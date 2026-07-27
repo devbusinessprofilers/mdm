@@ -1,0 +1,7 @@
+services:
+    App\Shared\Outbox\OutboxPublisher:
+        autowire: true
+        public: true
+        arguments:
+            $serializer: '@messenger.transport.symfony_serializer'
+            $sendersLocator: '@messenger.senders_locator'
