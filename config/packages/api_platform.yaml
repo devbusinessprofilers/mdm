@@ -1,0 +1,12 @@
+api_platform:
+    title: Business Profilers PIM / DAM API
+    version: 1.0.0
+    mapping:
+        paths:
+            - '%kernel.project_dir%/src/Pim/Entity'
+            - '%kernel.project_dir%/src/Dam/Entity'
+            - '%kernel.project_dir%/src/Account/Entity'
+    defaults:
+        stateless: true
+        cache_headers:
+            vary: ['Content-Type', 'Authorization', 'Origin']

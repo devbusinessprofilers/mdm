@@ -1,0 +1,32 @@
+# yaml-language-server: $schema=../vendor/symfony/routing/Loader/schema/routing.schema.json
+
+# This file is the entry point to configure the routes of your app.
+# Methods with the #[Route] attribute are automatically imported.
+# See also https://symfony.com/doc/current/routing.html
+
+# To list all registered routes, run the following command:
+#   bin/console debug:router
+
+shared_controllers:
+    resource: '../src/Shared/Controller/'
+    type: attribute
+
+pim_controllers:
+    resource: '../src/Pim/Controller/'
+    type: attribute
+
+dam_controllers:
+    resource: '../src/Dam/Controller/'
+    type: attribute
+
+etl_controllers:
+    resource: '../src/Etl/Controller/'
+    type: attribute
+
+enrichment_controllers:
+    resource: '../src/Enrichment/Controller/'
+    type: attribute
+
+account_controllers:
+    resource: '../src/Account/Controller/'
+    type: attribute
