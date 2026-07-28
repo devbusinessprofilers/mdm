@@ -8,12 +8,11 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 final class HomeControllerTest extends WebTestCase
 {
-    public function testHomePageIsAvailableAndEmpty(): void
+    public function testAnonymousUserIsRedirectedToLogin(): void
     {
         $client = self::createClient();
-        $crawler = $client->request('GET', '/');
+        $client->request('GET', '/');
 
-        self::assertResponseIsSuccessful();
-        self::assertSame('', trim($crawler->filter('body')->text()));
+        self::assertResponseRedirects('/login');
     }
 }

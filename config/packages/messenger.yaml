@@ -2,43 +2,62 @@ framework:
     messenger:
         failure_transport: failed
 
+        serializer:
+            default_serializer: messenger.transport.symfony_serializer
+            symfony_serializer:
+                format: json
+
         transports:
             pim:
                 dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
                 options:
                     queue_name: pim
+                    redeliver_timeout: 900
                 retry_strategy:
                     max_retries: 5
+                    delay: 1000
                     multiplier: 2
                     max_delay: 60000
             dam:
                 dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
                 options:
                     queue_name: dam
+                    redeliver_timeout: 900
                 retry_strategy:
                     max_retries: 5
+                    delay: 5000
                     multiplier: 2
                     max_delay: 60000
             etl:
                 dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
                 options:
                     queue_name: etl
+                    redeliver_timeout: 900
                 retry_strategy:
                     max_retries: 5
+                    delay: 10000
                     multiplier: 2
                     max_delay: 60000
             enrichment:
                 dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
                 options:
                     queue_name: enrichment
+                    redeliver_timeout: 900
                 retry_strategy:
                     max_retries: 5
+                    delay: 10000
                     multiplier: 2
                     max_delay: 60000
             mail:
                 dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
                 options:
                     queue_name: mail
+                    redeliver_timeout: 900
+                retry_strategy:
+                    max_retries: 5
+                    delay: 10000
+                    multiplier: 2
+                    max_delay: 60000
             failed:
                 dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
                 options:
@@ -47,7 +66,10 @@ framework:
         default_bus: messenger.bus.default
 
         buses:
-            messenger.bus.default: []
+            messenger.bus.default:
+                middleware:
+                    - App\Shared\Outbox\ReceivedDoctrineTransactionMiddleware
+                    - App\Shared\Outbox\IdempotencyMiddleware
 
         routing:
             App\Shared\Message\MediaUploaded: dam
@@ -64,9 +86,20 @@ when@test:
     framework:
         messenger:
             transports:
-                pim: 'in-memory://'
-                dam: 'in-memory://'
-                etl: 'in-memory://'
-                enrichment: 'in-memory://'
-                mail: 'in-memory://'
-                failed: 'in-memory://'
+                pim:
+                    dsn: '%env(TEST_MESSENGER_PIM_DSN)%'
+                dam:
+                    dsn: 'in-memory://'
+                    options: { serialize: true }
+                etl:
+                    dsn: 'in-memory://'
+                    options: { serialize: true }
+                enrichment:
+                    dsn: 'in-memory://'
+                    options: { serialize: true }
+                mail:
+                    dsn: 'in-memory://'
+                    options: { serialize: true }
+                failed:
+                    dsn: 'in-memory://'
+                    options: { serialize: true }
