@@ -22,12 +22,20 @@
         {% if app.user %}
             <header class="app-header">
                 <a href="{{ path('app_pim_home') }}" class="brand">MDM Business Profilers</a>
+                {% if is_granted('ROLE_BP') %}
+                    <a href="{{ path('app_pim_lieu_index') }}">Lieux</a>
+                {% endif %}
                 <form method="post" action="{{ path('app_logout') }}">
                     <input type="hidden" name="_csrf_token" value="{{ csrf_token('logout') }}">
                     <button type="submit" class="logout-button">Se déconnecter</button>
                 </form>
             </header>
         {% endif %}
+        {% for type, messages in app.flashes %}
+            {% for message in messages %}
+                <p role="status" class="flash-{{ type }}">{{ message }}</p>
+            {% endfor %}
+        {% endfor %}
         {% block body %}{% endblock %}
     </body>
 </html>

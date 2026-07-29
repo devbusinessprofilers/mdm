@@ -1,0 +1,25 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ lieu.label ?? 'Lieu' }}{% endblock %}
+
+{% block body %}
+<main>
+    <p><a href="{{ path('app_pim_lieu_index') }}">← Retour aux lieux</a></p>
+    <h1>{{ lieu.label ?? 'Sans libellé' }}</h1>
+    <dl>
+        <dt>Code</dt><dd>{{ lieu.code ?? '—' }}</dd>
+        <dt>Typologies</dt><dd>{{ lieu.generaleTypologie|join(', ') ?: '—' }}</dd>
+        <dt>Adresse</dt><dd>{% if lieu.localisation %}{{ lieu.localisation.ruePostale }} {{ lieu.localisation.codePostal }} {{ lieu.localisation.ville }}{% else %}—{% endif %}</dd>
+        <dt>Publié</dt><dd>{{ lieu.published ? 'Oui' : 'Non' }}</dd>
+        <dt>Salles</dt><dd>{{ lieu.salles|length }}</dd>
+        <dt>Périodes de fermeture</dt><dd>{{ lieu.periodesFermeture|length }}</dd>
+        <dt>Accès</dt><dd>{{ lieu.acces|length }}</dd>
+        <dt>Ressources DAM</dt><dd>{{ lieu.ressources|length }}</dd>
+    </dl>
+    <p><a href="{{ path('app_pim_lieu_edit', {id: lieu.id}) }}">Modifier</a></p>
+    <form method="post" action="{{ path('app_pim_lieu_delete', {id: lieu.id}) }}" onsubmit="return confirm('Supprimer ce lieu ?');">
+        <input type="hidden" name="_token" value="{{ csrf_token('delete-lieu-' ~ lieu.id) }}">
+        <button type="submit">Supprimer</button>
+    </form>
+</main>
+{% endblock %}

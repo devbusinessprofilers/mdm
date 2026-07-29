@@ -1,0 +1,54 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Lieux{% endblock %}
+
+{% block body %}
+<main>
+    <h1>Lieux</h1>
+    <p><a href="{{ path('app_pim_lieu_new') }}">Créer un lieu</a></p>
+    <form method="get">
+        <label>Recherche
+            <input type="search" name="q" value="{{ query }}" placeholder="Code, libellé, adresse…">
+        </label>
+        <label>Statut
+            <select name="status">
+                <option value="">Tous</option>
+                {% for value, label in {'en_cours': 'En cours', 'validee': 'Validée', 'publiee': 'Publiée', 'archivee': 'Archivée'} %}
+                    <option value="{{ value }}" {{ status and status.value == value ? 'selected' }}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <button type="submit">Rechercher</button>
+        {% if query or status %}<a href="{{ path('app_pim_lieu_index') }}">Effacer les critères</a>{% endif %}
+    </form>
+
+    {% if result_count is not null %}
+        <p>{{ result_count }} {{ result_count == 1 ? 'résultat' : 'résultats' }}</p>
+    {% endif %}
+
+    <table>
+        <thead><tr><th>Code</th><th>Libellé</th><th>Ville</th><th>Statut</th><th>Complétude</th><th>Actions</th></tr></thead>
+        <tbody>
+        {% for lieu in lieux %}
+            <tr>
+                <td>{{ lieu.code ?? '—' }}</td>
+                <td>{{ lieu.label ?? 'Sans libellé' }}</td>
+                <td>{{ lieu.ville ?? '—' }}</td>
+                <td>{{ lieu.status.value }}</td>
+                <td>{{ lieu.completeness }} %</td>
+                <td>
+                    <a href="{{ path('app_pim_lieu_show', {id: lieu.id}) }}">Voir</a>
+                    <a href="{{ path('app_pim_lieu_edit', {id: lieu.id}) }}">Modifier</a>
+                </td>
+            </tr>
+        {% else %}
+            <tr><td colspan="6">{{ query ? 'Aucun lieu trouvé.' : 'Aucun lieu.' }}</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    <nav aria-label="Pagination">
+        {% if app.request.query.has('cursor') %}<a href="{{ path('app_pim_lieu_index', {q: query ?: null, status: status ? status.value : null}) }}">Retour au début</a>{% endif %}
+        {% if next_cursor %}<a href="{{ path('app_pim_lieu_index', {q: query ?: null, cursor: next_cursor, status: status ? status.value : null}) }}">Page suivante</a>{% endif %}
+    </nav>
+</main>
+{% endblock %}

@@ -1,0 +1,58 @@
+{% extends 'base.html.twig' %}
+
+{% macro collection(field, title) %}
+    <fieldset data-collection data-index="{{ field|length }}" data-prototype="{{ form_widget(field.vars.prototype)|e('html_attr') }}">
+        <legend>{{ title }}</legend>
+        <div data-items>
+            {% for item in field %}
+                <fieldset data-item>{{ form_widget(item) }}<button type="button" data-remove>Retirer</button></fieldset>
+            {% endfor %}
+        </div>
+        <button type="button" data-add>Ajouter</button>
+    </fieldset>
+{% endmacro %}
+
+{% block title %}{{ creation ? 'Nouveau lieu' : 'Modifier le lieu' }}{% endblock %}
+
+{% block body %}
+<main>
+    <p><a href="{{ path('app_pim_lieu_index') }}">← Retour aux lieux</a></p>
+    <h1>{{ creation ? 'Nouveau lieu' : 'Modifier le lieu' }}</h1>
+
+    {{ form_start(form) }}
+        <fieldset>
+            <legend>Informations générales</legend>
+            {{ form_row(form.code) }}
+            {{ form_row(form.label) }}
+            {{ form_row(form.generaleTypologie) }}
+            {{ form_row(form.generaleWebsiteUrl) }}
+            {{ form_row(form.published) }}
+        </fieldset>
+        <fieldset>
+            <legend>Localisation</legend>
+            {{ form_widget(form.localisation) }}
+        </fieldset>
+        {{ _self.collection(form.salles, 'Salles') }}
+        {{ _self.collection(form.periodesFermeture, 'Périodes de fermeture') }}
+        {{ _self.collection(form.acces, 'Accès et points d’intérêt') }}
+        {{ _self.collection(form.ressources, 'Ressources DAM') }}
+        <button type="submit">Enregistrer</button>
+    {{ form_end(form) }}
+</main>
+
+<script>
+document.querySelectorAll('[data-collection]').forEach((collection) => {
+    collection.querySelector('[data-add]').addEventListener('click', () => {
+        const index = Number(collection.dataset.index);
+        const wrapper = document.createElement('fieldset');
+        wrapper.dataset.item = '';
+        wrapper.innerHTML = collection.dataset.prototype.replaceAll('__name__', String(index)) + '<button type="button" data-remove>Retirer</button>';
+        collection.querySelector('[data-items]').append(wrapper);
+        collection.dataset.index = String(index + 1);
+    });
+    collection.addEventListener('click', (event) => {
+        if (event.target.matches('[data-remove]')) event.target.closest('[data-item]').remove();
+    });
+});
+</script>
+{% endblock %}
