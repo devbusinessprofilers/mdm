@@ -29,5 +29,9 @@ services:
         arguments:
             $serializer: '@messenger.transport.symfony_serializer'
 
+    App\DataFixtures\Pim\LieuFixtures:
+        arguments:
+            $debugDataHolder: '@?doctrine.debug_data_holder'
+
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
