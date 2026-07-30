@@ -1,9 +1,9 @@
 security:
     role_hierarchy:
-        ROLE_PROVIDER: ROLE_USER
-        ROLE_BP: ROLE_USER
-        ROLE_ADMIN: [ROLE_BP, ROLE_ALLOWED_TO_SWITCH]
-        ROLE_SUPER_ADMIN: [ROLE_ADMIN, ROLE_PROVIDER]
+        ROLE_BP_EDITOR: ROLE_USER
+        ROLE_BP_VALIDATOR: ROLE_BP_EDITOR
+        ROLE_ADMIN: [ROLE_BP_VALIDATOR, ROLE_ALLOWED_TO_SWITCH]
+        ROLE_SUPER_ADMIN: ROLE_ADMIN
 
     # https://symfony.com/doc/current/security.html#registering-the-user-hashing-passwords
     password_hashers:
@@ -20,6 +20,11 @@ security:
             # Ensure dev tools and static assets are always allowed
             pattern: ^/(_profiler|_wdt|assets|build)/
             security: false
+        external_api:
+            pattern: ^/api/lieux
+            stateless: true
+            custom_authenticators:
+                - App\Account\Security\ExternalSiteJwtAuthenticator
         main:
             lazy: true
             provider: app_user_provider
@@ -46,7 +51,9 @@ security:
         - { path: ^/health$, roles: PUBLIC_ACCESS }
         - { path: ^/login$, roles: PUBLIC_ACCESS }
         - { path: ^/logout$, roles: PUBLIC_ACCESS }
-        - { path: ^/admin, roles: ROLE_BP }
+        - { path: ^/invitation/, roles: PUBLIC_ACCESS }
+        - { path: ^/api/lieux, roles: ROLE_EXTERNAL_SITE }
+        - { path: ^/admin, roles: ROLE_BP_EDITOR }
         - { path: ^/, roles: ROLE_USER }
 
 when@test:

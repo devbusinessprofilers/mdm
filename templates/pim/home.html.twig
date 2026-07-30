@@ -3,8 +3,11 @@
 {% block title %}PIM / DAM{% endblock %}
 
 {% block body %}
-    <main class="app-content">
-        <h1>Référentiel PIM / DAM</h1>
-        <p>Bienvenue {{ app.user.userIdentifier }}.</p>
+    <main class="page page-narrow">
+        <section class="card">
+            <p class="page-kicker">Business Profilers</p>
+            <h1>Référentiel PIM / DAM</h1>
+            <p class="page-description">Bienvenue {{ app.user.userIdentifier }}.</p>
+        </section>
     </main>
 {% endblock %}

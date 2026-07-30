@@ -11,24 +11,27 @@
             {% block importmap %}{{ importmap('app') }}{% endblock %}
         {% endblock %}
 
-        {% set frankenphp_hot_reload = app.request.server.get('FRANKENPHP_HOT_RELOAD') %}
+        {% set frankenphp_hot_reload = app.environment == 'dev' ? app.request.server.get('FRANKENPHP_HOT_RELOAD') : null %}
         {% if frankenphp_hot_reload %}
-        <meta name="frankenphp-hot-reload:url" content="{{ frankenphp_hot_reload }}">
-        <script src="https://cdn.jsdelivr.net/npm/idiomorph"></script>
-        <script src="https://cdn.jsdelivr.net/npm/frankenphp-hot-reload/+esm" type="module"></script>
+        <meta name="frankenphp-hot-reload:url" content="{{ frankenphp_hot_reload }}" data-controller="hot-reload">
         {% endif %}
     </head>
     <body>
         {% if app.user %}
             <header class="app-header">
-                <a href="{{ path('app_pim_home') }}" class="brand">MDM Business Profilers</a>
-                {% if is_granted('ROLE_BP') %}
-                    <a href="{{ path('app_pim_lieu_index') }}">Lieux</a>
-                {% endif %}
-                <form method="post" action="{{ path('app_logout') }}">
-                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('logout') }}">
-                    <button type="submit" class="logout-button">Se déconnecter</button>
-                </form>
+                <nav class="app-nav" aria-label="Navigation principale">
+                    <a href="{{ path('app_pim_home') }}" class="brand">MDM Business Profilers</a>
+                    {% if is_granted('ROLE_BP_EDITOR') %}
+                        <a class="nav-link" href="{{ path('app_pim_admin') }}">Administration</a>
+                        <a class="nav-link" href="{{ path('app_pim_lieu_index') }}">Lieux</a>
+                    {% endif %}
+                    {% if is_granted('ROLE_SUPER_ADMIN') %}
+                        <a class="nav-link" href="{{ path('app_account_admin_index') }}">Collaborateurs</a>
+                        <a class="nav-link" href="{{ path('app_account_user_admin_index') }}">Utilisateurs</a>
+                    {% endif %}
+                    {% set logout_form_view = logout_form() %}
+                    {{ form(logout_form_view) }}
+                </nav>
             </header>
         {% endif %}
         {% for type, messages in app.flashes %}
