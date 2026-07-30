@@ -38,6 +38,19 @@ docker compose --profile workers up -d --force-recreate
 Les workers redémarrent aussi automatiquement après une heure, lorsqu'ils
 atteignent leur limite mémoire ou après dix erreurs worker consécutives.
 
+Chaque conteneur worker utilise `APP_CACHE_DIR=/tmp/mdm-worker-cache`. Son
+conteneur Symfony compilé est ainsi isolé de `var/cache` monté depuis l'hôte :
+un `cache:clear`, une analyse statique ou une compilation d'assets ne peut plus
+invalider les classes d'un worker déjà en cours d'exécution.
+
+Le worker `dam` requiert aussi la commande ImageMagick `convert`, installée
+dans l'image PHP, pour produire les variantes WebP.
+
+Les notifications applicatives sont routées vers le transport `mail`, puis le
+handler appelle Mailer en mode synchrone dans ce worker. Ne pas router
+`SendEmailMessage` vers ce même transport JSON : `RawMessage` n'est pas
+désérialisable par le serializer Symfony utilisé par l'outbox.
+
 ## Diagnostic
 
 Afficher le nombre de messages en attente par transport :
