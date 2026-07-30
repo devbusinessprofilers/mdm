@@ -1,0 +1,35 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ collaborateur.email }}{% endblock %}
+
+{% block body %}
+<main class="page page-narrow">
+    <a class="back-link" href="{{ path('app_account_admin_index') }}">← Retour aux collaborateurs</a>
+    <header class="page-header">
+        <div class="page-header-copy">
+            <p class="page-kicker">Collaborateur prestataire</p>
+            <h1>{{ collaborateur.email }}</h1>
+            <p class="page-description">{{ collaborateur.firstName }} {{ collaborateur.lastName }} · {{ collaborateur.language }}</p>
+        </div>
+        {{ form(toggle_form) }}
+    </header>
+
+    <h2 class="card-title">Affiliations</h2>
+    <div class="affiliation-grid">
+    {% for affiliation in affiliations %}
+        <section class="card stacked-form">
+            <h3 class="font-semibold text-slate-900">{{ affiliation.fiche.label ?? affiliation.fiche.idString }}</h3>
+            {{ form(edit_forms[affiliation.idString]) }}
+            <div class="danger-form">{{ form(delete_forms[affiliation.idString]) }}</div>
+        </section>
+    {% else %}
+        <p class="empty-state card">Aucune affiliation.</p>
+    {% endfor %}
+    </div>
+
+    <section class="card form-card">
+        <h2 class="card-title">Ajouter une affiliation</h2>
+        {{ form(invite_form) }}
+    </section>
+</main>
+{% endblock %}
