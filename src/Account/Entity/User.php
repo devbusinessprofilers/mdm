@@ -14,7 +14,7 @@ use Symfony\Component\Uid\Ulid;
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: 'account_user')]
 #[ORM\UniqueConstraint(name: 'UNIQ_ACCOUNT_USER_EMAIL', columns: ['email'])]
-final class User implements UserInterface, PasswordAuthenticatedUserInterface
+class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
     #[ORM\Column(length: 26)]
@@ -24,8 +24,8 @@ final class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(length: 180)]
     private string $email;
 
-    #[ORM\Column(length: 255)]
-    private string $password;
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $password = null;
 
     /** @var list<string> */
     #[ORM\Column(type: Types::JSON)]
@@ -88,7 +88,7 @@ final class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->email;
     }
 
-    public function getPassword(): string
+    public function getPassword(): ?string
     {
         return $this->password;
     }

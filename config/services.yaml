@@ -8,6 +8,14 @@
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
     env(TEST_MESSENGER_PIM_DSN): 'in-memory://?serialize=true'
+    env(EXTERNAL_SITE_JWT_ISSUER): 'external-site'
+    env(EXTERNAL_SITE_JWT_AUDIENCE): 'mdm'
+    env(EXTERNAL_SITE_JWT_SUBJECT): 'external-site'
+    env(EXTERNAL_SITE_JWT_PUBLIC_KEY): ''
+    env(S3_ACCESS_KEY): ''
+    env(S3_SECRET_KEY): ''
+    env(MAILER_FROM): 'noreply@businessprofilers.fr'
+    env(INVITATION_SIGNING_KEY): ''
 
 services:
     # default configuration for services in *this* file
@@ -32,6 +40,52 @@ services:
     App\DataFixtures\Pim\LieuFixtures:
         arguments:
             $debugDataHolder: '@?doctrine.debug_data_holder'
+
+    App\Account\Security\ExternalSiteJwtVerifier:
+        arguments:
+            $issuer: '%env(EXTERNAL_SITE_JWT_ISSUER)%'
+            $audience: '%env(EXTERNAL_SITE_JWT_AUDIENCE)%'
+            $subject: '%env(EXTERNAL_SITE_JWT_SUBJECT)%'
+            $publicKey: '%env(EXTERNAL_SITE_JWT_PUBLIC_KEY)%'
+
+    App\Account\Service\InvitationTokenSigner:
+        arguments:
+            $key: '%env(INVITATION_SIGNING_KEY)%'
+
+    App\Account\MessageHandler\InternalUserInvitedHandler:
+        arguments:
+            $sender: '%env(MAILER_FROM)%'
+
+    App\Shared\Service\OvhS3ObjectStorage:
+        factory: ['App\Shared\Service\OvhS3ObjectStorage', 'create']
+        arguments:
+            $endpoint: '%env(S3_ENDPOINT)%'
+            $region: '%env(S3_REGION)%'
+            $bucket: '%env(S3_PRIVATE_BUCKET)%'
+            $accessKey: '%env(S3_ACCESS_KEY)%'
+            $secretKey: '%env(S3_SECRET_KEY)%'
+
+    app.storage.public:
+        class: App\Shared\Service\OvhS3ObjectStorage
+        factory: ['App\Shared\Service\OvhS3ObjectStorage', 'create']
+        arguments:
+            $endpoint: '%env(S3_ENDPOINT)%'
+            $region: '%env(S3_REGION)%'
+            $bucket: '%env(S3_PUBLIC_BUCKET)%'
+            $accessKey: '%env(S3_ACCESS_KEY)%'
+            $secretKey: '%env(S3_SECRET_KEY)%'
+
+    App\Shared\Service\ObjectStorageInterface: '@App\Shared\Service\OvhS3ObjectStorage'
+    App\Shared\Service\PrivateObjectStorageInterface: '@App\Shared\Service\OvhS3ObjectStorage'
+    App\Shared\Service\PublicObjectStorageInterface: '@app.storage.public'
+
+    App\Dam\Service\LieuImageUploader:
+        arguments:
+            $storagePrefix: '%env(S3_PREFIX)%'
+
+    App\Dam\Service\PublicMediaUrlGenerator:
+        arguments:
+            $baseUrl: '%env(S3_PUBLIC_BASE_URL)%'
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones

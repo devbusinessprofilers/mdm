@@ -72,13 +72,13 @@ framework:
                     - App\Shared\Outbox\IdempotencyMiddleware
 
         routing:
+            'App\Account\Message\*': mail
             App\Shared\Message\MediaUploaded: dam
             App\Shared\Message\MediaProcessed: pim
             'App\Pim\Message\*': pim
             'App\Dam\Message\*': dam
             'App\Etl\Message\*': etl
             'App\Enrichment\Message\*': enrichment
-            Symfony\Component\Mailer\Messenger\SendEmailMessage: mail
             Symfony\Component\Notifier\Message\ChatMessage: mail
             Symfony\Component\Notifier\Message\SmsMessage: mail
 

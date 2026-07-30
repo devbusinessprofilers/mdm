@@ -1,3 +1,6 @@
 framework:
     mailer:
         dsn: '%env(MAILER_DSN)%'
+        # Account notifications already run inside the asynchronous mail worker.
+        # Avoid nesting a RawMessage in the JSON-serialized mail transport.
+        message_bus: false

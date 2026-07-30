@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Account\Controller;
 
+use App\Account\Form\LoginType;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -22,6 +23,9 @@ final class SecurityController extends AbstractController
         return $this->render('security/login.html.twig', [
             'last_username' => $authenticationUtils->getLastUsername(),
             'authentication_error' => $authenticationUtils->getLastAuthenticationError(),
+            'login_form' => $this->createForm(LoginType::class, ['email' => $authenticationUtils->getLastUsername()], [
+                'action' => $this->generateUrl('app_login'),
+            ])->createView(),
         ]);
     }
 

@@ -1,0 +1,18 @@
+{% extends 'base.html.twig' %}
+{% block title %}Utilisateurs internes{% endblock %}
+{% block body %}
+<main class="page">
+    <header class="page-header"><div><p class="page-kicker">Administration</p><h1>Utilisateurs internes</h1><p class="page-description">Les éditeurs modifient et soumettent les fiches. Les validateurs peuvent aussi les publier, refuser, archiver et supprimer.</p></div></header>
+    <section class="card"><h2>Inviter un utilisateur</h2>{{ form(invite_form) }}</section>
+    <div class="table-shell"><table class="data-table"><thead><tr><th>Email</th><th>Rôle</th><th>État</th><th>Actions</th></tr></thead><tbody>
+    {% for user in users %}
+        <tr><td>{{ user.email }}</td><td>{{ user.roles|filter(r => r != 'ROLE_USER')|join(', ') }}</td><td>{{ user.active ? 'Actif' : 'Inactif / invitation en attente' }}</td><td>
+        {% if 'ROLE_SUPER_ADMIN' not in user.roles %}
+            {{ form(role_forms[user.id]) }}
+            {{ form(toggle_forms[user.id]) }}
+        {% else %}<span>Géré en console</span>{% endif %}
+        </td></tr>
+    {% else %}<tr><td colspan="4">Aucun utilisateur.</td></tr>{% endfor %}
+    </tbody></table></div>
+</main>
+{% endblock %}

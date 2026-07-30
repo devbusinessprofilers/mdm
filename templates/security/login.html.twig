@@ -13,30 +13,7 @@
                 <div class="alert" role="alert">Identifiants invalides.</div>
             {% endif %}
 
-            <form method="post" action="{{ path('app_login') }}">
-                <label for="email">Adresse email</label>
-                <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    value="{{ last_username }}"
-                    autocomplete="username"
-                    required
-                    autofocus
-                >
-
-                <label for="password">Mot de passe</label>
-                <input
-                    id="password"
-                    name="password"
-                    type="password"
-                    autocomplete="current-password"
-                    required
-                >
-
-                <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
-                <button type="submit">Se connecter</button>
-            </form>
+            <div class="form-card">{{ form(login_form) }}</div>
         </section>
     </main>
 {% endblock %}

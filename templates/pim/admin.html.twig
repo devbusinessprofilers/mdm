@@ -1,0 +1,148 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Administration du PIM{% endblock %}
+
+{% block body %}
+<main class="page">
+    <header class="page-header">
+        <div class="page-header-copy">
+            <p class="page-kicker">PIM / DAM</p>
+            <h1>Administration</h1>
+            <p class="page-description">Vue d’ensemble des automatisations, de leur état d’exécution et des pages exposées par l’application.</p>
+        </div>
+    </header>
+
+    <section class="admin-section">
+        <div class="section-heading">
+            <div>
+                <p class="page-kicker">Supervision</p>
+                <h2>État des traitements</h2>
+            </div>
+            {% if event_monitor.available %}<span class="badge badge-success">À jour</span>{% else %}<span class="badge badge-danger">Indisponible</span>{% endif %}
+        </div>
+
+        {% if event_monitor.available %}
+            <div class="admin-event-stats">
+                {% for status, total in event_monitor.outbox %}
+                    <article class="card admin-event-stat">
+                        <span>Outbox · {{ status }}</span>
+                        <strong>{{ total }}</strong>
+                    </article>
+                {% endfor %}
+                {% for queue, total in event_monitor.queues %}
+                    <article class="card admin-event-stat">
+                        <span>File · {{ queue }}</span>
+                        <strong class="{{ total == 0 ? 'text-success' : '' }}">{{ total }}</strong>
+                    </article>
+                {% endfor %}
+            </div>
+            <p class="admin-event-help">Outbox « published » signifie que l’événement a rejoint Messenger. « Traité » ci-dessous confirme que son handler métier s’est terminé et a enregistré son reçu.</p>
+        {% else %}
+            <div class="flash flash-error">Les données de supervision sont momentanément indisponibles. Les pages d’administration restent accessibles.</div>
+        {% endif %}
+    </section>
+
+    <section class="admin-section">
+        <div class="section-heading">
+            <div>
+                <p class="page-kicker">Automatisations</p>
+                <h2>Événements et résultats attendus</h2>
+            </div>
+            <span class="badge badge-info">{{ event_catalog|length }}</span>
+        </div>
+        <div class="table-shell">
+            <div class="table-scroll">
+                <table class="data-table admin-event-table">
+                    <thead><tr><th>Événement</th><th>Déclencheur</th><th>Traitement</th><th>Résultat</th></tr></thead>
+                    <tbody>
+                    {% for event in event_catalog %}
+                        <tr>
+                            <td>
+                                <strong>{{ event.label }}</strong>
+                                <span class="badge badge-neutral">{{ event.domain }}</span>
+                                <code>{{ event.type|split('\\')|last }}</code>
+                            </td>
+                            <td>{{ event.trigger }}</td>
+                            <td>
+                                <strong>{{ event.worker }}</strong> · file <code>{{ event.transport }}</code>
+                                <small>{{ event.handler|split('\\')|last }}</small>
+                            </td>
+                            <td>
+                                {{ event.result }}
+                                {% if event.next %}<small>{{ event.next }}</small>{% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    {% if event_monitor.available %}
+        <section class="admin-section">
+            <div class="section-heading">
+                <div>
+                    <p class="page-kicker">Historique</p>
+                    <h2>20 derniers événements</h2>
+                </div>
+            </div>
+            <div class="table-shell">
+                <div class="table-scroll">
+                    <table class="data-table admin-event-history">
+                        <thead><tr><th>Date</th><th>Événement</th><th>État observé</th><th>Résultat technique</th></tr></thead>
+                        <tbody>
+                        {% for event in event_monitor.recent %}
+                            <tr>
+                                <td><time datetime="{{ event.occurredAt }}">{{ event.occurredAt }}</time></td>
+                                <td><strong>{{ event.label }}</strong><code>{{ event.id }}</code></td>
+                                <td>
+                                    <span class="badge {{ event.status == 'Traité' ? 'badge-success' : (event.status == 'Échec de publication' ? 'badge-danger' : 'badge-info') }}">{{ event.status }}</span>
+                                    {% if event.attempts > 0 %}<small>{{ event.attempts }} tentative{{ event.attempts > 1 ? 's' : '' }}</small>{% endif %}
+                                </td>
+                                <td>
+                                    {% if event.error %}<span class="text-danger">{{ event.error|slice(0, 180) }}</span>{% elseif event.processedAt %}Handler terminé le {{ event.processedAt }}{% else %}En attente de confirmation du handler{% endif %}
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr><td colspan="4">Aucun événement enregistré.</td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    {% endif %}
+
+    <section class="admin-section">
+        <div class="section-heading">
+            <div>
+                <p class="page-kicker">Navigation</p>
+                <h2>Pages et interfaces disponibles</h2>
+            </div>
+        </div>
+    <div class="admin-page-groups">
+        {% for group, pages in page_groups %}
+            <section class="card admin-page-group">
+                <div class="section-heading"><h2>{{ group }}</h2><span class="badge badge-info">{{ pages|length }}</span></div>
+                <div class="admin-page-list">
+                    {% for page in pages %}
+                        <article class="admin-page-item">
+                            <div>
+                                {% if page.url %}<a href="{{ page.url }}"><strong>{{ page.label }}</strong></a>{% else %}<strong>{{ page.label }}</strong>{% endif %}
+                                <code>{{ page.path }}</code>
+                            </div>
+                            <div class="admin-page-meta">
+                                <span class="badge">{{ page.methods }}</span>
+                                {% if page.parameters is not empty %}<span>Paramètres : {{ page.parameters|join(', ') }}</span>{% endif %}
+                                <small>{{ page.name }}</small>
+                            </div>
+                        </article>
+                    {% endfor %}
+                </div>
+            </section>
+        {% endfor %}
+    </div>
+    </section>
+</main>
+{% endblock %}
