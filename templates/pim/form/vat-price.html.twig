@@ -1,0 +1,13 @@
+{% block vat_price_row %}
+    <div
+        class="w-full mt-6 grid grid-cols-1 lg:grid-cols-3 gap-x-6 gap-y-6"
+        {{ stimulus_controller('provider-portal--vat-price', { 'vatRates': vat_rates }) }}
+    >
+        {{ form_row(form.exTaxAmount, {
+            'input_attributes': {'data-provider-portal--vat-price-target': 'exTaxAmount'},
+            'stimulus_data_actions': ['input->provider-portal--vat-price#calculateTaxAmount'],
+        }) }}
+        {{ form_row(form.vat, {'group_attributes': {'data-provider-portal--vat-price-target': 'vat'}}) }}
+        {{ form_row(form.taxAmount, {'input_attributes': {'data-provider-portal--vat-price-target': 'taxAmount'}}) }}
+    </div>
+{% endblock %}

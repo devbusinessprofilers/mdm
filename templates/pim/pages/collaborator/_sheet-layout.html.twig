@@ -1,0 +1,88 @@
+{#
+@var string desktopMenu (component name for menu)
+@var string mobileMenu (component name for mobile menu)
+@var \App\Pim\Model\ProviderPortal\DTO\SheetDTO sheet
+@var array<\App\Pim\Model\ProviderPortal\DTO\Collaborator\MembershipDTO> memberships
+@var Symfony\Component\Form\FormView desktopForm
+@var Symfony\Component\Form\FormView mobileForm
+#}
+
+{% extends 'base.html.twig' %}
+
+{% block title %}
+    {{ 'page.collaborator.title'|trans }}
+{% endblock %}
+
+{% block form_themes %}
+    {% include 'pim/form/_form-theme.html.twig' with {form : desktopForm} %}
+    {% include 'pim/form/_form-theme.html.twig' with {form : mobileForm} %}
+{% endblock %}
+
+{% block body %}
+    <div class="w-full grid 2xl:grid-cols-[252px_1fr_407px] 2xl:gap-8 2xl:pl-8">
+        <aside>
+            {{ component(desktopMenu, {slug: sheet.slug, class: 'hidden 2xl:flex pt-20 pb-8'}) }}
+            {{ component(mobileMenu, {slug: sheet.slug, class: '2xl:hidden'}) }}
+        </aside>
+        <div class="px-8 py-12 2xl:px-0 2xl:pt-20 flex flex-col pt-20 min-w-0">
+            {% include 'pim/pages/sheet/component/_profile.html.twig' with {'sheet': sheet} %}
+            <section class="flex flex-col gap-6 bg-neutral-100 rounded-md shadow-(--shadow) w-full p-6 2xl:p-14 min-w-0">
+                <h2><twig:Typography variant="heading-3" bold>{{ 'page.collaborator.sheetList.title'|trans }}</twig:Typography></h2>
+                <div class="flex flex-col gap-2 items-start 2xl:hidden">
+                    {% block mobileForm %}{% endblock %}
+                </div>
+                {% embed 'pim/table/_table.html.twig' %}
+                    {% block thead %}
+                        <th class="{{ tableCva.apply({'table': 'header', 'cellSize': 'small'}, 'min-w-[78px] w-[78px] max-w-[78px]') }}"><twig:Typography bold>{{ 'page.collaborator.table.mainContact'|trans }}</twig:Typography></th>
+                        <th class="{{ tableCva.apply({'table': 'header', 'cellSize': 'small'}, 'min-w-[85px]') }}"><twig:Typography bold>{{ 'page.collaborator.table.lastName'|trans }}</twig:Typography></th>
+                        <th class="{{ tableCva.apply({'table': 'header', 'cellSize': 'small'}, 'min-w-[77px]') }}"><twig:Typography bold>{{ 'page.collaborator.table.firstName'|trans }}</twig:Typography></th>
+                        <th class="{{ tableCva.apply({'table': 'header', 'cellSize': 'small'}, 'min-w-[224px]') }}"><twig:Typography bold>{{ 'page.collaborator.table.email'|trans }}</twig:Typography></th>
+                        <th class="{{ tableCva.apply({'table': 'header', 'cellSize': 'small'}, 'min-w-[130px]') }}"><twig:Typography bold>{{ 'page.collaborator.table.phone'|trans }}</twig:Typography></th>
+                        <th class="{{ tableCva.apply({'table': 'header', 'cellSize': 'small'}, 'min-w-[126px]') }}"><twig:Typography bold>{{ 'page.collaborator.table.role'|trans }}</twig:Typography></th>
+                        <th class="{{ tableCva.apply({'table': 'header', 'cellSize': 'small'}, 'min-w-[90px] w-[90px] max-w-[90px]') }}"><twig:Typography bold>{{ 'page.collaborator.table.withRequest'|trans }}</twig:Typography></th>
+                        <th class="{{ tableCva.apply({'table': 'header', 'cellSize': 'small'}, 'min-w-[85px] w-[85px] max-w-[85px]') }}"><twig:Typography bold>{{ 'page.collaborator.table.withContent'|trans }}</twig:Typography></th>
+                        <th class="{{ tableCva.apply({'table': 'header', 'cellSize': 'small'}, 'min-w-[85px] w-[85px] max-w-[85px]') }}"><twig:Typography bold>{{ 'page.collaborator.table.withPayment'|trans }}</twig:Typography></th>
+                        <th class="{{ tableCva.apply({'table': 'header', 'cellSize': 'small'}, 'min-w-[73px] w-[73px] max-w-[73px]') }}"><twig:Typography bold>{{ 'global.action'|trans }}</twig:Typography></th>
+                    {% endblock %}
+                    {% block tbody %}
+                        {% for membership in memberships %}
+                            <tr class="{{ tableCva.apply({'table': 'row'}) }}">
+                                <td class="{{ tableCva.apply({'table': 'cell', 'cellSize': 'small'}) }}"><div class="w-full flex justify-center"><twig:Status state="{{ membership.mainContact }}" /></div></td>
+                                <td class="{{ tableCva.apply({'table': 'cell', 'cellSize': 'small'}) }}"><twig:Typography>{{ membership.collaborator.lastName }}</twig:Typography></td>
+                                <td class="{{ tableCva.apply({'table': 'cell', 'cellSize': 'small'}) }}"><twig:Typography>{{ membership.collaborator.firstName }}</twig:Typography></td>
+                                <td class="{{ tableCva.apply({'table': 'cell', 'cellSize': 'small'}) }}"><twig:Typography>{{ membership.collaborator.email }}</twig:Typography></td>
+                                <td class="{{ tableCva.apply({'table': 'cell', 'cellSize': 'small'}) }}"><twig:Typography>{{ membership.collaborator.phone }}</twig:Typography></td>
+                                <td class="{{ tableCva.apply({'table': 'cell', 'cellSize': 'small'}) }}"><twig:Typography>{{ roles[membership.role]|default('') }}</twig:Typography></td>
+                                <td class="{{ tableCva.apply({'table': 'cell', 'cellSize': 'small'}) }}"><div class="w-full flex justify-center"><twig:Status state="{{ membership.withRequest }}" /></div></td>
+                                <td class="{{ tableCva.apply({'table': 'cell', 'cellSize': 'small'}) }}"><div class="w-full flex justify-center"><twig:Status state="{{ membership.withContent }}" /></div></td>
+                                <td class="{{ tableCva.apply({'table': 'cell', 'cellSize': 'small'}) }}"><div class="w-full flex justify-center"><twig:Status state="{{ membership.withPayment }}" /></div></td>
+                                <td class="{{ tableCva.apply({'table': 'cell', 'cellSize': 'small'}) }}">
+                                    <div class="flex gap-2 justify-center items-center">
+                                        <twig:Table:EditButton
+                                            path="{{ path('provider_portal_sheet_membership_edit', {
+                                                'slug': sheet.slug,
+                                                'email': membership.collaborator.email,
+                                            }) }}"
+                                        />
+                                        {% if not membership.isAdmin %}
+                                            <twig:Table:DeleteButton
+                                                path="{{ path('provider_portal_sheet_membership_delete', {
+                                                    'slug': sheet.slug,
+                                                    'email': membership.collaborator.email,
+                                                }) }}"
+                                                csrfToken="{{ csrf_token('delete-membership-' ~ membership.sheet.uniqueId) }}"
+                                            />
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% endblock %}
+                {% endembed %}
+            </section>
+        </div>
+        <div class="hidden bg-primary-4 min-h-full 2xl:flex flex-col gap-6 justify-center items-center p-10 min-w-0">
+            {% block desktopForm %}{% endblock %}
+        </div>
+    </div>
+{% endblock %}

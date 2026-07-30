@@ -1,0 +1,29 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}
+    UI PAGE
+{% endblock %}
+
+{% block body %}
+    <main class="p-8">
+        <h1><twig:Typography variant="heading-1" bold center class="block">Page d'UI</twig:Typography></h1>
+        {% include 'pim/mock/ui_components/_typography.html.twig' %}
+        {% include 'pim/mock/ui_components/_pin.html.twig' %}
+        {% include 'pim/mock/ui_components/_button.html.twig' %}
+        {% include 'pim/mock/ui_components/_button-link.html.twig' %}
+        {% include 'pim/mock/ui_components/_text-input.html.twig' %}
+        {% include 'pim/mock/ui_components/_calendar.html.twig' %}
+        {% include 'pim/mock/ui_components/_password.html.twig' %}
+        {% include 'pim/mock/ui_components/_checkbox.html.twig' %}
+        {% include 'pim/mock/ui_components/_radio.html.twig' %}
+        {% include 'pim/mock/ui_components/_select.html.twig' %}
+        {% include 'pim/mock/ui_components/_tag.html.twig' %}
+        {% include 'pim/mock/ui_components/_progress-bar.html.twig' %}
+        {% include 'pim/mock/ui_components/_collapse.html.twig' %}
+        {% include 'pim/mock/ui_components/_chart.html.twig' %}
+        {% include 'pim/mock/ui_components/_score.html.twig' %}
+        {% include 'pim/mock/ui_components/_stars.html.twig' %}
+        {% include 'pim/mock/ui_components/_modal.html.twig' %}
+        {% include 'pim/mock/ui_components/_pagination.html.twig' %}
+    </main>
+{% endblock %}

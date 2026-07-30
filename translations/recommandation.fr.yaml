@@ -1,0 +1,5 @@
+recommandation:
+  breadcrumb:
+    my_events: "Mes évènements"
+  flash:
+    error_occurred: "Une erreur est survenue !"

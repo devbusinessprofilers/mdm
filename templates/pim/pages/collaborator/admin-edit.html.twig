@@ -1,0 +1,49 @@
+{% extends 'pim/pages/collaborator/_admin-layout.html.twig' %}
+
+{% block mobileForm %}
+    {{ form_start(mobileForm, {'attr': {'class': 'w-full'}}) }}
+    <div class="flex flex-col gap-4 mb-8">
+        {{ form_row(mobileForm.pictureFile) }}
+        {{ form_row(mobileForm.lastName) }}
+        {{ form_row(mobileForm.firstName) }}
+        {{ form_row(mobileForm.email) }}
+        {{ form_row(mobileForm.phone) }}
+    </div>
+    {{ form_row(mobileForm.memberships) }}
+    <div class="flex flex-col gap-2 mt-10 mb-8">
+        <twig:Button type="submit" variant="primary" class="w-full">{{ 'global.continue'|trans }}</twig:Button>
+        <twig:Button
+            asLink
+            href="{{ path('provider_portal_collaborator_list', {'page': currentPage}) }}"
+            variant="outline"
+            class="mt-2 w-full"
+        >
+            {{ 'global.cancel'|trans }}
+        </twig:Button>
+    </div>
+    {{ form_end(mobileForm) }}
+{% endblock %}
+
+{% block desktopForm %}
+    {{ form_start(desktopForm, {'attr': {'class': 'w-full mt-10'}}) }}
+    <div class="flex flex-col gap-4 mb-10">
+        {{ form_row(desktopForm.pictureFile) }}
+        {{ form_row(desktopForm.lastName) }}
+        {{ form_row(desktopForm.firstName) }}
+        {{ form_row(desktopForm.email) }}
+        {{ form_row(desktopForm.phone) }}
+    </div>
+    {{ form_row(desktopForm.memberships) }}
+    <div class="flex flex-col gap-2 mt-10">
+        <twig:Button type="submit" variant="primary" class="w-full">{{ 'global.continue'|trans }}</twig:Button>
+        <twig:Button
+            asLink
+            href="{{ path('provider_portal_collaborator_list', {'page': currentPage}) }}"
+            variant="outline"
+            class="mt-2 w-full"
+        >
+            {{ 'global.cancel'|trans }}
+        </twig:Button>
+    </div>
+    {{ form_end(desktopForm) }}
+{% endblock %}

@@ -1,0 +1,11 @@
+{%- block textarea_widget -%}
+    <twig:Form:Textarea
+        id="{{ id }}"
+        name="{{ full_name }}"
+        value="{{ value }}"
+        placeholder="{{ (attr.placeholder ?? '')|trans }}"
+        class="{{ attr.widgetClass ?? '' }}"
+        disabled="{{ disabled }}"
+        maxlength="{{ attr.maxlength ?? 1000 }}"
+    />
+{%- endblock -%}

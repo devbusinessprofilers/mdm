@@ -1,0 +1,44 @@
+{% block membership_row %}
+    {% set isCollectionItem = as_collection_item is defined %}
+    {% set displayDelete = isCollectionItem and as_collection_item.allow_delete %}
+    <div
+        class="w-full pb-6 border-b border-primary-3 mt-2"
+        {% if isCollectionItem %}
+            data-collection-item=""
+        {% endif %}
+    >
+        <div class="flex justify-between">
+            <twig:Typography variant="body-lg" bold>{{ 'page.collaborator.membership.title'|trans }}</twig:Typography>
+            {% if displayDelete %}
+                {{- block('collection_button_delete_content') -}}
+            {%- endif -%}
+        </div>
+        <div class="w-full flex flex-col gap-y-4 mt-3">
+            {{ form_row(form.sheet) }}
+            {{ form_row(form.role) }}
+            <div class="flex flex-col gap-4 2xl:flex-row 2xl:flex-wrap 2xl:gap-2">
+                {{ form_row(form.withContent) }}
+                {{ form_row(form.withRequest) }}
+                {{ form_row(form.withPayment) }}
+            </div>
+            <div>
+                <twig:Typography element="div" class="mb-1">{{ 'page.collaborator.panel.membership.status'|trans }}</twig:Typography>
+                {{ form_row(form.mainContact) }}
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{%- block collection_button_add_content -%}
+    <twig:Button
+        type="button"
+        variant="outline"
+        icon="plus"
+        class="w-full sm:w-auto"
+        size="sm"
+        data-provider-portal--form-collection-target="addButton"
+        data-action="click->provider-portal--form-collection#addItem"
+    >
+        {{- add_button_label|trans -}}
+    </twig:Button>
+{%- endblock -%}

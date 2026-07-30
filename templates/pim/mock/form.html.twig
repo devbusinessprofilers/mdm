@@ -1,0 +1,39 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}
+    PAGE FORM UI
+{% endblock %}
+
+{% block body %}
+    <main class="p-8">
+        <h1><twig:Typography variant="heading-1" bold center class="block">Page Form UI</twig:Typography></h1>
+        {{ form_start(form) }}
+        <div class="bg-neutral-100 rounded-sm mt-8 p-8 flex flex-col w-full gap-2 shadow-(--shadow)">
+            {{ form_row(form.avatar) }}
+            {{ form_row(form.text) }}
+            {{ form_row(form.number) }}
+            {{ form_row(form.password) }}
+            {{ form_row(form.repeated) }}
+            <div class="flex flex-wrap gap-8">
+                {{ form_row(form.checkbox) }}
+                {{ form_row(form.switch) }}
+            </div>
+            {{ form_row(form.radios) }}
+            {{ form_row(form.select) }}
+            {{ form_row(form.select_multiple) }}
+            {{ form_row(form.tag_select) }}
+            {{ form_row(form.calendar) }}
+            {{ form_row(form.calendar_range) }}
+            {{ form_row(form.textarea) }}
+            {{ form_row(form.wysiwyg) }}
+            {{ form_row(form.picture) }}
+            {{ form_row(form.document) }}
+            {{ form_row(form.dropzone_images) }}
+            {{ form_row(form.dropzone_documents) }}
+            <div class="flex justify-end">
+                {{ form_row(form.submit) }}
+            </div>
+        </div>
+        {{ form_end(form) }}
+    </main>
+{% endblock %}

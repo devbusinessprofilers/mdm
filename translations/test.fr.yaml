@@ -1,0 +1,8 @@
+test:
+  index:
+    query_results: "La requête a [%count%] résultat(s) :"
+  console:
+    execution: "Exécution controller %controller%/%params%"
+    ok: "==> OK !"
+  recaptcha:
+    submit: "Envoyer"

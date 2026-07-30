@@ -1,0 +1,29 @@
+{%- block choice_widget_expanded -%}
+    <div
+        data-radio-group="" class="radio-group-wrapper flex gap-x-7 gap-y-2 flex-wrap items-center"
+        {% if group_attributes is defined %}
+            {% for key, value in group_attributes %}
+                {{ key }}="{{ value }}"
+            {% endfor %}
+        {% endif %}
+    >
+        {%- for child in form %}
+            {% set radioProperties = {
+                'id': child.vars.id,
+                'name': child.vars.full_name,
+                'checked': child.vars.data ?? false,
+                'value': child.vars.value,
+                'inputAttributes': input_attributes ?? {},
+            } %}
+            {% if radio_attributes is defined %}
+                {% set radioProperties = radioProperties|merge(radio_attributes) %}
+            {% endif %}
+
+            {% component 'Form:RadioItem' with radioProperties %}
+                {% block content %}
+                    {{ child.vars.label|trans }}
+                {% endblock %}
+            {% endcomponent %}
+        {% endfor -%}
+    </div>
+{%- endblock -%}

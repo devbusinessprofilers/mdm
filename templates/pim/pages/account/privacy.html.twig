@@ -1,0 +1,12 @@
+{% extends 'pim/pages/account/_layout.html.twig' %}
+
+{% block title %}
+    {{ 'page.privacy.title'|trans }}
+{% endblock %}
+
+{% block main %}
+    <div class="flex flex-col gap-6">
+        <h1><twig:Typography variant="heading-3" bold>{{ 'page.privacy.title'|trans }}</twig:Typography></h1>
+        <twig:Typography variant="body">{{ 'page.privacy.description'|trans }}</twig:Typography>
+    </div>
+{% endblock %}

@@ -1,0 +1,32 @@
+{% set tableCva = cva({
+    base: '',
+    variants: {
+        'table' : {
+            'header': 'px-4 py-2 bg-primary-4 text-left',
+            'row': 'border-b border-neutral-300',
+            'cell': 'p-4',
+        },
+        'cellSize' : {
+            'small': '!px-3',
+        },
+        'cellType' : {
+            'center': 'text-right',
+        },
+    },
+    compoundVariants: [
+        { 'table': ['header'], 'cellType': ['center'], class: '!text-center' },
+    ],
+}) %}
+
+<div class="overflow-x-auto w-full min-w-0 pb-4">
+    <table class="w-full">
+        <thead>
+            <tr>
+                {% block thead %}{% endblock %}
+            </tr>
+        </thead>
+        <tbody>
+            {% block tbody %}{% endblock %}
+        </tbody>
+    </table>
+</div>

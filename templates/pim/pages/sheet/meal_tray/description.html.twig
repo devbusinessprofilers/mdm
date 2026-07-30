@@ -1,0 +1,24 @@
+{% extends 'pim/pages/sheet/_layout.html.twig' %}
+
+{% block title %}
+    {{ 'page.sheet.mealTray.description.title'|trans }}
+{% endblock %}
+
+{% block main %}
+    {{ form_start(form, { 'attr': { 'id': form.vars.id} }) }}
+    <section class="flex flex-col gap-6 bg-neutral-100 rounded-md shadow-(--shadow) w-full p-6 2xl:p-14">
+        <h2><twig:Typography variant="heading-3" bold>{{ 'page.sheet.mealTray.description.title'|trans }}</twig:Typography></h2>
+        <div class="w-full grid grid-cols-1 gap-x-6 gap-y-4">
+            {{ form_row(form.description) }}
+        </div>
+        <div class="w-full grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-4">
+            {{ form_row(form.cuisine) }}
+            {{ form_row(form.csrCommitments) }}
+        </div>
+    </section>
+    {{ form_end(form) }}
+{% endblock %}
+
+{% block float_submit %}
+    <twig:Form:FloatSubmit label="{{ 'global.save'|trans }}" formId="{{ form.vars.id }}" />
+{% endblock %}

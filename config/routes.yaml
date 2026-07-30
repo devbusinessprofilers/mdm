@@ -14,6 +14,11 @@ shared_controllers:
 pim_controllers:
     resource: '../src/Pim/Controller/'
     type: attribute
+    # Les pages sont servies sous /{_locale}/... (ex. /fr/portal/reviews).
+    # La contrainte sur _locale vient de framework.enabled_locales.
+    prefix: /{_locale}
+    defaults:
+        _locale: '%default_locale%'
 
 dam_controllers:
     resource: '../src/Dam/Controller/'
@@ -30,3 +35,6 @@ enrichment_controllers:
 account_controllers:
     resource: '../src/Account/Controller/'
     type: attribute
+    prefix: /{_locale}
+    defaults:
+        _locale: '%default_locale%'

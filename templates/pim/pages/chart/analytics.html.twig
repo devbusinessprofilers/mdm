@@ -1,0 +1,222 @@
+{#
+@var \App\Pim\Model\ProviderPortal\Mock\Chart\Analytics\Performance performance
+#}
+
+{% extends 'pim/pages/chart/_layout.html.twig' %}
+
+{% block title %}
+    {{ 'page.chart.analytics.title'|trans }}
+{% endblock %}
+
+{% block content %}
+    <div class="flex flex-col gap-8">
+        {# Filters #}
+        <section class="flex flex-col gap-6 bg-neutral-100 rounded-md shadow-(--shadow) w-full p-6 2xl:p-14">
+            <h2><twig:Typography variant="heading-3" bold>{{ 'page.chart.analytics.filter.title'|trans }}</twig:Typography></h2>
+            <div class="flex gap-8">
+                <div class="flex flex-col gap-1">
+                    <label for="establishment">
+                        <twig:Typography>{{ 'page.chart.analytics.filter.establishments'|trans }}</twig:Typography>
+                    </label>
+                    <twig:Form:Select
+                        id="establishment"
+                        name="establishment"
+                        choices="{{ establishments }}"
+                        placeholder="-"
+                    />
+                </div>
+                <div class="flex flex-col gap-1">
+                    <label for="period">
+                        <twig:Typography>{{ 'page.chart.analytics.filter.periods'|trans }}</twig:Typography>
+                    </label>
+                    <twig:Form:Select
+                        id="period"
+                        name="period"
+                        choices="{{ periods }}"
+                        placeholder="-"
+                    />
+                </div>
+            </div>
+        </section>
+        {# Card indicators #}
+        <div class="w-full grid grid-cols-1 lg:grid-cols-2 3xl:grid-cols-4 gap-6">
+            <twig:Chart:Card
+                label="{{ 'page.chart.analytics.card.turnover'|trans }}"
+                value="{{ performance.turnover }}"
+                variation="{{ performance.turnoverVariation }}"
+                critical="{{ performance.turnoverCritical }}"
+            />
+            <twig:Chart:Card
+                label="{{ 'page.chart.analytics.card.bookingCount'|trans }}"
+                value="{{ performance.bookingCount }}"
+                variation="{{ performance.bookingCountVariation }}"
+                critical="{{ performance.bookingCountCritical }}"
+            />
+            <twig:Chart:Card
+                label="{{ 'page.chart.analytics.card.averageBasket'|trans }}"
+                value="{{ performance.averageBasket }}"
+                variation="{{ performance.averageBasketVariation }}"
+                critical="{{ performance.averageBasketCritical }}"
+            />
+            <twig:Chart:Card
+                label="{{ 'page.chart.analytics.card.individualAverageBasket'|trans }}"
+                value="{{ performance.individualAverageBasket }}"
+                variation="{{ performance.individualAverageBasketVariation }}"
+                critical="{{ performance.individualAverageBasketCritical }}"
+            />
+        </div>
+        {# Turnover breakdown #}
+        <div>
+            <h1 class="mb-3"><twig:Typography variant="heading-3" bold>{{ 'page.chart.analytics.turnoverBreakdown.title'|trans }}</twig:Typography></h1>
+            <div class="w-full grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <section class="flex flex-col gap-6 bg-neutral-100 rounded-md shadow-(--shadow) w-full p-6 2xl:p-14">
+                    <h2><twig:Typography variant="heading-3" bold>{{ 'page.chart.analytics.turnoverBreakdown.section.values.title'|trans }}</twig:Typography></h2>
+                    <twig:Typography>{{ 'page.chart.analytics.turnoverBreakdown.section.values.description'|trans }}</twig:Typography>
+                    <div class="w-full grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        <div>
+                            <label for="value-size-group"><twig:Typography>{{ 'page.chart.analytics.filter.sizeGroup'|trans }}</twig:Typography></label>
+                            <twig:Form:Select id="value-group" name="value-group" choices="{{ sizeGroups }}" placeholder="-" />
+                        </div>
+                        <div>
+                            <label for="value-srje"><twig:Typography>{{ 'page.chart.analytics.filter.srje'|trans }}</twig:Typography></label>
+                            <twig:Form:Select id="value-group" name="value-srje" choices="{{ srjeList }}" placeholder="-" />
+                        </div>
+                    </div>
+                    <twig:Chart
+                        type="doughnut"
+                        data="{{ performance.valueTurnoverBreakdownChartData }}"
+                        options="{{ performance.valueTurnoverBreakdownChartOptions }}"
+                        class="w-[60%] m-auto"
+                    />
+                </section>
+                <section class="flex flex-col gap-6 bg-neutral-100 rounded-md shadow-(--shadow) w-full p-6 2xl:p-14">
+                    <h2><twig:Typography variant="heading-3" bold>{{ 'page.chart.analytics.turnoverBreakdown.section.volume.title'|trans }}</twig:Typography></h2>
+                    <twig:Typography>{{ 'page.chart.analytics.turnoverBreakdown.section.volume.description'|trans }}</twig:Typography>
+                    <div class="w-full grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        <div>
+                            <label for="volume-size-group"><twig:Typography>{{ 'page.chart.analytics.filter.sizeGroup'|trans }}</twig:Typography></label>
+                            <twig:Form:Select id="volume-group" name="volume-group" choices="{{ sizeGroups }}" placeholder="-" />
+                        </div>
+                        <div>
+                            <label for="volume-srje"><twig:Typography>{{ 'page.chart.analytics.filter.srje'|trans }}</twig:Typography></label>
+                            <twig:Form:Select id="volume-group" name="volume-srje" choices="{{ srjeList }}" placeholder="-" />
+                        </div>
+                    </div>
+                    <twig:Chart
+                        type="doughnut"
+                        data="{{ performance.volumeTurnoverBreakdownChartData }}"
+                        options="{{ performance.volumeTurnoverBreakdownChartOptions }}"
+                        class="w-[60%] m-auto"
+                    />
+                </section>
+            </div>
+        </div>
+        {# Request process #}
+        <div>
+            <h1 class="mb-3"><twig:Typography variant="heading-3" bold>{{ 'page.chart.analytics.requestProcess.title'|trans }}</twig:Typography></h1>
+            <div class="w-full grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="w-full grid grid-cols-2 lg:grid-cols-2 gap-6">
+                    <twig:Chart:Card
+                        label="{{ 'page.chart.analytics.card.turnover'|trans }}"
+                        value="{{ performance.averageProcessTime }}"
+                        variation="{{ performance.averageProcessTimeVariation }}"
+                        critical="{{ performance.averageProcessTimeCritical }}"
+                    />
+                    <twig:Chart:Card
+                        label="{{ 'page.chart.analytics.card.turnover'|trans }}"
+                        value="{{ performance.conversionRate }}"
+                        variation="{{ performance.conversionRateVariation }}"
+                        critical="{{ performance.conversionRateCritical }}"
+                    />
+                </div>
+                <section class="flex flex-col gap-6 bg-neutral-100 rounded-md shadow-(--shadow) w-full p-6 2xl:p-14 col-start-1">
+                    <h2><twig:Typography variant="heading-3" bold>{{ 'page.chart.analytics.requestProcess.section.availability.title'|trans }}</twig:Typography></h2>
+                    <twig:Typography>{{ 'page.chart.analytics.requestProcess.section.availability.description'|trans }}</twig:Typography>
+                    <div class="flex gap-2 items-center justify-center">
+                        <twig:Typography>{{ 'page.chart.analytics.requestProcess.section.availability.gaugeLeft'|trans }}</twig:Typography>
+                        <twig:Gauge value="10.96" ranges="{{ performance.availabilityRequestProcessGaugeRanges }}"/>
+                        <twig:Typography>{{ 'page.chart.analytics.requestProcess.section.availability.gaugeRight'|trans }}</twig:Typography>
+                    </div>
+                </section>
+                <section class="flex flex-col gap-6 bg-neutral-100 rounded-md shadow-(--shadow) w-full p-6 2xl:p-14">
+                    <h2><twig:Typography variant="heading-3" bold>{{ 'page.chart.analytics.requestProcess.section.quote.title'|trans }}</twig:Typography></h2>
+                    <twig:Typography>{{ 'page.chart.analytics.requestProcess.section.quote.description'|trans }}</twig:Typography>
+                    <twig:Chart
+                        type="line"
+                        data="{{ performance.quoteRequestProcessChartData }}"
+                        options="{{ performance.quoteRequestProcessChartOptions }}"
+                        class="lg:h-full"
+                    />
+                </section>
+                <section class="flex flex-col gap-6 bg-neutral-100 rounded-md shadow-(--shadow) w-full p-6 2xl:p-14 col-start-1">
+                    <h2><twig:Typography variant="heading-3" bold>{{ 'page.chart.analytics.requestProcess.section.refusalReason.title'|trans }}</twig:Typography></h2>
+                    <twig:Typography>{{ 'page.chart.analytics.requestProcess.section.refusalReason.description'|trans }}</twig:Typography>
+                    <twig:Chart type="pie" data="{{ performance.refusalRequestProcessChartData }}" class="w-[60%] m-auto"/>
+                </section>
+                <section class="flex flex-col justify-center gap-2 bg-error-pastel rounded-md shadow-(--shadow) w-full p-6 2xl:p-14">
+                    <twig:Typography variant="heading-1" center bold>{{ 'page.chart.analytics.requestProcess.section.refusalCount.title'|trans({'{count}': performance.refusalCount}) }}</twig:Typography>
+                    <twig:Typography variant="body-lg">{{ 'page.chart.analytics.requestProcess.section.refusalCount.description'|trans }}</twig:Typography>
+                </section>
+            </div>
+        </div>
+        {# Request profile #}
+        <div>
+            <h1 class="mb-3"><twig:Typography variant="heading-3" bold>{{ 'page.chart.analytics.requestProfile.title'|trans }}</twig:Typography></h1>
+            <div class="flex flex-col gap-6">
+                <div class="w-full grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <section class="flex flex-col gap-6 bg-neutral-100 rounded-md shadow-(--shadow) w-full p-6 2xl:p-14">
+                        <h2><twig:Typography variant="heading-3" bold>{{ 'page.chart.analytics.requestProfile.section.residenceDuration.title'|trans }}</twig:Typography></h2>
+                        <twig:Typography>{{ 'page.chart.analytics.requestProfile.section.residenceDuration.description'|trans }}</twig:Typography>
+                        <twig:Chart type="doughnut" data="{{ performance.residenceRequestProfileChartData }}" class="w-[60%] m-auto"/>
+                    </section>
+                    <section class="flex flex-col gap-6 bg-neutral-100 rounded-md shadow-(--shadow) w-full p-6 2xl:p-14">
+                        <h2><twig:Typography variant="heading-3" bold>{{ 'page.chart.analytics.requestProfile.section.bookingDuration.title'|trans }}</twig:Typography></h2>
+                        <twig:Typography>{{ 'page.chart.analytics.requestProfile.section.bookingDuration.description'|trans }}</twig:Typography>
+                        <twig:Chart type="doughnut" data="{{ performance.bookingRequestProfileChartData }}" class="w-[60%] m-auto"/>
+                    </section>
+                </div>
+                <section class="flex flex-col gap-6 bg-neutral-100 rounded-md shadow-(--shadow) w-full p-6 2xl:p-14">
+                    <h2><twig:Typography variant="heading-3" bold>{{ 'page.chart.analytics.requestProfile.section.eventCount.title'|trans }}</twig:Typography></h2>
+                    <twig:Typography>{{ 'page.chart.analytics.requestProfile.section.eventCount.description'|trans }}</twig:Typography>
+                    <twig:Chart type="pie" data="{{ performance.eventRequestProfileChartData }}" class="w-[30%] m-auto"/>
+                </section>
+                <div class="w-full grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <section class="flex flex-col gap-6 bg-neutral-100 rounded-md shadow-(--shadow) w-full p-6 2xl:p-14">
+                        <h2><twig:Typography variant="heading-3" bold>{{ 'page.chart.analytics.requestProfile.section.serviceNature.title'|trans }}</twig:Typography></h2>
+                        <twig:Typography>{{ 'page.chart.analytics.requestProfile.section.serviceNature.description'|trans }}</twig:Typography>
+                        <twig:Chart type="pie" data="{{ performance.serviceRequestProfileChartData }}" class="w-[60%] m-auto"/>
+                    </section>
+                    <section class="flex flex-col gap-6 bg-neutral-100 rounded-md shadow-(--shadow) w-full p-6 2xl:p-14">
+                        <h2><twig:Typography variant="heading-3" bold>{{ 'page.chart.analytics.requestProfile.section.geographicalRequest.title'|trans }}</twig:Typography></h2>
+                        <twig:Typography>{{ 'page.chart.analytics.requestProfile.section.geographicalRequest.description'|trans }}</twig:Typography>
+                        <table>
+                            <thead>
+                                <tr class="mb-2 border-b border-neutral-300">
+                                    <th class="pb-2 text-left"><twig:Typography bold>#</twig:Typography></th>
+                                    <th class="pb-2 text-left pl-8"><twig:Typography bold>{{ 'page.chart.analytics.requestProfile.section.geographicalRequest.table.department'|trans }}</twig:Typography></th>
+                                    <th class="pb-2 text-left pl-8"><twig:Typography bold>{{ 'page.chart.analytics.requestProfile.section.geographicalRequest.table.requestCount'|trans }}</twig:Typography></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% set cellCva = cva({
+                                    base: 'text-left pt-4',
+                                    variants: {
+                                        'firstRow' : { true: 'pt-6' },
+                                        'textCell' : { true: 'pl-8' },
+                                    },
+                                }) %}
+                                {% for geographicalRequest in performance.geographicalTopRequests %}
+                                    <tr>
+                                        <td class="{{ cellCva.apply({'firstRow': loop.first}) }}">{{ loop.index }}</td>
+                                        <td class="{{ cellCva.apply({'firstRow': loop.first, 'textCell': true}) }}"><twig:Typography>{{ geographicalRequest['department'] }}</twig:Typography></td>
+                                        <td class="{{ cellCva.apply({'firstRow': loop.first, 'textCell': true}) }}"><twig:Typography>{{ geographicalRequest['count'] }}</twig:Typography></td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </section>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

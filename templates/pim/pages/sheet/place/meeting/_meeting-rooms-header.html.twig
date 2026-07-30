@@ -1,0 +1,74 @@
+{#
+@var bool editable
+#}
+
+{% set headerCva = cva({
+    base: 'grid pb-6 border-b border-neutral-300',
+    variants: {
+        editable: {
+            true: 'grid-cols-[400px_repeat(12,70px)_150px_24px] gap-x-2',
+            false: 'grid-cols-[400px_repeat(12,70px)_100px] gap-x-4',
+        },
+    },
+}) %}
+
+<div class="{{ headerCva.apply({'editable': editable}) }}">
+    <div class="flex flex-col items-center">
+        <twig:Typography variant="body-sm" bold class="mt-13">{{ 'page.sheet.place.meeting.capacity.table.roomName'|trans }}</twig:Typography>
+    </div>
+    <div class="flex flex-col items-center gap-3">
+        <twig:Typography textColor="primary-3"><twig:Icon name="area" class="w-10 h-10" /></twig:Typography>
+        <twig:Typography variant="body-sm" bold center>{{ 'page.sheet.place.meeting.capacity.table.area'|trans }}</twig:Typography>
+    </div>
+    <div class="flex flex-col items-center gap-3">
+        <twig:Typography textColor="primary-3"><twig:Icon name="conference" class="w-10 h-10" /></twig:Typography>
+        <twig:Typography variant="body-sm" bold center>{{ 'page.sheet.place.meeting.capacity.table.theatre_area'|trans }}</twig:Typography>
+    </div>
+    <div class="flex flex-col items-center gap-3">
+        <twig:Typography textColor="primary-3"><twig:Icon name="meeting" class="w-10 h-10" /></twig:Typography>
+        <twig:Typography variant="body-sm" bold center>{{ 'page.sheet.place.meeting.capacity.table.meeting_area'|trans }}</twig:Typography>
+    </div>
+    <div class="flex flex-col items-center gap-3">
+        <twig:Typography textColor="primary-3"><twig:Icon name="u-meeting" class="w-10 h-10" /></twig:Typography>
+        <twig:Typography variant="body-sm" bold center>{{ 'page.sheet.place.meeting.capacity.table.u_shaped_area'|trans }}</twig:Typography>
+    </div>
+    <div class="flex flex-col items-center gap-3">
+        <twig:Typography textColor="primary-3"><twig:Icon name="classroom" class="w-10 h-10" /></twig:Typography>
+        <twig:Typography variant="body-sm" bold center>{{ 'page.sheet.place.meeting.capacity.table.class_area'|trans }}</twig:Typography>
+    </div>
+    <div class="flex flex-col items-center gap-3">
+        <twig:Typography textColor="primary-3"><twig:Icon name="cabaret" class="w-10 h-10" /></twig:Typography>
+        <twig:Typography variant="body-sm" bold center>{{ 'page.sheet.place.meeting.capacity.table.cabaret_area'|trans }}</twig:Typography>
+    </div>
+    <div class="flex flex-col items-center gap-3">
+        <twig:Typography textColor="primary-3"><twig:Icon name="banquet" class="w-10 h-10" /></twig:Typography>
+        <twig:Typography variant="body-sm" bold center>{{ 'page.sheet.place.meeting.capacity.table.banquet_area'|trans }}</twig:Typography>
+    </div>
+    <div class="flex flex-col items-center gap-3">
+        <twig:Typography textColor="primary-3"><twig:Icon name="cocktail" class="w-10 h-10" /></twig:Typography>
+        <twig:Typography variant="body-sm" bold center>{{ 'page.sheet.place.meeting.capacity.table.cocktail_area'|trans }}</twig:Typography>
+    </div>
+    <div class="flex flex-col items-center gap-3">
+        <twig:Typography textColor="primary-3"><twig:Icon name="sun" class="w-10 h-10" /></twig:Typography>
+        <twig:Typography variant="body-sm" bold center>{{ 'page.sheet.place.meeting.capacity.table.natural_light'|trans }}</twig:Typography>
+    </div>
+    <div class="flex flex-col items-center gap-3">
+        <twig:Typography textColor="primary-3"><twig:Icon name="wind" class="w-10 h-10" /></twig:Typography>
+        <twig:Typography variant="body-sm" bold center>{{ 'page.sheet.place.meeting.capacity.table.air_conditioned'|trans }}</twig:Typography>
+    </div>
+    <div class="flex flex-col items-center gap-3">
+        <twig:Typography textColor="primary-3"><twig:Icon name="wheel-chair" class="w-10 h-10" /></twig:Typography>
+        <twig:Typography variant="body-sm" bold center>{{ 'page.sheet.place.meeting.capacity.table.reduced_mobility'|trans }}</twig:Typography>
+    </div>
+    <div class="flex flex-col items-center gap-3">
+        <twig:Typography textColor="primary-3"><twig:Icon name="dance" class="w-10 h-10" /></twig:Typography>
+        <twig:Typography variant="body-sm" bold center>{{ 'page.sheet.place.meeting.capacity.table.danse_area'|trans }}</twig:Typography>
+    </div>
+    <div class="flex flex-col items-center justify-center gap-3">
+        <twig:Typography textColor="primary-3"><twig:Icon name="file-pdf" class="w-10 h-10" /></twig:Typography>
+        <twig:Typography variant="body-sm" bold center>{{ 'page.sheet.place.meeting.capacity.table.plan'|trans }}</twig:Typography>
+    </div>
+    {% if editable %}
+        <div></div>
+    {% endif %}
+</div>

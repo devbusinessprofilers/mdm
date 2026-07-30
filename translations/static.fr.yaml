@@ -1,0 +1,760 @@
+static:
+  page_titles:
+    comment_ca_marche: "Comment ça marche ?"
+    cgu: "Conditions générales d'utilisation du site Business Profilers"
+    cookies: "A propos des cookies"
+    jobs: "Jobs & recrutement"
+    solution: "La solution pour centraliser et optimiser vos achats événementiels"
+    launch: "Lancement de produit ou événementiel"
+    mentions: "Mentions légales"
+    privacy: "Politique de confidentialité et de protection des données"
+    who: "Qui sommes-nous ?"
+    seminaire_cohesion: "Séminaire de cohésion ou de motivation"
+    seminaire_force_vente: "Séminaire de force de vente interne ou réseau"
+    seminaire_formation: "Séminaire de formation ou d'intégration"
+    seminaire_management: "Séminaire de management ou direction"
+  assemblee:
+    title: "Assemblée générale ou convention d'entreprise"
+    section_assembly:
+      title: "ASSEMBLÉE GÉNÉRALE"
+      p1: "Vous devez informer, rendre des comptes et surtout convaincre"
+      p2: "L’atmosphère doit être chaleureuse, confortable, Il est donc nécessaire d’harmoniser le choix du lieu avec le reflet du message et le public des participants. Prévoir des outils de communication performants pour valider le nombre de participants et faire émarger les feuilles de présence, faciliter les votes et donc les décisions validées tels sont les enjeux de votre assemblée générale."
+      p3: "Business Profilers vous propose les meilleures salles, traiteurs, prestations techniques qui garantissent aux administrateurs les conditions optimum pour emporter l’adhésion."
+      p4: "Ordinaire ou extraordinaire, l’assemblée générale avec Business Profilers est toujours synonyme de succès !"
+    section_convention:
+      title: "CONVENTION D’ENTREPRISE"
+      p1: "Vous souhaitez de l’interactivité avec vos salariés et créer un lien véritable pour les mobiliser autour d’un projet fédérateur."
+      p2: "Vous avez trouvé les thèmes porteurs, défini quels seront les intervenants qui vont apporter un éclairage pertinent pour l’animation de cet évènement.<br>Il est temps de choisir un lieu adapté à votre budget en adéquation avec vos messages et votre image."
+      p3: "Oser le changement, soigner la scénographie, jouer la cohésion et privilégier l’interactivité sont autant de facteurs clés de succès de votre convention d’entreprise !"
+      p4: "Business Profilers vous accompagne pas à pas dans ce process et même au-delà ! Une fois la convention achevée, évaluer son impact à chaud sera l’ultime étape décisive qui vous permettra de préparer la prochaine !"
+      p5: "Les participants à votre convention sont les meilleurs ambassadeurs pour transmettre votre message bien au-delà du cadre de votre entreprise, c’est le pari gagnant !"
+  model:
+    placeholder: "Lorem ipsum…"
+  how_it_works:
+    lead_title: "LA MÉTHODOLOGIE DE NOTRE PÔLE CLIENT :"
+    p1: "Toute notre équipe et celle de nos prestataires œuvrent en synergie autour d’un objectif commun : le succès de votre évènement d’entreprise !"
+    p2: "Pour faciliter votre travail et garantir le succès de votre manifestation, Business Profilers vous assure un accompagnement tout au long de votre parcours, de la demande d’information jusqu’à l’évaluation finale de <strong>l’organisation de votre évènement</strong>."
+    p3: "Vous aurez un <strong>expert «profiler»</strong> dédié à votre écoute, disponible, efficace et réactif. Son rôle est de bien comprendre votre cahier des charges, vos enjeux pour pouvoir vous conseiller utilement. Il connaît l’ensemble des prestataires que nous avons sélectionné et ses conseils sont précieux et avisés."
+    section1:
+      title: "1/ La définition de vos besoins"
+      lead: "Valider votre cahier avec des experts du tourisme d’affaires, c’est rassurant !"
+      item1: "Dès que vous avez décidé d’organiser une conférence, un séminaire, un incentive, un team building ou un évènement, contactez nos experts au 03 44 555 444."
+      item2: "Ils sont à votre écoute 5 jours sur 7 de 9H à 18H 30, pour vous apporter un service personnalisé."
+    section2:
+      title: "2/ Recherche des solutions adaptées dans votre cadre budgétaire :"
+      item1: "Votre <strong>expert « profiler»</strong> identifie les lieux, les prestataires et les agences de communication qui correspondent à votre demande, s’assure de leurs disponibilités et leur communique votre cahier des charges"
+      item2: "Dans la demi-journée suivant votre demande, il vous transmet sa recommandation de lieux et prestataires qui répondent à vos besoins et disponibles à vos dates, avec une présentation détaillée de chaque site."
+      p1: "Vous disposez d’une sélection de lieux et de prestataires disponibles sous 4 heures et selon la formule retenue vous recevez directement les devis des prestataires ou une offre globalisée de Business Profilers."
+    section3:
+      title: "3/ L’accompagnement de votre projet jusqu’au jour de l’évènement"
+      lead: "Deux formules vous sont proposées :"
+      item1: "Vous êtes en relation avec les prestataires et finalisez vous-même votre projet,"
+      item2: "Vous avez un <strong>expert</strong> qui vous est dédié et pilote tout le projet avec vous."
+    section4:
+      title: "4/ La coordination de votre projet sur site"
+      p1: "C’est un service + optionnel."
+      p2: "Les missions de vos coordinateurs d’évènement sont essentielles : anticiper, coordonner, contrôler, réagir aux changements éventuels pour optimiser le service fourni… ainsi vous êtes tranquille et vous pouvez vous concentrer sur les relations avec vos invités en toute sérénité."
+    section5:
+      title: "5/ Analyse de la satisfaction"
+      p1: "Dès la manifestation réalisée, nous évaluons avec vous la qualité de la prestation de l’établissement au regard de vos attentes et de ses engagements de qualité. Le taux de satisfaction actuel est de 98.9 % sur les 5000 derniers évènements réalisés."
+    section6:
+      title: "6/ Reporting centralisé dans le cadre du service Centralisation d’achats"
+      p1: "Nous assurons le rapprochement financier post- évènement pour éditer et solder la facture finale ou pour vous apporter en plus les tableaux de bords définis à l’avance qui vous permettrons d’avoir une vision globale sur l’ensemble de vos projets."
+    section7:
+      title: "7/ Mise en place d’un « programme éducatif » vous permettant de mieux connaître le tourisme d’affaires international"
+      p1: "Notre équipe anime de nombreuses conférences sur les bonnes pratiques liées à l’organisation de séminaires et évènements d’entreprise, qui sont disponibles."
+      p2: "Grâce aux relations que nous entretenons avec nos fournisseurs, vous pouvez participer à des programmes éducatifs de découverte de sites, de destinations ou d’animations : séjour découverte, programme hosted buyers, etc."
+  comment_mieux_acheter:
+    breadcrumb: "Comment mieux acheter mes évènements ?"
+    title: "Comment mieux acheter mes événements ?"
+    section1:
+      title: "1. Quels jours privilégier pour un meilleur tarif ?"
+      p1: "La date de votre séminaire a un impact important sur le prix des prestations proposées."
+      p2: "Privilégier le début de semaine, le lundi et le mardi sont des jours très peu demandés. En conséquence, les lieux seront toujours prêts à fournir des efforts pour vous accueillir, à moindre frais."
+      p3: "Le format mardi / mercredi est le moins aimé des hôteliers, il coupe leur semaine, et leur bloque d’éventuelles privatisations. C’est la raison pour laquelle nous recevons plus de refus sur ces jours-ci."
+      p4: "Les vacances scolaires sont aussi une période creuse de l'événementiel d'entreprise. Par exemple, en juillet comme en août, les salles de séminaires et de conférences sont vides et souvent plus abordables."
+    section2:
+      title: "2. Haute et Basse Saison"
+      high_title: "Haute Saison :"
+      low_title: "Basse Saison :"
+      high:
+        item1: "janvier"
+        item2: "Juin"
+        item3: "Septembre"
+      low:
+        item1: "Février"
+        item2: "Juillet"
+        item3: "Août"
+      p1: "<i><strong>Les dates de vos événements : </strong></i>Septembre / Janvier (à l’exception de la première semaine de janvier) et juin sont les plus grosses périodes de séminaires et donc une très haute saison pour les hôteliers qui sont assurés de commercialiser 100 % de leurs espaces durant ces périodes. Autrement dit un événement positionné sur fin janvier sera nécessairement plus cher qu’un événement se déroulant Mi-Octobre, peu importe la volumétrie/contingent de votre événement."
+      p2: "Attention : Les zones géographiques Ski/Montagne et Bord de mer sont soumises un yield spécifique."
+    section3:
+      title: "3. Quand réserver mon séminaire ?"
+      p1: "Le meilleur moment pour organiser votre évènement est <i><strong>3 mois avant la date d’arrivée </strong></i>de votre séminaire."
+      p2: "<i><strong>L’organiser trop tard (à moins de 3 mois) : </strong></i>les lieux sont souvent déjà réservés, et vous aurez beaucoup moins de choix et un tarif plus élevé et non négociable."
+      p3: "<i><strong>L’organiser trop tôt (au-delà des 3 mois) : </strong></i>les lieux ne se positionnent pas, par peur de se fermer les portes sur des demandes de privatisations, ou sur des demandes de plusieurs jours."
+      p4: "Pour les demandes à partir de 150 personnes, il faut <i><strong>réserver 6 mois à l’avance</strong></i> afin d’obtenir un maximum d’adresses disponibles."
+    section4:
+      title: "4. Qu’est-ce que le Yield dans le MICE"
+      p1: "Le marché du <i><strong>MICE</strong></i>( <strong>M</strong>eetings, <strong>I</strong>ncentives, <strong>C</strong>onferencing, <strong>E</strong>xhibitions) est un type de tourisme dans lequel les sociétés organisent des événements pour leurs employés et/ou leurs clients (séminaire, teambuilding…)"
+      p2: "Le <i><strong>«Yield management» </strong></i>consiste à optimiser au maximum le prix du service en temps réel et par conséquent la marge réalisée ainsi que le chiffre d’affaires. Le prix n’est plus fixe mais évolue en fonction de la demande du consommateur et de certains critères, observés en direct.<br><br>Le prix est plus élevé lorsque la demande est importante, et vice versa (ex: billet de train ou d’avion)."
+      p3: "Il est essentiel d’intégrer que le MICE (Meetings, Incentives, Conferencing, Exhibitions) est une catégorie d’achat à part entière qui s’inscrit dans une logique dépendante de nombreux facteurs :"
+      p4: "<i><strong>Le format de votre événement : </strong></i>Une réservation d’évènement ayant lieu sur une semaine entière est un format très attractif pour un hôtelier.<br><br><i><strong>Le contingent : </strong></i>Selon la période celui-ci peut-être à votre avantage comme à votre désavantage. Sur une période creuse une privatisation d’un établissement sera très compétitive. À contrario sur des périodes de fortes influences, certains hôteliers préfèrent vendre plus cher leurs espaces à deux groupes différents remplissant l’établissement plutôt qu’un prix moyen négocié à un seul groupe. « Les frais de privatisation » découlent de cette logique.<br><br><i><strong>Les congrès et salons :</strong></i> Certaines périodes de congrès et salons (tels que le salon Maison &amp; Objet Villepinte) font augmenter très significativement le prix des chambres dans la zone proche mais aussi éloignée (40km pour M&amp;O).<br><br>Nous ne pouvons déterminer le prix de la chambre à la place de l’hôtel lui-même, celui-ci le détermine selon son taux de remplissage N-1 / N-2 aux mêmes dates, aux tarifs appliqués et aux capacités disponibles (Yield Management)."
+  cgu:
+    preamble:
+      title: "Préambule"
+      body: |
+        <p>Les présentes conditions générales d'utilisation sont conclues entre :</p>
+        <ul>
+          <li>Le gérant du site internet, ci-après désigné « l’Éditeur »,</li>
+          <li>Toute personne souhaitant accéder au site et à ses services, ci-après appelé « l’Utilisateur ».</li>
+        </ul>
+    article1:
+      title: "Article 1 – Principes"
+      body: |
+        <p>Business Profilers propose un service d’intermédiation ou de réservation directe permettant la réservation de prestations et notamment la réservation de lieux destinés à des évènements professionnels auprès de prestataires professionnels (ci-après les «&nbsp;fournisseurs&nbsp;») et des organisateur d’évènements et réunions professionnelles (ci-après les «&nbsp;utilisateurs&nbsp;»)</p>
+        <p>Les présentes conditions générales d'utilisation ont pour objet l'encadrement juridique de l’utilisation du site Business Profilers et de ses services.</p>
+        <p>L’accès et l’utilisation des services sont réservés aux utilisateurs professionnels. On entend par professionnel, les personnes physiques ou morales qui exercent une activité commerciale, industrielle, artisanale ou libérale, et toute personne agissant au nom ou pour le compte d’un professionnel.</p>
+        <p>Le site Internet www.businessprofilers.com est un service de :</p>
+        <ul>
+          <li>La société Business Profilers</li>
+          <li>Située 1 avenue du Général de Gaulle CHANTILLY, France</li>
+          <li>Adresse URL du site : www.businessprofilers.com</li>
+          <li>E-mail : <a href="mailto:contact@businessprofilers.fr?subject=Contact" target="_self">contact@businessprofilers.fr</a></li>
+          <li>Numéro de téléphone : <a href="tel:0344555444?subject=Contact" target="_self">0344555444</a></li>
+        </ul>
+        <p>Les conditions générales d'utilisation doivent être acceptées par tout Utilisateur, et son accès au site vaut acceptation de ces conditions.</p>
+    article2:
+      title: "Article 2 - Evolution et durée des CGU"
+      body: |
+        <p>Les présentes conditions générales d'utilisation sont conclues pour une durée indéterminée. Le contrat produit ses effets à l'égard de l'Utilisateur à compter du début de l’utilisation du service.</p>
+        <p>Le site Business Profilers se réserve le droit de modifier les clauses de ces conditions générales d’utilisation à tout moment et sans justification.</p>
+    article3:
+      title: "Article 3 - Accès au site"
+      body: |
+        <p>Tout Utilisateur ayant accès à internet peut accéder gratuitement et depuis n’importe où au site Business Profilers. Les frais supportés par l’Utilisateur pour y accéder (connexion internet, matériel informatique, etc.) ne sont pas à la charge de l’Éditeur.</p>
+        <p>Tout utilisateur convient :</p>
+        <ul>
+          <li>Être âgé de 18 ans ou plus.</li>
+          <li>Représenter une personne morale ou exercer une profession libérale ou artisanale ou une entreprise individuelle.</li>
+          <li>Utiliser les services de Business Profilers dans un cadre professionnel et non en tant que particulier ou consommateur.</li>
+        </ul>
+        <p>Le site et ses différents services peuvent être interrompus ou suspendus par l’Éditeur, notamment à l’occasion d’une maintenance, sans obligation de préavis ou de justification.</p>
+        <p>L'Utilisateur du site a accès aux services suivants :</p>
+        <ul>
+          <li>Recherche de lieu via un moteur de recherche multicritère</li>
+          <li>Consultation de fiche</li>
+        </ul>
+        <p>Le site comprend un espace membre réservé aux utilisateurs inscrits. Ces utilisateurs pourront y accéder en utilisant leurs identifiants de connexion.</p>
+        <p>Les services réservés aux membres sont les suivants :</p>
+        <ul>
+          <li>Recherche de lieu via un moteur de recherche multicritère</li>
+          <li>Consultation de fiche</li>
+          <li>Demande de devis en direct avec des fournisseur</li>
+          <li>Demande de devis avec accompagnement par un chef de projet de Business Profilers</li>
+          <li>Comparaison d’offre tarifaire</li>
+          <li>Confirmation d’une prestation en ayant accès aux devis et CGV des fournisseurs</li>
+          <li>Service de messagerie instantanée</li>
+          <li>Commande de prestation annexe</li>
+          <li>Réservation d’activités</li>
+          <li>Service de suivi en ligne des réservations avec historique de commande et facturation</li>
+          <li>Evaluation des prestation séminaire délivrée par les fournisseurs</li>
+        </ul>
+    article4:
+      title: "Article 4 - Responsabilités"
+      body: |
+        <p>Business Profilers propose un service en ligne d’intermédiation par lequel les fournisseurs proposent leurs prestations aux utilisateurs.</p>
+        <p>Il est précisé que Business Profilers n’intervient qu’en tant que société prestataire de service et d’opérateur de plateforme en ligne selon la loi pour une République Numérique du 7 octobre 2016.</p>
+        <p>L’ensemble des informations, devis, factures, présentation, information, renseignées par le fournisseur ne sauraient engager la responsabilité de Business Profilers. Business Profilers n’est donc pas responsable des informations contractuelles ou précontractuelles fournies par les fournisseurs sur l’espace client.</p>
+        <p>La responsabilité de l'Éditeur ne peut être engagée en cas de défaillance, panne, difficulté ou interruption de fonctionnement, empêchant l'accès au site ou à une de ses fonctionnalités.</p>
+        <p>Le matériel de connexion au site utilisée est sous l'entière responsabilité de l'Utilisateur qui doit prendre toutes les mesures appropriées pour protéger le matériel et les données notamment d'attaques virales par Internet. L'utilisateur est par ailleurs le seul responsable des sites et données qu'il consulte.</p>
+        <p>L'Éditeur ne pourra être tenu responsable en cas de poursuites judiciaires à l'encontre de l'Utilisateur :</p>
+        <ul>
+          <li>du fait de l'usage du site ou de tout service accessible via Internet ;</li>
+          <li>du fait du non-respect par l'Utilisateur des présentes conditions générales.</li>
+        </ul>
+        <p>L'Éditeur n'est pas responsable des dommages causés à l'Utilisateur, à des tiers et/ou à l'équipement de l'Utilisateur du fait de sa connexion ou de son utilisation du site et l'Utilisateur renonce à toute action contre l'Éditeur de ce fait.</p>
+        <p>Si l'Éditeur venait à faire l'objet d'une procédure amiable ou judiciaire à raison de l'utilisation du site par l'Utilisateur, il pourra retourner contre lui pour obtenir indemnisation de tous les préjudices, sommes, condamnations et frais qui pourraient découler de cette procédure.</p>
+        <p>Il est permis à l'Utilisateur de publier sur le site Business Profilers :</p>
+        <ul>
+          <li>Des messages adressés à l’éditeur ou les fournisseurs</li>
+          <li>Des notes personnelles</li>
+          <li>Des commentaires ou avis client</li>
+          <li>Des photos ou logo</li>
+          <li>Des informations personnelles</li>
+        </ul>
+        <p>L'Utilisateur s’engage à tenir des propos respectueux des autres et de la loi et accepte que ces publications soient modérées ou refusées par l’Éditeur, sans obligation de justification.</p>
+        <p>En publiant sur le site, l’Utilisateur cède à la société éditrice le droit non exclusif et gratuit de représenter, reproduire, adapter, modifier, diffuser et distribuer sa publication, directement ou par un tiers autorisé.</p>
+        <p>L’Éditeur s'engage toutefois à citer le membre en cas d’utilisation de sa publication.</p>
+    article5:
+      title: "Article 5 - Propriété intellectuelle"
+      body: |
+        <p>Tous les documents techniques, produits, photographies, textes, logos, dessins, vidéos, etc., sont soumis à des droits d'auteur et sont protégés par le Code de la propriété intellectuelle. Lorsqu'ils sont remis à nos clients, ils demeurent la propriété exclusive de Business Profilers, seul titulaire des droits de propriété intellectuelle sur ces documents, qui doivent lui être rendus à sa demande.</p>
+        <p>Nos clients s'engagent à ne faire aucun usage de ces documents, susceptible de porter atteinte aux droits de propriété industrielle ou intellectuelle du fournisseur et s'engagent à ne les divulguer à aucun tiers, en dehors d'une autorisation expresse et préalable donnée par l'Editeur.</p>
+    article6:
+      title: "Article 6 - Liens hypertextes"
+      body: |
+        <p>La mise en place par l'Utilisateur de tous liens hypertextes vers tout ou partie du site est strictement interdite, sauf autorisation préalable et écrite de l'Éditeur, sollicitée par courriel à l'adresse suivante : <a href="mailto:marketing@businessprofilers.fr?subject=CGU" target="_self">marketing@businessprofilers.fr</a></p>
+        <p>L'Éditeur est libre de refuser cette autorisation sans avoir à justifier de quelque manière que ce soit sa décision. Dans le cas où l'Éditeur accorderait son autorisation, celle-ci n'est dans tous les cas que temporaire et pourra être retirée à tout moment, sans obligation de justification à la charge de l'Éditeur.</p>
+        <p>Dans tous les cas, tout lien devra être retiré sur simple demande de l'Éditeur.</p>
+        <p>Toute information accessible via un lien vers d'autres sites n'est pas sous le contrôle de l'Éditeur qui décline toute responsabilité quant à leur contenu.</p>
+    article7:
+      title: "Article 7 - Protection des données personnelles"
+      body: |
+        <p><i><strong>Données collectées</strong></i></p>
+        <p>Les données à caractère personnel qui sont collectées sur ce site sont les suivantes :</p>
+        <ul>
+          <li><u>Ouverture de compte</u> : lors de la création du compte de l'utilisateur : nom ; prénom ; adresse électronique ; n° de téléphone ; adresse postale ; société, photo, tva intracommunautaire ;</li>
+          <li><u>Connexion</u> : lors de la connexion de l'utilisateur au site web, celui-ci enregistre, notamment, ses nom, prénom, données de connexion, d'utilisation, et de localisation</li>
+          <li><u>Profil</u> : l'utilisation des prestations prévues sur le site web permet de renseigner un profil, pouvant comprendre une adresse et un numéro de téléphone ;</li>
+          <li><u>Communication </u>: lorsque le site web est utilisé pour communiquer avec d'autres membres, les données concernant les communications de l'utilisateur font l'objet d'une conservation temporaire ;</li>
+          <li><u>Cookies </u>: les cookies sont utilisés, dans le cadre de l'utilisation du site. L'utilisateur a la possibilité de désactiver les cookies à partir des paramètres de son navigateur.</li>
+        </ul>
+        <p><i><strong>Utilisation des données personnelles</strong></i></p>
+        <p>Les données personnelles collectées auprès des utilisateurs ont pour objectif la mise à disposition des services du site web, leur amélioration et le maintien d'un environnement sécurisé. Plus précisément, les utilisations sont les suivantes :</p>
+        <ul>
+          <li>Accès et utilisation du site web par l'utilisateur ;</li>
+          <li>Gestion du fonctionnement et optimisation du site web ;</li>
+          <li>Organisation des conditions d'utilisation des Services commande de prestation ;</li>
+          <li>Vérification, identification et authentification des données transmises par l'utilisateur ;</li>
+          <li>Proposition à l'utilisateur de la possibilité de communiquer avec d'autres utilisateurs du site web ;</li>
+          <li>Mise en œuvre d'une assistance utilisateurs ;</li>
+          <li>Personnalisation des services en affichant des publicités en fonction de l'historique de navigation de l'utilisateur, selon ses préférences ;</li>
+          <li>Prévention et détection des fraudes, malwares (malicious softwares ou logiciels malveillants) et gestion des incidents de sécurité ;</li>
+          <li>Gestion des éventuels litiges avec les utilisateurs ;</li>
+          <li>Envoi d'informations commerciales et publicitaires, en fonction des préférences de l'utilisateur.</li>
+        </ul>
+        <p><i><strong>Partage des données personnelles avec des tiers</strong></i></p>
+        <p>Les données personnelles peuvent être partagées avec des sociétés tierces, dans les cas suivants :</p>
+        <ul>
+          <li>Lorsque l'Utilisateur utilise les services de commande, pour la mise en oeuvre de ces services, le site web est en relation avec des sociétés bancaires et financières tierces avec lesquelles elle a passé des contrats ;</li>
+          <li>Lorsque l'Utilisateur publie, dans les zones de commentaires libres du site web, des informations accessibles au public ;</li>
+          <li>Lorsque l'Utilisateur autorise le site web d'un tiers à accéder à ses données ;</li>
+          <li>Lorsque le site web recourt aux services de prestataires pour fournir l'assistance utilisateurs et la publicité. Ces prestataires disposent d'un accès limité aux données de l'utilisateur, dans le cadre de l'exécution de ces prestations, et ont une obligation contractuelle de les utiliser en conformité avec les dispositions de la réglementation applicable en matière protection des données à caractère personnel ;</li>
+          <li>Si la loi l'exige, le site web peut effectuer la transmission de données pour donner suite aux réclamations présentées contre le site web et se conformer aux procédures administratives et judiciaires ;</li>
+          <li>Si le site web est impliquée dans une opération de fusion, acquisition, cession d'actifs ou procédure de redressement judiciaire, elle pourra être amenée à céder ou partager tout ou partie de ses actifs, y compris les données à caractère personnel. Dans ce cas, les utilisateurs seraient informés, avant que les données à caractère personnel ne soient transférées à une tierce partie.</li>
+        </ul>
+        <p><i><strong>Sécurité et confidentialité</strong></i></p>
+        <p>Le site web met en œuvre des mesures organisationnelles, techniques, logicielles et physiques en matière de sécurité du numérique pour protéger les données personnelles contre les altérations, destructions et accès non autorisés. Toutefois, il est à signaler qu'internet n'est pas un environnement complètement sécurisé et le site web ne peut pas garantir la sécurité de la transmission ou du stockage des informations sur internet.</p>
+        <p>Accès à l’espace client&nbsp;:</p>
+        <ul>
+          <li>L’utilisateur peut modifier son mot de passe à tout moment via sa page «&nbsp;mon profil&nbsp;»</li>
+          <li>Il appartient à l’utilisateur d’assurer la confidentialité de ses identifiants</li>
+          <li>Toute connexion à l’espace client sera présumée être effectuée par l’utilisateur lui-même</li>
+          <li>L’utilisateur s’engage à ne créer qu’un seul et unique compte. L’Éditeur décline toute responsabilité quant aux conséquences dommageables que pourrait avoir l’utilisation de comptes multiples pour un seul utilisateur.</li>
+          <li>L’utilisateur est entièrement responsable de l’exactitude et de la mise à jour des données communiquées dans le cadre de l’ouverture de son compte</li>
+        </ul>
+        <p>Refus ou suspension de l’accès à l’espace client&nbsp;:</p>
+        <ul>
+          <li>L’Éditeur se réserve le droit discrétionnaire de refuser l’inscription ou suspendre l’accès à l’espace client qui ne serait pas conforme à l’esprit du site ou qui contreviendrait à l’image de Business Profilers.</li>
+        </ul>
+        <p><i><strong>Mise en œuvre des droits des utilisateurs</strong></i></p>
+        <p>En application de la réglementation applicable aux données à caractère personnel, les utilisateurs disposent des droits suivants, qu'ils peuvent exercer en faisant leur demande à l'adresse suivante : <a href="mailto:marketing@businessprofilers.fr?subject=Contact" target="_self">marketing@businessprofilers.fr</a></p>
+        <p>&nbsp;</p>
+        <ul>
+          <li>le droit d’accès : ils peuvent exercer leur droit d'accès, pour connaître les données personnelles les concernant. Dans ce cas, avant la mise en œuvre de ce droit, le site web peut demander une preuve de l'identité de l'utilisateur afin d'en vérifier l'exactitude.</li>
+          <li>le droit de rectification : si les données à caractère personnel détenues par le site web sont inexactes, ils peuvent demander la mise à jour des informations.</li>
+          <li>le droit de suppression des données : les utilisateurs peuvent demander la suppression de leurs données à caractère personnel, conformément aux lois applicables en matière de protection des données.</li>
+          <li>le droit à la limitation du traitement : les utilisateurs peuvent de demander au site web de limiter le traitement des données personnelles conformément aux hypothèses prévues par le RGPD.</li>
+          <li>le droit de s’opposer au traitement des données : les utilisateurs peuvent s’opposer à ce que ses données soient traitées conformément aux hypothèses prévues par le RGPD.&nbsp;</li>
+          <li>le droit à la portabilité : ils peuvent réclamer que le site web leur remette les données personnelles qui lui sont fournies pour les transmettre à un nouveau site web.</li>
+        </ul>
+        <p><i><strong>Evolution de la présente clause</strong></i></p>
+        <p>Le site web se réserve le droit d'apporter toute modification à la présente clause relative à la protection des données à caractère personnel à tout moment. Si une modification est apportée à la présente clause de protection des données à caractère personnel, le site web s'engage à publier la nouvelle version sur son site. Le site web informera également les utilisateurs de la modification par messagerie électronique, dans un délai minimum de 15 jours avant la date d'effet. Si l'utilisateur n'est pas d'accord avec les termes de la nouvelle rédaction de la clause de protection des données à caractère personnel, il a la possibilité de supprimer son compte.</p>
+    article8:
+      title: "Article 8 - Cookies"
+      body: |
+        <p>BUSINESS PROFILERS respecte votre vie privée et le droit de contrôler vos données personnelles. Nos principes directeurs sont simples. Nous serons ouverts à vous informer sur les données que nous collectons et pourquoi. Nous protégeons vos données comme si c'était notre plus grand secret commercial.</p>
+        <p>La politique de confidentialité de BUSINESS PROFILERS ("Société") décrit quelles données nous collectons, le but du traitement, comment vous pouvez contrôler vos propres données et comment nous contacter. La présente politique de confidentialité s'applique lorsque vous utilisez des applications, des pages Web et des services qui sont inclus dans une application ou sur un site Web géré par la Société. Le DPO de BUSINESS PROFILERS est une personne personnellement responsable conformément à ces conditions et est responsable du traitement conformément à la législation en vigueur.</p>
+        <p>Voici un résumé de ce à quoi vous pouvez vous attendre en visitant notre site Web :</p>
+        <ul>
+          <li>Nous suivons votre activité web à des fins de marketing</li>
+          <li>Nous recueillons des renseignements personnels à des fins de marketing et de communication.</li>
+          <li>Nous traitons les renseignements personnels en les envoyant à des systèmes intégrés de courriel et de gestion de la relation client (CRM) à des fins de marketing et de relations clients.</li>
+          <li>Nous sauvegardons les informations personnelles dans nos bases à des fins d'analyse.</li>
+          <li>Votre comportement et votre activité sur le Web peuvent être utilisés à des fins de marketing comme le ciblage et l'analyse marketing.</li>
+        </ul>
+    article9:
+      title: "Article 9 - Loi applicable"
+      body: |
+        <p>Les présentes conditions générales d'utilisation sont soumises à l'application du droit français.&nbsp;</p>
+        <p>Si les parties n'arrivent pas à résoudre un litige à l'amiable, le litige sera soumis à la compétence des tribunaux français.</p>
+        <p>&nbsp;</p>
+  cookies:
+    body_intro: |
+      <p>Ce site utilise des cookies afin d’améliorer votre expérience et optimiser nos sites et services.</p>
+      <p>Les cookies sont de petites quantités d’informations stockées dans des fichiers au sein même du navigateur de votre ordinateur. Les cookies sont accessibles et enregistrés par les sites internet que vous consultez, et par les sociétés qui affichent leurs annonces publicitaires sur des sites internet, pour qu’ils puissent reconnaître le navigateur. Les sites Internet peuvent uniquement accéder aux cookies qu’ils ont stockés sur votre ordinateur.</p>
+      <p>En utilisant le Site Internet, vous consentez à l’utilisation des cookies déposés par notre Site.</p>
+      <p>Le site Internet utilise des cookies aux fins suivantes :</p>
+      <ul>
+        <li><u>Usage du site</u> : pour nous aider à reconnaître votre navigateur comme celui d’un visiteur précédent et pour enregistrer les préférences que vous avez déterminées lors de votre précédente visite sur le Site. Par exemple, nous pouvons enregistrer vos informations de connexion de sorte que vous n’ayez pas à vous connecter à chaque fois que vous visitez le Site ;</li>
+        <li><u>Réseaux sociaux</u> : pour vérifier si vous êtes connectés à des services tiers (Linkedin, Instagram, Twitter, …)</li>
+        <li><u>Ciblage </u>: pour nous permettre de cibler (emailing, enrichissement de base) à postériori ou en temps réel l’internaute qui navigue sur notre Site ;</li>
+        <li><u>Mesure d’audience</u> : pour suivre les données statistiques de fréquentation du Site (soit l’utilisation faite du Site par les utilisateurs et pour améliorer les services du Site) et pour nous aider à mesurer et étudier l’efficacité de notre contenu interactif en ligne, de ses caractéristiques, publicités et autres communications.</li>
+      </ul>
+      <p>Vous trouverez ci-dessous les explications de notre utilisation des cookies sur nos sites Web et la raison pour laquelle nous les utilisons.</p>
+    table: |
+      <figure class="table">
+        <table>
+          <tbody>
+            <tr>
+              <td><h6><strong>Cookie</strong></h6></td>
+              <td><h6><strong>Détails</strong></h6></td>
+              <td><h6><strong>Nom et échéance</strong></h6></td>
+            </tr>
+            <tr>
+              <td>Google Analytics</td>
+              <td>Cookies de Google Analytics – Nous utilisons ces cookies pour recueillir des informations sur la façon dont les visiteurs utilisent nos sites web, y compris les détails du site que le visiteur a parcouru avant d’arriver sur notre site, et le nombre total de fois qu’un visiteur a visité notre site. Nous utilisons les informations pour optimiser nos sites web et nos services, et pour améliorer l’expérience de nos utilisateurs. Les cookies ne vous identifient pas personnellement. Ils se contentent de collecter de façon anonyme des informations qui sont transmises et stockées par Google sur des serveurs aux États-Unis conformément à ses pratiques de confidentialité. Pour en savoir plus sur les pratiques de confidentialité de Google Analytics, cliquez sur : https://support.google.com/analytics/answer/6004245</td>
+              <td>
+                <p>__utma = 2 ans</p>
+                <p>__utmb = 30 minutes</p>
+                <p>__utmc = Fin de la session de navigateur</p>
+                <p>__utmz = 6 mois</p>
+                <p>__utmv = 2 ans</p>
+              </td>
+            </tr>
+            <tr>
+              <td>Sendinblue</td>
+              <td>Avec Sendinblue, nous analysons ce que vous visitez et comment vous visitez notre page Web.&nbsp;</td>
+              <td>Pour plus d’informations sur les cookies avec différentes dates d’expiration, veuillez consulter la politique de confidentialité de Sendinblue pour obtenir plus de détails.</td>
+            </tr>
+            <tr>
+              <td>LinkedIn</td>
+              <td>Nous utilisons la fonction Tag-insight de LinkedIn pour mesurer la performance de nos annonces LinkedIn. Pour en savoir plus, visitez https://www.linkedin.com/legal/cookie-table</td>
+              <td>Pour d’avantage d’informations sur les cookies avec différentes dates d’expiration, veuillez consulter la politique de confidentialité de LinkedIn pour obtenir plus de détails.</td>
+            </tr>
+          </tbody>
+        </table>
+      </figure>
+    choices:
+      title: "Vos choix concernant les cookies et balises web"
+      body: |
+        <p>Vous avez le choix de configurer votre navigateur pour accepter tous les cookies, rejeter tous les cookies, vous informer quand un cookie est émis, sa durée de validité et son contenu, ainsi que vous permettre de refuser son enregistrement dans votre terminal, et supprimer vos cookies périodiquement.</p>
+        <p>Vous pouvez paramétrer votre navigateur Internet pour désactiver les cookies. Notez toutefois que si vous désactivez les cookies, votre nom d’utilisateur ainsi que votre mot de passe ne seront plus sauvegardés sur aucun site web. Pour plus d’informations relatives aux méthodes vous permettant de supprimer et de contrôler les cookies stockés sur votre ordinateur, consultez le site suivant : <a target="_self" href="http://www.allaboutcookies.org/fr">http://www.allaboutcookies.org/fr</a></p>
+        <p>Cliquez <a href="javascript:openAxeptioCookies()" target="_self">ici</a> pour modifier vos préférences en matière de cookies</p>
+    browser:
+      title: "Comment configurer votre navigateur"
+      body: |
+        <ul><li><strong>Firefox </strong>:</li></ul>
+        <ol>
+          <li>Ouvrez Firefox</li>
+          <li>Appuyez sur la touche « Alt »</li>
+          <li>Dans le menu en haut de la page cliquez sur « Outils » puis « Options »</li>
+          <li>Sélectionnez l’onglet « Vie privée »</li>
+          <li>Dans le menu déroulant à droite de « Règles de conservation », cliquez sur « utiliser les paramètres personnalisés pour l’historique »</li>
+          <li>Un peu plus bas, décochez « Accepter les cookies »</li>
+          <li>Sauvegardez vos préférences en cliquant sur « OK »</li>
+        </ol>
+        <ul><li><strong>Internet Explorer</strong> :</li></ul>
+        <ol>
+          <li>Ouvrez Internet Explorer</li>
+          <li>Dans le menu « Outils », sélectionnez « Options Internet »</li>
+          <li>Cliquez sur l’onglet « Confidentialité »</li>
+          <li>Cliquez sur « Avancé » et décochez « Accepter »</li>
+          <li>Sauvegardez vos préférences en cliquant sur « OK »</li>
+        </ol>
+        <ul><li><strong>Google Chrome</strong> :</li></ul>
+        <ol>
+          <li>Ouvrez Google Chrome</li>
+          <li>Cliquez sur l’icône d’outils dans la barre de menu</li>
+          <li>Sélectionnez « Options »</li>
+          <li>Cliquez sur l’onglet « Options avancées »</li>
+          <li>Dans le menu déroulant « Paramètres des cookies », sélectionnez « Bloquer tous les cookies »</li>
+        </ol>
+        <ul><li><strong>Safari </strong>:</li></ul>
+        <ol>
+          <li>Ouvrez Safari</li>
+          <li>Dans la barre de menu en haut, cliquez sur « Safari », puis « Préférences »</li>
+          <li>Sélectionnez l’icône « Sécurité »</li>
+          <li>À côté de « Accepter les cookies », cochez « Jamais »</li>
+          <li>Si vous souhaitez voir les cookies qui sont déjà sauvegardés sur votre ordinateur, cliquez sur « Afficher les cookies »</li>
+        </ol>
+  jobs:
+    title: "Rejoignez-nous !"
+    intro: "Business Profilers, parmi les leaders du Venue Finding Français vous propose de participer au succès de son développement connu depuis 17 ans. Agence tourisme d’affaires reconnue sur le marché, nous proposons à nos clients (grands comptes, PME, multinationales, …) des solutions en matière de recherche de lieux et d’accompagnement pour l’organisation de séminaires et évènements. Vous souhaitez intégrer une entreprise orientée vers les nouvelles technologies où la relation humaine reste l’alpha et l’omega de la richesse de notre relation client ? Bienvenue chez nous !"
+    opening: "Dans le cadre de notre développement nous recherchons un(e) :"
+    position:
+      title: "Chef de Projet Événementiel"
+      location: "Basé à Chantilly – Temps complet"
+      description_title: "Description du poste"
+      description_intro: "Vous intégrerez notre centrale de réservation séminaire. Vos missions principales sont :"
+      missions:
+        item1: "Recueillir les besoins et cibler les attentes des clients"
+        item2: "Construire et présenter des recommandations"
+        item3: "Être responsable projet de la prise de cahier des charges à la conclusion du dossier"
+        item4: "Développer une parfaite connaissance des lieux que vous recommandez"
+        item5: "Construire une relation forte avec vos clients afin de les fidéliser"
+        item6: "Développer le portefeuille actuel"
+      team: "Business Profilers vous permettra d’intégrer une équipe jeune et dynamique qui vous offrira plusieurs perspectives d’évolutions."
+      qualifications_title: "Qualifications"
+      qualifications:
+        item1: "Vous avez des prédisposions à l’action commerciale et vous aimez vous investir pour satisfaire vos clients."
+        item2: "Vous justifiez d’une 1<sup>ère</sup> expérience réussie en vente, la connaissance du tourisme d’affaires est un plus."
+        item3: "Vous savez gérer les priorités, les urgences et les outils bureautiques n’ont pas de secret pour vous."
+    info_title: "Informations complémentaires"
+    info:
+      item1: "Poste à pourvoir immédiatement – CDI"
+      item2: "Basé à Chantilly avec déplacements occasionnels à Paris ou en province à prévoir."
+    apply_title: "Pour postuler"
+    apply_text: "Merci de contacter le service ressource humaine par email : %email% en nous adressant votre CV et lettre de motivation."
+  team:
+    breadcrumb: "L'équipe"
+  solution:
+    subtitle: "Optimisez vos événements et piloter vos dépenses événementielles"
+    intro: "Grâce à notre solution unique, nous simplifions la réservation de lieux pour vos événements professionnels, tout en vous permettant de maîtriser vos dépenses. Notre technologie disruptive s'adapte à toutes les organisations et nous permet d'accompagner les organisateurs pour des événements clé en main, en leur laissant le choix de notre degré d'implication."
+    item1:
+      title: "1. SIMPLIFICATION & RÉACTIVITÉ"
+      text: "Devis des lieux disponibles sous 48 heures ! Un expert vous est totalement dédié, car nous privilégions l'expérience humaine"
+    item2:
+      title: "2. EN DIRECT OU ACCOMPAGNÉ"
+      text: "Vous gardez la main sur votre événement à chaque instant et décidez de notre degré implication."
+    item3:
+      title: "3. MEILLEURS PRIX GARANTIS"
+      text: "Grâce à la puissance de notre centrale d'achat indépendante et leader sur le marché, nous négocions pour vous et vous garantissons le meilleur prix pour votre événement. Nos partenaires sont engagés contractuellement à fournir le meilleur tarif."
+    item4:
+      title: "4. NÉGOCIATION OPTIMALE DES CGV"
+      text: "Notre expertise préserve au mieux vos intérêts. Nous vous faisons bénéficier des meilleures conditions de réservation (acompte, délai de règlement et condition d'annulation partielle ou totale)."
+    item5:
+      title: "5. UNE FIDÉLITÉ PRATIQUE"
+      text: "Lorsqu'un Grand Merci ne suffit pas : nous vous proposons de découvrir la richesse de l'offre séminaire en France et à l'étranger par des séjours de repérage éducationnels."
+    item6:
+      title: "6. PRESTATION SANS FRAIS D'AGENCE"
+      text: "Cette prestation vous est fournie sans frais d'agence, ni honoraires. À l'origine une association, la transparence est le pilier de notre ADN."
+    item7:
+      title: "7. COMPTE FOURNISSEUR UNIQUE"
+      text: "En nous mandatant pour l'achat, vous économisez des démarches administratives coûteuses. Une seule facture par événement, peu importe le nombre de prestataires."
+    item8:
+      title: "8. FINANCEMENT DE VOTRE ÉVÉNEMENT"
+      text: "Nous avançons pour vous les acomptes et les arrhes auprès des fournisseurs selon les accords d'un contrat cadre. La facture finale post événement est à régler selon nos accords."
+    item9:
+      title: "9. RÉCUPÉRATION DE TVA"
+      text: "En nous confiant l'achat de vos événements, vous transférez par délégation de mandat de mission à Business Profilers. Vous pouvez donc récupérer la TVA sur chaque événement."
+    item10:
+      title: "10. TABLEAU DE BORD PERSONNALISÉ"
+      text: "Notre outil de reporting est le summum de ce qu'un acheteur peut attendre ! Entièrement personnalisable : remonter d'information en directe, notifications, alertes, graphiques, exports automatiques et workflows personnalisés… Décrivez-nous votre rêve et nous le ferons !"
+    item11:
+      title: "11. REMISE DE FIN D'ANNÉE"
+      text: "Nous vous offrons une remise supplémentaire sur vos dépenses événementielles."
+    item12:
+      title: "12. PRISE EN CHARGE DE VOS REPÉRAGES"
+      text: "Nous organisons pour vous, vos repérages et prénons en charge les frais d'hébergement."
+  lancement:
+    section_product:
+      title: "LANCEMENT DE PRODUIT"
+      p1: "Vous devez préparer et mettre en musique votre lancement de produit !"
+      p2: "C’est sans aucun doute pour ce type d’évènement que le lieu est l’écrin de votre évènement. Il doit répondre à des critères d’accessibilité optimum, des facilités techniques pour y accueillir dans les meilleures conditions, scénographie, son, lumière, vidéo, il s’agit souvent de faire grand, de faire beau, de frapper les esprits et là plus que jamais vous avez besoin des experts de Business Profilers"
+      p3: "Business Profilers vous recommande les meilleurs lieux et les meilleurs prestataires qui sont en mesure de réaliser votre évènement et d’en garantir la réussite!"
+      p4: "Face aux enjeux de croissance que représente un lancement de produit, il n’y a aucune place pour l’improvisation !"
+    section_event:
+      title: "ORGANISATION ÉVÉNEMENTIELLE"
+      p1: "Vous souhaitez marquer un moment fort de votre entreprise ou organiser un évènement pour vos clients ? Pour que votre journée ou soirée soit réussie, entourez-vous de professionnels. Vous vous assurerez ainsi une tranquillité d’esprit car c’est votre image qui est en jeu ! Il s’agit d’un moment unique."
+      p2: "Business Profilers vous propose le meilleur chef de projet pour imaginer avec vous l’événement dont vous rêvez et coordonner : lieu, traiteur, logistique, techniques, gestion des participants, communication…"
+      p3: "Chaque évènement doit sublimer l’image de votre entreprise!"
+  legal:
+    title: "Mentions légales"
+    intro: "Conformément aux dispositions de la loi n° 2004-575 du 21 juin 2004 pour la confiance en l’économie numérique, il est précisé aux utilisateurs du site businessprofilers.com l’identité des différents intervenants dans le cadre de sa réalisation et de son suivi."
+    edition:
+      title: "Edition du site"
+      p1: "Le site businessprofilers.com est édité par la société Business Profilers, société par actions simplifiée au capital de 141 700 euros, dont le siège social est situé 1 avenue du Général de Gaulle – 60500 Chantilly, immatriculée au registre du commerce et des sociétés sous le numéro d’identification unique 480 674 100 RCS Compiegne."
+      p2: "Responsable de publication : Patrick Salas"
+    hosting:
+      title: "Hébergement"
+      p1: "Le site www.businessprofilers.com est hébergé par la société Upsun"
+      p2: "Adresse : <a href=\"https://maps.app.goo.gl/SzrrTFriALrQfku38\" target=\"_blank\">22 rue de la Palestro – 75002 PARIS – France</a>"
+      p3: "Le stockage des données personnelles des utilisateurs est exclusivement réalisé sur les centres de données (« clusters ») localisés dans des Etats membres de l’Union Européenne."
+    license:
+      title: "Licence & garanties"
+      p1: "Licence opérateur de voyages et séjours en tourisme d’affaires : IM060130005"
+      p2: "Garantie financière&nbsp;illimitée ATRADIUS"
+      p3: "Assurance responsabilité civile professionnelle : Gan Assurances IARD 1 530 000 euros"
+    contact:
+      title: "Nous contacter"
+      p1: "Par email : %email%"
+  opportunites:
+    breadcrumb: "Vous organisez une réunion?"
+    title: "Les plux beaux lieux de séminaires à Paris"
+    intro: "Vous recherchez actuellement un hôtel à Paris disposant d’espaces de séminaires ou événementiels pour votre prochaine réunion ou événement d’entreprise ? Découvrez parmi notre sélection l’hôtel idéal qui fera de votre séminaire à Paris un véritable succès."
+    cta: "Optez pour notre service de recherche gratuit \"Business Profilers\" qui se chargera de trouver le lieu correspondant à votre cahier des charges et votre budget. Vous recevrez des avis négociés pour vous et provenant de lieux sélectionnés par nos soins. Sans engagement et sans frais d’agence."
+    selection_title: "Découvrez notre sélection"
+    link_title: "Titre de lien"
+    link_item1: "Lieu insolite"
+    link_item2: "Lieux atypiques"
+  privacy:
+    intro: "En visitant notre site Web et en utilisant nos services, vous comprenez et acceptez la façon dont nous traitons les données personnelles conformément à notre politique de confidentialité. Nous respectons votre vie privée et le droit de contrôler vos données personnelles. Nos principes directeurs sont simples. Nous allons être ouverts avec quelles données nous collectons et pourquoi. Veuillez prendre un moment pour les lire. C'est important !"
+    section1:
+      title: "Politique de confidentialité et cookies"
+      body: |
+        <p>BUSINESS PROFILERS respecte votre vie privée et le droit de contrôler vos données personnelles.&nbsp;</p>
+        <p>Nos principes directeurs sont simples. Nous serons ouverts à vous informer sur les données que nous collectons et pourquoi. Nous protégeons vos données comme si c'était notre plus grand secret commercial.</p>
+        <p>La politique de confidentialité de BUSINESS PROFILERS ("Société") décrit quelles données nous collectons, le but du traitement, comment vous pouvez contrôler vos propres données et comment nous contacter. La présente politique de confidentialité s'applique lorsque vous utilisez des applications, des pages Web et des services qui sont inclus dans une application ou sur un site Web géré par la Société. Le DPO de BUSINESS PROFILERS est une personne personnellement responsable conformément à ces conditions et est responsable du traitement conformément à la législation en vigueur.</p>
+        <p>Voici un résumé de ce à quoi vous pouvez vous attendre en visitant notre site Web :</p>
+        <ul>
+          <li>Nous suivons votre activité web à des fins de marketing</li>
+          <li>Nous recueillons des renseignements personnels à des fins de marketing et de communication.</li>
+          <li>Nous traitons les renseignements personnels en les envoyant à des systèmes intégrés de courriel et de gestion de la relation client (CRM) à des fins de marketing et de relations clients.</li>
+          <li>Nous sauvegardons les informations personnelles dans nos bases à des fins d'analyse.</li>
+          <li>Votre comportement et votre activité sur le Web peuvent être utilisés à des fins de marketing comme le ciblage et l'analyse marketing.</li>
+        </ul>
+    section2:
+      title: "Quelles données personnelles collectons-nous ?"
+      body: |
+        <p>BUSINESS PROFILERS recueille les informations principalement auprès de vous en tant que client. Des exemples de données personnelles que nous pourrions collecter sont le nom de votre entreprise, votre nom et d'autres détails de contact tels que le numéro de téléphone, l'adresse e-mail ou l'adresse physique. BUSINESS PROFILERS peut mettre à jour vos informations à partir d'autres dossiers publics si cela est nécessaire pour maintenir un bon entretien du référentiel de donnée.</p>
+        <p>BUSINESS PROFILERS enregistre les données personnelles en relation avec :</p>
+        <p>A. &nbsp; Notification d'un service offert par le biais des différentes plateformes offertes par la Société.</p>
+        <p>B. &nbsp; Lorsque vous entrez votre adresse e-mail ou votre numéro de téléphone portable sur le site.</p>
+        <p>C. &nbsp; Si vous nous contactez par courriel, par téléphone, par nos sites Web et par les médias sociaux.</p>
+        <p>D. &nbsp; Si vous vous inscrivez à un abonnement par courriel.</p>
+        <p>E. &nbsp; Votre visite de sur nos sites Web et lors de l'accès à notre application, y compris, mais sans s'y limiter, les données de trafic, les données de localisation, les blogs et d'autres données de communication, telles que l'adresse IP, le type de périphérique, le système d'exploitation et le type de navigateur utilisé pour la visite.</p>
+    section3:
+      title: "Collecte avec consentement"
+      body: |
+        <p>En cliquant sur le bouton "Accepter / Fermer", vous consentez à ce que les données personnelles (société, nom, numéro de téléphone et adresse électronique) que vous entrez dans des formulaires à différents endroits sur ce site puissent être utilisées à des fins de marketing pour les services auxquels vous êtes exposé lorsque vous êtes invité à remplir vos informations personnelles. Nous recueillons également votre adresse IP, votre position géographique et vos intérêts afin de mieux adapter notre marketing à vos besoins.</p>
+        <p>En cliquant sur le bouton " Accepter / Fermer", vous acceptez également que nous puissions ajouter un cookie tiers sur votre ordinateur à partir de la Société. Ce cookie vous suivra, ainsi que votre comportement en ligne sur d'autres sites Web, afin de vous proposer du marketing basé sur votre comportement en ligne.</p>
+        <p>Comment nous utilisons les informations collectées</p>
+        <p>La Société traite les données personnelles principalement aux fins indiquées ci-dessous et à toute autre fin mentionnée lors de la collecte :</p>
+        <ul>
+          <li>Exécuter les fonctionnalités à travers l'une des plateformes offertes par la Société.</li>
+          <li>Permettre un bon service à la clientèle, comme la gestion de vos demandes, la correction d'informations incorrectes ou l'envoi d'informations que vous avez demandées, par exemple la newsletter, des livres blancs, de la documentation.</li>
+          <li>Pour gérer les profils clients, réaliser des analyses et des études de marché.</li>
+          <li>Pour l'administration du système et pour obtenir des données statistiques sur le comportement et les usages de nos utilisateurs.</li>
+          <li>Pour développer, livrer et améliorer nos produits et services par l'analyse de votre comportement sur nos sites web et nos applications.</li>
+          <li>Les données personnelles sont également utilisées à des fins d'analyse pour réaliser des segmentations et ciblages, afin de développer des offres et des services personnalisés.</li>
+          <li>Pour vous envoyer des informations et des promotions par SMS, email, app, push ou d'autres voies de contact numériques telles que les médias sociaux puisque vous avez une relation client active avec nous.</li>
+          <li>Pour vous contacter via l'application, SMS, email ou courrier sur d'autres offres, promotions ou services que nous pensons être d'intérêt pour vous, veuillez noter que vous pouvez refuser cette promotion à tout moment.</li>
+          <li>Vous fournir des recommandations pertinentes, des offres et des services personnalisés basés sur les besoins d'autres personnes ayant des comportements similaires aux vôtres.</li>
+          <li>Pour nous aider à développer notre site et notre application afin d'être plus utiles et d'améliorer votre expérience utilisateur des services offerts par la Société en personnalisant l'affichage des services à votre profil.</li>
+          <li>Envoyer des messages importants en tant que communication sur les changements dans nos mentions légales.</li>
+        </ul>
+        <p>Nous pouvons partager des informations avec d'autres sociétés qui traitent des données en notre nom afin d'exécuter nos services, c'est-à-dire l'analyse, la distribution ou d'autres services pour maintenir et appliquer nos conditions d'utilisation et de livraison. Cependant, le traitement des données personnelles garantit toujours une sécurité et une confidentialité élevées.</p>
+        <p>La société ne collabore qu'avec des partenaires qui traitent des données à caractère personnel au sein de l'UE/EEE.</p>
+    section4:
+      title: "À propos des cookies"
+      body: |
+        <p>Lorsque vous utilisez notre site et notre application, des données personnelles peuvent être collectées par le biais de cookies. Cela ne peut se faire qu'avec un consentement distinct. Ceci stockera les informations sur votre utilisation et les pages visitées. Il peut s'agir d'informations techniques sur votre appareil et votre connexion Internet telles que le système d'exploitation, la version du navigateur, l'adresse IP, les cookies et les identifiants uniques. Lorsque vous visitez nos sites Web où nos services sont présentés, différentes techniques peuvent être utilisées pour vous reconnaître afin d'en apprendre davantage sur nos utilisateurs. Cela peut se faire directement ou au moyen d'une technologie tierce.</p>
+    section5:
+      title: "Droit à l'oubli, stockage et divulgation des données personnelles"
+      body: |
+        <p>Vous pouvez à tout moment retirer votre consentement en nous en faisant la demande via la fonction "nous contacter"</p>
+        <p>Le traitement est conforme à la législation en vigueur et signifie que les données personnelles ne sont pas conservées pendant une période plus longue que nécessaire aux fins du traitement. La Société conservera vos données personnelles tant que vous serez en relation commerciale avec nous. A des fins de marketing, les informations datant de plus de 4 ans ne sont pas utilisées. Cela implique que les données seront effacées lorsqu'elles ne sont plus pertinentes ou nécessaires à des fins d'analyse ou de marketing direct aux fins pour lesquelles elles ont été collectées. Certaines informations peuvent être conservées plus longtemps au besoin en raison d'autres exigences légales. Cependant, le traitement des données personnelles garantit toujours une sécurité et une confidentialité élevées.</p>
+    section6:
+      title: "Vos droits et vos choix"
+      body: |
+        <p>Vous avez des droits sur vos données personnelles et vous pouvez demander la modification ou destruction de vos données sauvegardées. La Société rectifiera, de sa propre initiative ou à l'initiative du client, les données jugées incorrectes. Vous pouvez également demander à tout moment que vos données soient effacées ou que leur utilisation soit limitée en nous contactant (voir la rubrique "Nous Contacter"). Si vous pensez que nous ne respectons pas vos droits, veuillez contacter la Société ou contacter l'Autorité de Protection des Données de votre pays, à http://ec.europa.eu/justice/data-protection/article-29/structure/data-protection-authorities/index_fr. htm.</p>
+        <p>Vous pouvez à tout moment vous abstenir de recevoir des communications marketing de notre part en mettant à jour les paramètres de votre compte en cliquant sur "Se désinscrire" dans l'e-mail et les communications SMS que nous vous envoyons. Vous êtes toujours les bienvenus pour contacter notre service clientèle pour vous aider à stopper nos communications.</p>
+    section7:
+      title: "Liens vers d'autres sites"
+      body: |
+        <p>Dans le cas où notre site contient des liens vers des sites Web de tiers, des sites Web ou des documents publiés par des tiers, ces liens sont fournis à titre d'information seulement. Étant donné que la Société n'a aucun contrôle sur le contenu de ces sites Web ou de son matériel, nous ne sommes pas responsables de leur contenu. La Société n'est pas non plus responsable des dommages ou pertes qui pourraient résulter de l'utilisation de ces liens.</p>
+    section8:
+      title: "Comment nous contacter"
+      body: |
+        <p>Pour plus d'informations sur la gestion des données personnelles ou si vous avez des questions, n'hésitez pas à nous contacter :</p>
+        <p>BUSINESS PROFILERS, 1 avenue du Général de Gaulle 60500 Chantilly</p>
+        <p>Cette politique de confidentialité s'applique à partir du 01/01/2021</p>
+  solutions_covid:
+    breadcrumb: "Quelles solutions pour organiser mes événements durant la période Covid ?"
+    title: "Quelles solutions pour organiser mes évènements durant la période Covid ?"
+    intro_p1: "Vous trouverez dans cette thématique quelques astuces selon votre format d’événement (Digital, hybride ou physique).&nbsp;"
+    intro_p2: "C’est avec plaisir que vous pouvez joindre nos chefs de projets qui vous partageront leurs expériences mais aussi les retours clients qui sont parfois la meilleure garantie de trouver «&nbsp;une pépite&nbsp;» pour son besoin.&nbsp;"
+    digital:
+      title: "L’Évènement Digital"
+      body: |
+        <p>&nbsp;</p>
+        <p>Tout l’enjeu est de donner un maximum d’interactivité afin de ne pas perdre le lien avec vos participants et ainsi ne pas reproduire une énième réunion «&nbsp;zoom&nbsp;»…</p>
+        <p><i><strong>Le choix du lieu </strong></i>: Optez pour une conférence interactive depuis vos bureaux ou en retransmission live depuis un plateau TV&nbsp;</p>
+        <p><i><strong>L’outil</strong></i><strong> </strong><i><strong>c’est l’assurance d’un évènement fluide </strong></i>: Redoublez de vérifications en testant l’outil en amont de l’évènement avec l’ensemble des intervenants afin d’anticiper les problématiques techniques et appréhender les fonctionnalités de l’application. La performance technique et la capacité de diffusion de l’outil doivent être adaptées à votre jauge de participants. Adaptez votre fond de retransmission à la thématique de votre événement, la personnalisation est toujours possible en virtuel.&nbsp;</p>
+        <p><br><br>&nbsp;</p>
+        <p><i><strong>Les intervenants : </strong></i>Faites intervenir des intervenants de qualité durant votre conférence et n’hésitez pas à faire appel à des journalistes TV comme modérateurs de votre événement et ainsi assurer un rythme et ne pas perdre votre auditoire.&nbsp;</p>
+        <p><br><br>&nbsp;</p>
+        <p><i><strong>L’interactivité c’est la clé du succès : </strong></i>Distribuez la parole, donnez lieu à des temps de questions/réponses et faites intervenir des prestataires originaux comme un caricaturiste qui reprendra les thématiques et les intervenants de votre session.&nbsp;</p>
+        <p><br><br>&nbsp;</p>
+        <p><i><strong>Rebondir sur son évènement virtuel : </strong></i>Il est vrai que l’évènement virtuel démontre certaines limites dans la création d’émotions ou encore dans la communication de certains messages. Cependant c’est un parfait tremplin pour créer du contenu et ainsi faire vivre son évènement dans ses communications avec les interlocuteurs concernés.&nbsp;</p>
+        <p><br><br>&nbsp;</p>
+        <p><br><br>&nbsp;</p>
+    hybrid:
+      title: "L’Évènement Hybride"
+      body: |
+        <p>La parfaite alternative entre digital et physique, permettant de réunir les avantages des deux formats et sans contraintes. En complément de l’évènement digital certains aspects sont à prendre en compte.&nbsp;</p>
+        <p><br><br>&nbsp;</p>
+        <p><i><strong>Le choix du lieu </strong></i>: Le choix du lieu devient stratégique, tous les lieux ne disposent pas d’infrastructures permettant une réalisation de qualité (débit de connexion, gestion des flux, format de la plénière, régie, etc…). Optez donc pour un lieu rodé à ce type de prestations et capable de vous accueillir dans les meilleures conditions.&nbsp;</p>
+        <p><br><br>&nbsp;</p>
+        <p><i><strong>Le choix du partenaire technique : </strong></i>Le choix de votre partenaire audiovisuel devient alors stratégique, ce dernier doit de préférence être référencé au sein du lieu sélectionné car ce dernier disposera déjà d’une parfaite connaissance du lieu et de ses spécificités techniques.&nbsp;</p>
+    physical:
+      title: "L’Évènement physique&nbsp;"
+      body: |
+        <p>Source d’émotions, créateur de liens répondant à de nombreux enjeux des entreprises, ce format inconditionnel demeure le plus plébiscité par les prescripteurs qui continuent d’organiser des événements en présentiel. Quelques spécificités sont à prendre en compte dans le contexte actuel&nbsp;</p>
+        <p><br><br>&nbsp;</p>
+        <p><i><strong>Le choix du lieu :</strong></i><strong> </strong>Optez pour des lieux «&nbsp;safe&nbsp;» afin d’organiser un évènement en toute sérénité. Pour ce faire, privilégiez des lieux disposant d’un protocole sanitaire rigoureux, si possible labélisés (Bureau Veritas, Socotec etc… ) mettant à disposition des équipes spécifiques assurant la gestion des flux, le respect de la distanciation.&nbsp;</p>
+        <p><br><br>&nbsp;</p>
+        <p><i><strong>La localisation : </strong></i>Un lieu au vert où l’on respire avec de grands espaces permettra de créer un contexte de sérénité pour les participants et ainsi favoriser les échanges dans le respect des distanciations.&nbsp;</p>
+        <p><br><br>&nbsp;</p>
+        <p><i><strong>Les salles de réunion : </strong></i>n deux mots spacieuses et aérées, n’hésitez pas à choisir de grandes salles de réunions pour assurer une distanciation pour vos participants et ne pas être restreints dans un format imposé.&nbsp;</p>
+        <p><br><br>&nbsp;</p>
+        <p><i><strong>La restauration : </strong></i>Il s’agit du pied de pivot depuis le début de la crise sanitaire, les repas assis et les pauses individuelles sont à privilégier mais il est peut-être toujours opportun de s’assurer de la possibilité de livraison de plateaux repas.&nbsp;</p>
+  about:
+    intro_body: |
+      <p><strong>BUSINESS PROFILERS COMBINE LES TALENTS D’UN VENUE FINDER, D’UNE AGENCE EN TOURISME D’AFFAIRES POUR ACCOMPAGNER LES ENTREPRISES :</strong></p>
+      <p>Nous nous adressons aux PME comme aux grands groupes français ou aux multinationales. Que vous soyez responsable évènementiel, assistante de service, organisateur ou acheteur de prestations hors production, nous avons la solution adéquate et l’expertise dont vous avez besoin.</p>
+      <p>Nous coordonnons tous types d’évènements d’entreprise : séminaire, formation, convention, lancement de produit, assemblée générale, soirée de gala, incentive, réunion de force de ventes, comité stratégique ou de pilotage…</p>
+      <p>Favoriser la réussite de vos projets, optimiser vos ressources et vos coûts, minimiser vos risques : voilà nos missions.</p>
+      <p>Notre organisation est entièrement tournée vers votre satisfaction : Altruisme et intégrité sont nos principales valeurs</p>
+      <p>Grâce à notre savoir-faire, vous trouverez le lieu ou le prestataire pour l’organisation d’un évènement ou le développement d’une stratégie de globalisation au niveau national ou international avec pour effets principaux :</p>
+      <ul>
+        <li>Le gain de temps avec des solutions rapides, pertinentes et transparentes</li>
+        <li>La réduction du nombre de prestataires et la simplification de votre processus achats</li>
+        <li>Une vision claire sur le poste séminaires et évènements de votre entreprise.</li>
+        <li>Un accompagnement personnalisé</li>
+        <li>Une analyse de la performance</li>
+      </ul>
+      <p>Nous sommes là pour vous simplifier la vie en vous apportant des solutions efficaces dans le respect des contraintes, de la réglementation et de vos enjeux.</p>
+    history:
+      title: "Historique"
+      body: |
+        <p><strong>2005</strong> : Création de Business Profilers spécialiste de recherche de lieux pour évènements d’entreprise en France<br><strong>2010 </strong>: Business Profilers s’ouvre sur l’international et développe ses partenariats&nbsp;sur l’Espagne, le Portugal et le Maroc avec un bureau à Barcelone.<br><strong>2013 </strong>: Lancement de partenariat avec le Royaume-Uni, l’Irlande et l’Allemagne.<br>Business Profilers est accrédité Atout France avec sa Licence d’opérateur de voyages en tourisme d’affaires sous le n° IM060130005 et sa garantie financière.<br><strong>2014 </strong>: Lancement de partenariat avec les&nbsp;USA et le Vietnam.<br><strong>2015 </strong>: Lancement de partenariat avec l’Italie et le Benelux</p>
+    organization:
+      title: "Organisation"
+      body: |
+        <p><strong>La relation humaine est au cœur de notre organisation !</strong></p>
+        <p>Les fondateurs de Business Profilers sont présents sur le marché du M.I.C.E (Meeting, Incentive, Conference, Event) depuis plus de 30 ans. Ils ont œuvré pour les plus grandes chaînes hôtelières internationales et sont rompus à satisfaire les besoins les plus exigeants des entreprises dans l’organisation de leurs séminaires et évènements d’entreprise.</p>
+        <p>Pour les accompagner dans ce projet, ils ont organisé Business Profilers autour de deux pôles :</p>
+        <p><strong>Le pôle Sélection de prestataires : Business Premium</strong></p>
+        <p>Business Profilers a confié à la société Business Premium sur des critères de qualité très rigoureux la sélection de l’élite du tourisme d’affaires que nous mettons à votre disposition sur nos sites Internet. Ce qui apporte une garantie de qualité à tous nos clients organisateurs d’évènements. A la différence de la plupart de nos confrères notre base de données est privée et nous connaissons l’ensemble des partenaires que nous vous proposons. Nous travaillons avec eux depuis de nombreuses années et grâce aux études de satisfaction réalisées après chaque évènement, nous affichons un taux de performance de 98.9% sur les 5000 derniers évènements réalisés.</p>
+        <p><strong>Le Pôle Relation clients qui s’appuie </strong>:</p>
+        <ul>
+          <li>sur une équipe d’experts multilingues issus du monde de l’hôtellerie ou de l’organisation d’évènements,</li>
+          <li>une sélection de partenaires internationaux,</li>
+          <li>des outils de communication spécialement développés pour fluidifier la relation commerciale.</li>
+        </ul>
+        <p>Après avoir travaillé pendant des années au cœur des services opérationnels des principaux acteurs du tourisme d’affaires, ils sont à vos côtés chez Business Profilers pour vous accompagner dans la réussite de vos projets. Ils connaissent très bien le marché et l’ensemble des opérateurs. Ils sont les garants de votre sécurité, en effet, ils savent que l’organisation de votre évènement ne peut pas laisser place à l’improvisation !</p>
+    commitments:
+      title: "Nos engagements"
+      body: |
+        <p><strong>Business Profilers vous garanti :</strong></p>
+        <ul>
+          <li>des solutions idéales en un temps record</li>
+          <li>une relation commerciale personnalisée</li>
+          <li>un suivi avant, pendant et après l’évènement</li>
+          <li>la transparence des prix, des contrats, des produits et des services</li>
+          <li>du meilleur rapport qualité/prix/prestation du marché en vous appuyant sur notre puissance d’achat et les meilleures conditions d’achat et d’annulation</li>
+        </ul>
+        <p><strong>L’engagement de nos prestataires :</strong></p>
+        <ul>
+          <li>Répondre à nos demandes de disponibilité sous 4 heures</li>
+          <li>Éditer un devis sous 24 heures pour un hôtel ou un lieu</li>
+          <li>Vous fournir un accueil personnalisé lors de votre visite de repérage puis lors de la réception de vos invités</li>
+          <li>Vous apporter un service d’excellente qualité</li>
+          <li>Vous faire bénéficier du meilleur rapport qualité/prix/prestation en vigueur à la date indiquée et des meilleures conditions d’achat et d’annulation</li>
+        </ul>
+    footer_title: "D’un comité exécutif de 6 personnes à une convention de 3000 personnes, Business Profilers, c’est une synergie de talents au service de la réussite de vos projets !"
+  seminaire_cohesion:
+    section_cohesion:
+      title: "SÉMINAIRE DE COHÉSION"
+      p1: "Vous souhaitez aider votre équipe à se retrouver, à se consolider, à se souder pour réussir à passer à travers les challenges présents et à venir. C’est lors de cet instant de partage qu’il faut trouver les appuis pour renforcer les liens au quotidien."
+      p2: "Comment être cohérent en évitant le déjà-vu ? Quelles activités proposer pour favoriser l’inclusion de tous les participants ?"
+      p3: "Business Profilers est force de proposition pour vous suggérer de multiples activités de <strong>team building</strong> spécifiquement conçues pour les lieux conseillés."
+      p4: "Créer la surprise vous permet de faire vivre longtemps après votre séminaire la cohésion de vos équipes"
+    section_motivation:
+      title: "SÉMINAIRE DE MOTIVATION"
+      p1: "Vous souhaitez offrir du bien-être à vos collaborateurs pour stimuler leurs performances et leurs réussites."
+      p2: "Pour les booster, choisirez-vous un événement ludique, sportif, culturel, gastronomique ?"
+      p3: "Business Profilers vous recommande des solutions sur mesure pour favoriser le travail de groupe en permettant à chacun de se découvrir et se révéler."
+      p4: "Vos collaborateurs en reviendront enchantés et en redemanderont !!!!"
+  seminaire_force:
+    title: "Séminaire de force de vente interne ou réseau"
+    section_internal:
+      title: "RÉUNION DE FORCE DE VENTE INTERNE"
+      p1: "Le chiffre d’affaires est votre crédo, il ne peut pas ne pas être atteint ! Vous devez compter sur l’efficacité de chaque membre de votre équipe commerciale. Vous allez intégrer, former, informer, motiver, dynamiser, souder votre équipe pour prendre des parts de marché…"
+      p2: "Business Profilers vous aide à booster vos champions et vous trouve le lieu et les activités propices afin de récompenser et amplifier leurs talents !"
+    section_network:
+      title: "RÉUNION DE FORCE DE VENTE DE RÉSEAU"
+      p1: "Vous souhaitez réunir votre réseau de concessionnaires pour leur présenter vos nouveautés, les dynamiser et les valoriser."
+      p2: "En France ou à l’étranger ? Vous allez combiner travail, détente, moments de partage et de convivialité pour favoriser le sentiment de fierté d’appartenance."
+      p3: "Business Profilers vous propose son expérience internationale autour de ses partenaires rompus à satisfaire ces enjeux !"
+      p4: "Après cette expérience réussie qualité et chiffre d’affaires sont au rendez-vous !"
+  seminaire_formation:
+    section_training:
+      title: "SÉMINAIRE DE FORMATION"
+      p1: "Vous souhaitez former vos collaborateurs et les recevoir dans un endroit différent de leur milieu professionnel habituel, leur offrir un lieu atypique et inspirant, propice à la concentration qui va leur permettre de prendre le recul nécessaire à la réflexion pour profiter pleinement du sujet traité, tel est votre enjeu !"
+    section_location:
+      title: "OÙ ORGANISER CE SÉMINAIRE DE FORMATION ?"
+      p1: "Dans votre capitale, en province, dans votre métropole régionale, dans une demeure de caractère à la campagne, à la mer ou la montagne, dans un site très contemporain, dans un lieu facile d’accès, nous avons un large choix de possibilités à vous suggérer selon vos objectifs et votre budget.<br>Donnez-nous votre cahier des charges et nous vous apportons la solution idéale !<br>Notre recommandation de lieux et prestataires est déterminante pour le succès de votre formation."
+    section_integration:
+      title: "SÉMINAIRE D’INTÉGRATION"
+      p1: "Vous souhaitez exceller dans l’accueil de vos nouveaux collaborateurs, les réunir dans un lieu propice à l’échange afin qu’ils puissent tisser des liens solides avec toute l’équipe : c’est là votre mission !<br>Quel lieu, quelles activités, quels concepts proposer à ces nouveaux collaborateurs ?<br>Les experts « Profilers » sont là pour vous conseiller dans cette dynamique et vous apporter les meilleures solutions !<br>Notre proposition de concept d’intégration est un des facteurs clés pour faciliter l‘accueil de vos nouveaux collaborateurs."
+  seminaire_management:
+    title: "Séminaire de management ou direction"
+    section_management:
+      title: "SÉMINAIRE DE MANAGEMENT"
+      p1: "Vous souhaitez réunir vos cadres pour parler : stratégie, gestion des ressources humaines, budgétisation, travailler sur les méthodes… Optimiser l’implication des participants, renforcer les messages et faciliter leurs appropriations tels sont vos enjeux !"
+      p2: "Que ce soit pour une journée ou sur plusieurs modules pour des programmes récurrents, nous vous proposons la solution la plus adaptée"
+      p3: "Faire appel à Business Profilers pour trouver le cadre approprié de votre séminaire de management, c’est vous assurer d’un accompagnement sur mesure pour garantir la réussite de votre événement."
+      p4: "Parce que la forme est aussi importante que le fond, Business Profilers met toute son expérience à votre service !"
+    section_direction:
+      title: "SÉMINAIRE DE DIRECTION"
+      p1: "C’est un moment important pour vos cadres supérieurs et dirigeants de faire le point sur la situation de votre société. Prendre le temps de l’analyse et du partage, définir les nouveaux objectifs à venir, la nouvelle stratégie à adopter…"
+      p2: "Quel environnement sera le plus favorable à cet échange ? Complétement studieux ou quelque peu ludique ? En France ou à l’étranger ? Luxueux ou décalé ?…"
+      p3: "Les experts « Profilers » sont là pour vous conseiller et vous apporter les meilleures solutions !"
+      p4: "Le lieu, le « before », le « after » sont avec la réunion les clés du succès de votre séminaire de direction."
+  top10:
+    breadcrumb: "Top 10 des Lieux Insolites"
+    title: "Top 10 des Lieux Insolites"
+    item1:
+      title: "VILLAGE IGLOO LES ARCS"
+      p1: "Casser les codes ou simplement passer une belle soirée entre collègues à la montagne ? A seulement 30 minutes en bus de Bourg Saint Maurice, le Village Igloo des Arcs est l'endroit idéal pour une journée et une soirée inoubliable !"
+      p2: "Au programme : descente en luge, apéro givré, cocktail dînatoire, soirée dansante… La soirée à l'igloo peut se construire sur mesure pour répondre à vos attentes !"
+    item2:
+      title: "LA ROCHE COULOIR"
+      p1: "La Roche Couloir vous accueille pour des événements professionnels. Entouré de plusieurs hectares de forêt, le Domaine vous accueille dans une ambiance conviviale, et sereine. La Roche Couloir est à votre disposition un espace inspirant et paisible pour organiser tous types d'événements."
+    item3:
+      title: "SAINTE-CROIX PARC ANIMALIER"
+      p1: "Immersion totale au cœur de la nature et à proximité immédiate des animaux. Une expérience qui permettra à vos collaborateurs de se ressourcer, de stimuler leur inspiration et de se reconnecter à l’essentiel."
+    item4:
+      title: "LES CABANES DANS LES BOIS"
+      p1: "Une situation exceptionnelle des Cabanes dans les bois dans le sud de la France, à 60 minutes de Toulouse et de Montpellier, vous permet d’y installer votre camp de base pour une séminaire en pleine nature et profiter des plus beaux sites touristiques du Pays Cathare, du midi toulousain et du Languedoc-Roussillon tout en profitant d’un cadre de séjour authentique."
+    item5:
+      title: "LE CHÂTEAU DES PÈRES"
+      p1: "Envie d’un lieu atypique ou d’un espace intimiste pour une réunion d’affaire ou de grands espaces pour vos séminaires ? Le Château des Pères met à votre disposition pour ces temps d’échange 8 salles de 18 à 200m² son Parc de Sculptures de 31 hectares, et désormais une orangerie de 1000m², unique en Bretagne."
+    item6:
+      title: "BO RANCH"
+      p1: "BO RANCH, nouvel écrin pour tous vos événements d’entreprise, offre un cadre idyllique pour se réunir, célébrer & partager des moments authentiques. Doté d’un chaleureux Club House de 750m2 et de plusieurs espaces haut de gamme avec une vue imprenable sur la nature et les chevaux, BO RANCH accueille tout type d’événement…"
+    item7:
+      title: "ROCK ET BLEAU"
+      p1: "Situé à moins d’une heure de Paris, un endroit vert, insolite avec un concept nature pour votre séminaire ambiance conviviale. La société Rock & Bleau spécialisée dans l’événementiel dans la région Bellifontaine vous accueille sur le site familial de la Maison du Rocher de Fontainebleau. En adéquation à un besoin ou un enjeu stratégique auquel votre équipe concorde, Rock & Bleau est en mesure de vous offrir sur un même lieu, dans un cadre chaleureux et international."
+    item8:
+      title: "LÀ-HAUT"
+      p1: "Hébergements insolites, recyclés des grandes expéditions polaires françaises, nos Shelters ont été pensés pour vous offrir un refuge confortable et original. Sur place, c’est une véritable fenêtre sur le monde, entre le lac d’Annecy et le Mont-Blanc, qui s’offre à vous et à vous seul. Tout au long de votre séjour, notre équipe est présente, sur place, avec vous. Elle veille à anticiper vos attentes et satisfaire vos désirs pour garantir la réussite de vos réunions professionnelles."
+    item9:
+      title: "DIHAN ÉVASION"
+      p1: "Dihan vous propose une prestation à part pour vos séminaires : nature, insolite et marquante pour vos collaborateurs. De la demie journée, ou journée au séminaire résidentiel d’une à plusieurs nuits, nous saurons concocter avec vous un séjour qui surprendra votre équipe : salles chaleureuses et équipées, configurations multiples, espaces d’exception ouverts sur la nature, prestations de restauration et propositions d’activités. La structure est également idéale pour les réunions de cadres ou RV décisionnels (tranquillité et discrétion assurées)."
+  atypique:
+    breadcrumb: "Un évènement atypique de A à Z"
+    title: "Un événement atypique de A à Z"
+    intro: "Un événement est une succession de temps forts dont le rythme et l’originalité permettront de délivrer un message qui continuera de vivre après ce dernier.&nbsp;"
+    transport:
+      title: "Le transport oui, mais alors autrement&nbsp;!"
+      p1: "Souvent considérer comme du temps « perdu&nbsp;», il ne tient qu’à vous de transformer ce moment en une belle opportunité de créer du lien et assoir le contexte de votre événement&nbsp;:"
+      list: |
+        <ul>
+          <li>Privatisé une voiture SNCF et organiser un teambuilding à l’intérieur&nbsp;: Une murder Party ou encore une dégustation des produits régionaux de votre destination.&nbsp;</li>
+          <li>En voiture c’est bien, en 2cv c’est mieux&nbsp;! optez pour des trajets en 2 CV pour donner un côté bucolique à votre début d’événement.&nbsp;</li>
+        </ul>
+    venue:
+      title: "Donner du sens à votre choix de lieu."
+      p1: "Le lieu sera l’âme de votre événement. Il faut donc à la fois surprendre vos convives mais aussi qu’il colle avec votre thème, votre message et/ou bien évidemment votre public.&nbsp;"
+      p2: "Certains lieux se suffisent à eux même, et d’autres ouvrent le champ des possibles en termes d’aménagement ou de décoration."
+    format:
+      title: "Jouons sur le format.&nbsp;"
+      p1: "Pour certains événements vous aurez besoin de faire passer des messages plus ou moins forts. Le format de vos réunions, selon le nombre de participants pourra les aider à bien l’assimiler.&nbsp;"
+    catering:
+      title: "Restauration."
+      p1: "On se souviendra toujours de ce qu’on avait dans notre assiette…et c’est aussi l’un des aspects les plus importants de votre événement. La qualité des plats, du service, mais aussi de l’originalité est d’une grande importance et participera à la réussite de votre événement. Aujourd’hui la restauration peut aussi servir l’appui du RSE avec des traiteurs locaux qui vous feront découvrir les spécialités de la région ou bien encore des traiteurs engagés, qui emploierons des personnes en réinsertion. Le panel est infini, en voici quelques pistes&nbsp;:&nbsp;"
+    animate:
+      title: "Inspirer, Nourrir & Motiver."
+      p1: "Parce l’animation va rendre votre événement unique et va marquer les esprits des participants, il est important de surprendre et capter leur attention tout en coordonnant bien le fil rouge de votre événement :&nbsp;"
+    evening:
+      title: "Soirée.&nbsp;"
+      p1: "Votre événement pourra également être ponctué d’une animation tout au long de la soirée ou bien par touche. Pour cela vous pouvez vous appuyer sur votre lieu quand celui-ci a une identité forte, ou bien le créer et axer votre décoration sur le thème de la soirée.&nbsp;"
+    gift:
+      title: "Gift.&nbsp;"
+      p1: "Proposer des cadeaux à vos invités lors d’un événement, c’est faire preuve d’une attention particulière à leur égard tout en mettant en œuvre une action de communication efficace, à condition de choisir stratégiquement les objets offerts. Ce rôle a évolué, et offrir un simple stylo ne suffit plus ! Il faut aujourd’hui pousser la réflexion pour offrir des attentions responsables et tendances que les invités souhaiteront conserver une fois l’événement terminé, cela peut être l’occasion pour vous d’affirmer votre démarche RSE."
+      p2: "Spécialités régionale (ex. Pour Lyon&nbsp;: Les traditionnelles pralines, une bougie de L’atelier de Louis (fabrication française et artisanale) ou encore une praluline)"
+      p3: "Cadeaux orienté RSE&nbsp;: Gourde personnalisée&nbsp;; Tote Bag, boite à masque (spécial post Covid-19)"

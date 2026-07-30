@@ -1,0 +1,87 @@
+{% block cancellation_row %}
+    {% set groupCva = cva({
+        base: 'min-w-35 p-2 rounded-xs flex justify-center items-center',
+        variants: {
+            value: {
+                0: 'bg-primary',
+                10: 'bg-primary-2',
+                20: 'bg-neon',
+                30: 'bg-green',
+                40: 'bg-green-pastel',
+                50: 'bg-yellow',
+                60: 'bg-old-gold',
+                70: 'bg-orange',
+                80: 'bg-dark-orange',
+                90: 'bg-peach',
+                100: 'bg-peach',
+            },
+            length: {
+                2: 'col-span-2',
+                3: 'col-span-3',
+                4: 'col-span-4',
+                5: 'col-span-5',
+                6: 'col-span-6',
+                7: 'col-span-7',
+                8: 'col-span-8',
+                9: 'col-span-9',
+                10: 'col-span-10',
+            },
+        },
+        compoundVariants: [
+            { value: [0, 10, 30, 50, 60, 70, 80, 90, 100], class: 'text-light-text' },
+        ],
+    }) %}
+
+    <div
+        class="flex flex-col gap-6"
+        {{ stimulus_controller('provider-portal--cancellation') }}
+    >
+        <div class="flex flex-wrap justify-between gap-6">
+            <h2><twig:Typography variant="heading-3" bold>{{ 'form.cancellation.title'|trans }}</twig:Typography></h2>
+
+            <twig:Button
+                variant="outline"
+                class="w-full sm:w-fit"
+                data-provider-portal--cancellation-target="editButton"
+                data-action="click->provider-portal--cancellation#edit"
+                type="button"
+            >
+                {{ 'form.cancellation.actions.update'|trans }}
+            </twig:Button>
+        </div>
+
+        <div class="overflow-y-auto scrollbar pb-4 flex flex-col gap-2">
+            <ul class="grid grid-cols-[repeat(10,minmax(calc(var(--spacing)*35),1fr)))] gap-2">
+                {% for child in form %}
+                    <li class="min-w-35 p-2 bg-primary-4 rounded-xs flex justify-center items-center">
+                        {{ form_label(child) }}
+                    </li>
+                {% endfor %}
+            </ul>
+
+            <ul
+                class="grid grid-cols-[repeat(10,minmax(calc(var(--spacing)*35),1fr)))] gap-2"
+                {{ stimulus_target('provider-portal--cancellation', 'previewWrapper') }}
+            >
+                {% for group in groups %}
+                    <li class="{{ groupCva.apply({ value: group.groupValue, length: group.frameNumber }) }}">
+                        <twig:Typography variant="body-sm" textColor="controlled" bold center>
+                            {{ group.value }}%
+                        </twig:Typography>
+                    </li>
+                {% endfor %}
+            </ul>
+
+            <ul
+                class="grid grid-cols-[repeat(10,minmax(calc(var(--spacing)*35),1fr)))] gap-2 hidden"
+                {{ stimulus_target('provider-portal--cancellation', 'editionWrapper') }}
+            >
+                {% for child in form %}
+                    <li class="min-w-35">
+                        {{ form_row(child, {'label': false}) }}
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+{% endblock %}

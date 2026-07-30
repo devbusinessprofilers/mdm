@@ -1,0 +1,13 @@
+{%- block switch_button_row -%}
+    <twig:Form:SwitchButton
+        id="{{ id }}"
+        name="{{ full_name }}"
+        checked="{{ data ?? false }}"
+        disabled="{{ attr.disabled ?? false }}"
+        inverted="{{ inverted }}"
+        class="{{ attr.widgetClass ?? '' }}"
+        inputAttributes="{{ input_attributes ?? {} }}"
+    >
+        {{ form_label(form) }}
+    </twig:Form:SwitchButton>
+{%- endblock -%}

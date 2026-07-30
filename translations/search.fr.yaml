@@ -1,0 +1,36 @@
+search:
+  results:
+    title: "Affichage de %count% résultats pour \"%query%\""
+  form:
+    type:
+      place: "Lieux"
+      activity: "Activités"
+      provider: "Prestataires"
+      meal_tray: "Plateaux-repas"
+    destination:
+      placeholder: "Destination ou établissement…"
+    participants:
+      placeholder: "Personnes"
+    delivery_date:
+      placeholder: "Date de livraison"
+    submit: "Rechercher"
+  filters:
+    apply: "Appliquer"
+    clear: "Effacer"
+    labels:
+      place_types: "Types de lieux"
+      themes: "Thématiques"
+      meeting_room: "Salle de réunion"
+      accommodation: "Hébergement"
+      rse: "RSE"
+      objective: "Objectif"
+    meeting_room:
+      conference: "Conférence/Théatre"
+      reception: "Réception/Cocktail"
+      area: "Nombre de m²"
+      extra_room: "Salle supplémentaire"
+    accommodation:
+      rooms: "Nombre de chambres"
+      capacity: "Capacité d'hébergement"
+    rse:
+      global_score: "Note globale RSE"

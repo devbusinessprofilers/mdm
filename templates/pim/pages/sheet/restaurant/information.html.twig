@@ -1,0 +1,38 @@
+{% extends 'pim/pages/sheet/_layout.html.twig' %}
+
+{% block title %}
+    {{ 'page.sheet.restaurant.general_information.title'|trans }}
+{% endblock %}
+
+{% block form_themes %}
+    {% include 'pim/form/_form-theme.html.twig' with {
+        'additionalFormThemes': ['pim/form/subform/_closing-period.html.twig'],
+    } %}
+{% endblock %}
+
+{% block main %}
+    {{ form_start(form, { 'attr': getFormDependencyAttributes()|merge({'id': form.vars.id, 'class': 'flex flex-col gap-6 lg:gap-8'}) }) }}
+    <section class="flex flex-col gap-6 bg-neutral-100 rounded-md shadow-(--shadow) w-full p-6 lg:gap-8 2xl:p-14">
+        <h2><twig:Typography variant="heading-3" bold>{{ 'page.sheet.restaurant.general_information.main.title'|trans }}</twig:Typography></h2>
+        <div class="w-full grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-4">
+            {{ form_row(form.name) }}
+            {{ form_row(form.typologies) }}
+            {{ form_row(form.cuisines) }}
+            {{ form_row(form.dietaryPreferences) }}
+            {{ form_row(form.events) }}
+            {{ form_row(form.website) }}
+        </div>
+    </section>
+    <section class="flex flex-col gap-6 bg-neutral-100 rounded-md shadow-(--shadow) w-full p-6 lg:gap-8 2xl:p-14">
+        <h2><twig:Typography variant="heading-3" bold>{{ 'page.sheet.restaurant.general_information.availabilities.title'|trans }}</twig:Typography></h2>
+        {{ form_row(form.totalExclusivityAuthorized) }}
+        {{ form_row(form.partialExclusivityAuthorized) }}
+        {{ form_row(form.openingHours) }}
+        {{ form_row(form.closingPeriods) }}
+    </section>
+    {{ form_end(form) }}
+{% endblock %}
+
+{% block float_submit %}
+    <twig:Form:FloatSubmit label="{{ 'global.save'|trans }}" formId="{{ form.vars.id }}" />
+{% endblock %}

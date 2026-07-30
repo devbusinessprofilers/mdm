@@ -1,0 +1,28 @@
+{% extends 'pim/pages/sheet/_layout.html.twig' %}
+
+{% block title %}
+    {{ 'page.sheet.activity.capacity.title'|trans }}
+{% endblock %}
+
+{% block main %}
+    {{ form_start(form, { 'attr': { 'id': form.vars.id, 'class': 'flex flex-col gap-6 lg:gap-8'} }) }}
+    <section class="flex flex-col gap-6 bg-neutral-100 rounded-md shadow-(--shadow) w-full p-6 2xl:p-14">
+        <h2><twig:Typography variant="heading-3" bold>{{ 'page.sheet.activity.capacity.global.title'|trans }}</twig:Typography></h2>
+        <div class="w-full grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-4">
+            {{ form_row(form.minCapacity) }}
+            {{ form_row(form.maxCapacity) }}
+        </div>
+    </section>
+    <section class="flex flex-col gap-6 bg-neutral-100 rounded-md shadow-(--shadow) w-full p-6 2xl:p-14">
+        <h2><twig:Typography variant="heading-3" bold>{{ 'page.sheet.activity.capacity.duration.title'|trans }}</twig:Typography></h2>
+        <div class="w-full grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-4">
+            {{ form_row(form.minDuration) }}
+            {{ form_row(form.maxDuration) }}
+        </div>
+    </section>
+    {{ form_end(form) }}
+{% endblock %}
+
+{% block float_submit %}
+    <twig:Form:FloatSubmit label="{{ 'global.save'|trans }}" formId="{{ form.vars.id }}" />
+{% endblock %}

@@ -1,0 +1,12 @@
+{% extends 'pim/pages/_layout.html.twig' %}
+
+{% block sidebar %}
+    <twig:Menu:Account class="hidden 2xl:flex" />
+    <twig:Menu:Account:MobileMenu class="2xl:hidden" />
+{% endblock %}
+
+{% block content %}
+    <main class="bg-neutral-100 rounded-md shadow-(--shadow) w-full p-6 2xl:p-14">
+        {% block main %}{% endblock %}
+    </main>
+{% endblock %}

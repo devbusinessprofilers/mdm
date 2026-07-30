@@ -1,0 +1,270 @@
+event:
+  page:
+    list_title: "Mes évènements"
+  request:
+    missing_url_to_download: "Paramètre \"urlToDownload\" manquant."
+  activity:
+    no_selection: "Pas d'activité choisie"
+  restauration:
+    service:
+      welcome_coffee: "Café d'accueil"
+      breakfast: "Petit-déjeuner"
+      morning_break: "Pause matin"
+      lunch: "Déjeuner"
+      afternoon_break: "Pause après-midi"
+      aperitif: "Apéritif"
+      dinner: "Dîner"
+  search:
+    status:
+      all: "Tous"
+      draft: "Brouillon"
+      in_progress: "En cours"
+      confirmed: "Réalisés"
+      canceled: "Archivés"
+    date:
+      placeholder: "jj/mm/aaaa"
+  months:
+    january: "Janvier"
+    february: "Février"
+    march: "Mars"
+    april: "Avril"
+    may: "Mai"
+    june: "Juin"
+    july: "Juillet"
+    august: "Août"
+    september: "Septembre"
+    october: "Octobre"
+    november: "Novembre"
+    december: "Décembre"
+  dashboard:
+    chart:
+      common:
+        records_count: "Nombre d'enregistrements"
+        dataset_label: "DATASET LABEL"
+      status:
+        title: "Evènements par statut"
+      types:
+        title: "Evènements par types"
+      months:
+        title: "Evènements par mois"
+        subtitle: "Nombre de demandes par mois"
+      optimized:
+        title: "Evènements optimisés"
+      satisfaction:
+        label: "Satisfaction"
+        bp_title: "Evaluation Business Profilers"
+        provider_title: "Evaluation Prestataire"
+    key_metrics: "Indicateurs clés"
+    total_carbon: "Empreinte carbone totale estimée"
+    carbon_per_participant: "Empreinte carbone par participant"
+    carbon_note: "Simulateur d’empreinte carbonne basé sur le référentiel de l’Ademe - Fondation Good Planet et données Business Profilers."
+    optimisation_note: "Indicateur sur le pourcentage d’événements organisés dans un format non exposé à un impact inflationniste (Format des jours en séminaires résidentiel, date et région subissant une forte influence « salon de l’auto » etc…)"
+    savings: "Economies réalisées"
+    on: "sur"
+    map_title: "Carte des évènements (année écoulée)"
+    satisfaction: "Suivi satisfaction"
+    filters:
+      type_placeholder: "Type de l'évènement"
+      status_placeholder: "Statut de l'évènement"
+  flash:
+    brief_saved: "Votre brief est bien enregistré !"
+    opportunity_create_error: "Erreur à la création de l'opportunité"
+    opportunity_list_error: "Erreur lors de la récupération de la liste des opportunités"
+    product_create_missing_pricebook: "Erreur à la création du produit! pas de pricebookentryid"
+  steps:
+    selection: "Sélection"
+    event: "événement"
+    quote_request: "Demande de devis"
+  benefits:
+    response_time: "Réponse sous 3h<br />sans frais"
+    response_time_alt: "Réponse rapide"
+    personal_contact: "Mise en relation<br />personnalisée"
+    personal_contact_alt: "Mise en relation"
+    free_services: "Services gratuits et<br />sans engagements"
+    free_services_alt: "Services gratuits"
+    best_prices: "Tarifs aux meilleurs<br />prix garantis"
+    best_prices_alt: "Meilleurs tarifs"
+  form:
+    event_name:
+      placeholder: "Personnaliser le nom de votre évènement"
+    location:
+      placeholder: "Ville, département, région…"
+    start_date:
+      placeholder: "jj/mm/aaaa"
+    end_date:
+      placeholder: "jj/mm/aaaa"
+    participants:
+      placeholder: "Personnes"
+    global_budget:
+      placeholder: "Montant"
+    budget_per_person:
+      placeholder: "Montant"
+    vat:
+      label: "TVA"
+    budget_code:
+      placeholder: "Code Budgetaire"
+    save: "Sauvegarder"
+    submit: "Valider"
+    activity_comment:
+      placeholder: "Heure de début/fin, informations complémentaires"
+    activity_budget_comment:
+      placeholder: "Equipement, chambre,…"
+    provider_comment:
+      placeholder: "Précisez le détail de votre besoin"
+    provider_budget_comment:
+      placeholder: "Equipement, chambre,…"
+    location_comment:
+      placeholder: "Quelque chose à ajouter…"
+    date_comment:
+      placeholder: "Quelque chose à ajouter…"
+    budget_comment:
+      placeholder: "Equipement, chambre,…"
+    accommodation:
+      comment_placeholder: "Equipement, chambres…"
+    plenary:
+      participants:
+        label: "Nombre de participants"
+      configuration:
+        label: "Quelle configuration"
+        reunion_boardroom: "Réunion / Boardroom"
+        table_en_u: "Table en U"
+        theatre_conference: "Théâtre / Conférence"
+        classe_ecole: "Classe / Ecole"
+        cabaret: "Cabaret"
+        banquet: "Banquet"
+        cocktail: "Cocktail"
+        auditorium: "Auditorium"
+    time:
+      morning: "Matin"
+      afternoon: "Après-midi"
+    reservation:
+      comment_placeholder: "Equipement, matériel des salles,…"
+    commission:
+      comment_placeholder: "Equipement, matériel des salles,…"
+    restoration:
+      comment_placeholder: "Votre message…"
+    animation_short:
+      placeholder: "Votre message (250 caratères maximum)…"
+    activity:
+      duration:
+        label: "Durée de l'activité ?"
+        option_1: "1h00 à 1h30"
+        option_2: "1h30 à 3h00"
+        option_3: "3h00 à 6h00"
+      when:
+        label: "À quel moment ?"
+        morning: "Matin"
+        afternoon: "Après-midi"
+        evening: "Soirée"
+      environment:
+        label: "Environnement de l'activité"
+        outdoor: "Extérieur"
+        indoor: "Intérieur"
+      comment_placeholder: "Quelque chose à rajouter sur votre activité ?"
+    information:
+      placeholder: "Votre message…"
+    providers_choice:
+      send: "Envoyer"
+      cancel: "Annuler"
+
+  common:
+    previous: "Précédent"
+    next: "Suivant"
+    save: "Enregistrer"
+    cancel: "Annuler"
+    confirm: "Confirmer"
+    cancel_upper: "ANNULER"
+    validate_upper: "VALIDER"
+    yes: "Oui"
+    no: "Non"
+    close: "Fermer"
+    rooms_alt: "salle(s)"
+    activity_alt: "activité"
+    attachment_alt: "pièce jointe"
+    budget_alt: "budget"
+    save_alt: "enregistrer"
+
+  create_activity:
+    title: "Mon évènement"
+    event_name: "Nom de l'évènement"
+    activity: "Activité"
+    location: "Localisation"
+    start_date: "Date de début"
+    end_date: "Date de fin"
+    participants: "Nombre de participants"
+    add_attachment: "Ajouter une pièce jointe"
+    browse: "Parcourir"
+    comment: "Commentaire"
+    theme: "Thématique"
+    objective: "Objectif"
+
+  create_prestataire:
+    title: "Mon évènement"
+    event_name: "Nom de l'évènement"
+    provider: "Prestataire"
+    location: "Localisation"
+    start_date: "Date de début"
+    end_date: "Date de fin"
+    participants: "Nombre de participants"
+    add_attachment: "Ajouter une pièce jointe"
+    browse: "Parcourir"
+    comment: "Commentaire"
+    provider_type: "Type de prestataire"
+
+  create_location:
+    title: "Mon évènement"
+    event_name: "Nom de l'évènement"
+    additional_info: "INFORMATIONS COMPLÉMENTAIRES"
+    add_something: "Quelque chose à rajouter"
+    choose_providers: "Choisir des fournisseurs"
+    choose_providers_help: "Sélectionnez les prestataires pour communiquer vos modifications"
+
+  finalize:
+    title: "Demande de devis"
+    choose_support: "Choisissez votre <span class=\"accompagnement\">accompagnement</span>"
+    provider:
+      heading: "Gestion et mise en relation avec le fournisseur"
+      subheading: "Mise en relation à la carte"
+      cta: "POURSUIVRE AVEC<br>LE FOURNISSEUR"
+      benefits:
+        autonomy: "Autonomie dans vos recherches"
+        details_shared: "Vos coordonnées sont communiquées"
+        simplify: "Simplification et réactivité. Prestation sans frais d’agence"
+        best_prices: "Meilleurs prix garantis. Négociation optimale des CGV"
+        financing: "Financement de votre évènement, compte fournisseur unique, reporting personnalisé"
+    bp:
+      heading: "Business Profilers négocie les meilleurs tarifs"
+      subheading: "Source d’efficacité et de revenu. Facilitateur de financement."
+      cta: "CONFIEZ VOTRE ÉVÈNEMENT<br>À BUSINESS PROFILERS"
+      benefits:
+        fast_quotes: "Devis des lieux disponibles sous 48h, un expert vous est totalement dédié"
+        anonymity: "Anonymat à la carte pour protéger votre identité"
+        simplify: "Simplification et réactivité. Prestation sans frais d’agence"
+        best_prices: "Meilleurs prix garantis. Négociation optimale des CGV"
+        financing: "Financement de votre évènement, compte fournisseur unique, reporting personnalisé"
+
+  list:
+    title: "Événements"
+    event_name: "Nom de l'événement"
+    status: "Statut"
+    arrival_date_from: "Date d'arrivée (à partir du)"
+    table:
+      event_name: "Nom de l'évènement"
+      date: "Date"
+      participants: "Participants"
+      from: "du"
+      to: "au"
+
+  modal_update:
+    title: "Modification du brief"
+    changed_fields: "Les champs suivants ont été modifiés:"
+
+  questions:
+    title: "Vous avez des <span class=\"question\">questions ?</span>"
+    item1: "Puis-je changer les dates de mon évènement ?"
+    item2: "Quel accompagnement m'offre Business Profilers ?"
+    item3: "Est-il possible de modifier le nombre de partipants une fois la validation faite ?"
+
+  bp_block:
+    title: "Confiez votre projet à nos<br>experts Business Profilers"
+    body: "Votre demande est traitée par un conseiller expert dédié à l'organisation et au suivi de votre évènement jusqu'à ce qu'il soit réalisé."

@@ -1,0 +1,68 @@
+{% extends 'pim/pages/sheet/_layout.html.twig' %}
+
+{% block title %}
+    {{ 'page.sheet.place.prices.title'|trans }}
+{% endblock %}
+
+{% block form_themes %}
+    {% include 'pim/form/_form-theme.html.twig' with {
+        'additionalFormThemes': [
+            'pim/form/subform/_optional_price.html.twig',
+            'pim/form/subform/_catering-formula.html.twig',
+        ],
+    } %}
+{% endblock %}
+
+{% block main %}
+    {{ form_start(form, { 'attr': getFormDependencyAttributes()|merge({'id': form.vars.id, 'class': 'flex flex-col gap-6 lg:gap-8'}) }) }}
+    <section class="flex flex-col gap-8 bg-neutral-100 rounded-md shadow-(--shadow) w-full p-6 lg:gap-8 2xl:p-14">
+        <div class="flex flex-col gap-2">
+            <h2><twig:Typography variant="heading-3" bold>{{ 'page.sheet.place.prices.title'|trans }}</twig:Typography></h2>
+            <p><twig:Typography>{{ 'page.sheet.place.prices.description'|trans }}</twig:Typography></p>
+        </div>
+        <div class="flex flex-col gap-6">
+            <h3><twig:Typography variant="subtitle" bold>{{ 'form.sheet.place.prices.one_day_seminar'|trans }}</twig:Typography></h3>
+            {{ form_row(form.halfDayStudySeminar) }}
+            {{ form_row(form.oneDayStudySeminar) }}
+            {{ form_row(form.halfDayStudySeminarWithCocktail) }}
+            {{ form_row(form.oneDayStudySeminarWithCocktail) }}
+        </div>
+        <div class="flex flex-col gap-6">
+            <h3><twig:Typography variant="subtitle" bold>{{ 'form.sheet.place.prices.overnight_stay_seminar'|trans }}</twig:Typography></h3>
+            {{ form_row(form.semiResidentSeminar) }}
+            {{ form_row(form.residentSeminar) }}
+            {{ form_row(form.allInclusiveSeminar) }}
+        </div>
+        <div class="flex flex-col gap-6">
+            <h3><twig:Typography variant="subtitle" bold>{{ 'form.sheet.place.prices.room_only'|trans }}</twig:Typography></h3>
+            {{ form_row(form.halfDayLocation) }}
+            {{ form_row(form.oneDayLocation) }}
+            {{ form_row(form.eveningLocation) }}
+        </div>
+        <div class="flex flex-col gap-6">
+            <h3><twig:Typography variant="subtitle" bold>{{ 'form.sheet.place.prices.parties'|trans }}</twig:Typography></h3>
+            {{ form_row(form.brunchCocktail) }}
+            {{ form_row(form.cocktailParty) }}
+            {{ form_row(form.danceParty) }}
+            {{ form_row(form.dinnerParty) }}
+        </div>
+        <div class="flex flex-col gap-6">
+            {{ form_row(form.cateringFormulas, { 'wrapper_class': 'pb-4 border-b border-neutral-300' }) }}
+            {{ form_row(form.sitDownLunch) }}
+            {{ form_row(form.sitDownDinner) }}
+            {{ form_row(form.wineOption) }}
+            {{ form_row(form.alcoholOption) }}
+        </div>
+        <div class="flex flex-col gap-6">
+            <h3><twig:Typography variant="subtitle" bold>{{ 'form.sheet.place.prices.group_accommodation'|trans }}</twig:Typography></h3>
+            {{ form_row(form.groupSingleRoom) }}
+            {{ form_row(form.groupTwinRoom) }}
+            {{ form_row(form.groupDoubleRoom) }}
+        </div>
+    </section>
+    {{ form_end(form) }}
+{% endblock %}
+
+{% block float_submit %}
+    <twig:Form:FloatSubmit label="{{ 'global.save'|trans }}" formId="{{ form.vars.id }}" />
+{% endblock %}

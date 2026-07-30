@@ -1,0 +1,12 @@
+{%- block checkbox_row -%}
+    <twig:Form:Checkbox
+        id="{{ id }}"
+        name="{{ full_name }}"
+        checked="{{ data ?? false }}"
+        disabled="{{ attr.disabled ?? false }}"
+        class="{{ attr.widgetClass ?? '' }}"
+        inputAttributes="{{ input_attributes ?? {} }}"
+    >
+        {{ form_label(form) }}
+    </twig:Form:Checkbox>
+{%- endblock -%}

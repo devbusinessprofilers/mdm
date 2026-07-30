@@ -1,0 +1,35 @@
+{#
+@var string identifier unique identifier (same as identifier used for tab/content).
+@var string previewType (picture|document)
+@var string acceptedFiles
+@var int maxFileCount
+@var string fileMaxSize
+@var int imageMinWidth
+@var int imageMinHeight
+#}
+
+<div
+    id="{{ identifier }}-dropzone"
+    data-dropzone="{{ identifier }}"
+    data-preview-type="{{ previewType }}"
+    data-upload-path="{{ path('provider_portal_upload_media') }}"
+    data-accepted-files="{{ acceptedFiles }}"
+    data-max-file-count="{{ maxFileCount }}"
+    data-file-max-size="{{ fileMaxSize }}"
+    data-image-min-width="{{ imageMinWidth }}"
+    data-image-min-height="{{ imageMinHeight }}"
+    class="hidden h-full"
+>
+    <div class="pt-2 pb-8 flex flex-col justify-center items-center w-full lg:w-100 lg:h-full lg:bg-primary-4 lg:p-6 lg:gap-2 dz-message">
+        <div class="hidden lg:flex flex-col justify-center items-center">
+            <twig:Icon name="cloud-arrow-up" class="text-primary w-18 h-18" />
+            <twig:Typography variant="body-lg" bold class="mb-1">{{ 'form.dropzone.select.label'|trans|raw }}</twig:Typography>
+            <twig:Typography variant="body">{{ 'form.dropzone.count_constraint.label'|trans({ '{count}': maxFileCount }) }}</twig:Typography>
+            <twig:Typography variant="body">{{ 'form.dropzone.size_constraint.label'|trans({ '{size}': fileMaxSize~'M' }) }}</twig:Typography>
+            {% if imageMinWidth is not null and imageMinHeight is not null %}
+                <twig:Typography variant="body">{{ 'form.dropzone.image_constraint.label'|trans({ '{minWidth}': imageMinWidth, '{minHeight}': imageMinHeight }) }}</twig:Typography>
+            {% endif %}
+        </div>
+        <twig:Button icon="plus" type="button" class="dz-button">{{ 'form.dropzone.button.label'|trans }}</twig:Button>
+    </div>
+</div>

@@ -1,0 +1,56 @@
+{% extends 'pim/pages/sheet/_layout.html.twig' %}
+
+{% block title %}
+    {{ 'page.sheet.activity.information.title'|trans }}
+{% endblock %}
+
+{% block main %}
+    {{ form_start(form, { 'attr': getFormDependencyAttributes()|merge({'id': form.vars.id, 'class': 'flex flex-col gap-6 lg:gap-8'}) }) }}
+    <section class="flex flex-col gap-6 bg-neutral-100 rounded-md shadow-(--shadow) w-full p-6 2xl:p-14">
+        <h2><twig:Typography variant="heading-3" bold>{{ 'page.sheet.activity.information.general.title'|trans }}</twig:Typography></h2>
+        {% set dependencyIdentifier = 'thematic-wrapper' %}
+        <div class="w-full grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-4">
+            {{ form_row(form.name) }}
+            {{ form_row(form.languages) }}
+            {{ form_row(form.thematic, {'select_attributes': getFormDependencyTriggerAttributes(dependencyIdentifier, 'change')}) }}
+            {{ form_row(form.types) }}
+        </div>
+        <div
+            class="w-full grid grid-cols-1 gap-x-6 gap-y-4"
+            {{ getFormDependencyWrapperAttributes(dependencyIdentifier)|renderHtmlAttributes }}
+        >
+            {% if form.aquaticList is defined %}
+                {{ form_row(form.aquaticList, {'label_attr': {'typography': 'body-lg', 'bold': true, 'class': 'mb-2'}}) }}
+            {% endif %}
+            {% if form.artisticList is defined %}
+                {{ form_row(form.artisticList, {'label_attr': {'typography': 'body-lg', 'bold': true, 'class': 'mb-2'}}) }}
+            {% endif %}
+            {% if form.culinaryList is defined %}
+                {{ form_row(form.culinaryList, {'label_attr': {'typography': 'body-lg', 'bold': true, 'class': 'mb-2'}}) }}
+            {% endif %}
+            {% if form.culturalList is defined %}
+                {{ form_row(form.culturalList, {'label_attr': {'typography': 'body-lg', 'bold': true, 'class': 'mb-2'}}) }}
+            {% endif %}
+            {% if form.digitalList is defined %}
+                {{ form_row(form.digitalList, {'label_attr': {'typography': 'body-lg', 'bold': true, 'class': 'mb-2'}}) }}
+            {% endif %}
+            {% if form.extremeList is defined %}
+                {{ form_row(form.extremeList, {'label_attr': {'typography': 'body-lg', 'bold': true, 'class': 'mb-2'}}) }}
+            {% endif %}
+            {% if form.funList is defined %}
+                {{ form_row(form.funList, {'label_attr': {'typography': 'body-lg', 'bold': true, 'class': 'mb-2'}}) }}
+            {% endif %}
+            {% if form.naturalList is defined %}
+                {{ form_row(form.naturalList, {'label_attr': {'typography': 'body-lg', 'bold': true, 'class': 'mb-2'}}) }}
+            {% endif %}
+            {% if form.wellnessList is defined %}
+                {{ form_row(form.wellnessList, {'label_attr': {'typography': 'body-lg', 'bold': true, 'class': 'mb-2'}}) }}
+            {% endif %}
+        </div>
+    </section>
+    {{ form_end(form) }}
+{% endblock %}
+
+{% block float_submit %}
+    <twig:Form:FloatSubmit label="{{ 'global.save'|trans }}" formId="{{ form.vars.id }}" />
+{% endblock %}

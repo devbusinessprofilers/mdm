@@ -1,0 +1,13 @@
+{% set currentRoute = app.request.attributes.get('_route') %}
+
+<header class="sticky top-0 left-0 right-0 z-128 flex gap-2 xs:gap-8 items-center justify-between px-6 py-4 sm:px-8 bg-neutral-100 shadow-(--shadow) max-h-(navbar-height)">
+    <div class="flex items-center gap-8">
+        <twig:Logo class="xs:min-w-[230px]" />
+        <twig:Header:Menu class="hidden 2xl:block"/>
+    </div>
+    <div class="hidden 2xl:flex items-center gap-8">
+        <twig:Header:Profil currentRoute="{{ currentRoute }}" />
+        <twig:Header:LanguageSwitcher/>
+    </div>
+    <twig:Header:Menu:BurgerMenu class="2xl:hidden" />
+</header>

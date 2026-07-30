@@ -1,0 +1,20 @@
+{%- block money_widget -%}
+    <twig:Form:MoneyInput
+        id="{{ id }}"
+        name="{{ full_name }}"
+        value="{{ value }}"
+        placeholder="{{ (attr.placeholder ?? '')|trans }}"
+        autocomplete="{{ attr.autocomplete ?? name }}"
+        step="{{ step }}"
+        scale="{{ scale }}"
+        minValue="{{ min_value }}"
+        maxValue="{{ max_value }}"
+        radix="{{ radix }}"
+        padFractionalZeros="{{ pad_fractional_zeros }}"
+        currencyIcon="{{ currency_icon }}"
+        disabled="{{ disabled }}"
+        inputAttributes="{{ input_attributes ?? {} }}"
+        stimulusDataActions="{{ stimulus_data_actions ?? [] }}"
+    />
+{%- endblock -%}
+

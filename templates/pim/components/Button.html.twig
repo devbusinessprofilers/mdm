@@ -1,0 +1,103 @@
+{% set cva = cva({
+    base: 'flex items-center focus:outline-none',
+    variants: {
+        variant: {
+            primary: '
+                bg-linear-(--primary-gradient)
+                hover:bg-linear-(--primary-gradient-hover)
+                focus:bg-linear-(--primary-gradient-hover)
+            ',
+            outline: '
+                bg-border-primary-gradient bg-border-hover-primary-gradient bg-border-focus-primary-gradient border-2
+                hover:text-neutral-100
+                focus:text-neutral-100
+            ',
+            text: 'bg-transparent',
+            navigation: '
+                py-3 rounded-xs justify-start gap-2
+                group/navigation
+                hover:bg-linear-(--primary-gradient) hover:text-neutral-100
+                focus:bg-linear-(--primary-gradient) focus:text-neutral-100
+            ',
+        },
+        size: {
+            lg: 'px-3.5 py-2 h-fit xs:h-[48px]',
+            md: 'px-3.5 py-2 h-fit xs:h-[40px]',
+            sm: 'px-3.5 py-1 h-fit xs:h-[32px]',
+        },
+        disabled: {
+            true: '
+                cursor-not-allowed! bg-none! text-neutral-500! border! border-neutral-300! bg-neutral-200!
+                hover:shadow-none! hover:bg-none! hover:bg-neutral-200!
+                focus:outline! focus:outline-solid! focus:outline-neutral-500! focus:shadow-none! focus:bg-neutral-200!
+            ',
+            false: 'cursor-pointer',
+        },
+        full: {
+            true: 'w-full',
+            false: 'w-fit',
+        },
+    },
+    compoundVariants: [
+        { variant: ['primary', 'text', 'navigation'], size: ['lg', 'sm'], class: 'px-4' },
+        { variant: ['primary', 'outline', 'text'], class: 'rounded-lg justify-center gap-1' },
+        { variant: 'navigation', isActive: false, class: 'bg-transparent text-primary-3' },
+        { variant: 'navigation', isActive: true, class: 'bg-linear-(--primary-gradient) text-neutral-100' },
+    ],
+}) %}
+
+{% set iconCva = cva({
+    variants: {
+        variant: {
+            navigation: '
+                group-hover/navigation:text-inherit
+                group-focus/navigation:text-inherit
+            ',
+        },
+        size: {
+            lg: 'w-[40px] h-[40px]',
+            md: 'w-6 h-6',
+        },
+        disabled: {
+            true: 'text-inherit!',
+        },
+    },
+    compoundVariants: [
+        { variant: 'navigation', isActive: true, class: 'text-inherit!' },
+    ],
+}) %}
+
+{% set textCva = cva({
+    variants: {
+        variant: {
+            navigation: 'text-start',
+        },
+        disabled: {
+            true: 'text-inherit!',
+        },
+    },
+}) %}
+
+{% set parentContent %}{% block content %}{% endblock %}{% endset %}
+
+<{{ asLink ? 'a' : 'button' }}
+    {{ attributes.without('class', asLink and disabled ? 'href' : '') }}
+    class="{{ cva.apply({ variant: variant.value, size: size.value, disabled, full, isActive }, attributes.render('class')) }}"
+>
+    {% if icon %}
+        <twig:Typography textColor="{{ iconColor.value }}" class="{{ iconCva.apply({ variant: variant.value, size: iconSize.value, isActive, disabled }) }}">
+            <twig:Icon name="{{ icon }}" />
+        </twig:Typography>
+    {% endif %}
+    {% if parentContent|trim is not empty %}
+        <twig:Typography
+            variant="button"
+            textColor="{{ textColor.value }}"
+            center
+            bold
+            class="{{ textCva.apply({ variant: variant.value, disabled }) }}"
+        >
+            {{- parentContent -}}
+        </twig:Typography>
+    {% endif %}
+</{{ asLink ? 'a' : 'button' }}>

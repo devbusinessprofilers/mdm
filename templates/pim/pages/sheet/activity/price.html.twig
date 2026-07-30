@@ -1,0 +1,79 @@
+{% extends 'pim/pages/sheet/_layout.html.twig' %}
+
+{% block title %}
+    {{ 'page.sheet.activity.price.title'|trans }}
+{% endblock %}
+
+{% block form_themes %}
+    {% include 'pim/form/_form-theme.html.twig' with {
+        'additionalFormThemes': [
+            'pim/form/subform/_activity-package.html.twig',
+            'pim/form/subform/_activity-option.html.twig',
+        ],
+    } %}
+{% endblock %}
+
+{% block main %}
+    {{ form_start(form, { 'attr': getFormDependencyAttributes()|merge({'id': form.vars.id, 'class': 'flex flex-col gap-6 lg:gap-8'}) }) }}
+    <section class="flex flex-col gap-6 bg-neutral-100 rounded-md shadow-(--shadow) w-full p-6 2xl:p-14">
+        <h2><twig:Typography variant="heading-3" bold>{{ 'page.sheet.activity.price.general.title'|trans }}</twig:Typography></h2>
+        <div class="w-full grid grid-cols-1 lg:grid-cols-3 gap-x-6 gap-y-4">
+            {{ form_row(form.fromPrice) }}
+            {{ form_row(form.minCapacity) }}
+            {{ form_row(form.maxCapacity) }}
+        </div>
+    </section>
+    <section class="flex flex-col gap-6 bg-neutral-100 rounded-md shadow-(--shadow) w-full p-6 2xl:p-14">
+        <h2><twig:Typography variant="heading-3" bold>{{ 'page.sheet.activity.price.package.title'|trans }}</twig:Typography></h2>
+        {% set packageIdentifier1 = 'package-wrapper-1' %}
+        {{ form_row(form.withPackage1, {'input_attributes': getFormDependencyTriggerAttributes(packageIdentifier1)}) }}
+        <div {{ getFormDependencyWrapperAttributes(packageIdentifier1)|renderHtmlAttributes }}>
+            {% if form.package1 is defined %}
+                {{ form_row(form.package1) }}
+            {% endif %}
+        </div>
+        {% set packageIdentifier2 = 'package-wrapper-2' %}
+        {{ form_row(form.withPackage2, {'input_attributes': getFormDependencyTriggerAttributes(packageIdentifier2)}) }}
+        <div {{ getFormDependencyWrapperAttributes(packageIdentifier2)|renderHtmlAttributes }}>
+            {% if form.package2 is defined %}
+                {{ form_row(form.package2) }}
+            {% endif %}
+        </div>
+        {% set packageIdentifier3 = 'package-wrapper-3' %}
+        {{ form_row(form.withPackage3, {'input_attributes': getFormDependencyTriggerAttributes(packageIdentifier3)}) }}
+        <div {{ getFormDependencyWrapperAttributes(packageIdentifier3)|renderHtmlAttributes }}>
+            {% if form.package3 is defined %}
+                {{ form_row(form.package3) }}
+            {% endif %}
+        </div>
+    </section>
+    <section class="flex flex-col gap-6 bg-neutral-100 rounded-md shadow-(--shadow) w-full p-6 2xl:p-14">
+        <h2><twig:Typography variant="heading-3" bold>{{ 'page.sheet.activity.price.option.title'|trans }}</twig:Typography></h2>
+        {% set optionIdentifier1 = 'option-wrapper-1' %}
+        {{ form_row(form.withOption1, {'input_attributes': getFormDependencyTriggerAttributes(optionIdentifier1)}) }}
+        <div {{ getFormDependencyWrapperAttributes(optionIdentifier1)|renderHtmlAttributes }}>
+            {% if form.option1 is defined %}
+                {{ form_row(form.option1) }}
+            {% endif %}
+        </div>
+        {% set optionIdentifier2 = 'option-wrapper-2' %}
+        {{ form_row(form.withOption2, {'input_attributes': getFormDependencyTriggerAttributes(optionIdentifier2)}) }}
+        <div {{ getFormDependencyWrapperAttributes(optionIdentifier2)|renderHtmlAttributes }}>
+            {% if form.option2 is defined %}
+                {{ form_row(form.option2) }}
+            {% endif %}
+        </div>
+        {% set optionIdentifier3 = 'option-wrapper-3' %}
+        {{ form_row(form.withOption3, {'input_attributes': getFormDependencyTriggerAttributes(optionIdentifier3)}) }}
+        <div {{ getFormDependencyWrapperAttributes(optionIdentifier3)|renderHtmlAttributes }}>
+            {% if form.option3 is defined %}
+                {{ form_row(form.option3) }}
+            {% endif %}
+        </div>
+    </section>
+    {{ form_end(form) }}
+{% endblock %}
+
+{% block float_submit %}
+    <twig:Form:FloatSubmit label="{{ 'global.save'|trans }}" formId="{{ form.vars.id }}" />
+{% endblock %}

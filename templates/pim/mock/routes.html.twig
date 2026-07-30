@@ -1,0 +1,162 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}
+    ROUTES
+{% endblock %}
+
+{% set routes = {
+    'ui': [
+        {'name': 'Composants', 'path': 'provider_portal_ui'},
+        {'name': 'Formulaire', 'path': 'provider_portal_form_ui'},
+        {'name': 'Icons', 'path': 'provider_portal_icons'},
+    ],
+    'connection': [
+        {'name': 'Login', 'path': 'provider_portal_login'},
+        {'name': 'Mot de passe', 'path': 'provider_portal_enter_password'},
+        {'name': 'Mot de passe oublié', 'path': 'provider_portal_forgot_password'},
+        {'name': 'Création mot de passe', 'path': 'provider_portal_create_password'},
+    ],
+    'account': [
+        {'name': 'Informations utilisateur', 'path': 'provider_portal_account_personal_information'},
+        {'name': 'Sécurité et connexion', 'path': 'provider_portal_account_security'},
+        {'name': 'Données de confidentialité', 'path': 'provider_portal_account_privacy'},
+    ],
+    'chart': [
+        {'name': 'Tableau de bord', 'path': 'provider_portal_chart_dashboard'},
+        {'name': 'CA & Analytics', 'path': 'provider_portal_chart_analytics'},
+    ],
+    'sheet-place': [
+        {'name': 'Informations générales', 'path': 'provider_portal_sheet_place_index', 'parameters': {'slug': placeSheet.slug}},
+        {'name': 'Localisation & accessibilité', 'path': 'provider_portal_sheet_place_localisation', 'parameters': {'slug': placeSheet.slug}},
+        {'name': 'Thématiques & ambiances', 'path': 'provider_portal_sheet_place_thematic', 'parameters': {'slug': placeSheet.slug}},
+        {'name': 'Description', 'path': 'provider_portal_sheet_place_description', 'parameters': {'slug': placeSheet.slug}},
+        {'name': 'Hébergement', 'path': 'provider_portal_sheet_place_accommodation', 'parameters': {'slug': placeSheet.slug}},
+        {'name': 'Réunion', 'path': 'provider_portal_sheet_place_meeting', 'parameters': {'slug': placeSheet.slug}},
+        {'name': 'Restauration', 'path': 'provider_portal_sheet_place_catering', 'parameters': {'slug': placeSheet.slug}},
+        {'name': 'Loisirs & team building', 'path': 'provider_portal_sheet_place_leisure', 'parameters': {'slug': placeSheet.slug}},
+        {'name': 'Services & équipements', 'path': 'provider_portal_sheet_place_services', 'parameters': {'slug': placeSheet.slug}},
+        {'name': 'RSE', 'path': 'provider_portal_sheet_place_csr', 'parameters': {'slug': placeSheet.slug}},
+        {'name': 'Tarifs', 'path': 'provider_portal_sheet_place_prices', 'parameters': {'slug': placeSheet.slug}},
+        {'name': 'Booster ma visibilité', 'path': 'provider_portal_sheet_place_visibility', 'parameters': {'slug': placeSheet.slug}},
+        {'name': 'Templates de messages', 'path': 'provider_portal_sheet_place_template', 'parameters': {'slug': placeSheet.slug}},
+        {'name': 'Médias', 'path': 'provider_portal_sheet_place_media', 'parameters': {'slug': placeSheet.slug}},
+        {'name': 'Facturation & partenariat', 'path': 'provider_portal_sheet_place_invoicing', 'parameters': {'slug': placeSheet.slug}},
+        {'name': 'Collaborateurs', 'path': 'provider_portal_sheet_membership_list', 'parameters': {'slug': placeSheet.slug}},
+    ],
+    'sheet-restaurant': [
+        {'name': 'Informations générales', 'path': 'provider_portal_sheet_restaurant_index', 'parameters': {'slug': restaurantSheet.slug}},
+        {'name': 'Localisation & accessibilité', 'path': 'provider_portal_sheet_restaurant_localisation', 'parameters': {'slug': restaurantSheet.slug}},
+        {'name': 'Capacités', 'path': 'provider_portal_sheet_restaurant_capacity', 'parameters': {'slug': restaurantSheet.slug}},
+        {'name': 'Services, Équipements & Options', 'path': 'provider_portal_sheet_restaurant_facility', 'parameters': {'slug': restaurantSheet.slug}},
+        {'name': 'RSE', 'path': 'provider_portal_sheet_restaurant_csr', 'parameters': {'slug': restaurantSheet.slug}},
+        {'name': 'Tarifs', 'path': 'provider_portal_sheet_restaurant_price', 'parameters': {'slug': restaurantSheet.slug}},
+        {'name': 'Booster ma visibilité', 'path': 'provider_portal_sheet_restaurant_visibility', 'parameters': {'slug': restaurantSheet.slug}},
+        {'name': 'Templates de messages', 'path': 'provider_portal_sheet_restaurant_template', 'parameters': {'slug': restaurantSheet.slug}},
+        {'name': 'Médias', 'path': 'provider_portal_sheet_restaurant_media', 'parameters': {'slug': restaurantSheet.slug}},
+        {'name': 'Facturation & partenariat', 'path': 'provider_portal_sheet_restaurant_invoicing', 'parameters': {'slug': restaurantSheet.slug}},
+        {'name': 'Collaborateurs', 'path': 'provider_portal_sheet_membership_list', 'parameters': {'slug': restaurantSheet.slug}},
+    ],
+    'sheet-activity': [
+        {'name': 'Informations générales', 'path': 'provider_portal_sheet_activity_index', 'parameters': {'slug': activitySheet.slug}},
+        {'name': 'Localisation & accessibilité', 'path': 'provider_portal_sheet_activity_localisation', 'parameters': {'slug': activitySheet.slug}},
+        {'name': 'Description', 'path': 'provider_portal_sheet_activity_description', 'parameters': {'slug': activitySheet.slug}},
+        {'name': 'Capacités', 'path': 'provider_portal_sheet_activity_capacity', 'parameters': {'slug': activitySheet.slug}},
+        {'name': 'Tarifs', 'path': 'provider_portal_sheet_activity_price', 'parameters': {'slug': activitySheet.slug}},
+        {'name': 'RSE', 'path': 'provider_portal_sheet_activity_csr', 'parameters': {'slug': activitySheet.slug}},
+        {'name': 'Booster ma visibilité', 'path': 'provider_portal_sheet_activity_visibility', 'parameters': {'slug': activitySheet.slug}},
+        {'name': 'Templates de messages', 'path': 'provider_portal_sheet_activity_template', 'parameters': {'slug': activitySheet.slug}},
+        {'name': 'Médias', 'path': 'provider_portal_sheet_activity_media', 'parameters': {'slug': activitySheet.slug}},
+        {'name': 'Facturation & partenariat', 'path': 'provider_portal_sheet_activity_invoicing', 'parameters': {'slug': activitySheet.slug}},
+        {'name': 'Collaborateurs', 'path': 'provider_portal_sheet_membership_list', 'parameters': {'slug': activitySheet.slug}},
+    ],
+    'sheet-service': [
+        {'name': 'Informations générales', 'path': 'provider_portal_sheet_service_index', 'parameters': {'slug': serviceSheet.slug}},
+        {'name': 'Localisation & accessibilité', 'path': 'provider_portal_sheet_service_localisation', 'parameters': {'slug': serviceSheet.slug}},
+        {'name': 'Prestations (typologie)', 'path': 'provider_portal_sheet_service_detail', 'parameters': {'slug': serviceSheet.slug}},
+        {'name': 'Tarifs', 'path': 'provider_portal_sheet_service_price', 'parameters': {'slug': serviceSheet.slug}},
+        {'name': 'Booster ma visibilité', 'path': 'provider_portal_sheet_service_visibility', 'parameters': {'slug': serviceSheet.slug}},
+        {'name': 'Templates de messages', 'path': 'provider_portal_sheet_service_template', 'parameters': {'slug': serviceSheet.slug}},
+        {'name': 'Médias', 'path': 'provider_portal_sheet_service_media', 'parameters': {'slug': serviceSheet.slug}},
+        {'name': 'Facturation & partenariat', 'path': 'provider_portal_sheet_service_invoicing', 'parameters': {'slug': serviceSheet.slug}},
+        {'name': 'Collaborateurs', 'path': 'provider_portal_sheet_membership_list', 'parameters': {'slug': serviceSheet.slug}},
+    ],
+    'sheet-meal-tray': [
+        {'name': 'Informations générales', 'path': 'provider_portal_sheet_meal_tray_index', 'parameters': {'slug': mealTraySheet.slug}},
+        {'name': 'Description', 'path': 'provider_portal_sheet_meal_tray_description', 'parameters': {'slug': mealTraySheet.slug}},
+        {'name': 'Produits', 'path': 'provider_portal_sheet_meal_tray_product_list', 'parameters': {'slug': mealTraySheet.slug}},
+        {'name': 'Templates de messages', 'path': 'provider_portal_sheet_meal_tray_template', 'parameters': {'slug': mealTraySheet.slug}},
+        {'name': 'Médias', 'path': 'provider_portal_sheet_meal_tray_media', 'parameters': {'slug': mealTraySheet.slug}},
+        {'name': 'Facturation & partenariat', 'path': 'provider_portal_sheet_meal_tray_invoicing', 'parameters': {'slug': mealTraySheet.slug}},
+        {'name': 'Collaborateurs', 'path': 'provider_portal_sheet_membership_list', 'parameters': {'slug': mealTraySheet.slug}},
+    ],
+    'review': [
+        {'name': 'Avis reçus', 'path': 'provider_portal_review_received'},
+        {'name': 'Relances', 'path': 'provider_portal_review_reminder'},
+    ],
+} %}
+
+{% block body %}
+    <main class="p-8">
+        <h1><twig:Typography variant="heading-1" bold center class="block">Pages</twig:Typography></h1>
+        <h2><twig:Typography variant="heading-2" bold class="mt-8 mb-4 block">UI</twig:Typography></h2>
+        <div class="flex flex-wrap gap-6">
+            {% for route in routes['ui'] %}
+                <twig:Button asLink href="{{ path(route.path) }}" variant="outline">{{ route.name }}</twig:Button>
+            {% endfor %}
+        </div>
+        <h2><twig:Typography variant="heading-2" bold class="mt-8 mb-4 block">Connexion</twig:Typography></h2>
+        <div class="flex flex-wrap gap-6">
+            {% for route in routes['connection'] %}
+                <twig:Button asLink href="{{ path(route.path) }}" variant="outline">{{ route.name }}</twig:Button>
+            {% endfor %}
+        </div>
+        <h2><twig:Typography variant="heading-2" bold class="mt-8 mb-4 block">Mon compte</twig:Typography></h2>
+        <div class="flex flex-wrap gap-6">
+            {% for route in routes['account'] %}
+                <twig:Button asLink href="{{ path(route.path) }}" variant="outline">{{ route.name }}</twig:Button>
+            {% endfor %}
+        </div>
+        <h2><twig:Typography variant="heading-2" bold class="mt-8 mb-4 block">Graphiques</twig:Typography></h2>
+        <div class="flex flex-wrap gap-6">
+            {% for route in routes['chart'] %}
+                <twig:Button asLink href="{{ path(route.path) }}" variant="outline">{{ route.name }}</twig:Button>
+            {% endfor %}
+        </div>
+        <h2><twig:Typography variant="heading-2" bold class="mt-8 mb-4 block">Ma fiche lieu</twig:Typography></h2>
+        <div class="flex flex-wrap gap-6">
+            {% for route in routes['sheet-place'] %}
+                <twig:Button asLink href="{{ path(route.path, route.parameters|default({})) }}" variant="outline">{{ route.name }}</twig:Button>
+            {% endfor %}
+        </div>
+        <h2><twig:Typography variant="heading-2" bold class="mt-8 mb-4 block">Ma fiche restaurant</twig:Typography></h2>
+        <div class="flex flex-wrap gap-6">
+            {% for route in routes['sheet-restaurant'] %}
+                <twig:Button asLink href="{{ path(route.path, route.parameters|default({})) }}" variant="outline">{{ route.name }}</twig:Button>
+            {% endfor %}
+        </div>
+        <h2><twig:Typography variant="heading-2" bold class="mt-8 mb-4 block">Ma fiche activités</twig:Typography></h2>
+        <div class="flex flex-wrap gap-6">
+            {% for route in routes['sheet-activity'] %}
+                <twig:Button asLink href="{{ path(route.path, route.parameters|default({})) }}" variant="outline">{{ route.name }}</twig:Button>
+            {% endfor %}
+        </div>
+        <h2><twig:Typography variant="heading-2" bold class="mt-8 mb-4 block">Ma fiche service</twig:Typography></h2>
+        <div class="flex flex-wrap gap-6">
+            {% for route in routes['sheet-service'] %}
+                <twig:Button asLink href="{{ path(route.path, route.parameters|default({})) }}" variant="outline">{{ route.name }}</twig:Button>
+            {% endfor %}
+        </div>
+        <h2><twig:Typography variant="heading-2" bold class="mt-8 mb-4 block">Ma fiche plateau-repas</twig:Typography></h2>
+        <div class="flex flex-wrap gap-6">
+            {% for route in routes['sheet-meal-tray'] %}
+                <twig:Button asLink href="{{ path(route.path, route.parameters|default({})) }}" variant="outline">{{ route.name }}</twig:Button>
+            {% endfor %}
+        </div>
+        <h2><twig:Typography variant="heading-2" bold class="mt-8 mb-4 block">Avis</twig:Typography></h2>
+        <div class="flex flex-wrap gap-6">
+            {% for route in routes['review'] %}
+                <twig:Button asLink href="{{ path(route.path) }}" variant="outline">{{ route.name }}</twig:Button>
+            {% endfor %}
+        </div>
+    </main>
+{% endblock %}

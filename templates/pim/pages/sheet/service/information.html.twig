@@ -1,0 +1,48 @@
+{% extends 'pim/pages/sheet/_layout.html.twig' %}
+
+{% block title %}
+    {{ 'page.sheet.service.information.title'|trans }}
+{% endblock %}
+
+{% block main %}
+    {{ form_start(form, { 'attr': { 'id': form.vars.id, 'class': 'flex flex-col gap-6 lg:gap-8'} }) }}
+    <section class="flex flex-col gap-6 bg-neutral-100 rounded-md shadow-(--shadow) w-full p-6 2xl:p-14">
+        <h2><twig:Typography variant="heading-3" bold>{{ 'page.sheet.service.information.general.title'|trans }}</twig:Typography></h2>
+        <div class="w-full grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-4">
+            {{ form_row(form.name) }}
+        </div>
+        <div class="w-full grid grid-cols-1 lg:grid-cols-3 gap-x-6 gap-y-4">
+            {{ form_row(form.isEsat) }}
+            {{ form_row(form.isRse) }}
+        </div>
+        {{ form_row(form.pictureFiles) }}
+        {{ form_row(form.videoFiles) }}
+    </section>
+    <section class="flex flex-col gap-6 bg-neutral-100 rounded-md shadow-(--shadow) w-full p-6 2xl:p-14">
+        <h2><twig:Typography variant="heading-3" bold>{{ 'page.sheet.service.information.description.title'|trans }}</twig:Typography></h2>
+        <div class="w-full grid grid-cols-1 gap-x-6 gap-y-4 mb-4">
+            {{ form_row(form.description) }}
+        </div>
+        <h2><twig:Typography variant="heading-3" bold>{{ 'page.sheet.service.information.detail.title'|trans }}</twig:Typography></h2>
+        <div class="w-full grid grid-cols-1 lg:grid-cols-3 gap-x-6 gap-y-4 mb-4">
+            {{ form_row(form.pregnantSupport) }}
+            {{ form_row(form.deafSupport) }}
+            {{ form_row(form.blindSupport) }}
+            {{ form_row(form.minCapacity) }}
+            {{ form_row(form.maxCapacity) }}
+            {{ form_row(form.duration) }}
+        </div>
+        <h2><twig:Typography variant="heading-3" bold>{{ 'page.sheet.service.information.equipment.title'|trans }}</twig:Typography></h2>
+        <div class="w-full grid grid-cols-1 lg:grid-cols-3 gap-x-6 gap-y-4">
+            {{ form_row(form.withEquipment) }}
+            {{ form_row(form.withConstraint) }}
+            {{ form_row(form.userEquipmentRequired) }}
+            {{ form_row(form.receptionEquipmentRequired) }}
+        </div>
+    </section>
+    {{ form_end(form) }}
+{% endblock %}
+
+{% block float_submit %}
+    <twig:Form:FloatSubmit label="{{ 'global.save'|trans }}" formId="{{ form.vars.id }}" />
+{% endblock %}

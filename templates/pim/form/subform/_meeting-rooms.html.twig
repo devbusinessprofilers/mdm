@@ -1,0 +1,53 @@
+{% block _place_meeting_meetingRooms_row %}
+    <div
+        data-controller="provider-portal--form-collection"
+        data-provider-portal--form-collection-max-item-count-value="{{ max_item_count }}"
+        data-provider-portal--form-collection-sortable-value="{{ sortable }}"
+        class="w-full {{ attr.class|default('') }}"
+    >
+        <div class="overflow-x-scroll scrollbar pb-5 mb-5">
+            {% include 'pim/pages/sheet/place/meeting/_meeting-rooms-header.html.twig' with { 'editable': true } %}
+            <ul
+                id="{{ form.vars.id }}_form"
+                class="w-full flex flex-col gap-2 mt-10"
+                data-provider-portal--form-collection-target="collection"
+                data-prototype-template="{{ form_row(prototype)|e('html_attr') }}"
+                data-prototype-name="{{ prototype.vars['name']|default('__name__') }}"
+            >
+                {% for child in form %}
+                    {{ form_row(child) }}
+                {% endfor %}
+            </ul>
+        </div>
+        <div class="w-full flex justify-center lg:justify-end">
+            {{- block('collection_button_add_content') -}}
+        </div>
+    </div>
+{% endblock %}
+
+{% block meeting_room_row %}
+    <li data-collection-item="" class="w-full">
+        <div class="grid grid-cols-[400px_repeat(12,70px)_150px_24px] gap-x-2 items-center">
+            <div class="flex gap-2 items-center">
+                {{- block('collection_sortable_handler_content') -}}
+                {{ form_row(form.pictureFile, { 'attr': { 'class': 'w-20 h-14 rounded-xs' }}) }}
+                {{ form_row(form.name, { 'attr': { 'class': 'flex justify-center items-center flex-1' }}) }}
+                {{ form_row(form.position, { 'attr': { 'data-sortable-item-rank': true }}) }}
+            </div>
+            {{ form_row(form.area) }}
+            {{ form_row(form.theatreArea) }}
+            {{ form_row(form.meetingArea) }}
+            {{ form_row(form.uShapedArea) }}
+            {{ form_row(form.classArea) }}
+            {{ form_row(form.cabaretArea) }}
+            {{ form_row(form.banquetArea) }}
+            {{ form_row(form.cocktailArea) }}
+            {{ form_row(form.hasNaturalLight, { 'attr': { 'widgetClass': 'flex justify-center' }}) }}
+            {{ form_row(form.hasAirConditioned, { 'attr': { 'widgetClass': 'flex justify-center' }}) }}
+            {{ form_row(form.hasReducedMobilityAccess, { 'attr': { 'widgetClass': 'flex justify-center' }}) }}
+            {{ form_row(form.hasDanceFloor, { 'attr': { 'widgetClass': 'flex justify-center' }}) }}
+            {{ form_row(form.planFile) }}
+            {{- block('collection_button_delete_content') -}}
+        </div>
+    </li>
+{% endblock %}

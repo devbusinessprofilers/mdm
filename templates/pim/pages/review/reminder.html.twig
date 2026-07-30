@@ -1,0 +1,13 @@
+{% extends 'pim/pages/review/_layout.html.twig' %}
+
+{% block title %}
+    {{ 'page.review.reminder.title'|trans }}
+{% endblock %}
+
+{% block main %}
+    <div class="flex flex-col gap-2 mb-6 sm:mb-8">
+        <h1><twig:Typography variant="heading-3" bold>{{ 'page.review.reminder.title'|trans }}</twig:Typography></h1>
+        <p><twig:Typography variant="body-lg">{{ 'page.review.reminder.description'|trans }}</twig:Typography></p>
+    </div>
+    <twig:Review:PaginatedReminderList totalItems="{{ remindersTotal }}" itemsPerPage="{{ 6 }}" />
+{% endblock %}

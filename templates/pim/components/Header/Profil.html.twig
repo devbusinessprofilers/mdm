@@ -1,0 +1,21 @@
+{% set isActive = app.request.attributes.get('_route') == route %}
+
+{% set cva = cva({
+    base: 'flex items-center gap-2 relative',
+    variants: {
+        isActive: {
+            true: 'after:w-full',
+        },
+        isMobile: {
+            true: 'flex-col pb-4 border-b border-neutral-300',
+            false: 'p-2 after:content-[""] after:w-0 after:transition-[width] after:absolute after:bottom-0 after:h-1 after:bg-primary hover:after:w-full',
+        },
+    },
+}) %}
+
+<a href="{{ path(route) }}" {{ attributes.without('class') }} class="{{ cva.apply({ isActive, isMobile }, attributes.render('class')) }}">
+    {# @todo: use protected route to display picture? #}
+    {% set pictureUrl = user.pictureUrl ? asset(user.pictureUrl) : null %}
+    <twig:Badge pictureUrl="{{ pictureUrl }}" pictureText="{{ user.initials }}" class="{{ isMobile ? 'w-[48px]' : 'w-[32px]' }}" />
+    <twig:Typography bold>{{ user.fullName }}</twig:Typography>
+</a>

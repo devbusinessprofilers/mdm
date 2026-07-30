@@ -1,0 +1,20 @@
+{#
+@var string desktopMenu (component name for menu)
+@var string mobileMenu (component name for mobile menu)
+@var \App\Pim\Model\ProviderPortal\DTO\SheetDTO sheet
+#}
+
+{% extends 'pim/pages/_layout.html.twig' %}
+
+{% block sidebar %}
+    {{ component(desktopMenu, {slug: sheet.slug, class: 'hidden 2xl:flex'}) }}
+    {{ component(mobileMenu, {slug: sheet.slug, class: '2xl:hidden'}) }}
+{% endblock %}
+
+{% block content %}
+    {# screen width - sidebar width - gap #}
+    <main class="w-full min-w-0 2xl:max-w-[calc(100%-252px-32px)]">
+        {% include 'pim/pages/sheet/component/_profile.html.twig' with {'sheet': sheet} %}
+        {% block main %}{% endblock %}
+    </main>
+{% endblock %}

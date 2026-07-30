@@ -1,0 +1,26 @@
+{#
+@var string backgroundUrl Url of picture used for visual (left side)
+#}
+
+{% extends 'base.html.twig' %}
+
+{% block body %}
+    <div class="w-full flex items-center justify-center px-6 py-12 md:py-20">
+        <div class="max-w-lg 3xl:max-w-3xl w-full bg-linear-(--primary-gradient) rounded-md flex shadow-(--shadow)">
+            <div class="hidden lg:block lg:min-w-55/100 aspect-3/2">
+                <img
+                    {# @todo: remove asset to resolve URL #}
+                    src="{{ asset(backgroundUrl|default('img/mock/bg-auth-1.png')) }}"
+                    alt="Background Image"
+                    class="w-full h-full object-cover object-left rounded-l-md"
+                />
+            </div>
+            <main class="
+                w-full h-auto flex-1 px-6 py-12 bg-neutral-100 flex flex-col justify-center items-center rounded-md
+                lg:h-[800px] lg:min-w-50/100 lg:-translate-x-5/100
+            ">
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+{% endblock %}

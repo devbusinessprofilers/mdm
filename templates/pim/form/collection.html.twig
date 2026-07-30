@@ -1,0 +1,82 @@
+{% block collection_row %}
+    <div
+        data-controller="provider-portal--form-collection"
+        data-provider-portal--form-collection-max-item-count-value="{{ max_item_count }}"
+        data-provider-portal--form-collection-sortable-value="{{ sortable }}"
+        class="flex flex-col gap-4 {{ wrapper_class }}"
+    >
+
+        <div class="flex flex-col gap-4 sm:flex-row sm:justify-between">
+            {% if label is not same as(false) -%}
+                <div class="flex flex-col gap-4">
+                    {% component 'Typography' with { 'variant': label_typography_variant.value, 'bold': label_bold } %}
+                        {% block content %}
+                            {{ block(outerBlocks.form_label_content) }}
+                        {% endblock %}
+                    {% endcomponent %}
+                    {% if information_text is not empty -%}
+                        <twig:Typography variant="body-lg">{{ information_text|trans|raw }}</twig:Typography>
+                    {%- endif -%}
+                </div>
+            {%- endif -%}
+            {% if allow_add and 'start' == add_button_position -%}
+                <div class="flex sm:items-end sm:self-end">
+                    {{- block('collection_button_add_content') -}}
+                </div>
+            {%- endif -%}
+        </div>
+
+        {% set collectionItemAttributes = {'as_collection_item': {
+            'allow_delete': allow_delete,
+            'sortable': sortable,
+        }} %}
+
+        <div
+            id="{{ form.vars.id }}_form"
+            class="w-full flex flex-col gap-4 {{ collection_class }}"
+            data-provider-portal--form-collection-target="collection"
+            {% if (allow_add) %}
+                data-prototype-template="{{ form_row(prototype, collectionItemAttributes)|e('html_attr') }}"
+                data-prototype-name="{{ prototype.vars['name']|default('__name__') }}"
+            {% endif %}
+        >
+            {% for child in form %}
+                {{ form_row(child, collectionItemAttributes) }}
+            {% endfor %}
+        </div>
+        {% if allow_add and 'end' == add_button_position -%}
+            <div class="flex justify-end">
+                {{- block('collection_button_add_content') -}}
+            </div>
+        {%- endif -%}
+    </div>
+{% endblock %}
+
+{%- block collection_button_add_content -%}
+    <twig:Button
+        type="button"
+        variant="outline"
+        icon="plus"
+        class="w-full sm:w-auto"
+        data-provider-portal--form-collection-target="addButton"
+        data-action="click->provider-portal--form-collection#addItem"
+    >
+        {{- add_button_label|trans -}}
+    </twig:Button>
+{%- endblock -%}
+
+{%- block collection_button_delete_content -%}
+    <twig:Icon
+        name="bin"
+        class="cursor-pointer h-6 w-6"
+        data-action="click->provider-portal--form-collection#deleteItem"
+    />
+{%- endblock -%}
+
+{%- block collection_sortable_handler_content -%}
+    <twig:Icon
+        name="arrows-out-cardinal"
+        class="cursor-pointer w-6 h-6"
+        data-sortable-handler
+    />
+{%- endblock -%}

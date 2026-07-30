@@ -1,0 +1,41 @@
+{% block optional_price_row %}
+
+    {% set dependencyIdentifier = 'price-wrapper-'~form.vars.id %}
+    {% set isSelected = form.price is defined %}
+
+    <twig:Collapse class="w-full" isExpanded="{{ isSelected }}">
+        <twig:block name="trigger">
+            {{ form_row(form.isOptionSelected, { 'input_attributes': getFormDependencyTriggerAttributes(dependencyIdentifier)|merge({'data-provider-portal--collapse-target': 'checkboxController'}) }) }}
+        </twig:block>
+
+        <div class="flex flex-col gap-4 sm:flex-row sm:justify-between">
+            <div class="flex flex-col gap-2">
+                {% for infosLine in collapseContent %}
+                    <twig:Typography class="flex flex-wrap gap-2">
+                        {% for pictoInfo in infosLine.pictoInfos %}
+                            <span class="flex">
+                                {% if not loop.first %}
+                                    <span class="mr-2">+</span>
+                                {% endif %}
+                                <twig:Icon name="{{ pictoInfo.icon }}" class="w-5 h-5 mr-1" />
+                                <twig:Typography bold>{{ pictoInfo.label|trans }}</twig:Typography>
+                                {% if pictoInfo.transformer is not null %}
+                                    <twig:Typography>{{ pictoInfo.transformer|trans }}</twig:Typography>
+                                {% endif %}
+                            </span>
+                        {% endfor %}
+                    </twig:Typography>
+                {% endfor %}
+            </div>
+
+            <div
+                class="overflow-hidden transition-opacity min-h-[64px]"
+                {{ getFormDependencyWrapperAttributes(dependencyIdentifier)|renderHtmlAttributes }}
+            >
+                {% if isSelected %}
+                    {{ form_row(form.price) }}
+                {% endif %}
+            </div>
+        </div>
+    </twig:Collapse>
+{% endblock %}

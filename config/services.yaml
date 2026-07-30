@@ -8,10 +8,30 @@
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
     env(TEST_MESSENGER_PIM_DSN): 'in-memory://?serialize=true'
+    default_locale: 'fr'
+    locales: ['fr', 'en', 'es', 'it', 'nl', 'pt', 'de']
+    google_maps_api_key: "%env(GOOGLE_MAPS_API_KEY)%"
+    default_from_email: "%env(DEFAULT_FROM_EMAIL)%"
+    tinymce_api_key: "%env(TINYMCE_API_KEY)%"
 
 services:
     # default configuration for services in *this* file
     _defaults:
+        bind:
+            $defaultLocale: '%default_locale%'
+            $locales: '%locales%'
+            $translator: '@translator'
+            $salesforceEnv: "%env(SALESFORCE_ENV)%"
+            $salesforceUrl: '%env(SALESFORCE_URI)%'
+            $salesforceLoginUrl: '%env(SALESFORCE_LOGIN_URL)%'
+            $salesforceClientId: '%env(SALESFORCE_CLIENT_ID)%'
+            $salesforceLocationRecordTypeId: '%env(SALESFORCE_LOCATION_RECORD_TYPE_ID)%'
+            $salesforceActivityRecordTypeId: '%env(SALESFORCE_ACTIVITY_RECORD_TYPE_ID)%'
+            $salesforcePrestataireRecordTypeId: '%env(SALESFORCE_PRESTATAIRE_RECORD_TYPE_ID)%'
+            $salesforceOrgId: '%env(SALESFORCE_ORG_ID)%'
+            $instanceUrl: '%env(SALESFORCE_INSTANCE_URL)%'
+            $adminEmail: '%env(SALESFORCE_USERNAME)%'
+            $racine: '%kernel.project_dir%'
         autowire: true      # Automatically injects dependencies in your services.
         autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
 
@@ -19,6 +39,10 @@ services:
     # this creates a service per class whose id is the fully-qualified class name
     App\:
         resource: '../src/'
+
+    App\Pim\Controller\:
+        resource: '../src/Pim/Controller'
+        tags: [ 'controller.service_arguments' ]
 
     App\Shared\Outbox\OutboxPublisher:
         arguments:
@@ -29,5 +53,48 @@ services:
         arguments:
             $serializer: '@messenger.transport.symfony_serializer'
 
+    App\DataFixtures\Pim\LieuFixtures:
+        arguments:
+            $debugDataHolder: '@?doctrine.debug_data_holder'
+
+    App\Etl\Service\Salesforce\SalesforceGlobalService:
+        lazy: true
+
+    App\Etl\Service\Salesforce\SalesforceHttpClientService:
+        lazy: true
+        arguments:
+            $loggerInterface: '@monolog.logger.salesforce'
+
+    App\Pim\EventListener\LocaleRedirectListener:
+        arguments:
+            $defaultLocale: '%default_locale%'
+            $locales: '%locales%'
+
+    App\Monolog\Processor\RequestIpProcessor:
+        arguments:
+            - '@request_stack'
+        tags:
+            - { name: monolog.processor }
+
+    monolog.formatter.stacktrace:
+        class: Monolog\Formatter\LineFormatter
+        arguments:
+            $format: "[%%datetime%%] %%channel%%.%%level_name%%: %%message%% %%context%% %%extra%%\n"
+            $dateFormat: null
+            $allowInlineLineBreaks: true
+            $ignoreEmptyContextAndExtra: true
+        calls:
+            - method: includeStacktraces
+              arguments:
+                  - true
+    App\Pim\Service\GoogleMaps\GoogleMapsService:
+        arguments:
+            $httpClient: '@http_client'
+            $google_maps_api_key: '%google_maps_api_key%'
+
+    App\Etl\Service\GoogleTranslate\GoogleTranslateService:
+        arguments:
+            $httpClient: '@http_client'
+            $google_maps_api_key: '%google_maps_api_key%'
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones

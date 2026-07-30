@@ -1,0 +1,49 @@
+{%- block form_label -%}
+    {% if label is not same as(false) -%}
+        {% set typography = (label_attr is defined and label_attr.typography is defined) ? label_attr.typography : null %}
+        {% set isBold = (label_attr is defined and label_attr.bold is defined) ? label_attr.bold : false %}
+
+        {% set labelCva = cva({
+            base: ('flex self-start '~label_attr.class|default(''))|trim,
+            variants: {
+                'required': { true: 'required' },
+            },
+        }) %}
+
+        {% set componentAttributes = {
+            'element': element|default('label'),
+            'variant': typography,
+            'bold': isBold,
+            'class': labelCva.apply({ 'required': required }, 'text-left')
+        } %}
+
+        {% if not compound -%}
+            {% set componentAttributes = componentAttributes|merge({'for': id}) %}
+        {%- endif -%}
+
+        {% component 'Typography' with { ...componentAttributes } %}
+            {% block content %}
+                {{ block(outerBlocks.form_label_content) }}
+                {% if attr.tooltip is defined and attr.tooltip is not empty %}
+                    <twig:Tooltip>{{ attr.tooltip|trans }}</twig:Tooltip>
+                {% endif %}
+            {% endblock %}
+        {% endcomponent %}
+    {%- endif -%}
+{%- endblock form_label -%}
+
+{%- block form_row -%}
+    <div class="flex flex-col gap-1 {{ attr.class ?? '' }}">
+        {{ form_label(form) }}
+        {{ form_widget(form) }}
+    </div>
+{%- endblock -%}
+
+{%- block repeated_row -%}
+    <div class="{{ attr.class ?? '' }}">
+        {{ form_label(form) }}
+        {%- for child in form %}
+            {{ form_row(child, {'attr': {'class': attr.childClass ?? ''}}) }}
+        {%- endfor -%}
+    </div>
+{%- endblock repeated_row -%}

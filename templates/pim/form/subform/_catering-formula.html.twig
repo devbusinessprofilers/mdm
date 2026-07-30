@@ -1,0 +1,29 @@
+{% block catering_formula_row %}
+    {% set cva = cva({
+        'base': 'grid gap-x-6 gap-y-4 items-end grid-cols-1',
+        'variants': {
+            'expanded': {
+                true: 'sm:grid-cols-[3fr_3fr_2fr_1fr_auto]',
+                false: ' sm:grid-cols-[3fr_3fr_2fr_1fr]',
+            },
+        },
+    }) %}
+
+    {% set isCollectionItem = as_collection_item is defined %}
+    {% set displayDelete = isCollectionItem and as_collection_item.allow_delete %}
+
+    <div
+        class="{{ cva.apply({'expanded': displayDelete}) }}"
+        {% if isCollectionItem %}
+            data-collection-item=""
+        {% endif %}
+    >
+        {{ form_row(form.name) }}
+        {{ form_row(form.cateringFormulaContents) }}
+        {{ form_row(form.minimumParticipant) }}
+        {{ form_row(form.minimumPrice) }}
+        {%- if displayDelete -%}
+            <div class="mb-2">{{- block('collection_button_delete_content') -}}</div>
+        {%- endif -%}
+    </div>
+{% endblock %}

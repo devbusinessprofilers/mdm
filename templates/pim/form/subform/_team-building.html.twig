@@ -1,0 +1,17 @@
+{% block team_building_row %}
+    {% set isCollectionItem = as_collection_item is defined %}
+    {% set displayDelete = isCollectionItem and as_collection_item.allow_delete %}
+    <div
+        class="flex gap-x-6 gap-y-4 items-center"
+        {% if isCollectionItem %}
+            data-collection-item=""
+        {% endif %}
+    >
+        {{ form_row(form.pictureFile, {'attr': {'class': 'mt-2'}}) }}
+        {{ form_row(form.contractor, {'attr': {'class': 'grow min-w-[200px]'}}) }}
+        {{ form_row(form.activity, {'attr': {'class': 'grow min-w-[200px]'}}) }}
+        {% if displayDelete %}
+            <div class="mt-5">{{- block('collection_button_delete_content') -}}</div>
+        {%- endif -%}
+    </div>
+{% endblock %}

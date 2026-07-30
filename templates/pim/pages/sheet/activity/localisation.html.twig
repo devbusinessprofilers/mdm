@@ -1,0 +1,33 @@
+{% extends 'pim/pages/sheet/_layout.html.twig' %}
+
+{% block title %}
+    {{ 'page.sheet.activity.localisation.main.title'|trans }}
+{% endblock %}
+
+{% block main %}
+    {% set geographicRangeDependencyIdentifier = 'geographic-range-wrapper' %}
+
+    {{ form_start(form, { 'attr': getFormDependencyAttributes()|merge({'id': form.vars.id, 'class': 'flex flex-col gap-6 lg:gap-8'}) }) }}
+        <section class="flex flex-col gap-6 bg-neutral-100 rounded-md shadow-(--shadow) w-full p-6 2xl:p-14">
+            <h2><twig:Typography variant="heading-3" bold>{{ 'page.sheet.activity.localisation.main.title'|trans }}</twig:Typography></h2>
+            {{ form_row(form.geographicRange, {'input_attributes': getFormDependencyTriggerAttributes(geographicRangeDependencyIdentifier)}) }}
+        </section>
+
+        <section class="flex flex-col gap-6 bg-neutral-100 rounded-md shadow-(--shadow) w-full p-6 2xl:p-14" {{ getFormDependencyWrapperAttributes(geographicRangeDependencyIdentifier)|renderHtmlAttributes }}>
+            {% if form.address is defined %}
+                <h2><twig:Typography variant="heading-3" bold>{{ 'page.sheet.activity.localisation.fix_address.title'|trans }}</twig:Typography></h2>
+                {{ form_row(form.address) }}
+            {% endif %}
+
+            {% if form.countries is defined %}
+                <h2><twig:Typography variant="heading-3" bold>{{ 'page.sheet.activity.localisation.mobile_address.title'|trans }}</twig:Typography></h2>
+                {{ form_row(form.countries) }}
+                {{ form_row(form.departments) }}
+            {% endif %}
+        </section>
+    {{ form_end(form) }}
+{% endblock %}
+
+{% block float_submit %}
+    <twig:Form:FloatSubmit label="{{ 'global.save'|trans }}" formId="{{ form.vars.id }}" />
+{% endblock %}

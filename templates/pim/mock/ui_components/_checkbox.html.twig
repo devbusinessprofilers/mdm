@@ -1,0 +1,15 @@
+<h2><twig:Typography variant="heading-2" bold class="mt-8 mb-4 block">Checkbox</twig:Typography></h2>
+<div class="flex gap-8 flex-col bg-neutral-100 rounded-sm p-8  shadow-(--shadow)">
+    <ul class="flex flex-wrap max-w-full gap-8">
+        <li><twig:Form:Checkbox id="checkbox-1" name="checkbox-1" checked>Checked</twig:Form:Checkbox></li>
+        <li><twig:Form:Checkbox id="checkbox-2" name="checkbox-2">Unchecked</twig:Form:Checkbox></li>
+        <li><twig:Form:Checkbox id="checkbox-3" name="checkbox-3" checked disabled>Checked disabled</twig:Form:Checkbox></li>
+        <li><twig:Form:Checkbox id="checkbox-4" name="checkbox-4" disabled>Unchecked disabled</twig:Form:Checkbox></li>
+    </ul>
+    <ul class="flex flex-wrap max-w-full gap-8">
+        <li><twig:Form:SwitchButton id="switch-1" name="switch-1" checked>Switch active</twig:Form:SwitchButton></li>
+        <li><twig:Form:SwitchButton id="switch-2" name="switch-2">Switch inactive</twig:Form:SwitchButton></li>
+        <li><twig:Form:SwitchButton id="switch-3" name="switch-3" checked disabled>Switch active disabled</twig:Form:SwitchButton></li>
+        <li><twig:Form:SwitchButton id="switch-4" name="switch-4" disabled>Switch inactive disabled</twig:Form:SwitchButton></li>
+    </ul>
+</div>

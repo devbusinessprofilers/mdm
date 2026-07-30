@@ -1,0 +1,16 @@
+<h2><twig:Typography variant="heading-2" bold class="mt-8 mb-4 block">Modal</twig:Typography></h2>
+<div class="flex gap-8 flex-col bg-neutral-100 rounded-sm p-8  shadow-(--shadow)">
+    <twig:Modal identifier="modal">
+        <div class="w-auto h-auto flex flex-col gap-4">
+            <twig:Typography variant="heading-2" bold center>Information</twig:Typography>
+            <twig:Typography variant="body" center>
+                <p>Lorem ipsum dolor sit amet consectetur. Massa phasellus tincidunt rhoncus enim. Lorem vel massa leo ut enim.</p>
+                <p>Nascetur pellentesque ut ullamcorper odio.</p>
+            </twig:Typography>
+            <div class="flex gap-2 mt-4 justify-center">
+                <twig:Button variant="outline" data-action="click->provider-portal--modal#close">Fermer</twig:Button>
+            </div>
+        </div>
+    </twig:Modal>
+    <twig:Modal:TriggerButton modalIdentifier="modal" variant="outline" data-bis="bis">Ouvrir</twig:Modal:TriggerButton>
+</div>

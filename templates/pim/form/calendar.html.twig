@@ -1,0 +1,13 @@
+{%- block calendar_widget -%}
+    <twig:Form:Calendar
+        id="{{ id }}"
+        name="{{ full_name }}"
+        value="{{ value }}"
+        inputFormat="{{ format }}"
+        placeholder="{{ (attr.placeholder ?? '')|trans }}"
+        class="{{ attr.class ?? '' }}"
+        disabled="{{ disabled }}"
+        dateMin="{{ date_min }}"
+        dateMax="{{ date_max }}"
+    />
+{%- endblock -%}

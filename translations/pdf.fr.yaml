@@ -1,0 +1,111 @@
+pdf:
+  common:
+    logo_alt: "Logo BP"
+    header_title: "Tableau comparatif de vos offres commerciales"
+    pre_header:
+      location: "Localisation"
+      budget_global: "Budget global"
+      dossier_number: "Dossier n°"
+    budget_summary: "%total%€ - soit %per%€ / pers"
+    hello: "Bonjour %name%"
+    intro: "Nous avons le plaisir de vous présenter les solutions susceptibles de répondre à vos attentes pour votre événement \"%event%\""
+    date_range: "Du %start% au %end%"
+    labels:
+      dates: "Dates"
+      participants_short: "Nb. de participant"
+      participants: "Nombre de participants"
+    sections:
+      context: "Contexte"
+      restoration: "Restauration"
+      activities: "Activités"
+      offer: "Offre commerciale"
+      carbon: "Empreinte Carbone"
+      meeting_restoration: "Réunion & restauration"
+      accommodation: "Hébergement"
+    links:
+      quote: "Devis détaillé"
+      presentation: "Présentation"
+    closing: "Parlons-en ensemble afin de trouver la solution idéale pour votre événement !"
+    footer: "Votre expert %name% gère votre événement : %email% - %phone% – www.businessprofilers.com"
+  export_event:
+    restauration:
+      gastronomy: "Type de gastronomie"
+      privatization: "Privatisation"
+      aperitif: "Apéritif"
+      dinner_seated: "Dîner assis"
+      buffet: "Buffet dînatoire"
+      cocktail: "Cocktail dînatoire"
+      wines: "Vins"
+      softs: "Softs"
+      coffee: "Café"
+      special_diets: "Régimes spéciaux"
+    activities:
+      dancing: "Soirée dansante"
+      option_1: "Option 1"
+      option_2: "Option 2"
+    offer:
+      total_restoration_ttc: "Coût total restauration TTC"
+      total_restoration_ht: "Coût total restauration HT"
+      per_person_restoration_ttc: "Coût restauration par personne TTC"
+      per_person_restoration_ht: "Coût restauration par personne HT"
+      total_with_activity_ttc: "Coût total avec activité TTC"
+      total_with_activity_ht: "Coût total avec activité HT"
+      per_person_with_activity_ttc: "Coût par personne avec activité TTC"
+      per_person_with_activity_ht: "Coût par personne avec activité HT"
+      payment_terms: "Conditions de paiement"
+      cancellation_terms: "Conditions d'annulation"
+    carbon:
+      tco2e: "tCO2e"
+  export_event_lieux:
+    meeting_restoration:
+      room_rental: "Location de salle"
+      equipment: "Équipement"
+      welcome_coffee: "Café d'accueil"
+      morning_break: "Pause matin"
+      lunch: "Déjeuner"
+      afternoon_break: "Pause après-midi"
+      aperitif: "Apéritif"
+      dinner: "Dîner"
+      open_bar: "Open Bar"
+      breakfast: "Petit déjeuner"
+    accommodation:
+      room: "Chambre"
+      room_rate: "Tarif chambre"
+    offer:
+      city_tax: "Taxe de séjour"
+      total_ttc: "Coût total TTC"
+      total_ht: "Coût total HT"
+      per_person_ttc: "Coût par personne TTC"
+      per_person_ht: "Coût par personne HT"
+      payment_terms: "Conditions de paiement"
+      cancellation_terms: "Conditions d'annulation"
+    carbon:
+      tco2e: "tCO2e"
+      emissions_no_transport: "Émissions carbone hors transport (tCO2e)"
+  export_pptx:
+    common:
+      missing_logo: "Logo manquant, veuillez ajouter un logo sur votre profil"
+    first_slide:
+      title: "Vos Solutions"
+      offer: "Offre de disponibilité pour : %first_name% %last_name%"
+      file_number: "N° de dossier : %number%"
+      company: "Société : %name%"
+      date_range: "Date : %start% au %end%"
+      participants: "Nombre de participants : %count%"
+      location: "Localisation souhaitée : %location%"
+      event_details: "Détail de l'événement : %url%"
+      expert_title: "Votre chef de projet dédié :"
+    description:
+      presentation: "PRÉSENTATION :"
+      leisure: "LOISIRS & INCENTIVES :"
+      bedrooms: "%count% chambres"
+      restaurant: "1 restaurant"
+      global_rating: "Note globale : %rating%/5"
+      rooms: "%count% salle(s)"
+      max_people: "Jusqu’à %count% pers."
+      max_area: "Jusqu’à %area% m²"
+      highlights: "LES PLUS :"
+      access: "ACCÈS :"
+    access:
+      train_station: "Gare de %s"
+      airport: "Aéroport de %s"

@@ -1,0 +1,13 @@
+{%- block suggestion_widget -%}
+    <twig:Form:Suggestion
+        id="{{ id }}"
+        name="{{ full_name }}"
+        value="{{ value }}"
+        placeholder="{{ (attr.placeholder ?? '')|trans }}"
+        multiple="{{ multiple }}"
+        disabled="{{ disabled }}"
+        class="{{ attr.class ?? '' }}"
+        inputAttributes="{{ input_attributes ?? {} }}"
+        stimulusDataActions="{{ stimulus_data_actions ?? [] }}"
+    />
+{%- endblock -%}

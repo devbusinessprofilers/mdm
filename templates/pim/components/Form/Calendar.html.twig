@@ -1,0 +1,40 @@
+{% set parameters = {
+    'type': 'default',
+    'mode': 'default',
+    'inputMode': true,
+    'selectionDatesMode': 'single',
+    'displayMonthsCount': 1,
+    'displayDatesOutside': true,
+    'disableDatesPast': false,
+    'dateToday': 'today',
+    'locale': app.request.locale|split('_')[0],
+    'firstWeekday': 1,
+    'dateFormat': 'DD/MM/YYYY',
+    'selectedDates': isoValue ? [isoValue] : [],
+    'templates': {
+        'arrowPrev': '<button data-vc-arrow="prev" class="cursor-pointer"><svg class="shrink-0 size-8" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg></button>',
+        'arrowNext': '<button data-vc-arrow="next" class="cursor-pointer"><svg class="shrink-0 size-8" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></button>',
+    },
+} %}
+
+{% if dateMin is not null %}
+    {% set parameters = parameters|merge({'dateMin': dateMin|date('Y-m-d')}) %}
+{% endif %}
+
+{% if dateMax is not null %}
+    {% set parameters = parameters|merge({'dateMax': dateMax|date('Y-m-d')}) %}
+{% endif %}
+
+<twig:Form:TextInput
+    id="{{ id }}"
+    name="{{ name }}"
+    value="{{ value }}"
+    rightIcon="calendar"
+    disabled="{{ disabled }}"
+    readonly="true"
+    inputAttributes="{{ {
+        'data-controller': 'provider-portal--calendar',
+        'data-provider-portal--calendar-range-value': 'false',
+        'data-hs-datepicker': parameters|json_encode|raw,
+    } }}"
+/>

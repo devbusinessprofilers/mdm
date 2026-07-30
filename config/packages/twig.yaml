@@ -1,6 +1,34 @@
 twig:
-    file_name_pattern: '*.twig'
-
-when@test:
-    twig:
-        strict_variables: true
+    default_path: '%kernel.project_dir%/templates'
+    debug: '%kernel.debug%'
+    strict_variables: '%kernel.debug%'
+    globals:
+      appUrl: '%env(APP_URL)%'
+      google_maps_api_key: "%google_maps_api_key%"
+      tinymce_api_key: "%tinymce_api_key%"
+    form_themes:
+        - 'form/form_label.html.twig'
+        - 'form/form_gradient_widget.html.twig'
+        - 'form/form_transparent_widget.html.twig'
+        - 'form/form_dark_grey_widget.html.twig'
+        - 'form/attributes.html.twig'
+        - 'form/button_gradient_widget.html.twig'
+        - 'form/button_outline_gradient_widget.html.twig'
+        - 'form/button_outline_pink_widget.html.twig'
+        - 'form/button_yellow_widget.html.twig'
+        - 'form/button_pink_widget.html.twig'
+        - 'form/choice_toggle_switch_widget.html.twig'
+        - 'form/radio_label.html.twig'
+        - 'form/integer_plus_minus_widget.html.twig'
+        - 'form/form_errors.html.twig'
+        - 'form/integer_gradient_widget.html.twig'
+        - 'form/textarea_gradient_widget.html.twig'
+        - 'form/radio_inline.html.twig'
+        - 'form/checkbox_blue_label.html.twig'
+        - 'form/checkbox_style_1_label.html.twig'
+        - 'form/widget_attributes.html.twig'
+        - 'form/form_primary_label.html.twig'
+        - 'form/form_primary_widget.html.twig'
+        - 'form/select_primary_label.html.twig'
+        - 'form/checkbox_widget.html.twig'
+        - 'form/checkbox_style_2_label.html.twig'

@@ -1,0 +1,304 @@
+tunnel:
+  flash:
+    technical_error_try_again: "Erreur technique. Merci de ressayer plus tard!"
+    error_occurred: "Une erreur est survenue !"
+    error_contact_bp: "Une erreur est survenue! Merci de contacter Business Profilers"
+    account_create_error: "Une erreur est survenue lors de la création du compte."
+    error_occurred_short: "Une erreur est survenue!"
+    activation_sent: "Un mail d’activation vous a été transmis sur le mail renseigné afin de finaliser votre inscription"
+  user:
+    not_connected: "(non connecté)"
+  step_cdg:
+    title: "Demande de devis"
+    choose_support: "Choisissez&nbsp;votre&nbsp;accompagnement"
+    cards:
+      direct:
+        title: "Je gère en direct<br />avec les prestataires"
+        items:
+          item1: "Je mène mon projet de A à Z en totale autonomie"
+          item2: "J’échange en direct avec les prestataires"
+          item3: "Je réserve en quelques clics"
+          item4: "Je bénéficie des meilleurs tarifs, sans frais d’agence"
+      bp:
+        title: "Mon chef de projet dédié gère ma demande"
+        items:
+          item1: "Mon expert événementiel complète mes recherches"
+          item2: "Il vérifie et négocie pour moi les devis"
+          item3: "Il finalise ma réservation aux meilleurs conditions"
+          item4: "Je bénéficie des meilleurs tarifs, sans frais d’agence"
+    buttons:
+      autonomy: "Poursuivre en autonomie"
+      supported: "Poursuivre accompagné"
+  form:
+    professional_email_required: "Vous devez vous inscrire avec un email professionnel"
+    civility:
+      label: "Civilité"
+      mrs: "Madame"
+      mr: "Monsieur"
+    first_name:
+      label: "Prénom"
+    last_name:
+      label: "Nom"
+    email:
+      label: "Email professionnel"
+    password:
+      label: "Mot de passe"
+    password_confirm:
+      label: "Confirmer le mot de passe"
+    company_name:
+      label: "Nom de la société"
+    phone:
+      label: "Téléphone"
+    placeholder:
+      first_name: "Votre prénom"
+      last_name: "Votre nom"
+      email: "Votre email professionnel"
+      password: "Votre mot de passe"
+      password_confirm: "Confirmation de votre mot de passe"
+      company_name: "Le nom de votre société"
+      phone: "Votre téléphone"
+  common:
+    previous: "Précédent"
+    submit_request: "Valider et accéder à ma demande"
+
+  step01:
+    title: "Organisons ensemble votre évènement idéal !"
+    heading: "Organisons ensemble votre évènement idéal !"
+    subheading: "Cela ne prendra que quelques minutes, <span class=\"pink-color\">c'est promis !</span>"
+    email_placeholder: "Commençons par votre adresse email…"
+    submit: "Démarrer"
+    card1:
+      title: "Partagez-nous votre projet !"
+      desc: "Prenez un instant pour nous décrire tous vos besoins.<br /><i>On veut tout savoir !</i>"
+    card2:
+      title: "Suivez votre évènement en temps réel"
+      desc: "Accédez aux disponibilités et devis. Bénéficiez de<br />l'accompagnement de nos experts à tout moment !"
+    card3:
+      title: "Finalisez votre réservation en 2 clics"
+      desc: "Simple, fluide et efficace !"
+
+  step03:
+    title: "Ma sélection"
+    events_alt: "salle(s)"
+    heading: "Mon évènement"
+    event_name:
+      label: "Nom de l'évènement"
+      placeholder: "Nom de l'évènement"
+    event_type:
+      label: "Type d'évènement"
+      residential_seminar: "Séminaire résidentiel"
+      meeting_conference: "Réunion & Conférence"
+      incentive_teambuilding: "Incentive / Teambuilding"
+      group_accommodation: "Hébergement de groupe"
+      corporate_evening: "Soirée d'entreprise"
+      other: "Autres"
+    location:
+      label: "Localisation"
+      placeholder: "Ville, département, région…"
+    location_comment:
+      placeholder: "Quelque chose à ajouter…"
+    date:
+      label: "Date"
+      placeholder: "jj/mm/aaaa"
+    date_flexible:
+      label: "Dates flexibles"
+      placeholder: "jj/mm/aaaa"
+    flexible_dates_tooltip: "Renseigner des dates flexibles nous permet<br>d'élargir la recherche et d'augmenter vos<br>chances de trouver un lieu disponible"
+    arrival_time: "Heure d'arrivée"
+    departure_time: "Heure de départ"
+    submit: "Suivant"
+
+  step04:
+    title: "Évènement"
+    or: "ou"
+    cost_center: "Centre de coût"
+    budget_code: "Code Budgetaire"
+    browse: "Parcourir"
+    point_of_interest_alt: "salle(s)"
+    last_word: "Un dernier mot ?"
+    nb_participants:
+      label: "Nombre de personnes"
+      placeholder: "Personnes"
+    nb_rooms:
+      label: "Nombre de salles"
+    amount:
+      placeholder: "Montant"
+    global_budget:
+      label: "Budget global"
+    budget_per_person:
+      label: "Budget par personne"
+    vat:
+      label: "TVA"
+      incl: "TTC"
+      excl: "HT"
+    comment_budget:
+      help: "Pour toute demande de devis, assurez-vous au préalable d'avoir le budget auprès de votre contrôleur budgétaire."
+      placeholder: "Quelque chose à ajouter à votre budget…"
+    has_code_budget:
+      label: "Disposez-vous d'un code budgétaire pour votre projet ?"
+    code_budget:
+      placeholder: "Code budgétaire"
+    file:
+      label: "Ajouter une pièce jointe"
+    information:
+      placeholder: "Souhaits particuliers…"
+    submit: "Suivant"
+
+  step05:
+    title: "Évènement"
+    heading: "Personnalisez les prestations dont vous avez besoin :"
+    rooms_alt: "Salle(s)"
+    rooms_title: "Salle(s)"
+    rooms_desc: "Je personnalise mes salles pour accueillir mon événement."
+    accommodation_alt: "Hébergement"
+    accommodation_title: "Hébergement"
+    accommodation_desc: "Je personnalise le nombre de participants à héberger <br /> ainsi que le nombre de chambres individuelles et twin."
+    catering_alt: "Restauration"
+    catering_title: "Restauration"
+    catering_desc: "Je personnalise les options de restauration en fonction de <br /> mes besoins : pauses, dîner, apéritif…"
+    animation_alt: "Animation & teambuilding"
+    animation_title: "Animation & teambuilding"
+    animation_desc: "Je personnalise mon activité teambuilding en <br /> fonction de mes préférences."
+    submit: "Suivant"
+
+  step06:
+    title: "Évènement"
+    plenary_room: "Votre salle plénière"
+    main_room_tooltip: "Salle principale"
+    when: "Quand ?"
+    morning: "Matin"
+    afternoon: "Après-midi"
+    nb_participants:
+      label: "Nombre de participants"
+      placeholder: "Participants"
+    configuration:
+      label: "Configuration"
+      reunion_boardroom: "Réunion / Boardroom"
+      table_en_u: "Table en U"
+      theatre_conference: "Théâtre / Conférence"
+      classe_ecole: "Classe / Ecole"
+      banquet: "Banquet"
+      cocktail: "Cocktail"
+      auditorium: "Auditorium"
+      ne_sais_pas: "Ne sais pas"
+    comment:
+      placeholder: "Équipements, accès PMR…"
+    sub_commission:
+      label: "Salle(s) de sous-commission ?"
+    submit: "Suivant"
+
+  step07:
+    title: "Évènement"
+    subcommittee_rooms: "Salle(s) de sous-commission"
+    main_room_tooltip: "Salle principale"
+    when: "Quand ?"
+    morning: "Matin"
+    afternoon: "Après-midi"
+    nb_rooms:
+      label: "Combien de salles"
+    nb_participants:
+      label: "Nombre de participants"
+      placeholder: "Participants"
+    configuration:
+      label: "Configuration"
+      reunion_boardroom: "Réunion / Boardroom"
+      table_en_u: "Table en U"
+      theatre_conference: "Théâtre / Conférence"
+      classe_ecole: "Classe / Ecole"
+      banquet: "Banquet"
+      cocktail: "Cocktail"
+      auditorium: "Auditorium"
+      ne_sais_pas: "Ne sais pas"
+    comment:
+      placeholder: "Équipements, accès PMR…"
+    submit: "Suivant"
+
+  step08:
+    title: "Évènement"
+    heading: "Hébergement"
+    room_count: "Nombre de chambres"
+    at_night: "au soir"
+    single: "Individuelle"
+    twin: "Twin"
+    nb_people:
+      label: "Nombre de participants à héberger"
+      placeholder: "Participants"
+    comment:
+      placeholder: "Équipement, chambres…"
+    submit: "Suivant"
+
+  step09:
+    title: "Évènement"
+    heading: "Restauration"
+    dates: "dates"
+    meals:
+      welcome_coffee: "Café d'accueil"
+      breakfast: "Petit-déjeuner"
+      morning_break: "Pause matin"
+      lunch: "Déjeuner"
+      afternoon_break: "Pause après-midi"
+      aperitif: "Apéritif"
+      dinner: "Dîner"
+    comment:
+      placeholder: "Open bar, privatisation…"
+    submit: "Suivant"
+
+  step10:
+    title: "Évènement"
+    heading: "Animation & teambuilding"
+    activity_type: "Type d'activité ?"
+    duration:
+      label: "Durée de l'activité ?"
+      option_1: "1h00 à 1h30"
+      option_2: "1h30 à 3h00"
+      option_3: "3h00 à 6h00"
+    when:
+      label: "À quel moment ?"
+      morning: "Matin"
+      afternoon: "Après-midi"
+      evening: "Soirée"
+    environment:
+      label: "Environnement de l'activité"
+      outdoor: "Extérieur"
+      indoor: "Intérieur"
+    comment:
+      placeholder: "Quelque chose à rajouter sur votre activité ?"
+    submit: "Suivant"
+
+  account_creation:
+    title: "Organisons ensemble votre évènement idéal !"
+    heading: "Bravo 🎉"
+    subheading: "Il ne vous reste plus qu'à créer votre compte pour finaliser votre demande, et recevoir les meilleures solutions 👌"
+    access_solutions: "Accédez à vos solutions en créant votre compte !"
+    contact_details: "Coordonnées"
+    identifier: "Identifiant"
+    already_account: "J'ai déjà un compte"
+    password_rules_intro: "Il vous faut un minimum de <strong id=\"Length\" class=\"\">8 caractères</strong> avec au moins :"
+    password_rules:
+      uppercase: "1 majuscule"
+      lowercase: "1 minuscule"
+      number: "1 chiffre"
+      special: "1 caractère spécial"
+    password_mismatch: "Vos mots de passe ne correspondent pas"
+    accept_terms: "J’accepte les %cgu% et la %privacy% de Business Profilers"
+
+  login:
+    title: "Organisons ensemble votre évènement idéal !"
+    heading: "Bravo 🎉 Votre évènement est déjà lancé 🚀"
+    subheading: "Vos premières propositions arrivent très vite !"
+    access_solutions: "Accédez à vos solutions en vous connectant !"
+    email_placeholder: "Email professionnel"
+    password_placeholder: "Mot de passe"
+    forgot_password: "Mot de passe oublié"
+
+  thanks:
+    title: "Organisons ensemble votre évènement idéal !"
+    heading: "Bravo %name% 🎉"
+    subheading: "Votre évènement est déjà lancé 🚀"
+    message_1: "Nous sommes ravis de vous accompagner dans ce projet. 💙"
+    message_2: "Vos premières propositions arrivent très vite ! 🤩"
+    message_3: "En attendant si vous avez des questions ou des précisions à apporter, notre équipe reste à votre entière disposition."
+    follow_us: "Suivez-nous !"
+    contact_phone: "03 44 555 444"
+    contact_email: "hello@businessprofilers.fr"
+    submit: "Accéder à ma demande"

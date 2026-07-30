@@ -1,0 +1,46 @@
+{% set icons = {
+    "A": ["ai", "airplay", "amphitheatre", "area", "arrow-clockwise", "arrow-counter-clockwise", "arrows-out-cardinal"],
+    "B": ["balcony", "banquet", "beach", "bed", "bench", "biking", "bin", "bottle", "building", "business-center"],
+    "C": ["cabaret", "calendar", "call-bell", "car", "caret-down","caret-left", "caret-right", "caret-up", "chair", "charging-battery", "check-circle", "check", "cheers", "cigarette", "classroom", "clipboard", "cloud-arrow-up", "coat-hanger", "cocktail", "conference", "confetti", "cookie", "coworking", "cross-circle", "cross", "cube", "currency-euro"],
+    "D": ["dance", "desktop", "drop", "dumbbell"],
+    "E": ["elevator", "eye"],
+    "F": ["file-pdf"],
+    "G": ["gear", "git-branch"],
+    "H": ["hammam", "headset", "hot-stone"],
+    "I": ["identification-card", "image", "images", "info-circle", "instagram"],
+    "J": ["jaccuzi"],
+    "K": [],
+    "L": ["layout", "lectern", "linkedin", "list", "lock-outline", "lock"],
+    "M": ["magnifying-glass-minus", "magnifying-glass-plus", "massage", "meeting", "microphone", "money"],
+    "N": ["note"],
+    "O": [],
+    "P": ["package", "paper-plane", "parking", "pencil", "phone", "pin", "plant", "plus", "presentation", "printer"],
+    "Q": [],
+    "R": ["rocket", "rooftop", "room-service"],
+    "S": ["sauna", "shield-check", "spa", "speaker", "squares-four", "star", "suitcase", "sun", "swimming"],
+    "T": ["technicien", "television", "thalasso", "trash", "tree", "terrace", "trad", "trend-down", "trend-up"],
+    "U": ["u-meeting", "user-rectangle", "user", "users", "utensils"],
+    "V": ["van", "video-conference"],
+    "W": ["wheel-chair", "wifi", "wind"],
+    "X": [],
+    "Y": [],
+    "Z": [],
+    "FLAGS": ["flag-fr", "flag-en"],
+    "STYLED": ["styled-analytic", "styled-linkedin", "styled-mail"],
+} %}
+
+<h2><twig:Typography variant="heading-2" bold class="mt-8 mb-4 block">Icons</twig:Typography></h2>
+<ul class="bg-neutral-100 rounded-sm p-8 flex flex-col max-w-full gap-8 shadow-(--shadow)">
+    {% for letter, icons in icons %}
+        {% if (icons|length > 0) %}
+        <li class="flex flex-col gap-4">
+            <h3><twig:Typography id="{{ letter }}" variant="heading-3" bold>-- {{ letter }} --</twig:Typography></h3>
+            <ul class="flex flex-wrap gap-8">
+                {% for icon in icons %}
+                    <li class="text-center"><twig:Icon name="{{ icon }}" class="h-[40px]"/>{{ icon }}</li>
+                {% endfor %}
+            </ul>
+        </li>
+        {% endif %}
+    {% endfor %}
+</ul>

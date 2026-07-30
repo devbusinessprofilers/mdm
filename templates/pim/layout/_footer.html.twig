@@ -1,0 +1,10 @@
+<footer class="flex flex-col flex-wrap gap-6 justify-center xl:justify-between xl:flex-row items-center px-4 pt-6 pb-4 sm:px-12 border-t border-neutral-300 bg-neutral-100">
+    <twig:Footer:Menu class="w-full md:w-auto" />
+    <div class="flex flex-wrap md:flex-nowrap w-full md:w-auto items-center gap-6">
+        <twig:Button asLink href="{{ path('provider_portal_index') }}" variant="outline" icon="phone" class="w-full">{{ 'global.contact'|trans }}</twig:Button>
+        <div class="flex w-full md:w-auto justify-center gap-1">
+            <twig:Button asLink href="{{ path('provider_portal_index') }}" variant="text" icon="instagram" iconSize="lg" class="!p-0" />
+            <twig:Button asLink href="{{ path('provider_portal_index') }}" variant="text" icon="linkedin" iconSize="lg" class="!p-0" />
+        </div>
+    </div>
+</footer>

@@ -1,0 +1,59 @@
+{% extends 'pim/pages/sheet/_layout.html.twig' %}
+
+{% block title %}
+    {{ 'page.sheet.mealTray.product.list.title'|trans }}
+{% endblock %}
+
+{% block main %}
+    <section class="flex flex-col gap-8 bg-neutral-100 rounded-md shadow-(--shadow) w-full p-6 2xl:p-14">
+        <div class="flex flex-wrap justify-between gap-6">
+            <div class="flex flex-col gap-y-2 grow">
+                <h2><twig:Typography variant="heading-3" bold>{{ 'page.sheet.mealTray.product.list.title'|trans }}</twig:Typography></h2>
+                <twig:Typography variant="body-lg">{{ 'page.sheet.mealTray.product.list.info'|trans }}</twig:Typography>
+            </div>
+            <div class="justify-self-end">
+                <twig:Button
+                    variant="outline"
+                    icon="plus"
+                    asLink
+                    href="{{ path('provider_portal_sheet_meal_tray_product_edit', { 'slug': sheet.slug }) }}"
+                >
+                    {{ 'page.sheet.mealTray.product.list.add'|trans }}
+                </twig:Button>
+            </div>
+        </div>
+        {% embed 'pim/table/_table.html.twig' %}
+            {% block thead %}
+                <th class="{{ tableCva.apply({'table': 'header'}, 'min-w-[92px] w-[92px] max-w-[92px]') }}"><twig:Typography bold>{{ 'page.sheet.mealTray.product.list.table.picture'|trans }}</twig:Typography></th>
+                <th class="{{ tableCva.apply({'table': 'header'}, 'min-w-[200px]') }}"><twig:Typography bold>{{ 'page.sheet.mealTray.product.list.table.name'|trans }}</twig:Typography></th>
+                <th class="{{ tableCva.apply({'table': 'header'}, 'min-w-[200px]') }}"><twig:Typography bold>{{ 'page.sheet.mealTray.product.list.table.type'|trans }}</twig:Typography></th>
+                <th class="{{ tableCva.apply({'table': 'header'}, 'min-w-[150px]') }}"><twig:Typography bold>{{ 'page.sheet.mealTray.product.list.table.price'|trans }}</twig:Typography></th>
+                <th class="{{ tableCva.apply({'table': 'header'}, 'min-w-[100px]') }}"><twig:Typography bold>{{ 'global.action'|trans }}</twig:Typography></th>
+            {% endblock %}
+            {% block tbody %}
+                {% for product in products %}
+                    <tr class="{{ tableCva.apply({'table': 'row'}) }}">
+                        <td class="{{ tableCva.apply({'table': 'cell'}) }}">
+                            {% if product.pictureDocuments is not empty %}
+                                {# @todo: remove asset to resolve URL #}
+                                <img class="w-[60px] h-[40px] rounded-xs" src="{{ asset(product.pictureDocuments[0].url) }}" alt="" />
+                            {% endif %}
+                        </td>
+                        <td class="{{ tableCva.apply({'table': 'cell'}) }}"><twig:Typography>{{ product.name }}</twig:Typography></td>
+                        <td class="{{ tableCva.apply({'table': 'cell'}) }}"><twig:Typography>{{ productTypes[product.type]|default('-') }}</twig:Typography></td>
+                        <td class="{{ tableCva.apply({'table': 'cell'}) }}"><twig:Typography>{{ product.vatPrice.exTaxAmount|format_currency('EUR') }} HT</twig:Typography></td>
+                        <td class="{{ tableCva.apply({'table': 'cell'}) }}">
+                            <div class="flex gap-2 justify-center items-center">
+                                <twig:Table:EditButton path="{{ path('provider_portal_sheet_meal_tray_product_edit', { 'slug': sheet.slug, 'product': product.name }) }}" />
+                                <twig:Table:DeleteButton
+                                    path="{{ path('provider_portal_sheet_meal_tray_product_delete', { 'slug': sheet.slug, 'product': product.name }) }}"
+                                    csrfToken="{{ csrf_token('delete-product-' ~ product.name) }}"
+                                />
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            {% endblock %}
+        {% endembed %}
+    </section>
+{% endblock %}

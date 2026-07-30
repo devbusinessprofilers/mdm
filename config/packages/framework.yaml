@@ -1,15 +1,36 @@
 # see https://symfony.com/doc/current/reference/configuration/framework.html
 framework:
     secret: '%env(APP_SECRET)%'
+    annotations: false
+    http_method_override: true
+    handle_all_throwables: true
+    trusted_proxies: '127.0.0.1, ::1'
+    trusted_headers: ['x-forwarded-for', 'x-forwarded-proto']
 
-    # Note that the session will be started ONLY if you read or write from it.
+    # Enables session support. Note that the session will ONLY be started if you read or write from it.
+    # Remove or comment this section to explicitly disable session support.
     session:
+        handler_id: null
         cookie_secure: auto
-        cookie_httponly: true
         cookie_samesite: lax
 
     #esi: true
     #fragments: true
+    php_errors:
+        log: true
+
+    error_controller: App\Pim\Controller\ErrorController::show
+
+    http_client:
+      scoped_clients:
+        google_map_routes.client:
+            base_uri: https://routes.googleapis.com
+            headers:
+                X-Goog-Api-Key: '%env(string:GOOGLE_MAPS_API_KEY)%'
+        google_map_places.client:
+            base_uri: https://places.googleapis.com
+            headers:
+                X-Goog-Api-Key: '%env(string:GOOGLE_MAPS_API_KEY)%'
 
 when@test:
     framework:

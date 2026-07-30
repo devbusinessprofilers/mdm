@@ -1,0 +1,30 @@
+{% extends 'pim/pages/sheet/_layout.html.twig' %}
+
+{% block title %}
+    {{ 'page.sheet.place.leisure.title'|trans }}
+{% endblock %}
+
+{% block form_themes %}
+    {% include 'pim/form/_form-theme.html.twig' with {
+        'additionalFormThemes': ['provider_portal/form/subform/_team-building.html.twig'],
+    } %}
+{% endblock %}
+
+{% block main %}
+    {{ form_start(form, { 'attr': { 'id': form.vars.id } }) }}
+    <section class="flex flex-col gap-6 bg-neutral-100 rounded-md shadow-(--shadow) w-full p-6 2xl:p-14">
+        <h2><twig:Typography variant="heading-3" bold>{{ 'page.sheet.place.leisure.title'|trans }}</twig:Typography></h2>
+        <div class="w-full grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-4">
+            {{ form_row(form.leisureList) }}
+        </div>
+        {{ form_row(form.teamBuildings, {
+            'wrapper_class': 'mt-4',
+            'collection_class': 'overflow-x-auto',
+        }) }}
+    </section>
+    {{ form_end(form) }}
+{% endblock %}
+
+{% block float_submit %}
+    <twig:Form:FloatSubmit label="{{ 'global.save'|trans }}" formId="{{ form.vars.id }}" />
+{% endblock %}

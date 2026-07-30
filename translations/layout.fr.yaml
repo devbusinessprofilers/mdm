@@ -1,0 +1,16 @@
+layout:
+  modal:
+    contact_title: "Pour nous contacter"
+    contact_body: "Merci de contacter le numéro suivant :"
+    close_aria: "Fermer"
+  bookmark:
+    title: "Gestion des favoris"
+    ok: "OK"
+  loading: "Chargement…"
+  footer:
+    copyright: "Copyright %year%"
+  title_prefix: "Business Profilers - "
+  meta:
+    author: "Business Profilers"
+  logo:
+    alt: "Logo Business Profilers"

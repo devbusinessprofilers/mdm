@@ -1,0 +1,14 @@
+{%- block dropzone_widget -%}
+    <twig:Form:Dropzone
+        id="{{ id }}"
+        name="{{ full_name }}"
+        documents="{{ documents }}"
+        accept="{{ attr.accept ?? '' }}"
+        maxFileCount="{{ max_file_count }}"
+        fileMaxSize="{{ file_max_size }}"
+        imageMinWidth="{{ image_min_width }}"
+        imageMinHeight="{{ image_min_height }}"
+        withPreview="{{ with_preview }}"
+        disabled="{{ attr.disabled ?? false }}"
+    />
+{%- endblock -%}

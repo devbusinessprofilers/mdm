@@ -1,33 +1,37 @@
 <!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="UTF-8">
-        <title>{% block title %}MDM Business Profilers{% endblock %}</title>
-        <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><text y=%221.2em%22 font-size=%2296%22>⚫️</text><text y=%221.3em%22 x=%220.2em%22 font-size=%2276%22 fill=%22%23fff%22>sf</text></svg>">
-        {% block stylesheets %}
-        {% endblock %}
+<html lang="{{ app.request.locale|split('_')[0] }}">
+<head>
+    <meta charset="utf-8">
+    <meta name="author" content="Business Profilers" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta name="description" content="{% block meta_description %}{% endblock %}" />
+    <meta name="keywords" content="{% block meta_keywords %}{% endblock %}" />
+    {% block meta %}{% endblock %}
+    <title>Business Profilers - {% block title %}{% endblock %}</title>
 
-        {% block javascripts %}
-            {% block importmap %}{{ importmap('app') }}{% endblock %}
-        {% endblock %}
+    {% block importmap %}{{ importmap() }}{% endblock %}
 
-        {% set frankenphp_hot_reload = app.request.server.get('FRANKENPHP_HOT_RELOAD') %}
-        {% if frankenphp_hot_reload %}
-        <meta name="frankenphp-hot-reload:url" content="{{ frankenphp_hot_reload }}">
-        <script src="https://cdn.jsdelivr.net/npm/idiomorph"></script>
-        <script src="https://cdn.jsdelivr.net/npm/frankenphp-hot-reload/+esm" type="module"></script>
-        {% endif %}
-    </head>
-    <body>
-        {% if app.user %}
-            <header class="app-header">
-                <a href="{{ path('app_pim_home') }}" class="brand">MDM Business Profilers</a>
-                <form method="post" action="{{ path('app_logout') }}">
-                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('logout') }}">
-                    <button type="submit" class="logout-button">Se déconnecter</button>
-                </form>
-            </header>
-        {% endif %}
-        {% block body %}{% endblock %}
-    </body>
+    <link rel="icon" type="image/png" href="{{ asset('img/favicon.png') }}">
+
+    {% block style %}
+        <link rel="stylesheet" href="{{ asset('styles/app.css') }}">
+    {% endblock %}
+</head>
+<body class="scrollbar overflow-x-hidden">
+    {% block form_themes %}
+        {% include 'pim/form/_form-theme.html.twig' %}
+    {% endblock %}
+
+    <div class="bg-linear-(--background-gradient) bg-no-repeat grid grid-rows-[auto_1fr_auto] min-h-screen">
+        {% include 'pim/layout/_header.html.twig' %}
+        <div class="max-w-screen">
+            {% block body %}{% endblock %}
+        </div>
+        {% include 'pim/layout/_footer.html.twig' %}
+    </div>
+
+    {% block js %}
+        <script src="https://cdn.tiny.cloud/1/{{ tinymce_api_key }}/tinymce/8/tinymce.min.js" referrerpolicy="origin" crossorigin="anonymous"></script>
+    {% endblock %}
+</body>
 </html>

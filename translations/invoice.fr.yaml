@@ -1,0 +1,29 @@
+invoice:
+  page:
+    title: "Mes factures"
+  list:
+    event_name: "Nom de l’événement"
+    select_event: "Sélectionner un évènement"
+    invoice_number: "N° de facture"
+    invoice_number_placeholder: "N° de facture"
+    customer_reference: "Référence client"
+    customer_reference_placeholder: "Référence client"
+    table:
+      type: "Type de facture"
+      invoice_number: "N° de facture"
+      order_number: "N° de commande"
+      status: "Statut"
+      total_amount: "Montant TTC"
+    arrival_date: "Date d'arrivée :"
+    due_date: "Date d'échéance:"
+    view_order: "Voir la commande"
+    view_invoice: "Voir la facture"
+
+  list_by_opportunity:
+    sort_by: "Trier par"
+    table:
+      invoice_number: "N° de la facture"
+      due_date: "Date d'échéance"
+      payment_date: "Date de réglement"
+      status: "Statut"
+      total_amount: "Montant TTC"

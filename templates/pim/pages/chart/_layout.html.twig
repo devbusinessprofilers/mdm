@@ -1,0 +1,18 @@
+{#
+@var string desktopMenu (component name for menu)
+@var string mobileMenu (component name for mobile menu)
+#}
+
+{% extends 'base.html.twig' %}
+
+{% block body %}
+    <div class="w-full flex flex-col gap-3 2xl:flex-row items-start 2xl:gap-8 px-8 py-12 2xl:py-20 overflow-hidden">
+        <aside class="2xl:min-w-[252px] 2xl:max-w-[252px]">
+            {{ component(desktopMenu, {class: 'hidden 2xl:flex'}) }}
+            {{ component(mobileMenu, {class: '2xl:hidden'}) }}
+        </aside>
+        <main class="w-full 2xl:max-w-[calc(100%-252px-32px)]">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+{% endblock %}

@@ -1,0 +1,17 @@
+{%- block portal_number_widget -%}
+    <twig:Form:NumberInput
+        id="{{ id }}"
+        name="{{ full_name }}"
+        value="{{ value }}"
+        placeholder="{{ (attr.placeholder ?? '')|trans }}"
+        autocomplete="{{ attr.autocomplete ?? name }}"
+        step="{{ step }}"
+        scale="{{ scale }}"
+        minValue="{{ min_value }}"
+        maxValue="{{ max_value }}"
+        radix="{{ radix }}"
+        thousandsSeparator="{{ thousands_separator }}"
+        padFractionalZeros="{{ pad_fractional_zeros }}"
+        disabled="{{ disabled }}"
+    />
+{%- endblock -%}

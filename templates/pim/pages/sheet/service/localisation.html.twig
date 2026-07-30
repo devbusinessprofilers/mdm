@@ -1,0 +1,59 @@
+{% extends 'pim/pages/sheet/_layout.html.twig' %}
+
+{% block title %}
+    {{ 'page.sheet.service.localisation.main.title'|trans }}
+{% endblock %}
+
+{% block main %}
+    {% set localisationDependencyIdentifier = 'localisation-wrapper' %}
+    {% set reducedMobilityAccessDependencyIdentifier = 'reduced-mobility-access-wrapper' %}
+
+    {{ form_start(form, { 'attr': getFormDependencyAttributes()|merge({'id': form.vars.id, 'class': 'flex flex-col gap-6 lg:gap-8'}) }) }}
+        <section class="flex flex-col gap-6 bg-neutral-100 rounded-md shadow-(--shadow) w-full p-6 2xl:p-14">
+            <h2><twig:Typography variant="heading-3" bold>{{ 'page.sheet.service.localisation.main.title'|trans }}</twig:Typography></h2>
+            {{ form_row(form.address, {'input_attributes': getFormDependencyTriggerAttributes(localisationDependencyIdentifier)}) }}
+        </section>
+
+        <section class="flex flex-col gap-6 bg-neutral-100 rounded-md shadow-(--shadow) w-full p-6 2xl:p-14">
+            <h2><twig:Typography variant="heading-3" bold>{{ 'page.sheet.service.localisation.geographic_range.title'|trans }}</twig:Typography></h2>
+            {{ form_row(form.geographicRange) }}
+        </section>
+
+        <section class="flex flex-col gap-6 bg-neutral-100 rounded-md shadow-(--shadow) w-full p-6 2xl:p-14" {{ getFormDependencyWrapperAttributes(localisationDependencyIdentifier)|renderHtmlAttributes }}>
+            {% set isPositionSet = form.nearTrainStations is defined %}
+
+            <div class="flex flex-col gap-2">
+                <h2><twig:Typography variant="heading-3" bold>{{ 'page.sheet.service.localisation.accessibility.title'|trans }}</twig:Typography></h2>
+                {% if isPositionSet %}
+                    <p><twig:Typography>{{ 'page.sheet.service.localisation.accessibility.description'|trans }}</twig:Typography></p>
+                {% else %}
+                    <p><twig:Typography>{{ 'page.sheet.service.localisation.accessibility.waitingPosition'|trans }}</twig:Typography></p>
+                {% endif %}
+            </div>
+
+            {% if isPositionSet %}
+                <div class="w-full grid grid-cols-1 lg:grid-cols-3 gap-x-6 gap-y-4 lg:gap-y-6"  >
+                    {{ form_row(form.nearCities) }}
+                    {{ form_row(form.nearParkings) }}
+                    {{ form_row(form.nearTrainStations) }}
+                    {{ form_row(form.nearAirports) }}
+                </div>
+            {% endif %}
+        </section>
+
+        <section class="flex flex-col gap-6 bg-neutral-100 rounded-md shadow-(--shadow) w-full p-6 2xl:p-14">
+            <h2><twig:Typography variant="heading-3" bold>{{ 'page.sheet.service.localisation.reduced_mobility.title'|trans }}</twig:Typography></h2>
+            {{ form_row(form.hasReducedMobilityAccess, {'input_attributes': getFormDependencyTriggerAttributes(reducedMobilityAccessDependencyIdentifier)}) }}
+
+            <div {{ getFormDependencyWrapperAttributes(reducedMobilityAccessDependencyIdentifier)|renderHtmlAttributes }}>
+                {% if form.isReducedMobilityFriendly is defined %}
+                    {{ form_row(form.isReducedMobilityFriendly) }}
+                {% endif %}
+            </div>
+        </section>
+    {{ form_end(form) }}
+{% endblock %}
+
+{% block float_submit %}
+    <twig:Form:FloatSubmit label="{{ 'global.save'|trans }}" formId="{{ form.vars.id }}" />
+{% endblock %}

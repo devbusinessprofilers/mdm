@@ -1,0 +1,24 @@
+{% extends 'pim/pages/account/_layout.html.twig' %}
+
+{% block title %}
+    {{ 'page.security.title'|trans }}
+{% endblock %}
+
+{% block main %}
+    {{ form_start(form, { 'attr': { 'id': form.vars.id} }) }}
+    <div class="flex flex-col gap-6">
+        <h1><twig:Typography variant="heading-3" bold>{{ 'page.security.title'|trans }}</twig:Typography></h1>
+        <div class="w-full grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-4">
+            {{ form_row(form.password) }}
+            {{ form_row(form.newPassword, {'attr': {
+                'class': 'lg:col-start-1 lg:col-end-3 flex flex-col lg:flex-row gap-6',
+                'childClass': 'flex-1',
+            }}) }}
+        </div>
+    </div>
+    {{ form_end(form) }}
+{% endblock %}
+
+{% block float_submit %}
+    <twig:Form:FloatSubmit label="{{ 'global.save'|trans }}" formId="{{ form.vars.id }}" />
+{% endblock %}

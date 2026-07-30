@@ -1,0 +1,91 @@
+{#
+@var \App\Pim\Model\ProviderPortal\Mock\Chart\Dashboard\Dashboard dashboard
+#}
+
+{% extends 'pim/pages/chart/_layout.html.twig' %}
+
+{% block title %}
+    {{ 'page.chart.dashboard.title'|trans }}
+{% endblock %}
+
+{% block content %}
+    <div class="flex flex-col gap-8">
+        <div class="flex justify-between">
+            <div class="flex gap-8">
+                <div class="flex flex-col gap-1">
+                    <label for="establishment">
+                        <twig:Typography>{{ 'page.chart.dashboard.filter.establishments'|trans }}</twig:Typography>
+                    </label>
+                    <twig:Form:Select
+                        id="establishment"
+                        name="establishment"
+                        choices="{{ establishments }}"
+                        placeholder="-"
+                    />
+                </div>
+                <div class="flex flex-col gap-1">
+                    <label for="period">
+                        <twig:Typography>{{ 'page.chart.dashboard.filter.periods'|trans }}</twig:Typography>
+                    </label>
+                    <twig:Form:Select
+                        id="period"
+                        name="period"
+                        choices="{{ periods }}"
+                        placeholder="-"
+                    />
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <twig:Button>{{ 'global.excludedTax'|trans }}</twig:Button>
+                <twig:Button variant="outline">{{ 'global.includedTax'|trans }}</twig:Button>
+            </div>
+        </div>
+        <div class="w-full grid grid-cols-1 lg:grid-cols-2 3xl:grid-cols-4 gap-6">
+            <twig:Chart:Card
+                label="{{ 'page.chart.dashboard.card.turnover'|trans }}"
+                value="{{ dashboard.turnover }}"
+                variation="{{ dashboard.turnoverVariation }}"
+                critical="{{ dashboard.turnoverCritical }}"
+            />
+            <twig:Chart:Card
+                label="{{ 'page.chart.dashboard.card.bookingCount'|trans }}"
+                value="{{ dashboard.bookingCount }}"
+                variation="{{ dashboard.bookingCountVariation }}"
+                critical="{{ dashboard.bookingCountCritical }}"
+            />
+            <twig:Chart:Card
+                label="{{ 'page.chart.dashboard.card.averageBasket'|trans }}"
+                value="{{ dashboard.averageBasket }}"
+                variation="{{ dashboard.averageBasketVariation }}"
+                critical="{{ dashboard.averageBasketCritical }}"
+            />
+            <twig:Chart:Card
+                label="{{ 'page.chart.dashboard.card.individualAverageBasket'|trans }}"
+                value="{{ dashboard.individualAverageBasket }}"
+                variation="{{ dashboard.individualAverageBasketVariation }}"
+                critical="{{ dashboard.individualAverageBasketCritical }}"
+            />
+        </div>
+        <div class="w-full grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <section class="flex flex-col gap-6 bg-neutral-100 rounded-md shadow-(--shadow) p-6 2xl:p-14 lg:col-start-1 lg:col-end-3">
+                <h2><twig:Typography variant="heading-3" bold>{{ 'page.chart.dashboard.chart1.title'|trans }}</twig:Typography></h2>
+                <twig:Typography>{{ 'page.chart.dashboard.chart1.description'|trans }}</twig:Typography>
+                <twig:Chart
+                    type="bar"
+                    data="{{ dashboard.turnoverChartData1 }}"
+                    options="{{ dashboard.turnoverChartOptions1 }}"
+                />
+            </section>
+            <section class="flex flex-col gap-6 bg-neutral-100 rounded-md shadow-(--shadow) p-6 2xl:p-14">
+                <h2><twig:Typography variant="heading-3" bold>{{ 'page.chart.dashboard.chart2.title'|trans }}</twig:Typography></h2>
+                <twig:Typography>{{ 'page.chart.dashboard.chart2.description'|trans }}</twig:Typography>
+                <twig:Chart
+                    type="line"
+                    data="{{ dashboard.turnoverChartData2 }}"
+                    options="{{ dashboard.turnoverChartOptions2 }}"
+                    class="lg:h-full"
+                />
+            </section>
+        </div>
+    </div>
+{% endblock %}

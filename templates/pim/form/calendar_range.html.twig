@@ -1,0 +1,15 @@
+{%- block calendar_range_widget -%}
+{#    {{ dump() }}#}
+    <twig:Form:CalendarRange
+        id="{{ id }}"
+        name="{{ full_name }}"
+        value="{{ value }}"
+        separator="{{ separator }}"
+        inputFormat="{{ format }}"
+        placeholder="{{ (attr.placeholder ?? '')|trans }}"
+        class="{{ attr.class ?? '' }}"
+        disabled="{{ disabled }}"
+        dateMin="{{ date_min }}"
+        dateMax="{{ date_max }}"
+    />
+{%- endblock -%}

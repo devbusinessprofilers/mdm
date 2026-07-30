@@ -10,9 +10,9 @@ use Symfony\Component\Routing\Attribute\Route;
 
 final class HomeController extends AbstractController
 {
-    #[Route('/', name: 'app_pim_home', methods: ['GET'])]
+    #[Route('/', name: 'homepage', methods: ['GET'])]
     public function __invoke(): Response
     {
-        return $this->render('pim/home.html.twig');
+        return $this->render('pim/index.html.twig');
     }
 }

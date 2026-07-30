@@ -1,0 +1,50 @@
+notice:
+  page:
+    list_title: "Mes avis"
+    create_title: "Rédiger un avis"
+  user:
+    anonymous: "Utilisateur anonyme"
+  summary:
+    not_concerned: "NON CONCERNÉ"
+    relation: "Relation commerciale avec le site retenu"
+    equipment: "Equipements séminaires (salle de réunions…)"
+    catering: "Restauration (déjeuner, dîner, pauses…)"
+    accommodation: "Hébergement"
+    overall: "Evaluation globale"
+    other_providers: "Evaluation autres(s) prestataire(s)"
+  flash:
+    review_sent: "Votre avis a bien été transmis"
+  create:
+    title: "Améliorons ensemble vos expériences événementielles"
+    intro: "Nous vous remercions d'avoir retenu l'établissement %hotel% pour l'organisation de votre événement %event_name% - %event_ref% du %date%. Merci de nous accorder quelques instants pour partager avec nous votre retour d'expérience. La qualité est notre priorité, et votre avis nous est précieux."
+    error_required: "Veuillez compléter ce champ"
+    bp_comment: "Avez-vous un commentaire à formuler sur l'accompagnement de Business Profilers ?"
+    place_comment: "Quelques mots sur ce lieu ?"
+    provider_comment: "Partagez-nous votre retour d'expérience en précisant le nom du ou des prestataire(s) concerné(s)"
+    questions:
+      bp_support: "Êtes-vous satisfait(e) de l'accompagnement proposé par Business Profilers ?"
+      provider_relationship: "Êtes-vous satisfait(e) de la relation commerciale avec le site retenu pour votre événement ?"
+      equipment: "Êtes-vous satisfait(e) des équipements séminaires (salles de réunion…) ?"
+      catering: "Êtes-vous satisfait(e) de la restauration (déjeuners, pauses, dîner…) ?"
+      accommodation: "Êtes-vous satisfait(e) de l'hébergement proposé par le lieu ?"
+      overall_place: "D'une manière générale, êtes-vous satisfait(e) du lieu dans lequel votre événement s'est déroulé ?"
+      other_providers: "Êtes-vous satisfait(e) des autre(s) prestataire(s) de votre événement ?"
+  form:
+    comment:
+      placeholder: "Laissez une note personnelle…"
+    submit: "ENVOYER"
+
+  rating:
+    not_concerned: "Non<br/>concerné"
+    not_at_all_satisfied: "Pas du tout<br/>satisfait"
+    unsatisfied: "Insatisfait"
+    satisfied: "Satisfait"
+    very_satisfied: "Très<br/>satisfait"
+
+  common:
+    cancel_upper: "ANNULER"
+    loading: "Loading…"
+
+  list:
+    from: "du"
+    to: "à"

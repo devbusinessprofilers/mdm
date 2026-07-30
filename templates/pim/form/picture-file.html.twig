@@ -1,0 +1,17 @@
+{%- block picture_file_widget -%}
+    <twig:Form:PictureFile
+        id="{{ id }}"
+        name="{{ full_name }}"
+        pictureUrl="{{ picture_url }}"
+        accept="{{ attr.accept ?? '' }}"
+        disabled="{{ attr.disabled ?? false }}"
+        class="{{ attr.class ?? '' }}"
+    />
+{%- endblock -%}
+
+{%- block picture_file_row -%}
+    <div class="flex flex-col gap-1">
+        {{ form_widget(form) }}
+        {{ form_label(form) }}
+    </div>
+{%- endblock -%}

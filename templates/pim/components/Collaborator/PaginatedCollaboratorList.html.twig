@@ -1,0 +1,59 @@
+<div {{ attributes.without('class') }} class="flex flex-col gap-y-8 {{ attributes.render('class') }}">
+
+    {% embed 'pim/table/_table.html.twig' %}
+        {% block thead %}
+            <th class="{{ tableCva.apply({'table': 'header', 'cellSize': 'small'}, 'min-w-[85px]') }}"><twig:Typography bold>{{ 'page.collaborator.table.lastName'|trans }}</twig:Typography></th>
+            <th class="{{ tableCva.apply({'table': 'header', 'cellSize': 'small'}, 'min-w-[77px]') }}"><twig:Typography bold>{{ 'page.collaborator.table.firstName'|trans }}</twig:Typography></th>
+            <th class="{{ tableCva.apply({'table': 'header', 'cellSize': 'small'}, 'min-w-[224px]') }}"><twig:Typography bold>{{ 'page.collaborator.table.email'|trans }}</twig:Typography></th>
+            <th class="{{ tableCva.apply({'table': 'header', 'cellSize': 'small'}, 'min-w-[130px]') }}"><twig:Typography bold>{{ 'page.collaborator.table.phone'|trans }}</twig:Typography></th>
+            <th class="{{ tableCva.apply({'table': 'header', 'cellSize': 'small'}, 'min-w-[126px]') }}"><twig:Typography bold>{{ 'page.collaborator.table.memberships'|trans }}</twig:Typography></th>
+            <th class="{{ tableCva.apply({'table': 'header', 'cellSize': 'small'}, 'min-w-[73px] w-[73px] max-w-[73px]') }}"><twig:Typography bold>{{ 'global.action'|trans }}</twig:Typography></th>
+        {% endblock %}
+        {% block tbody %}
+            {% for collaborator in items %}
+                <tr class="{{ tableCva.apply({'table': 'row'}) }}">
+                    <td class="{{ tableCva.apply({'table': 'cell', 'cellSize': 'small'}) }}"><twig:Typography>{{ collaborator.lastName }}</twig:Typography></td>
+                    <td class="{{ tableCva.apply({'table': 'cell', 'cellSize': 'small'}) }}"><twig:Typography>{{ collaborator.firstName }}</twig:Typography></td>
+                    <td class="{{ tableCva.apply({'table': 'cell', 'cellSize': 'small'}) }}"><twig:Typography>{{ collaborator.email }}</twig:Typography></td>
+                    <td class="{{ tableCva.apply({'table': 'cell', 'cellSize': 'small'}) }}"><twig:Typography>{{ collaborator.phone }}</twig:Typography></td>
+                    <td class="{{ tableCva.apply({'table': 'cell', 'cellSize': 'small'}) }}"><twig:Typography>{{ 'page.collaborator.table.memberships.count'|trans({'count': collaborator.memberships|length}) }}</twig:Typography></td>
+                    <td class="{{ tableCva.apply({'table': 'cell', 'cellSize': 'small'}) }}">
+                        <div class="flex gap-2 justify-center items-center">
+                            <twig:Table:EditButton
+                                path="{{ path('provider_portal_collaborator_edit', {
+                                    'email': collaborator.email,
+                                    'page': currentPage,
+                                }) }}"/>
+                            <twig:Table:DeleteButton
+                                path="{{ path('provider_portal_collaborator_delete', {
+                                    'email': collaborator.email,
+                                    'page': currentPage,
+                                }) }}"
+                                csrfToken="{{ csrf_token('delete-collaborator-' ~ collaborator.email) }}"
+                            />
+                        </div>
+                    </td>
+                </tr>
+            {% endfor %}
+        {% endblock %}
+    {% endembed %}
+
+    <twig:Pagination
+        total="{{ totalPages }}"
+        current="{{ currentPage }}"
+        targetAttributes="{{ {
+            'data-action': 'click->live#action',
+            'data-live-action-param': 'changePage',
+            'data-live-page-param': 'page',
+        } }}"
+        previousAttributes="{{ {
+            'data-action': 'click->live#action',
+            'data-live-action-param': 'previousPage',
+        } }}"
+        nextAttributes="{{ {
+            'data-action': 'click->live#action',
+            'data-live-action-param': 'nextPage',
+        } }}"
+    />
+
+</div>

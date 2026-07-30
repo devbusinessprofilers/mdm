@@ -1,0 +1,5 @@
+sso_covea:
+  flash:
+    account_create_error_1: "Une erreur est survenue lors de la création du compte (1)."
+    account_create_error_2: "Une erreur est survenue lors de la création du compte (2)."
+    account_create_error: "Une erreur est survenue lors de la création du compte."

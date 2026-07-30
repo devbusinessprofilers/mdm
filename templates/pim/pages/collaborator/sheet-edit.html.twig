@@ -1,0 +1,67 @@
+{% extends 'pim/pages/collaborator/_sheet-layout.html.twig' %}
+
+{% block mobileForm %}
+    {{ form_start(mobileForm, {'attr': {'class': 'w-full'}}) }}
+    <div class="flex flex-col gap-4 mb-8">
+        {{ form_row(mobileForm.collaborator.pictureFile) }}
+        {{ form_row(mobileForm.collaborator.lastName) }}
+        {{ form_row(mobileForm.collaborator.firstName) }}
+        {{ form_row(mobileForm.collaborator.email) }}
+        {{ form_row(mobileForm.collaborator.phone) }}
+    </div>
+    <twig:Typography variant="body-lg" bold>{{ 'page.collaborator.panel.membership.rights'|trans }}</twig:Typography>
+    <div class="flex flex-col gap-4 py-4">
+        {{ form_row(mobileForm.role) }}
+        {{ form_row(mobileForm.withContent) }}
+        {{ form_row(mobileForm.withRequest) }}
+        {{ form_row(mobileForm.withPayment) }}
+    </div>
+    <twig:Typography element="div" class="mb-1">{{ 'page.collaborator.panel.membership.status'|trans }}</twig:Typography>
+    {{ form_row(mobileForm.mainContact) }}
+    <div class="flex flex-col gap-2 mt-10 mb-8">
+        <twig:Button type="submit" variant="primary" class="w-full">{{ 'global.continue'|trans }}</twig:Button>
+        <twig:Button
+            asLink
+            href="{{ path('provider_portal_sheet_membership_list', {'slug': sheet.slug}) }}"
+            variant="outline"
+            class="mt-2 w-full"
+        >
+            {{ 'global.cancel'|trans }}
+        </twig:Button>
+    </div>
+    {{ form_end(mobileForm) }}
+{% endblock %}
+
+{% block desktopForm %}
+    {{ form_start(desktopForm, {'attr': {'class': 'w-full mt-10'}}) }}
+    <div class="flex flex-col gap-4 mb-10">
+        {{ form_row(desktopForm.collaborator.pictureFile) }}
+        {{ form_row(desktopForm.collaborator.lastName) }}
+        {{ form_row(desktopForm.collaborator.firstName) }}
+        {{ form_row(desktopForm.collaborator.email) }}
+        {{ form_row(desktopForm.collaborator.phone) }}
+    </div>
+    <div class="flex flex-col gap-2 mb-4">
+        <twig:Typography variant="body-lg" bold>{{ 'page.collaborator.panel.membership.rights'|trans }}</twig:Typography>
+        {{ form_row(desktopForm.role) }}
+        <div class="flex flex-wrap gap-2">
+            {{ form_row(desktopForm.withContent) }}
+            {{ form_row(desktopForm.withRequest) }}
+            {{ form_row(desktopForm.withPayment) }}
+        </div>
+    </div>
+    <twig:Typography element="div" class="mb-1">{{ 'page.collaborator.panel.membership.status'|trans }}</twig:Typography>
+    {{ form_row(desktopForm.mainContact) }}
+    <div class="flex flex-col gap-2 mt-10">
+        <twig:Button type="submit" variant="primary" class="w-full">{{ 'global.continue'|trans }}</twig:Button>
+        <twig:Button
+            asLink
+            href="{{ path('provider_portal_sheet_membership_list', {'slug': sheet.slug}) }}"
+            variant="outline"
+            class="mt-2 w-full"
+        >
+            {{ 'global.cancel'|trans }}
+        </twig:Button>
+    </div>
+    {{ form_end(desktopForm) }}
+{% endblock %}

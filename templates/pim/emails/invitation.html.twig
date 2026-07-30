@@ -1,0 +1,250 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Business Profilers</title>
+
+    <style type="text/css">
+        body {
+            font-family: "Lato", sans-serif;
+            color: #282828;
+            text-align: center;
+            margin: 32px 24px;
+            display: block;
+        }
+
+        .container {
+            width: 650px;
+            max-width: 100%;
+        }
+
+        .container table {
+            width: 100%;
+            font-size: 10px;
+            line-height: 16px;
+        }
+
+        .container p {
+            margin: 0;
+        }
+
+        .container .p-center {
+            padding: 0 124px;
+        }
+
+        .container a {
+            color: #282828;
+            text-decoration: none;
+        }
+
+        .container .mt-8 {
+            margin-top: 8px;
+        }
+
+        .container .mt-16 {
+            margin-top: 16px;
+        }
+
+        .container .mt-24 {
+            margin-top: 24px;
+        }
+
+        .container .align {
+            text-align: center;
+        }
+
+        .container .logo img {
+            width: 250px;
+            height: auto;
+            max-width: 100%;
+        }
+
+        .container .main .title {
+            font-size: 20px;
+            line-height: 28px;
+            font-weight: 900;
+        }
+
+        .container .main .main-text {
+            font-size: 12px;
+            line-height: 20px;
+        }
+
+        .container .main .button {
+            font-family: "Lato", sans-serif;
+            font-size: 14px;
+            font-weight: 900;
+            background: linear-gradient(90deg, #33A0BE 0%, #1BCEC8 54.4%, #00FFD3 100%);
+            color: #FFFFFF;
+            border-radius: 100px;
+            padding: 8px 16px;
+            height: 46px;
+            cursor: pointer;
+            border: none;
+        }
+
+        .container .teaser .subtitle {
+            font-size: 16px;
+            line-height: 24px;
+            font-weight: 900;
+        }
+
+        .container .cards .card {
+            padding: 8px 16px;
+            background-color: #E4F7FC;
+            border-radius: 16px;
+            width: 25%;
+            vertical-align: top;
+        }
+
+        .container .cards .card .icon {
+            width: 40px;
+            height: 40px;
+        }
+
+        .container .cards .card .figure {
+            font-size: 20px;
+            line-height: 28px;
+            font-weight: 900;
+        }
+
+        .container .footer .mailto {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 480px) {
+            .container .cards .card {
+                display: block;
+                width: auto;
+                margin: 8px 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <table class="logo">
+            <tr class="align">
+                <td>
+                    <img src="{{ absolute_url(asset('img/logo.svg')) }}" alt="Business Profilers"/>
+                </td>
+            </tr>
+        </table>
+
+        <table class="main mt-24 p-center">
+            <tr class="align">
+                <td>
+                    <p class="title">{{ 'email.invitation.title.first'|trans }}
+                        <br/>
+                        {{ 'email.invitation.title.second'|trans }}
+                    </p>
+                    <p class="main-text mt-8">{{ 'email.invitation.main.text'|trans }}</p>
+                </td>
+            </tr>
+
+            <tr class="align">
+                <td>
+                    <a href="http://www.businessprofilers.com/" target="_blank">
+                        <button class="button mt-16">{{ 'email.invitation.main.cta'|trans }}</button>
+                    </a>
+                </td>
+            </tr>
+        </table>
+
+        <table class="teaser mt-24">
+            <tr class="align">
+                <td>
+                    <p class="subtitle">{{ 'email.invitation.figures.title'|trans }}</p>
+                    <p class="mt-4">{{ 'email.invitation.figures.text'|trans }}</p>
+                </td>
+            </tr>
+        </table>
+
+        <table class="cards mt-8" cellspacing="8">
+            <tr class="align">
+                <td class="card">
+                    <table>
+                        <tr class="align">
+                            <td>
+                                <img class="icon" src="{{ absolute_url(asset('img/emails/icons/calendar.png')) }}" alt="Calendar"/>
+                            </td>
+                        </tr>
+                        <tr class="align">
+                            <td>
+                                <p class="figure">{{ 'email.invitation.figures.calendar.title'|trans }}</p>
+                                <p>{{ 'email.invitation.figures.calendar.text'|trans }}</p>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+                <td class="card">
+                    <table>
+                        <tr class="align">
+                            <td>
+                                <img class="icon" src="{{ absolute_url(asset('img/emails/icons/building.png')) }}" alt="Building"/>
+                            </td>
+                        </tr class="align">
+                        <tr class="align">
+                            <td>
+                                <p class="figure">{{ 'email.invitation.figures.building.title'|trans }}</p>
+                                <p>{{ 'email.invitation.figures.building.text'|trans }}</p>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+                <td class="card">
+                    <table>
+                        <tr class="align">
+                            <td>
+                                <img class="icon" src="{{ absolute_url(asset('img/emails/icons/rate.png')) }}" alt="Rate"/>
+                            </td>
+                        </tr>
+                        <tr class="align">
+                            <td>
+                                <p class="figure">{{ 'email.invitation.figures.rate.title'|trans }}</p>
+                                <p>{{ 'email.invitation.figures.rate.text'|trans }}</p>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+                <td class="card">
+                    <table>
+                        <tr class="align">
+                            <td>
+                                <img class="icon" src="{{ absolute_url(asset('img/emails/icons/nasdaq.png')) }}" alt="Nasdaq"/>
+                            </td>
+                        </tr>
+                        <tr class="align">
+                            <td>
+                                <p class="figure">{{ 'email.invitation.figures.nasdaq.title'|trans }}</p>
+                                <p>{{ 'email.invitation.figures.nasdaq.text'|trans }}</p
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+
+        <table class="footer mt-16">
+            <tr class="align">
+                <td>
+                    <p>{{ 'email.invitation.footer.first'|trans }}<br>
+                        {{ 'email.invitation.footer.second'|trans }}<br>
+                        📞 03 44 555 444 | ✉️ <a class="mailto" href="mailto:contact@businessprofilers.fr">contact@businessprofilers.fr</a>
+                    </p>
+                </td>
+            </tr>
+
+            <tr class="align">
+                <td>
+                    <p class="mt-16">{{ 'email.invitation.footer.greetings'|trans }}<br />
+                        {{ 'email.invitation.footer.signature'|trans }}
+                    </p>
+                </td>
+            </tr>
+        </table>
+    </div>
+</body>
+</html>
+

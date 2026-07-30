@@ -1,0 +1,13 @@
+paginated_review_list.number: >-
+  {count, plural,
+      =0    {Aucun commentaire}
+      =1    {1 commentaire}
+      other {# commentaires}
+  }
+
+page.collaborator.table.memberships.count: >-
+  {count, plural,
+      =0    {Aucune}
+      =1    {1 fiche affiliée}
+      other {# fiches affiliées}
+  }

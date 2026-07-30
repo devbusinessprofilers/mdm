@@ -1,0 +1,16 @@
+<label class="cursor-pointer">
+    <input
+        type="checkbox"
+        class="peer hidden"
+        value="{{ value }}"
+        {% if selected %}checked{% endif %}
+    />
+    <div class="flex items-center gap-1 px-4 py-2 border-1 border-neutral-300 rounded-lg text-[0.875rem] leading-[1.375rem] font-sans font-[600]
+        peer-checked:bg-primary peer-checked:border-primary peer-checked:text-neutral-100"
+    >
+        {% if icon is not empty %}
+            <twig:Icon name="{{ icon }}" class="w-6 h-6"/>
+        {% endif %}
+        <div>{{ label }}</div>
+    </div>
+</label>

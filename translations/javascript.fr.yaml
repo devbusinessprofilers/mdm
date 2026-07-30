@@ -1,0 +1,4 @@
+search:
+  form:
+    destination:
+      placeholder: "Destination ou établissement…"

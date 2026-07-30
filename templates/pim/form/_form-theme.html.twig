@@ -1,0 +1,41 @@
+{#
+Apply default form themes on form if defined.
+
+@var Symfony\Component\Form\FormView form
+@var array<string> additionalFormThemes
+#}
+{% if form is defined %}
+    {% set formThemes = [
+        'address.html.twig',
+        'avatar.html.twig',
+        'calendar.html.twig',
+        'calendar_range.html.twig',
+        'checkbox.html.twig',
+        'collection.html.twig',
+        'document-file.html.twig',
+        'dropzone.html.twig',
+        'global.html.twig',
+        'live-collection.html.twig',
+        'map.html.twig',
+        'money.html.twig',
+        'near-places.html.twig',
+        'number.html.twig',
+        'opening-hours.html.twig',
+        'password.html.twig',
+        'picture-file.html.twig',
+        'radio-group.html.twig',
+        'select.html.twig',
+        'submit.html.twig',
+        'suggestion.html.twig',
+        'switch-button.html.twig',
+        'text.html.twig',
+        'textarea.html.twig',
+        'vat-price.html.twig',
+        'week-day-opening-hours.html.twig',
+        'wysiwyg.html.twig',
+    ] %}
+    {% if additionalFormThemes is defined and additionalFormThemes is not empty %}
+        {% set formThemes = formThemes|merge(additionalFormThemes) %}
+    {% endif %}
+    {% form_theme form with formThemes %}
+{% endif %}

@@ -1,0 +1,65 @@
+{% block address_row %}
+    <div 
+        {{ stimulus_controller('provider-portal--address', {
+            'autocompletePath': path('provider_portal_api_place_autocomplete'),
+            'placeDetailsPath': path('provider_portal_api_place_details'),
+            'defaultValues': form.vars.data,
+            'formName': form.vars.full_name,
+        }) }}
+        data-bindable
+        class="flex flex-col gap-6"
+    >
+        <div class="w-full grid grid-cols-1 lg:grid-cols-3 gap-x-6 gap-y-4">
+            {{ form_row(form.country, {
+                'select_attributes': {
+                    'data-provider-portal--address-target': 'country',
+                    'data-action': 'custom:change->provider-portal--address#onCountryChange',
+                },
+            }) }}
+        </div>
+        <div class="w-full grid grid-cols-1 lg:grid-cols-3 gap-x-6 gap-y-4">
+            {{ form_row(form.street, {
+                'stimulus_data_actions': ['custom:search->provider-portal--address#onStreetSearch', 'custom:accept->provider-portal--address#onStreetAccept'],
+                'input_attributes': {
+                    'data-provider-portal--address-target': 'street',
+                },
+            }) }}
+            {{ form_row(form.zipCode, {
+                'stimulus_data_actions': ['custom:search->provider-portal--address#onZipCodeSearch', 'custom:accept->provider-portal--address#onZipCodeAccept'],
+                'input_attributes': {
+                    'data-provider-portal--address-target': 'zipCode',
+                },
+            }) }}
+            {{ form_row(form.city, {
+                'stimulus_data_actions': ['custom:search->provider-portal--address#onCitySearch', 'custom:accept->provider-portal--address#onCityAccept'],
+                'input_attributes': {
+                    'data-provider-portal--address-target': 'city',
+                },
+            }) }}
+            {{ form_row(form.district, {
+                'stimulus_data_actions': ['custom:search->provider-portal--address#onDistrictSearch', 'custom:accept->provider-portal--address#onDistrictAccept'],
+                'input_attributes': {
+                    'data-provider-portal--address-target': 'district',
+                },
+            }) }}
+            {{ form_row(form.department, {
+                'stimulus_data_actions': ['custom:search->provider-portal--address#onDepartmentSearch', 'custom:accept->provider-portal--address#onDepartmentAccept'],
+                'input_attributes': {
+                    'data-provider-portal--address-target': 'department',
+                },
+            }) }}
+            {{ form_row(form.area, {
+                'stimulus_data_actions': ['custom:search->provider-portal--address#onAreaSearch', 'custom:accept->provider-portal--address#onAreaAccept'],
+                'input_attributes': {
+                    'data-provider-portal--address-target': 'area',
+                },
+            }) }}
+        </div>
+        {{ form_row(form.position, {
+            'input_attributes': input_attributes|default({}),
+            'attr': {
+                'data-provider-portal--address-target': 'position',
+            },
+        }) }}
+    </div>
+{% endblock %}

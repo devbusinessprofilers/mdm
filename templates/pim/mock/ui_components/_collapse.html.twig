@@ -1,0 +1,38 @@
+<h2><twig:Typography variant="heading-2" bold class="mt-8 mb-4 block">Collapse</twig:Typography></h2>
+<div class="flex gap-8 flex-col bg-neutral-100 rounded-sm p-8  shadow-(--shadow)">
+    <ul class="flex flex-col max-w-full gap-4">
+        <li>
+            <twig:Collapse isExpanded class="w-full">
+                <twig:block name="trigger">
+                    <twig:Typography bold>Expanded by default</twig:Typography>
+                </twig:block>
+
+                <twig:Icon name="check" class="text-success w-6 h-6" />
+            </twig:Collapse>
+        </li>
+        <li>
+            <twig:Collapse class="w-full">
+                <twig:block name="trigger">
+                    <twig:Typography bold>Default</twig:Typography>
+                </twig:block>
+
+                <twig:Icon name="check" class="text-success w-6 h-6" />
+            </twig:Collapse>
+        </li>
+        <li>
+            <twig:Collapse class="w-full">
+                <twig:block name="trigger">
+                    <twig:Form:SwitchButton
+                        id="collapse-controlled"
+                        name="collapse-controlled"
+                        inputAttributes="{{ { 'data-provider-portal--collapse-target': 'checkboxController' } }}"
+                    >
+                        Controller
+                    </twig:Form:SwitchButton>
+                </twig:block>
+
+                <twig:Icon name="check" class="text-success w-6 h-6" />
+            </twig:Collapse>
+        </li>
+    </ul>
+</div>

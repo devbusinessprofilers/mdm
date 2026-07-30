@@ -1,0 +1,21 @@
+{% extends 'pim/pages/collaborator/_sheet-layout.html.twig' %}
+
+{% block mobileForm %}
+    <twig:Typography variant="heading-4" center bold>{{ 'page.collaborator.panel.add.title'|trans }}</twig:Typography>
+    {{ form_start(mobileForm, {'attr': {'class': 'w-full'}}) }}
+    {{ form_row(mobileForm.email) }}
+    <twig:Button type="submit" variant="primary" class="mt-2 w-full">{{ 'global.continue'|trans }}</twig:Button>
+    {{ form_end(mobileForm) }}
+{% endblock %}
+
+{% block desktopForm %}
+    <twig:Icon name="plus" class="cursor-pointer w-20 h-20 text-primary" />
+    <div class="w-full">
+        <twig:Typography variant="heading-3" center bold>{{ 'page.collaborator.panel.add.title'|trans }}</twig:Typography>
+        <twig:Typography center>{{ 'page.collaborator.panel.add.description'|trans }}</twig:Typography>
+    </div>
+    {{ form_start(desktopForm, {'attr': {'class': 'w-full'}}) }}
+    {{ form_row(desktopForm.email) }}
+    <twig:Button type="submit" variant="primary" class="mt-2 w-full">{{ 'global.continue'|trans }}</twig:Button>
+    {{ form_end(desktopForm) }}
+{% endblock %}

@@ -1,0 +1,30 @@
+{%- block choice_widget_collapsed -%}
+    <twig:Form:Select
+        id="{{ id }}"
+        name="{{ full_name }}"
+        placeholder="{{ (attr.placeholder ?? '')|trans }}"
+        choices="{{ choices }}"
+        value="{{ value }}"
+        multiple="{{ multiple }}"
+        disabled="{{ disabled }}"
+        class="{{ attr.class ?? '' }}"
+        withIndicator="{{ attr.with_indicator ?? true }}"
+        tip="{{ attr.tip ?? null }}"
+        tipIcon="{{ attr.tip_icon ?? null }}"
+        limit="{{ attr.limit ?? null }}"
+        selectAttributes="{{ select_attributes ?? {} }}"
+        prototype="{{ attr.prototype ?? false }}"
+    />
+{%- endblock -%}
+
+{%- block tag_select_widget -%}
+    <twig:Form:TagSelect
+        id="{{ id }}"
+        name="{{ full_name }}"
+        choices="{{ choices }}"
+        value="{{ value }}"
+        disabled="{{ disabled }}"
+        class="{{ attr.class ?? '' }}"
+    />
+{%- endblock -%}
+

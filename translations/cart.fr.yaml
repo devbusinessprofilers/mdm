@@ -1,0 +1,80 @@
+cart:
+  flash:
+    email_sent: "Votre email a bien été envoyé!"
+    error_occurred: "Une erreur est survenue!"
+    authentication_required: "Authentification requise"
+    product_already_added: "Le produit a déjà été ajouté à cet évènement."
+  common:
+    previous: "Précédent"
+    next: "Suivant"
+
+  selection:
+    title: "Ma sélection"
+    back_to_results: "Retour sur la page de résultats"
+    heading: "Vos lieux précédemment sélectionnés"
+    palace_badge: "Palace"
+    remove_button_alt: "bouton supprimer"
+    empty: "Votre sélection est vide"
+
+  share:
+    title: "Partager la sélection"
+    breadcrumb_label: "Fil d’Ariane"
+    breadcrumb_home: "Accueil"
+    breadcrumb_selection: "Sélection"
+    breadcrumb_current: "Partager ma sélection"
+    selection_heading: "Votre sélection"
+    cancel: "Annuler"
+    recipient:
+      label: "Email du destinataire"
+      help: "Ajoutez plusieurs adresses emails séparées par ;"
+      placeholder: "Email"
+    subject:
+      label: "Sujet du message"
+      placeholder: "Saisir"
+    message:
+      placeholder: "Saisissez votre message"
+    submit: "PARTAGER"
+
+  cart_block:
+    remove: "Supprimer"
+    add_to_selection: "Ajouter à la sélection"
+
+  type_selection:
+    title: "Votre sélection contient déjà des lieux"
+    intro: "L'ajout de cette activité est possible seulement si vous finalisez votre sélection de lieux actuelle."
+    steps:
+      access_selection: "Accéder à ma sélection en cliquant sur l'icône panier."
+      fill_request: "Renseigner les informations relatives à ma demande."
+      request_quote: "Demander un devis."
+    quote_cta: "Demander un devis"
+    outro: "Ou vous pouvez directement cliquer sur %quote% pour cette activité. Vous pourrez en ajouter d'autres une fois votre évènement créé."
+    cta: "ACCÉDER À MA SÉLECTION"
+
+  modal_add:
+    title: "Le produit a bien été ajouté à votre sélection !"
+    question: "Que souhaiterez-vous faire ?"
+    continue_search: "Continuer ma recherche"
+    request_quote: "Demander un devis au(x) fournisseur(s)"
+    add_existing_project: "Ajouter un projet existant :"
+    cancel: "Annuler"
+    validate: "Valider"
+
+  email:
+    title: "Business Profilers"
+    header_alt: "Business Profilers"
+    header_title: "Sélection à découvrir"
+    intro: "Vous vous demandez pourquoi vous recevez un email de notre part 😉"
+    message_named: "C'est très simple, %firstname% %lastname% de la société %company% souhaite partager avec vous le résultat de ses recherches pour votre prochain évènement."
+    message_anonymous: "C'est très simple, quelqu'un souhaite partager avec vous le résultat de ses recherches pour votre prochain évènement."
+    here_is_message: "Voici son message :"
+    subject_label: "Objet :"
+    message_label: "Message :"
+    selection_intro: "Découvrez ci-dessous sa sélection :"
+    people: "pers"
+    rooms: "chambres"
+    meeting_rooms: "salles"
+    see_you: "A très bientôt sur"
+    at_your_disposal: "Nous restons à votre disposition"
+    team_signature: "La Team BP"
+    footer_alt: "Une question"
+    footer_title: "Une question"

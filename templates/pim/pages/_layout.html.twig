@@ -1,0 +1,12 @@
+{% extends 'base.html.twig' %}
+
+{% block body %}
+    {# @todo: use grid instead of flex for layout #}
+    <div class="w-full flex flex-col gap-3 2xl:flex-row items-start 2xl:gap-8 px-8 py-12 2xl:py-20 min-w-0">
+        <aside class="2xl:min-w-[252px] 2xl:max-w-[252px]">
+            {% block sidebar %}{% endblock %}
+        </aside>
+        {% block content %}{% endblock %}
+    </div>
+    {% block float_submit %}{% endblock %}
+{% endblock %}

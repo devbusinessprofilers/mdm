@@ -1,0 +1,22 @@
+error:
+  common:
+    home: "Accueil"
+    back: "Retour"
+
+  error_page:
+    breadcrumb: "Erreur %code% - %text%"
+    title: "Erreur %code% - %text%"
+    go_back_title: "Revenir à l'accueil"
+
+  maintenance:
+    title: "Maintenance"
+    heading: "Site en maintenance"
+    subheading: "Notre site est en maintenance pour vous offrir une meilleure expérience.<br />Nous serons de retour très bientôt. Merci de votre patience !"
+    contact: "Pour nous contacter 03 44 555 444 | hello@businessprofilers.fr"
+
+  provider:
+    logo_alt: "Logo Business Profilers"
+    logo_title: "Logo Business Profilers"
+    contact_us: "Contactez-nous"
+    email: "contact@businessprofilers.fr"
+    phone: "03 44 555 444"

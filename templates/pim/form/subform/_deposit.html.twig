@@ -1,0 +1,21 @@
+{% block deposit_row %}
+    {% set isCollectionItem = as_collection_item is defined %}
+    {% set displayDelete = isCollectionItem and as_collection_item.allow_delete %}
+    <div
+        {% if isCollectionItem %}
+            data-collection-item=""
+        {% endif %}
+        class="flex flex-col gap-4 mb-6 [counter-increment:deposit]"
+    >
+        <div class="flex justify-between">
+            <twig:Typography bold class="after:content-[counter(deposit)]">{{ 'form.invoicing.deposit.label'|trans }}&nbsp;</twig:Typography>
+            {% if displayDelete %}
+                {{- block('collection_button_delete_content') -}}
+            {% endif %}
+        </div>
+        <div class="w-full grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-4">
+            {{ form_row(form.delay) }}
+            {{ form_row(form.percent) }}
+        </div>
+    </div>
+{% endblock %}

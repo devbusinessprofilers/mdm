@@ -1,0 +1,193 @@
+{% block _library_widget %}
+    {% set tabCva = cva({
+        base: 'cursor-pointer pb-2 mb-3 text-[0.875rem] text-neutral-500 font-[900] border-b-2 border-b-neutral-100 text-nowrap',
+        variants: {
+            active: { true: 'text-neutral-900 border-b-primary' },
+        },
+    }) %}
+    <div
+        class="w-full flex gap-10 overflow-x-scroll"
+        {{ stimulus_target('provider-portal--library', 'tabHeader') }}
+        data-tab-inactive-class="{{ tabCva.apply({}) }}"
+        data-tab-active-class="{{ tabCva.apply({'active': true}) }}"
+    >
+        <div class="{{ tabCva.apply({}) }}" data-tab="{{ form.pictures.vars.id }}">{{ 'form.sheet.library.tab.pictures'|trans }}</div>
+        <div class="{{ tabCva.apply({}) }}" data-tab="{{ form.plans.vars.id }}">{{ 'form.sheet.library.tab.plans'|trans }}</div>
+        <div class="{{ tabCva.apply({}) }}" data-tab="{{ form.documents.vars.id }}">{{ 'form.sheet.library.tab.documents'|trans }}</div>
+        <div class="{{ tabCva.apply({}) }}" data-tab="{{ form.videoLink.vars.id }}">{{ 'form.sheet.library.tab.video'|trans }}</div>
+    </div>
+    <div {{ stimulus_target('provider-portal--library', 'tabContent') }}>
+        <div data-content="{{ form.pictures.vars.id }}" class="hidden">
+            {{ form_row(form.pictures) }}
+        </div>
+        <div data-content="{{ form.plans.vars.id }}" class="hidden">
+            {{ form_row(form.plans) }}
+        </div>
+        <div data-content="{{ form.documents.vars.id }}" class="hidden">
+            {{ form_row(form.documents) }}
+        </div>
+        <div data-content="{{ form.videoLink.vars.id }}" class="hidden">
+            <div class="w-full 3xl:w-[50%]">
+                {{ form_row(form.videoLink) }}
+            </div>
+        </div>
+    </div>
+    <div class="hidden">
+        <div id="picture-template">
+            <div class="dz-preview dz-file-preview flex flex-col gap-2 w-full">
+                <div class="dz-image relative flex justify-center items-center w-full">
+                    <img data-dz-thumbnail="" src="" alt="" class="w-full h-full border-0 rounded-[16px] aspect-256/174">
+                    <div class="dz-progress absolute top-0 left-0 w-full h-full flex items-center bg-background-transparency rounded-[16px]">
+                        <div class="dz-upload h-2 bg-linear-(--primary-gradient) rounded-full w-0 mx-[10%]" data-dz-uploadprogress=""></div>
+                    </div>
+                </div>
+                <div class="w-full h-9"></div>
+            </div>
+        </div>
+        <div id="document-template">
+            <div class="bg-primary-5 flex items-center gap-2 w-full">
+                <div class="w-full h-full flex items-center">
+                    <div class="h-2 bg-linear-(--primary-gradient) rounded-full w-0 mx-[10%]" data-dz-uploadprogress=""></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <twig:Modal identifier="opt-in-modal">
+        <div class="w-auto h-auto flex flex-col gap-4 max-w-[800px]">
+            <twig:Typography variant="heading-2" bold center>{{ 'form.sheet.library.modal.optIn.title'|trans }}</twig:Typography>
+            {{ form_row(form.optIn) }}
+            <div class="w-full mt-8 flex justify-center items-center gap-4">
+                <twig:Button
+                    type="button"
+                    variant="outline"
+                    data-controller="provider-portal--modal-trigger-button"
+                    data-action="click->provider-portal--modal-trigger-button#close"
+                    data-provider-portal--modal-trigger-button-modal-identifier-value="opt-in-modal"
+                >
+                    {{ 'global.cancel'|trans }}
+                </twig:Button>
+                <twig:Button type="submit" variant>{{ 'global.validate_save'|trans }}</twig:Button>
+            </div>
+        </div>
+    </twig:Modal>
+    <twig:Media:CropModal identifier="crop-modal" scaleStep="0.1" minScale="0" maxScale="2"/>
+{% endblock %}
+
+{% block media_collection_row %}
+    <div
+        id="{{ form.vars.id }}"
+        data-prototype-template="{{ form_row(form.vars.prototype)|e('html_attr') }}"
+        class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 3xl:grid-cols-4 gap-4"
+    >
+        {% for child in form %}
+            {{ form_row(child) }}
+        {% endfor %}
+    </div>
+{% endblock %}
+
+{% block media_picture_row %}
+    <div
+        id="{{ form.vars.value.id|default('__unique_id__') }}"
+        class="flex flex-col gap-2 w-full"
+        data-media="picture"
+    >
+        <div class="relative flex justify-center items-center w-full hover:[&:not(:has([data-select]:hover))_[data-overlay]]:flex">
+            <img
+                data-media-image
+                class="w-full h-full border-0 rounded-[16px] aspect-256/174"
+                src="{{ path('provider_portal_download_media', {'uniqueId': form.vars.value.id|default('__unique_id__'), 'type': 'picture'}) }}"
+                alt="-"
+            />
+            {{ form_widget(form.id, {'attr': {'data-media-id': ''}}) }}
+            {{ form_widget(form.rank, {'attr': {'data-media-rank': ''}}) }}
+            {{ form_widget(form.crop, {'attr': {'data-media-crop': ''}}) }}
+            {% if form.meetingRoom is defined %}
+                <div
+                    data-select
+                    data-media-meeting-room="{{ form.category.vars.id }}"
+                    class="absolute hidden w-full box-border bottom-0 left-0 p-[5%] z-1"
+                >
+                    {{ form_row(form.meetingRoom) }}
+                </div>
+            {% endif %}
+            <div data-media-rank class="absolute rounded-full bg-peach text-[10px] text-neutral-100 top-2 right-2 font-bold z-1 w-6 h-6 flex items-center justify-center"></div>
+            <div data-overlay class="hidden absolute bg-background-transparency top-0 left-0 w-full h-full rounded-[16px] justify-center items-center gap-2 z-2">
+                <twig:Button
+                    type="button"
+                    icon="gear"
+                    size="md"
+                    class="px-4"
+                    data-action="click->provider-portal--library#cropMedia"
+                    data-provider-portal--library-identifier-param="{{ form.vars.value.id|default('__unique_id__') }}"
+                />
+                <twig:Button
+                    type="button"
+                    icon="trash"
+                    size="md"
+                    class="px-4"
+                    data-action="click->provider-portal--library#removeMedia"
+                    data-provider-portal--library-identifier-param="{{ form.vars.value.id|default('__unique_id__') }}"
+                />
+            </div>
+        </div>
+        {% if form.category is defined %}
+            {{ form_row(form.category) }}
+        {% endif %}
+    </div>
+{% endblock %}
+
+{% block media_document_row %}
+    <div
+        id="{{ form.vars.value.id|default('__unique_id__') }}"
+        class="p-2 bg-primary-5 flex items-center gap-2 w-full"
+        data-media="document"
+    >
+        <twig:Icon name="note" class="w-6 h-6 text-neutral-900" />
+        <div class="flex-grow">
+            <twig:Typography variant="body" bold ellipsis>
+                <a href="{{ path('provider_portal_download_media', {'uniqueId': form.vars.value.id|default('__unique_id__'), 'type': 'document'}) }}" target="_blank">
+                    {{ form.vars.value.fileName|default('__unique_id__') }}
+                </a>
+            </twig:Typography>
+        </div>
+        <twig:Icon
+            name="cross"
+            class="cursor-pointer w-6 h-6 text-neutral-900"
+            data-action="click->provider-portal--library#removeMedia"
+            data-provider-portal--library-identifier-param="{{ form.vars.value.id|default('__unique_id__') }}"
+        />
+        {{ form_widget(form.id, {'attr': {'data-media-id': ''}}) }}
+        {{ form_widget(form.rank, {'attr': {'data-media-rank': ''}}) }}
+    </div>
+{% endblock %}
+
+{%- block _library_pictures_entry_category_row -%}
+    <div class="w-full relative">
+        <select
+            {{ block('widget_attributes') }}
+            class="w-full border border-primary rounded-xs p-2 text-[12px] pr-6 appearance-none"
+            {% if attr['data-meeting-room-trigger'] is defined and attr['data-meeting-room-trigger'] is not null %}
+                data-action="input->provider-portal--library#toggleMeetingRoom"
+            {% endif %}
+        >
+            {%- set options = choices -%}
+            {%- set render_preferred_choices = false -%}
+            {{- block('choice_widget_options') -}}
+        </select>
+        <twig:Icon name="caret-down" class="absolute pointer-events-none top-[6px] right-1 w-6 h-6"/>
+    </div>
+{%- endblock -%}
+
+{% block _library_pictures_entry_meetingRoom_row %}
+    <div class="w-full relative">
+        <select
+            {{ block('widget_attributes') }}
+            class="w-full border-none rounded-xs p-2 text-[14px] text-neutral-100 font-bold pr-6 appearance-none bg-background-transparency"
+        >
+            {%- set options = choices -%}
+            {%- set render_preferred_choices = false -%}
+            {{- block('choice_widget_options') -}}
+        </select>
+        <twig:Icon name="caret-down" class="absolute pointer-events-none text-neutral-100 top-[6px] right-1 w-6 h-6"/>
+    </div>
+{% endblock %}

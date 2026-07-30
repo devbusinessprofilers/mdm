@@ -1,0 +1,24 @@
+order:
+  statuses:
+    all: "…"
+    pending_validation: "En attente de validation"
+    validated: "Validée"
+  page:
+    title: "Mes commandes"
+  sort:
+    arrival_date: "Date d'arrivée"
+  list:
+    event_name: "Nom de l’événement"
+    select_event: "Sélectionner un évènement"
+    order_status: "Statut de la commande"
+    sort_by: "Trier par"
+    table:
+      customer_reference: "Référence Client"
+      order_number: "Numéro de Commande"
+      status: "Statut"
+      payment: "Règlement"
+      total_amount: "Montant TTC"
+    arrival_date: "Date d’arrivée :"
+    view_event: "Voir la prestation principale"
+    view_invoices: "voir les factures"
+    no_orders: "Aucune commande %status%"

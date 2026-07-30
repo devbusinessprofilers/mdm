@@ -1,0 +1,96 @@
+@layer preline {
+    [data-vc=calendar] {
+        @apply absolute !h-fit z-128 bg-primary-5 rounded-xs w-90 h-85 mt-2 shadow-(--shadow) lg:w-174 lg:h-95 p-2 lg:p-4
+    }
+
+    [data-vc-calendar-hidden] {
+        @apply hidden;
+    }
+
+    [data-vc=header] {
+        @apply flex items-center justify-between mb-4 h-10 text-[1.25rem] leading-[1.75rem] font-title font-bold;
+
+        > div > span {
+            @apply opacity-0 w-2;
+        }
+
+        [data-hs-select-dropdown] {
+            @apply scrollbar max-h-40 bg-neutral-100 border border-primary rounded-none rounded-xxs z-32;
+        }
+
+        div:has([data-vc-arrow]) {
+            @apply flex justify-end;
+        }
+    }
+
+    [data-vc=week] {
+        @apply mb-2;
+    }
+
+    [data-vc=week], [data-vc=dates] {
+        @apply grid grid-cols-7 text-center gap-y-4 lg:gap-y-6;
+
+        [data-vc-week-day] {
+            @apply h-6
+        }
+    }
+
+    [data-vc-date] {
+        @apply relative p-0;
+
+        &::before {
+            @apply content-[''] absolute z-0 top-0 left-0 bottom-0 w-50/100
+        }
+
+        &::after {
+            @apply content-[''] absolute z-0 top-0 right-0 bottom-0 w-50/100
+        }
+
+        button {
+            @apply relative z-1 cursor-pointer w-8 h-8 rounded-lg aspect-square;
+
+            &:hover {
+                @apply bg-primary text-light-text;
+            }
+        }
+
+        &[data-vc-date-disabled] {
+            @apply opacity-50 pointer-events-none;
+        }
+
+        &[data-vc-date-today] {
+            button {
+                @apply border border-primary font-bold;
+            }
+        }
+
+        &[data-vc-date-selected] {
+            button {
+                @apply bg-primary text-light-text;
+            }
+        }
+
+        &[data-vc-date-selected=middle] {
+            button {
+                @apply bg-transparent text-primary;
+            }
+        }
+
+        &[data-vc-date-selected=first], &[data-vc-date-selected=middle] {
+            &::after {
+                @apply bg-primary-4;
+            }
+        }
+
+        &[data-vc-date-selected=last], &[data-vc-date-selected=middle] {
+            &::before {
+                @apply bg-primary-4;
+            }
+        }
+
+        &[data-vc-date-month=next], &[data-vc-date-month=prev] {
+            @apply opacity-50;
+        }
+    }
+}
+

@@ -1,0 +1,17 @@
+{%- block text_widget -%}
+    {% set attributes = { 'maxLength': attr.maxLength ?? null }|merge(input_attributes ?? {}) %}
+
+    <twig:Form:TextInput
+        id="{{ id }}"
+        name="{{ full_name }}"
+        value="{{ value }}"
+        placeholder="{{ (attr.placeholder ?? '')|trans }}"
+        autocomplete="{{ attr.autocomplete ?? name }}"
+        class="{{ attr.widgetClass ?? '' }}"
+        iconColor="{{ attr.textColor ?? null }}"
+        leftIcon="{{ attr.leftIcon ?? null }}"
+        rightIcon="{{ attr.rightIcon ?? null }}"
+        disabled="{{ disabled }}"
+        inputAttributes="{{ attributes }}"
+    />
+{%- endblock -%}

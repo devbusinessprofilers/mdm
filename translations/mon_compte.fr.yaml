@@ -1,0 +1,182 @@
+mon_compte:
+  flash:
+    profile_updated: "Le profil utilisateur a été modifié avec succès !"
+    error_occurred: "Une erreur est survenue !"
+    user_info_fetch_error: "Une erreur est survenue lors de la récupération des informations de l'utilisateur!"
+    profile_update_error: "Une erreur s'est produite lors de la mise à jour du profil utilisateur."
+    account_create_error: "Une erreur est survenue lors de la création du compte."
+    activation_link_invalid: "Le lien d'activation est invalide ou a expiré. Si votre compte existe, un nouveau lien vous a été envoyé par e-mail."
+    company_logo_updated: "Le logo de la société a été modifié avec succès !"
+    company_logo_upload_error: "Une erreur est survenue lors de l’upload du logo de l’entreprise."
+    avatar_updated: "Votre avatar a été modifié avec succès !"
+    avatar_upload_error: "Une erreur est survenue lors de l’upload de l’image."
+    preferences_updated: "La modification de vos préférences a bien été prise en compte."
+    preferences_update_error: "Une erreur est survenue lors de l’enregistrement de vos préférences."
+  form:
+    professional_email_required: "Vous devez vous inscrire avec un email professionnel"
+    email_already_used: "Ce mail est déjà utilisé"
+    account_create_error: "Une erreur est survenue lors de la création du compte."
+    civility:
+      label: "Civilité"
+      mrs: "Madame"
+      mr: "Monsieur"
+    first_name:
+      label: "Prénom"
+    last_name:
+      label: "Nom"
+    email:
+      label: "Email professionnel"
+    password:
+      label: "Mot de passe"
+    password_confirm:
+      label: "Confirmer le mot de passe"
+    company_name:
+      label: "Nom de la société"
+    phone:
+      label: "Téléphone"
+    placeholder:
+      first_name: "Votre prénom"
+      last_name: "Votre nom"
+      email: "Votre email professionnel"
+      password: "Votre mot de passe"
+      password_confirm: "Confirmation de votre mot de passe"
+      company_name: "Le nom de votre société"
+      phone: "Votre téléphone"
+    custom_fields:
+      direction:
+        label: "Direction"
+        placeholder: "Sélectionner une direction"
+      badge:
+        label: "Identifiant"
+      direction_generale:
+        label: "Direction générale"
+        placeholder: "Sélectionner une direction générale"
+      direction_principale:
+        label: "Direction principale"
+        placeholder: "Sélectionner une direction principale"
+      sous_direction:
+        label: "Sous-direction"
+        placeholder: "Sélectionner une sous-direction"
+      marque:
+        label: "Marque"
+        choice: "Marque"
+      code_budget:
+        label: "Code budgétaire"
+        placeholder: "Code budgétaire"
+      fonction:
+        label: "Fonction"
+        placeholder: "Votre fonction"
+      societe_nom:
+        label: "Nom de la société"
+        placeholder: "Le nom de votre société"
+      societe_adresse:
+        label: "Adresse de la société"
+        placeholder: "Adresse de la société"
+      societe_ville:
+        label: "Ville"
+        placeholder: "Ville"
+      societe_code_postal:
+        label: "Code postal"
+        placeholder: "Code postal"
+      societe_siret:
+        label: "Siret"
+        placeholder: "Siret"
+      societe_tva:
+        label: "TVA intracommunautaire"
+        placeholder: "TVA intracommunautaire"
+    optin_cgu:
+      label: "J’accepte les <a href=\"/conditions-generales-dutilisation\" target=\"_blank\">conditions générales d’utilisation</a> et la <a href=\"/politique-de-confidentialite\" target=\"_blank\">charte de confidentialité</a>"
+    optin_rgpd:
+      label: "J’accepte que Business Profilers mémorise et traite mes données personnelles collectées dans le but de recevoir des newsletters ou des informations produits conformément à la <a href=\"/politique-de-confidentialite\" target=\"_blank\">politique de confidentialité</a> de Business Profilers"
+    submit: "Valider"
+    file:
+      label: "Fichier"
+  landing:
+    page_title: "Merci pour votre inscription !"
+    confirmation: "Votre compte est désormais créé."
+    notice: "Il ne reste qu'une petite étape pour démarrer :"
+    email_sent_span: "Confirmez votre adresse email"
+    email_sent: "en cliquant sur le lien qu'on vient de vous envoyer."
+    button:
+      submit: "Se connecter"
+      re_send_email: "Renvoyer l'email de confirmation"
+  page:
+    complete_profile_title: "Veuillez compléter votre profil avant d'utiliser le site"
+    toolbox_title: "Boîte à outils"
+  common:
+    browse: "Parcourir"
+    save: "Sauvegarder"
+    edit: "MODIFIER"
+    optional: "Facultatif"
+    yes: "Oui"
+    no: "Non"
+
+  breadcrumb:
+    account: "Mon compte"
+
+  update_file:
+    title: "Modification du <span class=\"m-logo\">logo</span><span class=\"m-profil\">profil</span>"
+    format_note: "(format carré ex: 85px / 85px)"
+
+  preferences:
+    title: "Gérer mes préférences"
+    form:
+      assigned_notifications: "Souhaitez-vous recevoir les notifications de prise en charge par email ?"
+      satisfaction_notifications: "Souhaitez-vous recevoir les notifications de suivi de satisfaction par email ?"
+      quote_notifications: "Souhaitez-vous recevoir les notifications de devis par email ?"
+
+  navigation:
+    account: "Mon compte"
+    my_events: "Mes événements"
+    my_profile: "Mon profil"
+    my_favorites: "Mes favoris"
+    saved_searches: "Mes recherches sauvegardées"
+    toolbox: "Boîte à outils"
+    activity: "Mon activité"
+    dashboard: "Tableau de bord"
+    my_orders: "Mes commandes"
+    my_invoices: "Mes factures"
+    my_messages: "Mes messages"
+    my_reviews: "Mes avis"
+    loyalty_program: "Mon programme fidélité"
+    referral: "Parrainage"
+    loyalty: "Programme fidélité"
+    enterprise_solutions: "Solutions grands comptes"
+    event_spend: "Mes dépenses événementielles"
+    expert_title: "Votre expert<br>événementiel dédié"
+    expert_phone: "03 44 55 54 44<br>Gratuit et sans engagement"
+    expert_email: "info@businessprofilers.fr"
+
+  favorites:
+    places: "MES LIEUX"
+    activities: "MES ACTIVITES"
+
+  profile:
+    personal_info: "Informations personnelles"
+    company_details: "Coordonnées société"
+    save_changes: "SAUVEGARDER LES MODIFICATIONS"
+    password: "Mot de passe"
+    logo: "Logo"
+    profile: "Profil"
+
+  create_account:
+    page_title: "Mon compte - Création"
+    title: "Création de <span>compte</span>"
+    subtitle: "Remplissez les informations suivantes<br>pour la création de votre compte Business Profilers"
+    password_rules_intro: "Il vous faut un minimum de <strong id=\"Length\" class=\"\">8 caractères</strong> avec au moins :"
+    password_rules:
+      uppercase: "1 majuscule"
+      lowercase: "1 minuscule"
+      number: "1 chiffre"
+      special: "1 caractère spécial"
+    password_mismatch: "Vos mots de passe ne correspondent pas"
+    cancel: "Annuler"
+
+  toolbox:
+    portage_alt: "Portage"
+    inflation_map: "Carte inflation"
+    map_inflation_alt: "Map inflation"
+    portage_request: "Demande de portage "
+    naval_group_newsletter: 'Newsletter'
+
+  tool_page: "la page outil"

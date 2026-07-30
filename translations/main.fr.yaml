@@ -1,0 +1,268 @@
+main:
+  salesforce:
+    connection_error: "Une erreur est survenue, le site ne peut pas se connecter à Salesforce."
+    invalid_argument: "Une erreur est survenue lors de la connexion à Salesforce."
+  email:
+    referencement_subject: "Nouveau référencement"
+    contact_subject: "Nouveau contact"
+  contact:
+    regions:
+      ile_de_france: "Ile de France"
+      nord_ouest: "Nord-Ouest (Bretagne, CVDL, Normandie, Pays de la Loire, la Réunion, Mayotte)"
+      nord_est: "Nord-Est (BFC, Grand-Est, HDF)"
+      sud_est: "Sud-Est (AURA, Corse, Occitanie secteur est, PACA)"
+      sud_ouest: "Sud-Ouest (Nouvelle-Aquitaine, Occitanie secteur ouest, Guadeloupe, Martinique, Guyane)"
+    form:
+      last_name:
+        label: "Nom"
+      first_name:
+        label: "Prénom"
+      company:
+        label: "Société"
+      phone:
+        label: "Téléphone"
+      email:
+        label: "Email"
+      subject:
+        label: "Sujet du message"
+      message:
+        label: "Message"
+      placeholder:
+        last_name: "Votre nom"
+        first_name: "Votre prénom"
+        company: "Votre société"
+        phone: "Votre numéro de téléphone"
+        email: "Votre adresse e-mail"
+        subject: "Sujet du message"
+        message: "Saisissez votre message…"
+  referencement:
+    form:
+      typology:
+        label: "Typologie"
+        placeholder: "Veuillez choisir une typologie…"
+        hotels: "Hôtels"
+        places: "Lieux"
+        restaurants: "Restaurants"
+        providers: "Prestataires"
+        congress_center: "Centre de congrès"
+        activity: "Activité"
+      place_name:
+        label: "Nom du lieu"
+      first_name:
+        label: "Votre prénom"
+      last_name:
+        label: "Votre nom"
+      email:
+        label: "Votre adresse e-mail professionnelle"
+      phone:
+        label: "Votre numéro de téléphone"
+      question:
+        label: "Des questions ?"
+  flash:
+    request_sent: "Votre demande a bien été envoyée !"
+  form:
+    professional_email_required: "Vous devez vous inscrire avec un email professionnel"
+    email_invalid: "Vous devez fournir une adresse email valide"
+  home:
+    title: "Trouvez le lieu idéal pour votre réunion"
+    hero:
+      title: "Votre événement<br>devient"
+      title_end:
+        one: "facile"
+        two: "responsable"
+        three: "impactant"
+      typed:
+        easy: "facile"
+        responsible: "responsable"
+        impactful: "impactant"
+    brand_aria: "marques"
+    bloc3_title: "Votre confiance, <span>notre plus belle réussite</span>"
+    video_fallback: "Votre navigateur ne supporte pas la vidéo HTML5."
+    carousel:
+      prev: "Précédent"
+      next: "Suivant"
+    bloc1:
+      title_html: "Le meilleur de la technologie événementielle<br>et de l’humain <span>au service de vos événements</span>"
+      lead_html: "Associez la puissance de l’IA aux meilleurs experts du secteur pour offrir à vos participants une expérience événementielle fluide, efficace et incomparable."
+      buttons:
+        "0": "Réservation tout-en-un"
+        "1": "Économies automatisées"
+        "2": "Événementiel engagé"
+        "3": "Direct ou accompagné"
+      slides:
+        "0":
+          left:
+            card_title_html: "Hilton Paris La Défense"
+            meta_items:
+              "0":
+                text_html: "Puteaux (92)"
+              "1":
+                text_html: "4,5 (117 avis)"
+            fact_items:
+              "0":
+                text_html: "153 Chambres"
+              "1":
+                text_html: "150 max"
+              "2":
+                text_html: "9 salles"
+          right:
+            h3_html: "Une plateforme tout-en-un<br>pour piloter vos événements"
+            p_top_html: "Accédez à plus de <span class=\"bold\">19&nbsp;000 lieux</span>, prestataires de service, activités de team building et restaurants vérifiés en France."
+            blocks:
+              "0":
+                h4_html: "Simplifiez votre réservation en ligne"
+                p_html: "Comparez les offres en quelques clics, sélectionnez les solutions adaptées à vos besoins et réservez directement en ligne."
+              "1":
+                h4_html: "Transparence et meilleurs tarifs garantis"
+                p_html: "Devis fournisseurs d’origine, aucun coût caché, aucune marge."
+        "1":
+          left:
+            card_title_html: "Analyse des<br>dépenses"
+          right:
+            h3_html: "Des économies générées automatiquement"
+            p_top_html: "En plus de proposer les meilleurs tarifs du marché grâce à nos contrats négociés avec chaque prestataire événementiel."
+            blocks:
+              "0":
+                h4_html: "Optimisation des devis"
+                p_html: "Notre moteur IA stimule la concurrence entre prestataires et identifie les opportunités de réduction sans compromis sur la qualité. Chaque devis est vérifié et optimisé par nos chefs de projet événementiels."
+              "1":
+                h4_html: "De 10 % à 30 % d’économies"
+        "2":
+          left:
+            card_title_html: "Emission carbone"
+          right:
+            h3_html: "Performance & Responsabilité : l’événementiel engagé"
+            blocks:
+              "0":
+                h4_html: "Evaluez les prestataires selon des indications RSE"
+                p_html: "Comparez les prestataires sur la base d’indicateurs RSE fiables en matière d’impact environnemental, social et éthique."
+              "1":
+                h4_html: "Maîtrisez l’impact carbone de chaque événement"
+                p_html: "Simulez l’empreinte carbone de chaque événement pour guider vos décisions vers un impact maîtrisé et mesurable."
+        "3":
+          right:
+            h3_html: "En autonomie ou accompagné,<br>vous décidez de notre degré d’implication !"
+            blocks:
+              "0":
+                h4_html: "En direct :"
+                p_html: "Vous gardez la main sur chaque étape de votre projet. Vous recherchez, comparez et réservez directement vos prestataires en ligne. En quelques clics, votre séminaire prend forme, avec la garantie des meilleurs tarifs sans frais cachés."
+              "1":
+                h4_html: "Avec l’accompagnement d’un chef de projet dédié :"
+                p_html: "Vous profitez de l’expertise d’un professionnel événementiel qui affine vos recherches, valide et négocie les devis à votre place. Vous gagnez du temps, tout en sécurisant vos choix aux meilleures conditions."
+    bloc2:
+      title_html: "Des événements <span>pensés pour vous</span> et vos équipes"
+      cards:
+        "0":
+          label: "Séminaire résidentiel"
+        "1":
+          label: "Journée d’étude"
+        "2":
+          label: "Team building"
+        "3":
+          label: "Comme à la maison"
+        "4":
+          label: "Soirée d’entreprise"
+    bloc3:
+      items:
+        "0":
+          title: "Claire"
+          subtitle: "BNP PARIBAS"
+          text: "La plateforme est intuitive et les résultats sont toujours en adéquation avec nos besoins. J’ai particulièrement apprécié la fonction de panier et la possibilité de comparer plusieurs lieux avant de faire mon choix. En quelques clics, nous avons trouvé le lieu parfait pour notre journée d’étude."
+        "1":
+          title: "Jacqueline"
+          subtitle: "TotalEnergies"
+          text: "Réactivité. Dans un CODIR, les dates peuvent souvent changer. Business Profiler sait se mettre à l'écoute de nos besoins."
+        "2":
+          title: "Sophie"
+          subtitle: "ENGIE Solutions"
+          text: "Nous utilisons Business Profilers depuis plusieurs mois pour organiser nos séminaires d’entreprise, et c’est un vrai gain de temps. La plateforme est claire, les filtres sont précis et les fiches lieux très complètes."
+        "3":
+          title: "Thomas"
+          subtitle: "Institut Pasteur"
+          text: "Ce qui fait la différence avec Business Profilers, c’est la combinaison entre un outil digital performant et un accompagnement sur mesure. Après avoir rempli notre brief, nous avons rapidement reçu une sélection pertinente de lieux adaptés à notre budget et à notre format de séminaire."
+        "4":
+          title: "Cécile"
+          subtitle: "EDF"
+          text: "Un immense merci, Julie ! Votre professionnalisme, votre sens du détail et votre engagement font toute la différence. Grâce à vous, mes événements ont une saveur toute particulière. C’est un vrai plaisir de collaborer avec vous."
+        "5":
+          title: "Valérie"
+          subtitle: "APEC"
+          text: "Toujours d'excellentes relations avec Carole qui facilitent l'organisation de mes événements : écoute, bonne humeur sont des qualités que j'apprécie particulièrement."
+        "6":
+          title: "Laura"
+          subtitle: "L'OREAL"
+          text: "En quelques minutes, j’ai trouvé plusieurs lieux adaptés à notre budget. L’interface est intuitive et les réponses rapides. Je recommande !"
+        "7":
+          title: "Julien"
+          subtitle: "THALES"
+          text: "Nous passons par Business Profilers pour tous nos séminaires et formations internes. Les établissements proposés sont toujours de grande qualité, et le suivi est impeccable. Ce n’est pas seulement une plateforme, c’est un vrai partenaire qui comprend les enjeux des entreprises."
+        "8":
+          title: "Marc"
+          subtitle: "AIRBUS"
+          text: "La plateforme est claire, les lieux sont variés et de qualité. Le service client est top, toujours disponible pour ajuster notre brief."
+        "9":
+          title: "Tassadite"
+          subtitle: "ALSTOM"
+          text: "Maike est d'une efficacité redoutable, à l'écoute. Elle a su très vite identifier nos besoins et satisfaire nos attentes avec \"les moyens du bord\" merci également de sa patience. Elle a su nous faire confiance."
+    bloc4:
+      title_html: "<span>Votre copilote</span> du début à la fin !"
+      paragraph_html: "Rejoignez plus de 100 000 organisateurs qui nous confient la gestion de leurs événements. Du brief à la réservation, on vous accompagne à chaque étape pour trouver les meilleurs lieux, activités, restaurants et prestataires."
+      list_items:
+        "0": "Un expert événementiel dédié"
+        "1": "Meilleurs prix garantis"
+        "2": "Prestation sans frais d’agence"
+        "3": "Financement de votre événement"
+        "4": "Négociation optimale des CGV"
+        "5": "Nos clients parlent d’excellence"
+      button:
+        text: "Simplifier mon événement"
+      media:
+        images:
+          "0":
+            alt: "image2"
+          "1":
+            alt: "image3"
+    bloc5:
+      title_html: "Nos petits plus à nous qui font <span>la différence</span>"
+      columns:
+        "0":
+          features:
+            "0":
+              title_html: "7 heures gagnées<br class=\"d-none d-md-inline\">par réservation"
+              desc_html: "Une interface intuitive qui simplifie la recherche et la comparaison de prestataires instantanément."
+            "1":
+              title_html: "Taux de satisfaction de<br class=\"d-none d-md-inline\">98% sur les 5&nbsp;000 projets"
+              desc_html: "Une plateforme conçue pour tous&nbsp;: simple à utiliser, efficace pour les opérationnels comme pour les responsables achats."
+        "1":
+          features:
+            "0":
+              title_html: "Jusqu'à 30&nbsp;% d'économies<br class=\"d-none d-md-inline\">sur vos réservations"
+              desc_html: "Grâce à la transparence des prix et à la mise en concurrence des prestataires, vous ne payez jamais plus cher que en direct."
+            "1":
+              title_html: "Une couverture<br class=\"d-none d-md-inline\">Européenne"
+              desc_html: "L’Europe entière à portée d’événement&nbsp;: 27 pays, 7 langues, une seule équipe."
+      illustration:
+        alt: "Image Laptop"
+    bloc6:
+      title_html: "On les a <span>testés</span> pour vous, on les a adorés"
+    bloc7:
+      title1_html: "<span>OptiMICE</span>"
+      title2_html: "Vous êtes une <br>grande entreprise ?"
+      paragraph_html: "Optimisez chaque événement, prenez le contrôle de votre portefeuille d'achats <br>MICE, traquez la DATA avec efficience, rationalisez toutes vos dépenses. <br>Dotez-vous de la meilleure solution 360 boostée par l’IA&nbsp;!"
+      cta:
+        text: "Planifier une démo"
+      image:
+        alt: "image1"
+    stats:
+      title: "Choisir Business Profilers, <span>c’est</span>"
+      alt:
+        places: "15 000 lieux"
+        rooms: "70 000 salles"
+        activities: "2500 activités"
+        no_more_expensive: "Pas plus cher qu’en direct"
+        tracking: "Suivi en ligne de l’avancement de votre projet"
+        loyalty: "Votre fidélité récompensée, transformez vos points en réduction ou en cadeau"
+        satisfaction: "Taux de satisfaction de 98% sur les 5000 projets"
+        negotiation: "Service de négociation des prix et des CGV offert"
+  newsletter:
+    title: "Inscription à la newsletter"

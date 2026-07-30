@@ -1,0 +1,154 @@
+pr:
+  flash:
+    delivery_point_invalid: "Le point de livraison spécifié est invalide. Veuillez en choisir un autre."
+    no_order_in_progress: "Aucune commande en cours"
+    order_create_error: "Une erreur est survenue lors de la création de la commande. Veuillez réessayer."
+    delivery_point_date_invalid: "Veuillez sélectionner un point de livraison et une date de livraison valides."
+  request:
+    traiteur_not_found: "Traiteur non trouvé"
+    reference_unknown: "Référence inconnue"
+  page:
+    title: "Page de détails Traiteur"
+  filters:
+    all: "Tous les filtres"
+    reset: "Réinitialiser les filtres"
+    apply: "Appliquer"
+    clear: "Effacer"
+    labels:
+      type_product: "Type de produit"
+      type_meal: "Type de repas"
+      specificities: "Spécificités"
+      allergens: "Allergènes"
+      rse: "Engagement RSE"
+      cuisine_types: "Types de cuisine"
+  breadcrumb:
+    back: "Retour sur la page de résultats"
+  tooltip:
+    non_partner: "Non partenaire : des frais à la<br>réservation peuvent être appliqués."
+  delivery:
+    between: "Livraison entre %start% et %end%"
+    from: "Livraison à partir de %amount% €"
+  rse:
+    title: "Engagements RSE"
+  results:
+    result: "%count% résultat(s)"
+    no_results: "Aucun résultat trouvé, élargissez votre recherche"
+    page_title: 'Page de résultats'
+    all_filters: 'Tosu les filtres'
+    reset_filters: 'Réinitialiser les filtres'
+  search:
+    price_range: "De %min% € à %max% €"
+    price_on_request: "Tarifs sur demande"
+  basket:
+    title: "Mes commandes"
+  pagination:
+    aria: "Navigation des pages"
+  modal:
+    close: "Fermer"
+    loading: "Chargement du contenu…"
+  order:
+    summary:
+      title: "Récapitulatif de commande"
+      heading: "Récapitulatif de votre commande"
+      steps_title: "Plus que 2 étapes pour valider votre devis :"
+      steps_text: "Contrôlez votre commande, les quantités et le détail des tarifs."
+      contact: "Contacter un conseiller"
+      table:
+        products: "Produits"
+        quantity: "Quantité"
+        unit_price_ht: "PU HT"
+        total_ht: "Total HT"
+    confirmation:
+      title: "Récapitulatif de commande"
+      heading: "Confirmation de votre commande"
+      delivery_billing_info: "Information de livraison et de facturation"
+      recipient_title: "Réceptionnaire de la commande"
+      sponsor_title: "Commanditaire de la commande"
+      important:
+        confirm_title: "La confirmation définitive de votre commande est soumise à validation individuelle de chaque traiteur."
+        important_title: "Important"
+        important_text: "Dans le cadre d’une commande impliquant plusieurs traiteurs, si l’un d’entre eux se trouvait dans l’impossibilité d’assurer sa prestation, les traiteurs ayant confirmé leur capacité à exécuter leur part de la commande demeurent pleinement et fermement engagés à l’égard de leurs prestations respectives"
+        cancel_title: "Modification et annulation de la commande"
+        cancel_text: "Une fois votre commande confirmée, aucune modification ni annulation ne pourra être effectuée à moins de 72h de la livraison.<br />D’autre part, pour toute annulation, des frais éventuels peuvent s’appliquer selon les conditions définies au contrat cadre."
+      info:
+        title: "Dernière étape pour valider votre devis :"
+        item1: "Renseignez vos informations de facturation et de paiement pour apaiser la comptabilité."
+        item2: "Confirmez vos informations pour que le livreur ne se transforme pas en détective privé."
+      contact: "Contacter un conseiller"
+    thanks:
+      title: "Récapitulatif de commande"
+      heading: "Merci pour votre commande !"
+      reference: "Référence de commande :"
+      summary_title: "Récapitulatif de votre commande:"
+      delivery_address: "Adresse de livraison :"
+      delivery_date: "Date de livraison :"
+      delivery_slot: "Créneau horaire :"
+      order_amount: "Montant de la commande :"
+      order_amount_join: "soit"
+      follow_title: "Suivi de commande & validation"
+      follow_text: "Votre commande est d’ores et déjà enregistrée et transmise aux traiteurs concernés.<br />Vous recevrez prochainement un e-mail récapitulatif reprenant l’ensemble des éléments de votre commande."
+      confirm_title: "La confirmation définitive de votre commande est soumise à validation individuelle de chaque traiteur."
+      confirm_text: "Si certains d’entre eux devaient ne pas être en capacité d’assurer la livraison, nous prendrons contact avec vous<br />afin de trouver une solution dans les plus brefs délais."
+      process_title: "Processus interne – demande d’achat"
+      process_text: "Merci de procéder dès à présent à votre demande d’achat interne, si votre processus le nécessite,<br />afin de garantir le bon déroulement de la prestation."
+      thanks: "Merci de votre confiance, et à très vite pour régaler vos équipes."
+      new_order: "Commencer une nouvelle commande"
+      back_home: "Retourner à la page d'accueil"
+  form:
+    order_validation:
+      billing_entity: "Entité de facturation"
+      delivery_address: "Adresse de livraison"
+      delivery_date: "Date de livraison"
+      delivery_slot:
+        label: "Créneau de livraison"
+        placeholder_empty: "Aucun créneau disponible"
+        placeholder_select: "Sélectionnez un créneau"
+      direction: "Direction"
+      manager: "Manager"
+      service: "Unité"
+      recipient:
+        first_name: "Prénom"
+        last_name: "Nom"
+        phone: "Numéro de téléphone"
+      delivery_details:
+        label: "Précision sur la livraison"
+        placeholder: "Étage, …"
+      sponsor:
+        first_name: "Prénom"
+        last_name: "Nom"
+        phone: "Numéro de téléphone"
+        email: "Email"
+      consent: "Vous reconnaissez avoir pris connaissance des présentes conditions ci-dessus et les accepter sans réserve."
+      confirm: "Confirmer la commande"
+  totals:
+    title: "Montant total"
+    subtotal_ht: "Sous-total HT"
+    delivery_ht: "Livraison HT"
+    delivery_fee: "Frais de livraison %traiteur%"
+    gestion_fee: "Frais de gestion"
+    total_ht: "Total général HT"
+    vat: "TVA %rate%"
+    total_ttc: "Total TTC"
+    total_ht_short: "Total HT"
+    finalize: "Finaliser la commande"
+    fees_free: "Offerts"
+  mini:
+    person: "personne"
+    persons: "personnes"
+    quantity: "Quantité :"
+    allergens: "Allergènes :"
+    additional_info: "Information additionnelle"
+    order: "Commande :"
+    order_same_day: "Le jour même"
+    order_day_before: "La veille"
+    order_two_days_before: "L'avant-veille"
+    add_to_basket: "Ajouter au panier"
+    decrease: "Diminuer"
+    increase: "Augmenter"
+    remove_from_basket: "Retirer du panier"
+    price_ht: "€ HT"
+    no_regime: 'Sans régime particulier'
+  common:
+    eur_ht: "€ HT"
+    eur_ttc: "€ TTC"
+    phone: "01 89 71 63 31"

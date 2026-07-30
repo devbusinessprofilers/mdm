@@ -1,0 +1,13 @@
+thanks:
+  flash:
+    error_contact_bp: "Une erreur est survenue! Merci de contacter Business Profilers"
+  title: "Merci"
+  thank_you_name: "Merci %name% !"
+  thank_you: "Merci!"
+  message_1: "Nous sommes ravis de vous accompagner dans ce projet. 💙"
+  message_2: "Vos premières propositions arrivent très vite ! 🤩"
+  message_3: "En attendant si vous avez des questions ou des précisions à apporter, notre équipe reste à votre entière disposition."
+  cta: "Accéder à ma demande"
+  contact:
+    phone: "03 44 555 444"
+    email: "hello@businessprofilers.fr"

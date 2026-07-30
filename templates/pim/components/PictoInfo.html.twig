@@ -1,0 +1,9 @@
+<div{{ attributes.without('class') }} class="flex gap-1">
+    <twig:Icon name="{{ icon }}" class="w-6 h-6 text-neutral-900" />
+    <div>
+        <twig:Typography variant="body" bold>{{ label }}</twig:Typography>
+        {% if detail is not empty %}
+            <twig:Typography variant="body">{{ detail }}</twig:Typography>
+        {% endif %}
+    </div>
+</div>

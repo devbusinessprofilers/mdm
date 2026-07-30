@@ -1,0 +1,117 @@
+{% extends 'pim/pages/sheet/_layout.html.twig' %}
+
+{% block title %}
+    {{ 'page.invoicing.title'|trans }}
+{% endblock %}
+
+{% block form_themes %}
+    {% include 'pim/form/_form-theme.html.twig' with {
+        'additionalFormThemes': [
+            'pim/form/subform/_deposit.html.twig',
+            'pim/form/subform/_cancellation.html.twig',
+        ],
+    } %}
+{% endblock %}
+
+{% block main %}
+    {{ form_start(form, { 'attr': getFormDependencyAttributes()|merge({'id': form.vars.id, 'class': 'flex flex-col gap-6 lg:gap-8'}) }) }}
+    <section class="flex flex-col gap-6 bg-neutral-100 rounded-md shadow-(--shadow) w-full p-6 2xl:p-14">
+        <h2><twig:Typography variant="heading-3" bold>{{ 'page.invoicing.legal_information.title'|trans }}</twig:Typography></h2>
+        <div class="w-full grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-4">
+            {{ form_row(form.address.country) }}
+            {{ form_row(form.businessName) }}
+            {{ form_row(form.legalForm) }}
+            {{ form_row(form.address.street) }}
+            {{ form_row(form.address.street2) }}
+            {{ form_row(form.address.zipCode) }}
+            {{ form_row(form.address.city) }}
+            {{ form_row(form.siret) }}
+
+            {% set dependencyIdentifier = 'with-vat-wrapper' %}
+            {{ form_row(form.withVat, {'radio_attributes': getFormDependencyTriggerAttributes(dependencyIdentifier)}) }}
+            <div {{ getFormDependencyWrapperAttributes(dependencyIdentifier)|renderHtmlAttributes }}>
+                {% if form.taxIdNumber is defined %}
+                    {{ form_row(form.taxIdNumber) }}
+                {% endif %}
+            </div>
+            <div {{ getFormDependencyWrapperAttributes(dependencyIdentifier)|renderHtmlAttributes }}>
+                {% if form.vatMode is defined %}
+                    {{ form_row(form.vatMode) }}
+                {% endif %}
+            </div>
+
+        </div>
+    </section>
+    <section class="flex flex-col gap-6 bg-neutral-100 rounded-md shadow-(--shadow) w-full p-6 2xl:p-14">
+        <h2><twig:Typography variant="heading-3" bold>{{ 'page.invoicing.invoicing_address.title'|trans }}</twig:Typography></h2>
+        <div class="w-full grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-4">
+            {{ form_row(form.invoicingName) }}
+            {{ form_row(form.invoicingAddress.country) }}
+            {{ form_row(form.invoicingAddress.street) }}
+            {{ form_row(form.invoicingAddress.zipCode) }}
+            {{ form_row(form.invoicingAddress.city) }}
+            {{ form_row(form.invoicingTaxIdNumber) }}
+        </div>
+    </section>
+    <section class="flex flex-col gap-6 bg-neutral-100 rounded-md shadow-(--shadow) w-full p-6 2xl:p-14">
+        <h2><twig:Typography variant="heading-3" bold>{{ 'page.invoicing.invoicing_contact.title'|trans }}</twig:Typography></h2>
+        <div class="w-full grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-4">
+            {{ form_row(form.contactLastName) }}
+            {{ form_row(form.contactFirstName) }}
+            {{ form_row(form.contactEmail) }}
+            {{ form_row(form.contactPhone) }}
+        </div>
+    </section>
+    <section class="flex flex-col gap-6 bg-neutral-100 rounded-md shadow-(--shadow) w-full p-6 2xl:p-14">
+        <h2><twig:Typography variant="heading-3" bold>{{ 'page.invoicing.payment_mode.title'|trans }}</twig:Typography></h2>
+        <div class="w-full grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-4">
+            {{ form_row(form.bti) }}
+            {{ form_row(form.iban) }}
+            {{ form_row(form.ribFile) }}
+        </div>
+        <div class="w-full grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-4">
+            {{ form_row(form.factoring) }}
+        </div>
+    </section>
+    <section class="flex flex-col gap-6 bg-neutral-100 rounded-md shadow-(--shadow) w-full p-6 2xl:p-14">
+        {{ form_row(form.depositList, {'collection_class': 'mt-8 [counter-reset:deposit]'}) }}
+        <twig:Alert icon="info-circle" class="mt-6">{{ 'page.invoicing.deposit.alert'|trans }}</twig:Alert>
+    </section>
+    <section class="bg-neutral-100 rounded-md shadow-(--shadow) w-full p-6 2xl:p-14">
+        {{ form_row(form.cancellation)  }}
+    </section>
+    <section class="flex flex-col gap-6 bg-neutral-100 rounded-md shadow-(--shadow) w-full p-6 2xl:p-14">
+        <h2><twig:Typography variant="heading-3" bold>{{ 'page.invoicing.payment.title'|trans }}</twig:Typography></h2>
+        <twig:Typography variant="body-lg" bold>{{ 'page.invoicing.payment.due_date'|trans }}</twig:Typography>
+        <div class="w-full grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-4">
+            {{ form_row(form.dueDateDelay) }}
+        </div>
+    </section>
+    <section class="flex flex-col gap-6 bg-neutral-100 rounded-md shadow-(--shadow) w-full p-6 2xl:p-14">
+        <h2><twig:Typography variant="heading-3" bold>{{ 'page.invoicing.commission.title'|trans }}</twig:Typography></h2>
+        <twig:Typography variant="body-lg" bold>{{ 'page.invoicing.commission.amount'|trans }}</twig:Typography>
+        <div class="w-full grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-4">
+            {{ form_row(form.commissionPercent) }}
+            {{ form_row(form.commissionPayment) }}
+        </div>
+    </section>
+    <section class="flex flex-col gap-6 bg-neutral-100 rounded-md shadow-(--shadow) w-full p-6 2xl:p-14">
+        <h2><twig:Typography variant="heading-3" bold>{{ 'page.invoicing.cgv.title'|trans }}</twig:Typography></h2>
+        <div class="w-full grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-4">
+            {{ form_row(form.cgvFile) }}
+        </div>
+    </section>
+    <section class="flex flex-col gap-6 bg-neutral-100 rounded-md shadow-(--shadow) w-full p-6 2xl:p-14">
+        <h2><twig:Typography variant="heading-3" bold>{{ 'page.invoicing.partnership_agreement.title'|trans }}</twig:Typography></h2>
+        <div class="w-full grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-4">
+            {{ form_row(form.partnershipAgreementDate) }}
+            {{ form_row(form.partnershipAgreementSignatory) }}
+            {{ form_row(form.partnershipAgreementFile) }}
+        </div>
+    </section>
+    {{ form_end(form) }}
+{% endblock %}
+
+{% block float_submit %}
+    <twig:Form:FloatSubmit label="{{ 'global.save'|trans }}" formId="{{ form.vars.id }}" />
+{% endblock %}

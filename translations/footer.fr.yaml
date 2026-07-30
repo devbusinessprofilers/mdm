@@ -1,0 +1,68 @@
+footer:
+  global:
+    meta_description: "La plateforme créée par des hôteliers passionnés, pour vous apporter la meilleure expérience d’événement d’entreprise."
+    phone_number: "03 44 555 444"
+    contact_email: "hello@businessprofilers.fr"
+    debug_email: "dev@businessprofilers.fr"
+  menu_service_and_solution:
+    title: "Services & Solutions"
+    items:
+      0:
+        title: "Qui sommes-nous ?"
+      1:
+        title: "Comment ça marche ?"
+      2:
+        title: "Jobs & recrutement"
+  menu_areas_of_expertise:
+    title: "Domaines d’expertise"
+    items:
+      0:
+        title: "Séminaire de cohésion ou de motivation"
+      1:
+        title: "Séminaire de management ou de direction"
+      2:
+        title: "Séminaire de formation ou d’intégration"
+      3:
+        title: "Lancement de produit ou événementiel"
+      4:
+        title: "Réunion de force de vente ou réseau"
+      5:
+        title: "Assemblée générale ou convention"
+  top_cta:
+    title: "Vous souhaitez référencer votre lieu ou votre activité ?"
+    contact: "Contactez-nous"
+  newsletter:
+    title: "Newsletter"
+    description: "Recevez nos suggestions et nouveautés dans votre boîte mail"
+    placeholder: "Adresse email"
+    submit: "S'inscrire"
+    form:
+      first_name:
+        label: "Prénom"
+        placeholder: "Votre prénom"
+      last_name:
+        label: "Nom"
+        placeholder: "Votre nom"
+      company:
+        label: "Entreprise"
+        placeholder: "Votre entreprise"
+      email:
+        label: "Email"
+        placeholder: "Adresse email"
+      submit: "S'inscrire"
+  social:
+    linkedin: "LinkedIn"
+    instagram: "Instagram"
+    pinterest: "Pinterest"
+  badges:
+    ecovadis_alt: "Logo Ecovadis Gold Novembre 2025"
+    soc_alt: "Logo SOC 3"
+  menu_bottom:
+    0:
+      title: "Mention légales"
+    1:
+      title: "Cookies"
+    2:
+      title: "Politique de confidentialité"
+    3:
+      title: "CGU"

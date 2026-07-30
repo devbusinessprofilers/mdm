@@ -1,0 +1,38 @@
+{%- block submit_row -%}
+    {%- if label is empty -%}
+        {%- if label_format is not empty -%}
+            {% set label = label_format|replace({
+                '%name%': name,
+                '%id%': id,
+            }) %}
+        {%- elseif label is not same as(false) -%}
+            {% set label = name|humanize %}
+        {%- endif -%}
+    {%- endif -%}
+    <twig:Button
+        type="submit"
+        variant="{{ attr.variant ?? null }}"
+        size="{{ attr.size ?? null }}"
+        textColor="{{ attr.textColor ?? null }}"
+        iconSize="{{ attr.iconSize ?? null }}"
+        icon="{{ attr.icon ?? null }}"
+        disabled="{{ attr.disabled ?? false }}"
+        full="{{ attr.full ?? false }}"
+        class="{{ attr.class ?? '' }}"
+    >
+        {%- if translation_domain is same as(false) -%}
+            {%- if label_html is same as(false) -%}
+                {{- label -}}
+            {%- else -%}
+                {{- label|raw -}}
+            {%- endif -%}
+        {%- else -%}
+            {%- if label_html is same as(false) -%}
+                {{- label|trans(label_translation_parameters, translation_domain) -}}
+            {%- else -%}
+                {{- label|trans(label_translation_parameters, translation_domain)|raw -}}
+            {%- endif -%}
+        {%- endif -%}
+    </twig:Button>
+{%- endblock -%}
+

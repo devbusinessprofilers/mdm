@@ -1,0 +1,954 @@
+global.action: Actions
+global.add: Ajouter
+global.backList: Retour à la liste
+global.cancel: Annuler
+global.confirmDelete: Confirmer la suppression
+global.contact: Contactez le support client
+global.continue: Continuer
+global.login: Se connecter
+global.no: Non
+global.validate_save: Valider et enregistrer
+global.save: Enregistrer
+global.select_all: Tout sélectionner
+global.domtom_notice: Les régions d'outre-mer (DOM-TOM) sont incluses dans votre sélection.
+global.placeholder.empty: '-'
+global.placeholder.time: 'hh:mm'
+global.yes: Oui
+global.week_day.monday: Lundi
+global.week_day.tuesday: Mardi
+global.week_day.wednesday: Mercredi
+global.week_day.thursday: Jeudi
+global.week_day.friday: Vendredi
+global.week_day.saturday: Samedi
+global.week_day.sunday: Dimanche
+global.excludedTax: HT
+global.includedTax: TTC
+global.near: À proximité
+global.import: Importer
+
+global.enum.sheet_type.PLACE: Lieu
+global.enum.sheet_type.RESTAURANT: Restaurant
+global.enum.sheet_type.ACTIVITY: Activité
+global.enum.sheet_type.SERVICE: Prestation
+global.enum.sheet_type.MEAL_TRAY: Plateau repas
+
+global.enum.geographical_range.MOBILE: Localisation mobile
+global.enum.geographical_range.FIX_ADDRESS: Localisation fixe
+
+global.enum.visibility_action.LINKEDIN_PUBLICATION: 1 publication Linkedin
+global.enum.visibility_action.MARKETING_RESEARCH: Étude de marché
+global.enum.visibility_action.ONE_TARGETED_EMAIL: 1 emailing dédié acheteurs ciblés
+global.enum.visibility_action.TWO_TARGETED_EMAIL: 2 emailing dédié acheteurs ciblés
+
+email.invitation.title.first: Bravo !
+email.invitation.title.second: Vous êtes invité à rejoindre le référentiel BP.
+email.invitation.main.text: Accédez à l’ensemble de nos clients MICE et propulsez votre visibilité !  Un tremplin unique pour développer votre activité et multiplier vos opportunités.
+email.invitation.main.cta: Accéder à mon espace
+email.invitation.figures.title: BP, votre partenaire de confiance
+email.invitation.figures.text: Un partenaire éthique, transparent et engagé, qui booste votre chiffre d’affaires.
+email.invitation.figures.calendar.title: + de 65M€
+email.invitation.figures.calendar.text: de volume de  réservations annuel.
+email.invitation.figures.building.title: + de 60
+email.invitation.figures.building.text: grands comptes du CAC 40 et du SBF 120 utilisent exclusivement BP.
+email.invitation.figures.rate.title: + de 20%
+email.invitation.figures.rate.text: de taux moyen de conversion des demandes.
+email.invitation.figures.nasdaq.title: 100%
+email.invitation.figures.nasdaq.text: de nos clients peuvent être en contact direct avec vous.
+email.invitation.footer.first: Une question ? Un besoin d’accompagnement ?
+email.invitation.footer.second: Notre équipe est là pour vous aider à tirer le meilleur parti de votre visibilité sur Business Profilers !
+email.invitation.footer.greetings: À très bientôt,
+email.invitation.footer.signature: L’équipe Business Profilers 💙
+
+menu.header.dashboard: Tableau de bord
+menu.header.invoices: Demandes de devis
+menu.header.sheets: Fiches
+menu.header.sheets.places: Lieux
+menu.header.sheets.restaurants: Restaurants
+menu.header.sheets.activities: Activités
+menu.header.sheets.services: Services
+menu.header.sheets.meal_trays: Plateaux repas
+menu.header.performances: Performances
+menu.header.reviews: Avis
+menu.header.collaborators: Collaborateurs
+
+menu.footer.legal_notices: Mentions légales
+menu.footer.cookies_policy: Cookies
+menu.footer.privacy_policy: Politique de confidentialité
+
+menu.account.title: Mon compte
+menu.account.personal_information: Informations personnelles
+menu.account.security: Sécurité & connexion
+menu.account.confidentiality: Données de confidentialité
+
+menu.mobile.sheet: Ma fiche
+
+menu.sheet.place.general.title: Ma fiche
+menu.sheet.place.general.main: Informations générales
+menu.sheet.place.general.localisation: Localisation & accessibilité
+menu.sheet.place.general.thematic: Thématiques & ambiances
+menu.sheet.place.general.description: Description
+menu.sheet.place.general.accommodation: Hébergement
+menu.sheet.place.general.meeting: Réunion
+menu.sheet.place.general.catering: Restauration
+menu.sheet.place.general.leisure: Loisirs & team buildings
+menu.sheet.place.general.services: Services & équipements
+menu.sheet.place.general.csr: RSE
+menu.sheet.place.general.prices: Tarifs
+menu.sheet.place.general.media: Média
+menu.sheet.place.general.visibility: Booster ma visibilité
+menu.sheet.place.setting.title: Paramètres
+menu.sheet.place.setting.invoicing: Facturation & partenariat
+menu.sheet.place.setting.collaborator: Collaborateurs
+menu.sheet.place.setting.template: Templates de message
+
+menu.sheet.restaurant.general.title: Ma fiche
+menu.sheet.restaurant.general.main: Informations générales
+menu.sheet.restaurant.general.localisation: Localisation & accessibilité
+menu.sheet.restaurant.general.description: Description
+menu.sheet.restaurant.general.capacity: Capacités
+menu.sheet.restaurant.general.facility: Services & équipements
+menu.sheet.restaurant.general.csr: RSE
+menu.sheet.restaurant.general.price: Tarifs
+menu.sheet.restaurant.general.media: Médias
+menu.sheet.restaurant.general.visibility: Booster ma visibilité
+menu.sheet.restaurant.setting.title: Paramètres
+menu.sheet.restaurant.setting.invoicing: Facturation & partenariat
+menu.sheet.restaurant.setting.collaborator: Collaborateurs
+menu.sheet.restaurant.setting.template: Templates de message
+
+menu.sheet.activity.general.title: Ma fiche
+menu.sheet.activity.general.main: Informations générales
+menu.sheet.activity.general.localisation: Localisation & accessibilité
+menu.sheet.activity.general.description: Description
+menu.sheet.activity.general.capacity: Capacités
+menu.sheet.activity.general.csr: RSE
+menu.sheet.activity.general.price: Tarifs
+menu.sheet.activity.general.media: Médias
+menu.sheet.activity.general.visibility: Booster ma visibilité
+menu.sheet.activity.setting.title: Paramètres
+menu.sheet.activity.setting.invoicing: Facturation & partenariat
+menu.sheet.activity.setting.collaborator: Collaborateurs
+menu.sheet.activity.setting.template: Templates de message
+
+menu.sheet.service.general.title: Ma fiche
+menu.sheet.service.general.main: Informations générales
+menu.sheet.service.general.localisation: Localisation & accessibilité
+menu.sheet.service.general.detail: Prestations
+menu.sheet.service.general.price: Tarifs
+menu.sheet.service.general.media: Médias
+menu.sheet.service.general.visibility: Booster ma visibilité
+menu.sheet.service.setting.title: Paramètres
+menu.sheet.service.setting.invoicing: Facturation & partenariat
+menu.sheet.service.setting.collaborator: Collaborateurs
+menu.sheet.service.setting.template: Templates de message
+
+menu.sheet.meal_tray.general.title: Ma fiche
+menu.sheet.meal_tray.general.main: Informations générales
+menu.sheet.meal_tray.general.localisation: Localisation & accessibilité
+menu.sheet.meal_tray.general.description: Description
+menu.sheet.meal_tray.general.product: Produits
+menu.sheet.meal_tray.general.media: Médias
+menu.sheet.meal_tray.general.visibility: Booster ma visibilité
+menu.sheet.meal_tray.setting.title: Paramètres
+menu.sheet.meal_tray.setting.invoicing: Facturation & partenariat
+menu.sheet.meal_tray.setting.collaborator: Collaborateurs
+menu.sheet.meal_tray.setting.template: Templates de message
+
+menu.review.title: Mes avis
+menu.review.received: Mes avis reçus
+menu.review.reminder: Mes avis à relancer
+
+menu.chart.dashboard.title: Tableau de bord
+
+menu.chart.analytics.title: CA & Analytics
+menu.chart.analytics.performance: Performance globale
+menu.chart.analytics.competition: Analyse concurrentielle
+
+form.confirm_password.label: Confirmation du nouveau mot de passe
+form.enter_password.label: Saisissez votre mot de passe
+form.new_password.label: Nouveau mot de passe
+form.forgot_password.label: Votre email
+form.forgot_password.placeholder: Votre email
+form.forgot_password.submit: Recevoir un lien
+form.login.label: Email
+form.login.placeholder: Votre e-mail professionnel
+form.firstName.label: Prénom
+form.lastName.label: Nom
+form.email.label: Adresse e-mail
+form.phone.label: Téléphone
+form.job.label: Fonction
+form.password.label: Mot de passe
+form.firstName.placeholder: Saisissez votre prénom
+form.lastName.placeholder: Saisissez votre nom
+form.email.placeholder: Saisissez votre adresse e-mail
+form.phone.placeholder: Saisissez votre téléphone
+form.job.placeholder: Saisissez votre fonction
+form.password.placeholder: '********'
+
+form.dropzone.select.label: '<u>Sélectionnez vos fichiers</u> ou glissez-les ici'
+form.dropzone.count_constraint.label: '{count} fichier(s) maximum.'
+form.dropzone.size_constraint.label: Limité à {size} par fichier.
+form.dropzone.image_constraint.label: Dimension minimum {minWidth} x {minHeight} px
+form.dropzone.button.label: Importer les fichiers
+
+form.document_file.import.label: Importer
+
+form.week_day_opening_hours.from.label: Ouverture
+form.week_day_opening_hours.to.label: Fermeture
+
+form.closing_periods.add.label: Ajouter une période
+form.closing_period.name.label: Nom de la période
+form.closing_period.period.label: Date(s) de fermeture
+
+form.catering_formula.add.label: Ajouter un tarif
+form.catering_formula.name.label: Nom de la formule
+form.catering_formula.cateringFormulaContents.label: Contenu de la formule
+form.catering_formula.minimumParticipant.label: Nombre de participants minimum
+form.catering_formula.minimumPrice.label: Montant HT à partir de
+
+form.address.country.label: Pays
+form.address.street.label: Rue
+form.address.zipCode.label: Code postal
+form.address.city.label: Ville
+form.address.district.label: Arrondissement
+form.address.department.label: Département
+form.address.area.label: Région
+
+form.sheet.place.name.label: Nom du lieu
+form.sheet.place.typologies.label: Typologie
+form.sheet.place.groups.label: Groupe et chaîne hôtelière
+form.sheet.place.events.label: Événements de prédilection
+form.sheet.place.erp.label: ERP
+form.sheet.place.erp.tooltip: Lorem ipsum dolor sit amet consectetur. Scelerisque diam viverra cum tortor odio libero id id. Id netus enim morbi eget commodo.Lorem ipsum dolor sit amet consectetur. Scelerisque diam viverra cum tortor odio libero id id. Id netus enim morbi eget commodo.Lorem ipsum dolor sit amet consectetur. Scelerisque diam viverra cum tortor odio libero id id. Id netus enim morbi eget commodo.
+form.sheet.place.website.label: Site web officiel
+form.sheet.place.privatisable.label: Lieu privatisable
+form.sheet.place.openingHours.label: Horaires
+form.sheet.place.closingPeriods.label: Périodes de fermeture
+
+form.optional_price.price.label: Montant HT à partir de
+
+form.sheet.place.accommodation.withAccommodation.label: Mon établissement dispose d'hébergement ?
+form.sheet.place.accommodation.roomCount.label: Nombre de chambres total
+form.sheet.place.accommodation.singleRoomCount.label: Dont nombre de chambres single / individuelle
+form.sheet.place.accommodation.twinRoomCount.label: Dont nombre de chambres twin
+form.sheet.place.accommodation.doubleRoomCount.label: Dont nombre de chambres double
+form.sheet.place.accommodation.totalCapacity.label: Capacité d'accueil totale des personnes hébergées
+form.sheet.place.accommodation.description.label: Paragraphe de description générale
+form.sheet.place.accommodation.equipments.label: Équipements
+
+form.sheet.place.localisation.nearTrainStations.label: Gare(s)
+form.sheet.place.localisation.nearSubwayStations.label: Métro(s)
+form.sheet.place.localisation.nearLightRailStations.label: Tram(s)
+form.sheet.place.localisation.nearAirports.label: Aéroport(s)
+form.sheet.place.localisation.nearCities.label: Accès par la route
+form.sheet.place.localisation.hasReducedMobilityAccess.label: Accès PMR
+
+form.sheet.place.csr.commitmentFile.label: Descriptif complet des engagements RSE
+form.sheet.place.csr.purchase.label: Achats responsables
+form.sheet.place.csr.environmentalImpact.label: Impact environnemental
+form.sheet.place.csr.socialImpact.label: Impact social
+form.sheet.place.csr.purchaseCategory.label: "% de volume d'achat par catégorie ESAT STPA"
+form.sheet.place.csr.mobility.label: Mobilité
+form.sheet.place.csr.distinction.label: Distinction / Certification
+
+form.sheet.place.description.global.label: Paragraphe de description générale
+form.sheet.place.description.asset1.label: Les plus / atouts 1
+form.sheet.place.description.asset2.label: Les plus / atouts 2
+form.sheet.place.description.asset3.label: Les plus / atouts 3
+form.sheet.place.description.asset4.label: Les plus / atouts 4
+form.sheet.place.description.asset5.label: Les plus / atouts 5
+form.sheet.place.description.significantPoints.label: Points d'intérêt à moins de 15 min à pied
+
+form.sheet.place.leisure.leisureList.label: Loisirs interne à l’établissement
+form.sheet.place.leisure.teamBuildings.label: Team buildings
+form.sheet.place.leisure.teamBuilding.contractor.label: Nom du prestataire externe
+form.sheet.place.leisure.teamBuilding.activity.label: Nom de l'activité
+form.sheet.place.leisure.teamBuilding.pictureFile.label: Photo
+
+form.sheet.place.catering.restaurantCount.label: Nombre de restaurants sur place
+form.sheet.place.catering.diningRoomCount.label: Nombre de salles de restauration
+form.sheet.place.catering.overallDiningCount.label: Nombre maximum de couverts debout
+form.sheet.place.catering.sittingDiningCount.label: Nombre maximum de couverts assis
+form.sheet.place.catering.withDanceEvening.label: Soirée dansante
+form.sheet.place.catering.withCocktailParty.label: Cocktail dinatoire
+form.sheet.place.catering.withLocalCaterer.label: Traiteur sur place
+form.sheet.place.catering.withExternalCaterer.label: Gestion de l'intervention de traiteur externe
+form.sheet.place.catering.selfCatererAuthorized.label: Le client peut-il venir avec son propre traiteur ?
+form.sheet.place.catering.exclusivityAuthorized.label: Restaurant privatisable
+form.sheet.place.catering.musicEndTime.label: Heure d'interruption de musique
+form.sheet.place.catering.cuisines.label: Type de cuisine
+form.sheet.place.catering.mealServices.label: Services
+
+form.sheet.place.services.amenities.label: Services
+form.sheet.place.services.meetingEquipments.label: Technique & Réunion
+form.sheet.place.services.facilities.label: Installation
+form.sheet.place.services.wellnessList.label: Bien-être
+
+form.sheet.place.thematic.thematic.label: Thématique
+form.sheet.place.thematic.environment.label: Cadre / Environement
+form.sheet.place.thematic.atmosphere.label: Ambiance
+
+form.sheet.place.prices.one_day_seminar: Séminaire à la journée
+form.sheet.place.prices.half_day_study_seminar: Demi journée d'étude
+form.sheet.place.prices.one_day_study_seminar: Journée d'étude
+form.sheet.place.prices.half_day_study_seminar_with_cocktail: Demi journée étude + cocktail
+form.sheet.place.prices.one_day_study_seminar_with_cocktail: Journée étude + cocktail
+form.sheet.place.prices.overnight_stay_seminar: Séminaire avec nuitée
+form.sheet.place.prices.semi_resident_seminar: Séminaire semi-résidentiel 1 nuit
+form.sheet.place.prices.resident_seminar: Séminaire résidentiel 1 nuit
+form.sheet.place.prices.all_inclusive_seminar: Séminaire résidentiel all inclusive 1 nuit
+form.sheet.place.prices.room_only: Location de salle seule
+form.sheet.place.prices.half_day_location: Location demi-journée
+form.sheet.place.prices.one_day_location: Location journée
+form.sheet.place.prices.evening_location: Location soirée
+form.sheet.place.prices.parties: Cocktail et soirées
+form.sheet.place.prices.brunch_cocktail: Cocktail déjeunatoire 10 pers
+form.sheet.place.prices.cocktail_party: Cocktail dinatoire
+form.sheet.place.prices.dance_party: Soirée dansante
+form.sheet.place.prices.dinner_party: Soirée dîner assis
+form.sheet.place.prices.cateringFormulas.label: Restauration
+form.sheet.place.prices.sit_down_lunch: Déjeuner assis
+form.sheet.place.prices.sit_down_dinner: Dîner assis
+form.sheet.place.prices.wine_option: Option vin
+form.sheet.place.prices.alcohol_option: Option alcool (apéritif digestif)
+form.sheet.place.prices.group_accommodation: Hébergement groupe
+form.sheet.place.prices.group_single_room: Tarif chambre single (petit déjeuner inclus)
+form.sheet.place.prices.group_twin_room: Tarif chambre twin (petit déjeuner inclus)
+form.sheet.place.prices.group_double_room: Tarif chambre double (petit déjeuner inclus)
+
+form.sheet.place.prices.infos.room: 1 salle
+form.sheet.place.prices.infos.collation: 1 collation
+form.sheet.place.prices.infos.two_collations: 2 collations
+form.sheet.place.prices.infos.lunch: 1 déjeuner
+form.sheet.place.prices.infos.dinner: 1 dîner
+form.sheet.place.prices.infos.lunch_or_dinner: 1 déjeuner ou dîner
+form.sheet.place.prices.infos.accommodation: 1 hébergement
+form.sheet.place.prices.infos.all_spaces: Accès à tous les espaces
+form.sheet.place.prices.infos.all_meals: Tous les repas inclus
+form.sheet.place.prices.infos.all_sides: Boissons et collations à volonté
+form.sheet.place.prices.infos.lunch_reception_space: 1 espace de réception pour le déjeuner
+form.sheet.place.prices.infos.evening_reception_space: 1 espace de réception pour la soirée
+form.sheet.place.prices.infos.cocktail: 1 cocktail comprenant 15 pièces
+form.sheet.place.prices.infos.wine: 1 bouteille de vin
+form.sheet.place.prices.infos.sit_down_dinner: Diner assis
+form.sheet.place.prices.infos.other_alcohol: Autres alcools
+form.sheet.place.prices.infos.catering_formula_all_inclusive: Entrée + plat + dessert + eau + café
+form.sheet.place.prices.infos.by_person: /pers
+form.sheet.place.prices.infos.by_three_persons: /3pers
+form.sheet.place.prices.infos.transformer_all_inclusive:  (entrée + plat + dessert + eau + café)
+form.sheet.place.prices.infos.minimum_participants: 10 participants minimum
+
+form.sheet.place.meeting.hasMeetingRooms.label: Mon établissement dispose de salles de réunion ?
+form.sheet.place.meeting.meetingRoomNumber.label: Nombre de salles de réunion
+form.sheet.place.meeting.cocktailConfigurationCapacity.label: Capacité de la plus grande salle en configuration cocktail
+form.sheet.place.meeting.theatreConfigurationCapacity.label: Capacité de la plus grande salle en configuration Théâtre
+form.sheet.place.meeting.minRoomArea.label: Surface de la plus petite salle de réunion (en m²)
+form.sheet.place.meeting.maxRoomArea.label: Surface de la plus grande salle de réunion (en m²)
+form.sheet.place.meeting.description.label: Descriptif des salles de séminaire
+form.sheet.place.meeting.rooms.actions.add: Ajouter une salle
+form.sheet.place.meeting.rooms.actions.update: Modifier
+form.sheet.place.meeting.rooms.actions.import.title: Pré remplir le fichier avec l’IA
+form.sheet.place.meeting.rooms.actions.import.description: "Importez votre document : l’IA extrait automatiquement les capacités des salles et complète le tableau pour vous faire gagner du temps. Pensez à vérifier et ajuster les données avant validation afin de garantir leur exactitude et leur bon positionnement."
+form.sheet.place.meeting.rooms.actions.import.cta: Importer un fichier
+
+form.sheet.place.media.info: Pour valoriser au mieux votre lieu, chargez au moins 5 photographies en haute définition et au format paysage uniquement.
+
+form.sheet.restaurant.information.name.label: Nom du Restaurant
+form.sheet.restaurant.information.typologies.label: Typologie de restaurant
+form.sheet.restaurant.information.cuisines.label: Type de cuisine
+form.sheet.restaurant.information.dietaryPreferences.label: Spécificité alimentaire
+form.sheet.restaurant.information.events.label: Type d'évènement
+form.sheet.restaurant.information.website.label: Site officiel
+form.sheet.restaurant.information.totalExclusivityAuthorized.label: Privatisation totale du restaurant
+form.sheet.restaurant.information.partialExclusivityAuthorized.label: Privatisation partielle (salon, étage, terrasse)
+form.sheet.restaurant.information.openingHours.label: Horaires
+form.sheet.restaurant.information.closingPeriods.label: Périodes de fermeture
+
+form.sheet.restaurant.description.global.label: Paragraphe de description générale
+form.sheet.restaurant.description.asset1.label: Les plus / atouts 1
+form.sheet.restaurant.description.asset2.label: Les plus / atouts 2
+form.sheet.restaurant.description.asset3.label: Les plus / atouts 3
+form.sheet.restaurant.description.asset4.label: Les plus / atouts 4
+form.sheet.restaurant.description.asset5.label: Les plus / atouts 5
+
+form.sheet.restaurant.facility.services.label: Services
+form.sheet.restaurant.facility.equipments.label: Équipements
+
+form.sheet.restaurant.capacity.sittingCapacity.label: Capacité assise maximum du restaurant (couverts)
+form.sheet.restaurant.capacity.privateCapacity.label: Capacité en salle privatisable ou espace clos
+form.sheet.restaurant.capacity.feastCapacity.label: Capacité banquet (repas assis festif)
+form.sheet.restaurant.capacity.cocktailCapacity.label: Capacité cocktail (maximum debout)
+
+form.sheet.restaurant.csr.csrCommitments.label: Engagements RSE
+
+form.sheet.restaurant.prices.seatedLunch: Déjeuner assis
+form.sheet.restaurant.prices.cocktailLunchParty: Cocktail déjeunatoire 10 pers
+form.sheet.restaurant.prices.seatedDinner: Diner assis
+form.sheet.restaurant.prices.cocktailDinnerParty: Cocktail dînatoire 10 pers
+form.sheet.restaurant.prices.wineOption: Forfait vin
+form.sheet.restaurant.prices.alcoholOption: Forfait alcool (apéritif digestif)
+form.sheet.restaurant.prices.infos.catering_formula_all_inclusive: Entrée + plat + dessert + eau + café
+form.sheet.restaurant.prices.infos.by_person: /pers
+form.sheet.restaurant.prices.infos.by_three_persons: /3pers
+form.sheet.restaurant.prices.infos.cocktail: 1 cocktail comprenant 15 pièces
+form.sheet.restaurant.prices.infos.lunch_reception_space: 1 espace de réception pour le déjeuner
+form.sheet.restaurant.prices.infos.minimum_participants: 10 participants minimum
+form.sheet.restaurant.prices.infos.wine: 1 bouteille de vin
+
+form.sheet.restaurant.localisation.nearTrainStations.label: Gare(s)
+form.sheet.restaurant.localisation.nearSubwayStations.label: Métro(s)
+form.sheet.restaurant.localisation.nearLightRailStations.label: Tram(s)
+form.sheet.restaurant.localisation.nearAirports.label: Aéroport(s)
+form.sheet.restaurant.localisation.nearCities.label: Accès par la route
+form.sheet.restaurant.localisation.hasReducedMobilityAccess.label: Accès PMR
+form.sheet.restaurant.localisation.hasReducedMobilityToilets.label: Toilettes adaptées aux PMR
+
+form.sheet.restaurant.media.info: Pour valoriser au mieux votre lieu, chargez au moins 5 photographies en haute définition et au format paysage uniquement.
+
+form.sheet.activity.information.name.label: Nom de l'activité
+form.sheet.activity.information.types.label: Type
+form.sheet.activity.information.languages.label: Langue parlée
+form.sheet.activity.information.thematic.label: Thématique de l'activité
+form.sheet.activity.information.aquaticList.label: Nautiques & Aquatiques
+form.sheet.activity.information.artisticList.label: Créatives, Artistiques & Musicales
+form.sheet.activity.information.culinaryList.label: Culinaires & Œnologiques
+form.sheet.activity.information.culturalList.label: Culturelles, Réflexions & Découvertes
+form.sheet.activity.information.digitalList.label: Numériques & Digitales
+form.sheet.activity.information.extremeList.label: Sensations fortes & Sports mécaniques
+form.sheet.activity.information.funList.label: Sportives & Ludiques
+form.sheet.activity.information.naturalList.label: Nature & RSE
+form.sheet.activity.information.wellnessList.label: Bien-être & Détente
+
+form.sheet.activity.description.description.label: Description générale
+form.sheet.activity.description.content.label: Ce que comprend la prestation
+form.sheet.activity.description.purposeList.label: Objectifs de séminaire
+form.sheet.activity.description.extra1.label: Plus n°1
+form.sheet.activity.description.extra2.label: Plus n°2
+form.sheet.activity.description.extra3.label: Plus n°3
+form.sheet.activity.description.extra4.label: Plus n°4
+form.sheet.activity.description.extra5.label: Plus n°5
+
+form.sheet.activity.capacity.minCapacity.label: Nombre de participants minimum
+form.sheet.activity.capacity.maxCapacity.label: Nombre de participants maximum
+form.sheet.activity.capacity.minDuration.label: Temps minimum
+form.sheet.activity.capacity.maxDuration.label: Temps maximum
+
+form.sheet.activity.csr.esatProviders.label: Engagements RSE
+
+form.sheet.activity.price.fromPrice.label: Tarifs à partir de (/pers)
+form.sheet.activity.price.withPackage1.label: Ajouter forfait 1
+form.sheet.activity.price.withPackage2.label: Ajouter forfait 2
+form.sheet.activity.price.withPackage3.label: Ajouter forfait 3
+form.sheet.activity.price.withOption1.label: Ajouter option 1
+form.sheet.activity.price.withOption2.label: Ajouter option 2
+form.sheet.activity.price.withOption3.label: Ajouter option 3
+
+form.sheet.activity.price.package.name.label: Nom forfait
+form.sheet.activity.price.package.minimumParticipant.label: Nombre de participants minimum
+form.sheet.activity.price.package.minimumPrice.label: Montant HT à partir de (/pers)
+form.sheet.activity.price.option.name.label: Nom option
+form.sheet.activity.price.option.minimumParticipant.label: Nombre de participants minimum
+form.sheet.activity.price.option.minimumPrice.label: Montant HT à partir de (/pers)
+
+form.sheet.activity.localisation.countries.label: Pays
+form.sheet.activity.localisation.areas.label: Région(s)
+form.sheet.activity.localisation.departments.label: Département(s)
+
+form.sheet.activity.media.info: Pour valoriser au mieux votre lieu, chargez au moins 5 photographies en haute définition et au format paysage uniquement.
+
+form.sheet.service.information.name.label: Nom du prestataire
+form.sheet.service.information.description.label: Description générale
+form.sheet.service.information.isEsat.label: Êtes-vous un prestataire ESAT ?
+form.sheet.service.information.isRse.label: Êtes-vous un prestataire RSE ?
+form.sheet.service.information.pregnantSupport.label: Votre prestation est-elle adaptée aux femmes enceintes ?
+form.sheet.service.information.deafSupport.label: Votre prestation est-elle adaptée aux personnes malentendantes ?
+form.sheet.service.information.blindSupport.label: Votre prestation est-elle adaptée aux personnes malvoyantes ?
+form.sheet.service.information.withEquipment.label: Y a-t-il du matériel fourni ?
+form.sheet.service.information.userEquipmentRequired.label: Y a-t-il des équipements à prévoir par les participants ?
+form.sheet.service.information.receptionEquipmentRequired.label: Y a-t-il des équipements à prévoir sur l'espace de réception ?
+form.sheet.service.information.withConstraint.label: Y a-t-il des contraintes logistiques ?
+form.sheet.service.information.minCapacity.label: Prestation à partir de combien de personnes ?
+form.sheet.service.information.maxCapacity.label: Prestation jusqu'à de combien de personnes ?
+form.sheet.service.information.duration.label: Durée de la prestation ?
+
+form.sheet.service.typology.receptionList.label: Accueil et sécurité
+form.sheet.service.typology.giftList.label: Cadeaux clients & Goodies
+form.sheet.service.typology.communicationList.label: Communication & Publicité
+form.sheet.service.typology.facilityList.label: Technique & Audiovisuel
+form.sheet.service.typology.digitalList.label: Son & Vidéo
+form.sheet.service.typology.activityList.label: Animations & Artistes
+form.sheet.service.typology.translationList.label: Traduction & Interprétariat
+form.sheet.service.typology.transportList.label: Transports & Logistique
+form.sheet.service.typology.foodList.label: Traiteurs
+form.sheet.service.typology.miscellaneousList.label: Divers & Sur-mesure
+form.sheet.service.typology.marketingList.label: Digital & Hybride
+
+form.sheet.service.price.perServicePrice.label: Par prestation
+form.sheet.service.price.perPersonPrice.label: Par personne
+form.sheet.service.price.perDayPrice.label: Par jour
+form.sheet.service.price.perHalfDayPrice.label: Par demi journée
+form.sheet.service.price.perHourPrice.label: Par heure
+form.sheet.service.price.onDemandPrice.label: Sur devis
+
+form.sheet.service.localisation.areas.label: Région(s)
+form.sheet.service.localisation.geographicRange.label: Département(s)
+form.sheet.service.localisation.nearTrainStations.label: Gare(s)
+form.sheet.service.localisation.nearAirports.label: Aéroport(s)
+form.sheet.service.localisation.nearCities.label: Accès par la route
+form.sheet.service.localisation.nearParkings.label: Parking(s)
+form.sheet.service.localisation.hasReducedMobilityAccess.label: Accès PMR
+form.sheet.service.localisation.isReducedMobilityFriendly.label: Matériel ou prestation adaptée aux publics PMR
+
+form.sheet.service.media.info: Pour valoriser au mieux votre lieu, chargez au moins 5 photographies en haute définition et au format paysage uniquement.
+
+form.sheet.mealTray.information.name.label: Nom du traiteur
+form.sheet.mealTray.information.pictureFile.label: Photo principale
+form.sheet.mealTray.information.logoFile.label: Logo
+form.sheet.mealTray.information.openingHours.label: Horaires
+form.sheet.mealTray.information.closingPeriods.label: Périodes de fermeture
+
+form.sheet.mealTray.description.description.label: Description générale
+form.sheet.mealTray.description.cuisine.label: Type de cuisine principal
+form.sheet.mealTray.description.csrCommitments.label: Engagements RSE
+
+form.sheet.mealTray.product.name.label: Nom du produit
+form.sheet.mealTray.product.type.label: Type de produit à créer
+form.sheet.mealTray.product.shortDescription.label: Description courte du produit
+form.sheet.mealTray.product.longDescription.label: Description complète du produit & ingrédients
+form.sheet.mealTray.product.dishTemperature.label: Température des plats à la livraison
+form.sheet.mealTray.product.pictureFiles.label: Photo(s)
+form.sheet.mealTray.product.capacity.label: Pour combien de personnes
+form.sheet.mealTray.product.minOrderCount.label: Quantité minimum de commande
+form.sheet.mealTray.product.maxOrderCount.label: Quantité maximum de commande
+form.sheet.mealTray.product.dietaryPreferences.label: Régime alimentaire du plateau repas
+form.sheet.mealTray.product.allergens.label: Allergènes du plateau repas
+form.sheet.mealTray.product.meals.label: Type de repas
+form.sheet.mealTray.product.orderLimit.label: Date limite de commande
+form.sheet.mealTray.product.timeLimit.label: Heure limite de commande
+form.sheet.mealTray.product.delayLimit.label: Délai minimum entre la commande et le créneau livraison
+
+form.sheet.mealTray.media.info: Pour valoriser au mieux votre lieu, chargez au moins 5 photographies en haute définition et au format paysage uniquement.
+
+form.sheet.vatPrice.exTaxAmount.label: Prix HT
+form.sheet.vatPrice.taxAmount.label: Montant TVA
+form.sheet.vatPrice.vat.label: Taux TVA
+
+form.sheet.library.tab.pictures: Photos
+form.sheet.library.tab.plans: Plans
+form.sheet.library.tab.menus: Menus
+form.sheet.library.tab.documents: Supports commerciaux
+form.sheet.library.tab.video: Vidéo
+form.sheet.library.optIn.label: Je certifie que les visuels téléversés sont libres de tout droit d’auteur et de droit à l’image, et que [Nom de l’hôtel] détient l’ensemble des autorisations nécessaires pour sa diffusion.  J’autorise Business Profilers à l’utiliser, reproduire et diffuser sur tous supports, sans restriction de durée ni de territoire, et garantis Business Profilers contre tout recours de tiers à ce titre. Consulter nos règles détaillées concernant les visuels que nous acceptons.
+form.sheet.library.modal.optIn.title: Avant d’enregistrer, avez-vous pensé au consentement dans l’utilisation de vos images ?
+form.sheet.library.videoLink.placeholder: Ajouter un lien
+
+form.sheet.collaborator.create.email.label: Adresse email
+form.sheet.collaborator.lastName.label: Nom
+form.sheet.collaborator.firstName.label: Prénom
+form.sheet.collaborator.email.label: Email
+form.sheet.collaborator.phone.label: Téléphone
+form.sheet.collaborator.memberships.label: Fiches affiliées
+
+form.crop.rotate.left: Rotation à gauche
+form.crop.rotate.right: Rotation à droite
+
+form.invoicing.address.country.label: Pays
+form.invoicing.businessName.label: Raison sociale
+form.invoicing.legalForm.label: Forme juridique
+form.invoicing.address.street.label: Rue postale
+form.invoicing.address.street2.label: Complément d’adresse
+form.invoicing.address.zipCode.label: Code postal
+form.invoicing.address.city.label: Ville
+form.invoicing.siret.label: N° de SIRET
+form.invoicing.taxIdNumber.label: N° de TVA
+form.invoicing.urssafFile.label: Attestation de vigilance URSSAF
+form.invoicing.rcProFile.label: Assurance RC professionnelle
+form.invoicing.withVat.label: Assujetti à la TVA
+form.invoicing.vatMode.label: TVA au débit ou à l’encaissement
+form.invoicing.invoicingName.label: Nom
+form.invoicing.invoicingTaxIdNumber.label: N° de TVA
+form.invoicing.contactLastName.label: Nom
+form.invoicing.contactFirstName.label: Prénom
+form.invoicing.contactEmail.label: Email
+form.invoicing.contactPhone.label: N° de téléphone
+form.invoicing.factoring.label: Affacturage
+form.invoicing.bti.label: BIC
+form.invoicing.iban.label: IBAN
+form.invoicing.ribFile.label: RIB
+form.invoicing.factoringBti.label: BIC
+form.invoicing.factoringIban.label: IBAN
+form.invoicing.factoringRibFile.label: RIB
+form.invoicing.withCard.label: Paiement par carte bancaire
+form.invoicing.acceptedCards.label: Cartes bancaires acceptées
+form.invoicing.depositList.label: Conditions de paiement de l’acompte
+form.invoicing.depositList.description: Les conditions de versement des acomptes sont plafonnées à 3 versements maximum.<br/>En cas de dépassement de ce seuil, notre service Partenariats prendra directement contact avec vous.
+form.invoicing.depositList.actions.add: Ajouter un accompte
+form.invoicing.deposit.label: Acompte
+form.invoicing.deposit.delay.label: Date d’acompte
+form.invoicing.deposit.percent.label: "% d’accompte"
+form.invoicing.dueDateDelay.label: Date du paiement
+form.invoicing.commissionPercent.label: "% de commission"
+form.invoicing.commissionScope.label: Champ d’application de la commission
+form.invoicing.commissionPayment.label: Paiement
+form.invoicing.cgvFile.label: Conditions générales de ventes
+form.invoicing.partnershipAgreementDate.label: Signé le
+form.invoicing.partnershipAgreementCommissionRate.label: Taux de commission
+form.invoicing.partnershipAgreementFile.label: PDF
+form.invoicing.partnershipAgreementSignatoryEmail.label: Email
+form.invoicing.partnershipAgreementSignatoryLastName.label: Nom
+form.invoicing.partnershipAgreementSignatoryFirstName.label: Prénom
+form.invoicing.cancellation.frame1.label: "Signature à J-181"
+form.invoicing.cancellation.frame2.label: "J-180 à J-91"
+form.invoicing.cancellation.frame3.label: "J-90 à J-61"
+form.invoicing.cancellation.frame4.label: "J-60 à J-45"
+form.invoicing.cancellation.frame5.label: "J-44 à J-30"
+form.invoicing.cancellation.frame6.label: "J-29 à J-15"
+form.invoicing.cancellation.frame7.label: "J-14 à J-8"
+form.invoicing.cancellation.frame8.label: "J-7 à J-4"
+form.invoicing.cancellation.frame9.label: "J-3 à Jour J"
+form.cancellation.actions.update: Modifier
+
+form.templateList.messageTemplates.label: Mes templates de message
+form.templateList.messageTemplates.description: Lorem ipsum dolor sit amet consectetur. Vel suscipit diam integer dolor sed nec neque dis. Egestas amet aenean adipiscing felis.
+form.templateList.messageTemplates.add.label: Créer un nouveau template
+form.templateList.messageTemplates.table.name: Nom du template
+form.templateList.messageTemplates.table.content: Message
+form.templateList.messageTemplates.table.action: Actions
+
+form.membership.role.label: Rôle
+form.membership.mainContact.label: Contact principal
+form.membership.withContent.label: Gérer la fiche
+form.membership.withRequest.label: Gérer les demandes
+form.membership.withPayment.label: Gérer les paiements
+form.membership.firstName.label: Prénom
+form.membership.lastName.label: Nom
+form.membership.email.label: Email
+form.membership.phone.label: Téléphone
+form.membership.sheet.label: Nom de la fiche
+
+page.create_password.description: Remplissez les informations pour finaliser votre inscription.
+page.create_password.title: Création de votre mot de passe
+
+page.enter_password.forgotten_password: Mot de passe oublié ?
+page.enter_password.title: Connectez-vous
+page.enter_password.other_account: Utiliser un autre compte
+
+page.forgot_password.title: Mot de passe oublié ?
+page.forgot_password.description: Réinitialisez votre accès.
+
+page.login.title: Identifiez-vous
+page.login.description: Renseignez votre adresse mail professionnel pour vous connecter ou pour vous créer un compte.
+page.login.contact.title: Besoin d'accompagnement ?
+page.login.contact.description: Notre équipe est là pour vous aider !
+page.login.contact.cta: Contactez notre support
+
+page.personal_information.title: Informations utilisateur
+page.personal_information.picture: Photo de profil
+page.personal_information.picture_detail: Une photo de profil vous permet de personnaliser votre compte.
+
+page.security.title: Sécurité & connexion
+
+page.privacy.title: Données de confidentialité
+page.privacy.description: Pour procéder à la suppression de votre compte, veuillez contacter le support client.
+
+page.chart.dashboard.title: Tabelau de bord
+page.chart.dashboard.filter.title: Filtres
+page.chart.dashboard.filter.establishments: Établissements
+page.chart.dashboard.filter.periods: Périodes
+page.chart.dashboard.card.turnover: Chiffre d'affaires
+page.chart.dashboard.card.bookingCount: Réservations effectuées
+page.chart.dashboard.card.averageBasket: Panier moyen
+page.chart.dashboard.card.individualAverageBasket: Panier moyen par personne
+page.chart.dashboard.chart1.title: Chiffre d'affaires sur l'année
+page.chart.dashboard.chart1.description: Lorem ipsum dolor sit amet consectetur. Nisi leo at ultrices pretium in velit arcu. Sagittis aliquet eu pretium quis mauris integer mattis scelerisque.
+page.chart.dashboard.chart2.title: Chiffre d'affaires sur l'année
+page.chart.dashboard.chart2.description: Lorem ipsum dolor sit amet consectetur. Nisi leo at ultrices pretium in velit arcu.
+
+page.chart.analytics.title: CA & analytics
+page.chart.analytics.filter.title: Filtres
+page.chart.analytics.filter.establishments: Établissements
+page.chart.analytics.filter.periods: Périodes
+page.chart.analytics.card.turnover: Chiffre d'affaires
+page.chart.analytics.card.bookingCount: Réservations effectuées
+page.chart.analytics.card.averageBasket: Panier moyen
+page.chart.analytics.card.individualAverageBasket: Panier moyen par personne
+page.chart.analytics.filter.sizeGroup: Taille du groupe
+page.chart.analytics.filter.srje: SR/JE
+page.chart.analytics.turnoverBreakdown.title: Ventilation du volume d'affaires
+page.chart.analytics.turnoverBreakdown.section.values.title: En valeurs
+page.chart.analytics.turnoverBreakdown.section.values.description: Lorem ipsum dolor sit amet consectetur. Nisi leo at ultrices pretium in velit arcu. Sagittis aliquet eu pretium quis mauris integer mattis scelerisque.
+page.chart.analytics.turnoverBreakdown.section.volume.title: En volume
+page.chart.analytics.turnoverBreakdown.section.volume.description: Lorem ipsum dolor sit amet consectetur. Nisi leo at ultrices pretium in velit arcu. Sagittis aliquet eu pretium quis mauris integer mattis scelerisque.
+page.chart.analytics.requestProcess.title: Traitement des demandes
+page.chart.analytics.requestProcess.card.averageProcessTime: Temps moyen de réponse
+page.chart.analytics.requestProcess.card.conversionRate: Taux de transformation
+page.chart.analytics.requestProcess.section.availability.title: Temps moyen de réponse à la disponibilité
+page.chart.analytics.requestProcess.section.availability.description: Lorem ipsum dolor sit amet consectetur. Nisi leo at ultrices pretium in velit arcu. Sagittis aliquet eu pretium quis mauris integer mattis scelerisque.
+page.chart.analytics.requestProcess.section.availability.gaugeLeft: Dans les 48h
+page.chart.analytics.requestProcess.section.availability.gaugeRight: Dans la semaine
+page.chart.analytics.requestProcess.section.quote.title: Temps moyen de réponse à la demande de devis
+page.chart.analytics.requestProcess.section.quote.description: Lorem ipsum dolor sit amet consectetur. Nisi leo at ultrices pretium in velit arcu. Sagittis aliquet eu pretium quis mauris integer mattis scelerisque.
+page.chart.analytics.requestProcess.section.refusalReason.title: Raison du refus des dossiers
+page.chart.analytics.requestProcess.section.refusalReason.description: Lorem ipsum dolor sit amet consectetur. Nisi leo at ultrices pretium in velit arcu. Sagittis aliquet eu pretium quis mauris integer mattis scelerisque.
+page.chart.analytics.requestProcess.section.refusalCount.title: '{count} refus'
+page.chart.analytics.requestProcess.section.refusalCount.description: Lorem ipsum dolor sit amet consectetur. Nisi leo at ultrices pretium in velit arcu. Sagittis aliquet eu pretium quis mauris integer mattis scelerisque.
+page.chart.analytics.requestProfile.title: Profil des demandes reçues
+page.chart.analytics.requestProfile.section.residenceDuration.title: Durée moyenne de séjour
+page.chart.analytics.requestProfile.section.residenceDuration.description: Lorem ipsum dolor sit amet consectetur. Nisi leo at ultrices pretium in velit arcu. Sagittis aliquet eu pretium quis mauris integer mattis scelerisque.
+page.chart.analytics.requestProfile.section.bookingDuration.title: Time booking moyen
+page.chart.analytics.requestProfile.section.bookingDuration.description: Lorem ipsum dolor sit amet consectetur. Nisi leo at ultrices pretium in velit arcu. Sagittis aliquet eu pretium quis mauris integer mattis scelerisque.
+page.chart.analytics.requestProfile.section.eventCount.title: Nombre d’événement par taille de groupe
+page.chart.analytics.requestProfile.section.eventCount.description: Lorem ipsum dolor sit amet consectetur. Nisi leo at ultrices pretium in velit arcu. Sagittis aliquet eu pretium quis mauris integer mattis scelerisque.
+page.chart.analytics.requestProfile.section.serviceNature.title: Nature de la prestation
+page.chart.analytics.requestProfile.section.serviceNature.description: Lorem ipsum dolor sit amet consectetur. Nisi leo at ultrices pretium in velit arcu. Sagittis aliquet eu pretium quis mauris integer mattis scelerisque.
+page.chart.analytics.requestProfile.section.geographicalRequest.title: Top 10 de l’origine géographique des demandes
+page.chart.analytics.requestProfile.section.geographicalRequest.description: Lorem ipsum dolor sit amet consectetur. Nisi leo at ultrices pretium in velit arcu. Sagittis aliquet eu pretium quis mauris integer mattis scelerisque.
+page.chart.analytics.requestProfile.section.geographicalRequest.table.department: Département
+page.chart.analytics.requestProfile.section.geographicalRequest.table.requestCount: Nombre de demande
+
+page.sheet.completion: 'Profil complété à : {percentage}%'
+page.sheet.publish: Publier ma fiche
+
+page.sheet.tag.online: En ligne
+page.sheet.tag.premium: Premium
+page.sheet.tag.standard: Standard
+page.sheet.tag.offline: Hors ligne
+
+page.sheet.place.general_information.title: Informations générales
+page.sheet.place.general_information.main.title: Informations générales
+page.sheet.place.general_information.availabilities.title: Disponibilités
+
+page.sheet.place.localisation.main.title: Localisation
+page.sheet.place.localisation.accessibility.title: Accessibilité
+page.sheet.place.localisation.accessibility.description: Ajouter jusqu'à 3 options par catégorie de transports
+page.sheet.place.localisation.accessibility.waitingPosition: Veuillez d'abord saisir une adresse pour renseigner les options d'accessibilité.
+page.sheet.place.localisation.reduced_mobility.title: Détails des accès PMR
+
+page.sheet.place.prices.title: Tarifs
+page.sheet.place.prices.description: "Référencement en ligne : ciblez les événements sur lesquels vous souhaitez être visible. Indiquez vos tarifs \"à partir de\" pour nous permettre de qualifier au mieux les demandes."
+
+page.sheet.place.accommodation.title: Hébergement
+page.sheet.place.accommodation.equipment: Équipements
+page.sheet.place.csr.title: RSE
+page.sheet.place.description.title: Description
+page.sheet.place.leisure.title: Loisirs & Team buildings
+page.sheet.place.catering.title: Restauration
+page.sheet.place.services.title: Services & équipements
+page.sheet.place.thematic.title: Thématiques & ambiances
+
+page.sheet.place.meeting.main.title: Salles de réunion
+page.sheet.place.meeting.capacity.title: Capacités
+page.sheet.place.meeting.capacity.table.roomName: Nom de la salle
+page.sheet.place.meeting.capacity.table.area: m²
+page.sheet.place.meeting.capacity.table.theatre_area: Théâtre
+page.sheet.place.meeting.capacity.table.meeting_area: Réunion
+page.sheet.place.meeting.capacity.table.u_shaped_area: En U
+page.sheet.place.meeting.capacity.table.class_area: Classe
+page.sheet.place.meeting.capacity.table.cabaret_area: Cabaret
+page.sheet.place.meeting.capacity.table.banquet_area: Banquet
+page.sheet.place.meeting.capacity.table.cocktail_area: Cocktail
+page.sheet.place.meeting.capacity.table.natural_light: Lumière naturelle
+page.sheet.place.meeting.capacity.table.air_conditioned: Climatisé
+page.sheet.place.meeting.capacity.table.reduced_mobility: PMR
+page.sheet.place.meeting.capacity.table.danse_area: Espace dansant
+page.sheet.place.meeting.capacity.table.plan: Plan
+
+page.sheet.place.visibility.main.title: Gérer sa visibilité
+page.sheet.place.visibility.main.description: Lorem ipsum dolor sit amet consectetur. Nunc aenean aliquam commodo viverra. Dictum a vel pharetra arcu pulvinar duis tortor. At scelerisque vel fusce tempor. Aliquam ultrices molestie egestas turpis pharetra. Quis nisl neque magna fringilla orci curabitur.
+page.sheet.place.visibility.upon_request.title: Actions marketing à la carte
+page.sheet.place.visibility.upon_request.description: Lorem ipsum dolor sit amet consectetur. Nunc aenean aliquam commodo viverra. Dictum a vel pharetra arcu pulvinar duis tortor. At scelerisque vel fusce tempor. Aliquam ultrices molestie egestas turpis pharetra. Quis nisl neque magna fringilla orci curabitur.
+
+page.sheet.restaurant.general_information.title: Informations générales
+page.sheet.restaurant.general_information.main.title: Informations générales
+page.sheet.restaurant.general_information.availabilities.title: Disponibilités
+
+page.sheet.restaurant.description.title: Description
+
+page.sheet.restaurant.facility.title: Services & équipements
+page.sheet.restaurant.facility.services.title: Services & équipements
+
+page.sheet.restaurant.capacity.title: Capacités
+page.sheet.restaurant.capacity.sitting.title: Capacité assise (Groupe)
+page.sheet.restaurant.capacity.cocktail.title: Capacité cocktail / debout
+
+page.sheet.restaurant.csr.title: RSE
+
+page.sheet.restaurant.prices.title: Tarifs
+page.sheet.restaurant.prices.description: "Référencement en ligne : ciblez les événements sur lesquels vous souhaitez être visible. Indiquez vos tarifs \"à partir de\" pour nous permettre de qualifier au mieux les demandes."
+
+page.sheet.restaurant.visibility.main.title: Gérer sa visibilité
+page.sheet.restaurant.visibility.main.description: Lorem ipsum dolor sit amet consectetur. Nunc aenean aliquam commodo viverra. Dictum a vel pharetra arcu pulvinar duis tortor. At scelerisque vel fusce tempor. Aliquam ultrices molestie egestas turpis pharetra. Quis nisl neque magna fringilla orci curabitur.
+page.sheet.restaurant.visibility.upon_request.title: Actions marketing à la carte
+page.sheet.restaurant.visibility.upon_request.description: Lorem ipsum dolor sit amet consectetur. Nunc aenean aliquam commodo viverra. Dictum a vel pharetra arcu pulvinar duis tortor. At scelerisque vel fusce tempor. Aliquam ultrices molestie egestas turpis pharetra. Quis nisl neque magna fringilla orci curabitur.
+
+page.sheet.restaurant.localisation.main.title: Localisation
+page.sheet.restaurant.localisation.accessibility.title: Accessibilité
+page.sheet.restaurant.localisation.accessibility.description: Ajouter jusqu'à 3 options par catégorie de transports
+page.sheet.restaurant.localisation.accessibility.waitingPosition: Veuillez d'abord saisir une adresse pour renseigner les options d'accessibilité.
+page.sheet.restaurant.localisation.reduced_mobility.title: Détails des accès PMR
+
+page.sheet.activity.information.title: Informations générales
+page.sheet.activity.information.general.title: Informations générales
+page.sheet.activity.information.thematic.title: Thématiques
+
+page.sheet.activity.description.title: Description
+page.sheet.activity.description.general.title: Description
+page.sheet.activity.description.extra.title: Les plus
+
+page.sheet.activity.capacity.title: Type d'activités
+page.sheet.activity.capacity.global.title: Capacité globale
+page.sheet.activity.capacity.duration.title: Durée de l'activité / Séminaire
+
+page.sheet.activity.price.title: Tarifs
+page.sheet.activity.price.general.title: Mes tarifs
+page.sheet.activity.price.package.title: Forfaits
+page.sheet.activity.price.option.title: Options
+
+page.sheet.activity.csr.title: RSE
+
+page.sheet.activity.visibility.main.title: Gérer sa visibilité
+page.sheet.activity.visibility.main.description: Lorem ipsum dolor sit amet consectetur. Nunc aenean aliquam commodo viverra. Dictum a vel pharetra arcu pulvinar duis tortor. At scelerisque vel fusce tempor. Aliquam ultrices molestie egestas turpis pharetra. Quis nisl neque magna fringilla orci curabitur.
+page.sheet.activity.visibility.upon_request.title: Actions marketing à la carte
+page.sheet.activity.visibility.upon_request.description: Lorem ipsum dolor sit amet consectetur. Nunc aenean aliquam commodo viverra. Dictum a vel pharetra arcu pulvinar duis tortor. At scelerisque vel fusce tempor. Aliquam ultrices molestie egestas turpis pharetra. Quis nisl neque magna fringilla orci curabitur.
+
+page.sheet.activity.localisation.main.title: Rayon d'action géographique
+page.sheet.activity.localisation.fix_address.title: Localisation fixe
+page.sheet.activity.localisation.mobile_address.title: Localisation mobile
+
+page.sheet.service.information.title: Informations générales
+page.sheet.service.information.general.title: Informations générales
+page.sheet.service.information.description.title: Description générale
+page.sheet.service.information.detail.title: Prestations
+page.sheet.service.information.equipment.title: Matériel
+
+page.sheet.service.detail.title: Prestations
+page.sheet.service.price.title: Tarifs
+
+page.sheet.service.visibility.main.title: Gérer sa visibilité
+page.sheet.service.visibility.main.description: Lorem ipsum dolor sit amet consectetur. Nunc aenean aliquam commodo viverra. Dictum a vel pharetra arcu pulvinar duis tortor. At scelerisque vel fusce tempor. Aliquam ultrices molestie egestas turpis pharetra. Quis nisl neque magna fringilla orci curabitur.
+page.sheet.service.visibility.upon_request.title: Actions marketing à la carte
+page.sheet.service.visibility.upon_request.description: Lorem ipsum dolor sit amet consectetur. Nunc aenean aliquam commodo viverra. Dictum a vel pharetra arcu pulvinar duis tortor. At scelerisque vel fusce tempor. Aliquam ultrices molestie egestas turpis pharetra. Quis nisl neque magna fringilla orci curabitur.
+
+page.sheet.service.localisation.main.title: Localisation
+page.sheet.service.localisation.geographic_range.title: Zone d’intervention principale
+page.sheet.service.localisation.accessibility.title: Accessibilité
+page.sheet.service.localisation.accessibility.description: Ajouter jusqu'à 3 options par catégorie de transports
+page.sheet.service.localisation.accessibility.waitingPosition: Veuillez d'abord saisir une adresse pour renseigner les options d'accessibilité.
+page.sheet.service.localisation.reduced_mobility.title: Détails des accès PMR
+
+page.sheet.mealTray.general_information.title: Informations générales
+page.sheet.mealTray.general_information.main.title: Informations générales
+page.sheet.mealTray.general_information.availabilities.title: Disponibilités
+
+page.sheet.mealTray.description.title: Description générale
+
+page.sheet.mealTray.product.list.title: Plateaux repas
+page.sheet.mealTray.product.list.info: Lorem ipsum dolor sit amet consectetur. Vel suscipit diam integer dolor sed nec neque dis. Egestas amet aenean adipiscing felis.
+page.sheet.mealTray.product.list.add: Créer un plateau repas
+page.sheet.mealTray.product.list.table.picture: Image
+page.sheet.mealTray.product.list.table.name: Nom du produit
+page.sheet.mealTray.product.list.table.type: Type de produit
+page.sheet.mealTray.product.list.table.price: Prix HT
+page.sheet.mealTray.product.list.confirmDelete.title: Vous vous apprêtez à supprimer un produit
+page.sheet.mealTray.product.list.confirmDelete.info: Lorem ipsum dolor sit amet consectetur. Massa phasellus tincidunt rhoncus enim. Lorem vel massa leo ut enim. Nascetur pellentesque ut ullamcorper odio.
+
+page.sheet.mealTray.product.edit.title: Plateau repas
+page.sheet.mealTray.product.edit.main.title: Informations générales
+page.sheet.mealTray.product.edit.main.info: Lorem ipsum dolor sit amet consectetur. Vel suscipit diam integer dolor sed nec neque dis. Egestas amet aenean adipiscing felis.
+page.sheet.mealTray.product.edit.price.title: Quantités et prix
+page.sheet.mealTray.product.edit.price.info: Lorem ipsum dolor sit amet consectetur. Vel suscipit diam integer dolor sed nec neque dis. Egestas amet aenean adipiscing felis.
+page.sheet.mealTray.product.edit.diet.title: Régimes alimentaires
+page.sheet.mealTray.product.edit.diet.info: Lorem ipsum dolor sit amet consectetur. Vel suscipit diam integer dolor sed nec neque dis. Egestas amet aenean adipiscing felis.
+page.sheet.mealTray.product.edit.availabilities.title: Disponibilités
+page.sheet.mealTray.product.edit.availabilities.info: Lorem ipsum dolor sit amet consectetur. Vel suscipit diam integer dolor sed nec neque dis. Egestas amet aenean adipiscing felis.
+page.sheet.mealTray.visibility.main.title: Gérer sa visibilité
+page.sheet.mealTray.visibility.upon_request.title: Actions marketing à la carte
+page.sheet.mealTray.visibility.upon_request.description: Lorem ipsum dolor sit amet consectetur. Nunc aenean aliquam commodo viverra. Dictum a vel pharetra arcu pulvinar duis tortor. At scelerisque vel fusce tempor. Aliquam ultrices molestie egestas turpis pharetra. Quis nisl neque magna fringilla orci curabitur.
+
+page.template.title: Templates de message
+
+page.review.received.title: Reçus
+page.review.received.description: Lorem ipsum dolor sit amet consectetur. Imperdiet odio ut diam risus nulla facilisi cras hac nunc. Tristique nunc laoreet vel donec id vestibulum quis.
+page.review.received.scores.global.description: Lorem ipsum dolor sit amet consectetur. Dis tristique sollicitudin fusce adipiscing in dis nibh magnis. Lacinia nibh molestie faucibus arcu adipiscing.
+page.review.received.scores.title: Évaluation globale
+page.review.section.relationship: Relation commerciale
+page.review.section.equipment: Équipement séminaire
+page.review.section.restauration: Restauration
+page.review.section.accomodation: Hébergement
+
+page.review.reminder.title: Relances
+page.review.reminder.description: Lorem ipsum dolor sit amet consectetur. Imperdiet odio ut diam risus nulla facilisi cras hac nunc. Tristique nunc laoreet vel donec id vestibulum quis.
+
+page.invoicing.title: Facturation & partenariat
+page.invoicing.legal_information.title: Informations légales
+page.invoicing.invoicing_address.title: Adresse de facturation
+page.invoicing.invoicing_contact.title: Contact de facturation
+page.invoicing.payment_mode.title: Mode de paiements acceptés
+page.invoicing.deposit.alert: Le pourcentage d’acompte demandé impacte directement votre notation de flexibilité, un critère fortement pris en compte par nos clients lors de la sélection de leurs partenaires.
+page.invoicing.payment.title: Paiement des soldes
+page.invoicing.payment.due_date: Echéance de paiement
+page.invoicing.commission.title: Commission
+page.invoicing.commission.amount: Montant des commissions
+page.invoicing.cancellation.title: Conditions de paiement annulation
+page.invoicing.cgv.title: Conditions générales de ventes
+page.invoicing.partnership_agreement.title: Convention de partenariat
+page.invoicing.partnership_agreement.request_button: Faire une demande de convention
+
+page.media.title: Médias
+
+page.collaborator.title: Collaborateurs
+page.collaborator.adminList.title: Collaborateurs
+page.collaborator.sheetList.title: Collaborateurs ayant accès à cette fiche
+page.collaborator.table.mainContact: Contact principal
+page.collaborator.table.lastName: Nom
+page.collaborator.table.firstName: Prénom
+page.collaborator.table.email: Email
+page.collaborator.table.phone: Téléphone
+page.collaborator.table.role: Rôle
+page.collaborator.table.memberships: Affiliations
+page.collaborator.table.withRequest: Traite les demandes
+page.collaborator.table.withContent: Traite les contenus
+page.collaborator.table.withPayment: Traite les paiements
+page.collaborator.panel.add.title: Ajouter un collaborateur
+page.collaborator.panel.add.description: Lorem ipsum dolor sit amet consectetur. Facilisis semper morbi facilisis massa viverra sagittis donec donec. Id massa consectetur in at vestibulum est.
+page.collaborator.panel.membership.rights: Droits
+page.collaborator.panel.membership.status: Status
+page.collaborator.membership.title: Fiche
+
+password.requirement.length: 8 caractères
+password.requirement.lower: 1 minuscule
+password.requirement.number: 1 chiffre
+password.requirement.special: 1 caractère spécial
+password.requirement.upper: 1 majuscule
+
+select.no_options: Aucune option correspondante
+suggestion.no_options: Aucun résultat
+
+visibility.pack.free.label: Pack Découverte
+visibility.pack.essential.label: Pack Essentiel
+visibility.pack.performance.label: Pack Performance
+visibility.pack.targeted_audience.label: Pack Coeur du public
+visibility.pack.option.free: Niveau gratuit
+visibility.pack.option.seo: Référencement sur le site businessprofilers.com
+visibility.pack.option.competitive_analysis: Accès analyse concurrentielle
+visibility.pack.option.top_digital_guide: 1 double page dans le guide digital “Top lieux de séminaires en France”
+visibility.pack.option.one_month_highlight: 1 mois de mise en avant web
+visibility.pack.option.one_newsletter_group_communication: 1 communication newsletter groupée
+visibility.pack.option.top_10_inclusion: Classement dans le Top 10 des résultats de recherche de votre destination
+visibility.pack.premium: Premium
+visibility.pack.cta: Sélectionner
+
+visibility.action.tip.targeted_email: HTML fourni, ciblage sur mesure
+visibility.action.cta: Sélectionner
+
+paginated_review_list.type.placeholder: Type de fiche
+
+review.reminder.already_reminded: Relancé le %date%
+review.reminder.remind: Relancer
+
+##############################################
+# translations below are used in assets only #
+# NOTE: prefix keys with "assets"            #
+# @see config/packages/ux_translator.yaml    #
+##############################################
+assets.form.sheet.library.picture.main: "- Photo principale"

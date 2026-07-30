@@ -1,0 +1,32 @@
+{% extends 'pim/pages/account/_layout.html.twig' %}
+
+{% block title %}
+    {{ 'page.personal_information.title'|trans }}
+{% endblock %}
+
+{% block main %}
+    {{ form_start(form, { 'attr': { 'id': form.vars.id} }) }}
+    <div class="flex flex-col gap-6">
+        <h1><twig:Typography variant="heading-3" bold>{{ 'page.personal_information.title'|trans }}</twig:Typography></h1>
+        <div class="flex justify-between border-b border-neutral-300 pb-4 lg:items-center">
+            <div class="flex flex-col gap-1">
+                <twig:Typography variant="body-lg" bold>{{ 'page.personal_information.picture'|trans }}</twig:Typography>
+                <twig:Typography variant="body-sm">{{ 'page.personal_information.picture_detail'|trans }}</twig:Typography>
+            </div>
+            {{ form_widget(form.pictureFile, {'attr': {'icon': 'user'}}) }}
+        </div>
+        <div class="w-full grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-4">
+            {{ form_row(form.lastName) }}
+            {{ form_row(form.firstName) }}
+            {{ form_row(form.email) }}
+            {{ form_row(form.phone) }}
+            {{ form_row(form.job) }}
+            {{ form_row(form.password) }}
+        </div>
+    </div>
+    {{ form_end(form) }}
+{% endblock %}
+
+{% block float_submit %}
+    <twig:Form:FloatSubmit label="{{ 'global.save'|trans }}" formId="{{ form.vars.id }}" />
+{% endblock %}

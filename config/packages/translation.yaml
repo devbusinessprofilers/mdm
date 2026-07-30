@@ -1,5 +1,7 @@
 framework:
-    default_locale: en
+    default_locale: '%default_locale%'
+    # Restreint automatiquement le paramètre de route {_locale} à ces valeurs.
+    enabled_locales: '%locales%'
     translator:
         default_path: '%kernel.project_dir%/translations'
         providers:

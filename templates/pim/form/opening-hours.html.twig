@@ -1,0 +1,10 @@
+{% block opening_hours_row %}
+    {{ form_label(form) }}
+    <ul class="w-full flex flex-wrap gap-8">
+        {% for weekDayOpeningHoursForm in form %}
+            <li class="w-full sm:w-[167px]">
+                {{ form_row(weekDayOpeningHoursForm) }}
+            </li>
+        {% endfor %}
+    </ul>
+{% endblock %}

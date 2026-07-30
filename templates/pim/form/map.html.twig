@@ -1,0 +1,17 @@
+{% block map_row %}
+    <div
+        data-controller="provider-portal--map"
+        {{ block('widget_container_attributes') }}
+    >
+        {{ form_widget(form.longitude, { 'attr': { 'data-provider-portal--map-target': 'longitude'}|merge(input_attributes ?? {}) }) }}
+        {{ form_widget(form.latitude, {'attr': {'data-provider-portal--map-target': 'latitude'}|merge(input_attributes ?? {})}) }}
+
+        <twig:Form:LiveMap
+            data-provider-portal--map-target="map"
+            center="{{ center }}"
+            zoom="{{ zoom }}"
+            markers="{{ markers }}"
+            class="{{ attr.class ?? 'h-[450px] rounded-sm relative overflow-hidden' }}"
+        />
+    </div>
+{% endblock %}

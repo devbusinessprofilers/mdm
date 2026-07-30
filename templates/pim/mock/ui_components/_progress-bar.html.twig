@@ -1,0 +1,23 @@
+<h2><twig:Typography variant="heading-2" bold class="mt-8 mb-4 block">Progress bar</twig:Typography></h2>
+<div class="flex gap-8 flex-col bg-neutral-100 rounded-sm p-8  shadow-(--shadow)">
+    <ul class="flex flex-wrap max-w-full gap-4">
+        <li class="flex-grow-1 text-center text-neutral-500">0%<twig:ProgressBar value="0"/></li>
+        <li class="flex-grow-1 text-center text-neutral-500">50%<twig:ProgressBar value="50"/></li>
+        <li class="flex-grow-1 text-center text-neutral-500">100%<twig:ProgressBar value="100"/></li>
+    </ul>
+    <ul class="flex flex-wrap max-w-full gap-4">
+        <li class="flex-grow-1 text-center text-neutral-500">0%<twig:ProgressBar large value="0"/></li>
+        <li class="flex-grow-1 text-center text-neutral-500">50%<twig:ProgressBar large value="50"/></li>
+        <li class="flex-grow-1 text-center text-neutral-500">100%<twig:ProgressBar large value="100"/></li>
+    </ul>
+    <ul class="flex flex-wrap max-w-full gap-4">
+        <li class="flex-grow-1 text-center text-neutral-500">0%<twig:ProgressBar noGradient value="0"/></li>
+        <li class="flex-grow-1 text-center text-neutral-500">50%<twig:ProgressBar noGradient value="50"/></li>
+        <li class="flex-grow-1 text-center text-neutral-500">100%<twig:ProgressBar noGradient value="100"/></li>
+    </ul>
+    <ul class="flex flex-wrap max-w-full gap-4">
+        <li class="flex-grow-1 text-center text-neutral-500">0%<twig:ProgressBar large noGradient value="0"/></li>
+        <li class="flex-grow-1 text-center text-neutral-500">50%<twig:ProgressBar large noGradient value="50"/></li>
+        <li class="flex-grow-1 text-center text-neutral-500">100%<twig:ProgressBar large noGradient value="100"/></li>
+    </ul>
+</div>

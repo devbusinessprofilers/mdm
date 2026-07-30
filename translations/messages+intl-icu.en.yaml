@@ -1,0 +1,13 @@
+paginated_review_list.number: >-
+  {count, plural,
+      =0    {No review}
+      =1    {1 review}
+      other {# reviews}
+  }
+
+page.collaborator.table.memberships.count: >-
+  {count, plural,
+      =0    {No membership}
+      =1    {1 membership}
+      other {# memberships}
+  }

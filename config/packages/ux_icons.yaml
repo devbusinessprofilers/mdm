@@ -1,0 +1,51 @@
+# Full configuration reference: https://symfony.com/bundles/ux-icons/current/index.html#configuration
+ux_icons:
+
+    # Default HTML attributes to add to all icons
+    default_icon_attributes:
+
+        # Use current text color to fill the icon
+        fill: currentColor
+
+        # Default dimensions
+        height: '1em'
+        width: '1em'
+
+    # Jeux d'icônes locaux. Les préfixes correspondent à ceux calculés par
+    # templates/pim/components/Icon.html.twig (et App\Pim\Service\Map\MapPinFactory).
+    icon_sets:
+        provider-portal:
+            path: '%kernel.project_dir%/assets/icons'
+        provider-portal-flags:
+            path: '%kernel.project_dir%/assets/icons/flags'
+        provider-portal-pin:
+            path: '%kernel.project_dir%/assets/icons/pin'
+        provider-portal-stroke:
+            path: '%kernel.project_dir%/assets/icons/stroke'
+            # Icônes en trait : les tracés n'ont qu'un stroke-width, sans couleur
+            # de contour. Sans cette surcharge, le fill par défaut les remplit.
+            icon_attributes:
+                fill: none
+                stroke: currentColor
+        provider-portal-styled:
+            path: '%kernel.project_dir%/assets/icons/styled'
+
+    # Icônes importées depuis Iconify. `ux:icons:import` les dépose toujours dans
+    # un sous-dossier nommé d'après le set (ici assets/icons/ph/) : la destination
+    # est codée en dur dans la commande. Ces alias évitent de répercuter le
+    # préfixe "ph:" sur toutes les références en template.
+    # La clé doit être le nom COMPLET produit par Icon.html.twig, préfixe inclus.
+    aliases:
+        'provider-portal:caret-down': 'provider-portal:ph:caret-down'
+        'provider-portal:caret-up': 'provider-portal:ph:caret-up'
+        'provider-portal:check': 'provider-portal:ph:check'
+        'provider-portal:eye': 'provider-portal:ph:eye'
+        'provider-portal:phone': 'provider-portal:ph:phone'
+
+    # Throw an exception if an icon is not
+    ignore_not_found: false
+
+when@prod:
+    ux_icons:
+        # Suppress exceptions for missing icons in production
+        ignore_not_found: true

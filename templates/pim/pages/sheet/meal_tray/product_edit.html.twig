@@ -1,0 +1,63 @@
+{% extends 'pim/pages/sheet/_layout.html.twig' %}
+
+{% block title %}
+    {{ 'page.sheet.mealTray.product.edit.title'|trans }}
+{% endblock %}
+
+{% block main %}
+    {{ form_start(form, { 'attr': { 'id': form.vars.id} }) }}
+    <section class="flex flex-col gap-12 bg-neutral-100 rounded-md shadow-(--shadow) w-full p-6 2xl:p-14">
+        <a
+            href="{{ path('provider_portal_sheet_meal_tray_product_list', {'slug': sheet.slug}) }}"
+            class="flex gap-1 items-center"
+        >
+            <twig:Icon name="caret-left" class="w-6 h-6"/>
+            <twig:Typography bold>{{ 'global.backList'|trans }}</twig:Typography>
+        </a>
+        <div>
+            <h2><twig:Typography variant="heading-3" bold>{{ 'page.sheet.mealTray.product.edit.main.title'|trans }}</twig:Typography></h2>
+            <twig:Typography>{{ 'page.sheet.mealTray.product.edit.price.info'|trans }}</twig:Typography>
+            <div class="w-full mt-6 grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-6">
+                {{ form_row(form.type) }}
+                {{ form_row(form.name) }}
+                {{ form_row(form.pictureFiles) }}
+                {{ form_row(form.shortDescription, {'attr': {'class': 'lg:col-start-1 lg:col-end-3'}}) }}
+                {{ form_row(form.longDescription, {'attr': {'class': 'lg:col-start-1 lg:col-end-3'}}) }}
+                {{ form_row(form.dishTemperature) }}
+            </div>
+        </div>
+        <div>
+            <h2><twig:Typography variant="heading-3" bold>{{ 'page.sheet.mealTray.product.edit.price.title'|trans }}</twig:Typography></h2>
+            <twig:Typography>{{ 'page.sheet.mealTray.product.edit.price.info'|trans }}</twig:Typography>
+            {{ form_row(form.vatPrice) }}
+            <div class="w-full mt-6 grid grid-cols-1 lg:grid-cols-3 gap-x-6 gap-y-6">
+                {{ form_row(form.capacity) }}
+                {{ form_row(form.minOrderCount) }}
+                {{ form_row(form.maxOrderCount) }}
+            </div>
+        </div>
+        <div>
+            <h2><twig:Typography variant="heading-3" bold>{{ 'page.sheet.mealTray.product.edit.diet.title'|trans }}</twig:Typography></h2>
+            <twig:Typography>{{ 'page.sheet.mealTray.product.edit.diet.info'|trans }}</twig:Typography>
+            <div class="w-full mt-6 flex flex-col gap-6">
+                {{ form_row(form.dietaryPreferences, {'label_attr': {'typography': 'body-lg', 'bold': true, 'class': 'mb-2'}}) }}
+                {{ form_row(form.allergens, {'label_attr': {'typography': 'body-lg', 'bold': true, 'class': 'mb-2'}}) }}
+                {{ form_row(form.meals, {'label_attr': {'typography': 'body-lg', 'bold': true, 'class': 'mb-2'}}) }}
+            </div>
+        </div>
+        <div>
+            <h2><twig:Typography variant="heading-3" bold>{{ 'page.sheet.mealTray.product.edit.availabilities.title'|trans }}</twig:Typography></h2>
+            <twig:Typography>{{ 'page.sheet.mealTray.product.edit.availabilities.info'|trans }}</twig:Typography>
+            <div class="w-full mt-6 grid grid-cols-1 lg:grid-cols-3 gap-x-6 gap-y-6">
+                {{ form_row(form.orderLimit) }}
+                {{ form_row(form.timeLimit) }}
+                {{ form_row(form.delayLimit) }}
+            </div>
+        </div>
+    </section>
+    {{ form_end(form) }}
+{% endblock %}
+
+{% block float_submit %}
+    <twig:Form:FloatSubmit label="{{ 'global.save'|trans }}" formId="{{ form.vars.id }}" />
+{% endblock %}

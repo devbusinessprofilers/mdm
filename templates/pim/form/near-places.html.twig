@@ -1,0 +1,14 @@
+{% block near_places_row %}
+    <div {{ stimulus_controller('provider-portal--near-places', {
+        'nearPath': path('provider_portal_api_place_near'),
+        'type': type.value,
+        'position': position,
+    }) }}>
+        {{ form_row(form.placeChoices, {
+            'value': value is not null and value.placeChoices is defined ? value.placeChoices : [],
+            'select_attributes': {
+                'data-provider-portal--near-places-target': 'select',
+            },
+        }) }}
+    </div>
+{% endblock %}

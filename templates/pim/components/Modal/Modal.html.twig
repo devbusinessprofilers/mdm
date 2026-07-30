@@ -1,0 +1,10 @@
+<div
+    class="fixed top-0 left-0 w-screen h-screen bg-background-transparency flex justify-center items-center z-256 hidden"
+    data-modal="{{ identifier|default('') }}"
+    {{ stimulus_controller('provider-portal--modal', { 'display': display }) }}
+    {{ stimulus_target('provider-portal--modal', 'modal') }}
+>
+    <div class="max-w-80/100 max-h-80/100 overflow-auto bg-neutral-100 p-14 rounded-md">
+        {%- block content -%}{% endblock -%}
+    </div>
+</div>

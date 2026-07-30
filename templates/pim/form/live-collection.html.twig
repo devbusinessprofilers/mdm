@@ -1,0 +1,52 @@
+{% block live_collection_button_add_row %}
+    {% set cva = cva({ base: 'w-full sm:w-auto' }) %}
+    <twig:Button
+        type="button"
+        variant="outline"
+        icon="plus"
+        class="{{ cva.apply({}, attr.class|default('')) }}"
+        attributes="{{ attr }}"
+    >
+        {{- label|trans -}}
+    </twig:Button>
+{% endblock %}
+
+{% block live_collection_button_delete_row %}
+    <button {{ block('button_attributes') }} class="p-2 pl-0 cursor-pointer flex justify-center items-center {{ attr.class|default('') }}" type="button">
+        <twig:Icon name="bin" class="h-6 w-6" />
+    </button>
+{% endblock %}
+
+{% block live_collection_row %}
+    {% set displayAdd =
+        button_add is defined
+        and not button_add.rendered
+        and (
+            display_add_button is not defined
+            or display_add_button is true
+        )
+    %}
+
+    <div
+        class="flex flex-col gap-6 {{ attr.class|default('') }}"
+    >
+        <div class="flex flex-col gap-4 justify-between sm:flex-row sm:items-center">
+            {{ form_label(form) }}
+            {%- if displayAdd and not button_add.rendered -%}
+                {{ form_row(button_add) }}
+            {%- endif -%}
+        </div>
+
+        {% if prototype is defined and not prototype.rendered %}
+            {%- set attr = attr|merge({'data-prototype': form_row(prototype) }) -%}
+        {% endif %}
+
+        <ul class="w-full flex flex-col gap-4 {{ attr.list_class|default('') }}">
+            {% for child in form %}
+                <li class="w-full">
+                    {{ form_row(child) }}
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+{% endblock %}

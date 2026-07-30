@@ -1,0 +1,59 @@
+swiper:
+  greeting:
+    welcome: "Bienvenue…"
+    hello: "Bonjour %name% !"
+  account:
+    client_title: "Compte client"
+    login: "Se connecter"
+    create: "Créer mon compte"
+    my_title: "Mon compte"
+    my_events: "Mes événements"
+    my_messages: "Mes messages"
+    logout: "Déconnexion"
+  partners:
+    title: "Partenaires"
+    refer: "Se référencer"
+    space: "Espace partenaire"
+  settings:
+    title: "Paramètres"
+    profile: "Mon profil"
+  enterprise:
+    title: "Solutions Grands comptes"
+    spend: "Mes dépenses événementielles"
+  expert:
+    title: "Expert événementiel"
+    entrust: "Confiez votre projet"
+    entrust_mine: "Confier mon projet"
+  contact:
+    reservation: "Contact & Réservation"
+    support: "Contact & Support"
+    phone: "03 44 55 54 44"
+    email: "hello@businessprofilers.fr"
+  follow_us: "Suivez-nous !"
+  selection:
+    title: "Ma sélection"
+    validate: "Valider ma sélection"
+  filters:
+    title: "Tous les filtres"
+    reset: "Réinitialiser les filtres"
+    apply: "Appliquer"
+    labels:
+      place_types: "Type de lieux"
+      themes_ambiance: "Thématiques / Ambiances"
+      meeting_room: "Salle de réunion"
+      accommodation: "Hébergement"
+      rse: "RSE"
+      categories: "Catégories"
+      provider_type: "Type de prestataire"
+      themes: "Thématiques"
+      objectives: "Objectifs"
+    meeting_room:
+      conference: "Conférence/Théatre"
+      reception: "Réception/Cocktail"
+      area: "Nombre de m²"
+      extra_room: "Salle supplémentaire"
+    accommodation:
+      rooms: "Nombre de chambres"
+      capacity: "Capacité d'hébergement"
+    rse:
+      global_score: "Note globale RSE"

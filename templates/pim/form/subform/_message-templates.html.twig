@@ -1,0 +1,69 @@
+{% block _template_list_messageTemplates_row %}
+    <div
+        {{ stimulus_controller('provider-portal--form-collection', {
+            'maxItemCount': max_item_count,
+        }) }}
+        class="flex flex-col gap-4 {{ wrapper_class }}"
+    >
+
+        <div class="flex flex-col gap-4 sm:flex-row sm:justify-between">
+            {% if label is not same as(false) -%}
+                <div class="flex flex-col gap-4">
+                    {% component 'Typography' with { 'variant': label_typography_variant.value, 'bold': true } %}
+                        {% block content %}
+                            {{ block(outerBlocks.form_label_content) }}
+                        {% endblock %}
+                    {% endcomponent %}
+                    {% if information_text is not empty -%}
+                        <twig:Typography variant="body-lg">{{ information_text|trans|raw }}</twig:Typography>
+                    {%- endif -%}
+                </div>
+            {%- endif -%}
+            {% if allow_add and 'start' == add_button_position -%}
+                <div class="flex sm:items-end sm:self-end">
+                    {{- block('collection_button_add_content') -}}
+                </div>
+            {%- endif -%}
+        </div>
+
+        <div
+            id="{{ form.vars.id }}_form"
+            class="mt-4 flex flex-col overflow-x-scroll {{ collection_class }}"
+            data-provider-portal--form-collection-target="collection"
+            {% if (allow_add) %}
+                data-prototype-template="{{ form_row(form.vars.prototype)|e('html_attr') }}"
+                data-prototype-name="{{ prototype.vars['name']|default('__name__') }}"
+            {% endif %}
+        >
+            <div class="bg-primary-4 flex w-fit lg:w-auto lg:grid lg:grid-cols-[1fr_1fr_82px]">
+                <twig:Typography bold class="px-4 py-2 w-[80vw] lg:w-auto">{{ 'form.templateList.messageTemplates.table.name'|trans }}</twig:Typography>
+                <twig:Typography bold class="px-4 py-2 w-[80vw] lg:w-auto">{{ 'form.templateList.messageTemplates.table.content'|trans }}</twig:Typography>
+                <twig:Typography bold class="px-4 py-2 w-[100px] lg:w-auto">{{ 'form.templateList.messageTemplates.table.action'|trans }}</twig:Typography>
+            </div>
+            {% for child in form %}
+                {{ form_row(child) }}
+            {% endfor %}
+        </div>
+
+        {% if allow_add and 'end' == add_button_position -%}
+            <div class="flex justify-end">
+                {{- block('collection_button_add_content') -}}
+            </div>
+        {%- endif -%}
+
+    </div>
+
+{% endblock %}
+
+{% block message_template_row %}
+    <div
+        data-collection-item=""
+        class="mt-4 flex w-fit pb-4 border-b border-neutral-300 lg:w-auto lg:grid lg:grid-cols-[1fr_1fr_82px]"
+    >
+        {{ form_row(form.name, {'attr': {'class': 'px-4 w-[80vw] lg:w-auto'}}) }}
+        {{ form_row(form.content, {'attr': {'class': 'px-4 w-[80vw] lg:w-auto'}}) }}
+        <div class="w-[100px] lg:w-auto flex items-start justify-center">
+            {{- block('collection_button_delete_content') -}}
+        </div>
+    </div>
+{% endblock %}

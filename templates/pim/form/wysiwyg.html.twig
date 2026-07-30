@@ -1,0 +1,11 @@
+{%- block wysiwyg_widget -%}
+    <twig:Form:Wysiwyg
+        id="{{ id }}"
+        name="{{ full_name }}"
+        value="{{ value }}"
+        class="{{ attr.widgetClass ?? '' }}"
+        disabled="{{ disabled }}"
+        maxHeight="{{ height }}"
+        maxLength="{{ max_length }}"
+    />
+{%- endblock -%}

@@ -1,0 +1,40 @@
+message:
+  flash:
+    sent: "Message envoyé"
+    error_occurred: "Une erreur est survenue"
+  list:
+    send_message_alt: "Envoyer un message"
+    new_message: "Envoyer un nouveau message"
+    title: "Liste des messages"
+    sort_by: "Trier par"
+    sort:
+      date: "Date"
+      unread: "Non lus"
+    section:
+      today: "Aujourd'hui"
+      this_month: "Ce mois-ci"
+      older: "Plus anciens"
+    received_docs:
+      one: "Vous avez reçu %count% nouveau document."
+      many: "Vous avez reçu %count% nouveaux documents."
+    reply: "Répondre"
+    to_label: "À :"
+    close: "Fermer"
+  add:
+    attachment_label: "Ajouter une pièce jointe"
+    browse: "Parcourir"
+    cancel: "Annuler"
+    send: "ENVOYER"
+  create_form:
+    event_name: "Nom de l'évènement"
+    recipient: "Destinataire"
+    subject: "Sujet du message"
+    event_name_placeholder: "Nom de l'évènement"
+    subject_placeholder: "Saisir"
+    message_placeholder: "Saississez votre message"
+  search:
+    event_name:
+      placeholder: "Nom de l'événement"
+    all: "Tous"
+  common:
+    not_specified: "Non spécifié"

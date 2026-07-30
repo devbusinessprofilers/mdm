@@ -1,0 +1,82 @@
+{#
+@var string desktopMenu (component name for menu)
+@var string mobileMenu (component name for mobile menu)
+@var \App\Pim\Model\ProviderPortal\DTO\SheetDTO sheet
+#}
+
+{% extends 'base.html.twig' %}
+
+{% block title %}
+    {{ 'page.media.title'|trans }}
+{% endblock %}
+
+{% block form_themes %}
+    {# Do not use default form themes for library but only those we need #}
+    {% form_theme form with [
+        'pim/form/global.html.twig',
+        'pim/form/text.html.twig',
+        'pim/form/checkbox.html.twig',
+        'pim/form/subform/_library.html.twig',
+    ] %}
+{% endblock %}
+
+{% block body %}
+    <div
+        {{ stimulus_controller('provider-portal--library') }}
+        {{ stimulus_target('provider-portal--library', 'library') }}
+        class="w-full grid grid-rows-[1fr_auto] lg:grid-cols-[1fr_404px]"
+    >
+        <div class="w-full flex flex-col gap-3 2xl:flex-row items-start 2xl:gap-8 px-8 pt-12 pb-4 lg:py-12 2xl:py-20 overflow-hidden">
+            <aside class="2xl:min-w-[252px] 2xl:max-w-[252px]">
+                {{ component(desktopMenu, {slug: sheet.slug, class: 'hidden 2xl:flex'}) }}
+                {{ component(mobileMenu, {slug: sheet.slug, class: '2xl:hidden'}) }}
+            </aside>
+            <main class="w-full flex flex-col gap-3">
+                {% include 'pim/pages/sheet/component/_profile.html.twig' with {'sheet': sheet} %}
+                {{ form_start(form, { 'attr': { 'id': form.vars.id, 'class': 'flex flex-col gap-6 lg:gap-8'} }) }}
+                <section class="w-full flex flex-col gap-6 bg-neutral-100 rounded-md shadow-(--shadow) p-6 2xl:p-14">
+                    {{ form(form) }}
+                </section>
+                {{ form_end(form) }}
+            </main>
+        </div>
+        <div
+            class="flex flex-col justify-center items-center lg:sticky lg:bg-primary-4 lg:overflow-y-auto lg:top-0 lg:h-screen"
+            {{ stimulus_target('provider-portal--library', 'dropzone') }}
+        >
+            {{ component('Media:Dropzone', {
+                'identifier': form.pictures.vars.id,
+                'previewType': 'picture',
+                'acceptedFiles': form.pictures.vars.acceptedFiles,
+                'maxFileCount': form.pictures.vars.maxFileCount,
+                'fileMaxSize': form.pictures.vars.fileMaxSize,
+                'imageMinWidth': form.pictures.vars.imageMinWidth|default(null),
+                'imageMinHeight': form.pictures.vars.imageMinHeight|default(null),
+            }) }}
+            {{ component('Media:Dropzone', {
+                'identifier': form.plans.vars.id,
+                'previewType': 'document',
+                'acceptedFiles': form.plans.vars.acceptedFiles,
+                'maxFileCount': form.plans.vars.maxFileCount,
+                'fileMaxSize': form.plans.vars.fileMaxSize,
+            }) }}
+            {{ component('Media:Dropzone', {
+                'identifier': form.documents.vars.id,
+                'previewType': 'document',
+                'acceptedFiles': form.documents.vars.acceptedFiles,
+                'maxFileCount': form.documents.vars.maxFileCount,
+                'fileMaxSize': form.documents.vars.fileMaxSize,
+            }) }}
+        </div>
+    </div>
+    <div class="sticky bottom-0 left-0 right-0 bg-primary-4 flex justify-center items-center px-4 py-2 lg:py:4 z-10">
+        <twig:Button
+            type="button"
+            data-controller="provider-portal--modal-trigger-button"
+            data-action="click->provider-portal--modal-trigger-button#open"
+            data-provider-portal--modal-trigger-button-modal-identifier-value="opt-in-modal"
+        >
+            {{ 'global.save'|trans }}
+        </twig:Button>
+    </div>
+{% endblock %}

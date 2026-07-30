@@ -1,0 +1,82 @@
+{% extends 'pim/pages/sheet/_layout.html.twig' %}
+
+{% block title %}
+    {{ 'page.sheet.place.meeting.main.title'|trans }}
+{% endblock %}
+
+{% block form_themes %}
+    {% include 'pim/form/_form-theme.html.twig' with {
+        'additionalFormThemes': ['pim/form/subform/_meeting-rooms.html.twig'],
+    } %}
+{% endblock %}
+
+{% block main %}
+    {% set dependencyIdentifier = 'meeting-room-wrapper' %}
+    {% set withMeetingRooms = form.vars.value.hasMeetingRooms %}
+
+    {{ form_start(form, { 'attr': getFormDependencyAttributes()|merge({'id': form.vars.id, 'class': 'flex flex-col gap-6 lg:gap-8'}) }) }}
+
+    <section class="flex flex-col gap-6 bg-neutral-100 rounded-md shadow-(--shadow) w-full p-6 2xl:p-14">
+        <h2><twig:Typography variant="heading-3" bold>{{ 'page.sheet.place.meeting.main.title'|trans }}</twig:Typography></h2>
+        {{ form_row(form.hasMeetingRooms, {'input_attributes': getFormDependencyTriggerAttributes(dependencyIdentifier)}) }}
+        <div
+            class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-end"
+            {{ getFormDependencyWrapperAttributes(dependencyIdentifier)|renderHtmlAttributes }}
+        >
+            {% if withMeetingRooms %}
+                {{ form_row(form.meetingRoomNumber) }}
+                {{ form_row(form.cocktailConfigurationCapacity) }}
+                {{ form_row(form.theatreConfigurationCapacity) }}
+                {{ form_row(form.minRoomArea) }}
+                {{ form_row(form.maxRoomArea) }}
+                {{ form_row(form.description, {'attr': {'class': 'lg:col-start-1 lg:col-end-4'}}) }}
+            {% endif %}
+        </div>
+    </section>
+
+    <div {{ getFormDependencyWrapperAttributes(dependencyIdentifier)|renderHtmlAttributes }}>
+        {% if withMeetingRooms %}
+            <section
+                class="flex flex-col gap-6 bg-neutral-100 rounded-md shadow-(--shadow) w-full p-6 2xl:p-14"
+                {{ stimulus_controller('provider-portal--meeting-page') }}
+            >
+                <div class="flex flex-wrap justify-between gap-6">
+                    <h2><twig:Typography variant="heading-3" bold>{{ 'page.sheet.place.meeting.capacity.title'|trans }}</twig:Typography></h2>
+                    <twig:Button
+                        variant="outline"
+                        class="w-full sm:w-fit"
+                        data-provider-portal--meeting-page-target="editButton"
+                        data-action="click->provider-portal--meeting-page#editCollection"
+                        type="button"
+                    >
+                        {{ 'form.sheet.place.meeting.rooms.actions.update'|trans }}
+                    </twig:Button>
+                </div>
+
+                <div data-provider-portal--meeting-page-target="collectionPreviewWrapper">
+                    {% include 'pim/pages/sheet/place/meeting/_meeting-rooms-list.html.twig' with { 'meetingRooms': form.meetingRooms.vars.value } %}
+                </div>
+
+                <div
+                    class="flex flex-col gap-6 hidden"
+                    data-provider-portal--meeting-page-target="collectionEditionWrapper"
+                >
+                    {{ form_row(form.meetingRooms) }}
+                    <div class="w-full p-6 bg-old-gold-pastel flex flex-wrap justify-end gap-x-35 gap-y-8 items-end rounded-sm lg:justify-between  lg:flex-nowrap">
+                        <div class="flex flex-col gap-2">
+                            <twig:Typography variant="heading-3" bold>{{ 'form.sheet.place.meeting.rooms.actions.import.title'|trans }}</twig:Typography>
+                            <twig:Typography variant="body-lg">{{ 'form.sheet.place.meeting.rooms.actions.import.description'|trans }}</twig:Typography>
+                        </div>
+                        <twig:Button variant="outline" icon="ai" type="button" class="w-full lg:flex-none sm:w-fit">{{ 'form.sheet.place.meeting.rooms.actions.import.cta'|trans }}</twig:Button>
+                    </div>
+                </div>
+            </section>
+        {% endif %}
+    </div>
+
+    {{ form_end(form) }}
+{% endblock %}
+
+{% block float_submit %}
+    <twig:Form:FloatSubmit label="{{ 'global.save'|trans }}" formId="{{ form.vars.id }}" />
+{% endblock %}

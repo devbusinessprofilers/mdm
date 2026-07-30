@@ -1,0 +1,13 @@
+{%- block document_file_widget -%}
+    <twig:Form:DocumentFile
+        id="{{ id }}"
+        name="{{ full_name }}"
+        fileName="{{ file_name }}"
+        accept="{{ attr.accept ?? '' }}"
+        disabled="{{ attr.disabled ?? false }}"
+    />
+{%- endblock -%}
+
+{%- block document_file_row -%}
+    {{ form_widget(form) }}
+{%- endblock -%}
