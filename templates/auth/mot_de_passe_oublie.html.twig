@@ -1,0 +1,29 @@
+{# Maquette : S1 · Mot de passe oublié — Desktop (nœud Figma 74:2380) #}
+{% extends 'auth/base.html.twig' %}
+{% import 'auth/_composants.html.twig' as ui %}
+
+{% block title %}Mot de passe oublié{% endblock %}
+
+{% block classe_carte %}auth-card--mot-de-passe-oublie{% endblock %}
+
+{% block panneau %}
+    <div class="auth-header">
+        {{ ui.pastille_cadenas() }}
+
+        <div class="auth-titlegroup">
+            <h1 class="auth-title">Mot de passe oublié</h1>
+            <p class="auth-subtitle">Réinitialisez votre accès</p>
+        </div>
+    </div>
+
+    <form class="auth-form auth-form--centre" method="post" action="">
+        {{ ui.champ('Votre email', 'email', {
+            type: 'email',
+            placeholder: 'Votre email',
+            autocomplete: 'email',
+            required: true
+        }) }}
+
+        {{ ui.bouton('Recevoir un lien', { style: 'primary', size: 'lg', block: true }) }}
+    </form>
+{% endblock %}

@@ -1,0 +1,142 @@
+{#
+    Coquille du back-office MDM : barre supérieure + rail de navigation.
+
+    Variable attendue : `ecran` — identifiant de l'écran courant, utilisé pour
+    marquer l'entrée active du rail et de la navigation.
+#}
+{% extends 'base.html.twig' %}
+{% import 'mdm/_composants.html.twig' as ui %}
+
+{% set ecran = ecran|default('') %}
+
+{% block body_class %}mdm-body{% endblock %}
+
+{% block stylesheets %}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&family=Ubuntu+Sans:wght@400;500;700;800&display=swap">
+{% endblock %}
+
+{% block body %}
+    <div class="mdm-app">
+
+        <header class="mdm-header">
+            <div class="mdm-header__start">
+                {#
+                    ÉCART : le logo 200 × 40 du handoff n'a pas pu être récupéré.
+                    Lockup composé du « mark » rond et du nom en texte.
+                #}
+                <a class="mdm-logo" href="{{ path('app_mdm_espace_travail') }}">
+                    <span class="mdm-logo__mark" role="img" aria-label="Business Profilers"></span>
+                    <span class="mdm-logo__wordmark">
+                        <span class="mdm-logo__name">Business Profilers</span>
+                        <span class="mdm-logo__product">Référentiel</span>
+                    </span>
+                </a>
+
+                <nav class="mdm-nav" aria-label="Navigation principale">
+                    {{ ui.nav_item('Accueil', ecran == 'accueil', path('app_mdm_espace_travail')) }}
+                    {{ ui.nav_item('Référentiel', ecran in ['general', 'liste', 'fiche', 'salles'], path('app_mdm_referentiel_general')) }}
+                    {{ ui.nav_item('Qualité', ecran == 'qualite') }}
+                    {{ ui.nav_item('Médias', ecran == 'medias') }}
+                    {{ ui.nav_item('Imports & exports', ecran == 'imports') }}
+                    {{ ui.nav_item('Synchronisation', ecran == 'sync') }}
+                    {{ ui.nav_item('Administration', ecran in ['admin', 'composants']) }}
+                </nav>
+            </div>
+
+            <div class="mdm-header__end">
+                <div class="mdm-search">
+                    <svg class="mdm-search__icon" width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                        <circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.6"></circle>
+                        <path d="M10.8 10.8L14 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+                    </svg>
+                    {# ÉCART : la maquette affiche un libellé statique, rendu ici en champ réel. #}
+                    <input class="mdm-search__input" type="search" aria-label="Rechercher"
+                           placeholder="Rechercher une fiche, un SIRET…">
+                </div>
+
+                <div class="mdm-user">
+                    <span class="mdm-user__avatar" aria-hidden="true">CP</span>
+                    <span class="mdm-user__identity">
+                        <span class="mdm-user__name">Clémence Philips</span>
+                        <span class="mdm-user__role">Équipe Supply</span>
+                    </span>
+                </div>
+            </div>
+        </header>
+
+        {#
+            Le rail et le contenu sont frères : un contrôleur Stimulus qui doit
+            piloter les deux se pose ici.
+        #}
+        <div class="mdm-main" {% block main_attributs %}{% endblock %}>
+            {#
+                L'éditeur de fiche remplace ce rail par les sections de la
+                fiche : il surcharge le bloc `rail`.
+            #}
+            {% block rail %}
+            <nav class="mdm-rail" aria-label="Sections du référentiel">
+                <div class="mdm-rail__group">
+                    <span class="mdm-rail__title">Référentiel</span>
+                    <div class="mdm-rail__items">
+                        {{ ui.rail_item('Toutes les fiches', {
+                            icone: 'eye',
+                            compteur: '18 953',
+                            actif: ecran == 'general',
+                            href: path('app_mdm_referentiel_general')
+                        }) }}
+                        {{ ui.rail_item('Lieux', {
+                            icone: 'bed',
+                            compteur: '12 480',
+                            actif: ecran in ['liste', 'salles'],
+                            href: path('app_mdm_lieux')
+                        }) }}
+                        {{ ui.rail_item('Restaurants', { icone: 'fork', compteur: '3 210' }) }}
+                        {{ ui.rail_item('Activités', { icone: 'check', compteur: '1 884' }) }}
+                        {{ ui.rail_item('Services événementiels', { icone: 'info', compteur: '962' }) }}
+                        {{ ui.rail_item('Plateaux repas', { icone: 'fork', compteur: '417' }) }}
+                    </div>
+                </div>
+
+                <div class="mdm-rail__group">
+                    <span class="mdm-rail__title">Travail en cours</span>
+                    <div class="mdm-rail__items">
+                        {{ ui.rail_item('Mon espace de travail', {
+                            icone: 'check',
+                            actif: ecran == 'accueil',
+                            href: path('app_mdm_espace_travail')
+                        }) }}
+                        {{ ui.rail_item('Mes fiches assignées', { icone: 'user', compteur: '38' }) }}
+                        {{ ui.rail_item('En attente de validation', { icone: 'check', compteur: '14' }) }}
+                        {{ ui.rail_item('Contributions prestataires', { icone: 'user', compteur: '62' }) }}
+                    </div>
+                </div>
+
+                <div class="mdm-rail__group">
+                    <span class="mdm-rail__title">Contrôle</span>
+                    <div class="mdm-rail__items">
+                        {{ ui.rail_item('Tableau de bord qualité', { icone: 'eye', actif: ecran == 'qualite' }) }}
+                        {{ ui.rail_item('Anomalies', { icone: 'info', compteur: '318' }) }}
+                        {{ ui.rail_item('Synchronisations', { icone: 'check', actif: ecran == 'sync' }) }}
+                    </div>
+                </div>
+
+                <div class="mdm-rail__group">
+                    <span class="mdm-rail__title">Paramétrage</span>
+                    <div class="mdm-rail__items">
+                        {{ ui.rail_item('Champs & taxonomies', { icone: 'pencil', actif: ecran in ['admin', 'composants'] }) }}
+                        {{ ui.rail_item('Rôles & droits', { icone: 'lock' }) }}
+                    </div>
+                </div>
+            </nav>
+            {% endblock %}
+
+            <div class="mdm-content">
+                {% block contenu %}{% endblock %}
+            </div>
+        </div>
+
+    </div>
+{% endblock %}

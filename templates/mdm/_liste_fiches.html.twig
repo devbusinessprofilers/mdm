@@ -1,0 +1,183 @@
+{#
+    Barre de filtres + table de fiches, partagées par « Référentiel général »
+    et « Lieux ». À inclure après le titre de l'écran et, le cas échéant, après
+    les cartes de répartition par typologie.
+
+    Variables attendues :
+      colonnes        list<{cle, libelle}> — ordre et intitulés
+      lignes          list<Ligne>
+      filtres         list<{libelle, actif}>
+      pagination      list<{libelle, courante}>
+      recherche       texte indicatif du champ de recherche
+      vue_enregistree libellé de la vue courante
+      note            volumétrie affichée en pied
+      selection       bool — affiche le bandeau d'actions groupées
+
+    Les largeurs sont portées par les classes `.ref__col-<cle>` du CSS.
+#}
+{% import 'mdm/_composants.html.twig' as ui %}
+
+<div class="ref__toolbar">
+    <div class="ref__search">
+        <svg class="ref__search-icon" width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.6"></circle>
+            <path d="M10.8 10.8L14 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+        </svg>
+        <input class="ref__search-input" type="search" aria-label="Rechercher une fiche"
+               placeholder="{{ recherche }}">
+    </div>
+
+    {% for filtre in filtres %}
+        <button class="ref__filter {{ filtre.actif ? 'ref__filter--actif' : '' }}"
+                type="button"
+                aria-pressed="{{ filtre.actif ? 'true' : 'false' }}">
+            <span>{{ filtre.libelle }}</span>
+            {{ ui.chevron() }}
+        </button>
+    {% endfor %}
+
+    <span class="ref__spacer"></span>
+
+    <button class="ref__saved" type="button">
+        <span>{{ vue_enregistree }}</span>
+        {{ ui.chevron() }}
+    </button>
+</div>
+
+{% if selection|default(false) %}
+    <div class="ref__selection">
+        <span class="ref__selection-label">{{ selection_label }}</span>
+        <span class="ref__selection-sep" aria-hidden="true"></span>
+        {% for action in actions_groupees %}
+            <button class="ref__bulk" type="button">{{ action }}</button>
+        {% endfor %}
+        <span class="ref__spacer"></span>
+        <button class="ref__deselect" type="button">Tout désélectionner</button>
+    </div>
+{% endif %}
+
+<div class="ref__card {{ selection|default(false) ? 'ref__card--sous-selection' : '' }}">
+    <div class="ref__table-wrap">
+        <table class="ref__table">
+            <thead>
+                <tr>
+                    {% for colonne in colonnes %}
+                        <th class="ref__col-{{ colonne.cle }}" scope="col">
+                            {%- if colonne.cle == 'check' -%}
+                                <span class="sr-only">Sélection</span>
+                            {%- elseif colonne.cle == 'actions' -%}
+                                <span class="sr-only">Actions</span>
+                            {%- else -%}
+                                {{ colonne.libelle }}
+                            {%- endif -%}
+                        </th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for ligne in lignes %}
+                    <tr class="{{ ligne.surlignee ? 'ref__row--selectionnee' : '' }}">
+                        {% for colonne in colonnes %}
+                            {% if colonne.cle == 'check' %}
+                                <td>
+                                    <span class="ref__check {{ ligne.selectionnee ? 'ref__check--cochee' : '' }}"
+                                          role="img"
+                                          aria-label="{{ ligne.selectionnee ? 'Fiche sélectionnée' : 'Fiche non sélectionnée' }}"></span>
+                                </td>
+
+                            {% elseif colonne.cle == 'nom' %}
+                                <td>
+                                    <span class="ref__name">
+                                        {# Le nom ouvre la fiche dès que son écran est intégré. #}
+                                        {{ ui.lien(ligne.nom, 'ref__name-label', lien_fiche|default(null)) }}
+                                        <span class="ref__name-ref">{{ ligne.reference }}</span>
+                                    </span>
+                                </td>
+
+                            {% elseif colonne.cle == 'typologie' %}
+                                <td>
+                                    <span class="ref__typo-cell">
+                                        {{ ui.pastille(ligne.typologieCouleur) }}
+                                        <span>{{ ligne.typologie }}</span>
+                                    </span>
+                                </td>
+
+                            {% elseif colonne.cle == 'ville' %}
+                                <td>{{ ligne.ville }}</td>
+
+                            {% elseif colonne.cle == 'sousTypologie' %}
+                                <td class="ref__sous-typo">{{ ligne.sousTypologie }}</td>
+
+                            {% elseif colonne.cle == 'statut' %}
+                                <td>
+                                    <span class="mdm-pill"
+                                          style="--mdm-pill-fg: var(--{{ ligne.statutFg }}); --mdm-pill-bg: var(--{{ ligne.statutBg }})">{{ ligne.statut }}</span>
+                                </td>
+
+                            {% elseif colonne.cle == 'completude' %}
+                                <td>
+                                    <span class="ref__completude">
+                                        <span class="ref__bar" style="--ref-bar-height: 6px">
+                                            <span class="ref__bar-fill"
+                                                  style="--ref-bar-level: {{ ligne.completude }}%; --ref-bar-color: var(--{{ ligne.completudeCouleur }})"></span>
+                                        </span>
+                                        <span class="ref__completude-pct {{ ligne.completudeAlerte ? 'ref__completude-pct--alerte' : '' }}">{{ ligne.completude }} %</span>
+                                    </span>
+                                </td>
+
+                            {% elseif colonne.cle == 'source' %}
+                                <td>
+                                    <span class="ref__source">
+                                        {{ ui.pastille(ligne.sourceCouleur) }}
+                                        <span>{{ ligne.source }}</span>
+                                    </span>
+                                </td>
+
+                            {% elseif colonne.cle == 'maj' %}
+                                <td class="ref__maj">{{ ligne.modification }}</td>
+
+                            {% elseif colonne.cle == 'actions' %}
+                                {#
+                                    Le crayon porte la ligne : la modale est unique
+                                    dans la page et se remplit au clic.
+                                #}
+                                <td>
+                                    <button class="ref__crayon" type="button"
+                                            title="Édition rapide"
+                                            data-action="edition-rapide#ouvrir"
+                                            data-edition-rapide-rang-param="{{ loop.parent.loop.index0 }}"
+                                            data-edition-rapide-nom-param="{{ ligne.nom }}"
+                                            data-edition-rapide-reference-param="{{ ligne.reference }}"
+                                            data-edition-rapide-ville-param="{{ ligne.ville }}"
+                                            data-edition-rapide-gamme-param="{{ ligne.gamme }}"
+                                            data-edition-rapide-statut-param="{{ ligne.statut }}"
+                                            data-edition-rapide-publiee-param="{{ ligne.statutPubliee ? '1' : '0' }}"
+                                            data-edition-rapide-completude-param="{{ ligne.completude }}"
+                                            data-edition-rapide-rue-param="{{ ligne.rue }}"
+                                            data-edition-rapide-cp-param="{{ ligne.codePostal }}"
+                                            data-edition-rapide-gps-param="{{ ligne.gps }}">
+                                        <span class="sr-only">Édition rapide de {{ ligne.nom }}</span>
+                                        {{ ui.icone('pencil') }}
+                                    </button>
+                                </td>
+                            {% endif %}
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="ref__footer">
+        <span class="ref__footer-note">{{ note }}</span>
+        <ul class="ref__pager">
+            {% for page in pagination %}
+                <li>
+                    <button class="ref__page {{ page.courante ? 'ref__page--courante' : '' }}"
+                            type="button"
+                            {{ page.courante ? 'aria-current="page"' : '' }}>{{ page.libelle }}</button>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>

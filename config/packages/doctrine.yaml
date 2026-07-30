@@ -6,7 +6,11 @@ doctrine:
         # either here or in the DATABASE_URL env var (see .env file)
         #server_version: '16'
 
-        profiling_collect_backtrace: '%kernel.debug%'
+        # PERF : capturait une backtrace complete a CHAQUE requete SQL en dev.
+        # Les requetes restent visibles dans le profiler ; seul le lien vers la
+        # ligne de code appelante est perdu. Repasser a '%kernel.debug%' le temps
+        # de traquer l'origine d'une requete.
+        profiling_collect_backtrace: false
         use_savepoints: true
     orm:
         auto_generate_proxy_classes: true

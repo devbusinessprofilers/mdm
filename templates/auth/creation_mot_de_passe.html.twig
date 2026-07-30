@@ -1,0 +1,53 @@
+{# Maquette : S1 · Création du mot de passe — Desktop (nœud Figma 74:2093) #}
+{% extends 'auth/base.html.twig' %}
+{% import 'auth/_composants.html.twig' as ui %}
+
+{% block title %}Création de votre mot de passe{% endblock %}
+
+{% block classe_carte %}auth-card--creation{% endblock %}
+
+{% block panneau %}
+    <div class="auth-header">
+        {{ ui.pastille_cadenas() }}
+
+        <div class="auth-titlegroup">
+            <h1 class="auth-title">Création de votre<br>mot de passe</h1>
+            <p class="auth-subtitle">Remplissez les informations pour finaliser votre inscription.</p>
+        </div>
+    </div>
+
+    <form class="auth-form" method="post" action="">
+        <div class="auth-password">
+            {{ ui.champ('Nouveau mot de passe', 'password', {
+                type: 'password',
+                placeholder: 'Mot de passe',
+                autocomplete: 'new-password',
+                required: true,
+                toggle: true
+            }) }}
+
+            <div class="auth-password__meta">
+                {# 198 px remplis sur 403,242 px de piste dans la maquette. #}
+                {{ ui.jauge(49, 'moyen') }}
+
+                <ul class="auth-rules">
+                    {{ ui.regle('8 caractères', 'valide') }}
+                    {{ ui.regle('1 majuscule', 'valide') }}
+                    {{ ui.regle('1 minuscule', 'valide') }}
+                    {{ ui.regle('1 caractère spécial', 'attente') }}
+                    {{ ui.regle('1 chiffre', 'attente') }}
+                </ul>
+            </div>
+        </div>
+
+        {{ ui.champ('Confirmation du nouveau mot de passe', 'password_confirmation', {
+            type: 'password',
+            placeholder: 'Confirmation du nouveau mot de passe',
+            autocomplete: 'new-password',
+            required: true,
+            toggle: true
+        }) }}
+
+        {{ ui.bouton('Se connecter', { style: 'primary', size: 'lg', block: true }) }}
+    </form>
+{% endblock %}

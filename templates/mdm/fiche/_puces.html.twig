@@ -1,0 +1,27 @@
+{#
+    Groupes de puces — section « Services & équipements ».
+    Le décompte et l'autorité viennent de la maquette : ces listes sont
+    déclarées par le prestataire.
+#}
+{% import 'mdm/_composants.html.twig' as ui %}
+
+{% for groupe in groupes_puces %}
+    {% set cochees = groupe.puces|filter(puce => puce.1)|length %}
+    <div class="fiche__puces-groupe">
+        <div class="fiche__puces-entete">
+            <span class="fiche__puces-nom">{{ groupe.nom }}</span>
+            {{ ui.pastille('secondary-p-che', 8) }}
+            <span class="fiche__puces-autorite">Prestataire</span>
+            <span class="fiche__spacer"></span>
+            <span class="fiche__puces-compte">{{ cochees }} sur {{ groupe.puces|length }} sélectionnés</span>
+        </div>
+
+        <div class="fiche__puces">
+            {% for puce in groupe.puces %}
+                <button class="fiche__puce {{ puce.1 ? 'fiche__puce--active' : '' }}"
+                        type="button"
+                        aria-pressed="{{ puce.1 ? 'true' : 'false' }}">{{ puce.0 }}</button>
+            {% endfor %}
+        </div>
+    </div>
+{% endfor %}

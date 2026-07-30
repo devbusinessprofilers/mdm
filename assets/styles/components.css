@@ -1,0 +1,670 @@
+/*
+ * Composants d'interface Business Profilers.
+ *
+ * Chaque bloc reprend une variante du handoff Claude Design. Les écarts
+ * volontaires par rapport à la maquette sont signalés par un commentaire
+ * « ÉCART : ... » afin qu'ils restent visibles en relecture.
+ */
+
+/* =========================================================================
+   Bouton — composant Figma « Button » (9 variantes)
+   ========================================================================= */
+
+.bp-btn {
+    display: inline-flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: calc(var(--extra-small) * 1px);
+    box-sizing: border-box;
+    border: 0;
+    border-radius: calc(var(--border-radius-large) * 1px);
+    cursor: pointer;
+    white-space: nowrap;
+    text-decoration: none;
+    /* ÉCART : la maquette alterne entre Ubuntu Sans 12/20 (états « défaut »)
+       et Lato 14/22 (états « hover »), ce qui ferait sauter le libellé au
+       survol. On applique le token --texte-button du design system, qui est
+       la valeur de référence, sur tous les états. */
+    font-family: var(--bp-font-texte);
+    font-size: calc(var(--texte-button-font-size) * 1px);
+    font-weight: var(--texte-button-font-weight);
+    line-height: calc(var(--texte-button-line-height) * 1px);
+    transition: background-color 0.15s ease, background-image 0.15s ease, color 0.15s ease;
+}
+
+.bp-btn__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+}
+
+.bp-btn__icon svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+/* ÉCART : ajout d'un anneau de focus, absent de la maquette mais nécessaire
+   pour la navigation au clavier (RGAA 10.7 / WCAG 2.4.7). */
+.bp-btn:focus-visible {
+    outline: 2px solid var(--primary-marine);
+    outline-offset: 2px;
+}
+
+/* ---- Tailles ---- */
+.bp-btn--lg {
+    height: 48px;
+    padding: 12px 16px;
+}
+
+.bp-btn--sm {
+    height: 32px;
+    padding: 4px 16px;
+}
+
+/* ---- Pleine largeur (utilisé par les écrans d'authentification) ---- */
+.bp-btn--block {
+    width: 100%;
+    align-self: stretch;
+}
+
+/* ---- Style : primary ---- */
+.bp-btn--primary {
+    background-color: var(--primary-turquoise);
+    color: var(--neutral-100);
+}
+
+.bp-btn--primary:hover:not(:disabled) {
+    background-image: var(--bp-gradient-primary-hover);
+}
+
+/* ---- Style : outline ---- */
+/* Bordure en dégradé : deux calques de fond, l'un clippé sur la boîte de
+   padding (le blanc intérieur), l'autre sur la boîte de bordure (le dégradé). */
+.bp-btn--outline {
+    background-image:
+        linear-gradient(var(--neutral-100), var(--neutral-100)),
+        var(--bp-gradient-outline-border);
+    background-origin: border-box;
+    background-clip: padding-box, border-box;
+    border: 2px solid transparent;
+    color: var(--neutral-900);
+}
+
+/* ÉCART : la maquette décrit le survol « outline » comme un simple aplat
+   blanc, ce qui supprimerait la bordure et ne donnerait aucun retour visuel.
+   On conserve la bordure et on teinte le fond avec --primary-bleu-clair,
+   couleur déjà présente dans la palette. */
+.bp-btn--outline:hover:not(:disabled) {
+    background-image:
+        linear-gradient(var(--primary-bleu-clair), var(--primary-bleu-clair)),
+        var(--bp-gradient-outline-border);
+}
+
+/* Variante « outline » en taille sm : la maquette prescrit un anneau noir de
+   2px au lieu du dégradé. Reproduit tel quel. */
+.bp-btn--outline.bp-btn--sm {
+    background-image: none;
+    background-color: var(--neutral-100);
+    border: 0;
+    box-shadow: inset 0 0 0 2px var(--neutral-900-2);
+}
+
+/* ---- Style : text ---- */
+.bp-btn--text {
+    background-color: transparent;
+    color: var(--neutral-900);
+}
+
+.bp-btn--text:hover:not(:disabled) {
+    background-color: var(--neutral-200);
+}
+
+/* ---- État désactivé ---- */
+.bp-btn:disabled,
+.bp-btn--disabled {
+    opacity: 0.67;
+    background-image: none;
+    background-color: var(--neutral-200);
+    border: 0;
+    box-shadow: inset 0 0 0 1px var(--neutral-300);
+    color: var(--neutral-500);
+    cursor: not-allowed;
+}
+
+/* =========================================================================
+   Champ de saisie — motif « label + input » des écrans d'authentification
+   ========================================================================= */
+
+.bp-field {
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--extra-small) * 1px);
+    align-self: stretch;
+}
+
+.bp-field__label {
+    font-family: var(--bp-font-titre);
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 22px;
+    /* ÉCART : sur les écrans « Connexion » et « Mot de passe », ce libellé est
+       en blanc dans la maquette — donc invisible sur la carte blanche. L'écran
+       « Mot de passe oublié » l'affiche en --neutral-900. On retient cette
+       dernière valeur, cohérente et lisible. */
+    color: var(--neutral-900);
+}
+
+.bp-field__control {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: calc(var(--extra-small) * 1px);
+    box-sizing: border-box;
+    height: 40px;
+    padding: 8px;
+    border-radius: calc(var(--border-radius-extra-small) * 1px);
+    background-color: var(--background-gradient-start);
+    box-shadow: inset 0 0 0 1px var(--primary-turquoise);
+}
+
+/* ÉCART : état de focus absent de la maquette, ajouté pour l'accessibilité. */
+.bp-field__control:focus-within {
+    box-shadow: inset 0 0 0 2px var(--primary-marine);
+}
+
+/*
+ * États « error » et « disabled » du composant Figma « Input field ».
+ * Relevés dans son cadre de documentation : le composant n'existe pas sous
+ * forme de variantes dans le bundle, seulement comme planche annotée.
+ */
+.bp-field__control--erreur {
+    background-color: var(--secondary-rouge-p-le);
+    box-shadow: inset 0 0 0 1px var(--feedback-error);
+}
+
+.bp-field__control--desactive {
+    background-color: var(--neutral-200);
+    box-shadow: inset 0 0 0 1px var(--neutral-300);
+}
+
+.bp-field__control--desactive .bp-field__input {
+    color: var(--neutral-500);
+    cursor: not-allowed;
+}
+
+/* Message d'erreur sous le champ */
+.bp-field__erreur {
+    font-family: var(--bp-font-texte);
+    font-size: calc(var(--texte-body-small-regular-font-size) * 1px);
+    line-height: calc(var(--texte-body-small-regular-line-height) * 1px);
+    color: var(--feedback-error);
+}
+
+.bp-field__input {
+    flex: 1 1 auto;
+    min-width: 0;
+    border: 0;
+    outline: none;
+    background: transparent;
+    font-family: var(--bp-font-titre);
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 20px;
+    color: var(--neutral-900);
+}
+
+/* ÉCART : la maquette affiche le texte indicatif en --neutral-900, ce qui rend
+   un champ vide indistinguable d'un champ rempli. Placeholder en --neutral-500. */
+.bp-field__input::placeholder {
+    color: var(--neutral-500);
+    opacity: 1;
+}
+
+.bp-field__toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    /* ÉCART : l'icône œil est en --neutral-100 (blanc) dans la maquette, donc
+       invisible sur le fond clair du champ. Passée en --neutral-500. */
+    color: var(--neutral-500);
+}
+
+.bp-field__toggle:hover {
+    color: var(--primary-marine);
+}
+
+.bp-field__toggle:focus-visible {
+    outline: 2px solid var(--primary-marine);
+    outline-offset: 1px;
+    border-radius: 4px;
+}
+
+.bp-field__toggle svg {
+    display: block;
+}
+
+/* =========================================================================
+   Tag — composant Figma « Tag », variantes sm utilisées par les règles de
+   robustesse du mot de passe
+   ========================================================================= */
+
+.bp-tag {
+    display: inline-flex;
+    flex-direction: row;
+    align-items: center;
+    gap: calc(var(--extra-small) * 1px);
+    box-sizing: border-box;
+    width: fit-content;
+    padding: 4px 8px;
+    border-radius: calc(var(--border-radius-large) * 1px);
+    font-family: var(--bp-font-texte);
+    font-size: calc(var(--texte-body-extra-small-bold-font-size) * 1px);
+    font-weight: var(--texte-body-extra-small-bold-font-weight);
+    line-height: calc(var(--texte-body-extra-small-bold-line-height) * 1px);
+    white-space: nowrap;
+}
+
+.bp-tag__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+}
+
+/*
+ * Tailles — la seule différence est la typographie, le gabarit est identique.
+ * `sm` reste la valeur par défaut : c'est celle qu'emploient les écrans déjà
+ * intégrés, qui n'ont donc pas à porter de modificateur.
+ */
+.bp-tag--lg {
+    font-size: calc(var(--texte-body-medium-bold-font-size) * 1px);
+    line-height: calc(var(--texte-body-medium-bold-line-height) * 1px);
+}
+
+.bp-tag--sm {
+    font-size: calc(var(--texte-body-extra-small-bold-font-size) * 1px);
+    line-height: calc(var(--texte-body-extra-small-bold-line-height) * 1px);
+}
+
+/* ---- Les 8 couleurs du composant Figma « Tag » ---- */
+
+.bp-tag--peche {
+    background-color: var(--secondary-p-che);
+    color: var(--neutral-900);
+}
+
+.bp-tag--gris {
+    background-color: var(--neutral-200);
+    color: var(--neutral-500);
+}
+
+.bp-tag--rouge {
+    background-color: var(--secondary-rouge-p-le);
+    color: var(--secondary-rouge);
+}
+
+.bp-tag--vert-pale {
+    background-color: var(--secondary-vert-p-le);
+    color: var(--secondary-vert);
+}
+
+.bp-tag--vert {
+    background-color: var(--secondary-vert);
+    color: var(--neutral-100);
+}
+
+.bp-tag--neon {
+    background-color: var(--primary-turquoise);
+    color: var(--neutral-100);
+}
+
+.bp-tag--marine {
+    background-color: var(--primary-marine);
+    color: var(--neutral-100);
+}
+
+.bp-tag--premium {
+    background-color: var(--secondary-premium);
+    color: var(--neutral-100);
+}
+
+/* =========================================================================
+   Avatar — composant Figma « User »
+   ========================================================================= */
+
+.bp-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-sizing: border-box;
+    width: var(--bp-avatar-size, 32px);
+    height: var(--bp-avatar-size, 32px);
+    border-radius: calc(var(--border-radius-large) * 1px);
+    overflow: hidden;
+}
+
+.bp-avatar--defaut {
+    background-color: var(--primary-bleu-clair);
+    color: var(--primary-marine);
+}
+
+.bp-avatar--defaut .bp-avatar__icon {
+    width: calc(var(--bp-avatar-size, 32px) * 0.75);
+    height: calc(var(--bp-avatar-size, 32px) * 0.75);
+}
+
+.bp-avatar__icon svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.bp-avatar--photo {
+    background-position: center;
+    background-size: cover;
+    background-repeat: no-repeat;
+}
+
+/* =========================================================================
+   Pastille d'icône — cercle bleu clair des écrans « mot de passe »
+   ========================================================================= */
+
+.bp-iconcircle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background-color: var(--primary-bleu-clair);
+    color: var(--secondary-p-che);
+}
+
+.bp-iconcircle svg {
+    display: block;
+}
+
+/* =========================================================================
+   Jauge de robustesse du mot de passe
+   ========================================================================= */
+
+.bp-strength {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    align-self: stretch;
+    gap: calc(var(--extra-small) * 1px);
+}
+
+.bp-strength__track {
+    position: relative;
+    flex: 1 1 auto;
+    height: 4px;
+    background-color: var(--neutral-200);
+    overflow: hidden;
+}
+
+.bp-strength__fill {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: var(--bp-strength-level, 0%);
+    background-color: var(--feedback-warning);
+}
+
+.bp-strength--faible .bp-strength__fill {
+    background-color: var(--feedback-error);
+}
+
+.bp-strength--moyen .bp-strength__fill {
+    background-color: var(--feedback-warning);
+}
+
+.bp-strength--fort .bp-strength__fill {
+    background-color: var(--feedback-success);
+}
+
+/* =========================================================================
+   Séparateur
+   ========================================================================= */
+
+.bp-divider {
+    align-self: stretch;
+    height: 1px;
+    margin: 0;
+    border: 0;
+    background-color: var(--neutral-300);
+}
+
+/* ---- Style : dégradé de marque (actions IA de l'éditeur de fiche) ---- */
+.bp-btn--degrade {
+    background-image: var(--bp-gradient-brand);
+    color: var(--neutral-100);
+}
+
+.bp-btn--degrade:hover:not(:disabled) {
+    background-image: var(--bp-gradient-primary-hover);
+}
+
+/* ---- Style : marine (action d'envoi en validation) ---- */
+.bp-btn--marine {
+    background-color: var(--primary-marine);
+    color: var(--neutral-100);
+}
+
+.bp-btn--marine:hover:not(:disabled) {
+    background-color: var(--primary-turquoise);
+}
+
+/* =========================================================================
+   Case à cocher — molécule Figma « Checkboxes » (type × state)
+   ========================================================================= */
+
+.bp-checkbox {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    flex-shrink: 0;
+    box-sizing: border-box;
+    width: 20px;
+    height: 20px;
+    border-radius: 1px;
+    background: transparent;
+    box-shadow: inset 0 0 0 1px var(--primary-turquoise);
+    color: var(--neutral-100);
+}
+
+.bp-checkbox--desactivee {
+    box-shadow: inset 0 0 0 1px var(--neutral-300);
+}
+
+.bp-checkbox--cochee {
+    background: var(--primary-turquoise);
+    box-shadow: none;
+}
+
+.bp-checkbox--cochee.bp-checkbox--desactivee {
+    background: var(--neutral-300);
+    box-shadow: none;
+}
+
+/* Le glyphe n'apparaît que sur l'état coché. */
+.bp-checkbox svg {
+    display: none;
+}
+
+.bp-checkbox--cochee svg {
+    display: block;
+}
+
+/* =========================================================================
+   Menu déroulant — molécule Figma « Menu dropdown »
+   -------------------------------------------------------------------------
+   Deux types : `list checkboxes` (210 px) et `poi` (432 px). Le rail de
+   droite est la barre de défilement du composant : piste blanche, curseur
+   turquoise de 8 px.
+   ========================================================================= */
+
+.bp-menu {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    box-sizing: border-box;
+    gap: 8px;
+    /* ÉCART : la molécule fixe 210 px (checkboxes) et 432 px (poi). Le menu
+       prend ici la largeur de son champ — sinon il flotte sous un champ trois
+       fois plus large et tronque les libellés. */
+    width: 100%;
+    padding: 16px 16px 16px 0;
+    border-radius: calc(var(--corner-radius) * 1px);
+    background: var(--background-gradient-start);
+    /* ÉCART : positionnement absolu et ombre portée — la molécule est présentée
+       isolée dans la bibliothèque ; il faut bien l'ancrer sous son champ. */
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    z-index: 20;
+    box-shadow: var(--bp-shadow-panel);
+}
+
+/* La variante `poi` ne se distingue plus que par sa teinte : sa largeur suit
+   le champ, comme l'autre type. */
+.bp-menu--poi {
+    color: var(--neutral-300);
+}
+
+.bp-menu[hidden] {
+    display: none;
+}
+
+/* Les listes longues défilent. La barre native est masquée : la molécule
+   porte son propre rail, l afficher deux fois serait redondant. */
+.bp-menu__liste {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    align-self: stretch;
+    flex: 1 1 auto;
+    min-width: 0;
+    max-height: 240px;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+    list-style: none;
+    scrollbar-width: none;
+}
+
+.bp-menu__liste::-webkit-scrollbar {
+    display: none;
+}
+
+.bp-menu__liste > li {
+    width: 100%;
+    flex-shrink: 0;
+}
+
+.bp-menu__barre {
+    position: relative;
+    align-self: stretch;
+    flex-shrink: 0;
+    width: 8px;
+}
+
+.bp-menu__barre-piste {
+    position: absolute;
+    inset: 0;
+    border-radius: 0 0 calc(var(--border-radius-large) * 1px) calc(var(--border-radius-large) * 1px);
+    background: var(--neutral-100);
+}
+
+.bp-menu__barre-curseur {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 8px;
+    height: var(--bp-menu-curseur, 54%);
+    border-radius: calc(var(--border-radius-large) * 1px);
+    background: var(--primary-turquoise);
+}
+
+/* ---- Entrée de menu — molécule « Menu item de liste » ---- */
+
+/* Alignement en haut : quand un libellé s'enroule, la case reste en regard de
+   sa première ligne au lieu de se centrer sur tout le bloc. */
+.bp-menu-item {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    box-sizing: border-box;
+    width: 100%;
+    gap: 8px;
+    padding: 4px 16px;
+    border: 0;
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+}
+
+.bp-menu-item:hover {
+    background: var(--primary-bleu-clair);
+}
+
+.bp-menu-item:focus-visible {
+    outline: 2px solid var(--primary-marine);
+    outline-offset: -2px;
+}
+
+.bp-menu-item__icone {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    /* recentre la case de 20 px sur la ligne de 22 px du libellé */
+    margin-top: 1px;
+}
+
+/* ÉCART : la molécule est en `nowrap`. Le libellé s'enroule ici plutôt que
+   d'être coupé — « Aéroport Inter. Amiens Henry Potez… » tenait sur deux
+   lignes et se perdait. */
+.bp-menu-item__label {
+    position: relative;
+    flex: 1 1 auto;
+    min-width: 0;
+    font-family: var(--bp-font-texte);
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 22px;
+    color: var(--neutral-900-2);
+    text-wrap: pretty;
+}
+
+.bp-menu__vide {
+    padding: 4px 16px;
+    font-family: var(--bp-font-texte);
+    font-size: 14px;
+    line-height: 22px;
+    color: var(--neutral-500);
+}

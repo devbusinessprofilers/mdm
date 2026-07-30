@@ -1,0 +1,471 @@
+{# Maquette : « Creation fiche » — tunnel de création d'une fiche #}
+{% extends 'mdm/base.html.twig' %}
+{% import 'mdm/_composants.html.twig' as ui %}
+
+{% set ecran = 'creation' %}
+
+{% block title %}Créer une fiche{% endblock %}
+
+{# Le contrôleur couvre le rail et le contenu : le rail y déclenche des sauts. #}
+{% block main_attributs %}data-controller="creation"{% endblock %}
+
+{#
+    Le rail de cet écran ne liste pas les sections du référentiel mais les sept
+    blocs de la création, avec leur état de remplissage.
+#}
+{% block rail %}
+    <nav class="creation-rail" aria-label="Sections de la fiche">
+        <div class="creation-rail__haut">
+            <span class="creation-rail__titre">Sections de la fiche</span>
+            {% for ancre in ancres %}
+                <button class="creation-rail__item {{ ancre.active ? 'creation-rail__item--active' : '' }}
+                               {{ ancre.verrouillee ? 'creation-rail__item--inerte' : '' }}"
+                        type="button"
+                        data-creation-target="ancre"
+                        data-action="creation#aller"
+                        data-creation-bloc-param="{{ ancre.index }}"
+                        {{ ancre.active ? 'aria-current="true"' : '' }}>
+                    <span class="creation-rail__icone">{{ ui.icone(ancre.icone) }}</span>
+                    <span class="creation-rail__libelle">{{ ancre.libelle }}</span>
+                    <span class="creation-rail__badge creation-rail__badge--{{ ancre.ton }}">{{ ancre.badge }}</span>
+                </button>
+            {% endfor %}
+        </div>
+
+        <div class="creation-rail__note">
+            <span class="creation-rail__note-titre">Enrichissement après création</span>
+            <span class="creation-rail__note-corps">{{ noteEnrichissement }}</span>
+        </div>
+    </nav>
+{% endblock %}
+
+{% block contenu %}
+    <div class="creation {{ occupe ? 'creation--occupe' : '' }}">
+
+        <div class="creation__entete">
+            <div class="creation__identite">
+                <nav class="creation__fil" aria-label="Fil d'Ariane">
+                    <a href="{{ path('app_mdm_referentiel_general') }}">Référentiel</a>
+                    <span aria-hidden="true">/</span>
+                    <a href="{{ path('app_mdm_referentiel_general') }}">Toutes les fiches</a>
+                    <span aria-hidden="true">/</span>
+                    <span class="creation__fil-courant" aria-current="page">Nouvelle fiche</span>
+                </nav>
+                <h1 class="creation__titre">Créer une fiche</h1>
+                <p class="creation__sous-titre">{{ sousTitre }}</p>
+            </div>
+
+            {% if etiquetteBrouillon %}
+                <span class="creation__brouillon">{{ etiquetteBrouillon }}</span>
+            {% endif %}
+        </div>
+
+        <div class="creation__defilement" data-creation-target="defilement">
+
+            {% if banniere.visible %}
+                <div class="creation__banniere" role="alert" data-creation-target="banniere">
+                    <span class="creation__banniere-icone" aria-hidden="true">{{ ui.icone('warn') }}</span>
+                    <div class="creation__banniere-corps">
+                        <span class="creation__banniere-titre"
+                              data-creation-target="banniereTitre">{{ banniere.titre }}</span>
+                        <div class="creation__banniere-liste">
+                            {% for champ in banniere.champs %}
+                                {# `adresse` disparaît si la zone d'intervention prend sa place. #}
+                                <span {% if 'Adresse postale' == champ %}data-champ="adresse"{% endif %}>· {{ champ }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            {% for bloc in blocs %}
+                <section class="creation__carte {{ bloc.verrouille ? 'creation__carte--verrouillee' : '' }}"
+                         data-creation-target="bloc" data-bloc="{{ bloc.index }}">
+
+                    <div class="creation__carte-tete">
+                        <div class="creation__carte-titre">
+                            <div class="creation__carte-ligne">
+                                <span class="creation__numero">{{ bloc.numero }}</span>
+                                <h2>{{ bloc.titre }}</h2>
+                            </div>
+                            <span class="creation__carte-description">{{ bloc.description }}</span>
+                        </div>
+                        {% if bloc.etiquette %}
+                            <span class="creation__etiquette creation__etiquette--{{ bloc.etiquetteTon }}">{{ bloc.etiquette }}</span>
+                        {% endif %}
+                    </div>
+
+                    {% if bloc.verrouille %}
+                        <div class="creation__verrou">
+                            <span aria-hidden="true">{{ ui.icone('lock') }}</span>
+                            <span>Choisissez d'abord une gamme : elle détermine les champs de ce bloc.</span>
+                        </div>
+                    {% endif %}
+
+                    {# --------------------------------------------------- Gamme #}
+                    {% if 'gamme' == bloc.type %}
+                        <div class="creation__gamme">
+                            <div class="creation__gamme-cartes">
+                                {% for g in gammes %}
+                                    <a class="creation__gamme-carte {{ g.active ? 'creation__gamme-carte--active' : '' }}"
+                                       href="{{ path('app_mdm_creation_fiche', { etat: etat.id, gamme: g.id }) }}">
+                                        <span class="creation__gamme-icone">{{ ui.icone(g.icone) }}</span>
+                                        <span class="creation__gamme-texte">
+                                            <span class="creation__gamme-nom">{{ g.label }}</span>
+                                            <span class="creation__gamme-sous">{{ g.sous }}</span>
+                                        </span>
+                                    </a>
+                                {% endfor %}
+                            </div>
+                            <div class="creation__note">
+                                <span aria-hidden="true">{{ ui.icone('info') }}</span>
+                                <span>{{ noteGamme }}</span>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    {# --------------------------------- Identité et localisation #}
+                    {% if 'identite' == bloc.type %}
+                        <div class="creation__identite-bloc"
+                             data-creation-target="identite"
+                             data-implantation="{{ implantation.affiche }}">
+                            <div class="creation__duo">
+                                <div class="creation__champ">
+                                    <span class="creation__label">Nom de la fiche {{ _self.etoile() }}</span>
+                                    <div class="creation__boite {{ nom.fautif ? 'creation__boite--fautive' : '' }}">
+                                        <span class="creation__valeur {{ nom.vide ? 'creation__valeur--vide' : '' }}">{{ nom.valeur }}</span>
+                                    </div>
+                                    {% if nom.fautif %}
+                                        <span class="creation__indice creation__indice--erreur">Le nom est obligatoire.</span>
+                                    {% endif %}
+                                </div>
+
+                                <div class="creation__champ">
+                                    <span class="creation__label">Référence MDM</span>
+                                    <div class="creation__boite creation__boite--lecture">
+                                        <span class="creation__valeur creation__valeur--grise">{{ reference }}</span>
+                                    </div>
+                                    <span class="creation__indice">Attribuée automatiquement à la création.</span>
+                                </div>
+                            </div>
+
+                            {% if implantation.visible %}
+                                <div class="creation__sous-bloc">
+                                    <span class="creation__label">Ce prestataire a-t-il une adresse fixe ?</span>
+                                    <div class="creation__radios">
+                                        {{ _self.radio('Implantation fixe', 'fixe' == implantation.choix,
+                                                       'implantation', 'fixe') }}
+                                        {{ _self.radio("Zone d'intervention", 'zone' == implantation.choix,
+                                                       'implantation', 'zone') }}
+                                    </div>
+                                </div>
+                            {% endif %}
+
+                            {% if adresse.rendue %}
+                                <div class="creation__duo creation__duo--haut creation__groupe-adresse">
+                                    <div class="creation__champ creation__champ--adresse">
+                                        <span class="creation__label">Adresse postale {{ _self.etoile() }}</span>
+                                        <div class="creation__boite {{ adresse.fautif ? 'creation__boite--fautive' : '' }}"
+                                             data-action="click->creation#basculerSuggestions"
+                                             role="button" tabindex="0">
+                                            <span class="creation__epingle" aria-hidden="true">{{ ui.icone('mappin') }}</span>
+                                            <span class="creation__valeur {{ adresse.vide ? 'creation__valeur--vide' : '' }}">{{ adresse.valeur }}</span>
+                                        </div>
+                                        <span class="creation__indice {{ adresse.fautif ? 'creation__indice--erreur' : '' }}">{{ adresse.indice }}</span>
+
+                                        <div class="creation__suggestions" data-creation-target="suggestions" hidden>
+                                            {% for suggestion in adresse.suggestions %}
+                                                <div class="creation__suggestion {{ suggestion.active ? 'creation__suggestion--active' : '' }}">
+                                                    <span class="creation__epingle" aria-hidden="true">{{ ui.icone('mappin') }}</span>
+                                                    <span class="creation__suggestion-texte">
+                                                        <span class="creation__suggestion-titre">{{ suggestion.titre }}</span>
+                                                        <span class="creation__suggestion-detail">{{ suggestion.detail }}</span>
+                                                    </span>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+
+                                    <div class="creation__champ">
+                                        <span class="creation__label">Adresse structurée</span>
+                                        <div class="creation__adresse {{ adresse.vide ? 'creation__adresse--vide' : '' }}">
+                                            {% for partie in adresse.parties %}
+                                                <div class="creation__adresse-ligne">
+                                                    <span class="creation__adresse-cle">{{ partie.cle }}</span>
+                                                    <span class="creation__adresse-valeur">{{ partie.valeur }}</span>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endif %}
+
+                            {% if zone.rendue %}
+                                <div class="creation__sous-bloc creation__groupe-zone">
+                                    <div class="creation__sous-bloc-tete">
+                                        <span class="creation__label">Zone d'intervention {{ _self.etoile() }}</span>
+                                        <span class="creation__compte creation__compte--fort"
+                                              data-creation-target="zoneCompte">{{ zone.compte }}</span>
+                                    </div>
+                                    <div class="creation__departements">
+                                        {% for departement in zone.departements %}
+                                            <button class="creation__departement" type="button"
+                                                    role="checkbox"
+                                                    aria-checked="{{ departement.active ? 'true' : 'false' }}"
+                                                    data-action="creation#basculerDepartement">
+                                                <span class="creation__departement-num">{{ departement.numero }}</span>
+                                                <span class="creation__departement-nom">{{ departement.libelle }}</span>
+                                            </button>
+                                        {% endfor %}
+                                    </div>
+                                    <span class="creation__indice">Un prestataire mobile n'a pas d'adresse publiée :
+                                        la zone remplace l'adresse sur les canaux.</span>
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+
+                    {# ------------------------------------------- Classification #}
+                    {% if 'classif' == bloc.type %}
+                        <div class="creation__classification">
+                            {% for groupe in classification %}
+                                <div class="creation__sous-bloc">
+                                    <div class="creation__sous-bloc-tete">
+                                        <span class="creation__label">{{ groupe.label }}</span>
+                                        <span class="creation__compte {{ groupe.fautif ? 'creation__compte--erreur' : '' }}"
+                                              data-creation-target="compteClasse">{{ groupe.compte }}</span>
+                                    </div>
+                                    <div class="creation__puces {{ groupe.fautif ? 'creation__puces--fautives' : '' }}">
+                                        {% for puce in groupe.puces %}
+                                            <button class="creation__puce" type="button"
+                                                    role="checkbox"
+                                                    aria-checked="{{ puce.active ? 'true' : 'false' }}"
+                                                    data-action="creation#basculerPuce">
+                                                <span class="creation__puce-icone creation__puce-icone--cochee" aria-hidden="true">{{ ui.icone('check') }}</span>
+                                                <span class="creation__puce-icone creation__puce-icone--libre" aria-hidden="true">{{ ui.icone('plus') }}</span>
+                                                <span class="creation__puce-libelle">{{ puce.libelle }}</span>
+                                            </button>
+                                        {% endfor %}
+                                    </div>
+                                    {% if groupe.fautif %}
+                                        <span class="creation__indice creation__indice--erreur">Au moins une valeur est requise.</span>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    {# ------------------------------------------------- Statut #}
+                    {% if 'statut' == bloc.type %}
+                        <div class="creation__interrupteurs">
+                            {% for interrupteur in interrupteurs %}
+                                <div class="creation__interrupteur">
+                                    <button class="creation__bascule" type="button"
+                                            role="switch" aria-checked="{{ interrupteur.actif ? 'true' : 'false' }}"
+                                            data-action="creation#basculerInterrupteur">
+                                        <span class="sr-only">{{ interrupteur.label }}</span>
+                                        <span class="creation__bascule-bouton" aria-hidden="true"></span>
+                                    </button>
+                                    <div class="creation__interrupteur-texte">
+                                        <div class="creation__carte-ligne">
+                                            <span class="creation__interrupteur-label">{{ interrupteur.label }}</span>
+                                            {% if interrupteur.etiquette %}
+                                                <span class="creation__etiquette creation__etiquette--premium">{{ interrupteur.etiquette }}</span>
+                                            {% endif %}
+                                        </div>
+                                        <span class="creation__aide">{{ interrupteur.aide }}</span>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    {# --------------------------------------------- Visibilité #}
+                    {% if 'visibilite' == bloc.type %}
+                        <div class="creation__visibilite">
+                            <div class="creation__recherche-ligne">
+                                <div class="creation__boite creation__boite--recherche">
+                                    <span class="creation__loupe" aria-hidden="true">{{ ui.icone('search') }}</span>
+                                    <span class="creation__valeur creation__valeur--vide">Rechercher un site de diffusion</span>
+                                </div>
+                                <span class="creation__compte creation__compte--fort"
+                                      data-creation-target="sitesCompte">{{ sites.compte }}</span>
+                            </div>
+
+                            <div class="creation__puces-sites" data-creation-target="sitesPuces">
+                                {% for puce in sites.puces %}
+                                    <span class="creation__etiquette creation__etiquette--{{ puce.active ? 'site' : 'neutre' }}">{{ puce.libelle }}</span>
+                                {% endfor %}
+                            </div>
+
+                            <div class="creation__sites">
+                                {% for groupe in sites.groupes %}
+                                    <div class="creation__sites-groupe">
+                                        <div class="creation__sites-tete">
+                                            <span class="creation__sites-nom">{{ groupe.nom }}</span>
+                                            <span class="creation__filet" aria-hidden="true"></span>
+                                            <span class="creation__sites-compte"
+                                                  data-creation-target="compteGroupe">{{ groupe.compte }}</span>
+                                        </div>
+                                        <div class="creation__sites-liste">
+                                            {% for site in groupe.sites %}
+                                                <button class="creation__site" type="button"
+                                                        role="checkbox"
+                                                        aria-checked="{{ site.retenu ? 'true' : 'false' }}"
+                                                        {{ site.verrouille ? 'data-verrouille="1" aria-disabled="true"' : '' }}
+                                                        data-action="creation#basculerSite">
+                                                    <span class="creation__case" aria-hidden="true">{{ ui.icone('check') }}</span>
+                                                    <span class="creation__site-nom">{{ site.libelle }}</span>
+                                                    {% if site.mention %}
+                                                        <span class="creation__etiquette creation__etiquette--{{ 'payant' == site.mention ? 'payant' : 'requis' }}">{{ site.mention }}</span>
+                                                    {% endif %}
+                                                </button>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    {# ----------------------------------- Contact prestataire #}
+                    {% if 'contact' == bloc.type %}
+                        <div class="creation__contact">
+                            <button class="creation__repli {{ contact.repli ? 'creation__repli--actif' : '' }}"
+                                    type="button" role="checkbox"
+                                    aria-checked="{{ contact.repli ? 'true' : 'false' }}"
+                                    data-action="creation#basculerRepli">
+                                <span class="creation__case" aria-hidden="true">{{ ui.icone('check') }}</span>
+                                <span class="creation__repli-texte">
+                                    <span class="creation__interrupteur-label">Utiliser le contact de repli Business Profilers</span>
+                                    <span class="creation__aide">{{ contact.aide }}</span>
+                                </span>
+                            </button>
+
+                            <div class="creation__duo creation__duo--quatre">
+                                {% for champ in contact.champs %}
+                                    <div class="creation__champ">
+                                        <span class="creation__label {{ contact.repli ? 'creation__label--grise' : '' }}">{{ champ.label }}</span>
+                                        <div class="creation__boite
+                                                    {{ contact.repli ? 'creation__boite--lecture' : '' }}
+                                                    {{ champ.fautif ? 'creation__boite--fautive' : '' }}">
+                                            <span class="creation__valeur {{ champ.vide ? 'creation__valeur--vide' : (contact.repli ? 'creation__valeur--grise' : '') }}">{{ champ.valeur }}</span>
+                                            {% if contact.repli %}
+                                                <span class="creation__cadenas" aria-hidden="true">{{ ui.icone('lock') }}</span>
+                                            {% endif %}
+                                        </div>
+                                        {% if champ.indice %}
+                                            <span class="creation__indice creation__indice--{{ champ.indiceTon }}">{{ champ.indice }}</span>
+                                        {% endif %}
+                                    </div>
+                                {% endfor %}
+                            </div>
+
+                            <div class="creation__note">
+                                <span aria-hidden="true">{{ ui.icone('users') }}</span>
+                                <span>{{ contact.note }}</span>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    {# ---------------------------------------- Accès extranet #}
+                    {% if 'acces' == bloc.type %}
+                        <div class="creation__acces">
+                            <div class="creation__acces-options">
+                                {% for option in acces.options %}
+                                    <button class="creation__acces-option {{ option.inerte ? 'creation__acces-option--inerte' : '' }}"
+                                            type="button" role="radio"
+                                            aria-checked="{{ option.active ? 'true' : 'false' }}"
+                                            {{ option.inerte ? 'aria-disabled="true"' : '' }}
+                                            data-action="creation#choisirAcces">
+                                        <span class="creation__anneau" aria-hidden="true">
+                                            <span class="creation__anneau-point"></span>
+                                        </span>
+                                        <span class="creation__acces-texte">
+                                            <span class="creation__interrupteur-label">{{ option.label }}</span>
+                                            <span class="creation__aide">{{ option.aide }}</span>
+                                        </span>
+                                    </button>
+                                {% endfor %}
+                            </div>
+
+                            <div class="creation__champ creation__champ--moitie">
+                                <span class="creation__label {{ acces.trame.actif ? '' : 'creation__label--grise' }}">Trame d'email</span>
+                                <div class="creation__boite {{ acces.trame.actif ? '' : 'creation__boite--lecture' }}">
+                                    <span class="creation__valeur {{ acces.trame.actif ? '' : 'creation__valeur--grise' }}"
+                                          data-creation-target="trame">{{ acces.trame.valeur }}</span>
+                                    <span class="creation__caret" aria-hidden="true">{{ ui.icone('caret') }}</span>
+                                </div>
+                                <span class="creation__indice"
+                                      data-creation-target="trameIndice">{{ acces.trame.indice }}</span>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                </section>
+            {% endfor %}
+        </div>
+
+        {# ------------------------------------------------ Barre d'actions #}
+        <div class="creation__barre creation__barre--{{ barre.ton }}">
+            <div class="creation__barre-message">
+                <span class="creation__barre-icone" aria-hidden="true">{{ ui.icone(barre.icone) }}</span>
+                <span>{{ barre.note }}</span>
+            </div>
+            <div class="creation__barre-actions">
+                <button class="creation__bouton creation__bouton--fantome" type="button"
+                        {{ occupe ? 'disabled' : '' }}>Annuler</button>
+                <button class="creation__bouton creation__bouton--fantome" type="button"
+                        {{ occupe or not choisie ? 'disabled' : '' }}>Enregistrer comme brouillon</button>
+                <button class="creation__bouton creation__bouton--contour" type="button"
+                        {{ occupe or not choisie ? 'disabled' : '' }}>Créer et enchaîner</button>
+                <button class="creation__bouton creation__bouton--primaire" type="button"
+                        {{ occupe or not choisie ? 'disabled' : '' }}>
+                    <span class="creation__rouet" aria-hidden="true">{{ ui.icone('spinner') }}</span>
+                    <span class="creation__fleche" aria-hidden="true">{{ ui.icone('arrowright') }}</span>
+                    <span>{{ barre.libellePrincipal }}</span>
+                </button>
+            </div>
+        </div>
+
+        {# ------------------------------------------- Voile de création #}
+        {% if occupe %}
+            <div class="creation__voile" role="status" aria-live="polite">
+                <div class="creation__voile-boite">
+                    <span class="creation__voile-rouet" aria-hidden="true">{{ ui.icone('spinner') }}</span>
+                    <span class="creation__voile-titre">Création de la fiche</span>
+                    <div class="creation__voile-etapes">
+                        {% for etape in etapesCreation %}
+                            <div class="creation__etape creation__etape--{{ etape.etat }}">
+                                <span class="creation__etape-icone" aria-hidden="true">
+                                    {%- if 'faite' == etape.etat -%}{{ ui.icone('okcircle') }}
+                                    {%- elseif 'encours' == etape.etat -%}{{ ui.icone('spinner') }}
+                                    {%- else -%}{{ ui.icone('caretright') }}
+                                    {%- endif -%}
+                                </span>
+                                <span>{{ etape.libelle }}</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <div class="creation__voile-jauge"><span></span></div>
+                </div>
+            </div>
+        {% endif %}
+
+    </div>
+{% endblock %}
+
+{% macro etoile() %}<span class="creation__requis">*</span>{% endmacro %}
+
+{% macro radio(libelle, actif, groupe, valeur = null) %}
+    <button class="creation__radio" type="button" role="radio"
+            aria-checked="{{ actif ? 'true' : 'false' }}"
+            data-action="creation#choisirRadio"
+            data-creation-groupe-param="{{ groupe }}"
+            {% if valeur %}data-creation-valeur-param="{{ valeur }}"{% endif %}>
+        <span class="creation__anneau" aria-hidden="true">
+            <span class="creation__anneau-point"></span>
+        </span>
+        <span class="creation__radio-libelle">{{ libelle }}</span>
+    </button>
+{% endmacro %}

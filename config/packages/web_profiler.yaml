@@ -4,6 +4,22 @@ when@dev:
 
     framework:
         profiler:
+            # PERF : mesure A/B sur ce projet, page d'accueil, cache chaud :
+            #   collect: true  -> mediane 5.27 s
+            #   collect: false -> mediane 1.64 s
+            # La collecte (tous les DataCollectors + ecriture du profil) coute
+            # environ 3.6 s par page sur ce bind mount. Desactivee par defaut.
+            #
+            # Le profiler et la toolbar restent installes et disponibles. Pour
+            # profiler une page, repasser cette valeur a true : en environnement
+            # dev, Symfony recompile le conteneur automatiquement a la requete
+            # suivante (comptez une requete lente), aucun cache:clear necessaire.
+            # Puis remettre false une fois le diagnostic termine.
+            #
+            # NB : l'option "collect_parameter: profile" (activation par ?profile=1)
+            # a ete testee et ecartee : elle maintient l'instrumentation active en
+            # permanence et annule l'essentiel du gain (mediane remontee a 5.79 s).
+            collect: false
             collect_serializer_data: true
 
 when@test:
