@@ -8,7 +8,6 @@ use App\Pim\Entity\Fiche;
 use App\Pim\Entity\Localisation;
 use App\Pim\Lov\LieuLovCatalog;
 use App\Pim\Repository\LieuRepository;
-use App\Pim\Enum\StatutFiche;
 use App\Pim\Enum\TypeFiche;
 use App\Shared\Entity\TimestampableTrait;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -120,6 +119,10 @@ class Lieu
     #[ORM\Column(name: 'desc_generale', type: Types::TEXT, nullable: true)]
     private ?string $descGenerale = null;
 
+    // Points d'intérêt à moins de 15 minutes à pied (Bible row 34)
+    #[ORM\Column(name: 'desc_generale_point_interet', type: Types::TEXT, nullable: true)]
+    private ?string $descGeneralePointInteret = null;
+
     // Plus n°1 (Bible row 41)
     #[ORM\Column(name: 'atout_1', length: 255, nullable: true)]
     private ?string $atout1 = null;
@@ -211,6 +214,10 @@ class Lieu
     // Bien-être (Bible row 81)
 
     // Achats responsables (Bible row 83)
+
+    // Descriptif complet des engagements RSE (Bible row 82)
+    #[ORM\Column(name: 'rse_desc_generale', type: Types::TEXT, nullable: true)]
+    private ?string $rseDescGenerale = null;
 
     // Impact environnemental (Bible row 84)
 
@@ -677,6 +684,17 @@ class Lieu
         $this->touch();
     }
 
+    public function descGeneralePointInteret(): ?string
+    {
+        return $this->descGeneralePointInteret;
+    }
+
+    public function changeDescGeneralePointInteret(?string $value): void
+    {
+        $this->descGeneralePointInteret = self::normalizeNullableString($value);
+        $this->touch();
+    }
+
     public function atout1(): ?string
     {
         return $this->atout1;
@@ -962,6 +980,17 @@ class Lieu
     public function changeBienEtre(array $values): void
     {
         $this->replaceLovValues('BIEN_ETRE', $values);
+    }
+
+    public function rseDescGenerale(): ?string
+    {
+        return $this->rseDescGenerale;
+    }
+
+    public function changeRseDescGenerale(?string $value): void
+    {
+        $this->rseDescGenerale = self::normalizeNullableString($value);
+        $this->touch();
     }
 
     /** @return list<string> */
@@ -1284,15 +1313,6 @@ class Lieu
         $this->touch();
     }
 
-    public function published(): bool
-    {
-        return StatutFiche::Publiee === $this->fiche->status();
-    }
-
-    public function changePublished(bool $value): void
-    {
-        $this->fiche->changeStatus($value ? StatutFiche::Publiee : StatutFiche::EnCours);
-    }
 
     public function markChanged(): void
     {

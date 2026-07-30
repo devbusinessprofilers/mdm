@@ -14,6 +14,37 @@ use Symfony\Component\Form\FormFactoryInterface;
 
 final class LieuTypeTest extends KernelTestCase
 {
+    public function testCompleteBibleSectionsExposeModelAdministrativeAndPricingFields(): void
+    {
+        self::bootKernel();
+        $factory = self::getContainer()->get(FormFactoryInterface::class);
+        $lieu = new Lieu();
+        $form = $factory->create(LieuType::class, $lieu, ['csrf_protection' => false]);
+
+        foreach (['informationsGenerales', 'disponibilites', 'accessibiliteDescription', 'hebergement', 'syntheseSalles', 'equipementsServices', 'rse', 'loisirs', 'restauration', 'visibilite', 'administratif', 'tarification'] as $section) {
+            self::assertTrue($form->has($section), $section);
+        }
+        self::assertTrue($form->get('accessibiliteDescription')->has('descGeneralePointInteret'));
+        self::assertTrue($form->get('rse')->has('rseDescGenerale'));
+        self::assertCount(37, $form->get('administratif'));
+        self::assertCount(22, $form->get('tarification'));
+
+        $form->submit([
+            'code' => '99',
+            'label' => 'Lieu Bible',
+            'accessibiliteDescription' => ['descGeneralePointInteret' => 'Musée à proximité'],
+            'rse' => ['rseDescGenerale' => 'Engagement complet'],
+            'administratif' => ['infoLegaleNom' => 'Société Bible'],
+            'tarification' => ['seminaireJourneeJourneeEtude' => '125.50'],
+        ]);
+
+        self::assertTrue($form->isValid(), (string) $form->getErrors(true));
+        self::assertSame('Musée à proximité', $lieu->descGeneralePointInteret());
+        self::assertSame('Engagement complet', $lieu->rseDescGenerale());
+        self::assertSame('Société Bible', $lieu->administratif()->infoLegaleNom());
+        self::assertSame('125.50', $lieu->tarification()->seminaireJourneeJourneeEtude());
+    }
+
     public function testTemporaryCrudFormCreatesNestedData(): void
     {
         self::bootKernel();
@@ -26,7 +57,6 @@ final class LieuTypeTest extends KernelTestCase
             'label' => 'Lieu test',
             'generaleTypologie' => ['GENERALE_TYPOLOGIE_20'],
             'generaleWebsiteUrl' => 'https://example.test',
-            'published' => '1',
             'localisation' => ['pays' => 'France', 'region' => '', 'departement' => '', 'ruePostale' => '1 rue Test', 'codePostal' => '75001', 'ville' => 'Paris', 'arrondissement' => '', 'latitude' => '', 'longitude' => ''],
             'salles' => [['nom' => 'Auditorium', 'superficie' => '100', 'capaciteReunion' => '', 'capaciteU' => '', 'capaciteClasse' => '', 'capaciteTheatre' => '120', 'capaciteCabaret' => '', 'capaciteBanquet' => '', 'capaciteCocktail' => '', 'capaciteAuditorium' => '120', 'lumiereJour' => '1', 'accesPmr' => '1', 'espaceDansant' => '', 'climatisee' => '1', 'position' => '']],
             'periodesFermeture' => [['nom' => 'Fermeture annuelle', 'dateDebut' => '2026-08-01', 'dateFin' => '2026-08-15']],
@@ -71,5 +101,27 @@ final class LieuTypeTest extends KernelTestCase
         self::assertFalse($form->get('localisation')->get('latitude')->isSynchronized());
         self::assertFalse($form->isValid());
         self::assertStringContainsString('coordonnée saisie est invalide', (string) $form->getErrors(true));
+    }
+
+    public function testEmptyDamIdentifierDoesNotCauseATypeErrorBeforeUpload(): void
+    {
+        self::bootKernel();
+        $factory = self::getContainer()->get(FormFactoryInterface::class);
+        $form = $factory->create(LieuType::class, new Lieu(), ['csrf_protection' => false]);
+
+        $form->submit([
+            'code' => '44',
+            'label' => 'Lieu avec nouvelle photo',
+            'ressources' => [[
+                'nature' => 'photo',
+                'usage' => 'PHOTO_DIVERSE',
+                'legende' => '',
+                'position' => '0',
+            ]],
+        ]);
+
+        self::assertTrue($form->isSynchronized());
+        self::assertFalse($form->isValid());
+        self::assertStringContainsString('Sélectionnez une image', (string) $form->getErrors(true));
     }
 }

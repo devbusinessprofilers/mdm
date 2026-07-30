@@ -156,7 +156,9 @@ final class MariaDbSearchEngineTest extends KernelTestCase
         $lieu->changeCode($code);
         $lieu->changeLabel($label);
         $lieu->changeDescGenerale('Description événementielle du lieu.');
-        $lieu->fiche()->changeStatus($status);
+        if (StatutFiche::Publiee === $status) {
+            $lieu->fiche()->publishFromExternal();
+        }
         $localisation = new Localisation();
         $localisation->changeRuePostale('10 avenue de France');
         $localisation->changeCodePostal('75001');

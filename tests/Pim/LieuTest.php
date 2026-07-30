@@ -10,6 +10,7 @@ use App\Pim\Entity\Lieu\AccesLieu;
 use App\Pim\Entity\Lieu\PeriodeFermeture;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Entity\Lieu\Salle;
+use App\Pim\Enum\StatutFiche;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -27,7 +28,7 @@ final class LieuTest extends TestCase
         self::assertFalse($lieu->pmrAcces());
         self::assertTrue($lieu->chambreHebergement());
         self::assertTrue($lieu->salleReunionExist());
-        self::assertFalse($lieu->published());
+        self::assertSame(StatutFiche::EnCours, $lieu->fiche()->status());
         self::assertSame([], $lieu->generaleTypologie());
     }
 

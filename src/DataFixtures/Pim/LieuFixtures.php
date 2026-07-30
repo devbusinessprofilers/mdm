@@ -79,7 +79,9 @@ final class LieuFixtures extends Fixture implements FixtureGroupInterface
             $lieu->changeChambreNbTotal(0 === $code % 3 ? $randomizer->getInt(10, 180) : null);
             $lieu->changeSalleReunionExist(true);
             $lieu->changeSalleReunionNbTotal($randomizer->getInt(1, 8));
-            $lieu->changePublished(0 !== $code % 5);
+            if (0 !== $code % 5) {
+                $lieu->fiche()->publishFromExternal();
+            }
 
             $localisation = new Localisation();
             $localisation->changePays('France');

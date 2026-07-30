@@ -7,7 +7,7 @@ namespace App\Pim\Enum;
 enum StatutFiche: string
 {
     case EnCours = 'en_cours';
-    case Validee = 'validee';
+    case EnAttenteValidation = 'en_attente_validation';
     case Publiee = 'publiee';
     case Archivee = 'archivee';
 }

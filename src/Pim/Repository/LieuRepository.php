@@ -79,6 +79,14 @@ final class LieuRepository extends ServiceEntityRepository
         );
     }
 
+    public function countByStatus(StatutFiche $status): int
+    {
+        return (int) $this->getEntityManager()->getConnection()->fetchOne(
+            'SELECT COUNT(*) FROM pim_fiche f INNER JOIN pim_lieu l ON l.fiche_id = f.id WHERE f.type = :type AND f.status = :status',
+            ['type' => TypeFiche::Lieu->value, 'status' => $status->value],
+        );
+    }
+
     /**
      * @param list<string> $ids Ordered fiche ULIDs.
      *

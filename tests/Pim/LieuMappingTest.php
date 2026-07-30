@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Pim;
 
+use App\Dam\Entity\MediaAsset;
 use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Entity\Localisation;
 use App\Pim\Entity\Fiche;
@@ -25,9 +26,10 @@ final class LieuMappingTest extends KernelTestCase
         $lieuMetadata = $entityManager->getClassMetadata(Lieu::class);
         $ficheMetadata = $entityManager->getClassMetadata(Fiche::class);
         $localisationMetadata = $entityManager->getClassMetadata(Localisation::class);
+        $mediaMetadata = $entityManager->getClassMetadata(MediaAsset::class);
 
         // Les champs communs, les LOV, les champs répétables et les fichiers ne sont plus dans la table large.
-        self::assertCount(53, $lieuMetadata->getFieldNames());
+        self::assertCount(55, $lieuMetadata->getFieldNames());
         foreach (['fiche', 'administratif', 'tarification', 'salles', 'periodesFermeture', 'acces', 'ressources'] as $association) {
             self::assertTrue($lieuMetadata->hasAssociation($association));
         }
@@ -40,7 +42,10 @@ final class LieuMappingTest extends KernelTestCase
         self::assertFalse($lieuMetadata->hasField('generaleTypologie'));
         self::assertFalse($lieuMetadata->hasField('infoLegaleNom'));
         self::assertFalse($lieuMetadata->hasField('seminaireJourneeJourneeEtude'));
-        foreach (['configNomSalle', 'dispoNomPeriode', 'accessAeroport', 'photo', 'rseDescGenerale'] as $legacyField) {
+        foreach (['descGeneralePointInteret', 'rseDescGenerale'] as $bibleField) {
+            self::assertTrue($lieuMetadata->hasField($bibleField));
+        }
+        foreach (['configNomSalle', 'dispoNomPeriode', 'accessAeroport', 'photo'] as $legacyField) {
             self::assertFalse($lieuMetadata->hasField($legacyField));
         }
 
@@ -49,8 +54,8 @@ final class LieuMappingTest extends KernelTestCase
         self::assertSame(Lieu::class, $entityManager->getClassMetadata(AccesLieu::class)->getAssociationTargetClass('lieu'));
         self::assertSame(Lieu::class, $entityManager->getClassMetadata(RessourceLieu::class)->getAssociationTargetClass('lieu'));
 
-        self::assertCount(11, $ficheMetadata->getFieldNames());
-        foreach (['type', 'code', 'label', 'status', 'completeness', 'version', 'publishedAt', 'archivedAt'] as $field) {
+        self::assertCount(16, $ficheMetadata->getFieldNames());
+        foreach (['type', 'code', 'label', 'status', 'completeness', 'version', 'publishedAt', 'archivedAt', 'validationRequestedAt', 'validationRequestedBy', 'validationReviewedAt', 'validationReviewedBy', 'validationFeedback'] as $field) {
             self::assertTrue($ficheMetadata->hasField($field));
         }
         foreach (['localisation', 'attributValues'] as $association) {
@@ -64,6 +69,11 @@ final class LieuMappingTest extends KernelTestCase
         self::assertCount(15, $localisationMetadata->getFieldNames());
         foreach (['pays', 'countryCode', 'region', 'departement', 'ruePostale', 'codePostal', 'ville', 'villeNormalisee', 'addressFingerprint', 'arrondissement', 'latitude', 'longitude'] as $field) {
             self::assertTrue($localisationMetadata->hasField($field));
+        }
+
+        self::assertSame('dam_media_asset', $mediaMetadata->getTableName());
+        foreach (['originalStorageKey', 'originalFilename', 'mimeType', 'sizeBytes', 'checksum', 'status'] as $field) {
+            self::assertTrue($mediaMetadata->hasField($field));
         }
     }
 }

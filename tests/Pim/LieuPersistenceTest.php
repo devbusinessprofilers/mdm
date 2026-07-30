@@ -83,7 +83,7 @@ final class LieuPersistenceTest extends KernelTestCase
             $lieu->changeCode($index);
             $lieu->changeLabel('Lieu '.$index);
             if (0 === $index % 2) {
-                $lieu->fiche()->changeStatus(StatutFiche::Publiee);
+                $lieu->fiche()->publishFromExternal();
             }
             $expected[$lieu->id()] = $lieu->fiche()->status();
             $this->entityManager->persist($lieu);

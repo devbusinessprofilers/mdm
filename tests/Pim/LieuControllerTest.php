@@ -58,7 +58,7 @@ final class LieuControllerTest extends WebTestCase
         $this->connection->executeStatement('DELETE FROM outbox_message');
         $this->connection->executeStatement('DELETE FROM account_user');
 
-        $user = new User('crud-lieu@example.test', ['ROLE_BP']);
+        $user = new User('crud-lieu@example.test', ['ROLE_BP_VALIDATOR']);
         $user->setPassword('not-used-by-login-user');
         $entityManager->persist($user);
         $entityManager->flush();
@@ -101,7 +101,7 @@ final class LieuControllerTest extends WebTestCase
         $this->connection->executeStatement('DELETE FROM outbox_message');
         $this->connection->executeStatement('DELETE FROM account_user');
 
-        $user = new User('search-lieu@example.test', ['ROLE_BP']);
+        $user = new User('search-lieu@example.test', ['ROLE_BP_VALIDATOR']);
         $user->setPassword('not-used-by-login-user');
         $entityManager->persist($user);
         $paris = $this->createSearchableLieu($entityManager, 201, 'Palais Lumière Paris', 'Paris', StatutFiche::Publiee);
@@ -140,7 +140,9 @@ final class LieuControllerTest extends WebTestCase
         $lieu = new Lieu();
         $lieu->changeCode($code);
         $lieu->changeLabel($label);
-        $lieu->fiche()->changeStatus($status);
+        if (StatutFiche::Publiee === $status) {
+            $lieu->fiche()->publishFromExternal();
+        }
         $localisation = new Localisation();
         $localisation->changeVille($ville);
         $localisation->changePays('France');

@@ -38,7 +38,7 @@ class Fiche
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $label = null;
 
-    #[ORM\Column(length: 16, enumType: StatutFiche::class)]
+    #[ORM\Column(length: 32, enumType: StatutFiche::class)]
     private StatutFiche $status = StatutFiche::EnCours;
 
     #[ORM\Column(type: Types::SMALLINT, options: ['unsigned' => true, 'default' => 0])]
@@ -53,6 +53,21 @@ class Fiche
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $archivedAt = null;
+
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $validationRequestedAt = null;
+
+    #[ORM\Column(length: 26, nullable: true)]
+    private ?string $validationRequestedBy = null;
+
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $validationReviewedAt = null;
+
+    #[ORM\Column(length: 26, nullable: true)]
+    private ?string $validationReviewedBy = null;
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $validationFeedback = null;
 
     #[ORM\OneToOne(cascade: ['persist', 'remove'], orphanRemoval: true)]
     #[ORM\JoinColumn(name: 'localisation_id', referencedColumnName: 'id', nullable: true, unique: true, onDelete: 'SET NULL')]
@@ -80,6 +95,11 @@ class Fiche
     public function version(): int { return $this->version; }
     public function publishedAt(): ?\DateTimeImmutable { return $this->publishedAt; }
     public function archivedAt(): ?\DateTimeImmutable { return $this->archivedAt; }
+    public function validationRequestedAt(): ?\DateTimeImmutable { return $this->validationRequestedAt; }
+    public function validationRequestedBy(): ?string { return $this->validationRequestedBy; }
+    public function validationReviewedAt(): ?\DateTimeImmutable { return $this->validationReviewedAt; }
+    public function validationReviewedBy(): ?string { return $this->validationReviewedBy; }
+    public function validationFeedback(): ?string { return $this->validationFeedback; }
     public function localisation(): ?Localisation { return $this->localisation; }
 
     public function changeCode(?int $code): void { $this->code = $code; $this->markChanged(); }
@@ -93,12 +113,71 @@ class Fiche
         $this->markChanged();
     }
     public function changeLocalisation(?Localisation $localisation): void { $this->localisation = $localisation; $this->markChanged(); }
-    public function changeStatus(StatutFiche $status): void
+    public function submitForValidation(string $actorId): void
     {
-        $this->status = $status;
-        $this->publishedAt = StatutFiche::Publiee === $status ? ($this->publishedAt ?? new \DateTimeImmutable()) : $this->publishedAt;
-        $this->archivedAt = StatutFiche::Archivee === $status ? new \DateTimeImmutable() : null;
-        $this->markChanged();
+        if (StatutFiche::EnCours !== $this->status) {
+            throw new \DomainException('Seule une fiche en cours peut être soumise à validation.');
+        }
+        $this->status = StatutFiche::EnAttenteValidation;
+        $this->validationRequestedAt = new \DateTimeImmutable();
+        $this->validationRequestedBy = $actorId;
+        $this->validationReviewedAt = null;
+        $this->validationReviewedBy = null;
+        $this->validationFeedback = null;
+        $this->touch();
+    }
+
+    public function validateAndPublish(string $actorId): void
+    {
+        if (StatutFiche::EnAttenteValidation !== $this->status) {
+            throw new \DomainException('Seule une fiche en attente peut être validée.');
+        }
+        $this->status = StatutFiche::Publiee;
+        $this->publishedAt = new \DateTimeImmutable();
+        $this->validationReviewedAt = new \DateTimeImmutable();
+        $this->validationReviewedBy = $actorId;
+        $this->validationFeedback = null;
+        $this->touch();
+    }
+
+    public function rejectValidation(string $actorId, string $reason): void
+    {
+        $reason = trim($reason);
+        if (StatutFiche::EnAttenteValidation !== $this->status) {
+            throw new \DomainException('Seule une fiche en attente peut être refusée.');
+        }
+        if ('' === $reason) {
+            throw new \DomainException('Le motif du refus est obligatoire.');
+        }
+        $this->status = StatutFiche::EnCours;
+        $this->validationReviewedAt = new \DateTimeImmutable();
+        $this->validationReviewedBy = $actorId;
+        $this->validationFeedback = $reason;
+        $this->touch();
+    }
+
+    public function archive(string $actorId): void
+    {
+        if (StatutFiche::Publiee !== $this->status) {
+            throw new \DomainException('Seule une fiche publiée peut être archivée.');
+        }
+        $this->status = StatutFiche::Archivee;
+        $this->archivedAt = new \DateTimeImmutable();
+        $this->validationReviewedAt = new \DateTimeImmutable();
+        $this->validationReviewedBy = $actorId;
+        $this->touch();
+    }
+
+    /** Publication directe réservée au contrat REST du site externe. */
+    public function publishFromExternal(): void
+    {
+        $this->status = StatutFiche::Publiee;
+        $this->publishedAt = new \DateTimeImmutable();
+        $this->archivedAt = null;
+        $this->validationFeedback = null;
+        $this->validationReviewedAt = null;
+        $this->validationReviewedBy = null;
+        $this->touch();
     }
 
     /** @return list<int> */
@@ -138,7 +217,21 @@ class Fiche
         $this->markChanged();
     }
 
-    public function markChanged(): void { $this->touch(); }
+    public function markChanged(): void
+    {
+        if (StatutFiche::EnCours !== $this->status) {
+            $this->status = StatutFiche::EnCours;
+            $this->archivedAt = null;
+            $this->validationRequestedAt = null;
+            $this->validationRequestedBy = null;
+            $this->validationReviewedAt = null;
+            $this->validationReviewedBy = null;
+        }
+        $this->touch();
+    }
+
+    /** Mise à jour technique sans modifier le cycle de validation. */
+    public function markSystemChanged(): void { $this->touch(); }
 
     private static function normalize(?string $value): ?string
     {

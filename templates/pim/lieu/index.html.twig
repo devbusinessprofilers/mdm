@@ -3,30 +3,27 @@
 {% block title %}Lieux{% endblock %}
 
 {% block body %}
-<main>
-    <h1>Lieux</h1>
-    <p><a href="{{ path('app_pim_lieu_new') }}">Créer un lieu</a></p>
-    <form method="get">
-        <label>Recherche
-            <input type="search" name="q" value="{{ query }}" placeholder="Code, libellé, adresse…">
-        </label>
-        <label>Statut
-            <select name="status">
-                <option value="">Tous</option>
-                {% for value, label in {'en_cours': 'En cours', 'validee': 'Validée', 'publiee': 'Publiée', 'archivee': 'Archivée'} %}
-                    <option value="{{ value }}" {{ status and status.value == value ? 'selected' }}>{{ label }}</option>
-                {% endfor %}
-            </select>
-        </label>
-        <button type="submit">Rechercher</button>
-        {% if query or status %}<a href="{{ path('app_pim_lieu_index') }}">Effacer les critères</a>{% endif %}
-    </form>
+<main class="page">
+    <header class="page-header">
+        <div class="page-header-copy">
+            <p class="page-kicker">Catalogue</p>
+            <h1>Lieux</h1>
+            <p class="page-description">Consultez et maintenez les fiches Lieu du PIM.</p>
+        </div>
+        <a class="btn" href="{{ path('app_pim_lieu_new') }}">Créer un lieu</a>
+    </header>
+
+    <div class="toolbar">
+        {{ form(search_form) }}
+        <a class="btn btn-secondary btn-small" href="{{ path('app_pim_lieu_index', {status: 'en_attente_validation'}) }}">À valider ({{ pending_count }})</a>
+        {% if query or status %}<a class="text-link" href="{{ path('app_pim_lieu_index') }}">Effacer les critères</a>{% endif %}
+    </div>
 
     {% if result_count is not null %}
-        <p>{{ result_count }} {{ result_count == 1 ? 'résultat' : 'résultats' }}</p>
+        <p class="page-description">{{ result_count }} {{ result_count == 1 ? 'résultat' : 'résultats' }}</p>
     {% endif %}
 
-    <table>
+    <div class="table-shell"><div class="table-scroll"><table class="data-table">
         <thead><tr><th>Code</th><th>Libellé</th><th>Ville</th><th>Statut</th><th>Complétude</th><th>Actions</th></tr></thead>
         <tbody>
         {% for lieu in lieux %}
@@ -34,21 +31,22 @@
                 <td>{{ lieu.code ?? '—' }}</td>
                 <td>{{ lieu.label ?? 'Sans libellé' }}</td>
                 <td>{{ lieu.ville ?? '—' }}</td>
-                <td>{{ lieu.status.value }}</td>
+                <td><span class="badge badge-info">{{ lieu.status.value }}</span></td>
                 <td>{{ lieu.completeness }} %</td>
-                <td>
-                    <a href="{{ path('app_pim_lieu_show', {id: lieu.id}) }}">Voir</a>
-                    <a href="{{ path('app_pim_lieu_edit', {id: lieu.id}) }}">Modifier</a>
+                <td><div class="table-actions">
+                    <a class="text-link" href="{{ path('app_pim_lieu_show', {id: lieu.id}) }}">Voir</a>
+                    {% if is_granted('ROLE_BP_EDITOR') %}<a class="text-link" href="{{ path('app_pim_lieu_edit', {id: lieu.id}) }}">Modifier</a>{% endif %}
+                </div>
                 </td>
             </tr>
         {% else %}
-            <tr><td colspan="6">{{ query ? 'Aucun lieu trouvé.' : 'Aucun lieu.' }}</td></tr>
+            <tr><td class="empty-state" colspan="6">{{ query ? 'Aucun lieu trouvé.' : 'Aucun lieu.' }}</td></tr>
         {% endfor %}
         </tbody>
-    </table>
-    <nav aria-label="Pagination">
-        {% if app.request.query.has('cursor') %}<a href="{{ path('app_pim_lieu_index', {q: query ?: null, status: status ? status.value : null}) }}">Retour au début</a>{% endif %}
-        {% if next_cursor %}<a href="{{ path('app_pim_lieu_index', {q: query ?: null, cursor: next_cursor, status: status ? status.value : null}) }}">Page suivante</a>{% endif %}
+    </table></div></div>
+    <nav class="pagination" aria-label="Pagination">
+        {% if app.request.query.has('cursor') %}<a class="btn btn-secondary btn-small" href="{{ path('app_pim_lieu_index', {q: query ?: null, status: status ? status.value : null}) }}">Retour au début</a>{% endif %}
+        {% if next_cursor %}<a class="btn btn-secondary btn-small" href="{{ path('app_pim_lieu_index', {q: query ?: null, cursor: next_cursor, status: status ? status.value : null}) }}">Page suivante</a>{% endif %}
     </nav>
 </main>
 {% endblock %}
