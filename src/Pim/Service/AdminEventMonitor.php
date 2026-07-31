@@ -6,15 +6,20 @@ namespace App\Pim\Service;
 
 use App\Shared\Outbox\OutboxRepository;
 use Doctrine\DBAL\Connection;
+use Symfony\Contracts\Cache\CacheInterface;
+use Symfony\Contracts\Cache\ItemInterface;
 
 final readonly class AdminEventMonitor
 {
     private const QUEUES = ['pim', 'dam', 'etl', 'enrichment', 'mail', 'failed'];
+    private const CACHE_KEY = 'admin_event_monitor.snapshot';
+    private const CACHE_TTL = 10;
 
     public function __construct(
         private Connection $connection,
         private OutboxRepository $outbox,
         private AdminEventCatalog $catalog,
+        private CacheInterface $cache,
     ) {
     }
 
@@ -27,7 +32,29 @@ final readonly class AdminEventMonitor
      *     recent: list<array{id: string, label: string, type: string, status: string, attempts: int, occurredAt: string, processedAt: string|null, error: string|null}>
      * }
      */
-    public function snapshot(): array
+    public function snapshot(bool $fresh = false): array
+    {
+        if ($fresh) {
+            $this->cache->delete(self::CACHE_KEY);
+        }
+
+        return $this->cache->get(self::CACHE_KEY, function (ItemInterface $item): array {
+            $item->expiresAfter(self::CACHE_TTL);
+
+            return $this->computeSnapshot();
+        });
+    }
+
+    /**
+     * @return array{
+     *     available: bool,
+     *     error: string|null,
+     *     outbox: array<string, int>,
+     *     queues: array<string, int>,
+     *     recent: list<array{id: string, label: string, type: string, status: string, attempts: int, occurredAt: string, processedAt: string|null, error: string|null}>
+     * }
+     */
+    private function computeSnapshot(): array
     {
         try {
             $queues = array_fill_keys(self::QUEUES, 0);
