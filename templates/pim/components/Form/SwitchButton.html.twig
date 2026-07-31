@@ -1,0 +1,42 @@
+{% set cva = cva({
+    base: 'flex gap-2 items-center h-[24px] w-fit',
+    variants: {
+        inverted: {
+            true: 'flex-row-reverse',
+        },
+        disabled: {
+            true: 'cursor-not-allowed',
+            false: 'cursor-pointer',
+        },
+    },
+}) %}
+
+<div class="{{ attributes.render('class') }}">
+    <label for="{{ id }}" class="{{ cva.apply({ disabled, inverted }) }}">
+        <input
+            id="{{ id }}"
+            name="{{ name }}"
+            type="checkbox"
+            class="peer hidden"
+            {% if checked %}checked{% endif %}
+            {% if disabled %}disabled{% endif %}
+            value="1"
+            {% for key, value in inputAttributes %}
+                {{ key }}="{{ value }}"
+            {% endfor %}
+        />
+        <div class="w-[40px] min-w-[40px] h-[24px] rounded-full relative transition-all bg-neutral-100
+            before:absolute before:top-0 before:left-0 before:w-full before:h-full before:border-box before:border before:border-primary before:rounded-full
+            after:w-[12px] after:h-[12px] after:rounded-full after:absolute after:top-[6px] after:left-[4px] after:bg-primary after:transition-all
+            peer-checked:bg-primary
+            peer-checked:after:left-[20px] peer-checked:after:top-[4px] peer-checked:after:w-[16px] peer-checked:after:h-[16px] peer-checked:after:bg-neutral-100
+            peer-disabled:before:border-neutral-300
+            peer-disabled:after:bg-neutral-300
+            peer-disabled:peer-checked:bg-neutral-300
+            peer-disabled:peer-checked:after:bg-neutral-100"
+        ></div>
+        <twig:Typography variant="button">
+            {{ block(outerBlocks.content) }}
+        </twig:Typography>
+    </label>
+</div>

@@ -1,0 +1,15 @@
+<twig:Dropdown class="flex items-center justify-between gap-1 cursor-pointer">
+    <twig:block name="trigger">
+        <twig:Icon name="flag-{{ currentLocale }}" class="w-5 h-5 rounded-xs" />
+    </twig:block>
+    <ul class="p-4 flex flex-col gap-4">
+        {% for locale in availableLocales %}
+            <li>
+                {# "setlang" indique à LocaleRedirectListener de mémoriser le choix en session. #}
+                <a href="{{ path(app.request.attributes.get('_route'), app.request.attributes.get('_route_params')|merge({'_locale': locale, 'setlang': 1})) }}">
+                    <twig:Icon name="flag-{{ locale }}" class="w-5 h-5 rounded-xs" />
+                </a>
+            </li>
+        {% endfor %}
+    </ul>
+</twig:Dropdown>

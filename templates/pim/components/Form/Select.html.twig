@@ -1,0 +1,159 @@
+{% set wrapperCva = cva({
+    base: 'flex gap-2 items-center justify-between border rounded-xs pr-2 w-full',
+    variants: {
+        disabled: {
+            true: 'cursor-not-allowed text-neutral-500 border-neutral-300 bg-neutral-200 focus-within:outline focus:outline-neutral-500',
+            false: 'border-primary bg-primary-5 focus-within:bg-neutral-100',
+        },
+    }
+}) %}
+
+{% set inputCva = cva({
+    base: 'focus:outline-none text-[0.75rem] leading-[1.25rem] w-full pl-2 py-2',
+    variants: {
+        disabled: { true: 'cursor-not-allowed' },
+    },
+}) %}
+
+{% set optionCva = cva({
+    base: 'pl-2 py-1 hover:bg-primary-4 cursor-pointer',
+    variants: {
+        selected: { true: 'bg-primary-4' },
+    },
+}) %}
+
+{% set noOptionsCva = cva({
+    base: 'px-2',
+    variants: {
+        hidden: { true: 'hidden' },
+    },
+}) %}
+
+{% set selectedValues = this.getSelectedValues() %}
+
+<div
+    {{ stimulus_controller('provider-portal--select', {
+        'choices': choices,
+        'defaultSelection': selectedValues,
+        'multiple': multiple,
+        'limit': limit,
+    }) }}
+    data-bindable
+    class="{{ attributes.render('class') }}"
+>
+    {% if prototype %}
+        <option
+            {{ stimulus_target('provider-portal--select', 'optionPrototype') }}
+            value=""
+            class="hidden"
+        >
+            Select Option Prototype
+        </option>
+
+        <li
+            {{ stimulus_target('provider-portal--select', 'elementPrototype') }}
+            {{ stimulus_action('provider-portal--select', 'toggleChoice', 'click', {
+                value: '',
+                label: '',
+            }) }}
+            class="{{ optionCva.apply({ selected: false }, 'hidden') }}"
+        >
+            {% if multiple %}
+                <twig:Form:Checkbox id="" name="" checked="{{ false }}">
+                    Select Checkbox Choice Prototype
+                </twig:Form:Checkbox>
+            {% else %}
+                <twig:Typography>Select Choice Prototype</twig:Typography>
+            {% endif %}
+        </li>
+    {% endif %}
+
+    <select
+        id="{{ id }}"
+        name="{{ name }}"
+        {{ stimulus_target('provider-portal--select', 'select') }}
+        {% if disabled %}disabled{% endif %}
+        {% if multiple %}multiple{% endif %}
+        hidden
+        {% for attrKey, attrValue in selectAttributes %}
+            {{ attrKey }}="{{ attrValue }}"
+        {% endfor %}
+    >
+        {% for choice in choices %}
+            <option
+                value="{{ choice.value }}"
+                {% if choice.value in selectedValues %}selected{% endif %}
+            >
+                {{ choice.label }}
+            </option>
+        {% endfor %}
+    </select>
+
+    <twig:Dropdown
+        class="{{ wrapperCva.apply({ disabled }) }}"
+        wrapperClass="{{ wrapperClass }}"
+        containerClass="w-full z-128 rounded-xxs py-4 px-2 overflow-x-visible bg-primary-5"
+        disabled="{{ disabled }}"
+    >
+        <twig:block name="trigger">
+            <input
+                {{ stimulus_target('provider-portal--select', 'input') }}
+                {{ stimulus_action('provider-portal--select', 'onSearch', 'input')|stimulus_action('provider-portal--select', 'prevent', 'keyup') }}
+                id="trigger-{{ id }}"
+                autocomplete="off"
+                {% if placeholder is not empty %}placeholder="{{ placeholder }}"{% endif %}
+                {% if disabled %}disabled{% endif %}
+                class="{{ inputCva.apply({ disabled }) }}"
+            />
+        </twig:block>
+
+        {% if tip is not null %}
+            <div class="flex items-center gap-2 mx-2 pb-2 mb-2 border-b border-neutral-300">
+                {% if tipIcon is not null %}
+                    <twig:Icon name="{{ tipIcon }}" class='w-5 h-5 text-primary' />
+                {% endif %}
+                <twig:Typography>
+                    {{ tip|trans }}
+                </twig:Typography>
+            </div>
+        {% endif %}
+
+        <ul
+            {{ stimulus_target('provider-portal--select', 'list') }}
+            class="w-full flex flex-col gap-2 max-h-[214px] overflow-x-visible overflow-y-auto scrollbar"
+        >
+            {% for choice in choices %}
+                <li
+                    {{ stimulus_action('provider-portal--select', 'toggleChoice', 'click', {
+                        value: choice.value,
+                        label: choice.label,
+                    }) }}
+                    class="{{ optionCva.apply({ 'selected': choice.value in selectedValues }) }}"
+                >
+                    {% if multiple %}
+                        {% set uniqueIdentifier = id~'_option_'~loop.index %}
+                        {# WARNING: do not set name here since Symfony form uses it on submit (i.e. map checkbox with form data) #}
+                        <twig:Form:Checkbox
+                            id="{{ uniqueIdentifier }}"
+                            name=""
+                            checked="{{ choice.value in selectedValues }}"
+                        >
+                            {{ choice.label }}
+                        </twig:Form:Checkbox>
+                    {% else %}
+                        <twig:Typography>
+                            {{ choice.label }}
+                        </twig:Typography>
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ul>
+
+        <twig:Typography
+            data-provider-portal--select-target="noOptions"
+            class="block w-full {{ noOptionsCva.apply({ hidden: choices|length > 0 }) }}"
+        >
+            {{- 'select.no_options'|trans -}}
+        </twig:Typography>
+    </twig:Dropdown>
+</div>

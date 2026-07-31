@@ -1,0 +1,30 @@
+<div
+    {{ stimulus_controller('provider-portal--gauge', {
+        'min': min,
+        'max': max,
+        'ranges': ranges,
+        'current':  value,
+    }) }}
+    {{ attributes.without('class') }}
+    class="{{ attributes.render('class') }}"
+>
+    {% if showLabel %}
+        <div class="flex gap-4 flex-wrap justify-center items-center w-full mb-2">
+            {% for range in ranges %}
+                <div class="flex gap-2 items-center">
+                    <div class="w-10 h-3 bg-neutral-300" style="background-color: {{ range.color }};"></div>
+                    <twig:Typography variant="body-sm">{{ range.label }}</twig:Typography>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+    <div class="relative w-full flex justify-center">
+        <canvas
+            {{ stimulus_target('provider-portal--gauge', 'canvas') }}
+            class="{{ attributes.render('gaugeClass') }}"
+            width="320"
+            height="320"
+        ></canvas>
+        <twig:Typography variant="heading-1" class="absolute top-0 left-0 w-full h-full flex items-center justify-center" bold>{{ value }}</twig:Typography>
+    </div>
+</div>

@@ -727,6 +727,11 @@
     color: var(--neutral-500);
 }
 
+.qe__espace {
+    flex: 1 1 auto;
+    min-width: 24px;
+}
+
 .qe__puce-retrait {
     font-size: 13px;
     line-height: 13px;

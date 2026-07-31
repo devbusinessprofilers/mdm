@@ -171,8 +171,8 @@ Handoff `MDM Business Profilers.dc.html`.
 | Écran de la maquette | Identifiant | Route |
 |---|---|---|
 | Mon espace de travail | `accueil` | `/espace-de-travail` |
-| Référentiel général | `general` | `/referentiel` |
-| Lieux | `liste` | `/referentiel/lieux` |
+| Liste des fiches | `liste` | `/referentiel?etat=nominal` |
+| Liste des fiches · Lieux | `liste` | `/referentiel/lieux` |
 | Éditeur de fiche Lieu | `fiche` | `/referentiel/lieux/fiche?section=0..15` |
 | Création d'une fiche | `creation` | `/referentiel/fiche/nouvelle?etat=vierge` |
 
@@ -308,333 +308,102 @@ partie du parc.
 
 ---
 
-## « Référentiel général »
+## « Liste des fiches »
 
-`/referentiel` · gabarit `mdm/referentiel_general.html.twig` ·
-données `src/Pim/Maquette/ReferentielMaquette.php` (jetable, comme celles de
-l'espace de travail).
+`/referentiel` · `/referentiel/lieux` · gabarit `mdm/liste_fiches.html.twig` ·
+`assets/styles/liste.css` · `liste_controller.js` · `ListeFichesMaquette`
 
-Les 40 lignes sont produites par le même algorithme que la maquette — mêmes
-noms, mêmes rotations de typologie, ville, statut, complétude, source et
-canaux. Reproduire la génération plutôt que figer 40 lignes garde le fichier
-lisible et le rendu identique.
+Un seul écran remplace le référentiel général **et** la page Lieux. Le panneau
+de filtres porte la gamme, et les colonnes suivent : « Type » devient
+« Catégorie de lieu » quand la liste ne porte qu'une gamme, et un neuvième
+groupe de facettes — la taxonomie — apparaît. `/referentiel/lieux` reste servi
+et ouvre la liste déjà filtrée, pour que les liens du rail continuent de
+marcher.
 
-Largeurs de colonnes, reprises telles quelles :
+### La sémantique de facettes
 
-| Colonne | Largeur |
-|---|---|
-| Sélection | 52 px |
-| Fiche | reste disponible |
-| Typologie | 176 px (famille) · 210 px (sous-typologie) |
-| Ville | 160 px |
-| Statut | 160 px |
-| Complétude | 180 px |
-| Source | 130 px |
-| Dernière modification | 150 px |
-| Actions | 48 px |
+C'est le point dur du handoff, et il est explicite dans son code :
+**intersection entre groupes, union à l'intérieur d'un groupe**. Un seul
+prédicat sert les lignes, les badges et le compte — les trois ne peuvent pas
+dire autre chose.
 
-La colonne **Canaux** a été retirée par la maquette ; **Actions** l'a remplacée
-en fin de ligne. Voir « Révision du tableau » plus bas.
+Le volume affiché n'est pas le nombre de lignes rendues : c'est le plus petit
+total de groupe retenu. Un échantillon de 36 fiches ne peut pas prétendre en
+compter 15 906, et la maquette ne le prétend pas non plus.
 
-Trois pièges rencontrés, réglés, qui vaudront pour les prochaines tables :
-
-- **Un libellé `.sr-only` dans une cellule allonge le document.** `.sr-only`
-  est en `position: absolute` ; si aucun parent n'est positionné, son bloc
-  conteneur est le bloc conteneur initial : il échappe à `overflow: hidden` et
-  compte dans la hauteur de la page. Les 40 libellés du crayon d'édition
-  rapide, hauts de 1 px, portaient ainsi le document à 2 143 px pour un
-  viewport de 932 — d'où un grand vide sous les deux écrans de liste. Le shell
-  `.mdm-app` est désormais `position: relative`, et le crayon aussi. À
-  surveiller pour tout `.sr-only` posé dans une zone défilante. Les libellés de
-  l'en-tête y échappaient : `thead th` est `sticky`, donc déjà positionné.
-
-- **`box-sizing: border-box` est obligatoire sur les cellules.** Sans lui, le
-  `padding-right` de 12 px s'ajoute à la largeur déclarée : chaque colonne
-  gagnait 12 px et la dernière était écrasée à 64 px. La maquette le précise
-  dans son helper de colonne. La table de l'espace de travail avait le même
-  défaut, corrigé au passage.
-- **La colonne de sélection vaut 52 px, pas 32.** La maquette pose 20 px de
-  retrait de ligne, puis une case de 16 px suivie de 16 px de marge. En
-  `border-box`, le retrait fait partie de la largeur de la colonne.
-
-### Écarts assumés
-
-| # | Constat dans la maquette | Décision d'intégration |
+| Filtre | Volume annoncé | D'où il vient |
 |---|---|---|
-| 1 | La table est une pile de `div`. | Rendue en `<table>`, en-tête figé par `position: sticky` là où le handoff le sortait de la zone défilante. Largeurs et hauteurs de ligne inchangées. |
-| 2 | L'écran redéfinit ses propres boutons en Ubuntu Sans 12/20. | Réutilisation du composant `bp-btn` du design system, déjà aligné sur le token `--texte-button`. |
-| 3 | La recherche et les filtres sont des libellés statiques. | Champ `<input type="search">` réel et boutons avec `aria-pressed`. |
-| 4 | Trois lignes portent une case cochée alors que la barre d'actions groupées est masquée sur cet écran. | Reproduit tel quel — incohérence à confirmer par le design. |
-| 5 | Aucun état de focus n'est décrit. | Anneau de focus sur les filtres, la vue enregistrée et la pagination. |
+| Publiée + France | 15 906 | min(15 906 ; 16 210) |
+| Lieux + Publiée + France | 12 480 | min(12 480 ; 15 906 ; 16 210) |
+| Valeurs IA + Anomalies | 231 | 200 + 31, un seul groupe actif |
 
-### Adaptation aux petits écrans
+### Les treize états
 
-La table conserve sa largeur utile (`min-width: 1400px`) et défile
-horizontalement plutôt que d'écraser ses colonnes. Les cartes de typologie
-passent de 5 à 3 colonnes sous 1600 px, puis à 2 sous 1100 px. Proposition
-d'intégration, à valider par le design.
-
----
-
-## « Lieux »
-
-`/referentiel/lieux` · gabarit `mdm/lieux.html.twig`.
-
-Cet écran et le référentiel général partagent la même table. Elle est extraite
-dans **`mdm/_liste_fiches.html.twig`**, qui rend la barre de filtres, le
-bandeau de sélection facultatif, la table et la pagination. Chaque écran
-fournit ses données et se contente d'inclure le partiel :
-
-```twig
-{% include 'mdm/_liste_fiches.html.twig' with {
-    recherche: entete.recherche,
-    vue_enregistree: entete.vueEnregistree,
-    note: entete.note,
-    selection: true
-} %}
-```
-
-Les colonnes sont décrites côté PHP (`ReferentielMaquette::colonnes()`) sous la
-forme `{cle, libelle}` : le partiel boucle dessus, l'ordre et les intitulés
-viennent de la maquette, les largeurs des classes `.ref__col-<cle>`. Ajouter
-une liste (Restaurants, Activités…) revient à décrire ses colonnes et ses
-lignes, sans toucher au gabarit.
-
-Ce qui distingue l'écran Lieux du référentiel général :
-
-| | Référentiel général | Lieux |
-|---|---|---|
-| Lignes | 40, toutes typologies | 50, typologie « Lieux » |
-| Cartes de répartition | oui | non |
-| Colonne typologie | famille, 176 px, avec pastille | sous-typologie, 210 px, après la ville |
-| Bandeau de sélection | masqué | affiché, 5 actions groupées |
-| Lignes sélectionnées | case cochée seulement | case cochée **et** ligne teintée |
-| Vue enregistrée | « Toutes les fiches » | « Lieux à enrichir · FR » |
-| Pagination | 474 pages | 250 pages |
-
-### Mise à jour du handoff
-
-La maquette a été révisée entre l'intégration du référentiel général et celle
-des Lieux (1 403 → 2 052 lignes, deux écrans ajoutés : éditeur de fiche et
-configuration des salles). Les largeurs de colonnes ont changé : le nom devient
-élastique, Canaux passe de 180 à 160, Source de 130 à 112, et Dernière
-modification devient fixe à 192 px. **Les deux écrans ont été alignés sur cette
-nouvelle version.**
-
-Au passage, la révision a introduit une incohérence côté maquette : l'en-tête
-déclare la colonne du nom en élastique alors que les cellules du corps la
-gardent en 340/360 px fixes — en-tête et corps seraient décalés d'une vingtaine
-de pixels. L'intégration en `<table>` y échappe : les largeurs sont portées par
-l'en-tête et le corps suit.
-
-### Révision du tableau
-
-La maquette a de nouveau revu la table des deux listes :
-
-| | Avant | Après |
-|---|---|---|
-| Canaux | 180 px, quatre pastilles MP/ST/SF/PP | **colonne retirée** |
-| Source | 130 px | 130 px |
-| Dernière modification | 192 px | **150 px** |
-| Actions | — | **48 px, crayon d'édition rapide** |
-
-Les données des canaux existent toujours côté maquette : seule la colonne
-disparaît. `ReferentielMaquette::canaux()` est donc conservé, prêt à resservir.
-
-Les 160 px libérés ont permis de **revenir à la complétude de la maquette** :
-barre à gauche, taux à droite sur 40 px en Lato 900 / 14 px. L'intégration
-l'avait provisoirement empilé sur deux lignes pour tenir dans 120 px.
-
-En-tête et corps restent alignés d'office : la table est un `<table>`, les
-largeurs sont portées par l'en-tête. La maquette, elle, donne 30 px de retrait
-à droite de son en-tête contre 48 px au corps — un décalage de 18 px sur la
-dernière colonne, qui n'est pas reproduit.
-
-## Modale « Édition rapide »
-
-`mdm/_edition_rapide.html.twig` · `assets/styles/edition-rapide.css` ·
-`edition_rapide_controller.js`
-
-Le crayon d'une ligne l'ouvre. **Une seule instance par page** : le crayon
-transmet sa ligne en paramètres Stimulus, le contrôleur remplit l'en-tête, la
-gamme et l'adresse. À 50 lignes, rendre 50 modales n'aurait pas de sens.
-
-L'adresse est résolue depuis la ville de la ligne, par la table
-`ReferentielMaquette::ADRESSES` — 26 villes, avec rue, code postal et GPS,
-exactement comme le fait la maquette.
-
-### Les quatre états
-
-Portés par des classes sur la racine, ce qui les rend inspectables sans
-manipuler la page :
-
-| Classe | Déclencheur | Effet |
-|---|---|---|
-| `qe--adresse` | « Corriger » | champ de recherche et panneau de suggestions à la place de la carte d'adresse |
-| `qe--sites-ouverts` | « Gérer » | panneau des 31 sites de diffusion |
-| `qe--enregistrement` | « Enregistrer » | corps à 50 %, jauge sous l'en-tête, rouet, retour à la liste après 1,1 s |
-| `qe--erreur` | **aucun** | anneau pêche sur le nom, message sous le champ, alerte en pied |
-
-`qe--erreur` n'a pas de déclencheur **dans la maquette non plus** : l'état
-existe, aucune interaction n'y mène. Il est intégré et vérifié, il s'obtient en
-posant la classe.
-
-### Ce qui est recalculé
-
-Le panneau des sites est le seul endroit où la maquette recompte quelque chose.
-Cocher ou décocher met à jour, comme elle : le compte global (« 9 sur 31 »), les
-quatre puces de résumé et leur « +N », et le décompte de chaque groupe — deux
-fois, dans la liste et sous le champ. Le site marqué « obligatoire » refuse le
-clic.
-
-Les raccourcis de la maquette sont câblés : Échap ferme la couche la plus haute
-(confirmation, puis panneau, puis modale), ⌘/Ctrl + ⏎ enregistre, Alt + ← / →
-passent d'une fiche à l'autre.
-
-### Écarts assumés
-
-| # | Constat dans la maquette | Décision d'intégration |
-|---|---|---|
-| 1 | La modale est posée en absolu à 340 / 116 dans un cadre de 1920 × 1080. | C'est exactement le centre du cadre : elle est centrée, plafonnée à 1240 × 848. Rendu identique à cette taille, et elle tient plus bas. |
-| 2 | Les deux panneaux flottants sont en absolu et la maquette réserve 150 px en pied du corps. | Suffisant à 1080 px, pas en dessous. Le pied est conservé et complété par une réserve exacte sur le bloc porteur. Le pied du panneau des sites reste atteignable jusqu'à 768 px de haut. |
-| 3 | La gamme « restaurant » a sa propre classification, mais aucun nom de la liste ne la déclenche — la branche est morte. | Les deux jeux sont rendus, le contrôleur montre celui de la gamme. La règle reste vraie si les noms changent. |
-| 4 | Le bouton principal s'appelle « Enregistrer et suivante » mais referme la modale au lieu de passer à la fiche suivante. | Reproduit tel quel — à confirmer par le design. |
-| 5 | Quatre teintes du handoff n'ont pas de jeton : deux surfaces presque blanches, un vert et un or « texte sur fond pâle ». | Ajoutées en `--mdm-surface-pied`, `--mdm-surface-ligne`, `--mdm-vert-texte`, `--mdm-or-texte`. Les jetons `--secondary-vert` et `--secondary-premium` ne passent pas en 11 px sur leur propre teinte pâle. |
-| 6 | La recherche du panneau et la saisie d'adresse sont des libellés statiques. | Reproduits tels quels : la modale n'a pas de formulaire, l'écran est une intégration. |
-
-Les glyphes de la modale — `caret`, `caretleft`, `caretright`, `warn`,
-`search`, `spinner`, `arrowright` — sont **extraits** de `mdm-icons.js`, pas
-recopiés, par le même procédé que le jeu de navigation : le fichier du handoff
-est évalué dans un bac à sable et les tracés sont écrits tels quels dans
-`templates/mdm/_icones_modale.html.twig`.
-
-Le script (`gen-icones-modale.js`) n'est pas versionné : le dépôt n'a pas de
-dossier d'outillage et en créer un se décide à plusieurs. Il est à disposition
-si vous le voulez dans le dépôt.
-
-`mappin`, `pencil` et `lock` étaient déjà là ; la macro `icone()` route chaque
-nom vers le bon jeu.
-
-## Adaptation aux petits écrans
-
-Le handoff ne fournit qu'un cadre de 1920 × 1080. Trois paliers ont été ajoutés
-(colonne latérale rétrécie à 1600 px, passage en une colonne à 1366 px, grille
-de compteurs empilée à 900 px). **Proposition d'intégration, pas une reprise de
-maquette** — à valider par le design.
-
-La modale d'édition rapide passe son corps en une colonne sous 1100 px.
-
----
-
-## Tunnel de création d'une fiche
-
-`/referentiel/fiche/nouvelle` · gabarit `mdm/creation_fiche.html.twig` ·
-`assets/styles/creation.css` · `creation_controller.js` ·
-`CreationFicheMaquette`
-
-Maquette « Creation fiche », un fichier séparé du handoff principal. Le bouton
-**« + Nouvelle fiche »** des deux listes y mène.
-
-**Ce n'est pas un assistant pas à pas** malgré son nom : les sept blocs sont sur
-une seule page, et c'est le premier — la gamme — qui débloque les six autres.
-Le rail de gauche sert d'ancres et de tableau de bord du remplissage.
-
-### Les sept blocs
-
-| # | Bloc | Ce qu'il porte |
-|---|---|---|
-| 1 | Gamme | cinq cartes ; le choix fixe la structure de la fiche |
-| 2 | Identité et localisation | nom, référence, adresse **ou** zone d'intervention |
-| 3 | Classification | puces par axe, une à deux listes selon la gamme |
-| 4 | Statut et référencement | actif, adhérent Business Premium |
-| 5 | Visibilité | les 30 sites de diffusion, par groupe |
-| 6 | Contact prestataire | quatre champs, ou le contact de repli de l'agence |
-| 7 | Accès extranet | envoyer les identifiants, ou pas, et la trame d'email |
-
-Le badge de chaque entrée du rail suit la règle de la maquette : `!` si le bloc
-est fautif, `OK` s'il est renseigné, `—` s'il attend la gamme, `à faire` sinon —
-et le remplissage l'emporte sur le verrou, d'où les trois `OK` déjà présents sur
-la page vierge.
-
-### Les six états
-
-Servis par `?etat=`, comme les sections de l'éditeur de fiche. Par défaut
-`vierge`, qui est l'état réel d'un écran de création.
+Servis par `?etat=`, comme les autres écrans. Par défaut `nominal`.
 
 | `?etat=` | Ce qu'il montre |
 |---|---|
-| `vierge` | rien n'est choisi, six blocs verrouillés à 72 % d'opacité |
-| `lieu` | gamme Lieux, page complétée |
-| `activite` | gamme Activités : la zone d'intervention remplace l'adresse |
-| `repli` | contact de repli de l'agence, envoi des accès désactivé |
-| `erreurs` | tentative de création : bannière, trois champs signalés |
-| `encours` | voile de création, trois étapes, corps figé |
+| `nominal` | gammes mélangées, 8 groupes de facettes |
+| `lieux` | filtré sur Lieux : 9 groupes, colonne « Catégorie de lieu » |
+| `selection` | 4 lignes cochées, barre d'actions, menu « Plus d'actions » ouvert |
+| `tout` | le filtre entier retenu — 15 906 — et l'avertissement de volume |
+| `seuil` | même sélection, actions au-delà de leur plafond |
+| `socle` | valeurs IA et conflits dans la colonne polymorphe, recherche active |
+| `modifiee` | vue enregistrée touchée : « Enregistrer » ou « Réinitialiser » |
+| `replie` | panneau rangé à 60 px, gardant le compte de filtres |
+| `picker` | sélecteur de vues déployé |
+| `rien` | 5 filtres, aucun résultat — distinct d'un référentiel vide |
+| `chargement` | dix squelettes de lignes |
+| `vues` | modale de gestion des vues |
+| `compacte` | lignes à 40 px, 19 par page au lieu de 14 |
 
-`?gamme=` force la gamme sans changer d'état — c'est ce que fait le clic sur une
-carte. Le choix passe donc par le serveur : c'est lui qui décide des blocs, des
-axes de classification, du nom pré-rempli et de la trame. Une seule source de
-vérité, pas de dérivation dupliquée en JavaScript.
+### Trois règles que la maquette encode
 
-Tout le reste se règle sans rechargement : puces de classement, départements,
-sites de diffusion, interrupteurs, contact de repli, mode d'envoi, panneau de
-suggestions d'adresse, et le rail qui suit le défilement.
+- **Une photo absente n'est pas une anomalie.** C'est un champ « vide et
+  obligatoire » du socle : l'anneau pêche de la vignette le porte, le glyphe
+  d'alerte reste réservé aux conflits.
+- **Une grande sélection n'est pas une petite en plus gros.** Passé son
+  plafond — 5 000 pour « Publier », 500 pour « Envoyer les accès » — l'action
+  est désactivée et réclame une confirmation d'un autre ordre. L'irréversibilité
+  est un fait distinct : elle occupe son propre emplacement et **survit** au
+  plafond, elle n'est pas écrasée par lui.
+- **Un filtre sans résultat n'est pas un référentiel vide.** Le message rappelle
+  les 18 953 fiches et propose de retirer un filtre, pas de repartir de zéro.
 
-### Deux règles métier que la maquette encode
-
-- **Une gamme mobile peut n'avoir aucune adresse.** Activités et Prestataires de
-  services proposent « implantation fixe » ou « zone d'intervention » ; la zone
-  remplace alors l'adresse sur les canaux publics.
-- **Le contact de repli interdit l'envoi des accès.** Cocher le repli verrouille
-  les quatre champs *et* rend « envoyer les accès » indisponible : l'adresse de
-  l'agence n'est pas celle du prestataire. Le basculement est reproduit dans le
-  contrôleur, message compris.
-
-### Adresse fixe ou zone d'intervention
-
-C'est le seul endroit du tunnel où deux blocs se disputent la même place, et la
-règle de la maquette se lit en trois lignes :
-
-```
-implant    = ?etat=activite ? "zone" : "fixe"
-showZone   = gamme choisie ET gamme mobile ET implant vaut "zone"
-showAddress = gamme choisie ET pas showZone
-```
-
-Conséquence à ne pas manquer : sur `?etat=activite&gamme=lieu`, `implant` vaut
-« zone » mais la gamme n'est pas mobile — **c'est l'adresse qui s'affiche**. Le
-bloc porte donc `data-implantation` sur *ce qui est affiché*, pas sur le choix
-brut. Trois combinaisons ne montraient ni l'un ni l'autre avant ce correctif.
-
-Les deux blocs sont rendus ensemble sur une gamme mobile, et le bouton radio
-permute sans recharger. La bannière d'erreurs suit : sans adresse affichée,
-« Adresse postale » n'est plus un champ obligatoire manquant et le compte
-redescend — `3 champs` devient `2 champs`.
-
-La matrice complète — 6 états × 6 gammes, soit 36 combinaisons — est vérifiée au
-navigateur sur quatre propriétés : gamme retenue, présence du choix
-d'implantation, zone affichée, adresse affichée.
+L'identifiant d'une fiche se dérive de son rang fixe, pas de sa position dans la
+page : il reste stable d'un filtre et d'une page à l'autre.
 
 ### Écarts assumés
 
 | # | Constat dans la maquette | Décision d'intégration |
 |---|---|---|
-| 1 | Le fichier embarque son propre chrome de démonstration : colonne de 300 px pour changer d'état, contrôles de zoom, cadre de 1920 × 1080 mis à l'échelle. | Non intégré — c'est l'outillage du handoff, pas le produit. Les états passent par `?etat=`. |
-| 2 | Le fichier redéfinit un en-tête de 64 px avec sept onglets, dont « Outils » que le reste du produit n'a pas. | L'en-tête réel du back-office est conservé. La simplification n'appartient qu'à ce fichier isolé. |
-| 3 | Les champs sont des libellés statiques : aucun `input`, aucun formulaire. | Reproduits tels quels. L'écran est une intégration, rien n'est saisi ni envoyé. |
-| 4 | La liste des sites de diffusion diffère de celle de la modale d'édition rapide : 30 sites au lieu de 31, « Hire Space » en moins. | Les deux jeux sont tenus **séparément**. Les fusionner masquerait un arbitrage que le design n'a pas rendu. |
-| 5 | Le rouge d'erreur — `rgb(226,86,80)` sur `rgb(255,240,239)` — n'est ni `--secondary-rouge` ni celui de la modale d'édition rapide. | Ajouté en `--mdm-erreur-texte` / `--mdm-erreur-fond`. Troisième rouge du produit : à arbitrer par le design. |
-| 6 | « Créer et enchaîner » et « Créer et enrichir » ne sont pas distingués dans le comportement. | Reproduits tels quels, tous deux inertes. |
+| 1 | Le fichier embarque son chrome de démonstration : colonne d'états de 300 px, contrôles de zoom, cadre de 1920 × 1080 mis à l'échelle. | Non intégré — outillage du handoff. Les états passent par `?etat=`. |
+| 2 | Cocher une facette ne recalcule rien dans le fichier : `onClick: () => {}`. | Le clic marque l'intention et rien de plus. Recalculer côté client ferait diverger les lignes, les badges et le compte, qui sortent d'un seul prédicat côté serveur. |
+| 3 | La densité, le repli du panneau et les menus sont des états React. | La densité et le repli passent par `?etat=` (ils changent la pagination) ; les menus et la sélection de lignes restent locaux. |
+| 4 | Les cartes de répartition par typologie du référentiel général ont disparu. | Suivies : la nouvelle maquette ne les porte plus. |
+| 5 | Le tri, la recherche et le choix de colonnes sont des libellés statiques. | Reproduits tels quels. |
 
-### Deux ajouts au socle
+### Ce que cette révision a supprimé
 
-- **`{% block main_attributs %}`** sur `.mdm-main` dans `mdm/base.html.twig` :
-  le rail et le contenu sont frères, et le contrôleur du tunnel doit piloter les
-  deux — le rail y déclenche les sauts vers les blocs.
-- **La règle de base des liens du handoff**, `a { text-decoration: none }` avec
-  survol vers le marine, présente dans le préambule de *chacun* de ses fichiers.
-  Elle était redéclarée composant par composant ; les cartes de gamme et le fil
-  d'Ariane, premiers vrais liens ajoutés depuis, arrivaient soulignés. Elle est
-  désormais posée une fois, sous `.mdm-app`.
+`mdm/_liste_fiches.html.twig`, `mdm/referentiel_general.html.twig`,
+`mdm/lieux.html.twig` et `assets/styles/referentiel.css` n'ont plus d'emploi :
+la nouvelle maquette ne reprend ni leur table, ni leurs cartes de typologie.
+`ReferentielMaquette` est conservée — c'est elle qui alimente la modale
+d'édition rapide, toujours ouverte par le crayon de chaque ligne.
+
+## Le logo
+
+`assets/images/bp-logo.png` — le lockup « bp Business Profilers » manquant,
+enfin fourni. Il remplace le montage provisoire (pastille ronde + nom en texte).
+
+Le fichier est **monochrome blanc sur fond transparent**, 1349 × 246 : posé tel
+quel sur l'en-tête blanc, il serait invisible. Il sert donc de **masque CSS** et
+c'est le marine qui le peint — la couleur exacte du nom qu'il remplace. Le
+procédé est sans perte et suit le jeton : si l'en-tête passe un jour au sombre,
+une seule déclaration change.
+
+Si une version couleur existe, elle se substitue en remplaçant le fichier et en
+troquant le masque contre un `background-image`.
 
 ## « Éditeur de fiche Lieu »
 

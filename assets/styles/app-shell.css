@@ -26,12 +26,18 @@
  * fonce vers le marine. Elle était jusqu'ici redéclarée composant par
  * composant, d'où des soulignements parasites sur les nouveaux liens.
  */
-.mdm-app a {
+/*
+ * `:where()` ne compte pas dans la spécificité : la règle pèse donc autant que
+ * le `a { }` du handoff, et n'importe quelle classe de composant la surcharge.
+ * Écrite `.mdm-app a`, elle valait (0,1,1) et écrasait toutes les couleurs de
+ * lien posées par une classe simple — logo, navigation, rail, bouton primaire.
+ */
+:where(.mdm-app) a {
     color: var(--primary-turquoise);
     text-decoration: none;
 }
 
-.mdm-app a:hover {
+:where(.mdm-app) a:hover {
     color: var(--primary-marine);
 }
 
@@ -91,19 +97,27 @@
     background: url('../images/brand/bp-mark.png') center / contain no-repeat;
 }
 
-.mdm-logo__wordmark {
-    display: flex;
-    flex-direction: column;
-    line-height: 1;
+/*
+ * Le lockup « bp Business Profilers » livré est un PNG monochrome blanc sur
+ * fond transparent : posé tel quel sur l'en-tête blanc, il serait invisible.
+ * Il sert donc de masque, et c'est le marine — la couleur du nom qu'il
+ * remplace — qui le peint. Ratio 1349 × 246, rendu sur 34 px de haut.
+ */
+.mdm-logo__lockup {
+    display: block;
+    flex-shrink: 0;
+    width: 186px;
+    height: 34px;
+    background: var(--primary-marine);
+    -webkit-mask: url('../images/bp-logo.png') no-repeat center / contain;
+    mask: url('../images/bp-logo.png') no-repeat center / contain;
 }
 
-.mdm-logo__name {
-    font-family: var(--bp-font-titre);
-    font-size: 16px;
-    font-weight: 700;
-    line-height: 20px;
-    color: var(--primary-marine);
-    white-space: nowrap;
+.mdm-logo__filet {
+    flex-shrink: 0;
+    width: 1px;
+    height: 22px;
+    background: var(--mdm-hairline);
 }
 
 .mdm-logo__product {

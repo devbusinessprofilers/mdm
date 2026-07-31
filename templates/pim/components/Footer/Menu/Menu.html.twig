@@ -1,0 +1,9 @@
+<nav{{ attributes }}>
+    <ul class="flex flex-col md:flex-row gap-4 lg:gap-14">
+        {% for item in items %}
+            <li>
+                <a href="{{ path(item.route) }}"><twig:Typography bold>{{ item.label|trans }}</twig:Typography></a>
+            </li>
+        {% endfor %}
+    </ul>
+</nav>

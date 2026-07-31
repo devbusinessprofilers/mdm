@@ -1,0 +1,35 @@
+{% set currentRoute = app.request.attributes.get('_route') %}
+{% set currentRouteParameters = app.request.attributes.get('_route_params') %}
+
+<nav{{ attributes }}>
+    <ul class="flex gap-8">
+        {% for item in items %}
+            {% set isActive = (item.isActive(currentRoute, currentRouteParameters)) %}
+            <li>
+                {% if item.items is defined and item.items|length > 0 %}
+                    <twig:Header:Menu:DropdownNavLink
+                        label="{{ item.label|trans }}"
+                        notification="{{ item.notification ?? null }}"
+                        currentRoute="{{ currentRoute }}"
+                        currentRouteParameters="{{ currentRouteParameters }}"
+                        items="{{ item.items }}"
+                        isFloating="{{ true }}"
+                        icon="{{ item.icon }}"
+                        iconColor="{{ item.iconColor }}"
+                        isActive="{{ isActive }}"
+                    />
+                {% else %}
+                    <twig:Header:Menu:NavLink
+                        route="{{ item.route }}"
+                        routeParameters="{{ item.routeParameters }}"
+                        label="{{ item.label|trans }}"
+                        notification="{{ item.notification ?? null }}"
+                        icon="{{ item.icon }}"
+                        iconColor="{{ item.iconColor }}"
+                        isActive="{{ isActive }}"
+                    />
+                {% endif %}
+            </li>
+        {% endfor %}
+    </ul>
+</nav>

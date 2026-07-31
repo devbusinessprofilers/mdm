@@ -1,0 +1,75 @@
+{# @todo: remove asset to resolve URL #}
+{% set assetDocuments = documents|map(document => { 'name': document.name, 'url': asset(document.url)}) %}
+
+{% set cardAreaCva = cva({
+    base: 'mt-1 w-full gap-2',
+    variants: {
+        preview: {
+            true: 'flex flex-wrap',
+            false: 'grid grid-cols-1 lg:grid-cols-3',
+        },
+    }
+}) %}
+
+<div
+    class="flex flex-col gap-1 items-center {{ class }}"
+    {{ attributes }}
+    {% if not disabled %}
+        {{ stimulus_controller('provider-portal--dropzone', {
+            'withPreview': withPreview,
+            'maxFileCount': maxFileCount,
+            'documents': assetDocuments,
+        }) }}
+    {% endif %}
+>
+    <div class="relative p-6 rounded-xs bg-primary-4 flex flex-col gap-2 items-center w-full">
+        <twig:Icon name="cloud-arrow-up" class="text-primary h-14 w-14" />
+        <div class="flex flex-col items-center">
+            <twig:Typography variant="body-lg" bold class="mb-1">{{ 'form.dropzone.select.label'|trans|raw }}</twig:Typography>
+            <twig:Typography variant="body">{{ 'form.dropzone.count_constraint.label'|trans({ '{count}': maxFileCount }) }}</twig:Typography>
+            <twig:Typography variant="body">{{ 'form.dropzone.size_constraint.label'|trans({ '{size}': fileMaxSize }) }}</twig:Typography>
+            {% if imageMinWidth is not null and imageMinHeight is not null %}
+                <twig:Typography variant="body">{{ 'form.dropzone.image_constraint.label'|trans({ '{minWidth}': imageMinWidth, '{minHeight}': imageMinHeight }) }}</twig:Typography>
+            {% endif %}
+        </div>
+        <twig:Button
+            icon="plus"
+            type="button"
+            disabled="{{ disabled }}"
+        >
+            {{ 'form.dropzone.button.label'|trans }}
+        </twig:Button>
+        <input
+            id="{{ id }}"
+            name="{{ name }}"
+            accept="{{ accept }}"
+            multiple="multiple"
+            type="file"
+            {% if disabled %}
+                disabled
+            {% else %}
+                data-provider-portal--dropzone-target="inputFile"
+                data-action="change->provider-portal--dropzone#onFileChange"
+            {% endif %}
+            class="absolute top-0 left-0 w-full h-full opacity-0"
+        >
+    </div>
+    <div class="hidden">
+        <div data-provider-portal--dropzone-target="cardDefaultPrototype" class="p-2 bg-primary-5 flex gap-x-2 items-center">
+            <twig:Icon name="note" class="w-4 h-4" />
+            <twig:Typography variant="medium" bold data-prototype-value="" class="grow"></twig:Typography>
+            <twig:Icon name="cross" data-prototype-delete="" class="w-4 h-4 cursor-pointer" />
+        </div>
+        <div data-provider-portal--dropzone-target="cardPreviewPrototype" class="relative w-full aspect-45/32 sm:w-45 sm:h-32 group">
+            <img src="" alt="" class="w-full h-full object-cover rounded-xs" />
+            <div class="hidden absolute bg-background-transparency rounded-xs top-0 left-0 w-full h-full items-center justify-center group-hover:flex">
+                <twig:Button type="button" icon="trash" class="px-6" data-prototype-delete="" />
+            </div>
+        </div>
+    </div>
+    <div
+        data-provider-portal--dropzone-target="cardArea"
+        class="{{ cardAreaCva.apply({ preview: withPreview }) }}"
+    >
+    </div>
+</div>

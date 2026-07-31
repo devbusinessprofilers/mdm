@@ -1,0 +1,25 @@
+{% set cva = cva({
+    base: 'border rounded-xs p-2 focus:outline-none text-[0.75rem] leading-[1.25rem] w-full min-h-16',
+    variants: {
+        disabled: {
+            true: '
+                cursor-not-allowed text-neutral-500 border-neutral-300 bg-neutral-200
+                focus:outline focus:outline-neutral-500
+            ',
+            false: '
+                cursor-text border-primary bg-primary-5
+                focus:bg-neutral-100
+            ',
+        },
+    }
+}) %}
+
+<div class="w-full">
+    <textarea
+        id="{{ id }}"
+        name="{{ name }}"
+        {% if disabled %}disabled{% endif %}
+        class="{{ cva.apply({ disabled }, attributes.render('class')) }}"
+        {{ attributes.without('class', 'value') }}
+    >{{ value|default('') }}</textarea>
+</div>

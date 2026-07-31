@@ -1,0 +1,11 @@
+{% set cva = cva({
+    base: 'flex gap-4 items-center justify-center',
+}) %}
+
+<div {{ attributes.without('class') }} class="{{ cva.apply({}, attributes.render('class')) }}">
+    <img src="{{ asset('img/left-bay-leaf.png') }}" alt="Left bay leaf" class="h-10 sm:h-17" />
+    <twig:Typography variant="heading-1" bold center>
+        {{- value|format_number({ min_fraction_digit: 2, max_fraction_digit: 2 }, locale: app.request.locale) -}}
+    </twig:Typography>
+    <img src="{{ asset('img/right-bay-leaf.png') }}" alt="Left bay leaf" class="h-10 sm:h-17" />
+</div>

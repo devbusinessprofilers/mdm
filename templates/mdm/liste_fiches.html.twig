@@ -1,0 +1,617 @@
+{#
+    Maquette : « Liste des fiches » — l'écran unique du référentiel.
+
+    Écrit avec les composants du portail prestataire (`templates/pim/components`)
+    et Tailwind. Les composants portent tout ce qu'ils savent faire : boutons,
+    étiquettes, jauges, icônes, typographie. Le reste — le panneau de facettes,
+    le tableau dense, la barre d'actions groupées — n'a pas d'équivalent et est
+    écrit en utilitaires, sans feuille de style propre à l'écran.
+#}
+{% extends 'mdm/base.html.twig' %}
+
+{% set ecran = 'liste' %}
+
+{% block title %}{{ etat.label }} · Liste des fiches{% endblock %}
+
+{# Le contrôleur couvre le panneau de filtres et le contenu : ils sont frères. #}
+{% block main_attributs %}data-controller="liste edition-rapide"{% endblock %}
+
+{#
+    Le rail de cet écran est le panneau de filtres. Neuf groupes de facettes,
+    repliable en une colonne de 60 px qui garde le compte de filtres actifs.
+#}
+{% block rail %}
+    <div class="{{ panneau.replie ? 'w-[60px]' : 'w-[284px]' }} shrink-0 flex flex-col overflow-hidden
+                bg-neutral-100 border-r border-neutral-200"
+         data-liste-target="panneau">
+
+        {# ------------------------------------------------------- Rail replié #}
+        <div class="{{ panneau.replie ? 'flex' : 'hidden' }} flex-1 flex-col items-center gap-3.5 py-4"
+             data-liste-target="replie">
+            <button type="button" title="Déplier les filtres"
+                    class="w-[34px] h-[34px] shrink-0 flex items-center justify-center rounded-full
+                           bg-primary-4 text-primary-3 cursor-pointer"
+                    data-action="liste#basculerPanneau">
+                <span class="sr-only">Déplier les filtres</span>
+                <twig:Icon name="caret-right" class="w-[15px] h-[15px]" />
+            </button>
+            <twig:Tag label="{{ panneau.compte }}" variant="neutral" size="sm"
+                      class="bg-neutral-100! border-primary!" />
+            <span class="[writing-mode:vertical-rl] uppercase tracking-[0.8px] whitespace-nowrap">
+                <twig:Typography variant="body-xs" textColor="neutral-500" bold>Filtres actifs</twig:Typography>
+            </span>
+        </div>
+
+        {# -------------------------------------------------------- Rail ouvert #}
+        <div class="{{ panneau.replie ? 'hidden' : 'flex' }} flex-1 min-h-0 flex-col"
+             data-liste-target="ouvert">
+
+            <div class="shrink-0 flex flex-col gap-2 px-4 pt-4 pb-3 border-b border-neutral-200">
+                <div class="flex items-center justify-between gap-2.5">
+                    <twig:Typography variant="body-sm" bold>Filtres</twig:Typography>
+                    {% if panneau.compte %}
+                        <button type="button" class="cursor-pointer">
+                            <twig:Typography variant="body-xs" textColor="primary-3" bold>Tout effacer</twig:Typography>
+                        </button>
+                    {% endif %}
+                    <button type="button" title="Replier les filtres"
+                            class="w-[26px] h-[26px] shrink-0 flex items-center justify-center rounded-full
+                                   bg-primary-4 text-primary-3 cursor-pointer"
+                            data-action="liste#basculerPanneau">
+                        <span class="sr-only">Replier les filtres</span>
+                        <twig:Icon name="caret-left" class="w-[15px] h-[15px]" />
+                    </button>
+                </div>
+                <twig:Typography variant="body-xs" textColor="neutral-500"
+                                 data-liste-target="resume">{{ panneau.resume }}</twig:Typography>
+            </div>
+
+            <div class="flex-1 min-h-0 overflow-y-auto flex flex-col gap-1 px-3 pt-2 pb-5 scrollbar">
+                {% for groupe in panneau.groupes %}
+                    <div class="flex flex-col gap-0.5 pt-2 pb-2.5">
+                        <div class="flex items-center gap-2 px-1.5 pb-1.5">
+                            <span class="uppercase tracking-[0.8px]">
+                                <twig:Typography variant="body-xs" textColor="neutral-500" bold>{{ groupe.nom }}</twig:Typography>
+                            </span>
+                            <span class="flex-1 h-px bg-neutral-200"></span>
+                            {% if groupe.etiquette %}
+                                <twig:Tag label="{{ groupe.etiquette }}" variant="primary-3" size="sm" />
+                            {% endif %}
+                        </div>
+
+                        {% for facette in groupe.facettes %}
+                            <button type="button" role="checkbox"
+                                    aria-checked="{{ facette.retenue ? 'true' : 'false' }}"
+                                    class="group/facette flex items-center gap-2.5 w-full p-1.5 rounded-xs text-left
+                                           cursor-pointer aria-checked:bg-primary-4"
+                                    data-action="liste#basculerFacette">
+                                {{ _self.case() }}
+                                <span class="flex-1 min-w-0 truncate">
+                                    <twig:Typography variant="body-sm"
+                                                     class="group-aria-checked/facette:font-black group-aria-checked/facette:text-primary-3">{{ facette.label }}</twig:Typography>
+                                </span>
+                                <twig:Typography variant="body-xs" textColor="neutral-500"
+                                                 class="shrink-0">{{ facette.compte }}</twig:Typography>
+                            </button>
+                        {% endfor %}
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block contenu %}
+    <div class="flex flex-col flex-1 min-h-0">
+
+        {# ------------------------------------------------------- Barre d'outils #}
+        <div class="shrink-0 flex items-center gap-3.5 px-[30px] pt-4 pb-3">
+            <div class="flex-1 min-w-[300px] max-w-[460px] h-[38px] box-border flex items-center gap-2.5 px-4
+                        rounded-full bg-neutral-100
+                        {{ recherche.saisie ? 'inset-ring-1 inset-ring-primary' : 'inset-ring-1 inset-ring-neutral-200' }}">
+                <twig:Icon name="magnifying-glass" class="w-4 h-4 shrink-0 text-neutral-500" />
+                <span class="flex-1 min-w-0 truncate">
+                    <twig:Typography variant="body-sm"
+                                     textColor="{{ recherche.saisie ? 'neutral-900' : 'neutral-500' }}"
+                                     class="{{ recherche.saisie ? 'font-black' : '' }}">{{ recherche.valeur }}</twig:Typography>
+                </span>
+                <span class="shrink min-w-0 overflow-hidden">
+                    <twig:Typography variant="body-xs" textColor="neutral-500">nom · ville · identifiant</twig:Typography>
+                </span>
+            </div>
+
+            {# -------------------------------------------- Vue courante et sélecteur #}
+            <div class="relative shrink-0">
+                <twig:Button variant="text" size="md" icon="layout"
+                             class="bg-neutral-100! inset-ring-1 inset-ring-neutral-200 h-[38px]! rounded-full!"
+                             data-action="liste#basculerPicker"
+                             aria-expanded="{{ picker.ouvert ? 'true' : 'false' }}">
+                    {{ vueCourante.nom }}
+                    {% if vueCourante.modifiee %}
+                        <twig:Tag label="modifiée" variant="peach" size="sm" class="ml-1" />
+                    {% endif %}
+                </twig:Button>
+
+                <div class="absolute left-0 top-[44px] z-8 w-[380px] p-1.5 rounded-[14px] bg-neutral-100
+                            shadow-[0_16px_40px_rgba(3,74,94,0.22)] flex flex-col gap-px"
+                     data-liste-target="picker" {{ picker.ouvert ? '' : 'hidden' }}>
+                    {% for vue in picker.vues %}
+                        <div class="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xs cursor-pointer
+                                    {{ vue.courante ? 'bg-primary-4' : '' }}">
+                            <twig:Icon name="{{ vue.courante ? 'check-circle' : 'layout' }}"
+                                       class="w-[15px] h-[15px] shrink-0 {{ vue.courante ? 'text-primary-3' : 'text-primary' }}" />
+                            <span class="flex-1 min-w-0 truncate">
+                                <twig:Typography variant="body-sm" class="{{ vue.courante ? 'font-black' : '' }}">{{ vue.nom }}</twig:Typography>
+                            </span>
+                            <twig:Typography variant="body-xs" textColor="neutral-500" class="shrink-0">{{ vue.proprietaire }}</twig:Typography>
+                        </div>
+                    {% endfor %}
+                    <button type="button" class="flex items-center gap-2 w-full px-3 py-2.5 border-t border-neutral-200 cursor-pointer"
+                            data-action="liste#basculerVues">
+                        <twig:Icon name="dots-three" class="w-3.5 h-3.5 shrink-0 text-primary-3" />
+                        <twig:Typography variant="body-sm" textColor="primary-3" bold>Gérer les vues</twig:Typography>
+                    </button>
+                </div>
+            </div>
+
+            {% if vueCourante.modifiee %}
+                <div class="flex items-center gap-2 shrink-0">
+                    <twig:Button variant="primary" size="sm">Enregistrer</twig:Button>
+                    <twig:Button variant="text" size="sm" textColor="primary-3">Réinitialiser</twig:Button>
+                </div>
+            {% endif %}
+
+            <twig:Button variant="text" size="md" icon="note"
+                         class="bg-neutral-100! inset-ring-1 inset-ring-neutral-200 h-[38px]! rounded-full!">Copier le lien</twig:Button>
+
+            <span class="flex-1"></span>
+
+            {# ------------------------------------------------------------ Densité #}
+            <div class="shrink-0 flex items-center gap-0.5 p-[3px] rounded-full bg-neutral-100
+                        inset-ring-1 inset-ring-neutral-200">
+                {{ _self.densite('Normale', not compacte, 'nominal') }}
+                {{ _self.densite('Compacte', compacte, 'compacte') }}
+            </div>
+
+            <twig:Button variant="text" size="md" icon="eye"
+                         class="bg-neutral-100! inset-ring-1 inset-ring-neutral-200 h-[38px]! rounded-full!">{{ colonnes.libelle }}</twig:Button>
+
+            <twig:Button variant="primary" size="md" icon="plus-circle" asLink
+                         href="{{ path('app_mdm_creation_fiche') }}"
+                         class="h-[38px]! rounded-full!">Créer une fiche</twig:Button>
+        </div>
+
+        {# ------------------------------------------- Bandeau : filtres ou sélection #}
+        <div class="shrink-0 h-14 mx-[30px] mb-2.5 px-[18px] box-border flex items-center rounded-[14px]
+                    {{ bandeau.selection ? 'bg-primary-4 inset-ring-1 inset-ring-primary' : 'bg-neutral-100 inset-ring-1 inset-ring-neutral-200' }}"
+             data-liste-target="bandeau" data-total="{{ bandeau.compte }}">
+
+            {# -- Filtres actifs -- #}
+            <div class="{{ bandeau.selection ? 'hidden' : 'flex' }} items-center gap-2.5 w-full min-w-0"
+                 data-liste-target="vueFiltres">
+                <twig:Typography variant="subtitle" element="span" bold class="shrink-0">{{ bandeau.compte }}</twig:Typography>
+                <span class="shrink-0 w-px h-5 bg-neutral-200"></span>
+                <div class="flex-1 min-w-0 flex items-center gap-2 flex-nowrap overflow-hidden">
+                    {% for badge in bandeau.badges %}
+                        <span class="shrink-0 flex items-center gap-1.5 pl-2.5 pr-2 py-[5px] rounded-full bg-primary-4">
+                            <twig:Typography variant="body-xs" textColor="neutral-500">{{ badge.cle }}</twig:Typography>
+                            <twig:Typography variant="body-sm" textColor="primary-3" bold>{{ badge.valeur }}</twig:Typography>
+                            <twig:Icon name="cross" class="w-3 h-3 text-primary-3 cursor-pointer" />
+                        </span>
+                    {% endfor %}
+                    {% if bandeau.badges is empty %}
+                        <twig:Typography variant="body-sm" textColor="neutral-500">Aucun filtre actif — les {{ total_referentiel }} fiches du référentiel.</twig:Typography>
+                    {% endif %}
+                </div>
+                <twig:Typography variant="body-sm" textColor="primary-3" bold class="shrink-0">{{ bandeau.tri }}</twig:Typography>
+            </div>
+
+            {# -- Actions groupées -- #}
+            <div class="{{ bandeau.selection ? 'flex' : 'hidden' }} items-center gap-2.5 w-full min-w-0"
+                 data-liste-target="vueActions">
+                <twig:Typography variant="subtitle" element="span" textColor="primary-3" bold
+                                 class="shrink-0" data-liste-target="compteSelection">{{ bandeau.compteSelection }}</twig:Typography>
+
+                {% if bandeau.proposerTout %}
+                    <twig:Button variant="outline" size="sm">{{ bandeau.libelleTout }}</twig:Button>
+                {% endif %}
+
+                {% if bandeau.toutRetenu %}
+                    <div class="flex items-center gap-2 shrink-0">
+                        <twig:Icon name="warning" class="w-4 h-4 text-error" />
+                        <twig:Typography variant="body-sm" textColor="primary-3" bold>{{ bandeau.avertissement }}</twig:Typography>
+                        <twig:Button variant="text" size="sm" textColor="primary-3">Revenir à la page</twig:Button>
+                    </div>
+                {% endif %}
+
+                <span class="flex-1"></span>
+
+                <div class="flex items-center gap-2 shrink-0">
+                    {% for action in actions.principales %}
+                        {#
+                            Une grande sélection n'est pas une petite en plus gros :
+                            passé son plafond, l'action est désactivée et réclame une
+                            confirmation d'un autre ordre.
+                        #}
+                        <twig:Button variant="text" size="sm" icon="{{ action.icone }}"
+                                     disabled="{{ action.depasse }}"
+                                     class="bg-neutral-100! inset-ring-1 inset-ring-neutral-200 h-8! rounded-full!">{{ action.label }}</twig:Button>
+                    {% endfor %}
+
+                    <div class="relative shrink-0">
+                        <twig:Button variant="text" size="sm" icon="caret-down"
+                                     class="bg-neutral-100! inset-ring-1 inset-ring-neutral-200 h-8! rounded-full! flex-row-reverse"
+                                     data-action="liste#basculerPlus"
+                                     aria-expanded="{{ bandeau.menuOuvert ? 'true' : 'false' }}">Plus d'actions</twig:Button>
+
+                        <div class="absolute right-0 top-[38px] z-8 w-[340px] p-1.5 rounded-[14px] bg-neutral-100
+                                    shadow-[0_16px_40px_rgba(3,74,94,0.22)] flex flex-col gap-px"
+                             data-liste-target="plus" {{ bandeau.menuOuvert ? '' : 'hidden' }}>
+                            {% for action in actions.secondaires %}
+                                <div class="flex items-center gap-2 w-full px-3 py-2.5 rounded-xs
+                                            {{ action.depasse ? 'bg-error-pastel' : '' }}">
+                                    <twig:Icon name="{{ action.icone }}" class="w-[15px] h-[15px] shrink-0 text-primary-3" />
+                                    <twig:Typography variant="body-sm" bold class="flex-1 min-w-0 whitespace-nowrap">{{ action.label }}</twig:Typography>
+                                    {#
+                                        Deux faits indépendants, deux emplacements :
+                                        l'irréversibilité appartient à l'action et
+                                        survit au plafond de volume.
+                                    #}
+                                    {% if action.irreversible %}
+                                        <twig:Tag label="Irréversible" variant="peach" size="sm" />
+                                    {% endif %}
+                                    {% if action.depasse %}
+                                        <twig:Tag label="Plafond {{ action.plafond|number_format(0, ',', ' ') }}"
+                                                  variant="neutral" size="sm" class="bg-neutral-100!" />
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# ------------------------------------------------------------- Tableau #}
+        <div class="flex-1 min-h-0 flex flex-col px-[30px] pb-4">
+            <div class="flex-1 min-h-0 flex flex-col overflow-hidden rounded-[20px] bg-neutral-100 shadow-(--shadow)">
+
+                <div class="shrink-0 flex items-center px-4 box-border bg-primary-5 border-b border-neutral-200
+                            {{ compacte ? 'h-9' : 'h-[42px]' }}">
+                    {{ _self.case(true, tableau.toutCoche, tableau.partiel) }}
+                    {% for colonne in tableau.colonnes %}
+                        <span class="shrink-0 box-border whitespace-nowrap uppercase tracking-[0.3px]
+                                     {{ loop.first ? 'pr-0 mr-2.5' : 'pr-2.5' }}
+                                     text-{{ colonne.alignement }}"
+                              style="width: {{ colonne.largeur }}px">
+                            <twig:Typography variant="body-xs" textColor="neutral-500" bold
+                                             class="text-[10px]!">{{ colonne.label }}</twig:Typography>
+                        </span>
+                    {% endfor %}
+                </div>
+
+                {% if tableau.afficher %}
+                    <div class="flex-1 min-h-0 overflow-y-auto scrollbar">
+                        {% for ligne in tableau.lignes %}
+                            <div class="flex items-center px-4 box-border border-t border-neutral-200 first:border-t-0
+                                        {{ compacte ? 'h-10' : 'h-[54px]' }}
+                                        {{ ligne.selectionnee ? 'bg-primary-4' : '' }}"
+                                 data-liste-target="ligne">
+
+                                <button type="button" role="checkbox"
+                                        aria-checked="{{ ligne.selectionnee ? 'true' : 'false' }}"
+                                        class="group/case shrink-0 mr-3 cursor-pointer"
+                                        data-action="liste#basculerLigne">
+                                    <span class="sr-only">Sélectionner {{ ligne.nom }}</span>
+                                    {{ _self.pave() }}
+                                </button>
+
+                                {#
+                                    Une photo manquante est un champ « vide et
+                                    obligatoire » du socle, pas une anomalie : l'anneau
+                                    pêche le porte, le glyphe d'alerte reste réservé
+                                    aux conflits.
+                                #}
+                                <span class="shrink-0 mr-2.5 box-border flex items-center justify-center rounded-md
+                                             {{ compacte ? 'w-[30px] h-6' : 'w-10 h-8' }}
+                                             {{ ligne.vignette ? 'bg-primary-4' : 'bg-primary-5 inset-ring-1 inset-ring-peach' }}">
+                                    {% if ligne.vignette %}
+                                        <twig:Icon name="images" class="{{ compacte ? 'w-[13px] h-[13px]' : 'w-[15px] h-[15px]' }} text-primary-3" />
+                                    {% else %}
+                                        <span class="block w-[5px] h-[5px] rounded-full bg-peach"></span>
+                                    {% endif %}
+                                </span>
+
+                                <div class="shrink-0 min-w-0 pr-2.5 flex flex-col {{ compacte ? 'w-[250px]' : 'w-[280px]' }}">
+                                    <twig:Typography variant="{{ compacte ? 'body-sm' : 'body' }}" bold
+                                                     ellipsis>{{ ligne.nom }}</twig:Typography>
+                                    <twig:Typography variant="body-xs" textColor="neutral-500" ellipsis>{{ ligne.sousTitre }}</twig:Typography>
+                                </div>
+
+                                {{ _self.cellule(ligne.gamme, 106) }}
+
+                                {# La colonne polymorphe : la taxonomie de chaque ligne,
+                                   et la convention tabulaire du socle si la valeur est
+                                   provisoire ou en conflit. #}
+                                <div class="shrink-0 min-w-0 w-[168px] pr-2.5 box-border flex items-center gap-1.5">
+                                    {% if ligne.marque %}
+                                        <span class="shrink-0 w-[18px] h-[18px] flex items-center justify-center rounded-xs
+                                                     {{ ligne.marque == 'conflit' ? 'bg-error' : 'bg-old-gold' }}">
+                                            <twig:Icon name="{{ ligne.marque == 'conflit' ? 'warning' : 'rocket' }}"
+                                                       class="w-3 h-3 {{ ligne.marque == 'conflit' ? 'text-neutral-100' : 'text-primary-3' }}" />
+                                        </span>
+                                    {% endif %}
+                                    <span class="flex-1 min-w-0 truncate">
+                                        <twig:Typography variant="{{ compacte ? 'body-sm' : 'body' }}"
+                                                         class="{{ ligne.marque ? 'font-black' : '' }}">{{ ligne.type }}</twig:Typography>
+                                    </span>
+                                </div>
+
+                                {{ _self.cellule(ligne.pays, 82) }}
+
+                                <span class="shrink-0 w-[130px] pr-2.5 box-border flex items-center">
+                                    <twig:Tag label="{{ ligne.statut }}" variant="{{ _self.tonStatut(ligne.statut) }}" size="sm" />
+                                </span>
+
+                                <div class="shrink-0 w-[132px] pr-2.5 box-border flex items-center gap-2">
+                                    <twig:ProgressBar value="{{ ligne.completude }}"
+                                                      noGradient="{{ ligne.palier == 'insuffisant' }}"
+                                                      class="flex-1 min-w-0" />
+                                    <twig:Typography variant="body-xs" textColor="primary-3" bold
+                                                     class="shrink-0 w-[38px] text-right">{{ ligne.completude }} %</twig:Typography>
+                                </div>
+
+                                <span class="shrink-0 w-[92px] pr-2.5 box-border text-right">
+                                    <twig:Typography variant="{{ compacte ? 'body-sm' : 'body' }}" bold
+                                                     textColor="{{ ligne.canauxNuls ? 'error' : 'neutral-900' }}">{{ ligne.canaux }}</twig:Typography>
+                                </span>
+
+                                <span class="shrink-0 w-[52px] box-border flex items-center justify-center">
+                                    <span class="block w-[9px] h-[9px] rounded-full {{ ligne.actif ? 'bg-success' : 'bg-neutral-300' }}"
+                                          role="img" aria-label="{{ ligne.actif ? 'Fiche active' : 'Fiche inactive' }}"></span>
+                                </span>
+
+                                <span class="shrink-0 w-[58px] box-border flex items-center justify-center">
+                                    {% if ligne.premium %}
+                                        <twig:Tag label="BP" variant="primary-3" size="sm" />
+                                    {% else %}
+                                        <twig:Typography variant="body-xs" textColor="neutral-400">—</twig:Typography>
+                                    {% endif %}
+                                </span>
+
+                                <div class="shrink-0 min-w-0 w-[164px] pr-2.5 box-border flex flex-col">
+                                    <twig:Typography variant="body-sm" class="whitespace-nowrap">{{ ligne.quand }}</twig:Typography>
+                                    <twig:Typography variant="body-xs" textColor="neutral-500" ellipsis>{{ ligne.auteur }}</twig:Typography>
+                                </div>
+
+                                <div class="shrink-0 w-[104px] box-border flex items-center justify-end gap-1">
+                                    <button type="button" title="Édition rapide"
+                                            class="w-7 h-7 shrink-0 flex items-center justify-center rounded-full
+                                                   bg-primary-4 text-primary-3 cursor-pointer"
+                                            data-edition-rapide-target="crayon"
+                                            data-action="edition-rapide#ouvrir"
+                                            data-edition-rapide-rang-param="{{ loop.index0 }}"
+                                            data-edition-rapide-nom-param="{{ ligne.nom }}"
+                                            data-edition-rapide-reference-param="{{ ligne.sousTitre|split(' · ')|last }}"
+                                            data-edition-rapide-ville-param="{{ ligne.sousTitre|split(' · ')|first }}"
+                                            data-edition-rapide-gamme-param="lieu"
+                                            data-edition-rapide-statut-param="{{ ligne.statut }}"
+                                            data-edition-rapide-publiee-param="{{ 'Publiée' == ligne.statut ? '1' : '0' }}"
+                                            data-edition-rapide-completude-param="{{ ligne.completude }}">
+                                        <span class="sr-only">Édition rapide de {{ ligne.nom }}</span>
+                                        <twig:Icon name="pencil" class="w-3.5 h-3.5" />
+                                    </button>
+                                    <a href="{{ path('app_mdm_fiche_lieu') }}" title="Ouvrir la fiche"
+                                       class="w-7 h-7 shrink-0 flex items-center justify-center rounded-full
+                                              bg-neutral-200 text-primary-3">
+                                        <span class="sr-only">Ouvrir {{ ligne.nom }}</span>
+                                        <twig:Icon name="arrow-right" class="w-3.5 h-3.5" />
+                                    </a>
+                                    <button type="button" title="Plus"
+                                            class="w-7 h-7 shrink-0 flex items-center justify-center rounded-full
+                                                   text-neutral-500 cursor-pointer">
+                                        <span class="sr-only">Plus d'actions sur {{ ligne.nom }}</span>
+                                        <twig:Icon name="dots-three" class="w-3.5 h-3.5" />
+                                    </button>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                {% if tableau.squelette %}
+                    <div class="flex-1 min-h-0 flex flex-col gap-2.5 px-4 py-2.5" aria-hidden="true">
+                        {% for i in 1..10 %}
+                            <span class="block shrink-0 rounded-[10px] bg-neutral-200 animate-pulse
+                                         {{ compacte ? 'h-[30px]' : 'h-11' }}"></span>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                {#
+                    Un filtre sans résultat n'est pas un référentiel vide : le
+                    message rappelle le volume total et propose de retirer un
+                    filtre plutôt que de repartir de zéro.
+                #}
+                {% if tableau.vide %}
+                    <div class="flex-1 min-h-0 flex flex-col items-center justify-center gap-3.5 p-10">
+                        <twig:Icon name="magnifying-glass" class="w-[34px] h-[34px] text-neutral-400" />
+                        <div class="flex flex-col items-center gap-1.5">
+                            <twig:Typography variant="heading-3" bold center>Aucune fiche ne correspond à ces filtres.</twig:Typography>
+                            <twig:Typography variant="body-sm" textColor="neutral-500" center
+                                             class="max-w-[520px] text-pretty">Le référentiel contient {{ total_referentiel }} fiches —
+                                c'est la combinaison des {{ panneau.compte }} filtres actifs qui ne renvoie rien.
+                                Retirez-en un pour élargir.</twig:Typography>
+                        </div>
+                        <div class="flex gap-2.5">
+                            <twig:Button variant="text" size="sm"
+                                         class="bg-neutral-100! inset-ring-1 inset-ring-neutral-200 rounded-full!">Retirer « Italie »</twig:Button>
+                            <twig:Button variant="text" size="sm"
+                                         class="bg-neutral-100! inset-ring-1 inset-ring-neutral-200 rounded-full!">Retirer « Archivée »</twig:Button>
+                            <twig:Button variant="outline" size="sm">Tout effacer</twig:Button>
+                        </div>
+                    </div>
+                {% endif %}
+
+                <div class="shrink-0 h-[52px] px-4 box-border flex items-center border-t border-neutral-200 bg-neutral-100">
+                    <twig:Typography variant="body-sm" textColor="neutral-500">{{ pagination.note }}</twig:Typography>
+                    <span class="flex-1"></span>
+                    <div class="flex items-center gap-1.5">
+                        {% for page in pagination.pages %}
+                            <button type="button"
+                                    class="min-w-[30px] h-[30px] px-2 box-border rounded-xs cursor-pointer
+                                           {{ page.courante ? 'bg-linear-(--primary-gradient)' : '' }}"
+                                    {{ page.courante ? 'aria-current="page"' : '' }}>
+                                <twig:Typography variant="body-sm"
+                                                 textColor="{{ page.courante ? 'neutral-100' : 'neutral-900' }}"
+                                                 bold="{{ page.courante }}">{{ page.libelle }}</twig:Typography>
+                            </button>
+                        {% endfor %}
+                    </div>
+                    <span class="w-px h-5 mx-1.5 bg-neutral-200"></span>
+                    <div class="flex items-center gap-2">
+                        <twig:Typography variant="body-sm" textColor="neutral-500">Aller à</twig:Typography>
+                        <span class="w-[46px] h-[30px] box-border flex items-center justify-center rounded-xs
+                                     bg-primary-5 inset-ring-1 inset-ring-primary">
+                            <twig:Typography variant="input">42</twig:Typography>
+                        </span>
+                        <twig:Typography variant="body-sm" textColor="neutral-500">{{ pagination.total }}</twig:Typography>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# ------------------------------------------------- Gestion des vues #}
+        <div class="fixed inset-0 z-30 flex items-start justify-center pt-[120px] bg-background-transparency"
+             data-liste-target="vues" {{ gestionVues.ouverte ? '' : 'hidden' }}>
+            <div class="w-[min(760px,calc(100vw-48px))] max-h-[calc(100vh-200px)] flex flex-col overflow-hidden
+                        rounded-3xl bg-neutral-100 shadow-[0_24px_60px_rgba(3,74,94,0.28)]"
+                 role="dialog" aria-modal="true" aria-label="Vues enregistrées">
+
+                <div class="shrink-0 flex items-start justify-between gap-5 px-[26px] pt-[22px] pb-4 border-b border-neutral-200">
+                    <div class="flex flex-col gap-[3px] min-w-0">
+                        <twig:Typography variant="heading-3" bold>Vues enregistrées</twig:Typography>
+                        <twig:Typography variant="body-sm" textColor="neutral-500">Une vue retient ses filtres, ses colonnes et son tri.
+                            Les vues partagées sont visibles par toute l'équipe.</twig:Typography>
+                    </div>
+                    <button type="button" class="w-8 h-8 shrink-0 flex items-center justify-center rounded-full
+                                                 bg-neutral-200 cursor-pointer"
+                            data-action="liste#basculerVues">
+                        <span class="sr-only">Fermer</span>
+                        <twig:Icon name="cross" class="w-[15px] h-[15px] text-neutral-500" />
+                    </button>
+                </div>
+
+                <div class="flex-1 min-h-0 max-h-[460px] overflow-y-auto px-4 py-3 scrollbar">
+                    {% for groupe in gestionVues.groupes %}
+                        <div class="flex flex-col gap-0.5 pt-2 pb-3.5">
+                            <div class="flex items-center gap-2.5 px-2.5 pb-2">
+                                <span class="uppercase tracking-[0.8px]">
+                                    <twig:Typography variant="body-xs" textColor="neutral-500" bold>{{ groupe.nom }}</twig:Typography>
+                                </span>
+                                <span class="flex-1 h-px bg-neutral-200"></span>
+                                <twig:Typography variant="body-xs" textColor="neutral-500">{{ groupe.note }}</twig:Typography>
+                            </div>
+                            {% for vue in groupe.vues %}
+                                <div class="flex items-center gap-3 px-2.5 py-2.5 rounded-md
+                                            {{ vue.courante ? 'bg-primary-4' : '' }}">
+                                    <twig:Icon name="{{ vue.courante ? 'check-circle' : 'layout' }}"
+                                               class="w-[18px] h-[18px] shrink-0 {{ vue.courante ? 'text-primary-3' : 'text-primary' }}" />
+                                    <div class="flex-1 min-w-0 flex flex-col gap-px">
+                                        <div class="flex items-center gap-2.5">
+                                            <twig:Typography variant="body" bold class="whitespace-nowrap">{{ vue.nom }}</twig:Typography>
+                                            {% if vue.courante %}
+                                                <twig:Tag label="Vue courante" variant="neutral" size="sm" class="bg-neutral-100!" />
+                                            {% endif %}
+                                        </div>
+                                        <twig:Typography variant="body-xs" textColor="neutral-500" ellipsis>{{ vue.recette }}</twig:Typography>
+                                    </div>
+                                    <twig:Typography variant="body-xs" textColor="neutral-500"
+                                                     class="shrink-0 w-24 whitespace-nowrap">{{ vue.proprietaire }}</twig:Typography>
+                                    <div class="flex items-center gap-1.5 shrink-0">
+                                        <twig:Button variant="text" size="sm" textColor="primary-3">Modifier</twig:Button>
+                                        <twig:Button variant="text" size="sm" textColor="primary-3">Dupliquer</twig:Button>
+                                        <button type="button" class="w-7 h-7 shrink-0 flex items-center justify-center
+                                                                     rounded-full bg-error-pastel text-error cursor-pointer">
+                                            <span class="sr-only">Supprimer {{ vue.nom }}</span>
+                                            <twig:Icon name="trash" class="w-3.5 h-3.5" />
+                                        </button>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <div class="shrink-0 flex items-center gap-3 px-[26px] py-4 border-t border-neutral-200">
+                    <twig:Typography variant="body-sm" textColor="neutral-500" class="flex-1 min-w-0">L'état courant —
+                        {{ panneau.compte }} filtres, 13 colonnes, tri sur la dernière modification — n'est pas encore enregistré.</twig:Typography>
+                    <twig:Button variant="outline" size="sm">Enregistrer comme nouvelle vue</twig:Button>
+                    <twig:Button variant="primary" size="sm">Mettre à jour la vue courante</twig:Button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    {% include 'mdm/_edition_rapide.html.twig' %}
+{% endblock %}
+
+{#
+    Case à cocher du panneau et de l'en-tête. Le composant `Form:Checkbox`
+    attend un `input` nommé : ici les cases sont des boutons `aria-checked`
+    pilotés par le contrôleur, la forme est donc reprise en utilitaires.
+#}
+{% macro case(tete = false, cochee = false, partielle = false) %}
+    <span class="shrink-0 w-[18px] h-[18px] box-border flex items-center justify-center rounded-xs
+                 {{ tete ? 'mr-3' : '' }}
+                 {{ cochee or partielle ? 'bg-primary' : 'bg-neutral-100 inset-ring-1 inset-ring-neutral-400' }}
+                 {{ tete ? '' : 'group-aria-checked/facette:bg-primary group-aria-checked/facette:inset-ring-0' }}"
+          data-liste-target="{{ tete ? 'caseTete' : '' }}">
+        {% if partielle %}
+            <span class="block w-[9px] h-0.5 rounded-[1px] bg-neutral-100"></span>
+        {% else %}
+            <twig:Icon name="check" class="w-[13px] h-[13px] text-neutral-100
+                                           {{ cochee ? '' : 'hidden' }}
+                                           {{ tete ? '' : 'group-aria-checked/facette:block' }}" />
+        {% endif %}
+    </span>
+{% endmacro %}
+
+{# Case d'une ligne du tableau : le groupe porte l'état, la case le rend. #}
+{% macro pave() %}
+    <span class="block w-[18px] h-[18px] box-border rounded-xs
+                 bg-neutral-100 inset-ring-1 inset-ring-neutral-400
+                 group-aria-checked/case:bg-primary group-aria-checked/case:inset-ring-0
+                 flex items-center justify-center">
+        <twig:Icon name="check" class="w-[13px] h-[13px] text-neutral-100 hidden group-aria-checked/case:block" />
+    </span>
+{% endmacro %}
+
+{% macro cellule(valeur, largeur) %}
+    <span class="shrink-0 box-border pr-2.5 truncate" style="width: {{ largeur }}px">
+        <twig:Typography variant="body">{{ valeur }}</twig:Typography>
+    </span>
+{% endmacro %}
+
+{#
+    Les tons de statut de la maquette — fond pâle, texte marine — se rendent
+    avec les variantes existantes : `success-pastel` pour Publiée, `peach` pour
+    l'enrichissement, `primary-3` pour Validée, `neutral` pour le reste.
+#}
+{% macro tonStatut(statut) %}
+    {%- if 'Publiée' == statut -%}success-pastel
+    {%- elseif 'En enrichissement' == statut -%}peach
+    {%- elseif 'Validée' == statut -%}primary-3
+    {%- else -%}neutral
+    {%- endif -%}
+{% endmacro %}
+
+{% macro densite(libelle, actif, etat) %}
+    <a href="{{ path('app_mdm_referentiel_general', { etat: etat }) }}"
+       class="h-[30px] px-3 box-border flex items-center rounded-full whitespace-nowrap
+              {{ actif ? 'bg-linear-(--primary-gradient)' : '' }}">
+        <twig:Typography variant="body-sm" textColor="{{ actif ? 'neutral-100' : 'neutral-500' }}"
+                         bold="{{ actif }}">{{ libelle }}</twig:Typography>
+    </a>
+{% endmacro %}

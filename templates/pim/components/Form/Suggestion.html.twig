@@ -1,0 +1,104 @@
+{% set cva = cva({
+    base: 'flex gap-2 items-center justify-between border rounded-xs pr-2 w-full',
+    variants: {
+        disabled: {
+            true: '
+                cursor-not-allowed text-neutral-500 border-neutral-300 bg-neutral-200
+                focus-within:outline focus:outline-neutral-500
+            ',
+            false: '
+                border-primary bg-primary-5
+                focus-within:bg-neutral-100
+            ',
+        },
+    }
+}) %}
+
+{% set noOptionsCva = cva({
+    base: 'px-2',
+    variants: {
+        hidden: {
+            true: 'hidden',
+        },
+    },
+}) %}
+
+{% set inputCva = cva({
+    base: 'focus:outline-none text-[0.75rem] leading-[1.25rem] w-full pl-2 py-2',
+    variants: {
+        disabled: {
+            true: 'cursor-not-allowed',
+        },
+    },
+}) %}
+
+<div
+    {{ stimulus_controller('provider-portal--suggestion', {
+        'multiple': multiple,
+        'defaultValue': value,
+    }) }}
+    data-bindable
+    class="{{ attributes.render('class') }}"
+>
+    <twig:Dropdown
+        class="{{ cva.apply({ disabled }) }}"
+        wrapperClass="{{ wrapperClass }}"
+        containerClass="w-full z-128 rounded-xxs py-4 px-2 overflow-x-visible bg-primary-5"
+        disabled="{{ disabled }}"
+        withIndicator="{{ false }}"
+    >
+        <twig:block name="trigger">
+            <input
+                id="{{ id }}"
+                name="{{ name }}"
+                value="{{ value }}"
+                {{ stimulus_target('provider-portal--suggestion', 'input') }}
+                data-action="input->provider-portal--suggestion#onSearch keyup->provider-portal--suggestion#prevent click->provider-portal--suggestion#prevent {{ stimulusDataActions ?? '' }}"
+                autocomplete="off"
+                {% if placeholder is not empty %}placeholder="{{ placeholder }}"{% endif %}
+                {% if disabled %}disabled{% endif %}
+                class="{{ inputCva.apply({ disabled }) }}"
+                {% for key, value in inputAttributes %}
+                    {{ key }}="{{ value }}"
+                {% endfor %}
+            />
+        </twig:block>
+
+        {% if tip is not null %}
+            <div class="flex items-center gap-2 mx-2 pb-2 mb-2 border-b border-neutral-300">
+                {% if tipIcon is not null %}
+                    <twig:Icon name="{{ tipIcon }}" class='w-5 h-5 text-primary' />
+                {% endif %}
+                <twig:Typography>
+                    {{ tip }}
+                </twig:Typography>
+            </div>
+        {% endif %}
+
+        {% if not multiple %}
+            <li
+                {{ stimulus_target('provider-portal--suggestion', 'prototype') }}
+                {{ stimulus_action('provider-portal--suggestion', 'acceptSuggestion', 'click', {
+                    value: '',
+                    label: '',
+                }) }}
+                class="pl-2 py-1 hover:bg-primary-4 cursor-pointer hidden"
+            >
+                <twig:Typography>Prototype</twig:Typography>
+            </li>
+        {% endif %}
+
+        <ul
+            {{ stimulus_target('provider-portal--suggestion', 'list') }}
+            class="w-full flex flex-col gap-2 max-h-[214px] overflow-x-visible overflow-y-auto scrollbar"
+        >
+        </ul>
+
+        <twig:Typography
+            data-provider-portal--suggestion-target="noOptions"
+            class="block w-full {{ noOptionsCva.apply({ hidden: value is not null and value is not empty }) }}"
+        >
+            {{- 'suggestion.no_options'|trans -}}
+        </twig:Typography>
+    </twig:Dropdown>
+</div>

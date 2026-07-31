@@ -24,15 +24,13 @@
         <header class="mdm-header">
             <div class="mdm-header__start">
                 {#
-                    ÉCART : le logo 200 × 40 du handoff n'a pas pu être récupéré.
-                    Lockup composé du « mark » rond et du nom en texte.
+                    Le lockup fourni est monochrome blanc : il est peint en
+                    marine par masque CSS, la couleur du nom qu'il remplace.
                 #}
                 <a class="mdm-logo" href="{{ path('app_mdm_espace_travail') }}">
-                    <span class="mdm-logo__mark" role="img" aria-label="Business Profilers"></span>
-                    <span class="mdm-logo__wordmark">
-                        <span class="mdm-logo__name">Business Profilers</span>
-                        <span class="mdm-logo__product">Référentiel</span>
-                    </span>
+                    <span class="mdm-logo__lockup" role="img" aria-label="Business Profilers"></span>
+                    <span class="mdm-logo__filet" aria-hidden="true"></span>
+                    <span class="mdm-logo__product">Référentiel</span>
                 </a>
 
                 <nav class="mdm-nav" aria-label="Navigation principale">

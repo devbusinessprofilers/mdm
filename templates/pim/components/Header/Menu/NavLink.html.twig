@@ -1,0 +1,33 @@
+{% set linkCva = cva({
+    base: '
+        flex items-center gap-2 relative
+        after:max-w-0 after:transition-[max-width] after:content-[""] after:absolute after:bottom-0 after:h-1 after:bg-primary
+        hover:after:max-w-full
+    ',
+    variants: {
+        'isActive': {
+            true: 'after:max-w-full',
+        },
+        'level': {
+            0: 'pt-1.5 pb-2.5 px-4 after:left-4 after:right-4',
+            1: 'p-0 h-8 after:left-0 after:right-0',
+            2: 'p-2 after:left-2 after:right-2',
+        }
+    },
+}) %}
+
+<a
+    href="{{ path(route, routeParameters) }}"
+    class="{{ linkCva.apply({ isActive, level }, attributes.render('class')) }}"
+    {{ attributes.without('class', 'href') }}
+>
+    {% if icon %}
+        <twig:Typography textColor="{{ iconColor.value }}" class="w-6 h-6">
+            <twig:Icon name="{{ icon }}" />
+        </twig:Typography>
+    {% endif %}
+    <twig:Typography variant="{{ labelVariant.value }}" bold="{{ isLabelBold }}">{{ label }}</twig:Typography>
+    {% if notification is defined and notification and notification > 0 %} 
+        <twig:Sticker value="{{ notification }}" />
+    {% endif %}
+</a>

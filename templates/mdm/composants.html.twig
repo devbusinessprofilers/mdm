@@ -1,0 +1,55 @@
+{# Contrôle de rendu des composants importés depuis le portail prestataire. #}
+{% extends 'base.html.twig' %}
+
+{% block title %}Composants{% endblock %}
+
+{% block body %}
+<div class="p-10 flex flex-col gap-8 bg-neutral-200 min-h-screen">
+
+    <div class="flex flex-col gap-3">
+        <twig:Typography variant="heading-3" bold>Boutons</twig:Typography>
+        <div class="flex items-center gap-3 flex-wrap">
+            <twig:Button variant="primary" size="lg">Créer une fiche</twig:Button>
+            <twig:Button variant="outline" size="md">Exporter</twig:Button>
+            <twig:Button variant="text" size="sm">Annuler</twig:Button>
+            <twig:Button variant="primary" size="md" icon="plus">Ajouter</twig:Button>
+            <twig:Button variant="primary" size="md" disabled>Désactivé</twig:Button>
+        </div>
+    </div>
+
+    <div class="flex flex-col gap-3">
+        <twig:Typography variant="heading-3" bold>Étiquettes</twig:Typography>
+        <div class="flex items-center gap-3 flex-wrap">
+            <twig:Tag label="Publiée" />
+            <twig:Tag label="En enrichissement" variant="warning" />
+            <twig:Tag label="Brouillon" variant="neutral" size="sm" />
+            <twig:StateTag label="Actif" enabled />
+        </div>
+    </div>
+
+    <div class="flex flex-col gap-3">
+        <twig:Typography variant="heading-3" bold>Jauge et progression</twig:Typography>
+        <div class="flex flex-col gap-3 w-96">
+            <twig:ProgressBar value="42" />
+            <twig:ProgressBar value="88" large />
+        </div>
+    </div>
+
+    <div class="flex flex-col gap-3">
+        <twig:Typography variant="heading-3" bold>Icônes</twig:Typography>
+        <div class="flex items-center gap-4">
+            <twig:Icon name="plus" />
+            <twig:Icon name="pencil" />
+            <twig:Icon name="check" />
+        </div>
+    </div>
+
+    <div class="flex flex-col gap-3">
+        <twig:Typography variant="heading-3" bold>Typographie</twig:Typography>
+        <twig:Typography variant="heading-1">Titre de niveau 1</twig:Typography>
+        <twig:Typography variant="body">Corps de texte courant.</twig:Typography>
+        <twig:Typography variant="body" textColor="light-text" class="bg-primary-3 p-2 w-fit">Texte clair sur marine</twig:Typography>
+    </div>
+
+</div>
+{% endblock %}

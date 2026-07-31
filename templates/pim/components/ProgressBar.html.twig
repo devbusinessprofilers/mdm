@@ -1,0 +1,31 @@
+{% set barCva = cva({
+    base: 'w-full bg-neutral-200 rounded-full',
+    variants: {
+        size: {
+            'large': 'h-[0.5rem]',
+            'small': 'h-[0.25rem]',
+        },
+    },
+}) %}
+
+{% set progressCva = cva({
+    base: 'h-full rounded-full w-0',
+    variants: {
+        gradient: {
+            'true': 'bg-linear-(--primary-gradient)',
+            'false': 'bg-warning',
+        },
+    },
+}) %}
+
+<div
+    {{ attributes.without('class') }}
+    class="{{ barCva.apply({ size: large ? 'large' : 'small' }, attributes.render('class')) }}"
+    {{ stimulus_controller('provider-portal--progress-bar', { 'max': max, 'current': value }) }}
+>
+    <div
+        class="{{ progressCva.apply({ gradient: noGradient ? 'false' : 'true' }) }}"
+        {{ stimulus_target('provider-portal--progress-bar', 'bar') }}
+    >
+    </div>
+</div>

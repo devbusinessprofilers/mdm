@@ -1,0 +1,37 @@
+@layer tinymce {
+    .tox-tinymce {
+        @apply border !border-primary !rounded-sm;
+    }
+
+    .tox {
+        .tox-editor-header {
+            @apply !bg-primary-4 !shadow-none !h-9 !z-1;
+        }
+
+        .tox-toolbar__primary {
+            @apply !bg-primary-4;
+        }
+
+        .tox-tbtn {
+            @apply !bg-primary-4 !m-0;
+        }
+
+        .tox-edit-area {
+            .tox-edit-area__iframe {
+                @apply !bg-primary-5;
+            }
+        }
+
+        &.tox-edit-focus {
+            .tox-edit-area {
+                &:before {
+                    @apply !opacity-0;
+                }
+
+                .tox-edit-area__iframe {
+                    @apply !bg-neutral-100;
+                }
+            }
+        }
+    }
+}

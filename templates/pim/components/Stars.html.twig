@@ -1,0 +1,19 @@
+{% set cva = cva({
+    base: 'relative w-full',
+}) %}
+
+<div
+    {{ attributes.without('class') }}
+    class="{{ cva.apply({}, attributes.render('class')) }}"
+    {{ stimulus_controller('provider-portal--progress-bar', { 'max': max, 'current': value }) }}
+>
+    <div class="w-full">
+        <img src="{{ asset('img/empty-stars.png') }}" alt="Empty stars" class="h-full w-full min-w-[120px]" />
+    </div>
+    <div
+        class="flex absolute inset-0 overflow-hidden"
+        {{ stimulus_target('provider-portal--progress-bar', 'bar') }}
+    >
+        <img src="{{ asset('img/stars.png') }}" alt="Filled Stars" class="h-full w-full min-w-[120px]" />
+    </div>
+</div>

@@ -1,0 +1,21 @@
+<div
+    {{ attributes.without('class') }}
+    {{ stimulus_controller('provider-portal--state-tag', { 'state': enabled ? 'true' : 'false' }) }}
+>
+    <twig:Tag
+        label="{{ label }}"
+        variant="{{ disableVariant.value }}"
+        size="{{ size.value }}"
+        icon="{{ icon }}"
+        class="{{ enabled ? 'hidden' : '' }}"
+        data-provider-portal--state-tag-target="disableTag"
+    />
+    <twig:Tag
+        label="{{ label }}"
+        variant="{{ enableVariant.value }}"
+        size="{{ size.value }}"
+        icon="{{ icon }}"
+        class="{{ enabled ? '' : 'hidden' }}"
+        data-provider-portal--state-tag-target="enableTag"
+    />
+</div>

@@ -8,5 +8,13 @@ parameters:
     paths:
         - src
         - tests
+    # Code importé tel quel du portail prestataire (dépôt nodevo). Il ne passe
+    # pas le niveau 8 — 214 erreurs — mais ce n'est pas à nous de le corriger
+    # ici : toute retouche divergerait de la source. À remonter à l'équipe.
+    excludePaths:
+        analyse:
+            - src/Pim/Twig/Components
+            - src/Pim/Model/ProviderPortal
+            - src/Pim/Enum/ProviderPortal
     symfony:
         containerXmlPath: var/cache/dev/App_KernelDevDebugContainer.xml

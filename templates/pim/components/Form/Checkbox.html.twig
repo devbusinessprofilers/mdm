@@ -1,0 +1,30 @@
+{% set content %}{% block content %}{% endblock %}{% endset %}
+
+<div class="{{ attributes.render('class') }}">
+    <label for="{{ id }}" class="flex gap-2 items-start{% if not disabled %} cursor-pointer{% endif %}">
+        <input
+            id="{{ id }}"
+            name="{{ name }}"
+            type="checkbox"
+            class="peer hidden"
+            value="1"
+            {% if checked %}checked{% endif %}
+            {% if disabled %}disabled{% endif %}
+            {% for key, value in inputAttributes %}
+                {{ key }}="{{ value }}"
+            {% endfor %}
+        />
+        <div class="w-5 min-w-5 h-5 min-h-5 box-border border border-primary rounded-[0.833px] bg-neutral-100
+            peer-checked:bg-primary peer-checked:border-0 peer-checked:display-children
+            peer-disabled:border-neutral-300
+            peer-checked:peer-disabled:bg-neutral-300"
+        >
+            <twig:Icon name="check" class="text-neutral-100 hidden" />
+        </div>
+        {% if content|trim is not empty %}
+            <twig:Typography variant="button" class="-mt-[2px]">
+                {{- content -}}
+            </twig:Typography>
+        {% endif %}
+    </label>
+</div>

@@ -4,51 +4,47 @@ declare(strict_types=1);
 
 namespace App\Pim\Controller;
 
+use App\Pim\Maquette\ListeFichesMaquette;
 use App\Pim\Maquette\ReferentielMaquette;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
 /**
- * Listes de fiches du référentiel.
+ * Liste des fiches du référentiel.
  *
- * Intégration des maquettes uniquement. Les données viennent de
- * {@see ReferentielMaquette} ; ni recherche, ni filtre, ni tri, ni pagination
- * ne sont fonctionnels à ce stade.
+ * La maquette « Liste des fiches » remplace les deux écrans précédents — le
+ * référentiel général et la page Lieux : un seul tableau, dont le panneau de
+ * filtres porte la gamme. `/referentiel/lieux` reste servi et ouvre la liste
+ * filtrée sur les Lieux, pour que les liens du rail continuent de marcher.
+ *
+ * Intégration de la maquette uniquement : ni recherche, ni tri, ni pagination.
  */
 final class ReferentielController extends AbstractController
 {
     #[Route('/referentiel', name: 'app_mdm_referentiel_general', methods: ['GET'])]
-    public function general(): Response
+    public function liste(Request $request): Response
     {
-        return $this->render('mdm/referentiel_general.html.twig', [
-            'entete' => ReferentielMaquette::entete(true),
-            'typologies' => ReferentielMaquette::typologies(),
-            'colonnes' => ReferentielMaquette::colonnes(true),
-            'filtres' => ReferentielMaquette::filtres(true),
-            'lignes' => ReferentielMaquette::lignes(true),
-            'pagination' => ReferentielMaquette::pagination(true),
-        ] + self::editionRapide());
+        return $this->rendre($request->query->getString('etat', 'nominal'));
     }
 
     #[Route('/referentiel/lieux', name: 'app_mdm_lieux', methods: ['GET'])]
     public function lieux(): Response
     {
-        return $this->render('mdm/lieux.html.twig', [
-            'entete' => ReferentielMaquette::entete(false),
-            'colonnes' => ReferentielMaquette::colonnes(false),
-            'filtres' => ReferentielMaquette::filtres(false),
-            'lignes' => ReferentielMaquette::lignes(false),
-            'pagination' => ReferentielMaquette::pagination(false),
-            'selection_label' => ReferentielMaquette::LIBELLE_SELECTION,
-            'actions_groupees' => ReferentielMaquette::ACTIONS_GROUPEES,
+        return $this->rendre('lieux');
+    }
+
+    private function rendre(string $etat): Response
+    {
+        return $this->render('mdm/liste_fiches.html.twig', ListeFichesMaquette::vue($etat) + [
+            'total_referentiel' => number_format(ListeFichesMaquette::TOTAL_REFERENTIEL, 0, ',', ' '),
         ] + self::editionRapide());
     }
 
     /**
-     * Données de la modale d'édition rapide, partagées par les deux listes :
-     * elles ne dépendent pas de la ligne, seul le contenu de l'en-tête et de
-     * l'adresse en dépend et voyage par attributs sur le crayon.
+     * Données de la modale d'édition rapide : elles ne dépendent pas de la
+     * ligne, seul l'en-tête en dépend et voyage par attributs sur le crayon.
      *
      * @return array<string, mixed>
      */

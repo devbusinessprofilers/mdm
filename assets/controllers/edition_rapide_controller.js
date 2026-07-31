@@ -17,12 +17,16 @@ export default class extends Controller {
         'nom', 'nomChamp', 'reference', 'gamme', 'gammeChamp', 'indiceGamme',
         'statut', 'jauge', 'taux', 'position', 'rue', 'cp', 'ville', 'gps',
         'verrou', 'boiteGamme', 'sitesCompte', 'sitesPuces', 'sitesDecompte',
-        'compteGroupe', 'gerer', 'libelleEnregistrer', 'indice',
+        'compteGroupe', 'gerer', 'libelleEnregistrer', 'indice', 'crayon',
     ];
 
     connect() {
         this.rang = 0;
-        this.crayons = Array.from(this.element.querySelectorAll('.ref__crayon'));
+        /*
+         * Les crayons sont des cibles Stimulus, pas une classe CSS : la modale
+         * suit les listes qui changent de gabarit sans qu'on y revienne.
+         */
+        this.crayons = this.crayonTargets;
         // La maquette ouvre la modale sur une fiche déjà modifiée.
         this.modifiee = true;
         this.surTouche = (evenement) => this.clavier(evenement);

@@ -1,0 +1,35 @@
+<div
+    class="{{ attributes.render('class') }}"
+    {{ stimulus_controller('provider-portal--tag-select') }}
+>
+    <select
+        id="{{ id }}"
+        name="{{ name }}"
+        {{ stimulus_target('provider-portal--tag-select', 'select') }}
+        {{ attributes.without('class') }}
+        multiple
+        hidden
+    >
+        {% for choice in choices %}
+            <option
+                value="{{ choice.value }}"
+                {% if this.isSelected(choice.value) %}selected{% endif %}
+            >
+                {{ choice.label }}
+            </option>
+        {% endfor %}
+    </select>
+    <div
+        {{ stimulus_target('provider-portal--tag-select', 'choices') }}
+        class="flex flex-wrap gap-2"
+    >
+        {% for choice in choices %}
+            <twig:Form:TagSelectOption
+                value="{{ choice.value }}"
+                label="{{ choice.label }}"
+                icon="{{ choice.attr['data-choice-icon'] ?? null }}"
+                selected="{{ this.isSelected(choice.value) }}"
+            />
+        {% endfor %}
+    </div>
+</div>

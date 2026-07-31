@@ -15,7 +15,6 @@ import './styles/app.css';
 import './styles/auth.css';
 import './styles/app-shell.css';
 import './styles/workspace.css';
-import './styles/referentiel.css';
 import './styles/edition-rapide.css';
 import './styles/creation.css';
 import './styles/fiche.css';
