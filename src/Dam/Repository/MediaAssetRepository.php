@@ -6,6 +6,7 @@ namespace App\Dam\Repository;
 
 use App\Dam\Entity\MediaAsset;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Component\Uid\Ulid;
 
@@ -28,6 +29,19 @@ final class MediaAssetRepository extends ServiceEntityRepository
             array_values(array_filter($ids, Ulid::isValid(...))),
         );
 
-        return [] === $ulids ? [] : $this->findBy(['id' => $ulids]);
+        if ([] === $ulids) {
+            return [];
+        }
+
+        // Fetch-join renditions so presenters can resolve variant URLs
+        // without one lazy collection load per asset.
+        return $this->createQueryBuilder('m')
+            ->addSelect('r')
+            ->leftJoin('m.renditions', 'r')
+            ->where('m.id IN (:ids)')
+            // DQL does not run the 'ulid' column type on array parameters; bind binaries.
+            ->setParameter('ids', array_map(static fn (Ulid $id): string => $id->toBinary(), $ulids), ArrayParameterType::BINARY)
+            ->getQuery()
+            ->getResult();
     }
 }

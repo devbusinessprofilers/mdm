@@ -15,6 +15,7 @@ use Symfony\Component\Uid\Ulid;
 #[ORM\Index(name: 'IDX_PIM_RESOURCE_LIEU_ORDERED', columns: ['lieu_id', 'position', 'id'])]
 #[ORM\Index(name: 'IDX_PIM_RESOURCE_SALLE_ORDERED', columns: ['salle_id', 'position', 'id'])]
 #[ORM\Index(name: 'IDX_PIM_RESOURCE_USAGE', columns: ['usage_code', 'lieu_id'])]
+#[ORM\Index(name: 'IDX_PIM_RESSOURCE_DAM_ASSET', columns: ['dam_asset_id'])]
 #[ORM\HasLifecycleCallbacks]
 class RessourceLieu
 {

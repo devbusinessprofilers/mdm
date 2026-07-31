@@ -79,10 +79,6 @@ final class LieuFixtures extends Fixture implements FixtureGroupInterface
             $lieu->changeChambreNbTotal(0 === $code % 3 ? $randomizer->getInt(10, 180) : null);
             $lieu->changeSalleReunionExist(true);
             $lieu->changeSalleReunionNbTotal($randomizer->getInt(1, 8));
-            if (0 !== $code % 5) {
-                $lieu->fiche()->publishFromExternal();
-            }
-
             $localisation = new Localisation();
             $localisation->changePays('France');
             $localisation->changeCountryCode('FR');
@@ -94,6 +90,9 @@ final class LieuFixtures extends Fixture implements FixtureGroupInterface
             $localisation->changeLatitude($city['latitude']);
             $localisation->changeLongitude($city['longitude']);
             $lieu->changeLocalisation($localisation);
+            if (0 !== $code % 5) {
+                $lieu->fiche()->publishForImport();
+            }
 
             $lieu->administratif()->changeInfoLegaleNom($label.' SAS');
             $lieu->administratif()->changeInfoLegaleSiret(sprintf('%014d', 100_000_000_000_00 + $code));

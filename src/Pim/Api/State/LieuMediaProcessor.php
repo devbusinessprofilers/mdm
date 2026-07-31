@@ -1,0 +1,263 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Pim\Api\State;
+
+use ApiPlatform\Metadata\Operation;
+use ApiPlatform\Metadata\HttpOperation;
+use ApiPlatform\State\ProcessorInterface;
+use App\Dam\Entity\MediaAsset;
+use App\Dam\Message\DeleteMedia;
+use App\Dam\Message\RegenerateMedia;
+use App\Dam\Service\ImageVariantRegistry;
+use App\Dam\Service\LieuImageUploader;
+use App\Pim\Api\Dto\LieuMediaResource;
+use App\Pim\Api\Dto\LieuResource;
+use App\Pim\Api\Dto\MediaOrderInput;
+use App\Pim\Api\Dto\MediaPatchInput;
+use App\Pim\Api\Exception\ApiProblemException;
+use App\Pim\Api\LieuApiMapper;
+use App\Pim\Entity\Lieu\Lieu;
+use App\Pim\Entity\Lieu\RessourceLieu;
+use App\Pim\Enum\NatureRessource;
+use App\Pim\Repository\RessourceLieuRepository;
+use App\Shared\Message\MediaUploaded;
+use App\Shared\Outbox\OutboxPublisherInterface;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bundle\SecurityBundle\Security;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
+use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\HttpFoundation\Response;
+
+/** @implements ProcessorInterface<mixed, LieuMediaResource|LieuResource|void> */
+final readonly class LieuMediaProcessor implements ProcessorInterface
+{
+    private const MAX_PHOTOS = 25;
+    private const USAGES = [
+        'PHOTO_PRINCIPALE', 'PHOTO_FACADE', 'PHOTO_CHAMBRE', 'PHOTO_RESTAURATION',
+        'CONFIG_PHOTO_SALLE', 'PHOTO_DIVERSE', 'CONFIG_PLAN_SALLE',
+        'LOISIR_EXTERNE_PHOTO', 'PHOTO',
+    ];
+
+    public function __construct(
+        private LieuApiState $state,
+        private LieuApiMapper $mapper,
+        private LieuImageUploader $uploader,
+        private RessourceLieuRepository $resources,
+        private EntityManagerInterface $entityManager,
+        private OutboxPublisherInterface $outbox,
+        private RequestStack $requests,
+        private Security $security,
+    ) {
+    }
+
+    public function process(mixed $data, Operation $operation, array $uriVariables = [], array $context = []): LieuMediaResource|LieuResource|null
+    {
+        $lieu = $this->state->lieu((string) ($uriVariables['lieuId'] ?? ''));
+        $this->state->assertVersion($lieu);
+        if (!$operation instanceof HttpOperation) {
+            throw new \LogicException('Une opération HTTP est requise.');
+        }
+        $template = $operation->getUriTemplate() ?? '';
+        $method = $operation->getMethod();
+
+        return $lieu->fiche()->preserveWorkflowDuring(function () use ($data, $lieu, $method, $template, $uriVariables): LieuMediaResource|LieuResource|null {
+            if ('POST' === $method && str_ends_with($template, '/medias')) {
+                return $this->upload($lieu);
+            }
+            if ('PUT' === $method && str_ends_with($template, '/ordre')) {
+                if (!$data instanceof MediaOrderInput) {
+                    throw new ApiProblemException(Response::HTTP_BAD_REQUEST, 'invalid_payload', 'Le tableau ids est obligatoire.');
+                }
+
+                return $this->order($lieu, $data);
+            }
+
+            $resource = $this->resource($lieu, (string) ($uriVariables['resourceId'] ?? ''));
+            if ('PATCH' === $method) {
+                if (!$data instanceof MediaPatchInput) {
+                    throw new ApiProblemException(Response::HTTP_BAD_REQUEST, 'invalid_payload', 'Corps JSON invalide.');
+                }
+
+                return $this->metadata($lieu, $resource, $data);
+            }
+            if ('POST' === $method && str_ends_with($template, '/fichier')) {
+                return $this->replace($lieu, $resource);
+            }
+            if ('DELETE' === $method) {
+                $this->outbox->enqueue(new DeleteMedia($resource->damAssetId()));
+                $lieu->removeRessource($resource);
+                $this->entityManager->remove($resource);
+                $this->changed($lieu);
+
+                return null;
+            }
+
+            throw new \LogicException('Opération média API inconnue.');
+        });
+    }
+
+    private function upload(Lieu $lieu): LieuMediaResource
+    {
+        if (count($this->photos($lieu)) >= self::MAX_PHOTOS) {
+            throw new ApiProblemException(Response::HTTP_UNPROCESSABLE_ENTITY, 'media_limit_reached', 'Un lieu ne peut pas contenir plus de 25 photos.');
+        }
+        $request = $this->requests->getCurrentRequest();
+        if (null === $request) {
+            throw new \LogicException('Aucune requête HTTP active.');
+        }
+        $file = $request->files->get('photo');
+        if (!$file instanceof UploadedFile) {
+            throw new ApiProblemException(Response::HTTP_UNPROCESSABLE_ENTITY, 'photo_required', 'Le champ multipart photo est obligatoire.');
+        }
+        $usage = $request->request->getString('usage', 'PHOTO_DIVERSE');
+        $this->assertUsage($lieu, $usage);
+
+        try {
+            $asset = $this->uploader->upload($file, $lieu);
+        } catch (\DomainException $exception) {
+            throw new ApiProblemException(Response::HTTP_UNPROCESSABLE_ENTITY, 'invalid_media', $exception->getMessage());
+        }
+        $resource = new RessourceLieu();
+        $resource->changeDamAssetId($asset->id());
+        $resource->changeNature(NatureRessource::Photo);
+        $resource->changeUsage($usage);
+        $legende = $request->request->get('legende');
+        $resource->changeLegende(is_string($legende) ? $legende : null);
+        $resource->changePosition(count($this->photos($lieu)));
+        $lieu->addRessource($resource);
+
+        try {
+            $this->entityManager->persist($asset);
+            $this->outbox->enqueue(new MediaUploaded($asset->id(), $asset->originalStorageKey(), $asset->checksum(), ImageVariantRegistry::names()));
+            $this->changed($lieu);
+        } catch (\Throwable $exception) {
+            $this->cleanup($asset);
+            throw $exception;
+        }
+
+        return $this->mapper->media($lieu, $resource);
+    }
+
+    private function order(Lieu $lieu, MediaOrderInput $input): LieuResource
+    {
+        $photos = $this->photos($lieu);
+        $known = array_map(static fn (RessourceLieu $resource): string => $resource->id(), $photos);
+        if (count($input->ids) !== count(array_unique($input->ids)) || count($input->ids) !== count($known) || [] !== array_diff($input->ids, $known) || [] !== array_diff($known, $input->ids)) {
+            throw new ApiProblemException(Response::HTTP_UNPROCESSABLE_ENTITY, 'invalid_media_order', "L’ordre transmis ne correspond pas aux photos du lieu.");
+        }
+        $byId = [];
+        foreach ($photos as $photo) { $byId[$photo->id()] = $photo; }
+        foreach ($input->ids as $position => $id) { $byId[$id]->changePosition($position); }
+        $this->changed($lieu);
+
+        return $this->mapper->lieu($lieu);
+    }
+
+    private function metadata(Lieu $lieu, RessourceLieu $resource, MediaPatchInput $input): LieuMediaResource
+    {
+        $requestData = json_decode((string) $this->requests->getCurrentRequest()?->getContent(), true);
+        $requestData = is_array($requestData) ? $requestData : [];
+        if (array_key_exists('usage', $requestData)) {
+            if (!is_string($input->usage)) {
+                throw new ApiProblemException(Response::HTTP_UNPROCESSABLE_ENTITY, 'invalid_media_usage', 'La catégorie de photo est invalide.');
+            }
+            $this->assertUsage($lieu, $input->usage, $resource);
+            $resource->changeUsage($input->usage);
+        }
+        if (array_key_exists('legende', $requestData)) { $resource->changeLegende($input->legende); }
+        if (array_key_exists('source', $requestData)) { $resource->changeSource($input->source); }
+        if (array_key_exists('rightsGranted', $requestData)) {
+            true === $input->rightsGranted
+                ? $resource->grantRights($this->security->getUser()?->getUserIdentifier() ?? 'external-site')
+                : $resource->revokeRights();
+        }
+        try {
+            $transformationChanged = false;
+            if (array_key_exists('crop', $requestData)) {
+                $crop = $input->crop;
+                $resource->changeCrop($crop['x'] ?? null, $crop['y'] ?? null, $crop['width'] ?? null, $crop['height'] ?? null);
+                $transformationChanged = true;
+            }
+            if (array_key_exists('rotation', $requestData) && null !== $input->rotation) {
+                $resource->changeRotation($input->rotation);
+                $transformationChanged = true;
+            }
+        } catch (\DomainException $exception) {
+            throw new ApiProblemException(Response::HTTP_UNPROCESSABLE_ENTITY, 'invalid_transformation', $exception->getMessage());
+        }
+        if ($transformationChanged) {
+            $this->outbox->enqueue(new RegenerateMedia($resource->damAssetId()));
+        }
+        $this->changed($lieu);
+
+        return $this->mapper->media($lieu, $resource);
+    }
+
+    private function replace(Lieu $lieu, RessourceLieu $resource): LieuMediaResource
+    {
+        $file = $this->requests->getCurrentRequest()?->files->get('photo');
+        if (!$file instanceof UploadedFile) {
+            throw new ApiProblemException(Response::HTTP_UNPROCESSABLE_ENTITY, 'photo_required', 'Le champ multipart photo est obligatoire.');
+        }
+        try {
+            $asset = $this->uploader->upload($file, $lieu);
+        } catch (\DomainException $exception) {
+            throw new ApiProblemException(Response::HTTP_UNPROCESSABLE_ENTITY, 'invalid_media', $exception->getMessage());
+        }
+        $oldId = $resource->damAssetId();
+        try {
+            $this->entityManager->persist($asset);
+            $resource->changeDamAssetId($asset->id());
+            $this->outbox->enqueue(new MediaUploaded($asset->id(), $asset->originalStorageKey(), $asset->checksum(), ImageVariantRegistry::names()));
+            $this->outbox->enqueue(new DeleteMedia($oldId));
+            $this->changed($lieu);
+        } catch (\Throwable $exception) {
+            $this->cleanup($asset);
+            throw $exception;
+        }
+
+        return $this->mapper->media($lieu, $resource);
+    }
+
+    private function resource(Lieu $lieu, string $id): RessourceLieu
+    {
+        $resource = $this->resources->find($id);
+        if (!$resource instanceof RessourceLieu || $resource->lieu() !== $lieu || NatureRessource::Photo !== $resource->nature()) {
+            throw new ApiProblemException(Response::HTTP_NOT_FOUND, 'not_found', 'Média introuvable.');
+        }
+
+        return $resource;
+    }
+
+    /** @return list<RessourceLieu> */
+    private function photos(Lieu $lieu): array
+    {
+        return array_values(array_filter($lieu->ressources()->toArray(), static fn (RessourceLieu $resource): bool => NatureRessource::Photo === $resource->nature()));
+    }
+
+    private function assertUsage(Lieu $lieu, string $usage, ?RessourceLieu $current = null): void
+    {
+        if (!in_array($usage, self::USAGES, true)) {
+            throw new ApiProblemException(Response::HTTP_UNPROCESSABLE_ENTITY, 'invalid_media_usage', 'La catégorie de photo est invalide.');
+        }
+        if ('PHOTO_PRINCIPALE' !== $usage) { return; }
+        foreach ($this->photos($lieu) as $photo) {
+            if ($photo !== $current && 'PHOTO_PRINCIPALE' === $photo->usage()) {
+                throw new ApiProblemException(Response::HTTP_UNPROCESSABLE_ENTITY, 'main_media_exists', 'Une seule photo principale est autorisée par lieu.');
+            }
+        }
+    }
+
+    private function changed(Lieu $lieu): void
+    {
+        $lieu->fiche()->markSystemChanged();
+        $this->state->flushAndIndex($lieu);
+    }
+
+    private function cleanup(MediaAsset $asset): void
+    {
+        try { $this->uploader->delete($asset); } catch (\Throwable) {}
+    }
+}

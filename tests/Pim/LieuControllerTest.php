@@ -140,13 +140,13 @@ final class LieuControllerTest extends WebTestCase
         $lieu = new Lieu();
         $lieu->changeCode($code);
         $lieu->changeLabel($label);
-        if (StatutFiche::Publiee === $status) {
-            $lieu->fiche()->publishFromExternal();
-        }
         $localisation = new Localisation();
         $localisation->changeVille($ville);
         $localisation->changePays('France');
         $lieu->changeLocalisation($localisation);
+        if (StatutFiche::Publiee === $status) {
+            $lieu->fiche()->publishForImport();
+        }
         $entityManager->persist($lieu);
         $entityManager->persist(new FicheSearchDocument(
             $lieu->fiche(),

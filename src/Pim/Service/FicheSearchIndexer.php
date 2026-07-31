@@ -6,19 +6,19 @@ namespace App\Pim\Service;
 
 use App\Pim\Entity\Fiche;
 use App\Pim\Entity\FicheSearchDocument;
-use App\Pim\Entity\Lieu\Lieu;
+use App\Pim\Repository\LieuRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
 final readonly class FicheSearchIndexer
 {
-    public function __construct(private EntityManagerInterface $entityManager)
+    public function __construct(private EntityManagerInterface $entityManager, private LieuRepository $lieux)
     {
     }
 
     public function index(Fiche $fiche): void
     {
+        $lieu = $this->lieux->findOneByFicheWithLocalisation($fiche);
         $location = $fiche->localisation();
-        $lieu = $this->entityManager->getRepository(Lieu::class)->findOneBy(['fiche' => $fiche]);
         $content = implode(' ', array_filter([
             null === $fiche->code() ? null : (string) $fiche->code(),
             $fiche->label(),

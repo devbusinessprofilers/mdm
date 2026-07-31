@@ -33,7 +33,7 @@ final class FicheWorkflowTest extends TestCase
     public function testInternalEditResetsPublishedFicheButTechnicalUpdateDoesNot(): void
     {
         $fiche = new Fiche(TypeFiche::Lieu);
-        $fiche->publishFromExternal();
+        $fiche->publishForImport();
         $fiche->markSystemChanged();
         self::assertSame(StatutFiche::Publiee, $fiche->status());
 
@@ -45,7 +45,7 @@ final class FicheWorkflowTest extends TestCase
     {
         $fiche = new Fiche(TypeFiche::Lieu);
         $fiche->submitForValidation('editor');
-        $fiche->publishFromExternal();
+        $fiche->publishForImport();
         self::assertSame(StatutFiche::Publiee, $fiche->status());
         self::assertNull($fiche->validationFeedback());
     }

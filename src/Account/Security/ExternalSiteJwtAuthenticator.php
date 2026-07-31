@@ -18,7 +18,7 @@ final class ExternalSiteJwtAuthenticator extends AbstractAuthenticator
 {
     public function __construct(private readonly ExternalSiteJwtVerifier $verifier) {}
 
-    public function supports(Request $request): bool { return str_starts_with($request->getPathInfo(), '/api/lieux'); }
+    public function supports(Request $request): bool { return str_starts_with($request->getPathInfo(), '/api/v1/lieux'); }
 
     public function authenticate(Request $request): SelfValidatingPassport
     {
@@ -37,6 +37,6 @@ final class ExternalSiteJwtAuthenticator extends AbstractAuthenticator
     public function onAuthenticationSuccess(Request $request, TokenInterface $token, string $firewallName): ?Response { return null; }
     public function onAuthenticationFailure(Request $request, AuthenticationException $exception): Response
     {
-        return new JsonResponse(['error' => 'invalid_token', 'message' => 'Authentification du site externe invalide.'], Response::HTTP_UNAUTHORIZED);
+        return new JsonResponse(['type' => 'invalid_token', 'message' => 'Authentification du site externe invalide.'], Response::HTTP_UNAUTHORIZED);
     }
 }

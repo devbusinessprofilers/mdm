@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Pim\Repository;
 
+use App\Pim\Entity\Fiche;
 use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Enum\StatutFiche;
 use App\Pim\Enum\TypeFiche;
@@ -77,6 +78,23 @@ final class LieuRepository extends ServiceEntityRepository
             $items,
             $hasNext && null !== $last ? (new FicheCursor($last->updatedAt, Ulid::fromString($last->id)))->encode() : null,
         );
+    }
+
+    public function findOneByFicheWithLocalisation(Fiche $fiche): ?Lieu
+    {
+        // Fetch-join the inverse one-to-one associations as well: Doctrine
+        // otherwise resolves them with two additional queries while hydrating.
+        return $this->createQueryBuilder('l')
+            ->addSelect('f', 'loc', 'administratif', 'tarification')
+            ->innerJoin('l.fiche', 'f')
+            ->leftJoin('f.localisation', 'loc')
+            ->leftJoin('l.administratif', 'administratif')
+            ->leftJoin('l.tarification', 'tarification')
+            ->where('l.fiche = :fiche')
+            // DQL does not run the 'ulid' column type on inferred parameters; bind it explicitly.
+            ->setParameter('fiche', $fiche->id(), 'ulid')
+            ->getQuery()
+            ->getOneOrNullResult();
     }
 
     public function countByStatus(StatutFiche $status): int

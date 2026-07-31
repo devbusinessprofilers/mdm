@@ -25,6 +25,9 @@ class Fiche
 {
     use TimestampableTrait;
 
+    /** Transient guard used by technical/API updates that must preserve workflow state. */
+    private int $workflowTransitionSuppressionDepth = 0;
+
     #[ORM\Id]
     #[ORM\Column(type: 'ulid', unique: true)]
     private Ulid $id;
@@ -168,8 +171,8 @@ class Fiche
         $this->touch();
     }
 
-    /** Publication directe réservée au contrat REST du site externe. */
-    public function publishFromExternal(): void
+    /** Publication technique réservée aux imports et aux jeux de données internes. */
+    public function publishForImport(): void
     {
         $this->status = StatutFiche::Publiee;
         $this->publishedAt = new \DateTimeImmutable();
@@ -219,6 +222,11 @@ class Fiche
 
     public function markChanged(): void
     {
+        if ($this->workflowTransitionSuppressionDepth > 0) {
+            $this->touch();
+
+            return;
+        }
         if (StatutFiche::EnCours !== $this->status) {
             $this->status = StatutFiche::EnCours;
             $this->archivedAt = null;
@@ -232,6 +240,44 @@ class Fiche
 
     /** Mise à jour technique sans modifier le cycle de validation. */
     public function markSystemChanged(): void { $this->touch(); }
+
+    /**
+     * Exécute une modification en conservant le statut et toutes les métadonnées
+     * du workflow. La version et la date de modification restent actualisées.
+     *
+     * @template T
+     * @param callable(): T $mutation
+     * @return T
+     */
+    public function preserveWorkflowDuring(callable $mutation): mixed
+    {
+        $workflow = [
+            $this->status,
+            $this->publishedAt,
+            $this->archivedAt,
+            $this->validationRequestedAt,
+            $this->validationRequestedBy,
+            $this->validationReviewedAt,
+            $this->validationReviewedBy,
+            $this->validationFeedback,
+        ];
+        ++$this->workflowTransitionSuppressionDepth;
+        try {
+            return $mutation();
+        } finally {
+            --$this->workflowTransitionSuppressionDepth;
+            [
+                $this->status,
+                $this->publishedAt,
+                $this->archivedAt,
+                $this->validationRequestedAt,
+                $this->validationRequestedBy,
+                $this->validationReviewedAt,
+                $this->validationReviewedBy,
+                $this->validationFeedback,
+            ] = $workflow;
+        }
+    }
 
     private static function normalize(?string $value): ?string
     {
