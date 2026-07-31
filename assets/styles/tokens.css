@@ -1,0 +1,202 @@
+/*
+ * Design tokens Business Profilers — Espace prestataire.
+ *
+ * Repris tels quels du handoff Claude Design (screens/fig-tokens.css), lui-même
+ * généré depuis les Variables Figma. Les noms sont conservés à l'identique pour
+ * que les écrans à intégrer par la suite s'y branchent sans traduction.
+ *
+ * Convention du handoff : les tokens de taille sont SANS unité. Pour les utiliser
+ * comme longueur, il faut écrire calc(var(--token) * 1px).
+ */
+
+:root {
+    /* ---- Couleurs : fond ---- */
+    --background-gradient-start: rgb(242, 248, 255);
+    --background-gradient-end: rgb(255, 255, 255);
+
+    /* ---- Couleurs : primaires ---- */
+    --primary-marine: rgb(3, 74, 94);
+    --primary-turquoise: rgb(51, 160, 190);
+    --primary-bleu-clair: rgb(228, 247, 252);
+    --primary-gris-clair: rgb(251, 246, 231);
+    --primary-900: rgb(46, 44, 48);
+
+    /* ---- Couleurs : secondaires ---- */
+    --secondary-jaune: rgb(255, 201, 71);
+    --secondary-orange: rgb(247, 145, 21);
+    --secondary-n-on: rgb(0, 255, 211);
+    --secondary-p-che: rgb(255, 152, 148);
+    --secondary-p-che-p-le: rgb(255, 236, 235);
+    --secondary-rouge: rgb(211, 62, 54);
+    --secondary-rouge-p-le: rgb(255, 243, 243);
+    --secondary-vert: rgb(50, 186, 85);
+    --secondary-vert-p-le: rgb(201, 243, 211);
+    --secondary-premium: rgb(211, 179, 75);
+    --secondary-prenium-p-le: rgb(251, 247, 237);
+
+    /* ---- Couleurs : neutres ---- */
+    --neutral-100: rgb(255, 255, 255);
+    --neutral-200: rgb(245, 245, 245);
+    --neutral-300: rgb(200, 200, 200);
+    --neutral-400: rgb(175, 175, 175);
+    --neutral-500: rgb(132, 132, 132);
+    --neutral-900: rgb(40, 40, 40);
+    --neutral-900-2: rgb(0, 0, 0);
+    --oppacit-noir-50: rgba(0, 0, 0, 0.5);
+
+    /* ---- Couleurs : feedback ---- */
+    --feedback-success: rgb(68, 173, 75);
+    --feedback-warning: rgb(255, 174, 0);
+    --feedback-error: rgb(243, 46, 46);
+
+    /* ---- Rayons (sans unité) ---- */
+    --corner-radius: 4;
+    --border-radius-extra-small: 8;
+    --border-radius-small: 16;
+    --border-radius-medium: 32;
+    --border-radius-large: 100;
+
+    /* ---- Espacements (sans unité) ---- */
+    --extra-small: 4;
+    --extra-small-2: 8;
+    --small: 16;
+    --small-2: 16;
+    --small-3: 16;
+    --medium: 32;
+    --medium-2: 24;
+    --extra-medium: 24;
+    --large: 56;
+    --large-2: 40;
+    --extra-large: 80;
+    --extra-large-2: 56;
+
+    /* ---- Typographie : titres desktop ---- */
+    --desktop-titre-headline-1-font-family: "Ubuntu Sans";
+    --desktop-titre-headline-1-font-size: 40;
+    --desktop-titre-headline-1-font-weight: 950;
+    --desktop-titre-headline-1-line-height: 48;
+    --desktop-titre-headline-2-font-family: "Ubuntu Sans";
+    --desktop-titre-headline-2-font-size: 32;
+    --desktop-titre-headline-2-font-weight: 900;
+    --desktop-titre-headline-2-line-height: 40;
+    --desktop-titre-headline-3-font-family: "Ubuntu Sans";
+    --desktop-titre-headline-3-font-size: 22;
+    --desktop-titre-headline-3-font-weight: 900;
+    --desktop-titre-headline-3-line-height: 30;
+    --headline-4-font-family: "Ubuntu Sans";
+    --headline-4-font-size: 26;
+    --headline-4-font-weight: 900;
+    --headline-4-line-height: 34;
+    --subtitle-font-family: "Ubuntu Sans";
+    --subtitle-font-size: 20;
+    --subtitle-font-weight: 900;
+    --subtitle-line-height: 28;
+
+    /* ---- Typographie : titres mobile ---- */
+    --mobile-titre-headline-1-font-family: "Ubuntu Sans";
+    --mobile-titre-headline-1-font-size: 32;
+    --mobile-titre-headline-1-font-weight: 950;
+    --mobile-titre-headline-1-line-height: 40;
+    --mobile-titre-headline-2-font-family: "Ubuntu Sans";
+    --mobile-titre-headline-2-font-size: 26;
+    --mobile-titre-headline-2-font-weight: 900;
+    --mobile-titre-headline-2-line-height: 34;
+    --mobile-titre-headline-3-font-family: "Ubuntu Sans";
+    --mobile-titre-headline-3-font-size: 20;
+    --mobile-titre-headline-3-font-weight: 900;
+    --mobile-titre-headline-3-line-height: 30;
+
+    /* ---- Typographie : corps de texte ---- */
+    --texte-body-large-regular-font-family: "Lato";
+    --texte-body-large-regular-font-size: 16;
+    --texte-body-large-regular-font-weight: 400;
+    --texte-body-large-regular-line-height: 24;
+    --texte-body-large-bold-font-family: "Lato";
+    --texte-body-large-bold-font-size: 16;
+    --texte-body-large-bold-font-weight: 900;
+    --texte-body-large-bold-line-height: 24;
+    --texte-body-medium-regular-font-family: "Lato";
+    --texte-body-medium-regular-font-size: 14;
+    --texte-body-medium-regular-font-weight: 400;
+    --texte-body-medium-regular-line-height: 22;
+    --texte-body-medium-bold-font-family: "Lato";
+    --texte-body-medium-bold-font-size: 14;
+    --texte-body-medium-bold-font-weight: 900;
+    --texte-body-medium-bold-line-height: 22;
+    --texte-body-small-regular-font-family: "Lato";
+    --texte-body-small-regular-font-size: 12;
+    --texte-body-small-regular-font-weight: 400;
+    --texte-body-small-regular-line-height: 20;
+    --texte-body-small-bold-font-family: "Lato";
+    --texte-body-small-bold-font-size: 12;
+    --texte-body-small-bold-font-weight: 900;
+    --texte-body-small-bold-line-height: 20;
+    --texte-body-extra-small-regular-font-family: "Lato";
+    --texte-body-extra-small-regular-font-size: 10;
+    --texte-body-extra-small-regular-font-weight: 400;
+    --texte-body-extra-small-regular-line-height: 16;
+    --texte-body-extra-small-medium-font-family: "Lato";
+    --texte-body-extra-small-medium-font-size: 10;
+    --texte-body-extra-small-medium-font-weight: 600;
+    --texte-body-extra-small-medium-line-height: 16;
+    --texte-body-extra-small-bold-font-family: "Lato";
+    --texte-body-extra-small-bold-font-size: 10;
+    --texte-body-extra-small-bold-font-weight: 900;
+    --texte-body-extra-small-bold-line-height: 16;
+
+    /* ---- Typographie : composants ---- */
+    --texte-button-font-family: "Lato";
+    --texte-button-font-size: 14;
+    --texte-button-font-weight: 900;
+    --texte-button-line-height: 22;
+    --texte-input-font-family: "Lato";
+    --texte-input-font-size: 12;
+    --texte-input-font-weight: 400;
+    --texte-input-line-height: 20;
+
+    /* ---- Piles de polices prêtes à l'emploi (ajout intégration) ---- */
+    --bp-font-titre: "Ubuntu Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --bp-font-texte: "Lato", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+    /* ---- Dégradés de marque (extraits des variantes de bouton) ---- */
+    --bp-gradient-primary-hover: linear-gradient(90deg, rgb(42, 132, 157) 0%, rgb(24, 185, 179) 54.4%, rgb(0, 229, 190) 100%);
+    /* Dégradé de marque : bordure des boutons « outline », état actif du rail MDM. */
+    --bp-gradient-brand: linear-gradient(90deg, rgb(51, 160, 190) 0%, rgb(27, 206, 200) 54.4%, rgb(0, 255, 211) 100%);
+    --bp-gradient-outline-border: var(--bp-gradient-brand);
+
+    /* ---- Ombres ---- */
+    --bp-shadow-card: 0 7.683px 30.733px 0 rgba(51, 38, 174, 0.08);
+    --bp-shadow-panel: 0 8px 24px 0 rgba(51, 38, 174, 0.08);
+    --bp-shadow-header: 0 4px 24px 0 rgba(155, 155, 155, 0.14);
+
+    /*
+     * ---- Neutres propres au back-office MDM ----
+     * Déclarés par la maquette « MDM Business Profilers » elle-même : les
+     * tableaux denses en ont besoin, le design system du portail ne les définit
+     * pas. Noms conservés à l'identique.
+     */
+    --mdm-hairline: rgb(240, 242, 246);
+    /* Bordure des champs du panneau collaborateur et filets du tableau de
+       capacités : plus soutenue que le filet des listes, sans jeton dédié. */
+    --mdm-champ-bordure: rgb(228, 232, 238);
+    /* Astérisque des champs obligatoires : le rouge du handoff n'est ni
+       --secondary-rouge ni --feedback-error. */
+    --mdm-obligatoire: rgb(255, 107, 107);
+    /* Verts et ors « texte sur fond pâle » de la modale d'édition rapide :
+       plus sombres que --secondary-vert et --secondary-premium, qui ne
+       passent pas en 11 px sur leur propre teinte pâle. */
+    --mdm-vert-texte: rgb(23, 132, 80);
+    /* Rouge d'erreur du tunnel de création : la maquette y pose ses propres
+       valeurs, plus soutenues que --secondary-rouge et sa teinte pâle. */
+    --mdm-erreur-texte: rgb(226, 86, 80);
+    --mdm-erreur-fond: rgb(255, 240, 239);
+    --mdm-or-texte: rgb(196, 138, 26);
+    /* Deux surfaces presque blanches : pied de modale et ligne de site retenu. */
+    --mdm-surface-pied: rgb(250, 252, 254);
+    --mdm-surface-ligne: rgb(250, 253, 254);
+    --mdm-surface-head: rgb(247, 250, 253);
+    --mdm-surface-selected: rgb(240, 249, 252);
+
+    /* Fond de l'application MDM */
+    --mdm-app-background: linear-gradient(180deg, rgb(242, 248, 255) 0%, rgb(255, 255, 255) 100%);
+}

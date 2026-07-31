@@ -1,0 +1,36 @@
+{#
+    Coquille commune aux écrans « Connexion & mot de passe ».
+
+    Structure reprise de la maquette : une carte de 1536 × 800 dans laquelle le
+    panneau blanc de droite chevauche le visuel de gauche.
+#}
+{% extends 'base.html.twig' %}
+
+{% block body_class %}auth-body{% endblock %}
+
+{% block stylesheets %}
+    {#
+        Polices de la charte. Le handoff les charge depuis Google Fonts ; on
+        reprend la même source pour rester fidèle au rendu.
+        À arbitrer avant mise en production : héberger ces fichiers en local
+        évite un appel tiers et la question RGPD qui va avec.
+    #}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&family=Ubuntu+Sans:wght@100..800&family=Roboto:wght@400;500;700&display=swap">
+{% endblock %}
+
+{% block body %}
+    <main class="auth-page">
+        <div class="auth-card {% block classe_carte %}{% endblock %}">
+            <div class="auth-card__visual" aria-hidden="true">
+                <div class="auth-card__visual-media"></div>
+            </div>
+
+            <div class="auth-card__panel {% block classe_panneau %}{% endblock %}">
+                {% block panneau %}{% endblock %}
+            </div>
+        </div>
+    </main>
+{% endblock %}

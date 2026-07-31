@@ -1,0 +1,121 @@
+{# Maquette : « MDM Business Profilers » · écran `accueil` — Mon espace de travail #}
+{% extends 'mdm/base.html.twig' %}
+{% import 'mdm/_composants.html.twig' as ui %}
+
+{% set ecran = 'accueil' %}
+
+{% block title %}Mon espace de travail{% endblock %}
+
+{% block contenu %}
+    <div class="ws">
+
+        <div class="ws__top">
+            <div class="ws__greeting">
+                <h1 class="ws__hello">{{ vue.salutation }}</h1>
+                <p class="ws__hello-sub">{{ vue.sousTitre }}</p>
+            </div>
+
+            {#
+                Sélecteur de rôle. La maquette le traite comme un bouton d'état ;
+                côté intégration ce sont des liens, l'écran étant rendu par le
+                serveur pour chaque rôle.
+            #}
+            <div class="ws__roles">
+                <span class="ws__roles-label">Rôle&nbsp;:</span>
+                {% for cle, libelle in roles %}
+                    <a class="ws__role {{ cle == role ? 'ws__role--actif' : '' }}"
+                       href="{{ path('app_mdm_espace_travail', { role: cle }) }}"
+                       {{ cle == role ? 'aria-current="true"' : '' }}>{{ libelle }}</a>
+                {% endfor %}
+            </div>
+        </div>
+
+        <ul class="ws__queues">
+            {% for compteur in vue.compteurs %}
+                <li class="ws__queue">
+                    <div class="ws__queue-head">
+                        {{ ui.pastille(compteur.couleur, 10) }}
+                        <span class="ws__queue-label">{{ compteur.libelle }}</span>
+                    </div>
+                    <span class="ws__queue-count">{{ compteur.valeur }}</span>
+                    <div class="ws__queue-foot">
+                        <span class="ws__queue-note">{{ compteur.note }}</span>
+                        {# Destination : la file correspondante, pas encore intégrée. #}
+                        {{ ui.lien('Ouvrir', 'ws__queue-link') }}
+                    </div>
+                </li>
+            {% endfor %}
+        </ul>
+
+        <div class="ws__cols">
+
+            <section class="ws__card ws__card--principal">
+                <div class="ws__card-head">
+                    <h2 class="ws__card-title">{{ vue.titre }}</h2>
+                    <span class="ws__card-sub">{{ vue.tri }}</span>
+                </div>
+
+                <table class="ws__table">
+                    <thead>
+                        <tr>
+                            <th class="ws__col-fiche" scope="col">Fiche</th>
+                            <th class="ws__col-typologie" scope="col">Typologie</th>
+                            <th class="ws__col-motif" scope="col">Motif</th>
+                            <th class="ws__col-echeance" scope="col">Échéance</th>
+                            <th class="ws__col-action" scope="col">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ligne in vue.lignes %}
+                            <tr>
+                                <td class="ws__cell-fiche">{{ ligne.fiche }}</td>
+                                <td>
+                                    <span class="ws__cell-typologie">
+                                        {{ ui.pastille(ligne.typologieCouleur) }}
+                                        <span>{{ ligne.typologie }}</span>
+                                    </span>
+                                </td>
+                                <td class="ws__cell-motif">{{ ligne.motif }}</td>
+                                <td>
+                                    <span class="mdm-pill {{ ligne.echeanceTon != 'neutre' ? 'mdm-pill--' ~ ligne.echeanceTon : '' }}">
+                                        {{ ligne.echeance }}
+                                    </span>
+                                </td>
+                                {# Destination : la fiche concernée, écran pas encore intégré. #}
+                                <td>{{ ui.lien(ligne.action, 'ws__cell-action') }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </section>
+
+            <div class="ws__aside">
+                <section class="ws__card">
+                    <h2 class="ws__card-title">Raccourcis</h2>
+                    <ul class="ws__shortcuts">
+                        {% for raccourci in vue.raccourcis %}
+                            <li>{{ ui.lien(raccourci, 'ws__shortcut') }}</li>
+                        {% endfor %}
+                    </ul>
+                </section>
+
+                <section class="ws__card ws__card--activite">
+                    <h2 class="ws__card-title">Activité récente</h2>
+                    <ul class="ws__activity">
+                        {% for evenement in vue.activite %}
+                            <li class="ws__activity-item">
+                                <span class="ws__activity-bar" aria-hidden="true"></span>
+                                <div class="ws__activity-body">
+                                    <span class="ws__activity-who">{{ evenement.qui }}</span>
+                                    <span class="ws__activity-what">{{ evenement.quoi }}</span>
+                                    <span class="ws__activity-when">{{ evenement.quand }}</span>
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </section>
+            </div>
+
+        </div>
+    </div>
+{% endblock %}

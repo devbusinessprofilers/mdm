@@ -1,0 +1,65 @@
+{# Maquette : « MDM Business Profilers » · écran `general` — Référentiel général #}
+{% extends 'mdm/base.html.twig' %}
+{% import 'mdm/_composants.html.twig' as ui %}
+{% import 'auth/_composants.html.twig' as bp %}
+
+{% set ecran = 'general' %}
+
+{% block title %}{{ entete.titre }}{% endblock %}
+
+{% block contenu %}
+    <div class="ref" data-controller="edition-rapide">
+
+        <div class="ref__top">
+            <div class="ref__heading">
+                <h1 class="mdm-page-title">{{ entete.titre }}</h1>
+                <p class="mdm-page-subtitle">{{ entete.sousTitre }}</p>
+            </div>
+
+            {#
+                Ce sont des actions, pas de la navigation : rendues en <button>
+                plutôt qu'en liens vers « # ». Elles ouvriront un tunnel
+                d'import, un export ou un formulaire de création.
+            #}
+            <div class="ref__actions">
+                {{ bp.bouton('Importer', { style: 'outline', size: 'lg', type: 'button' }) }}
+                {{ bp.bouton('Exporter', { style: 'outline', size: 'lg', type: 'button' }) }}
+                {{ bp.bouton('+ Nouvelle fiche', { style: 'primary', size: 'lg',
+                                   href: path('app_mdm_creation_fiche') }) }}
+            </div>
+        </div>
+
+        {# Répartition par typologie : propre au référentiel général. #}
+        <ul class="ref__typologies">
+            {% for typologie in typologies %}
+                <li class="ref__typologie">
+                    {{ ui.pastille(typologie.couleur, 10) }}
+                    <div class="ref__typologie-body">
+                        <div class="ref__typologie-head">
+                            <span class="ref__typologie-count">{{ typologie.total }}</span>
+                            <span class="ref__typologie-label">{{ typologie.libelle }}</span>
+                        </div>
+                        <div class="ref__typologie-meter">
+                            {# La jauge reprend la couleur de la pastille de sa typologie. #}
+                            <span class="ref__bar">
+                                <span class="ref__bar-fill"
+                                      style="--ref-bar-level: {{ typologie.completude }}%; --ref-bar-color: var(--{{ typologie.couleur }})"></span>
+                            </span>
+                            <span class="ref__typologie-pct">{{ typologie.completude }} %</span>
+                        </div>
+                    </div>
+                </li>
+            {% endfor %}
+        </ul>
+
+        {% include 'mdm/_liste_fiches.html.twig' with {
+            recherche: entete.recherche,
+            vue_enregistree: entete.vueEnregistree,
+            note: entete.note,
+            selection: false
+        } %}
+
+        {% include 'mdm/_edition_rapide.html.twig' %}
+
+    </div>
+{% endblock %}

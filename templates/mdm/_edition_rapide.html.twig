@@ -1,0 +1,367 @@
+{#
+    Modale « Édition rapide », ouverte par le crayon d'une ligne de liste.
+    Partagée par « Référentiel général » et « Lieux ».
+
+    Une seule instance par page : le crayon transmet la ligne par paramètres
+    Stimulus et le contrôleur `edition-rapide` remplit l'en-tête et l'adresse.
+
+    Quatre états, portés par des classes sur la racine :
+      qe--adresse         adresse en cours de frappe, panneau de suggestions
+      qe--erreur          nom vide, anneau pêche et alerte en pied
+      qe--enregistrement  corps estompé, jauge de progression
+      qe--sites-ouverts   panneau des sites de diffusion déployé
+
+    Variables : sites_groupes, sites_compte, sites_puces, sites_decompte,
+    classifications, gammes, suggestions_adresse, requete_adresse,
+    modifications_en_cours, lignes.
+#}
+{% import 'mdm/_composants.html.twig' as ui %}
+
+<div class="qe" data-edition-rapide-target="modale" hidden>
+    <div class="qe__voile" data-action="click->edition-rapide#tenterFermer"></div>
+
+    <div class="qe__boite" role="dialog" aria-modal="true"
+         aria-label="Édition rapide de la fiche">
+
+        {# ------------------------------------------------------- En-tête #}
+        <div class="qe__entete">
+            <div class="qe__identite">
+                <div class="qe__identite-ligne">
+                    <span class="qe__nom" data-edition-rapide-target="nom"></span>
+                    <span class="qe__badge qe__badge--gamme" data-edition-rapide-target="gamme"></span>
+                    <span class="qe__badge" data-edition-rapide-target="statut"></span>
+                    <span class="qe__reference" data-edition-rapide-target="reference"></span>
+                </div>
+                <div class="qe__identite-ligne qe__identite-ligne--mesure">
+                    <span class="qe__libelle-mesure">Complétude</span>
+                    <span class="qe__jauge">
+                        <span class="qe__jauge-remplissage" data-edition-rapide-target="jauge"></span>
+                    </span>
+                    <span class="qe__taux" data-edition-rapide-target="taux"></span>
+                    <span class="qe__separateur" aria-hidden="true"></span>
+                    <span class="qe__position" data-edition-rapide-target="position"></span>
+                </div>
+            </div>
+
+            <div class="qe__navigation">
+                <button class="qe__nav" type="button" title="Fiche précédente"
+                        data-action="edition-rapide#precedente">
+                    <span class="sr-only">Fiche précédente</span>{{ ui.icone('caretleft') }}
+                </button>
+                <button class="qe__nav" type="button" title="Fiche suivante"
+                        data-action="edition-rapide#suivante">
+                    <span class="sr-only">Fiche suivante</span>{{ ui.icone('caretright') }}
+                </button>
+                <span class="qe__separateur qe__separateur--nav" aria-hidden="true"></span>
+                <button class="qe__fermer" type="button" title="Fermer"
+                        data-action="edition-rapide#tenterFermer">
+                    <span class="sr-only">Fermer</span>
+                    <span aria-hidden="true">×</span>
+                </button>
+            </div>
+        </div>
+
+        {# Jauge d'enregistrement : visible dans le seul état « enregistrement ». #}
+        <div class="qe__progression" aria-hidden="true"><span></span></div>
+
+        {# ---------------------------------------------------------- Corps #}
+        <div class="qe__corps">
+
+            <div class="qe__colonne">
+
+                <section class="qe__groupe">
+                    {{ _self.titre_groupe('Statut et référencement') }}
+
+                    {{ _self.interrupteur('Actif', 'actif', true) }}
+                    {{ _self.interrupteur(
+                        'Adhérent Business Premium', 'premium', true,
+                        'Affiche la mention « recommandé par Business Profilers » sur les canaux de diffusion.'
+                    ) }}
+
+                    <div class="qe__champ">
+                        <div class="qe__champ-tete">
+                            <span class="qe__label">Gamme</span>
+                            <button class="qe__lien" type="button"
+                                    data-edition-rapide-target="verrou"
+                                    data-action="edition-rapide#basculerVerrou">Déverrouiller</button>
+                        </div>
+                        <div class="qe__boite-champ qe__boite-champ--verrouillee"
+                             data-edition-rapide-target="boiteGamme">
+                            <span class="qe__cadenas" aria-hidden="true">{{ ui.icone('lock') }}</span>
+                            <span class="qe__valeur" data-edition-rapide-target="gammeChamp"></span>
+                            <span class="qe__caret" aria-hidden="true">{{ ui.icone('caret') }}</span>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="qe__groupe">
+                    {{ _self.titre_groupe('Identité et localisation') }}
+
+                    <div class="qe__champ">
+                        <span class="qe__label">Nom {{ _self.etoile() }}</span>
+                        <div class="qe__boite-champ" data-edition-rapide-target="boiteNom">
+                            <span class="qe__valeur" data-edition-rapide-target="nomChamp"></span>
+                            <span class="qe__alerte-icone" aria-hidden="true">{{ ui.icone('warn') }}</span>
+                        </div>
+                        <span class="qe__erreur">Le nom est obligatoire pour publier la fiche.</span>
+                    </div>
+
+                    <div class="qe__champ qe__champ--adresse">
+                        <span class="qe__label">Adresse postale {{ _self.etoile() }}</span>
+
+                        {# Saisie : champ de recherche et panneau de suggestions. #}
+                        <div class="qe__saisie">
+                            <div class="qe__boite-champ qe__boite-champ--saisie">
+                                <span class="qe__loupe" aria-hidden="true">{{ ui.icone('search') }}</span>
+                                <span class="qe__valeur">{{ requete_adresse }}</span>
+                                <span class="qe__curseur" aria-hidden="true"></span>
+                            </div>
+                            <div class="qe__suggestions">
+                                {% for suggestion in suggestions_adresse %}
+                                    <div class="qe__suggestion {{ loop.first ? 'qe__suggestion--active' : '' }}">
+                                        <span class="qe__epingle" aria-hidden="true">{{ ui.icone('mappin') }}</span>
+                                        <span class="qe__suggestion-texte">
+                                            <span class="qe__suggestion-titre">{{ suggestion[0] }}</span>
+                                            <span class="qe__suggestion-detail">{{ suggestion[1] }}</span>
+                                        </span>
+                                    </div>
+                                {% endfor %}
+                                <div class="qe__suggestions-pied">
+                                    <span>↑↓ parcourir · ⏎ retenir · Échap fermer</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {# Résolu : l'adresse en cinq lignes, plus « Corriger ». #}
+                        <div class="qe__adresse">
+                            <span class="qe__epingle qe__epingle--carte" aria-hidden="true">{{ ui.icone('mappin') }}</span>
+                            <div class="qe__adresse-grille">
+                                <span class="qe__adresse-cle">Rue</span>
+                                <span class="qe__adresse-valeur" data-edition-rapide-target="rue"></span>
+                                <span class="qe__adresse-cle">Code postal</span>
+                                <span class="qe__adresse-valeur" data-edition-rapide-target="cp"></span>
+                                <span class="qe__adresse-cle">Ville</span>
+                                <span class="qe__adresse-valeur" data-edition-rapide-target="ville"></span>
+                                <span class="qe__adresse-cle">Pays</span>
+                                <span class="qe__adresse-valeur">France</span>
+                                <span class="qe__adresse-cle">GPS</span>
+                                <span class="qe__adresse-valeur" data-edition-rapide-target="gps"></span>
+                            </div>
+                            <button class="qe__lien" type="button"
+                                    data-action="edition-rapide#corrigerAdresse">Corriger</button>
+                        </div>
+                    </div>
+
+                    <div class="qe__champ">
+                        <span class="qe__label">Pays {{ _self.etoile() }}</span>
+                        <div class="qe__boite-champ">
+                            <span class="qe__valeur">France</span>
+                            <span class="qe__mention">via adresse</span>
+                            <span class="qe__caret" aria-hidden="true">{{ ui.icone('caret') }}</span>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <div class="qe__colonne">
+
+                <section class="qe__groupe">
+                    {{ _self.titre_groupe('Classification', true) }}
+
+                    {#
+                        Un bloc par gamme : la maquette n'ouvre la modale que sur
+                        des lieux, mais la règle « la classification suit la
+                        gamme » reste vraie si les noms changent.
+                    #}
+                    {% for cle, champs in classifications %}
+                        <div class="qe__classification" data-gamme="{{ cle }}"
+                             {{ 'lieu' == cle ? '' : 'hidden' }}>
+                            {% for champ in champs %}
+                                <div class="qe__champ">
+                                    <div class="qe__champ-tete">
+                                        <span class="qe__label">{{ champ.label }}</span>
+                                        <span class="qe__compte">{{ champ.compte }}</span>
+                                    </div>
+                                    <div class="qe__boite-champ qe__boite-champ--puces">
+                                        {% for valeur in champ.valeurs %}
+                                            <span class="qe__puce">
+                                                <span>{{ valeur }}</span>
+                                                <span class="qe__puce-retrait" role="button"
+                                                      aria-label="Retirer {{ valeur }}">×</span>
+                                            </span>
+                                        {% endfor %}
+                                        <span class="ref__spacer"></span>
+                                        <span class="qe__caret" aria-hidden="true">{{ ui.icone('caret') }}</span>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endfor %}
+                </section>
+
+                <section class="qe__groupe qe__groupe--sites">
+                    {{ _self.titre_groupe('Visibilité') }}
+
+                    <div class="qe__champ qe__champ--sites">
+                        <div class="qe__champ-tete">
+                            <span class="qe__label">Sites de diffusion</span>
+                            <span class="qe__compte qe__compte--fort"
+                                  data-edition-rapide-target="sitesCompte">{{ sites_compte }}</span>
+                        </div>
+
+                        <div class="qe__boite-champ qe__boite-champ--resume">
+                            <div class="qe__puces-sites" data-edition-rapide-target="sitesPuces">
+                                {% for puce in sites_puces %}
+                                    <span class="qe__puce {{ puce.reste ? 'qe__puce--reste' : '' }}">{{ puce.libelle }}</span>
+                                {% endfor %}
+                            </div>
+                            <button class="qe__gerer" type="button"
+                                    data-edition-rapide-target="gerer"
+                                    data-action="edition-rapide#basculerSites">Gérer</button>
+                        </div>
+
+                        <div class="qe__decompte" data-edition-rapide-target="sitesDecompte">
+                            {% for ligne in sites_decompte %}
+                                <span>{{ ligne }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    {# ------------------------------- Panneau des sites #}
+                    <div class="qe__panneau">
+                        <div class="qe__panneau-tete">
+                            <div class="qe__boite-champ qe__boite-champ--recherche">
+                                <span class="qe__loupe" aria-hidden="true">{{ ui.icone('search') }}</span>
+                                <span class="qe__valeur qe__valeur--indicative">Rechercher un site</span>
+                            </div>
+                            <div class="qe__filtres">
+                                <button class="qe__filtre qe__filtre--actif" type="button"
+                                        aria-pressed="true"
+                                        data-action="edition-rapide#filtrer"
+                                        data-edition-rapide-filtre-param="tous">Tous</button>
+                                <button class="qe__filtre" type="button"
+                                        aria-pressed="false"
+                                        data-action="edition-rapide#filtrer"
+                                        data-edition-rapide-filtre-param="retenus">Retenus</button>
+                            </div>
+                        </div>
+
+                        <div class="qe__panneau-liste">
+                            {% for groupe in sites_groupes %}
+                                <div class="qe__groupe-sites">
+                                    <div class="qe__groupe-tete">
+                                        <span class="qe__groupe-nom">{{ groupe.nom }}</span>
+                                        <span class="qe__groupe-compte"
+                                              data-edition-rapide-target="compteGroupe">{{ groupe.compte }}</span>
+                                    </div>
+                                    {% for site in groupe.sites %}
+                                        <button class="qe__site" type="button"
+                                                role="checkbox"
+                                                aria-checked="{{ site.retenu ? 'true' : 'false' }}"
+                                                {{ site.verrouille ? 'data-verrouille="1" aria-disabled="true"' : '' }}
+                                                data-action="edition-rapide#basculerSite">
+                                            <span class="qe__case" aria-hidden="true">✓</span>
+                                            <span class="qe__site-nom">{{ site.libelle }}</span>
+                                            {% if site.mention %}
+                                                <span class="qe__mention-site qe__mention-site--{{ 'payant' == site.mention ? 'payant' : 'requis' }}">{{ site.mention }}</span>
+                                            {% endif %}
+                                        </button>
+                                    {% endfor %}
+                                </div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="qe__panneau-pied">
+                            <span>Espace pour cocher · Échap fermer</span>
+                            <button class="qe__appliquer" type="button"
+                                    data-action="edition-rapide#basculerSites">Appliquer</button>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        {# ----------------------------------------------------------- Pied #}
+        <div class="qe__pied">
+            <div class="qe__pied-message">
+                <span class="qe__alerte">
+                    <span class="qe__alerte-icone" aria-hidden="true">{{ ui.icone('warn') }}</span>
+                    <span>1 champ obligatoire à corriger</span>
+                </span>
+                <span class="qe__indice" data-edition-rapide-target="indice">⌘ ⏎ enregistrer · ⇧ ⌘ ⏎ enregistrer et suivante · Échap fermer</span>
+            </div>
+
+            <button class="qe__bouton qe__bouton--fantome" type="button"
+                    data-action="edition-rapide#tenterFermer">Annuler</button>
+            <button class="qe__bouton qe__bouton--contour" type="button"
+                    data-action="edition-rapide#enregistrer">Enregistrer</button>
+            <button class="qe__bouton qe__bouton--primaire" type="button"
+                    data-action="edition-rapide#enregistrer">
+                <span class="qe__rouet" aria-hidden="true">{{ ui.icone('spinner') }}</span>
+                <span data-edition-rapide-target="libelleEnregistrer">Enregistrer et suivante</span>
+                <span class="qe__fleche" aria-hidden="true">{{ ui.icone('arrowright') }}</span>
+            </button>
+        </div>
+    </div>
+
+    {# -------------------------------------- Confirmation de fermeture #}
+    <div class="qe__confirmation" data-edition-rapide-target="confirmation" hidden>
+        <div class="qe__confirmation-boite" role="dialog" aria-modal="true"
+             aria-label="Modifications non enregistrées">
+            <div class="qe__confirmation-tete">
+                <span class="qe__alerte-icone qe__alerte-icone--grande" aria-hidden="true">{{ ui.icone('warn') }}</span>
+                <div class="qe__confirmation-texte">
+                    <span class="qe__confirmation-titre">Modifications non enregistrées</span>
+                    <span class="qe__confirmation-corps" data-edition-rapide-target="confirmationCorps"></span>
+                </div>
+            </div>
+
+            <div class="qe__modifications">
+                {% for modification in modifications_en_cours %}
+                    <div class="qe__modification">
+                        <span class="qe__modification-point" aria-hidden="true"></span>
+                        <span class="qe__modification-champ">{{ modification[0] }}</span>
+                        <span class="qe__modification-detail">{{ modification[1] }}</span>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <div class="qe__confirmation-actions">
+                <span class="qe__indice">Échap revient à l'édition</span>
+                <button class="qe__bouton qe__bouton--fantome qe__bouton--abandon" type="button"
+                        data-action="edition-rapide#abandonner">Fermer sans enregistrer</button>
+                <button class="qe__bouton qe__bouton--primaire" type="button"
+                        data-action="edition-rapide#enregistrer">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% macro etoile() %}<span class="qe__requis">*</span>{% endmacro %}
+
+{% macro titre_groupe(titre, avec_indice = false) %}
+    <div class="qe__groupe-titre">
+        <span>{{ titre }}</span>
+        <span class="qe__filet" aria-hidden="true"></span>
+        {% if avec_indice %}
+            <span class="qe__indice-gamme" data-edition-rapide-target="indiceGamme"></span>
+        {% endif %}
+    </div>
+{% endmacro %}
+
+{% macro interrupteur(libelle, cle, actif, aide = null) %}
+    <div class="qe__bascule-champ">
+        <div class="qe__bascule-ligne">
+            <span class="qe__label">{{ libelle }}</span>
+            <button class="qe__bascule" type="button"
+                    role="switch" aria-checked="{{ actif ? 'true' : 'false' }}"
+                    data-action="edition-rapide#basculerInterrupteur">
+                <span class="sr-only">{{ libelle }}</span>
+                <span class="qe__bascule-bouton" aria-hidden="true"></span>
+            </button>
+        </div>
+        {% if aide %}
+            <span class="qe__aide">{{ aide }}</span>
+        {% endif %}
+    </div>
+{% endmacro %}

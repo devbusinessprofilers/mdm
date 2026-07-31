@@ -1,0 +1,80 @@
+{#
+    Section « Booster ma visibilité » : quatre formules de référencement dont
+    une seule active, puis les actions marketing à la carte.
+
+    La maquette répète la même formule quatre fois — seule la deuxième est
+    marquée comme sélectionnée. On reproduit tel quel : le contenu réel des
+    quatre paliers n'est pas encore arbitré côté design.
+#}
+{% import 'mdm/_composants.html.twig' as ui %}
+
+{% set formule = constant('App\\Pim\\Maquette\\FicheLieuDonnees::FORMULE') %}
+{% set action = constant('App\\Pim\\Maquette\\FicheLieuDonnees::ACTION_MARKETING') %}
+{% set taux = formule.value|replace({'%': ''})|trim %}
+
+<div class="fiche__booster">
+    <div class="fiche__booster-intro">
+        <span class="fiche__sous-titre">Gérer sa visibilité</span>
+        <span class="fiche__aide">Quatre formules de référencement. Une seule active à la fois.</span>
+    </div>
+
+    <div class="fiche__formules">
+        {% for rang in 0..3 %}
+            {% set active = rang == 1 %}
+            <div class="fiche__formule {{ active ? 'fiche__formule--active' : '' }}">
+                <div class="fiche__formule-entete">
+                    <span class="fiche__formule-palier">{{ formule.tier }}</span>
+                    <span class="fiche__formule-niveau">{{ formule.level }}</span>
+                    <span class="fiche__formule-trait"></span>
+                </div>
+
+                {# Anneau de progression : rayon 44, trait 12, périmètre 276,46. #}
+                <div class="fiche__anneau">
+                    <svg width="112" height="112" viewBox="0 0 112 112" aria-hidden="true">
+                        <circle cx="56" cy="56" r="44" fill="none" stroke="var(--mdm-hairline)" stroke-width="12"></circle>
+                        <circle cx="56" cy="56" r="44" fill="none"
+                                stroke="var(--primary-turquoise)" stroke-width="12" stroke-linecap="round"
+                                stroke-dasharray="276.46"
+                                stroke-dashoffset="{{ 276.46 * (1 - taux / 100) }}"
+                                transform="rotate(-90 56 56)"></circle>
+                    </svg>
+                    <span class="fiche__anneau-valeur">{{ formule.value }}</span>
+                </div>
+
+                <div class="fiche__formule-avantages">
+                    {% for ligne in formule.lines %}
+                        <div class="fiche__formule-avantage">
+                            <span class="fiche__formule-coche">{{ ui.icone_coche_fine() }}</span>
+                            <span>{{ ligne }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <button class="fiche__formule-bouton {{ active ? 'fiche__formule-bouton--active' : '' }}"
+                        type="button"
+                        aria-pressed="{{ active ? 'true' : 'false' }}">{{ active ? 'Sélectionné' : 'Sélectionner' }}</button>
+            </div>
+        {% endfor %}
+    </div>
+
+    <div class="fiche__booster-intro fiche__booster-intro--marge">
+        <span class="fiche__sous-titre">Actions marketing à la carte</span>
+        <span class="fiche__aide">Achats ponctuels, indépendants de la formule.</span>
+    </div>
+
+    <div class="fiche__actions-marketing">
+        {% for rang in 0..3 %}
+            <div class="fiche__action">
+                <div class="fiche__action-corps">
+                    <span class="fiche__action-icone">
+                        <svg width="24" height="24" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                            <path d="M14.769 0H1.231C0.904 0 0.591 0.13 0.36 0.36C0.13 0.591 0 0.904 0 1.231v13.538C0 15.096 0.13 15.409 0.36 15.64C0.591 15.87 0.904 16 1.231 16h13.538c0.327 0 0.64-0.13 0.871-0.36c0.231-0.231 0.36-0.544 0.36-0.871V1.231c0-0.327-0.13-0.64-0.36-0.871C15.409 0.13 15.096 0 14.769 0ZM5.231 13.538H3.077V6.154h2.154v7.385Zm-1.077-8.43a1.29 1.29 0 1 1 0-2.581a1.29 1.29 0 0 1 0 2.58Zm8.769 8.43h-2.154V9.846c0-0.99-0.42-1.354-0.964-1.354c-0.66 0-1.19 0.5-1.19 1.4v3.646H6.462V6.154h2.07v0.98c0.343-0.62 1.09-1.134 2.146-1.134c1.2 0 2.245 0.677 2.245 2.677v4.86Z" fill="currentColor"></path>
+                        </svg>
+                    </span>
+                    <span class="fiche__action-label">{{ action }}</span>
+                </div>
+                <button class="fiche__action-bouton" type="button">Sélectionner</button>
+            </div>
+        {% endfor %}
+    </div>
+</div>

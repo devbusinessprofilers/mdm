@@ -1,0 +1,51 @@
+{# Maquette : S1 · Connexion V1 — Desktop (nœud Figma 36:1455) #}
+{% extends 'auth/base.html.twig' %}
+{% import 'auth/_composants.html.twig' as ui %}
+
+{% block title %}Identifiez-vous{% endblock %}
+
+{% block classe_carte %}auth-card--connexion{% endblock %}
+
+{# Seul écran du groupe à espacer ses blocs de 40 px. #}
+{% block classe_panneau %}auth-card__panel--aere{% endblock %}
+
+{% block panneau %}
+    <div class="auth-header">
+        {{ ui.avatar('defaut', 64) }}
+
+        <div class="auth-titlegroup">
+            <h1 class="auth-title">Identifiez-vous</h1>
+            <p class="auth-subtitle">
+                Renseignez votre adresse mail professionnel pour vous connecter ou pour vous créer un compte.
+            </p>
+        </div>
+
+        <form class="auth-form" method="post" action="">
+            {{ ui.champ('Email', 'email', {
+                type: 'email',
+                placeholder: 'Votre e-mail professionnel',
+                autocomplete: 'email',
+                required: true
+            }) }}
+
+            {{ ui.bouton('Continuer', { style: 'primary', size: 'lg', block: true }) }}
+        </form>
+    </div>
+
+    <hr class="bp-divider">
+
+    <div class="auth-support">
+        <div class="auth-support__titlegroup">
+            <h2 class="auth-support__title">Besoin d’accompagnement ?</h2>
+            <p class="auth-support__text">Notre équipe est là pour vous aider !</p>
+        </div>
+
+        {# Action de contact : la destination reste à définir (page, mailto…). #}
+        {{ ui.bouton('Contactez notre support', {
+            style: 'outline',
+            size: 'lg',
+            block: true,
+            type: 'button'
+        }) }}
+    </div>
+{% endblock %}

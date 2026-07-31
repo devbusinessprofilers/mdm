@@ -1,0 +1,284 @@
+{# Maquette : « MDM Business Profilers » · écran `fiche` — Éditeur de fiche Lieu #}
+{% extends 'mdm/base.html.twig' %}
+{% import 'mdm/_composants.html.twig' as ui %}
+{% import 'auth/_composants.html.twig' as bp %}
+
+{% set ecran = 'fiche' %}
+
+{% block title %}{{ section.nom }} · Éditeur de fiche{% endblock %}
+
+{#
+    Sur cet écran le rail ne montre plus les sections du référentiel mais les
+    16 sections de la fiche, avec leur taux de complétude — c'est le motif du
+    portail prestataire.
+#}
+{% block rail %}
+    {% set coupure = constant('App\\Pim\\Maquette\\FicheLieuMaquette::SECTIONS_MA_FICHE') %}
+    <nav class="mdm-rail" aria-label="Sections de la fiche">
+        <div class="mdm-rail__group">
+            <span class="mdm-rail__title">Ma fiche</span>
+            <div class="mdm-rail__items">
+                {% for onglet in onglets|slice(0, coupure) %}
+                    {{ ui.rail_item(onglet.nom, {
+                        icone: onglet.icone,
+                        compteur: onglet.completude ~ ' %',
+                        actif: onglet.actif,
+                        href: path('app_mdm_fiche_lieu', { section: onglet.index })
+                    }) }}
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="mdm-rail__group">
+            <span class="mdm-rail__title">Paramètres</span>
+            <div class="mdm-rail__items">
+                {% for onglet in onglets|slice(coupure) %}
+                    {{ ui.rail_item(onglet.nom, {
+                        icone: onglet.icone,
+                        compteur: onglet.completude ~ ' %',
+                        actif: onglet.actif,
+                        href: path('app_mdm_fiche_lieu', { section: onglet.index })
+                    }) }}
+                {% endfor %}
+            </div>
+        </div>
+    </nav>
+{% endblock %}
+
+{% block contenu %}
+    {#
+        La section « Collaborateurs » ajoute un panneau latéral : la colonne
+        principale et sa barre d'actions se regroupent alors dans `__principal`
+        pour laisser l'aside occuper toute la hauteur à droite.
+    #}
+    <div class="fiche {{ a_des_collaborateurs ? 'fiche--avec-panneau' : '' }}"
+         {% if a_des_collaborateurs %}data-controller="collaborateurs"{% endif %}>
+
+      <div class="fiche__principal">
+
+        <div class="fiche__defilement">
+
+            {# ------------------------------------------------ En-tête de fiche #}
+            <div class="fiche__entete">
+                <div class="fiche__identite">
+                    <h1 class="fiche__titre">Jeanne &amp; The Forest - Château de Montvillargenne</h1>
+                    <span class="fiche__badge fiche__badge--enrichissement">En enrichissement</span>
+                    <span class="fiche__badge fiche__badge--enligne">En ligne</span>
+                    <span class="fiche__badge fiche__badge--reference">LIE-004821 · v14</span>
+                </div>
+
+                <div class="fiche__mesure">
+                    <div class="fiche__completude">
+                        <div class="fiche__completude-texte">
+                            <span class="fiche__completude-taux">Complété à : 64 %</span>
+                            <span class="fiche__completude-detail">134 / 210 champs</span>
+                        </div>
+                        <div class="fiche__jauge"
+                             role="progressbar"
+                             aria-label="Complétude de la fiche"
+                             aria-valuenow="64" aria-valuemin="0" aria-valuemax="100">
+                            <span class="fiche__jauge-fond"></span>
+                            <span class="fiche__jauge-remplissage" style="--fiche-completude: 64%"></span>
+                        </div>
+                    </div>
+
+                    <div class="fiche__actions-ia">
+                        <button class="bp-btn bp-btn--lg bp-btn--degrade" type="button">
+                            <span class="bp-btn__icon">{{ ui.icone_etincelle() }}</span>
+                            Enrichir ce qui manque
+                        </button>
+                        {{ bp.bouton("Extraire d'un document", { style: 'outline', size: 'lg', type: 'button' }) }}
+                        {{ bp.bouton('Traduire', { style: 'outline', size: 'lg', type: 'button' }) }}
+                    </div>
+                </div>
+            </div>
+
+            {# ------------------------------------------------ Carte de section #}
+            {% if not a_des_collaborateurs %}
+            <section class="fiche__carte">
+                <div class="fiche__bloc">
+                    <div class="fiche__section-entete">
+                        <h2 class="fiche__section-titre">{{ section.nom }}</h2>
+                        <span class="fiche__section-compte">{{ section.champs|length }}</span>
+                        <div class="fiche__legende">
+                            <span class="fiche__legende-item">
+                                {{ ui.pastille('primary-turquoise', 9) }}<span>Maîtrisé par le MDM</span>
+                            </span>
+                            <span class="fiche__legende-item">
+                                {{ ui.pastille('primary-marine', 9) }}<span>Lecture seule · Salesforce</span>
+                            </span>
+                            <span class="fiche__legende-item">
+                                {{ ui.pastille('secondary-p-che', 9) }}<span>Déclaré par le prestataire</span>
+                            </span>
+                        </div>
+                    </div>
+
+                    {% if groupes_puces %}
+                        {% include 'mdm/fiche/_puces.html.twig' %}
+                    {% endif %}
+
+                    {% if a_des_formules %}
+                        {% include 'mdm/fiche/_formules.html.twig' %}
+                    {% endif %}
+
+                    {% if a_des_medias %}
+                        {% include 'mdm/fiche/_medias.html.twig' %}
+                    {% endif %}
+
+                    {% if section.champs %}
+                        <div class="fiche__champs">
+                            {% for champ in section.champs %}
+                                <div class="fiche__champ {{ champ.riche ? 'fiche__champ--riche' : '' }}"
+                                     {% if champ.liste %}data-controller="bp-select"{% endif %}>
+                                    <div class="fiche__champ-entete">
+                                        {{ ui.pastille(champ.autoriteDot, 8) }}
+                                        <span class="fiche__champ-label">{{ champ.label }}</span>
+                                        <span class="fiche__spacer"></span>
+                                        <span class="fiche__champ-autorite"
+                                              style="--autorite-fg: var(--{{ champ.autoriteFg }}); --autorite-bg: var(--{{ champ.autoriteBg }})">{{ champ.autorite }}</span>
+                                    </div>
+
+                                    {% if champ.riche %}
+                                    {#
+                                        Texte enrichi : le champ prend toute la largeur, la boîte
+                                        n'a pas de hauteur fixe et le texte s'enroule. La barre
+                                        d'outils est celle de la maquette.
+                                    #}
+                                    <div class="fiche__editeur {{ champ.vide ? 'fiche__editeur--vide' : '' }}">
+                                        <div class="fiche__editeur-outils">
+                                            <div class="fiche__editeur-outils-rangee" aria-hidden="true">
+                                                {{ ui.barre_texte_enrichi() }}
+                                            </div>
+                                        </div>
+                                        <div class="fiche__editeur-corps">
+                                            <span class="fiche__editeur-texte {{ champ.vide ? 'fiche__editeur-texte--vide' : '' }}">{{ champ.valeur }}</span>
+                                            {% if champ.suggerable %}
+                                                <button class="fiche__suggerer" type="button">
+                                                    {{ ui.icone_etincelle() }} Suggérer
+                                                </button>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% else %}
+
+                                    <div class="fiche__champ-boite
+                                                {{ champ.lectureSeule ? 'fiche__champ-boite--lecture' : '' }}
+                                                {{ champ.vide and not champ.lectureSeule ? 'fiche__champ-boite--vide' : '' }}"
+                                         {% if champ.liste %}
+                                             data-bp-select-target="declencheur"
+                                             data-action="click->bp-select#basculer"
+                                             role="button" tabindex="0"
+                                             aria-haspopup="listbox" aria-expanded="false"
+                                         {% endif %}>
+                                        <span class="fiche__champ-valeur {{ champ.vide ? 'fiche__champ-valeur--vide' : '' }}">{{ champ.valeur }}</span>
+
+                                        {% if champ.suggerable %}
+                                            <button class="fiche__suggerer" type="button">
+                                                {{ ui.icone_etincelle() }} Suggérer
+                                            </button>
+                                        {% endif %}
+
+                                        {% if champ.verrouille %}
+                                            <span class="fiche__cadenas" title="Champ maîtrisé par Salesforce">{{ ui.icone_verrou() }}</span>
+                                        {% endif %}
+
+                                        {% if champ.liste %}
+                                            <span class="fiche__chevron" aria-hidden="true">{{ ui.chevron() }}</span>
+                                        {% endif %}
+                                    </div>
+
+                                    {% if champ.liste %}
+                                        {% set liste = listes[champ.label]|default({ type: 'checkboxes', options: [] }) %}
+                                        {{ ui.menu_deroulant(liste.options, liste.type) }}
+                                    {% endif %}
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </section>
+            {% endif %}
+
+            {% if a_des_collaborateurs %}
+                {% include 'mdm/fiche/_collaborateurs.html.twig' %}
+            {% endif %}
+
+            {% if a_des_disponibilites %}
+                {% include 'mdm/fiche/_disponibilites.html.twig' %}
+            {% endif %}
+
+            {% if a_des_capacites %}
+                {% include 'mdm/fiche/_capacites.html.twig' %}
+            {% endif %}
+
+            {# --------------------------- Suggestions, canaux et historique #}
+            <section class="fiche__carte">
+                <div class="fiche__bloc">
+                    {% if suggestions %}
+                        <h2 class="fiche__section-titre">Suggestions IA en attente</h2>
+                        {% for suggestion in suggestions %}
+                            <div class="fiche__suggestion">
+                                <span class="fiche__suggestion-champ">{{ suggestion.champ }}</span>
+                                <span class="fiche__suggestion-valeur">{{ suggestion.valeur }}</span>
+                                <span class="fiche__suggestion-confiance">{{ suggestion.confiance }}</span>
+                                <button class="fiche__accepter" type="button">Accepter</button>
+                                <button class="fiche__ignorer" type="button">Ignorer</button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+
+                <div class="fiche__colonnes">
+                    <div class="fiche__colonne fiche__colonne--moitie">
+                        <h2 class="fiche__section-titre">Complétude par canal</h2>
+                        <div class="fiche__canaux">
+                            <div class="fiche__canal fiche__canal--entete">
+                                <span class="fiche__canal-libelle"></span>
+                                <span class="fiche__canal-cellule">FR</span>
+                                <span class="fiche__canal-cellule">EN</span>
+                            </div>
+                            {% for canal in canaux %}
+                                <div class="fiche__canal">
+                                    <span class="fiche__canal-libelle">{{ canal.libelle }}</span>
+                                    <span class="fiche__canal-valeur fiche__canal-valeur--{{ canal.fr >= 80 ? 'vert' : (canal.fr >= 40 ? 'or' : 'rouge') }}">{{ canal.fr }} %</span>
+                                    <span class="fiche__canal-valeur fiche__canal-valeur--{{ canal.en >= 80 ? 'vert' : (canal.en >= 40 ? 'or' : 'rouge') }}">{{ canal.en }} %</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="fiche__colonne">
+                        <h2 class="fiche__section-titre">Historique · Nom du lieu</h2>
+                        {% for evenement in historique %}
+                            <div class="fiche__historique">
+                                <span class="fiche__historique-barre" aria-hidden="true"></span>
+                                <div class="fiche__historique-corps">
+                                    <span class="fiche__historique-qui">{{ evenement.qui }}</span>
+                                    <span class="fiche__historique-quand">{{ evenement.quand }} · {{ evenement.source }}</span>
+                                    <span class="fiche__historique-changement">{{ evenement.changement }}</span>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </section>
+
+            <div class="fiche__pied-defilement"></div>
+        </div>
+
+        {# ------------------------------------------------ Barre d'actions fixe #}
+        <div class="fiche__barre">
+            {{ bp.bouton('Annuler', { style: 'outline', size: 'lg', type: 'button' }) }}
+            {{ bp.bouton('Enregistrer les modifications', { style: 'primary', size: 'lg', type: 'button' }) }}
+            <button class="bp-btn bp-btn--lg bp-btn--marine" type="button">Envoyer en validation</button>
+        </div>
+
+      </div>
+
+      {% if a_des_collaborateurs %}
+          {% include 'mdm/fiche/_panneau_collaborateur.html.twig' %}
+      {% endif %}
+
+    </div>
+{% endblock %}

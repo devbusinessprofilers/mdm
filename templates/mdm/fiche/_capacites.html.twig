@@ -1,0 +1,111 @@
+{#
+    Matrice « Capacités » — section Réunion.
+
+    Grille de 16 colonnes : poignée, vignette, nom, 8 chiffres (surface + 7
+    configurations), 4 équipements, lien vers le plan. Deux états : lecture
+    (valeurs brutes, pastilles vert/gris) et édition (champs saisissables,
+    cases à cocher, ajout de salle et pré-remplissage par l'IA).
+#}
+{% set colonnes = constant('App\\Pim\\Maquette\\FicheLieuMaquette::COLONNES_CAPACITES') %}
+{% set lecture = not capacites_en_edition %}
+
+<section class="fiche__carte fiche__carte--capacites">
+    <div class="capa__entete">
+        <h2 class="fiche__section-titre">Capacités</h2>
+        {% if lecture %}
+            <a class="bp-btn bp-btn--lg bp-btn--outline"
+               href="{{ path('app_mdm_fiche_lieu', { section: index, capacites: 'edition' }) }}">Modifier</a>
+        {% else %}
+            <a class="bp-btn bp-btn--lg bp-btn--primary"
+               href="{{ path('app_mdm_fiche_lieu', { section: index }) }}">Terminer</a>
+        {% endif %}
+    </div>
+
+    <div class="capa">
+        <div class="capa__grille capa__grille--tete">
+            <span></span>
+            <span></span>
+            <span class="capa__tete-nom">Nom de la salle</span>
+            {% for colonne in colonnes %}
+                <span class="capa__tete">
+                    <span class="capa__tete-label">{{ colonne.0 }}</span>
+                </span>
+            {% endfor %}
+        </div>
+
+        <div class="capa__trait"></div>
+
+        {% for salle in salles %}
+            <div class="capa__grille capa__ligne {{ lecture and salle.enAvant ? 'capa__ligne--avant' : '' }}">
+                <span class="capa__poignee {{ lecture ? '' : 'capa__poignee--saisissable' }}" aria-hidden="true"></span>
+                <span class="capa__vignette {{ salle.photo ? 'capa__vignette--photo' : '' }}" aria-hidden="true"></span>
+
+                {% if lecture %}
+                    <span class="capa__nom">{{ salle.nom }}</span>
+                    {% for chiffre in salle.chiffres %}
+                        <span class="capa__chiffre">{{ chiffre }}</span>
+                    {% endfor %}
+                    {% for equipement in salle.equipements %}
+                        <span class="capa__drapeau">
+                            <span class="capa__marque {{ equipement ? 'capa__marque--oui' : 'capa__marque--non' }}"
+                                  role="img"
+                                  aria-label="{{ equipement ? 'Disponible' : 'Non disponible' }}"></span>
+                        </span>
+                    {% endfor %}
+                    <a class="capa__plan" href="#">{{ constant('App\\Pim\\Maquette\\FicheLieuMaquette::PLAN_SALLE') }}</a>
+                {% else %}
+                    <span class="capa__saisie">{{ salle.nom }}</span>
+                    {% for chiffre in salle.chiffres %}
+                        <span class="capa__saisie capa__saisie--nombre">{{ chiffre }}</span>
+                    {% endfor %}
+                    {% for equipement in salle.equipements %}
+                        <span class="capa__drapeau">
+                            <span class="capa__case {{ equipement ? 'capa__case--cochee' : '' }}"
+                                  role="checkbox"
+                                  aria-checked="{{ equipement ? 'true' : 'false' }}"
+                                  tabindex="0"></span>
+                        </span>
+                    {% endfor %}
+                    <span class="capa__outils">
+                        <button class="capa__importer" type="button">Importer</button>
+                        <button class="capa__supprimer" type="button" aria-label="Supprimer la salle">
+                            <svg width="15" height="16" viewBox="0 0 14 16" fill="none" aria-hidden="true">
+                                <path d="M1.5 4h11M5 4V2.4A1 1 0 016 1.4h2a1 1 0 011 1V4M2.8 4l.6 10a1 1 0 001 1h5.2a1 1 0 001-1l.6-10"
+                                      stroke="currentColor" stroke-width="1.3" stroke-linecap="round"></path>
+                            </svg>
+                        </button>
+                    </span>
+                {% endif %}
+            </div>
+        {% endfor %}
+    </div>
+
+    {% if not lecture %}
+        <div class="capa__ajout">
+            <button class="bp-btn bp-btn--lg bp-btn--outline" type="button">
+                <span class="bp-btn__icon">
+                    <svg width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                        <path d="M8 1.5v13M1.5 8h13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
+                    </svg>
+                </span>
+                Ajouter une salle
+            </button>
+        </div>
+
+        <div class="capa__ia">
+            <div class="capa__ia-texte">
+                <span class="fiche__sous-titre">Pré remplir le fichier avec l'IA</span>
+                <span class="capa__ia-detail">Importez la brochure commerciale ou la fiche technique de l'établissement : l'IA en extrait les salles, leurs surfaces et leurs capacités par configuration, puis pré-remplit le tableau. Chaque valeur reste à valider avant enregistrement.</span>
+            </div>
+            <button class="bp-btn bp-btn--lg bp-btn--outline" type="button">
+                <span class="bp-btn__icon">
+                    <svg width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                        <path d="M3 1.5h6l4 4v9H3v-13z" stroke="currentColor" stroke-width="1.3"></path>
+                        <path d="M8 8.5v4M6 10.5l2-2 2 2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"></path>
+                    </svg>
+                </span>
+                Importer un fichier
+            </button>
+        </div>
+    {% endif %}
+</section>

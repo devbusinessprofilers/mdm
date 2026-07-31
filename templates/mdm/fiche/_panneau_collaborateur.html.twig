@@ -1,0 +1,127 @@
+{#
+    Panneau latéral de la section « Collaborateurs ».
+
+    Deux états dans la maquette : l'invitation par email, puis le formulaire
+    complet. Les deux sont rendus ici et c'est le contrôleur `collaborateurs`
+    qui bascule de l'un à l'autre — depuis « Continuer » ou depuis le crayon
+    d'une ligne du tableau, qui pré-remplit alors les champs.
+#}
+{% set droits = constant('App\\Pim\\Maquette\\FicheLieuMaquette::DROITS_COLLABORATEUR') %}
+{% set email_invitation = constant('App\\Pim\\Maquette\\FicheLieuMaquette::EMAIL_INVITATION') %}
+{% set email_brouillon = constant('App\\Pim\\Maquette\\FicheLieuMaquette::EMAIL_BROUILLON') %}
+
+<aside class="collab-panneau" aria-label="Ajouter ou modifier un collaborateur">
+
+    {# ------------------------------------------------------ Invitation #}
+    <div class="collab-panneau__etat" data-collaborateurs-target="ajout">
+        <div class="collab-panneau__intro">
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+                <path d="M24 10v28M10 24h28" stroke="var(--primary-turquoise)" stroke-width="2.5"
+                      stroke-linecap="round"/>
+            </svg>
+            <span class="collab-panneau__titre">Ajouter un collaborateur</span>
+            <span class="collab-panneau__aide">Renseignez l'adresse professionnelle du collaborateur.
+                Il recevra une invitation à rejoindre la fiche et choisira son mot de passe.</span>
+        </div>
+
+        <div class="collab-panneau__champ">
+            <span class="collab-panneau__label">Adresse email {{ _self.etoile() }}</span>
+            <div class="collab-panneau__boite">
+                <span class="collab-panneau__valeur collab-panneau__valeur--vide">{{ email_brouillon }}</span>
+            </div>
+        </div>
+
+        <button class="collab-panneau__bouton collab-panneau__bouton--degrade" type="button"
+                data-action="collaborateurs#continuer">Continuer</button>
+    </div>
+
+    {# ------------------------------------------------------- Formulaire #}
+    <div class="collab-panneau__etat" data-collaborateurs-target="formulaire" hidden>
+        <div class="collab-panneau__intro">
+            <span class="collab-panneau__avatar">
+                <svg width="52" height="52" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+                    <circle cx="24" cy="17" r="8" fill="var(--primary-marine)"/>
+                    <path d="M8 42c0-8.837 7.163-16 16-16s16 7.163 16 16" fill="var(--primary-marine)"/>
+                </svg>
+            </span>
+            <button class="collab-panneau__retouche" type="button">
+                <span class="sr-only">Changer la photo</span>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <path d="M11.3 1.7a1.4 1.4 0 012 2l-7.4 7.4-2.7.7.7-2.7 7.4-7.4z" stroke="currentColor"
+                          stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M2 14h12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+                </svg>
+            </button>
+        </div>
+
+        {#
+            L'email est en lecture seule : c'est la clé de l'invitation, elle
+            ne se corrige pas depuis ce panneau.
+        #}
+        {{ _self.champ('Nom', 'nom') }}
+        {{ _self.champ('Prénom', 'prenom') }}
+        {{ _self.champ('Email', 'email', email_invitation, true) }}
+        {{ _self.champ('Téléphone', 'telephone') }}
+
+        <span class="collab-panneau__sous-titre">Droits</span>
+
+        <div class="collab-panneau__champ">
+            <span class="collab-panneau__label">Rôle {{ _self.etoile() }}</span>
+            <div class="collab-panneau__boite collab-panneau__boite--liste">
+                <span class="collab-panneau__valeur" data-collaborateurs-target="role">Manager</span>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <path d="M4 6.5l4 4 4-4" stroke="currentColor" stroke-width="1.3"
+                          stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="collab-panneau__droits">
+            {% for droit in droits %}
+                <button class="collab-panneau__droit" type="button"
+                        role="checkbox" aria-checked="false"
+                        data-action="collaborateurs#basculerDroit">
+                    <span class="collab__case" aria-hidden="true">
+                        <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+                            <path d="M3.5 8.5l3 3 6-6" stroke="#fff" stroke-width="2"
+                                  stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </span>
+                    <span class="collab-panneau__droit-label">{{ droit }}</span>
+                </button>
+            {% endfor %}
+        </div>
+
+        <div class="collab-panneau__champ collab-panneau__champ--statut">
+            <span class="collab-panneau__label">Statut</span>
+            <button class="collab-panneau__statut" type="button"
+                    role="switch" aria-checked="false"
+                    data-collaborateurs-target="principal"
+                    data-action="collaborateurs#basculerPrincipal">
+                <span class="collab__bascule" aria-hidden="true">
+                    <span class="collab__bascule-bouton"></span>
+                </span>
+                <span class="collab-panneau__droit-label">Contact principal {{ _self.etoile() }}</span>
+            </button>
+        </div>
+
+        <div class="collab-panneau__pied">
+            <button class="collab-panneau__bouton collab-panneau__bouton--degrade" type="button"
+                    data-action="collaborateurs#annuler">Continuer</button>
+            <button class="collab-panneau__bouton collab-panneau__bouton--contour" type="button"
+                    data-action="collaborateurs#annuler">Annuler</button>
+        </div>
+    </div>
+</aside>
+
+{% macro etoile() %}<span class="collab-panneau__requis">*</span>{% endmacro %}
+
+{% macro champ(libelle, cible, valeur = '', lecture_seule = false) %}
+    <div class="collab-panneau__champ">
+        <span class="collab-panneau__label">{{ libelle }} {{ _self.etoile() }}</span>
+        <div class="collab-panneau__boite {{ lecture_seule ? 'collab-panneau__boite--lecture' : '' }}">
+            <span class="collab-panneau__valeur {{ valeur is empty or lecture_seule ? 'collab-panneau__valeur--vide' : '' }}"
+                  data-collaborateurs-target="{{ cible }}">{{ valeur }}</span>
+        </div>
+    </div>
+{% endmacro %}

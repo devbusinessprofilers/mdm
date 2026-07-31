@@ -1,0 +1,53 @@
+{#
+    Section « Médias » : onglets, galerie de vignettes et association à une salle.
+    Les vignettes de la maquette sont des emplacements vides — aucune image
+    n'est fournie par le handoff.
+#}
+{% set onglets_medias = constant('App\\Pim\\Maquette\\FicheLieuDonnees::ONGLETS_MEDIAS') %}
+
+<div class="fiche__medias">
+    <div class="fiche__medias-barre">
+        {% for rang, nom in onglets_medias %}
+            <button class="fiche__media-onglet {{ rang == 0 ? 'fiche__media-onglet--actif' : '' }}"
+                    type="button"
+                    aria-pressed="{{ rang == 0 ? 'true' : 'false' }}">{{ nom }}</button>
+        {% endfor %}
+        <span class="fiche__spacer"></span>
+        <span class="fiche__aide">25 Mo max · 960 × 480 px · format paysage</span>
+    </div>
+
+    <div class="fiche__vignettes">
+        {% for rang in 0..11 %}
+            <div class="fiche__vignette {{ rang == 0 ? 'fiche__vignette--principale' : '' }}">
+                {% if rang == 0 %}
+                    <span class="fiche__vignette-etiquette">Photo principale</span>
+                {% endif %}
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.5"></rect>
+                    <circle cx="8.5" cy="10" r="1.5" fill="currentColor"></circle>
+                    <path d="M4 17l5-5 4 4 3-2 4 4" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"></path>
+                </svg>
+            </div>
+        {% endfor %}
+
+        <button class="fiche__vignette-ajout" type="button">
+            <svg width="22" height="22" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+            </svg>
+            <span>Ajouter un média</span>
+        </button>
+    </div>
+
+    <div class="fiche__media-salle">
+        <div class="fiche__media-salle-label">
+            <span class="mdm-dot" style="--mdm-dot-color: var(--secondary-p-che); --mdm-dot-size: 8px" aria-hidden="true"></span>
+            <span>Associer à une salle de réunion</span>
+        </div>
+        <div class="fiche__media-salle-champ">
+            <span>Salle de réunion</span>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+        </div>
+    </div>
+</div>
