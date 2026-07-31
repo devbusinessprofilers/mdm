@@ -12,12 +12,19 @@ use App\Pim\Api\LieuApiMapper;
 /** @implements ProviderInterface<LieuResource> */
 final readonly class LieuItemProvider implements ProviderInterface
 {
-    public function __construct(private LieuApiState $state, private LieuApiMapper $mapper)
-    {
+    public function __construct(
+        private LieuApiState $state,
+        private LieuApiMapper $mapper,
+    ) {
     }
 
-    public function provide(Operation $operation, array $uriVariables = [], array $context = []): LieuResource
-    {
-        return $this->mapper->lieu($this->state->lieu((string) ($uriVariables['id'] ?? '')));
+    public function provide(
+        Operation $operation,
+        array $uriVariables = [],
+        array $context = [],
+    ): LieuResource {
+        return $this->mapper->lieu(
+            $this->state->lieu((string) ($uriVariables['id'] ?? '')),
+        );
     }
 }

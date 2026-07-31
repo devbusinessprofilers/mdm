@@ -47,39 +47,138 @@ final readonly class LieuApiMapper
             updatedAt: $fiche->updatedAt()->format(DATE_ATOM),
             generaleTypologie: $lieu->generaleTypologie(),
             generaleWebsiteUrl: $lieu->generaleWebsiteUrl(),
-            informationsGenerales: $this->fields($lieu, LieuFormCatalog::general()),
-            disponibilites: $this->fields($lieu, LieuFormCatalog::availability()),
-            accessibiliteDescription: $this->fields($lieu, LieuFormCatalog::accessibilityAndDescription()),
+            informationsGenerales: $this->fields(
+                $lieu,
+                LieuFormCatalog::general(),
+            ),
+            disponibilites: $this->fields(
+                $lieu,
+                LieuFormCatalog::availability(),
+            ),
+            accessibiliteDescription: $this->fields(
+                $lieu,
+                LieuFormCatalog::accessibilityAndDescription(),
+            ),
             hebergement: $this->fields($lieu, LieuFormCatalog::accommodation()),
-            syntheseSalles: $this->fields($lieu, LieuFormCatalog::meetingRooms()),
-            equipementsServices: $this->fields($lieu, LieuFormCatalog::equipmentAndServices()),
+            syntheseSalles: $this->fields(
+                $lieu,
+                LieuFormCatalog::meetingRooms(),
+            ),
+            equipementsServices: $this->fields(
+                $lieu,
+                LieuFormCatalog::equipmentAndServices(),
+            ),
             rse: $this->fields($lieu, LieuFormCatalog::rse()),
             loisirs: $this->fields($lieu, LieuFormCatalog::leisure()),
             restauration: $this->fields($lieu, LieuFormCatalog::restaurant()),
             visibilite: $this->fields($lieu, LieuFormCatalog::visibility()),
-            localisation: null === $lieu->localisation() ? null : $this->namedFields($lieu->localisation(), ['pays', 'countryCode', 'region', 'departement', 'ruePostale', 'codePostal', 'ville', 'arrondissement', 'latitude', 'longitude']),
-            administratif: $this->fields($lieu->administratif(), LieuFormCatalog::administrative()),
-            tarification: $this->fields($lieu->tarification(), LieuFormCatalog::pricing()),
-            salles: array_values(array_map(fn (object $salle): array => $this->namedFields($salle, ['id', 'nom', 'superficie', 'capaciteReunion', 'capaciteU', 'capaciteClasse', 'capaciteTheatre', 'capaciteCabaret', 'capaciteBanquet', 'capaciteCocktail', 'capaciteAuditorium', 'lumiereJour', 'accesPmr', 'espaceDansant', 'climatisee', 'position']), $lieu->salles()->toArray())),
-            periodesFermeture: array_values(array_map(fn (object $periode): array => $this->namedFields($periode, ['id', 'nom', 'dateDebut', 'dateFin']), $lieu->periodesFermeture()->toArray())),
-            acces: array_values(array_map(fn (object $acces): array => $this->namedFields($acces, ['id', 'type', 'nom', 'distanceKilometres', 'dureeMinutes', 'modeTransport', 'position']), $lieu->acces()->toArray())),
-            medias: array_map(fn (array $photo): LieuMediaResource => $this->photo($photo), $this->photos->photos($lieu)),
+            localisation: null === $lieu->localisation()
+                ? null
+                : $this->namedFields($lieu->localisation(), [
+                    'pays',
+                    'countryCode',
+                    'region',
+                    'departement',
+                    'ruePostale',
+                    'codePostal',
+                    'ville',
+                    'arrondissement',
+                    'latitude',
+                    'longitude',
+                ]),
+            administratif: $this->fields(
+                $lieu->administratif(),
+                LieuFormCatalog::administrative(),
+            ),
+            tarification: $this->fields(
+                $lieu->tarification(),
+                LieuFormCatalog::pricing(),
+            ),
+            salles: array_values(
+                array_map(
+                    fn (object $salle): array => $this->namedFields($salle, [
+                        'id',
+                        'nom',
+                        'superficie',
+                        'capaciteReunion',
+                        'capaciteU',
+                        'capaciteClasse',
+                        'capaciteTheatre',
+                        'capaciteCabaret',
+                        'capaciteBanquet',
+                        'capaciteCocktail',
+                        'capaciteAuditorium',
+                        'lumiereJour',
+                        'accesPmr',
+                        'espaceDansant',
+                        'climatisee',
+                        'position',
+                    ]),
+                    $lieu->salles()->toArray(),
+                ),
+            ),
+            periodesFermeture: array_values(
+                array_map(
+                    fn (object $periode): array => $this->namedFields($periode, [
+                        'id',
+                        'nom',
+                        'dateDebut',
+                        'dateFin',
+                    ]),
+                    $lieu->periodesFermeture()->toArray(),
+                ),
+            ),
+            acces: array_values(
+                array_map(
+                    fn (object $acces): array => $this->namedFields($acces, [
+                        'id',
+                        'type',
+                        'nom',
+                        'distanceKilometres',
+                        'dureeMinutes',
+                        'modeTransport',
+                        'position',
+                    ]),
+                    $lieu->acces()->toArray(),
+                ),
+            ),
+            medias: array_map(
+                fn (array $photo): LieuMediaResource => $this->photo($photo),
+                $this->photos->photos($lieu),
+            ),
         );
     }
 
-    public function media(Lieu $lieu, RessourceLieu $resource): LieuMediaResource
-    {
+    public function media(
+        Lieu $lieu,
+        RessourceLieu $resource,
+    ): LieuMediaResource {
         foreach ($this->photos->photos($lieu) as $photo) {
             if ($photo['resource'] === $resource) {
                 return $this->photo($photo);
             }
         }
 
-        return new LieuMediaResource($resource->id(), $lieu->fiche()->version(), $resource->damAssetId(), $resource->usage(), $resource->legende(), $resource->position(), $resource->rightsGranted(), $resource->source(), $resource->crop(), $resource->rotation(), null, null, []);
+        return new LieuMediaResource(
+            $resource->id(),
+            $lieu->fiche()->version(),
+            $resource->damAssetId(),
+            $resource->usage(),
+            $resource->legende(),
+            $resource->position(),
+            $resource->rightsGranted(),
+            $resource->source(),
+            $resource->crop(),
+            $resource->rotation(),
+            null,
+            null,
+            [],
+        );
     }
 
     /**
      * @param array<string, array<string, mixed>> $definitions
+     *
      * @return array<string, mixed>
      */
     private function fields(object $source, array $definitions): array
@@ -89,6 +188,7 @@ final readonly class LieuApiMapper
 
     /**
      * @param list<string> $names
+     *
      * @return array<string, mixed>
      */
     private function namedFields(object $source, array $names): array

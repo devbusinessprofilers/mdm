@@ -25,25 +25,34 @@ final readonly class LieuPatchProcessor implements ProcessorInterface
     ) {
     }
 
-    public function process(mixed $data, Operation $operation, array $uriVariables = [], array $context = []): LieuResource
-    {
+    public function process(
+        mixed $data,
+        Operation $operation,
+        array $uriVariables = [],
+        array $context = [],
+    ): LieuResource {
         $lieu = $this->state->lieu((string) ($uriVariables['id'] ?? ''));
         $this->state->assertVersion($lieu);
-        $form = $this->forms->create(LieuType::class, $lieu, ['csrf_protection' => false]);
+        $form = $this->forms->create(LieuType::class, $lieu, [
+            'csrf_protection' => false,
+        ]);
         try {
-            return $lieu->fiche()->preserveWorkflowDuring(function () use ($data, $form, $lieu): LieuResource {
-                $form->submit($data->payload(), false);
-                if (!$form->isValid()) {
-                    throw new ApiProblemException(Response::HTTP_UNPROCESSABLE_ENTITY, 'validation_failed', 'La fiche contient des données invalides.', [
-                        'violations' => $this->errors($form),
-                    ]);
-                }
+            return $lieu
+                ->fiche()
+                ->preserveWorkflowDuring(function () use (
+                    $data,
+                    $form,
+                    $lieu,
+                ): LieuResource {
+                    $form->submit($data->payload(), false);
+                    if (!$form->isValid()) {
+                        throw new ApiProblemException(Response::HTTP_UNPROCESSABLE_ENTITY, 'validation_failed', 'La fiche contient des données invalides.', ['violations' => $this->errors($form)]);
+                    }
+                    $lieu->fiche()->markSystemChanged();
+                    $this->state->flushAndIndex($lieu);
 
-                $lieu->fiche()->markSystemChanged();
-                $this->state->flushAndIndex($lieu);
-
-                return $this->mapper->lieu($lieu);
-            });
+                    return $this->mapper->lieu($lieu);
+                });
         } catch (ApiProblemException $exception) {
             throw $exception;
         } catch (\Throwable $exception) {
@@ -52,7 +61,7 @@ final readonly class LieuPatchProcessor implements ProcessorInterface
     }
 
     /** @param FormInterface<mixed> $form
-     *  @return list<array{propertyPath: string, message: string}>
+     * @return list<array{propertyPath: string, message: string}>
      */
     private function errors(FormInterface $form): array
     {
@@ -64,7 +73,10 @@ final readonly class LieuPatchProcessor implements ProcessorInterface
                 array_unshift($path, $origin->getName());
                 $origin = $origin->getParent();
             }
-            $errors[] = ['propertyPath' => implode('.', $path), 'message' => $error->getMessage()];
+            $errors[] = [
+                'propertyPath' => implode('.', $path),
+                'message' => $error->getMessage(),
+            ];
         }
 
         return $errors;

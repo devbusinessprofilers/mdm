@@ -16,11 +16,15 @@ final class Version20260730100000 extends AbstractMigration
 
     public function up(Schema $schema): void
     {
-        $this->addSql('ALTER TABLE pim_lieu ADD desc_generale_point_interet LONGTEXT DEFAULT NULL, ADD rse_desc_generale LONGTEXT DEFAULT NULL');
+        $this->addSql(
+            'ALTER TABLE pim_lieu ADD desc_generale_point_interet LONGTEXT DEFAULT NULL, ADD rse_desc_generale LONGTEXT DEFAULT NULL',
+        );
     }
 
     public function down(Schema $schema): void
     {
-        $this->addSql('ALTER TABLE pim_lieu DROP desc_generale_point_interet, DROP rse_desc_generale');
+        $this->addSql(
+            'ALTER TABLE pim_lieu DROP desc_generale_point_interet, DROP rse_desc_generale',
+        );
     }
 }

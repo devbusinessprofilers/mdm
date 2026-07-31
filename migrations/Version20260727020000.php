@@ -17,7 +17,7 @@ final class Version20260727020000 extends AbstractMigration
     public function up(Schema $schema): void
     {
         $this->addSql(
-            "CREATE TABLE account_user (
+            'CREATE TABLE account_user (
                 id VARCHAR(26) NOT NULL,
                 email VARCHAR(180) NOT NULL,
                 password VARCHAR(255) NOT NULL,
@@ -27,7 +27,7 @@ final class Version20260727020000 extends AbstractMigration
                 updated_at DATETIME NOT NULL,
                 UNIQUE INDEX UNIQ_ACCOUNT_USER_EMAIL (email),
                 PRIMARY KEY(id)
-            ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE = InnoDB",
+            ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE = InnoDB',
         );
     }
 

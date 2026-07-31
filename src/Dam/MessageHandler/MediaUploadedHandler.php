@@ -29,12 +29,21 @@ final readonly class MediaUploadedHandler
         if (null === $media) {
             return;
         }
-        if ($media->originalStorageKey() !== $message->storageKey || $media->checksum() !== $message->checksum) {
+        if (
+            $media->originalStorageKey() !== $message->storageKey
+            || $media->checksum() !== $message->checksum
+        ) {
             throw new \DomainException('Le contrat MediaUploaded ne correspond pas au média enregistré.');
         }
-
         $urls = $this->processor->process($media);
-        $this->outbox->enqueue(new MediaProcessed($media->id(), $urls, [], $media->status()->value));
+        $this->outbox->enqueue(
+            new MediaProcessed(
+                $media->id(),
+                $urls,
+                [],
+                $media->status()->value,
+            ),
+        );
         $this->entityManager->flush();
     }
 }

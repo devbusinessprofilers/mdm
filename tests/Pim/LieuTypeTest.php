@@ -57,6 +57,8 @@ final class LieuTypeTest extends KernelTestCase
             'label' => 'Lieu test',
             'generaleTypologie' => ['GENERALE_TYPOLOGIE_20'],
             'generaleWebsiteUrl' => 'https://example.test',
+            'informationsGenerales' => ['evenementsPredilection' => ['GENERALE_EVENEMENTS_PREDILECTION_1', 'GENERALE_EVENEMENTS_PREDILECTION_5']],
+            'disponibilites' => ['joursOuverture' => ['DISPO_JOUR_OUVERTURE_1', 'DISPO_JOUR_OUVERTURE_2']],
             'localisation' => ['pays' => 'France', 'region' => '', 'departement' => '', 'ruePostale' => '1 rue Test', 'codePostal' => '75001', 'ville' => 'Paris', 'arrondissement' => '', 'latitude' => '', 'longitude' => ''],
             'salles' => [['nom' => 'Auditorium', 'superficie' => '100', 'capaciteReunion' => '', 'capaciteU' => '', 'capaciteClasse' => '', 'capaciteTheatre' => '120', 'capaciteCabaret' => '', 'capaciteBanquet' => '', 'capaciteCocktail' => '', 'capaciteAuditorium' => '120', 'lumiereJour' => '1', 'accesPmr' => '1', 'espaceDansant' => '', 'climatisee' => '1', 'position' => '']],
             'periodesFermeture' => [['nom' => 'Fermeture annuelle', 'dateDebut' => '2026-08-01', 'dateFin' => '2026-08-15']],
@@ -67,6 +69,8 @@ final class LieuTypeTest extends KernelTestCase
         self::assertTrue($form->isSynchronized());
         self::assertTrue($form->isValid(), (string) $form->getErrors(true));
         self::assertSame('Paris', $lieu->localisation()?->ville());
+        self::assertSame(['GENERALE_EVENEMENTS_PREDILECTION_1', 'GENERALE_EVENEMENTS_PREDILECTION_5'], $lieu->evenementsPredilection());
+        self::assertSame(['DISPO_JOUR_OUVERTURE_1', 'DISPO_JOUR_OUVERTURE_2'], $lieu->joursOuverture());
         self::assertCount(1, $lieu->salles());
         self::assertCount(1, $lieu->periodesFermeture());
         self::assertCount(1, $lieu->acces());

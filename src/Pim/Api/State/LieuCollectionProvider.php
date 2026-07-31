@@ -26,11 +26,15 @@ final readonly class LieuCollectionProvider implements ProviderInterface
     }
 
     /** @return list<LieuListResource> */
-    public function provide(Operation $operation, array $uriVariables = [], array $context = []): array
-    {
+    public function provide(
+        Operation $operation,
+        array $uriVariables = [],
+        array $context = [],
+    ): array {
         $request = $this->requests->getCurrentRequest();
         $statusValue = $request?->query->getString('status') ?? '';
-        $status = '' === $statusValue ? null : StatutFiche::tryFrom($statusValue);
+        $status =
+            '' === $statusValue ? null : StatutFiche::tryFrom($statusValue);
         if ('' !== $statusValue && null === $status) {
             throw new ApiProblemException(Response::HTTP_BAD_REQUEST, 'invalid_filter', 'Le filtre status est invalide.');
         }
@@ -39,11 +43,12 @@ final readonly class LieuCollectionProvider implements ProviderInterface
             throw new ApiProblemException(Response::HTTP_BAD_REQUEST, 'invalid_filter', 'Le paramètre limit doit être compris entre 1 et 100.');
         }
         try {
-            $cursor = FicheCursor::decode($request?->query->getString('cursor'));
+            $cursor = FicheCursor::decode(
+                $request?->query->getString('cursor'),
+            );
         } catch (\InvalidArgumentException $exception) {
             throw new ApiProblemException(Response::HTTP_BAD_REQUEST, 'invalid_cursor', $exception->getMessage());
         }
-
         $page = $this->lieux->findListPage($cursor, $limit, $status);
         if (null !== $request) {
             $request->attributes->set('_api_next_cursor', $page->nextCursor);

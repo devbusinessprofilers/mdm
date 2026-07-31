@@ -265,4 +265,6 @@ final class ApiTestObjectStorage implements PrivateObjectStorageInterface
     public function exists(string $key): bool { return false; }
     public function temporaryUrl(string $key, \DateTimeInterface $expiresAt): string { return 'https://private.example.test/'.$key; }
     public function delete(string $key): void {}
+
+    public function deleteDirectory(string $prefix): void {}
 }

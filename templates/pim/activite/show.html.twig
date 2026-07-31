@@ -1,0 +1,90 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ activite.label ?? 'Activité' }}{% endblock %}
+
+{% block body %}
+<main class="page page-narrow">
+    <a class="back-link" href="{{ path('app_pim_activite_index') }}">← Retour aux activités</a>
+
+    <header class="page-header">
+        <div class="page-header-copy">
+            <p class="page-kicker">Fiche Activité</p>
+            <h1>{{ activite.label ?? 'Sans libellé' }}</h1>
+        </div>
+
+        <div class="table-actions">
+            <a class="btn" href="{{ path('app_pim_activite_edit', {id: activite.id}) }}">Modifier</a>
+
+            {% if is_granted('ROLE_BP_VALIDATOR') %}
+                <a
+                    class="btn btn-secondary"
+                    href="{{ path('app_pim_activite_history', {id: activite.id}) }}"
+                >
+                    Historique
+                </a>
+            {% endif %}
+        </div>
+    </header>
+
+    <section class="card">
+        <dl class="definition-list">
+            <dt>Code</dt>
+            <dd>{{ activite.code ?? '—' }}</dd>
+
+            <dt>Prestataire</dt>
+            <dd>{{ activite.prestataire ? activite.prestataire.label : '—' }}</dd>
+
+            <dt>Type</dt>
+            <dd>{{ activite.types|join(', ') ?: '—' }}</dd>
+
+            <dt>Thématique</dt>
+            <dd>{{ activite.thematique ?? '—' }}</dd>
+
+            <dt>Rayon</dt>
+            <dd>{{ activite.modeIntervention ? activite.modeIntervention.value : '—' }}</dd>
+
+            <dt>Participants</dt>
+            <dd>{{ activite.participantsMin ?? '—' }} à {{ activite.participantsMax ?? '—' }}</dd>
+
+            <dt>Durée</dt>
+            <dd>{{ activite.dureeMinMinutes ?? '—' }} à {{ activite.dureeMaxMinutes ?? '—' }} minutes</dd>
+
+            <dt>Statut</dt>
+            <dd><span class="badge badge-info">{{ activite.fiche.status.value }}</span></dd>
+        </dl>
+    </section>
+
+    <section class="card">
+        <h2>Description</h2>
+        <p>{{ activite.descriptionGenerale ?? '—' }}</p>
+
+        <h3>Comprend</h3>
+        <p>{{ activite.comprendPrestation ?? '—' }}</p>
+    </section>
+
+    <section class="card">
+        <h2>Cycle de validation</h2>
+
+        <div class="table-actions">
+            {% if activite.fiche.status.value == 'en_cours' and is_granted('FICHE_SUBMIT', activite.fiche) %}
+                {{ form(submit_form) }}
+            {% endif %}
+
+            {% if activite.fiche.status.value == 'en_attente_validation' and is_granted('FICHE_VALIDATE', activite.fiche) %}
+                {{ form(validate_form) }}
+                {{ form(reject_form) }}
+            {% endif %}
+
+            {% if activite.fiche.status.value == 'publiee' and is_granted('FICHE_ARCHIVE', activite.fiche) %}
+                {{ form(archive_form) }}
+            {% endif %}
+        </div>
+    </section>
+
+    {% if is_granted('FICHE_DELETE', activite.fiche) %}
+        <div class="danger-form">
+            {{ form(delete_form) }}
+        </div>
+    {% endif %}
+</main>
+{% endblock %}

@@ -1,0 +1,76 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Services événementiels{% endblock %}
+
+{% block body %}
+<main class="page">
+    <header class="page-header">
+        <div class="page-header-copy">
+            <p class="page-kicker">Catalogue</p>
+            <h1>Services événementiels</h1>
+            <p class="page-description">Consultez et maintenez les fiches Service du PIM.</p>
+        </div>
+        <a class="btn" href="{{ path('app_pim_service_new') }}">Créer un service</a>
+    </header>
+
+    <div class="toolbar">
+        {{ form(search_form) }}
+        <a class="btn btn-secondary btn-small" href="{{ path('app_pim_service_index', {status: 'en_attente_validation'}) }}">
+            À valider ({{ pending_count }})
+        </a>
+        {% if query or status %}
+            <a class="text-link" href="{{ path('app_pim_service_index') }}">Effacer les critères</a>
+        {% endif %}
+    </div>
+
+    {% if result_count is not null %}
+        <p class="page-description">{{ result_count }} résultat{{ result_count == 1 ? '' : 's' }}</p>
+    {% endif %}
+
+    <div class="table-shell">
+        <div class="table-scroll">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Code</th>
+                        <th>Nom</th>
+                        <th>Ville fixe</th>
+                        <th>Statut</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for service in services %}
+                    <tr>
+                        <td>{{ service.code ?? '—' }}</td>
+                        <td>{{ service.label ?? 'Sans libellé' }}</td>
+                        <td>{{ service.ville ?? '—' }}</td>
+                            <td>
+                                <span class="badge badge-info">{{ service.status.value }}</span>
+                            </td>
+                        <td>
+                            <a class="text-link" href="{{ path('app_pim_service_show', {id: service.id}) }}">Voir</a>
+                            <a class="text-link" href="{{ path('app_pim_service_edit', {id: service.id}) }}">Modifier</a>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="5" class="empty-state">Aucun service.</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% if next_cursor %}
+        <nav class="pagination">
+            <a class="btn btn-secondary btn-small" href="{{ path('app_pim_service_index', {
+                q: query ?: null,
+                status: status ? status.value : null,
+                cursor: next_cursor
+            }) }}">Page suivante</a>
+        </nav>
+    {% endif %}
+</main>
+{% endblock %}

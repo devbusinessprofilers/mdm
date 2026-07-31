@@ -1,0 +1,117 @@
+{% extends 'base.html.twig' %}
+
+{% macro collection(field, title) %}
+    <fieldset
+        data-controller="form-collection"
+        data-form-collection-index-value="{{ field|length }}"
+        data-form-collection-prototype-value="{{ form_widget(field.vars.prototype)|e('html_attr') }}"
+    >
+        <legend>{{ title }}</legend>
+        <div data-form-collection-target="items">
+            {% for item in field %}
+                <fieldset data-form-collection-item>
+                    {{ form_widget(item) }}
+                    <button type="button" data-action="form-collection#remove">Retirer</button>
+                </fieldset>
+            {% endfor %}
+        </div>
+        <button type="button" data-action="form-collection#add" data-remove-label="Retirer">Ajouter</button>
+    </fieldset>
+{% endmacro %}
+
+{% block title %}{{ creation ? 'Nouveau service' : 'Modifier le service' }}{% endblock %}
+
+{% block body %}
+<main class="page">
+    <a class="back-link" href="{{ path('app_pim_service_index') }}">← Retour aux services</a>
+    <header class="page-header">
+        <div class="page-header-copy">
+            <p class="page-kicker">Fiche Service</p>
+            <h1>{{ creation ? 'Nouveau service' : 'Modifier le service' }}</h1>
+        </div>
+    </header>
+
+    {{ form_start(form) }}
+        {{ form_errors(form) }}
+        <section class="card">
+            <h2>Informations générales</h2>
+            {{ form_row(form.code) }}
+            {{ form_row(form.label) }}
+            {{ form_row(form.prestations) }}
+            {{ form_row(form.prestataireEsat) }}
+            {{ form_row(form.demarcheRse) }}
+            {{ form_row(form.descriptionGenerale) }}
+        </section>
+
+        <section class="card">
+            <h2>Accessibilité de la prestation</h2>
+            {{ form_row(form.adapteFemmesEnceintes) }}
+            {{ form_row(form.adapteMalentendants) }}
+            {{ form_row(form.adapteMalvoyants) }}
+        </section>
+
+        <section class="card">
+            <h2>Matériel et logistique</h2>
+            {{ form_row(form.materielInclus) }}
+            {{ form_row(form.equipementParticipantsRequis) }}
+            {{ form_row(form.equipementReceptionRequis) }}
+            {{ form_row(form.contraintesLogistiques) }}
+        </section>
+
+        <section class="card">
+            <h2>Rayon d’action</h2>
+            {{ form_row(form.modeIntervention) }}
+            <details open>
+                <summary>Localisation fixe — champs texte V1</summary>
+                {{ form_widget(form.localisation) }}
+            </details>
+            <details>
+                <summary>Localisation mobile — une valeur par ligne</summary>
+                {{ form_row(form.paysMobiles) }}
+                {{ form_row(form.regionsMobiles) }}
+                {{ form_row(form.departementsMobiles) }}
+            </details>
+        </section>
+
+        <section class="card">
+            <h2>Tarifs en euros</h2>
+            {{ form_row(form.tarifParPrestation) }}
+            {{ form_row(form.tarifParPersonne) }}
+            {{ form_row(form.tarifParJour) }}
+            {{ form_row(form.tarifParDemiJournee) }}
+            {{ form_row(form.tarifParHeure) }}
+            {{ form_row(form.surDevis) }}
+        </section>
+
+        <section class="card">
+            <h2>Médias et documents</h2>
+            {{ form_row(form.youtubeUrl) }}
+            {{ _self.collection(form.ressources, 'Photos — dix maximum') }}
+            <h3>Nouveaux supports commerciaux</h3>
+            {{ form_row(form.supportsCommerciaux) }}
+            {{ form_row(form.supportTitle) }}
+            {{ form_row(form.supportSource) }}
+            {{ form_row(form.supportRightsGranted) }}
+        </section>
+        {{ form_row(form.submit) }}
+    {{ form_end(form) }}
+
+    {% if not creation %}
+        <section class="card">
+            <h2>Supports commerciaux existants</h2>
+            {% for document in documents %}
+                <article class="lieu-photo-card">
+                    <strong>{{ document.resource.legende ?: 'Support commercial' }}</strong>
+                    {{ form(document.metadata_form) }}
+                    {{ form(document.replace_form) }}
+                    <a href="{{ path('app_pim_service_document_download', {id: service.id, resourceId: document.resource.id}) }}">Télécharger</a>
+                    {% if is_granted('ROLE_BP_VALIDATOR') %}{{ form(document.publication_form) }}{% endif %}
+                    {{ form(document.delete_form) }}
+                </article>
+            {% else %}
+                <p class="empty-state">Aucun support commercial.</p>
+            {% endfor %}
+        </section>
+    {% endif %}
+</main>
+{% endblock %}

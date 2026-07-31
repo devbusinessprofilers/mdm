@@ -21,7 +21,7 @@ security:
             pattern: ^/(_profiler|_wdt|assets|build)/
             security: false
         external_api:
-            pattern: ^/api/v1/lieux
+            pattern: ^/api/v1/(?:lieux|activites|services)
             stateless: true
             custom_authenticators:
                 - App\Account\Security\ExternalSiteJwtAuthenticator
@@ -52,7 +52,7 @@ security:
         - { path: ^/login$, roles: PUBLIC_ACCESS }
         - { path: ^/logout$, roles: PUBLIC_ACCESS }
         - { path: ^/invitation/, roles: PUBLIC_ACCESS }
-        - { path: ^/api/v1/lieux, roles: ROLE_EXTERNAL_SITE }
+        - { path: ^/api/v1/(?:lieux|activites|services), roles: ROLE_EXTERNAL_SITE }
         - { path: ^/admin, roles: ROLE_BP_EDITOR }
         - { path: ^/, roles: ROLE_USER }
 

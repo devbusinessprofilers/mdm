@@ -20,6 +20,7 @@ final class MediaAssetRepository extends ServiceEntityRepository
 
     /**
      * @param list<string> $ids
+     *
      * @return list<MediaAsset>
      */
     public function findByStringIds(array $ids): array
@@ -28,7 +29,6 @@ final class MediaAssetRepository extends ServiceEntityRepository
             static fn (string $id): Ulid => Ulid::fromString($id),
             array_values(array_filter($ids, Ulid::isValid(...))),
         );
-
         if ([] === $ulids) {
             return [];
         }
@@ -39,8 +39,14 @@ final class MediaAssetRepository extends ServiceEntityRepository
             ->addSelect('r')
             ->leftJoin('m.renditions', 'r')
             ->where('m.id IN (:ids)')
-            // DQL does not run the 'ulid' column type on array parameters; bind binaries.
-            ->setParameter('ids', array_map(static fn (Ulid $id): string => $id->toBinary(), $ulids), ArrayParameterType::BINARY)
+            ->setParameter(
+                'ids',
+                array_map(
+                    static fn (Ulid $id): string => $id->toBinary(),
+                    $ulids,
+                ),
+                ArrayParameterType::BINARY,
+            )
             ->getQuery()
             ->getResult();
     }

@@ -7,7 +7,7 @@ namespace App\Pim\Api\Dto;
 final readonly class LieuMediaResource
 {
     /**
-     * @param array{x: int, y: int, width: int, height: int}|null $crop
+     * @param array{x: int, y: int, width: int, height: int}|null                  $crop
      * @param list<array{name: string, width: int, height: int, url: string|null}> $variants
      */
     public function __construct(

@@ -10,8 +10,7 @@ final class MediaOrderInput
 {
     /** @param list<string> $ids */
     public function __construct(
-        #[Assert\Count(min: 1)]
-        public array $ids = [],
+        #[Assert\Count(min: 1)] public array $ids = [],
     ) {
     }
 }

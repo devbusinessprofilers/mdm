@@ -12,7 +12,17 @@ final class ImageRenditionGeneratorTest extends TestCase
 {
     public function testItCreatesEveryExactWebpVariant(): void
     {
-        $process = proc_open(['convert', '-size', '1200x800', 'gradient:#2563eb-#f8fafc', 'png:-'], [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes);
+        $process = proc_open(
+            [
+                'convert',
+                '-size',
+                '1200x800',
+                'gradient:#2563eb-#f8fafc',
+                'png:-',
+            ],
+            [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']],
+            $pipes,
+        );
         self::assertIsResource($process);
         fclose($pipes[0]);
         $source = stream_get_contents($pipes[1]);
@@ -24,16 +34,30 @@ final class ImageRenditionGeneratorTest extends TestCase
         self::assertIsResource($stream);
         fwrite($stream, $source);
         rewind($stream);
-
-        $renditions = (new ImageRenditionGenerator())->generate($stream, ['x' => 100, 'y' => 100, 'width' => 900, 'height' => 600], 90);
+        $renditions = (new ImageRenditionGenerator())->generate(
+            $stream,
+            ['x' => 100, 'y' => 100, 'width' => 900, 'height' => 600],
+            90,
+        );
         fclose($stream);
-
-        self::assertSame(ImageVariantRegistry::names(), array_map(static fn ($rendition): string => $rendition->name, $renditions));
+        self::assertSame(
+            ImageVariantRegistry::names(),
+            array_map(
+                static fn ($rendition): string => $rendition->name,
+                $renditions,
+            ),
+        );
         foreach ($renditions as $rendition) {
             $dimensions = getimagesizefromstring($rendition->contents);
             self::assertIsArray($dimensions);
-            self::assertSame(ImageVariantRegistry::all()[$rendition->name]['width'], $dimensions[0]);
-            self::assertSame(ImageVariantRegistry::all()[$rendition->name]['height'], $dimensions[1]);
+            self::assertSame(
+                ImageVariantRegistry::all()[$rendition->name]['width'],
+                $dimensions[0],
+            );
+            self::assertSame(
+                ImageVariantRegistry::all()[$rendition->name]['height'],
+                $dimensions[1],
+            );
             self::assertSame('image/webp', $dimensions['mime']);
         }
     }

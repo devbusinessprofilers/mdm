@@ -20,7 +20,7 @@ final class LieuFormCatalog
         return [
             'generaleChainesGroupeHot' => self::choice('GENERALE_CHAINES_GROUPE_HOT', 'Groupe et chaîne hôtelière', true),
             'generaleEtabRp' => ['label' => 'ERP'],
-            'generaleGamme' => ['label' => 'Événements de prédilection'],
+            'evenementsPredilection' => self::choice('GENERALE_EVENEMENTS_PREDILECTION', 'Événements de prédilection', true),
         ];
     }
 
@@ -32,7 +32,7 @@ final class LieuFormCatalog
 
         return [
             'dispoLieuPrivatisable' => ['label' => 'Lieu privatisable'],
-            'dispoJourOuverture' => self::choice('DISPO_JOUR_OUVERTURE', "Jour d'ouverture"),
+            'joursOuverture' => self::choice('DISPO_JOUR_OUVERTURE', "Jours d'ouverture", true),
             'dispoHeureOuvertureHeure' => $hour + ['label' => "Heure d'ouverture"],
             'dispoHeureOuvertureMinutes' => $minute + ['label' => "Minutes d'ouverture"],
             'dispoHeureFermetureHeure' => $hour + ['label' => 'Heure de fermeture'],

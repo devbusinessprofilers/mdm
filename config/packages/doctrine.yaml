@@ -1,6 +1,7 @@
 doctrine:
     dbal:
         url: '%env(resolve:DATABASE_URL)%'
+        schema_filter: '~^(?!messenger_messages$)~'
 
         # IMPORTANT: You MUST configure your server version,
         # either here or in the DATABASE_URL env var (see .env file)
@@ -52,6 +53,12 @@ doctrine:
                 dir: '%kernel.project_dir%/src/Shared/Entity'
                 prefix: 'App\Shared\Entity'
                 alias: Shared
+            Audit:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Audit/Entity'
+                prefix: 'App\Audit\Entity'
+                alias: Audit
         controller_resolver:
             auto_mapping: false
 

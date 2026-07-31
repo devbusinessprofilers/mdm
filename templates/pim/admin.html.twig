@@ -18,7 +18,11 @@
                 <p class="page-kicker">Supervision</p>
                 <h2>État des traitements</h2>
             </div>
-            {% if event_monitor.available %}<span class="badge badge-success">À jour</span>{% else %}<span class="badge badge-danger">Indisponible</span>{% endif %}
+            {% if event_monitor.available %}
+                <span class="badge badge-success">À jour</span>
+            {% else %}
+                <span class="badge badge-danger">Indisponible</span>
+            {% endif %}
         </div>
 
         {% if event_monitor.available %}
@@ -45,11 +49,40 @@
     <section class="admin-section">
         <div class="section-heading">
             <div>
+                <p class="page-kicker">Guide opérationnel</p>
+                <h2>Workflows Lieu, Activité, Service, API et DAM</h2>
+            </div>
+            <span class="badge badge-info">{{ workflow_catalog|length }}</span>
+        </div>
+        <p class="admin-event-help">Ces parcours décrivent les responsabilités, les préconditions et les traitements asynchrones à respecter en administration et lors d’une intégration API.</p>
+        <div class="admin-workflow-grid">
+            {% for workflow in workflow_catalog %}
+                <article class="card admin-workflow-card">
+                    <div class="section-heading">
+                        <h3>{{ workflow.title }}</h3>
+                        <span class="badge badge-neutral">{{ workflow.domain }}</span>
+                    </div>
+                    <p>{{ workflow.summary }}</p>
+                    <ol>
+                        {% for step in workflow.steps %}<li>{{ step }}</li>{% endfor %}
+                    </ol>
+                    <ul>
+                        {% for rule in workflow.rules %}<li>{{ rule }}</li>{% endfor %}
+                    </ul>
+                </article>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="admin-section">
+        <div class="section-heading">
+            <div>
                 <p class="page-kicker">Automatisations</p>
-                <h2>Événements et résultats attendus</h2>
+                <h2>Événements asynchrones et résultats attendus</h2>
             </div>
             <span class="badge badge-info">{{ event_catalog|length }}</span>
         </div>
+        <p class="admin-event-help">Le catalogue couvre les traitements Lieu, Activité et Service. Les révisions d’audit sont écrites dans la transaction métier : elles sont consultables dans l’historique de la fiche et n’apparaissent donc pas dans les files Messenger.</p>
         <div class="table-shell">
             <div class="table-scroll">
                 <table class="data-table admin-event-table">
@@ -97,11 +130,21 @@
                                 <td><time datetime="{{ event.occurredAt }}">{{ event.occurredAt }}</time></td>
                                 <td><strong>{{ event.label }}</strong><code>{{ event.id }}</code></td>
                                 <td>
-                                    <span class="badge {{ event.status == 'Traité' ? 'badge-success' : (event.status == 'Échec de publication' ? 'badge-danger' : 'badge-info') }}">{{ event.status }}</span>
+                                    {% set status_class = event.status == 'Traité'
+                                        ? 'badge-success'
+                                        : (event.status == 'Échec de publication' ? 'badge-danger' : 'badge-info')
+                                    %}
+                                    <span class="badge {{ status_class }}">{{ event.status }}</span>
                                     {% if event.attempts > 0 %}<small>{{ event.attempts }} tentative{{ event.attempts > 1 ? 's' : '' }}</small>{% endif %}
                                 </td>
                                 <td>
-                                    {% if event.error %}<span class="text-danger">{{ event.error|slice(0, 180) }}</span>{% elseif event.processedAt %}Handler terminé le {{ event.processedAt }}{% else %}En attente de confirmation du handler{% endif %}
+                                    {% if event.error %}
+                                        <span class="text-danger">{{ event.error|slice(0, 180) }}</span>
+                                    {% elseif event.processedAt %}
+                                        Handler terminé le {{ event.processedAt }}
+                                    {% else %}
+                                        En attente de confirmation du handler
+                                    {% endif %}
                                 </td>
                             </tr>
                         {% else %}
@@ -129,7 +172,11 @@
                     {% for page in pages %}
                         <article class="admin-page-item">
                             <div>
-                                {% if page.url %}<a href="{{ page.url }}"><strong>{{ page.label }}</strong></a>{% else %}<strong>{{ page.label }}</strong>{% endif %}
+                                {% if page.url %}
+                                    <a href="{{ page.url }}"><strong>{{ page.label }}</strong></a>
+                                {% else %}
+                                    <strong>{{ page.label }}</strong>
+                                {% endif %}
                                 <code>{{ page.path }}</code>
                             </div>
                             <div class="admin-page-meta">

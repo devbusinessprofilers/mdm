@@ -10,6 +10,7 @@ use App\Pim\Lov\LieuLovCatalog;
 use App\Pim\Repository\LieuRepository;
 use App\Pim\Enum\TypeFiche;
 use App\Shared\Entity\TimestampableTrait;
+use App\Pim\Validation\ValidLieu;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
@@ -19,6 +20,8 @@ use Symfony\Component\Uid\Ulid;
 #[ORM\Entity(repositoryClass: LieuRepository::class)]
 #[ORM\Table(name: 'pim_lieu')]
 #[ORM\HasLifecycleCallbacks]
+#[ValidLieu(groups: ['Draft'])]
+#[ValidLieu(groups: ['Submission'])]
 class Lieu
 {
     use TimestampableTrait { touch as touchDetail; }
@@ -443,12 +446,14 @@ class Lieu
 
         $this->ressources->add($ressource);
         $ressource->attachTo($this);
+        if (!$this->fiche->resources()->contains($ressource)) { $this->fiche->addResource($ressource); }
         $this->touch();
     }
 
     public function removeRessource(RessourceLieu $ressource): void
     {
         if ($this->ressources->removeElement($ressource)) {
+            $this->fiche->removeResource($ressource);
             $ressource->detachFrom($this);
             $this->touch();
         }
@@ -521,6 +526,19 @@ class Lieu
         $this->touch();
     }
 
+    /** @return list<string> */
+    public function evenementsPredilection(): array
+    {
+        return $this->lovValues('GENERALE_EVENEMENTS_PREDILECTION');
+    }
+
+    /** @param list<string> $values */
+    public function changeEvenementsPredilection(array $values): void
+    {
+        $this->replaceLovValues('GENERALE_EVENEMENTS_PREDILECTION', $values);
+    }
+
+    /** @deprecated Colonne de repli conservée pendant la migration. */
     public function generaleGamme(): ?string
     {
         return $this->generaleGamme;
@@ -556,6 +574,19 @@ class Lieu
         $this->touch();
     }
 
+    /** @return list<string> */
+    public function joursOuverture(): array
+    {
+        return $this->lovValues('DISPO_JOUR_OUVERTURE');
+    }
+
+    /** @param list<string> $values */
+    public function changeJoursOuverture(array $values): void
+    {
+        $this->replaceLovValues('DISPO_JOUR_OUVERTURE', $values);
+    }
+
+    /** @deprecated Colonne de repli conservée pendant la migration. */
     public function dispoJourOuverture(): ?string
     {
         return $this->dispoJourOuverture;

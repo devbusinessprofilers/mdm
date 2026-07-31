@@ -28,9 +28,12 @@ final class ExternalSiteJwtAuthenticator extends AbstractAuthenticator
         $claims = $this->verifier->verify($matches[1]);
         $subject = (string) $claims['sub'];
         if ('' === $subject) { throw new BadCredentialsException('Identité JWT vide.'); }
-        return new SelfValidatingPassport(new UserBadge($subject, static function (string $id): ExternalSitePrincipal {
+        $rawScopes = $claims['scope'] ?? $claims['scopes'] ?? [];
+        $scopes = is_string($rawScopes) ? preg_split('/\s+/', trim($rawScopes), -1, PREG_SPLIT_NO_EMPTY) : $rawScopes;
+        $scopes = is_array($scopes) ? array_values(array_unique(array_filter($scopes, is_string(...)))) : [];
+        return new SelfValidatingPassport(new UserBadge($subject, static function (string $id) use ($scopes): ExternalSitePrincipal {
             if ('' === $id) { throw new BadCredentialsException('Identité JWT vide.'); }
-            return new ExternalSitePrincipal($id);
+            return new ExternalSitePrincipal($id, $scopes);
         }));
     }
 

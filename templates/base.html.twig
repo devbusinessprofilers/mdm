@@ -24,6 +24,9 @@
                     {% if is_granted('ROLE_BP_EDITOR') %}
                         <a class="nav-link" href="{{ path('app_pim_admin') }}">Administration</a>
                         <a class="nav-link" href="{{ path('app_pim_lieu_index') }}">Lieux</a>
+                        <a class="nav-link" href="{{ path('app_pim_activite_index') }}">Activités</a>
+                        <a class="nav-link" href="{{ path('app_pim_restaurant_index') }}">Restaurants</a>
+                        <a class="nav-link" href="{{ path('app_pim_service_index') }}">Services</a>
                     {% endif %}
                     {% if is_granted('ROLE_SUPER_ADMIN') %}
                         <a class="nav-link" href="{{ path('app_account_admin_index') }}">Collaborateurs</a>

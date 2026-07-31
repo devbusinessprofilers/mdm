@@ -88,18 +88,64 @@ final class Version20260729153000 extends AbstractMigration
         $this->copyFromLieu('pim_lieu_administratif', self::ADMIN_COLUMNS);
         $this->copyFromLieu('pim_lieu_tarification', self::PRICING_COLUMNS);
 
-        $columns = [...array_keys(self::ADMIN_COLUMNS), ...array_keys(self::PRICING_COLUMNS)];
-        $this->addSql('ALTER TABLE pim_lieu '.implode(', ', array_map(static fn (string $column): string => 'DROP COLUMN '.$column, $columns)));
+        $columns = [
+            ...array_keys(self::ADMIN_COLUMNS),
+            ...array_keys(self::PRICING_COLUMNS),
+        ];
+        $this->addSql(
+            'ALTER TABLE pim_lieu '.
+                implode(
+                    ', ',
+                    array_map(
+                        static fn (string $column): string => 'DROP COLUMN '.
+                            $column,
+                        $columns,
+                    ),
+                ),
+        );
     }
 
     public function down(Schema $schema): void
     {
         $columns = self::ADMIN_COLUMNS + self::PRICING_COLUMNS;
-        $this->addSql('ALTER TABLE pim_lieu '.implode(', ', array_map(static fn (string $column, string $definition): string => sprintf('ADD %s %s', $column, $definition), array_keys($columns), $columns)));
+        $this->addSql(
+            'ALTER TABLE pim_lieu '.
+                implode(
+                    ', ',
+                    array_map(
+                        static fn (
+                            string $column,
+                            string $definition,
+                        ): string => sprintf('ADD %s %s', $column, $definition),
+                        array_keys($columns),
+                        $columns,
+                    ),
+                ),
+        );
 
-        foreach (['pim_lieu_administratif' => self::ADMIN_COLUMNS, 'pim_lieu_tarification' => self::PRICING_COLUMNS] as $table => $blockColumns) {
-            $assignments = implode(', ', array_map(static fn (string $column): string => sprintf('l.%1$s = b.%1$s', $column), array_keys($blockColumns)));
-            $this->addSql(sprintf('UPDATE pim_lieu l INNER JOIN %s b ON b.lieu_id = l.id SET %s', $table, $assignments));
+        foreach (
+            [
+                'pim_lieu_administratif' => self::ADMIN_COLUMNS,
+                'pim_lieu_tarification' => self::PRICING_COLUMNS,
+            ] as $table => $blockColumns
+        ) {
+            $assignments = implode(
+                ', ',
+                array_map(
+                    static fn (string $column): string => sprintf(
+                        'l.%1$s = b.%1$s',
+                        $column,
+                    ),
+                    array_keys($blockColumns),
+                ),
+            );
+            $this->addSql(
+                sprintf(
+                    'UPDATE pim_lieu l INNER JOIN %s b ON b.lieu_id = l.id SET %s',
+                    $table,
+                    $assignments,
+                ),
+            );
         }
 
         $this->addSql('DROP TABLE pim_lieu_administratif');
@@ -109,14 +155,38 @@ final class Version20260729153000 extends AbstractMigration
     /** @param array<string, string> $columns */
     private function createBlockTable(string $table, array $columns): void
     {
-        $definitions = implode(', ', array_map(static fn (string $column, string $definition): string => sprintf('%s %s', $column, $definition), array_keys($columns), $columns));
-        $this->addSql(sprintf('CREATE TABLE %s (lieu_id BINARY(16) NOT NULL, %s, PRIMARY KEY (lieu_id), CONSTRAINT FK_%s_LIEU FOREIGN KEY (lieu_id) REFERENCES pim_lieu (id) ON DELETE CASCADE) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci`', $table, $definitions, strtoupper($table)));
+        $definitions = implode(
+            ', ',
+            array_map(
+                static fn (
+                    string $column,
+                    string $definition,
+                ): string => sprintf('%s %s', $column, $definition),
+                array_keys($columns),
+                $columns,
+            ),
+        );
+        $this->addSql(
+            sprintf(
+                'CREATE TABLE %s (lieu_id BINARY(16) NOT NULL, %s, PRIMARY KEY (lieu_id), CONSTRAINT FK_%s_LIEU FOREIGN KEY (lieu_id) REFERENCES pim_lieu (id) ON DELETE CASCADE) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci`',
+                $table,
+                $definitions,
+                strtoupper($table),
+            ),
+        );
     }
 
     /** @param array<string, string> $columns */
     private function copyFromLieu(string $table, array $columns): void
     {
         $columnList = implode(', ', array_keys($columns));
-        $this->addSql(sprintf('INSERT INTO %s (lieu_id, %s) SELECT id, %s FROM pim_lieu', $table, $columnList, $columnList));
+        $this->addSql(
+            sprintf(
+                'INSERT INTO %s (lieu_id, %s) SELECT id, %s FROM pim_lieu',
+                $table,
+                $columnList,
+                $columnList,
+            ),
+        );
     }
 }

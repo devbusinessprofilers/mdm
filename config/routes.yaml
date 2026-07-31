@@ -30,3 +30,7 @@ enrichment_controllers:
 account_controllers:
     resource: '../src/Account/Controller/'
     type: attribute
+
+audit_controllers:
+    resource: '../src/Audit/Controller/'
+    type: attribute

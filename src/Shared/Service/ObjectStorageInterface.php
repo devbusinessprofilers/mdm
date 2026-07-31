@@ -27,4 +27,9 @@ interface ObjectStorageInterface
     public function temporaryUrl(string $key, \DateTimeInterface $expiresAt): string;
 
     public function delete(string $key): void;
+
+    /**
+     * Supprime tous les objets situés sous un préfixe non vide.
+     */
+    public function deleteDirectory(string $prefix): void;
 }

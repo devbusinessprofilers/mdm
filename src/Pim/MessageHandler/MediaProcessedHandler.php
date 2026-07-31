@@ -12,18 +12,20 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 #[AsMessageHandler]
 final readonly class MediaProcessedHandler
 {
-    public function __construct(private RessourceLieuRepository $resources, private EntityManagerInterface $entityManager)
-    {
+    public function __construct(
+        private RessourceLieuRepository $resources,
+        private EntityManagerInterface $entityManager,
+    ) {
     }
 
     public function __invoke(MediaProcessed $message): void
     {
         $resource = $this->resources->findOneByMediaId($message->mediaId);
-        if (null === $resource || null === $resource->lieu()) {
+        if (null === $resource || null === $resource->fiche()) {
             return;
         }
 
-        $resource->lieu()->fiche()->markSystemChanged();
+        $resource->fiche()->markSystemChanged();
         $this->entityManager->flush();
     }
 }

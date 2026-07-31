@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 namespace App\Pim\Entity\Lieu;
 
+use App\Dam\Enum\DocumentAccess;
+use App\Dam\Enum\DocumentPublicationStatus;
+use App\Dam\Enum\DocumentUsage;
+use App\Pim\Entity\Fiche;
+use App\Pim\Entity\Restaurant\RestaurantSalle;
 use App\Pim\Enum\NatureRessource;
 use App\Pim\Repository\RessourceLieuRepository;
 use App\Shared\Entity\TimestampableTrait;
@@ -12,68 +17,86 @@ use Symfony\Component\Uid\Ulid;
 
 #[ORM\Entity(repositoryClass: RessourceLieuRepository::class)]
 #[ORM\Table(name: 'pim_ressource_lieu')]
-#[ORM\Index(name: 'IDX_PIM_RESOURCE_LIEU_ORDERED', columns: ['lieu_id', 'position', 'id'])]
-#[ORM\Index(name: 'IDX_PIM_RESOURCE_SALLE_ORDERED', columns: ['salle_id', 'position', 'id'])]
+#[
+    ORM\Index(
+        name: 'IDX_PIM_RESOURCE_LIEU_ORDERED',
+        columns: ['lieu_id', 'position', 'id'],
+    ),
+]
+#[
+    ORM\Index(
+        name: 'IDX_PIM_RESOURCE_SALLE_ORDERED',
+        columns: ['salle_id', 'position', 'id'],
+    ),
+]
 #[ORM\Index(name: 'IDX_PIM_RESOURCE_USAGE', columns: ['usage_code', 'lieu_id'])]
 #[ORM\Index(name: 'IDX_PIM_RESSOURCE_DAM_ASSET', columns: ['dam_asset_id'])]
+#[ORM\Index(name: 'IDX_RESOURCE_RESTAURANT_ROOM', columns: ['restaurant_salle_id', 'position', 'id'])]
+#[
+    ORM\Index(
+        name: 'IDX_RESSOURCE_FICHE_ORDERED',
+        columns: ['fiche_id', 'position', 'id'],
+    ),
+]
 #[ORM\HasLifecycleCallbacks]
 class RessourceLieu
 {
     use TimestampableTrait;
-
     #[ORM\Id]
     #[ORM\Column(type: 'ulid', unique: true)]
     private Ulid $id;
-
     #[ORM\ManyToOne(inversedBy: 'ressources')]
-    #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'CASCADE')]
     private ?Lieu $lieu = null;
-
+    #[ORM\ManyToOne(inversedBy: 'resources')]
+    #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
+    private ?Fiche $fiche = null;
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(nullable: true, onDelete: 'CASCADE')]
     private ?Salle $salle = null;
-
+    #[ORM\ManyToOne]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'CASCADE')]
+    private ?RestaurantSalle $restaurantSalle = null;
     #[ORM\Column(length: 255)]
     private string $damAssetId = '';
-
     #[ORM\Column(length: 32, enumType: NatureRessource::class)]
     private NatureRessource $nature = NatureRessource::Document;
-
     #[ORM\Column(name: 'usage_code', length: 64)]
     private string $usage = '';
-
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $legende = null;
-
     #[ORM\Column(options: ['default' => 0])]
     private int $position = 0;
-
     #[ORM\Column(options: ['default' => false])]
     private bool $rightsGranted = false;
-
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $rightsGrantedAt = null;
-
     #[ORM\Column(length: 26, nullable: true)]
     private ?string $rightsGrantedBy = null;
-
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $source = null;
-
     #[ORM\Column(nullable: true)]
     private ?int $cropX = null;
-
     #[ORM\Column(nullable: true)]
     private ?int $cropY = null;
-
     #[ORM\Column(nullable: true)]
     private ?int $cropWidth = null;
-
     #[ORM\Column(nullable: true)]
     private ?int $cropHeight = null;
-
     #[ORM\Column(options: ['default' => 0])]
     private int $rotation = 0;
+    #[ORM\Column(length: 16, enumType: DocumentAccess::class, nullable: true)]
+    private ?DocumentAccess $documentAccess = null;
+    #[
+        ORM\Column(
+            length: 24,
+            enumType: DocumentPublicationStatus::class,
+            nullable: true,
+        ),
+    ]
+    private ?DocumentPublicationStatus $publicationStatus = null;
+    #[ORM\Column(length: 1024, nullable: true)]
+    private ?string $publicStorageKey = null;
 
     public function __construct()
     {
@@ -81,49 +104,257 @@ class RessourceLieu
         $this->initializeTimestamps();
     }
 
-    public function id(): string { return (string) $this->id; }
-    public function lieu(): ?Lieu { return $this->lieu; }
-    public function salle(): ?Salle { return $this->salle; }
-    public function damAssetId(): string { return $this->damAssetId; }
-    public function nature(): NatureRessource { return $this->nature; }
-    public function usage(): string { return $this->usage; }
-    public function legende(): ?string { return $this->legende; }
-    public function position(): int { return $this->position; }
-    public function rightsGranted(): bool { return $this->rightsGranted; }
-    public function rightsGrantedAt(): ?\DateTimeImmutable { return $this->rightsGrantedAt; }
-    public function rightsGrantedBy(): ?string { return $this->rightsGrantedBy; }
-    public function source(): ?string { return $this->source; }
-    public function rotation(): int { return $this->rotation; }
-    /** @return array{x: int, y: int, width: int, height: int}|null */
-    public function crop(): ?array
+    public function id(): string
     {
-        if (null === $this->cropX || null === $this->cropY || null === $this->cropWidth || null === $this->cropHeight) {
+        return (string) $this->id;
+    }
+
+    public function lieu(): ?Lieu
+    {
+        return $this->lieu;
+    }
+
+    public function fiche(): ?Fiche
+    {
+        return $this->fiche;
+    }
+
+    public function salle(): ?Salle
+    {
+        return $this->salle;
+    }
+
+    public function restaurantSalle(): ?RestaurantSalle
+    {
+        return $this->restaurantSalle;
+    }
+
+    public function damAssetId(): string
+    {
+        return $this->damAssetId;
+    }
+
+    public function nature(): NatureRessource
+    {
+        return $this->nature;
+    }
+
+    public function usage(): string
+    {
+        return $this->usage;
+    }
+
+    public function legende(): ?string
+    {
+        return $this->legende;
+    }
+
+    public function position(): int
+    {
+        return $this->position;
+    }
+
+    public function rightsGranted(): bool
+    {
+        return $this->rightsGranted;
+    }
+
+    public function rightsGrantedAt(): ?\DateTimeImmutable
+    {
+        return $this->rightsGrantedAt;
+    }
+
+    public function rightsGrantedBy(): ?string
+    {
+        return $this->rightsGrantedBy;
+    }
+
+    public function source(): ?string
+    {
+        return $this->source;
+    }
+
+    public function rotation(): int
+    {
+        return $this->rotation;
+    }
+
+    public function documentAccess(): ?DocumentAccess
+    {
+        return $this->documentAccess;
+    }
+
+    public function publicationStatus(): ?DocumentPublicationStatus
+    {
+        return $this->publicationStatus;
+    }
+
+    public function publicStorageKey(): ?string
+    {
+        return $this->publicStorageKey;
+    }
+
+    public function documentUsage(): ?DocumentUsage
+    {
+        if (NatureRessource::Document !== $this->nature) {
             return null;
         }
 
-        return ['x' => $this->cropX, 'y' => $this->cropY, 'width' => $this->cropWidth, 'height' => $this->cropHeight];
+        return DocumentUsage::tryFrom(
+            match ($this->usage) {
+                'rse' => DocumentUsage::RseEvidence->value,
+                'plan_general' => DocumentUsage::GeneralPlan->value,
+                default => $this->usage,
+            },
+        );
     }
-    public function changeSalle(?Salle $value): void { $this->salle = $value; $this->touch(); }
-    public function changeDamAssetId(?string $value): void { $this->damAssetId = trim((string) $value); $this->touch(); }
-    public function changeNature(NatureRessource $value): void { $this->nature = $value; $this->touch(); }
-    public function changeUsage(string $value): void { $this->usage = trim($value); $this->touch(); }
-    public function changeLegende(?string $value): void { $this->legende = null === $value || '' === trim($value) ? null : trim($value); $this->touch(); }
-    public function changePosition(?int $value): void { $this->position = $value ?? 0; $this->touch(); }
-    public function changeSource(?string $value): void { $this->source = null === $value || '' === trim($value) ? null : trim($value); $this->touch(); }
-    public function grantRights(string $userId): void { $this->rightsGranted = true; $this->rightsGrantedAt = new \DateTimeImmutable(); $this->rightsGrantedBy = $userId; $this->touch(); }
-    public function revokeRights(): void { $this->rightsGranted = false; $this->rightsGrantedAt = null; $this->rightsGrantedBy = null; $this->touch(); }
-    public function changeCrop(?int $x, ?int $y, ?int $width, ?int $height): void
+
+    /** @return array{x: int, y: int, width: int, height: int}|null */
+    public function crop(): ?array
     {
-        if ((null !== $width && $width <= 0) || (null !== $height && $height <= 0) || (null !== $x && $x < 0) || (null !== $y && $y < 0)) {
+        if (
+            null === $this->cropX
+            || null === $this->cropY
+            || null === $this->cropWidth
+            || null === $this->cropHeight
+        ) {
+            return null;
+        }
+
+        return [
+            'x' => $this->cropX,
+            'y' => $this->cropY,
+            'width' => $this->cropWidth,
+            'height' => $this->cropHeight,
+        ];
+    }
+
+    public function changeSalle(?Salle $value): void
+    {
+        $this->salle = $value;
+        if (null !== $value) {
+            $this->restaurantSalle = null;
+        }
+        $this->touch();
+    }
+
+    public function changeRestaurantSalle(?RestaurantSalle $value): void
+    {
+        $this->restaurantSalle = $value;
+        if (null !== $value) {
+            $this->salle = null;
+        }
+        $this->touch();
+    }
+
+    public function attachToFiche(Fiche $value): void
+    {
+        $this->fiche = $value;
+        $this->touch();
+    }
+
+    public function detachFromFiche(): void
+    {
+        $this->fiche = null;
+        $this->touch();
+    }
+
+    public function changeDamAssetId(?string $value): void
+    {
+        $this->damAssetId = trim((string) $value);
+        $this->touch();
+    }
+
+    public function changeNature(NatureRessource $value): void
+    {
+        $this->nature = $value;
+        $this->touch();
+    }
+
+    public function changeUsage(string $value): void
+    {
+        $this->usage = trim($value);
+        $this->touch();
+    }
+
+    public function changeLegende(?string $value): void
+    {
+        $this->legende =
+            null === $value || '' === trim($value) ? null : trim($value);
+        $this->touch();
+    }
+
+    public function changePosition(?int $value): void
+    {
+        $this->position = $value ?? 0;
+        $this->touch();
+    }
+
+    public function changeSource(?string $value): void
+    {
+        $this->source =
+            null === $value || '' === trim($value) ? null : trim($value);
+        $this->touch();
+    }
+
+    public function grantRights(string $userId): void
+    {
+        $this->rightsGranted = true;
+        $this->rightsGrantedAt = new \DateTimeImmutable();
+        $this->rightsGrantedBy = $userId;
+        $this->touch();
+    }
+
+    public function revokeRights(): void
+    {
+        $this->rightsGranted = false;
+        $this->rightsGrantedAt = null;
+        $this->rightsGrantedBy = null;
+        $this->touch();
+    }
+
+    public function changeCrop(
+        ?int $x,
+        ?int $y,
+        ?int $width,
+        ?int $height,
+    ): void {
+        if (
+            (null !== $width && $width <= 0)
+            || (null !== $height && $height <= 0)
+            || (null !== $x && $x < 0)
+            || (null !== $y && $y < 0)
+        ) {
             throw new \DomainException('Les coordonnées de recadrage sont invalides.');
         }
         $values = [$x, $y, $width, $height];
-        if (0 !== count(array_filter($values, static fn (?int $value): bool => null !== $value)) && 4 !== count(array_filter($values, static fn (?int $value): bool => null !== $value))) {
+        if (
+            0 !==
+                count(
+                    array_filter(
+                        $values,
+                        static fn (?int $value): bool => null !== $value,
+                    ),
+                )
+            && 4 !==
+                count(
+                    array_filter(
+                        $values,
+                        static fn (?int $value): bool => null !== $value,
+                    ),
+                )
+        ) {
             throw new \DomainException('Toutes les coordonnées de recadrage sont requises.');
         }
-        [$this->cropX, $this->cropY, $this->cropWidth, $this->cropHeight] = $values;
+        [
+            $this->cropX,
+            $this->cropY,
+            $this->cropWidth,
+            $this->cropHeight,
+        ] = $values;
         $this->touch();
     }
+
     public function changeRotation(int $rotation): void
     {
         if (!in_array($rotation, [0, 90, 180, 270], true)) {
@@ -132,6 +363,81 @@ class RessourceLieu
         $this->rotation = $rotation;
         $this->touch();
     }
-    public function attachTo(Lieu $lieu): void { $this->lieu = $lieu; }
-    public function detachFrom(Lieu $lieu): void { if ($this->lieu === $lieu) { $this->lieu = null; } }
+
+    public function configureDocument(DocumentUsage $usage): void
+    {
+        $this->nature = NatureRessource::Document;
+        $this->usage = $usage->value;
+        $this->documentAccess = $usage->access();
+        $this->publicationStatus ??= DocumentPublicationStatus::Private;
+        if (DocumentAccess::Private === $this->documentAccess) {
+            $this->publicationStatus = DocumentPublicationStatus::Private;
+            $this->publicStorageKey = null;
+        }
+        $this->touch();
+    }
+
+    public function requestPublication(): void
+    {
+        if (
+            DocumentAccess::Publishable !== $this->documentAccess
+            || !$this->rightsGranted
+        ) {
+            throw new \DomainException('La publication exige un document publiable et des droits d’utilisation validés.');
+        }
+        if (\App\Pim\Enum\StatutFiche::Publiee !== $this->fiche?->status()) {
+            throw new \DomainException('La fiche doit être publiée avant son document.');
+        }
+        $this->publicationStatus = DocumentPublicationStatus::Publishing;
+        $this->touch();
+    }
+
+    public function confirmPublication(string $storageKey): void
+    {
+        $this->publicStorageKey = $storageKey;
+        $this->publicationStatus = DocumentPublicationStatus::Published;
+        $this->touch();
+    }
+
+    public function requestUnpublication(): ?string
+    {
+        $key = $this->publicStorageKey;
+        $this->publicationStatus =
+            null === $key
+                ? DocumentPublicationStatus::Private
+                : DocumentPublicationStatus::Unpublishing;
+        $this->touch();
+
+        return $key;
+    }
+
+    public function confirmUnpublication(): void
+    {
+        $this->publicStorageKey = null;
+        $this->publicationStatus = DocumentPublicationStatus::Private;
+        $this->touch();
+    }
+
+    public function archiveDocument(): ?string
+    {
+        $key = $this->publicStorageKey;
+        $this->publicStorageKey = null;
+        $this->publicationStatus = DocumentPublicationStatus::Archived;
+        $this->touch();
+
+        return $key;
+    }
+
+    public function attachTo(Lieu $lieu): void
+    {
+        $this->lieu = $lieu;
+        $this->fiche = $lieu->fiche();
+    }
+
+    public function detachFrom(Lieu $lieu): void
+    {
+        if ($this->lieu === $lieu) {
+            $this->lieu = null;
+        }
+    }
 }

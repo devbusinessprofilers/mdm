@@ -22,13 +22,21 @@ final class MediaAssetRepositoryTest extends KernelTestCase
 
     protected function setUp(): void
     {
-        if (!str_starts_with((string) getenv('TEST_MESSENGER_PIM_DSN'), 'doctrine://')) {
-            self::markTestSkipped('Set TEST_MESSENGER_PIM_DSN to a Doctrine transport to run database integration tests.');
+        if (
+            !str_starts_with(
+                (string) getenv('TEST_MESSENGER_PIM_DSN'),
+                'doctrine://',
+            )
+        ) {
+            self::markTestSkipped(
+                'Set TEST_MESSENGER_PIM_DSN to a Doctrine transport to run database integration tests.',
+            );
         }
-
         self::bootKernel();
         $this->connection = self::getContainer()->get(Connection::class);
-        $this->entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $this->entityManager = self::getContainer()->get(
+            EntityManagerInterface::class,
+        );
         $this->clearTables();
     }
 
@@ -37,7 +45,6 @@ final class MediaAssetRepositoryTest extends KernelTestCase
         if (isset($this->connection)) {
             $this->clearTables();
         }
-
         parent::tearDown();
     }
 
@@ -49,14 +56,17 @@ final class MediaAssetRepositoryTest extends KernelTestCase
         $firstId = $first->id();
         $secondId = $second->id();
         $this->entityManager->clear();
-
         /** @var MediaAssetRepository $repository */
         $repository = $this->entityManager->getRepository(MediaAsset::class);
-        $debugDataHolder = self::getContainer()->get('doctrine.debug_data_holder');
+        $debugDataHolder = self::getContainer()->get(
+            'doctrine.debug_data_holder',
+        );
         $debugDataHolder->reset();
-
-        $assets = $repository->findByStringIds([$firstId, $secondId, 'not-a-ulid']);
-
+        $assets = $repository->findByStringIds([
+            $firstId,
+            $secondId,
+            'not-a-ulid',
+        ]);
         self::assertCount(2, $assets);
         foreach ($assets as $asset) {
             $renditions = $asset->renditions();
@@ -64,23 +74,59 @@ final class MediaAssetRepositoryTest extends KernelTestCase
             self::assertTrue($renditions->isInitialized());
             self::assertNotNull($asset->rendition('large'));
         }
-
         $queries = array_merge(...array_values($debugDataHolder->getData()));
-        $selects = array_values(array_filter(
-            $queries,
-            static fn (array $query): bool => str_starts_with(ltrim((string) $query['sql']), 'SELECT'),
-        ));
-        self::assertCount(1, $selects, implode("\n", array_map(
-            static fn (array $query): string => (string) $query['sql'],
+        $selects = array_values(
+            array_filter(
+                $queries,
+                static fn (array $query): bool => str_starts_with(
+                    ltrim((string) $query['sql']),
+                    'SELECT',
+                ),
+            ),
+        );
+        self::assertCount(
+            1,
             $selects,
-        )));
+            implode(
+                "\n",
+                array_map(
+                    static fn (array $query): string => (string) $query['sql'],
+                    $selects,
+                ),
+            ),
+        );
     }
 
     private function createAsset(string $storageKey): MediaAsset
     {
-        $asset = new MediaAsset(new Ulid(), $storageKey, 'original.jpg', 'image/jpeg', 1024, sha1($storageKey));
-        $asset->addRendition(new MediaRendition($asset, 'large', $storageKey.'/renditions/large.webp', 960, 480, 512));
-        $asset->addRendition(new MediaRendition($asset, 'small', $storageKey.'/renditions/small.webp', 200, 100, 128));
+        $asset = new MediaAsset(
+            new Ulid(),
+            $storageKey,
+            'original.jpg',
+            'image/jpeg',
+            1024,
+            sha1($storageKey),
+        );
+        $asset->addRendition(
+            new MediaRendition(
+                $asset,
+                'large',
+                $storageKey.'/renditions/large.webp',
+                960,
+                480,
+                512,
+            ),
+        );
+        $asset->addRendition(
+            new MediaRendition(
+                $asset,
+                'small',
+                $storageKey.'/renditions/small.webp',
+                200,
+                100,
+                128,
+            ),
+        );
         $this->entityManager->persist($asset);
 
         return $asset;

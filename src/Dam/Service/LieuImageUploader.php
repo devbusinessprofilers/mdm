@@ -33,12 +33,10 @@ final readonly class LieuImageUploader
         if (false === $path || !is_file($path)) {
             throw new \DomainException("Le fichier téléversé n'est plus disponible.");
         }
-
         $size = $file->getSize();
         if (false === $size || $size > self::MAX_SIZE) {
             throw new \DomainException('Une image de lieu ne peut pas dépasser 25 Mo.');
         }
-
         $image = @getimagesize($path);
         if (!is_array($image)) {
             throw new \DomainException('Formats autorisés : PNG, JPG, JPEG et WEBP.');
@@ -50,21 +48,24 @@ final readonly class LieuImageUploader
         if ($image[0] < self::MIN_WIDTH || $image[1] < self::MIN_HEIGHT) {
             throw new \DomainException('Les dimensions minimales sont de 960 × 480 pixels.');
         }
-
         $checksum = hash_file('sha256', $path);
         if (false === $checksum) {
             throw new \RuntimeException("Impossible de calculer l'empreinte du média.");
         }
-
         $mediaId = new Ulid();
         $prefix = trim($this->storagePrefix, '/');
-        $key = ('' === $prefix ? '' : $prefix.'/')
-            .'lieux/'.$lieu->id().'/'.$mediaId.'/original.'.self::EXTENSIONS[$mimeType];
+        $key =
+            ('' === $prefix ? '' : $prefix.'/').
+            'lieux/'.
+            $lieu->id().
+            '/'.
+            $mediaId.
+            '/original.'.
+            self::EXTENSIONS[$mimeType];
         $stream = fopen($path, 'rb');
         if (false === $stream) {
             throw new \RuntimeException("Impossible d'ouvrir le média à téléverser.");
         }
-
         try {
             $this->storage->writeStream($key, $stream, [
                 'visibility' => 'private',

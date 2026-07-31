@@ -16,8 +16,10 @@ use Symfony\Component\Uid\Ulid;
 #[AsEventListener]
 final readonly class MediaFailureSubscriber
 {
-    public function __construct(private MediaAssetRepository $repository, private EntityManagerInterface $entityManager)
-    {
+    public function __construct(
+        private MediaAssetRepository $repository,
+        private EntityManagerInterface $entityManager,
+    ) {
     }
 
     public function __invoke(WorkerMessageFailedEvent $event): void
@@ -26,7 +28,11 @@ final readonly class MediaFailureSubscriber
             return;
         }
         $message = $event->getEnvelope()->getMessage();
-        if (!$message instanceof MediaUploaded && !$message instanceof RegenerateMedia && !$message instanceof DeleteMedia) {
+        if (
+            !($message instanceof MediaUploaded)
+            && !($message instanceof RegenerateMedia)
+            && !($message instanceof DeleteMedia)
+        ) {
             return;
         }
         if (!Ulid::isValid($message->mediaId)) {

@@ -15,4 +15,21 @@ final class LocalisationRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, Localisation::class);
     }
+
+    public function countOtherLocationsWithSameAddress(
+        Localisation $location,
+    ): int {
+        if (null === $location->addressFingerprint()) {
+            return 0;
+        }
+
+        return (int) $this->createQueryBuilder('location')
+            ->select('COUNT(location.id)')
+            ->where('location.addressFingerprint = :fingerprint')
+            ->andWhere('location.id != :id')
+            ->setParameter('fingerprint', $location->addressFingerprint())
+            ->setParameter('id', $location->id(), 'ulid')
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
 }

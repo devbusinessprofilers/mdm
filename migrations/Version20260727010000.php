@@ -17,7 +17,7 @@ final class Version20260727010000 extends AbstractMigration
     public function up(Schema $schema): void
     {
         $this->addSql(
-            "CREATE TABLE outbox_message (
+            'CREATE TABLE outbox_message (
                 id VARCHAR(26) NOT NULL,
                 message_type VARCHAR(255) NOT NULL,
                 body LONGTEXT NOT NULL,
@@ -34,16 +34,16 @@ final class Version20260727010000 extends AbstractMigration
                 INDEX IDX_OUTBOX_LOCKED (locked_at),
                 INDEX IDX_OUTBOX_PUBLISHED (published_at),
                 PRIMARY KEY(id)
-            ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE = InnoDB",
+            ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE = InnoDB',
         );
         $this->addSql(
-            "CREATE TABLE processed_message (
+            'CREATE TABLE processed_message (
                 event_id VARCHAR(26) NOT NULL,
                 message_type VARCHAR(255) NOT NULL,
                 processed_at DATETIME NOT NULL,
                 INDEX IDX_PROCESSED_MESSAGE_DATE (processed_at),
                 PRIMARY KEY(event_id)
-            ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE = InnoDB",
+            ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE = InnoDB',
         );
     }
 

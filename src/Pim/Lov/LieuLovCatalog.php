@@ -122,6 +122,16 @@ final class LieuLovCatalog
             'DISPO_JOUR_OUVERTURE_6' => 'Samedi',
             'DISPO_JOUR_OUVERTURE_7' => 'Dimanche',
         ],
+        'GENERALE_EVENEMENTS_PREDILECTION' => [
+            'GENERALE_EVENEMENTS_PREDILECTION_1' => 'Séminaire',
+            'GENERALE_EVENEMENTS_PREDILECTION_2' => 'Convention / Congrès',
+            'GENERALE_EVENEMENTS_PREDILECTION_3' => 'Réunion / Comité de direction',
+            'GENERALE_EVENEMENTS_PREDILECTION_4' => 'Formation',
+            'GENERALE_EVENEMENTS_PREDILECTION_5' => 'Team building',
+            'GENERALE_EVENEMENTS_PREDILECTION_6' => 'Lancement de produit',
+            'GENERALE_EVENEMENTS_PREDILECTION_7' => 'Soirée / Réception',
+            'GENERALE_EVENEMENTS_PREDILECTION_8' => 'Événement hybride',
+        ],
         'COND_PAIE_ACC_SIGNATURE' => [
             'COND_PAIE_ACC_SIGNATURE_1' => 'Signature à J-61',
             'COND_PAIE_ACC_SIGNATURE_2' => 'J-60 à J-30',

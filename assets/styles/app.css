@@ -450,6 +450,14 @@
     .admin-event-stat span { @apply text-xs font-semibold uppercase tracking-wide text-slate-500; }
     .admin-event-stat strong { @apply text-2xl; }
     .admin-event-help { @apply m-0 text-sm text-slate-500; }
+    .admin-workflow-grid { @apply grid gap-4 xl:grid-cols-2; }
+    .admin-workflow-card { @apply grid content-start gap-3; }
+    .admin-workflow-card h3,
+    .admin-workflow-card p { @apply m-0; }
+    .admin-workflow-card ol,
+    .admin-workflow-card ul { @apply m-0 grid gap-2 pl-5 text-sm text-slate-700; }
+    .admin-workflow-card ol { @apply list-decimal; }
+    .admin-workflow-card ul { @apply list-disc border-t border-slate-200 pt-3; }
     .admin-event-table td { @apply min-w-48 align-top; }
     .admin-event-table td:first-child,
     .admin-event-table td:nth-child(3),

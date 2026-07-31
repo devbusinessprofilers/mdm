@@ -41,6 +41,14 @@ services:
         arguments:
             $debugDataHolder: '@?doctrine.debug_data_holder'
 
+    App\DataFixtures\Pim\ActiviteFixtures:
+        arguments:
+            $debugDataHolder: '@?doctrine.debug_data_holder'
+
+    App\DataFixtures\Pim\ServiceFixtures:
+        arguments:
+            $debugDataHolder: '@?doctrine.debug_data_holder'
+
     App\Account\Security\ExternalSiteJwtVerifier:
         arguments:
             $issuer: '%env(EXTERNAL_SITE_JWT_ISSUER)%'
@@ -80,6 +88,18 @@ services:
     App\Shared\Service\PublicObjectStorageInterface: '@app.storage.public'
 
     App\Dam\Service\LieuImageUploader:
+        arguments:
+            $storagePrefix: '%env(S3_PREFIX)%'
+
+    App\Dam\Service\FicheImageUploader:
+        arguments:
+            $storagePrefix: '%env(S3_PREFIX)%'
+
+    App\Dam\Service\FicheDocumentUploader:
+        arguments:
+            $storagePrefix: '%env(S3_PREFIX)%'
+
+    App\Dam\Service\LieuDocumentUploader:
         arguments:
             $storagePrefix: '%env(S3_PREFIX)%'
 

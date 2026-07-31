@@ -19,7 +19,9 @@ final readonly class OpenApiFactory implements OpenApiFactoryInterface
     public function __invoke(array $context = []): OpenApi
     {
         $openApi = ($this->inner)($context);
-        $schemes = $openApi->getComponents()->getSecuritySchemes() ?? new \ArrayObject();
+        $schemes =
+            $openApi->getComponents()->getSecuritySchemes() ??
+            new \ArrayObject();
         $schemes['bearerAuth'] = new SecurityScheme(
             type: 'http',
             description: 'JWT de service RS256 émis par le site externe.',
@@ -27,6 +29,8 @@ final readonly class OpenApiFactory implements OpenApiFactoryInterface
             bearerFormat: 'JWT',
         );
 
-        return $openApi->withComponents($openApi->getComponents()->withSecuritySchemes($schemes));
+        return $openApi->withComponents(
+            $openApi->getComponents()->withSecuritySchemes($schemes),
+        );
     }
 }

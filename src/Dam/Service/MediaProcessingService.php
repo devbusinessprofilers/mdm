@@ -27,20 +27,36 @@ final readonly class MediaProcessingService
     /** @return array<string, string> */
     public function process(MediaAsset $media): array
     {
-        if (MediaStatus::Deleted === $media->status() || MediaStatus::Deleting === $media->status()) {
+        if (
+            MediaStatus::Deleted === $media->status()
+            || MediaStatus::Deleting === $media->status()
+        ) {
             return [];
         }
-
-        if (MediaStatus::Processed === $media->status() && $this->hasEveryRendition($media)) {
+        if (
+            MediaStatus::Processed === $media->status()
+            && $this->hasEveryRendition($media)
+        ) {
             return $this->urls($media);
         }
-
         $media->markProcessing();
         $resource = $this->resources->findOneByMediaId($media->id());
-        $stream = $this->privateStorage->readStream($media->originalStorageKey());
+        $stream = $this->privateStorage->readStream(
+            $media->originalStorageKey(),
+        );
         try {
-            foreach ($this->generator->generate($stream, $resource?->crop(), $resource?->rotation() ?? 0) as $generated) {
-                $key = preg_replace('#/original\.[^/]+$#', '/renditions/'.$generated->name.'.webp', $media->originalStorageKey());
+            foreach (
+                $this->generator->generate(
+                    $stream,
+                    $resource?->crop(),
+                    $resource?->rotation() ?? 0,
+                ) as $generated
+            ) {
+                $key = preg_replace(
+                    '#/original\.[^/]+$#',
+                    '/renditions/'.$generated->name.'.webp',
+                    $media->originalStorageKey(),
+                );
                 if (!is_string($key) || $key === $media->originalStorageKey()) {
                     throw new \RuntimeException("La clé du rendu n'a pas pu être construite.");
                 }
@@ -51,16 +67,27 @@ final readonly class MediaProcessingService
                 ]);
                 $rendition = $media->rendition($generated->name);
                 if (null === $rendition) {
-                    $rendition = new MediaRendition($media, $generated->name, $key, $generated->width, $generated->height, strlen($generated->contents));
+                    $rendition = new MediaRendition(
+                        $media,
+                        $generated->name,
+                        $key,
+                        $generated->width,
+                        $generated->height,
+                        strlen($generated->contents),
+                    );
                     $media->addRendition($rendition);
                 } else {
-                    $rendition->refresh($key, $generated->width, $generated->height, strlen($generated->contents));
+                    $rendition->refresh(
+                        $key,
+                        $generated->width,
+                        $generated->height,
+                        strlen($generated->contents),
+                    );
                 }
             }
         } finally {
             fclose($stream);
         }
-
         $media->markProcessed();
         $this->entityManager->flush();
 
@@ -83,7 +110,9 @@ final readonly class MediaProcessingService
     {
         $urls = [];
         foreach ($media->renditions() as $rendition) {
-            $urls[$rendition->name()] = $this->urlGenerator->url($rendition->storageKey());
+            $urls[$rendition->name()] = $this->urlGenerator->url(
+                $rendition->storageKey(),
+            );
         }
 
         return $urls;

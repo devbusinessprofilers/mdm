@@ -26,7 +26,7 @@ final readonly class LieuApiState
     public function lieu(string $id): Lieu
     {
         $lieu = $this->lieux->find($id);
-        if (!$lieu instanceof Lieu) {
+        if (!($lieu instanceof Lieu)) {
             throw new ApiProblemException(Response::HTTP_NOT_FOUND, 'not_found', 'Lieu introuvable.');
         }
 
@@ -35,14 +35,20 @@ final readonly class LieuApiState
 
     public function assertVersion(Lieu $lieu): void
     {
-        $header = trim((string) $this->requests->getCurrentRequest()?->headers->get('If-Match'), " \t\n\r\0\x0B\"");
+        $header = trim(
+            (string) $this->requests
+                ->getCurrentRequest()
+                ?->headers->get('If-Match'),
+            " \t\n\r\x00\v\"",
+        );
         if ('' === $header) {
             throw new ApiProblemException(Response::HTTP_PRECONDITION_REQUIRED, 'precondition_required', 'L’en-tête If-Match est obligatoire.');
         }
-        if (!ctype_digit($header) || (int) $header !== $lieu->fiche()->version()) {
-            throw new ApiProblemException(Response::HTTP_CONFLICT, 'version_conflict', 'La fiche a été modifiée depuis sa lecture.', [
-                'currentVersion' => $lieu->fiche()->version(),
-            ]);
+        if (
+            !ctype_digit($header)
+            || (int) $header !== $lieu->fiche()->version()
+        ) {
+            throw new ApiProblemException(Response::HTTP_CONFLICT, 'version_conflict', 'La fiche a été modifiée depuis sa lecture.', ['currentVersion' => $lieu->fiche()->version()]);
         }
     }
 

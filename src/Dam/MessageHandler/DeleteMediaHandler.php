@@ -29,7 +29,6 @@ final readonly class DeleteMediaHandler
         if (null === $media || MediaStatus::Deleted === $media->status()) {
             return;
         }
-
         $media->markDeleting();
         foreach ($media->renditions() as $rendition) {
             $this->publicStorage->delete($rendition->storageKey());

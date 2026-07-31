@@ -1,0 +1,66 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ restaurant.label ?? 'Restaurant' }}{% endblock %}
+
+{% block body %}
+<main class="page page-narrow">
+    <a class="back-link" href="{{ path('app_pim_restaurant_index') }}">← Retour aux restaurants</a>
+    <header class="page-header">
+        <div class="page-header-copy">
+            <p class="page-kicker">Fiche Restaurant</p>
+            <h1>{{ restaurant.label ?? 'Sans libellé' }}</h1>
+        </div>
+        <div class="table-actions">
+            <a class="btn" href="{{ path('app_pim_restaurant_edit', {id: restaurant.id}) }}">Modifier</a>
+            {% if is_granted('ROLE_BP_VALIDATOR') %}
+                <a class="btn btn-secondary" href="{{ path('app_pim_restaurant_history', {id: restaurant.id}) }}">Historique</a>
+            {% endif %}
+        </div>
+    </header>
+
+    <section class="card">
+        <dl class="definition-list">
+            <dt>Code</dt>
+            <dd>{{ restaurant.code ?? '—' }}</dd>
+
+            <dt>Types</dt>
+            <dd>{{ restaurant.typesRestaurant|join(', ') ?: '—' }}</dd>
+
+            <dt>Cuisines</dt>
+            <dd>{{ restaurant.typesCuisine|join(', ') ?: '—' }}</dd>
+
+            <dt>Ville</dt>
+            <dd>{{ restaurant.localisation ? restaurant.localisation.ville : '—' }}</dd>
+
+            <dt>Statut</dt>
+            <dd><span class="badge badge-info">{{ restaurant.fiche.status.value }}</span></dd>
+        </dl>
+    </section>
+
+    <section class="card">
+        <h2>Description</h2>
+        <p>{{ restaurant.descriptionGenerale ?? '—' }}</p>
+    </section>
+
+    <section class="card">
+        <h2>Cycle de validation</h2>
+
+        {% if restaurant.fiche.status.value == 'en_cours' and is_granted('FICHE_SUBMIT', restaurant.fiche) %}
+            {{ form(submit_form) }}
+        {% endif %}
+
+        {% if restaurant.fiche.status.value == 'en_attente_validation' and is_granted('FICHE_VALIDATE', restaurant.fiche) %}
+            {{ form(validate_form) }}
+            {{ form(reject_form) }}
+        {% endif %}
+
+        {% if restaurant.fiche.status.value == 'publiee' and is_granted('FICHE_ARCHIVE', restaurant.fiche) %}
+            {{ form(archive_form) }}
+        {% endif %}
+    </section>
+
+    {% if is_granted('FICHE_DELETE', restaurant.fiche) %}
+        <div class="danger-form">{{ form(delete_form) }}</div>
+    {% endif %}
+</main>
+{% endblock %}

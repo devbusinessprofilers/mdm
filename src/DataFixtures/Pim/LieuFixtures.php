@@ -50,7 +50,7 @@ final class LieuFixtures extends Fixture implements FixtureGroupInterface
 
     public static function getGroups(): array
     {
-        return ['pim-lieux'];
+        return ['pim-lieux', 'pim-demo'];
     }
 
     public function load(ObjectManager $manager): void

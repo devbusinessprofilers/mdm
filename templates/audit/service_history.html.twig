@@ -1,0 +1,73 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Historique de {{ service.label }}{% endblock %}
+
+{% block body %}
+<main class="page">
+    <a class="back-link" href="{{ path('app_pim_service_show', {id: service.id}) }}">
+        ← Retour au service
+    </a>
+
+    <header class="page-header">
+        <div>
+            <p class="page-kicker">Audit append-only</p>
+            <h1>Historique de {{ service.label }}</h1>
+        </div>
+    </header>
+
+    <section class="card">
+        {{ form(filter_form) }}
+    </section>
+
+    {% for revision in revisions %}
+        <article class="card" id="revision-{{ revision.id }}">
+            <div class="section-heading">
+                <h2>{{ revision.action }}</h2>
+                <time datetime="{{ revision.createdAt|date('c') }}">
+                    {{ revision.createdAt|date('d/m/Y H:i:s') }}
+                </time>
+            </div>
+
+            <p>
+                {{ revision.actor }} · {{ revision.source }}
+                · corrélation {{ revision.correlationId }}
+            </p>
+
+            {% if revision.rolesScopes %}
+                <p>{{ revision.rolesScopes|join(', ') }}</p>
+            {% endif %}
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Champ</th>
+                        <th>Ancienne valeur</th>
+                        <th>Nouvelle valeur</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for change in revision.changes %}
+                        <tr>
+                            <td><code>{{ change.path }}</code></td>
+                            <td><pre>{{ change.oldValue|json_encode(constant('JSON_PRETTY_PRINT')) }}</pre></td>
+                            <td><pre>{{ change.newValue|json_encode(constant('JSON_PRETTY_PRINT')) }}</pre></td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </article>
+    {% else %}
+        <p class="empty-state">Aucune modification auditée depuis l’activation de l’historique.</p>
+    {% endfor %}
+
+    {% if next_cursor %}
+        <nav>
+            <a href="{{ path('app_pim_service_history', app.request.query.all|merge({
+                cursor: next_cursor
+            })) }}">
+                Historique précédent
+            </a>
+        </nav>
+    {% endif %}
+</main>
+{% endblock %}

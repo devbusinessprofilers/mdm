@@ -16,18 +16,13 @@ final class LieuPatchInput
     private bool $labelDefined = false;
     private bool $generaleTypologieDefined = false;
     private bool $generaleWebsiteUrlDefined = false;
-
     #[ApiProperty(example: 12345)]
     private ?int $code = null;
-
     #[ApiProperty(example: 'Hôtel des Lumières')]
     private ?string $label = null;
-
     /** @var list<string> */
     private array $generaleTypologie = [];
-
     private ?string $generaleWebsiteUrl = null;
-
     /** @var array<string, mixed>|null */
     public ?array $informationsGenerales = null;
     /** @var array<string, mixed>|null */
@@ -61,29 +56,122 @@ final class LieuPatchInput
     /** @var list<array<string, mixed>>|null */
     public ?array $acces = null;
 
-    public function setCode(?int $code): void { $this->codeDefined = true; $this->code = $code; }
-    public function getCode(): ?int { return $this->code; }
-    public function setLabel(?string $label): void { $this->labelDefined = true; $this->label = $label; }
-    public function getLabel(): ?string { return $this->label; }
+    public function setCode(?int $code): void
+    {
+        $this->codeDefined = true;
+        $this->code = $code;
+    }
+
+    public function getCode(): ?int
+    {
+        return $this->code;
+    }
+
+    public function setLabel(?string $label): void
+    {
+        $this->labelDefined = true;
+        $this->label = $label;
+    }
+
+    public function getLabel(): ?string
+    {
+        return $this->label;
+    }
+
     /** @param list<string> $values */
-    public function setGeneraleTypologie(array $values): void { $this->generaleTypologieDefined = true; $this->generaleTypologie = $values; }
+    public function setGeneraleTypologie(array $values): void
+    {
+        $this->generaleTypologieDefined = true;
+        $this->generaleTypologie = $values;
+    }
+
     /** @return list<string> */
-    public function getGeneraleTypologie(): array { return $this->generaleTypologie; }
-    public function setGeneraleWebsiteUrl(?string $url): void { $this->generaleWebsiteUrlDefined = true; $this->generaleWebsiteUrl = $url; }
-    public function getGeneraleWebsiteUrl(): ?string { return $this->generaleWebsiteUrl; }
+    public function getGeneraleTypologie(): array
+    {
+        return $this->generaleTypologie;
+    }
+
+    public function setGeneraleWebsiteUrl(?string $url): void
+    {
+        $this->generaleWebsiteUrlDefined = true;
+        $this->generaleWebsiteUrl = $url;
+    }
+
+    public function getGeneraleWebsiteUrl(): ?string
+    {
+        return $this->generaleWebsiteUrl;
+    }
 
     /** @return array<string, mixed> */
     public function payload(): array
     {
         $payload = [];
-        if ($this->codeDefined) { $payload['code'] = $this->code; }
-        if ($this->labelDefined) { $payload['label'] = $this->label; }
-        if ($this->generaleTypologieDefined) { $payload['generaleTypologie'] = $this->generaleTypologie; }
-        if ($this->generaleWebsiteUrlDefined) { $payload['generaleWebsiteUrl'] = $this->generaleWebsiteUrl; }
-        foreach (['informationsGenerales', 'disponibilites', 'accessibiliteDescription', 'hebergement', 'syntheseSalles', 'equipementsServices', 'rse', 'loisirs', 'restauration', 'visibilite', 'localisation', 'administratif', 'tarification', 'salles', 'periodesFermeture', 'acces'] as $property) {
+        if ($this->codeDefined) {
+            $payload['code'] = $this->code;
+        }
+        if ($this->labelDefined) {
+            $payload['label'] = $this->label;
+        }
+        if ($this->generaleTypologieDefined) {
+            $payload['generaleTypologie'] = $this->generaleTypologie;
+        }
+        if ($this->generaleWebsiteUrlDefined) {
+            $payload['generaleWebsiteUrl'] = $this->generaleWebsiteUrl;
+        }
+        foreach (
+            [
+                'informationsGenerales',
+                'disponibilites',
+                'accessibiliteDescription',
+                'hebergement',
+                'syntheseSalles',
+                'equipementsServices',
+                'rse',
+                'loisirs',
+                'restauration',
+                'visibilite',
+                'localisation',
+                'administratif',
+                'tarification',
+                'salles',
+                'periodesFermeture',
+                'acces',
+            ] as $property
+        ) {
             if (null !== $this->{$property}) {
                 $payload[$property] = $this->{$property};
             }
+        }
+        foreach (
+            [
+                ['informationsGenerales', 'evenementsPredilection'],
+                ['disponibilites', 'joursOuverture'],
+            ] as [$section, $field]
+        ) {
+            if (
+                isset($payload[$section][$field])
+                && is_string($payload[$section][$field])
+            ) {
+                $payload[$section][$field] = [$payload[$section][$field]];
+            }
+        }
+        foreach (
+            [
+                [
+                    'informationsGenerales',
+                    'generaleGamme',
+                    'evenementsPredilection',
+                ],
+                ['disponibilites', 'dispoJourOuverture', 'joursOuverture'],
+            ] as [$section, $legacy, $field]
+        ) {
+            if (!isset($payload[$section][$legacy])) {
+                continue;
+            }
+            $payload[$section][$field] = is_array($payload[$section][$legacy])
+                ? $payload[$section][$legacy]
+                : [$payload[$section][$legacy]];
+            unset($payload[$section][$legacy]);
         }
 
         return $payload;

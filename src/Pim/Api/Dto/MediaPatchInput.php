@@ -12,10 +12,9 @@ final class MediaPatchInput
     public ?string $legende = null;
     public ?string $source = null;
     public ?bool $rightsGranted = null;
-
+    public ?string $salleId = null;
     /** @var array{x: int, y: int, width: int, height: int}|null */
     public ?array $crop = null;
-
     #[Assert\Choice(choices: [0, 90, 180, 270])]
     public ?int $rotation = null;
 }

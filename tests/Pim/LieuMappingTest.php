@@ -72,7 +72,7 @@ final class LieuMappingTest extends KernelTestCase
         }
 
         self::assertSame('dam_media_asset', $mediaMetadata->getTableName());
-        foreach (['originalStorageKey', 'originalFilename', 'mimeType', 'sizeBytes', 'checksum', 'status'] as $field) {
+        foreach (['originalStorageKey', 'originalFilename', 'mimeType', 'sizeBytes', 'checksum', 'kind', 'status'] as $field) {
             self::assertTrue($mediaMetadata->hasField($field));
         }
     }

@@ -20,8 +20,7 @@ use Symfony\Component\Form\Extension\Core\Type\UrlType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\FormTypeInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
-use Symfony\Component\Validator\Constraints\Callback;
-use Symfony\Component\Validator\Context\ExecutionContextInterface;
+use App\Pim\Validation\ValidationGroups;
 
 /** @extends AbstractType<Lieu> */
 final class LieuType extends AbstractType
@@ -137,34 +136,7 @@ final class LieuType extends AbstractType
     {
         $resolver->setDefaults([
             'data_class' => Lieu::class,
-            'constraints' => [new Callback(static function (Lieu $lieu, ExecutionContextInterface $context): void {
-                $openingHour = $lieu->dispoHeureOuvertureHeure();
-                $closingHour = $lieu->dispoHeureFermetureHeure();
-                if (null !== $openingHour && null !== $closingHour) {
-                    $opening = 60 * $openingHour + ($lieu->dispoHeureOuvertureMinutes() ?? 0);
-                    $closing = 60 * $closingHour + ($lieu->dispoHeureFermetureMinutes() ?? 0);
-                    if ($closing <= $opening) {
-                        $context->buildViolation("L'heure de fermeture doit être postérieure à l'heure d'ouverture.")
-                            ->atPath('disponibilites.dispoHeureFermetureHeure')
-                            ->addViolation();
-                    }
-                }
-
-                $photos = array_values(array_filter(
-                    $lieu->ressources()->toArray(),
-                    static fn ($resource): bool => \App\Pim\Enum\NatureRessource::Photo === $resource->nature(),
-                ));
-                if (count($photos) > 25) {
-                    $context->buildViolation('Un lieu ne peut pas contenir plus de 25 photos.')
-                        ->atPath('ressources')
-                        ->addViolation();
-                }
-                if (1 < count(array_filter($photos, static fn ($resource): bool => 'PHOTO_PRINCIPALE' === $resource->usage()))) {
-                    $context->buildViolation('Un lieu ne peut avoir qu’une seule photo principale.')
-                        ->atPath('ressources')
-                        ->addViolation();
-                }
-            })],
+            'validation_groups' => [ValidationGroups::DRAFT],
         ]);
     }
 }

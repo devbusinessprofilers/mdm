@@ -12,8 +12,10 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 #[AsMessageHandler]
 final readonly class RegenerateMediaHandler
 {
-    public function __construct(private MediaAssetRepository $mediaRepository, private MediaProcessingService $processor)
-    {
+    public function __construct(
+        private MediaAssetRepository $mediaRepository,
+        private MediaProcessingService $processor,
+    ) {
     }
 
     public function __invoke(RegenerateMedia $message): void

@@ -7,10 +7,14 @@ namespace App\Pim\Service;
 use App\Account\Message\InternalUserInvited;
 use App\Account\MessageHandler\InternalUserInvitedHandler;
 use App\Dam\Message\DeleteMedia;
+use App\Dam\Message\PublishDocument;
 use App\Dam\Message\RegenerateMedia;
+use App\Dam\Message\UnpublishDocument;
 use App\Dam\MessageHandler\DeleteMediaHandler;
 use App\Dam\MessageHandler\MediaUploadedHandler;
+use App\Dam\MessageHandler\PublishDocumentHandler;
 use App\Dam\MessageHandler\RegenerateMediaHandler;
+use App\Dam\MessageHandler\UnpublishDocumentHandler;
 use App\Pim\Message\IndexFiche;
 use App\Pim\MessageHandler\IndexFicheHandler;
 use App\Pim\MessageHandler\MediaProcessedHandler;
@@ -39,7 +43,7 @@ final class AdminEventCatalog
                 'type' => MediaUploaded::class,
                 'label' => 'Image déposée',
                 'domain' => 'DAM',
-                'trigger' => 'Ajout ou remplacement d’une image sur un lieu.',
+                'trigger' => 'Ajout ou remplacement d’une photo sur une fiche Lieu, Activité, Restaurant ou Service.',
                 'transport' => 'dam',
                 'worker' => 'worker-dam',
                 'handler' => MediaUploadedHandler::class,
@@ -54,7 +58,7 @@ final class AdminEventCatalog
                 'transport' => 'pim',
                 'worker' => 'worker-pim',
                 'handler' => MediaProcessedHandler::class,
-                'result' => 'Signale la modification de la fiche du lieu afin que le PIM expose le nouvel état du média.',
+                'result' => 'Signale la modification de la fiche afin que le PIM expose le nouvel état du média et sa version.',
                 'next' => null,
             ],
             [
@@ -72,7 +76,7 @@ final class AdminEventCatalog
                 'type' => DeleteMedia::class,
                 'label' => 'Suppression d’image demandée',
                 'domain' => 'DAM',
-                'trigger' => 'Suppression ou remplacement d’une image, ou suppression du lieu associé.',
+                'trigger' => 'Suppression ou remplacement d’une image, ou suppression de la fiche Lieu, Activité, Restaurant ou Service associée.',
                 'transport' => 'dam',
                 'worker' => 'worker-dam',
                 'handler' => DeleteMediaHandler::class,
@@ -80,14 +84,36 @@ final class AdminEventCatalog
                 'next' => null,
             ],
             [
+                'type' => PublishDocument::class,
+                'label' => 'Publication de document demandée',
+                'domain' => 'DAM',
+                'trigger' => 'Publication explicite d’un document publiable dont les droits sont validés sur une fiche publiée.',
+                'transport' => 'dam',
+                'worker' => 'worker-dam',
+                'handler' => PublishDocumentHandler::class,
+                'result' => 'Copie l’original privé vers le stockage public et confirme l’URL CDN uniquement après réussite.',
+                'next' => null,
+            ],
+            [
+                'type' => UnpublishDocument::class,
+                'label' => 'Révocation de document demandée',
+                'domain' => 'DAM',
+                'trigger' => 'Dépublication, remplacement, archivage ou suppression d’un document publié.',
+                'transport' => 'dam',
+                'worker' => 'worker-dam',
+                'handler' => UnpublishDocumentHandler::class,
+                'result' => 'Supprime idempotemment la copie publique puis confirme le retour à un état privé.',
+                'next' => null,
+            ],
+            [
                 'type' => IndexFiche::class,
                 'label' => 'Réindexation d’une fiche',
                 'domain' => 'PIM',
-                'trigger' => 'Création ou modification d’un lieu, changement de ses images ou suppression d’un média.',
+                'trigger' => 'Création ou modification d’une fiche Lieu, Activité, Restaurant ou Service, changement de ses ressources ou évolution du workflow.',
                 'transport' => 'pim',
                 'worker' => 'worker-pim',
                 'handler' => IndexFicheHandler::class,
-                'result' => 'Reconstruit le document de recherche de la fiche utilisé par les listes et recherches PIM.',
+                'result' => 'Reconstruit le document de recherche avec uniquement les données actives, utilisé par les listes et recherches PIM.',
                 'next' => null,
             ],
             [
@@ -111,7 +137,6 @@ final class AdminEventCatalog
                 return $event['label'];
             }
         }
-
         $position = strrpos($type, '\\');
 
         return false === $position ? $type : substr($type, $position + 1);

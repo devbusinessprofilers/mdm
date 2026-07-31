@@ -38,25 +38,40 @@ Symfony 7.4 + API Platform (Upsun, projet dédié)
 - Les workers PIM, DAM, ETL, Enrichment et Mail sont séparés.
 - RabbitMQ, Redis et OpenSearch sont reportés en V2 jusqu'à ce que des mesures prouvent leur utilité.
 
-## 2. État actuel
+## 2. État actuel — 31 juillet 2026
 
 Légende : `[x]` terminé, `[~]` partiel, `[ ]` à faire.
 
 - [x] Socle Symfony, Docker, MariaDB, tests et PHPStan
 - [x] Comptes locaux, connexion et rôles BP de base
 - [x] Messenger Doctrine, files par domaine, retries, échecs et outbox
-- [x] Tronc commun `Fiche`, localisation, statuts et listes de valeurs
-- [x] Domaine Lieu, CRUD temporaire, fixtures, pagination et recherche MariaDB
-- [~] API Platform installé, API métier à exposer
-- [~] Contrats DAM et messages créés, pipeline média à construire
-- [ ] Activités
-- [ ] Restaurants
-- [ ] Services événementiels
+- [x] Tronc commun `Fiche`, localisation, statuts, listes de valeurs et validations `Draft`/`Submission`
+- [x] Domaine Lieu : CRUD PIM, workflow, recherche MariaDB, contraintes métier et commande de contrôle
+- [x] Domaine Activité : CRUD PIM, prestataire, localisation fixe/mobile, offres, workflow, recherche et validation
+- [x] Domaine Service événementiel : CRUD PIM, prestations, localisation fixe/mobile V1, tarifs euros, workflow, recherche et validation
+- [x] API Platform v1 des Lieux, Activités, Restaurants et Services : lecture, modification, médias et documents avec JWT, scopes, `ETag` et `If-Match`
+- [x] DAM images et documents : originaux privés, variantes d’images, publication/révocation documentaire et workers idempotents
+- [x] Audit append-only des Lieux, Activités, Restaurants et Services, avec historique filtrable réservé aux validateurs et administrateurs
+- [x] Administration technique : supervision outbox/files, catalogue des événements, workflows et routes disponibles
+- [x] Restaurants : modèle Bible, LOV, contraintes Draft/Submission, PIM,
+  workflow, recherche, audit, DAM, API externe, fixtures et commande de
+  validation livrés. L’autocomplétion géographique et la minicarte sont
+  reportées au passage au front.
 - [ ] Traiteurs et Plateaux-repas
-- [ ] Imports, exports et synchronisations
-- [ ] Dashboards, audit complet et qualité des données
+- [~] Imports : LOV Prestataire CSV et commandes de contrôle Lieu/Activité/Service disponibles ; imports métier génériques, exports et synchronisations à faire
+- [~] Dashboards et qualité des données : supervision technique disponible ; indicateurs métier et complétude globale à faire
 - [ ] Traduction, OCR et enrichissement IA
 - [ ] Déploiement Upsun et stockage OVH de production
+
+La dernière vérification locale couvre les migrations MariaDB jusqu’à
+`Version20260731201000`, un schéma Doctrine synchronisé, 209 tests (950
+assertions), l’analyse PHPStan, les templates Twig et l’export OpenAPI. Les
+formulaires PIM sont construits avec les FormTypes Symfony et rendus par les
+helpers Twig ; aucun formulaire métier n’est écrit directement en HTML.
+
+Le contrat détaillé de l’API, du workflow, du DAM et de l’audit est documenté
+dans [docs/external-site-api.md](docs/external-site-api.md) et présenté dans la
+page `/admin`.
 
 ## 3. Démarrer le projet localement
 
@@ -112,14 +127,32 @@ docker compose exec php php bin/console app:user:create-super-admin admin@exampl
 
 Le mot de passe est demandé sans être affiché. Il doit contenir au moins 12 caractères.
 
-### Étape 6 — Charger des lieux de démonstration
+### Étape 6 — Charger les fiches de démonstration
 
 ```bash
 docker compose exec php php bin/console doctrine:fixtures:load \
-  --group=pim-lieux --append --no-interaction --no-debug
+  --group=pim-demo --append --no-interaction --no-debug
 ```
 
-La liste est ensuite disponible sur <http://localhost:6080/admin/lieux>.
+Cette commande crée par défaut 100 Lieux, 100 Activités, 100 Restaurants et
+100 Services.
+Les volumes se configurent avec `PIM_LIEU_FIXTURE_COUNT`,
+`PIM_ACTIVITE_FIXTURE_COUNT`, `PIM_RESTAURANT_FIXTURE_COUNT` et
+`PIM_SERVICE_FIXTURE_COUNT`. Les groupes `pim-lieux`, `pim-activites`,
+`pim-restaurants` et `pim-services` restent disponibles pour charger un seul
+domaine.
+
+Pour repartir d’un environnement vide, arrêter d’abord les workers puis lancer :
+
+```bash
+docker compose exec php php bin/console app:dev:database:clean
+```
+
+La commande n’existe qu’en environnement `dev`. Elle demande une confirmation,
+vide les données applicatives, l’audit, l’outbox et les files Messenger, puis
+supprime les objets sous `S3_PREFIX` dans les stockages privé et public. Les
+versions de migration et les LOV sont conservées. En exécution automatisée,
+ajouter `--force`.
 
 ### Étape 7 — Démarrer les workers
 
@@ -167,10 +200,14 @@ Conserver `Fiche` comme tronc commun : identifiant ULID, type, code, libellé, s
 
 Utiliser les fichiers Excel du cahier des charges comme source des champs, listes de valeurs, validations et conditions.
 
-1. **Lieu** : terminer les droits, le workflow et l'interface définitive autour du modèle existant.
-2. **Activité** : informations générales, type, zone d'action, description, objectifs, capacités et tarifs.
-3. **Restaurant** : typologie, cuisine, capacité, localisation, événements, services, photos et tarifs.
-4. **Service événementiel** : informations générales, localisation, typologie et informations commerciales.
+1. **Lieu** `[~]` : modèle, CRUD, droits BP, workflow, API, audit et DAM livrés ; les contradictions métier explicitement écartées restent à arbitrer.
+2. **Activité** `[x]` : informations générales, prestataire, type, zone d'action, description, objectifs, capacités, tarifs, offres, médias et supports commerciaux livrés.
+3. **Restaurant** `[x]` : typologie, cuisine, capacité, localisation en texte
+   pour la V1, événements, services, salles, photos, menus, documents, API,
+   audit et workflow livrés. Les champs Bible 346 `TYPE_FORFAIT` et 347
+   `NOM_PERSONALISE` sont volontairement exclus : **champs à ajouter lors du
+   passage au front**.
+4. **Service événementiel** `[x]` : informations générales, prestations contrôlées, localisation fixe ou zones mobiles en texte pour la V1, description simple, accessibilité, logistique, tarifs flottants en euros, médias, supports commerciaux, API, audit et workflow livrés. L’autocomplétion et la minicarte sont reportées.
 5. **Traiteur/Plateau-repas** : traiteur, produits, variantes, interactions Salesforce et frais de livraison par zone.
 
 Pour chaque domaine :
@@ -308,6 +345,11 @@ docker compose exec -e PIM_LIEU_FIXTURE_COUNT=30000 php \
   php bin/console doctrine:fixtures:load --group=pim-lieux --append \
   --no-interaction --no-debug
 ```
+
+Pour tester simultanément les quatre domaines, utiliser le groupe `pim-demo` et
+ajouter `-e PIM_ACTIVITE_FIXTURE_COUNT=...`,
+`-e PIM_RESTAURANT_FIXTURE_COUNT=...` ainsi que
+`-e PIM_SERVICE_FIXTURE_COUNT=...`.
 
 ## 6. Quand passer en V2
 

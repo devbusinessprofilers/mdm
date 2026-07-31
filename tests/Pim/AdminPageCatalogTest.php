@@ -21,6 +21,12 @@ final class AdminPageCatalogTest extends KernelTestCase
         $names = array_merge(...array_values(array_map(static fn (array $pages): array => array_column($pages, 'name'), $groups)));
         self::assertContains('app_pim_admin', $names);
         self::assertContains('app_pim_lieu_index', $names);
+        self::assertContains('app_pim_restaurant_index', $names);
+        self::assertContains('app_pim_restaurant_history', $names);
+        self::assertContains('app_pim_service_index', $names);
+        self::assertContains('app_pim_service_history', $names);
+        self::assertContains('_api_/v1/services_get_collection', $names);
+        self::assertContains('_api_/v1/restaurants_get_collection', $names);
         self::assertContains('api_doc', $names);
         self::assertContains('api_entrypoint', $names);
         self::assertNotContains('api_graphql_graphiql', $names);

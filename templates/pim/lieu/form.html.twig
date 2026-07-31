@@ -9,7 +9,10 @@
         <legend>{{ title }}</legend>
         <div data-form-collection-target="items">
             {% for item in field %}
-                <fieldset data-form-collection-item>{{ form_widget(item) }}<button type="button" data-action="form-collection#remove">Retirer</button></fieldset>
+                <fieldset data-form-collection-item>
+                    {{ form_widget(item) }}
+                    <button type="button" data-action="form-collection#remove">Retirer</button>
+                </fieldset>
             {% endfor %}
         </div>
         <button type="button" data-action="form-collection#add" data-remove-label="Retirer">Ajouter</button>
@@ -91,6 +94,54 @@
         </section>
     {% else %}
         <section class="card"><h2>Photos du lieu</h2><p>Enregistrez d’abord le lieu, puis vous pourrez ajouter plusieurs images et leurs métadonnées.</p></section>
+    {% endif %}
+
+    {% if not creation %}
+        <section class="card">
+            <div class="section-heading"><div><p class="page-kicker">DAM</p><h2>Documents</h2></div><span class="badge">{{ documents|length }}</span></div>
+            <p>Les originaux restent privés. Une copie publique n’est créée qu’après validation des droits et traitement par le worker.</p>
+            {{ form_start(document_upload_form, {attr: {class: 'crud-form'}}) }}
+                {{ form_widget(document_upload_form) }}
+            {{ form_end(document_upload_form) }}
+            {% for document in documents %}
+                <article class="lieu-photo-card">
+                    <p>
+                        <strong>{{ document.view.title ?: document.view.filename }}</strong>
+                        <span class="badge">
+                            {{ document.view.access }} · {{ document.view.publicationStatus }}
+                        </span>
+                    </p>
+                    <p>
+                        {{ document.view.mimeType }} ·
+                        {{ document.view.sizeBytes
+                            ? (document.view.sizeBytes / 1024 / 1024)|number_format(2, ',', ' ') ~ ' Mo'
+                            : 'fichier introuvable'
+                        }}
+                    </p>
+                    {{ form_start(document.metadata_form, {attr: {class: 'crud-form'}}) }}
+                        {{ form_widget(document.metadata_form) }}
+                    {{ form_end(document.metadata_form) }}
+                    {{ form_start(document.replace_form) }}{{ form_widget(document.replace_form) }}{{ form_end(document.replace_form) }}
+                    {% if document.view.access != 'private' or is_granted('ROLE_BP_VALIDATOR') %}
+                        <p>
+                            <a href="{{ path('app_pim_lieu_document_download', {
+                                id: lieu.id,
+                                resourceId: document.view.id
+                            }) }}">Télécharger l’original</a>
+                            {% if document.view.publicUrl %}
+                                · <a href="{{ document.view.publicUrl }}">Copie publique</a>
+                            {% endif %}
+                        </p>
+                    {% endif %}
+                    {% if is_granted('ROLE_BP_VALIDATOR') and document.view.access == 'publishable' %}
+                        {{ form(document.publication_form) }}
+                    {% endif %}
+                    {{ form(document.delete_form) }}
+                </article>
+            {% else %}<p class="empty-state">Aucun document.</p>{% endfor %}
+        </section>
+    {% else %}
+        <section class="card"><h2>Documents</h2><p>Enregistrez d’abord le lieu pour déposer des documents.</p></section>
     {% endif %}
 
     {{ form_start(form, {attr: {class: 'crud-form'}}) }}

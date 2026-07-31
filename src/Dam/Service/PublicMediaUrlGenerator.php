@@ -12,6 +12,11 @@ final readonly class PublicMediaUrlGenerator
 
     public function url(string $key): string
     {
-        return rtrim($this->baseUrl, '/').'/'.implode('/', array_map(rawurlencode(...), explode('/', ltrim($key, '/'))));
+        return rtrim($this->baseUrl, '/').
+            '/'.
+            implode(
+                '/',
+                array_map(rawurlencode(...), explode('/', ltrim($key, '/'))),
+            );
     }
 }
