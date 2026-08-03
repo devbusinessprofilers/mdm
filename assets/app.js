@@ -6,17 +6,11 @@ import './stimulus_bootstrap.js';
  * which should already be in your base.html.twig.
  */
 /*
- * Ordre volontaire : les tokens définissent les variables CSS, les composants
- * s'appuient dessus, les écrans surchargent en dernier.
+ * Feuille unique : le thème du portail prestataire et Tailwind. Les sept
+ * feuilles maison (tokens, composants, coquille, fiche, espace de travail,
+ * édition rapide, authentification) ont été retirées avec la bascule des
+ * écrans sur les composants Twig du portail.
  */
-import './styles/tokens.css';
-import './styles/components.css';
 import './styles/app.css';
-import './styles/auth.css';
-import './styles/app-shell.css';
-import './styles/workspace.css';
-import './styles/edition-rapide.css';
-import './styles/creation.css';
-import './styles/fiche.css';
 
 console.log('This log comes from assets/app.js - welcome to AssetMapper! 🎉');

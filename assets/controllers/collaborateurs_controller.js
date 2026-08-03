@@ -56,13 +56,14 @@ export default class extends Controller {
         ['nom', 'prenom', 'telephone'].forEach((nom) => {
             const cible = this[`${nom}Target`];
             cible.textContent = valeurs[nom] ?? '';
-            cible.classList.toggle('collab-panneau__valeur--vide', '' === cible.textContent);
+            cible.classList.toggle('text-neutral-400', '' === cible.textContent);
+            cible.classList.toggle('text-neutral-900', '' !== cible.textContent);
         });
 
         this.emailTarget.textContent = valeurs.email ?? this.emailParDefaut;
         this.roleTarget.textContent = valeurs.role ?? 'Manager';
 
-        this.element.querySelectorAll('.collab-panneau__droit').forEach((droit) => {
+        this.element.querySelectorAll('[data-action*="basculerDroit"]').forEach((droit) => {
             droit.setAttribute('aria-checked', 'false');
         });
 

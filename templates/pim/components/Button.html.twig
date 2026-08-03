@@ -84,9 +84,20 @@
     {{ attributes.without('class', asLink and disabled ? 'href' : '') }}
     class="{{ cva.apply({ variant: variant.value, size: size.value, disabled, full, isActive }, attributes.render('class')) }}"
 >
+    {#
+        ADAPTATION LOCALE — `w-full h-full` sur l'icône.
+
+        `iconCva` dimensionne cette enveloppe `Typography` (md → 24 px,
+        lg → 40 px), mais le SVG, lui, sort à `1em` : la taille de police de
+        cette même enveloppe, 14 px par défaut. `iconSize` n'avait donc aucun
+        effet visible, et le glyphe flottait en haut à gauche de sa boîte.
+
+        Seule ligne modifiée du composant. Le correctif côté portail serait le
+        même — à remonter.
+    #}
     {% if icon %}
         <twig:Typography textColor="{{ iconColor.value }}" class="{{ iconCva.apply({ variant: variant.value, size: iconSize.value, isActive, disabled }) }}">
-            <twig:Icon name="{{ icon }}" />
+            <twig:Icon name="{{ icon }}" class="w-full h-full" />
         </twig:Typography>
     {% endif %}
     {% if parentContent|trim is not empty %}

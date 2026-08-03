@@ -1,51 +1,53 @@
 {# Maquette : S1 · Connexion V1 — Desktop (nœud Figma 36:1455) #}
 {% extends 'auth/base.html.twig' %}
-{% import 'auth/_composants.html.twig' as ui %}
 
 {% block title %}Identifiez-vous{% endblock %}
 
-{% block classe_carte %}auth-card--connexion{% endblock %}
-
 {# Seul écran du groupe à espacer ses blocs de 40 px. #}
-{% block classe_panneau %}auth-card__panel--aere{% endblock %}
+{% block classe_panneau %}gap-10{% endblock %}
 
 {% block panneau %}
-    <div class="auth-header">
-        {{ ui.avatar('defaut', 64) }}
+    <div class="flex flex-col items-center self-stretch shrink-0 gap-6">
+        <twig:Badge icon="user" class="w-16" />
 
-        <div class="auth-titlegroup">
-            <h1 class="auth-title">Identifiez-vous</h1>
-            <p class="auth-subtitle">
+        <div class="flex flex-col items-center self-stretch shrink-0 gap-1">
+            <twig:Typography variant="heading-1" element="h1" center
+                             class="self-stretch font-[700]!">Identifiez-vous</twig:Typography>
+            <twig:Typography variant="body-lg" element="p" center class="self-stretch">
                 Renseignez votre adresse mail professionnel pour vous connecter ou pour vous créer un compte.
-            </p>
+            </twig:Typography>
         </div>
 
-        <form class="auth-form" method="post" action="">
-            {{ ui.champ('Email', 'email', {
-                type: 'email',
-                placeholder: 'Votre e-mail professionnel',
-                autocomplete: 'email',
-                required: true
-            }) }}
-
-            {{ ui.bouton('Continuer', { style: 'primary', size: 'lg', block: true }) }}
+        <form class="flex flex-col items-stretch self-stretch shrink-0 gap-4" method="post" action="">
+            {{ _self.champ('Email', 'email', 'Votre e-mail professionnel', 'email', 'email') }}
+            <twig:Button variant="primary" size="lg" full>Continuer</twig:Button>
         </form>
     </div>
 
-    <hr class="bp-divider">
+    <hr class="self-stretch w-full h-px border-0 bg-neutral-200">
 
-    <div class="auth-support">
-        <div class="auth-support__titlegroup">
-            <h2 class="auth-support__title">Besoin d’accompagnement ?</h2>
-            <p class="auth-support__text">Notre équipe est là pour vous aider !</p>
+    <div class="flex flex-col items-start self-stretch shrink-0 gap-8">
+        <div class="flex flex-col items-start self-stretch shrink-0 gap-1">
+            <twig:Typography variant="heading-3" element="h2" center
+                             class="self-stretch font-[700]!">Besoin d’accompagnement ?</twig:Typography>
+            <twig:Typography variant="body" element="p" center
+                             class="self-stretch">Notre équipe est là pour vous aider !</twig:Typography>
         </div>
 
         {# Action de contact : la destination reste à définir (page, mailto…). #}
-        {{ ui.bouton('Contactez notre support', {
-            style: 'outline',
-            size: 'lg',
-            block: true,
-            type: 'button'
-        }) }}
+        <twig:Button variant="outline" size="lg" full type="button">Contactez notre support</twig:Button>
     </div>
 {% endblock %}
+
+{#
+    ÉCART : sur « Connexion » et « Mot de passe » ce libellé est en blanc dans
+    la maquette — donc invisible sur la carte blanche. « Mot de passe oublié »
+    l'affiche en neutral-900 ; on retient cette valeur, cohérente et lisible.
+#}
+{% macro champ(libelle, nom, indication, type, autocomplete) %}
+    <div class="flex flex-col gap-1 self-stretch">
+        <twig:Typography variant="body" element="label" for="champ-{{ nom }}">{{ libelle }}*</twig:Typography>
+        <twig:Form:TextInput id="champ-{{ nom }}" name="{{ nom }}" placeholder="{{ indication }}"
+                             inputAttributes="{{ { type: type, autocomplete: autocomplete, required: 'required' } }}" />
+    </div>
+{% endmacro %}

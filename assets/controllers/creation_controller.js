@@ -10,7 +10,7 @@ import { Controller } from '@hotwired/stimulus';
  */
 export default class extends Controller {
     static targets = [
-        'ancre', 'defilement', 'bloc', 'suggestions', 'identite',
+        'ancre', 'defilement', 'bloc', 'suggestions', 'identite', 'contact',
         'banniere', 'banniereTitre',
         'compteClasse', 'zoneCompte', 'sitesCompte', 'sitesPuces', 'compteGroupe',
         'trame', 'trameIndice',
@@ -64,10 +64,7 @@ export default class extends Controller {
 
     marquerAncre(index) {
         this.ancreTargets.forEach((ancre, rang) => {
-            const active = rang === index;
-            ancre.classList.toggle('creation-rail__item--active', active);
-
-            if (active) {
+            if (rang === index) {
                 ancre.setAttribute('aria-current', 'true');
             } else {
                 ancre.removeAttribute('aria-current');
@@ -81,8 +78,8 @@ export default class extends Controller {
         const puce = evenement.currentTarget;
         this.inverser(puce);
 
-        const groupe = puce.closest('.creation__sous-bloc');
-        const puces = Array.from(groupe.querySelectorAll('.creation__puce'));
+        const groupe = puce.closest('div').parentElement;
+        const puces = Array.from(groupe.querySelectorAll('[data-action*="basculerPuce"]'));
         const retenues = puces.filter((p) => this.coche(p)).length;
         const compte = groupe.querySelector('[data-creation-target="compteClasse"]');
 
@@ -94,7 +91,7 @@ export default class extends Controller {
     basculerDepartement(evenement) {
         this.inverser(evenement.currentTarget);
 
-        const retenus = this.element.querySelectorAll('.creation__departement[aria-checked="true"]').length;
+        const retenus = this.element.querySelectorAll('[data-action*="basculerDepartement"][aria-checked="true"]').length;
         this.zoneCompteTarget.textContent = retenus + ' départements couverts';
     }
 
@@ -116,16 +113,17 @@ export default class extends Controller {
      * suivent les cases — comme dans la maquette.
      */
     recompterSites() {
-        const groupes = Array.from(this.element.querySelectorAll('.creation__sites-groupe'));
+        const groupes = Array.from(this.element.querySelectorAll('[data-creation-target="compteGroupe"]'))
+            .map((c) => c.closest('div').parentElement);
         let retenus = [];
         let total = 0;
 
         groupes.forEach((groupe, rang) => {
-            const sites = Array.from(groupe.querySelectorAll('.creation__site'));
+            const sites = Array.from(groupe.querySelectorAll('[data-action*="basculerSite"]'));
             const coches = sites.filter((s) => this.coche(s));
 
             total += sites.length;
-            retenus = retenus.concat(coches.map((s) => s.querySelector('.creation__site-nom').textContent));
+            retenus = retenus.concat(coches.map((s) => s.dataset.libelle));
 
             this.compteGroupeTargets[rang].textContent = coches.length + ' / ' + sites.length;
         });
@@ -143,8 +141,14 @@ export default class extends Controller {
 
     puce(libelle, retenue) {
         const span = document.createElement('span');
-        span.className = 'creation__etiquette creation__etiquette--' + (retenue ? 'site' : 'neutre');
-        span.textContent = libelle;
+        span.className = 'flex items-center justify-center gap-1 rounded-lg px-2 py-1 border '
+            + (retenue ? 'bg-primary-3 border-primary-3' : 'bg-neutral-200 border-neutral-500');
+
+        const texte = document.createElement('span');
+        texte.className = 'font-black text-[0.75rem] leading-[1.25rem] '
+            + (retenue ? 'text-neutral-100' : 'text-neutral-900');
+        texte.textContent = libelle;
+        span.appendChild(texte);
 
         return span;
     }
@@ -164,18 +168,7 @@ export default class extends Controller {
         const actif = !this.coche(bouton);
 
         this.inverser(bouton);
-        bouton.classList.toggle('creation__repli--actif', actif);
-
-        const bloc = bouton.closest('.creation__contact');
-
-        bloc.querySelectorAll('.creation__label').forEach((label) => {
-            label.classList.toggle('creation__label--grise', actif);
-        });
-
-        bloc.querySelectorAll('.creation__boite').forEach((boite) => {
-            boite.classList.toggle('creation__boite--lecture', actif);
-        });
-
+        this.contactTarget.dataset.repli = actif ? '1' : '0';
         this.envoyer(actif);
     }
 
@@ -186,30 +179,22 @@ export default class extends Controller {
             return;
         }
 
-        this.element.querySelectorAll('.creation__acces-option').forEach((autre) => {
-            autre.setAttribute('aria-checked', autre === option ? 'true' : 'false');
-        });
+        const options = Array.from(this.element.querySelectorAll('[data-action*="choisirAcces"]'));
+        options.forEach((autre) => autre.setAttribute('aria-checked', autre === option ? 'true' : 'false'));
 
-        const envoie = option === this.element.querySelector('.creation__acces-option');
-        this.majTrame(envoie);
+        this.majTrame(option === options[0]);
     }
 
-    choisirRadio(evenement) {
-        const bouton = evenement.currentTarget;
-        const groupe = evenement.params.groupe;
+    /*
+     * L'implantation permute l'adresse et la zone d'intervention, et la
+     * bannière suit : sans adresse affichée, l'adresse n'est plus un champ
+     * obligatoire manquant.
+     */
+    choisirImplantation(evenement) {
+        const valeur = evenement.params.valeur;
 
-        this.element
-            .querySelectorAll('[data-creation-groupe-param="' + groupe + '"]')
-            .forEach((autre) => autre.setAttribute('aria-checked', autre === bouton ? 'true' : 'false'));
-
-        /*
-         * L'implantation permute l'adresse et la zone d'intervention. Le rail
-         * suit : le bloc 2 reste renseigné dès que l'un des deux l'est.
-         */
-        if ('implantation' === groupe && this.hasIdentiteTarget) {
-            this.identiteTarget.dataset.implantation = evenement.params.valeur;
-            this.majBanniere('zone' === evenement.params.valeur);
-        }
+        this.identiteTarget.dataset.implantation = valeur;
+        this.majBanniere('zone' === valeur);
     }
 
     /*
@@ -227,7 +212,7 @@ export default class extends Controller {
             adresse.hidden = zone;
         }
 
-        const restants = Array.from(this.banniereTarget.querySelectorAll('.creation__banniere-liste span'))
+        const restants = Array.from(this.banniereTarget.querySelectorAll('[data-champ], .flex-wrap > span'))
             .filter((champ) => !champ.hidden).length;
 
         this.banniereTarget.hidden = 0 === restants;
@@ -243,14 +228,15 @@ export default class extends Controller {
 
     /* Bascule l'option « envoyer » entre inerte et disponible. */
     envoyer(repli) {
-        const options = Array.from(this.element.querySelectorAll('.creation__acces-option'));
+        const options = Array.from(this.element.querySelectorAll('[data-action*="choisirAcces"]'));
 
         if (0 === options.length) {
             return;
         }
 
         const [envoyer, rien] = options;
-        envoyer.classList.toggle('creation__acces-option--inerte', repli);
+        envoyer.classList.toggle('cursor-default', repli);
+        envoyer.classList.toggle('cursor-pointer', !repli);
 
         if (repli) {
             envoyer.setAttribute('aria-disabled', 'true');
@@ -260,7 +246,7 @@ export default class extends Controller {
             envoyer.removeAttribute('aria-disabled');
         }
 
-        envoyer.querySelector('.creation__aide').textContent = repli
+        envoyer.querySelector('[data-aide]').textContent = repli
             ? "Indisponible : le contact de repli n'est pas l'adresse du prestataire."
             : 'Le prestataire reçoit ses identifiants du portail dès la création.';
 
@@ -272,12 +258,12 @@ export default class extends Controller {
      * l'interdit, ou l'utilisateur a choisi « ne rien envoyer ».
      */
     majTrame(actif, repli = false) {
-        const boite = this.trameTarget.closest('.creation__boite');
-        const label = boite.parentElement.querySelector('.creation__label');
+        const boite = this.trameTarget.parentElement;
 
-        boite.classList.toggle('creation__boite--lecture', !actif);
-        label.classList.toggle('creation__label--grise', !actif);
-        this.trameTarget.classList.toggle('creation__valeur--grise', !actif);
+        boite.classList.toggle('bg-neutral-200', !actif);
+        boite.classList.toggle('bg-primary-5', actif);
+        boite.classList.toggle('inset-ring-1', actif);
+        boite.classList.toggle('inset-ring-primary', actif);
 
         this.trameTarget.textContent = actif ? 'Bienvenue — Lieux (FR)' : 'Aucun envoi';
         this.trameIndiceTarget.textContent = actif

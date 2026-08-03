@@ -1,203 +1,215 @@
-{# Maquette : « MDM Business Profilers » · écran `fiche` — Éditeur de fiche Lieu #}
+{#
+    Maquette : « MDM Business Profilers » · écran `fiche` — Éditeur de fiche Lieu.
+
+    Écrit avec les composants du portail prestataire et Tailwind. Le rail des
+    16 sections, la grille de champs et les blocs spécialisés (puces, formules,
+    médias, disponibilités, capacités) n'ont pas d'équivalent : ils sont écrits
+    en utilitaires, sans feuille de style propre à l'écran.
+#}
 {% extends 'mdm/base.html.twig' %}
 {% import 'mdm/_composants.html.twig' as ui %}
-{% import 'auth/_composants.html.twig' as bp %}
 
 {% set ecran = 'fiche' %}
 
 {% block title %}{{ section.nom }} · Éditeur de fiche{% endblock %}
 
+{% block main_attributs %}{% if a_des_collaborateurs %}data-controller="collaborateurs"{% endif %}{% endblock %}
+
 {#
     Sur cet écran le rail ne montre plus les sections du référentiel mais les
-    16 sections de la fiche, avec leur taux de complétude — c'est le motif du
-    portail prestataire.
+    16 sections de la fiche, avec leur taux de complétude. Il ne défile jamais :
+    les espacements se resserrent quand la fenêtre raccourcit.
 #}
 {% block rail %}
     {% set coupure = constant('App\\Pim\\Maquette\\FicheLieuMaquette::SECTIONS_MA_FICHE') %}
-    <nav class="mdm-rail" aria-label="Sections de la fiche">
-        <div class="mdm-rail__group">
-            <span class="mdm-rail__title">Ma fiche</span>
-            <div class="mdm-rail__items">
-                {% for onglet in onglets|slice(0, coupure) %}
-                    {{ ui.rail_item(onglet.nom, {
-                        icone: onglet.icone,
-                        compteur: onglet.completude ~ ' %',
-                        actif: onglet.actif,
-                        href: path('app_mdm_fiche_lieu', { section: onglet.index })
-                    }) }}
-                {% endfor %}
-            </div>
-        </div>
-
-        <div class="mdm-rail__group">
-            <span class="mdm-rail__title">Paramètres</span>
-            <div class="mdm-rail__items">
-                {% for onglet in onglets|slice(coupure) %}
-                    {{ ui.rail_item(onglet.nom, {
-                        icone: onglet.icone,
-                        compteur: onglet.completude ~ ' %',
-                        actif: onglet.actif,
-                        href: path('app_mdm_fiche_lieu', { section: onglet.index })
-                    }) }}
-                {% endfor %}
-            </div>
-        </div>
+    <nav class="w-[328px] shrink-0 flex flex-col overflow-hidden bg-neutral-100 border-r border-neutral-200
+                py-[clamp(6px,calc(6px+(100vh-640px)*0.05),28px)]
+                gap-[clamp(6px,calc(6px+(100vh-640px)*0.0455),26px)]"
+         aria-label="Sections de la fiche">
+        {{ _self.groupe('Ma fiche', onglets|slice(0, coupure)) }}
+        {{ _self.groupe('Paramètres', onglets|slice(coupure)) }}
     </nav>
 {% endblock %}
 
 {% block contenu %}
     {#
         La section « Collaborateurs » ajoute un panneau latéral : la colonne
-        principale et sa barre d'actions se regroupent alors dans `__principal`
-        pour laisser l'aside occuper toute la hauteur à droite.
+        principale et sa barre d'actions se regroupent alors à gauche pour
+        laisser l'aside occuper toute la hauteur à droite.
     #}
-    <div class="fiche {{ a_des_collaborateurs ? 'fiche--avec-panneau' : '' }}"
-         {% if a_des_collaborateurs %}data-controller="collaborateurs"{% endif %}>
+    <div class="flex flex-row flex-1 min-h-0">
 
-      <div class="fiche__principal">
+      <div class="flex flex-col flex-1 min-w-0 min-h-0">
 
-        <div class="fiche__defilement">
+        <div class="flex-1 min-h-0 overflow-y-auto flex flex-col gap-6 pl-7 pr-8 pt-8 scrollbar">
 
             {# ------------------------------------------------ En-tête de fiche #}
-            <div class="fiche__entete">
-                <div class="fiche__identite">
-                    <h1 class="fiche__titre">Jeanne &amp; The Forest - Château de Montvillargenne</h1>
-                    <span class="fiche__badge fiche__badge--enrichissement">En enrichissement</span>
-                    <span class="fiche__badge fiche__badge--enligne">En ligne</span>
-                    <span class="fiche__badge fiche__badge--reference">LIE-004821 · v14</span>
+            {#
+                Deux colonnes : à gauche l'identité de la fiche sur deux lignes,
+                à droite les actions. `items-center` sur la rangée les centre sur
+                toute la hauteur du bloc de gauche plutôt que de les caler sur la
+                seule ligne de complétude.
+            #}
+            <div class="shrink-0 flex flex-row items-center gap-[196px] overflow-hidden">
+              <div class="flex flex-col gap-1 grow min-w-0">
+                <div class="flex flex-row items-center gap-3 flex-wrap">
+                    {#
+                        La maquette veut 26 px / 34 en Ubuntu 700. La variante
+                        `heading-2` porte bien ces valeurs, mais son palier `sm`
+                        les pousse à 32/40 — et `bold` donne 900 quand la
+                        maquette demande 700. Les deux sont ramenés ici.
+                    #}
+                    <twig:Typography variant="heading-2" element="h1"
+                                     class="sm:text-[1.625rem]! sm:leading-[2.125rem]! font-[700]!">Jeanne &amp; The Forest - Château de Montvillargenne</twig:Typography>
+                    <twig:Tag label="En enrichissement" variant="old-gold" size="sm" />
+                    <twig:Tag label="En ligne" variant="success" size="sm" />
+                    <twig:Tag label="LIE-004821 · v14" variant="neutral" size="sm" />
                 </div>
 
-                <div class="fiche__mesure">
-                    <div class="fiche__completude">
-                        <div class="fiche__completude-texte">
-                            <span class="fiche__completude-taux">Complété à : 64 %</span>
-                            <span class="fiche__completude-detail">134 / 210 champs</span>
-                        </div>
-                        <div class="fiche__jauge"
-                             role="progressbar"
-                             aria-label="Complétude de la fiche"
-                             aria-valuenow="64" aria-valuemin="0" aria-valuemax="100">
-                            <span class="fiche__jauge-fond"></span>
-                            <span class="fiche__jauge-remplissage" style="--fiche-completude: 64%"></span>
-                        </div>
+                {# Le libellé, puis la jauge qui prend tout l'espace restant. #}
+                <div class="flex flex-row items-center gap-4">
+                    <div class="flex flex-row items-center gap-2.5 shrink-0">
+                        <twig:Typography variant="body" bold>Complété à : 64 %</twig:Typography>
+                        <twig:Typography variant="body-sm" textColor="neutral-500">134 / 210 champs</twig:Typography>
                     </div>
-
-                    <div class="fiche__actions-ia">
-                        <button class="bp-btn bp-btn--lg bp-btn--degrade" type="button">
-                            <span class="bp-btn__icon">{{ ui.icone_etincelle() }}</span>
-                            Enrichir ce qui manque
-                        </button>
-                        {{ bp.bouton("Extraire d'un document", { style: 'outline', size: 'lg', type: 'button' }) }}
-                        {{ bp.bouton('Traduire', { style: 'outline', size: 'lg', type: 'button' }) }}
-                    </div>
+                    <twig:ProgressBar value="64" large class="grow min-w-0" />
                 </div>
+              </div>
+
+                    {#
+                        Actions de barre, pas des appels à l'action : en `lg` elles
+                        montaient à 48 px contre un titre de 34, et pesaient plus
+                        lourd que lui. `md` les ramène à 40.
+
+                        ÉCART ASSUMÉ : la maquette pose ici un troisième bouton
+                        « Traduire », retiré à la demande de l'équipe back. La
+                        traduction est un traitement de fond, déclenché à la
+                        validation de la fiche — un bouton obligerait à y penser
+                        après chaque modification, et des fiches passeraient à
+                        travers.
+                    #}
+                    <div class="flex flex-row items-center gap-2 shrink-0">
+                        {#
+                            L'enveloppe de l'icône est ramenée de 24 à 20 px : le
+                            `md` du composant pèse lourd contre un libellé de 14.
+                            Le tracé la remplit — `Button` s'en charge — donc le
+                            glyphe suit et reste centré.
+                        #}
+                        <twig:Button variant="primary" size="md" icon="ai"
+                                     class="[&>:first-child]:size-5">Enrichir ce qui manque</twig:Button>
+                        <twig:Button variant="outline" size="md">Extraire d'un document</twig:Button>
+                    </div>
             </div>
 
             {# ------------------------------------------------ Carte de section #}
             {% if not a_des_collaborateurs %}
-            <section class="fiche__carte">
-                <div class="fiche__bloc">
-                    <div class="fiche__section-entete">
-                        <h2 class="fiche__section-titre">{{ section.nom }}</h2>
-                        <span class="fiche__section-compte">{{ section.champs|length }}</span>
-                        <div class="fiche__legende">
-                            <span class="fiche__legende-item">
-                                {{ ui.pastille('primary-turquoise', 9) }}<span>Maîtrisé par le MDM</span>
-                            </span>
-                            <span class="fiche__legende-item">
-                                {{ ui.pastille('primary-marine', 9) }}<span>Lecture seule · Salesforce</span>
-                            </span>
-                            <span class="fiche__legende-item">
-                                {{ ui.pastille('secondary-p-che', 9) }}<span>Déclaré par le prestataire</span>
-                            </span>
+                <section class="shrink-0 box-border flex flex-col gap-14 p-14 rounded-[32px]
+                                bg-neutral-100 shadow-(--shadow)">
+                    <div class="flex flex-col gap-4">
+                        <div class="flex flex-row items-center gap-6 flex-wrap">
+                            <twig:Typography variant="heading-3" element="h2" class="grow font-[700]!">{{ section.nom }}</twig:Typography>
+                            <twig:Typography variant="heading-3" textColor="neutral-400">{{ section.champs|length }}</twig:Typography>
+                            <div class="flex flex-row items-center gap-5 flex-wrap">
+                                {{ _self.legende('bg-primary', 'Maîtrisé par le MDM') }}
+                                {{ _self.legende('bg-primary-3', 'Lecture seule · Salesforce') }}
+                                {{ _self.legende('bg-peach', 'Déclaré par le prestataire') }}
+                            </div>
                         </div>
-                    </div>
 
-                    {% if groupes_puces %}
-                        {% include 'mdm/fiche/_puces.html.twig' %}
-                    {% endif %}
+                        {% if groupes_puces %}
+                            {% include 'mdm/fiche/_puces.html.twig' %}
+                        {% endif %}
 
-                    {% if a_des_formules %}
-                        {% include 'mdm/fiche/_formules.html.twig' %}
-                    {% endif %}
+                        {% if a_des_formules %}
+                            {% include 'mdm/fiche/_formules.html.twig' %}
+                        {% endif %}
 
-                    {% if a_des_medias %}
-                        {% include 'mdm/fiche/_medias.html.twig' %}
-                    {% endif %}
+                        {% if a_des_medias %}
+                            {% include 'mdm/fiche/_medias.html.twig' %}
+                        {% endif %}
 
-                    {% if section.champs %}
-                        <div class="fiche__champs">
-                            {% for champ in section.champs %}
-                                <div class="fiche__champ {{ champ.riche ? 'fiche__champ--riche' : '' }}"
-                                     {% if champ.liste %}data-controller="bp-select"{% endif %}>
-                                    <div class="fiche__champ-entete">
-                                        {{ ui.pastille(champ.autoriteDot, 8) }}
-                                        <span class="fiche__champ-label">{{ champ.label }}</span>
-                                        <span class="fiche__spacer"></span>
-                                        <span class="fiche__champ-autorite"
-                                              style="--autorite-fg: var(--{{ champ.autoriteFg }}); --autorite-bg: var(--{{ champ.autoriteBg }})">{{ champ.autorite }}</span>
-                                    </div>
+                        {% if section.champs %}
+                            <div class="flex flex-row flex-wrap gap-x-6 gap-y-5">
+                                {% for champ in section.champs %}
+                                    <div class="relative flex flex-col gap-1 {{ champ.riche ? 'w-full' : 'w-[calc(50%-12px)]' }}"
+                                         {% if champ.liste %}data-controller="bp-select"{% endif %}>
 
-                                    {% if champ.riche %}
-                                    {#
-                                        Texte enrichi : le champ prend toute la largeur, la boîte
-                                        n'a pas de hauteur fixe et le texte s'enroule. La barre
-                                        d'outils est celle de la maquette.
-                                    #}
-                                    <div class="fiche__editeur {{ champ.vide ? 'fiche__editeur--vide' : '' }}">
-                                        <div class="fiche__editeur-outils">
-                                            <div class="fiche__editeur-outils-rangee" aria-hidden="true">
-                                                {{ ui.barre_texte_enrichi() }}
+                                        <div class="flex flex-row items-center gap-2">
+                                            <span class="w-2 h-2 shrink-0 rounded-full {{ _self.pastille(champ.autoriteDot) }}"></span>
+                                            <twig:Typography variant="input" element="span"
+                                                             class="text-[0.875rem]! leading-[1.375rem]!">{{ champ.label }}</twig:Typography>
+                                            <span class="flex-1"></span>
+                                            <span class="shrink-0 px-2 py-0.5 rounded-full {{ _self.fondAutorite(champ.autoriteBg) }}">
+                                                <twig:Typography variant="body-xs" bold
+                                                                 class="{{ _self.texteAutorite(champ.autoriteFg) }}">{{ champ.autorite }}</twig:Typography>
+                                            </span>
+                                        </div>
+
+                                        {% if champ.riche %}
+                                            {#
+                                                Texte enrichi : le composant `Form:Wysiwyg` du portail,
+                                                monté sur TinyMCE auto-hébergé. La barre d'outils de la
+                                                maquette — annuler, rétablir, gras, italique, les quatre
+                                                alignements, la liste et l'émoji — est reprise à
+                                                l'identique par le contrôleur `wysiwyg`, mais elle est
+                                                cette fois fonctionnelle.
+
+                                                Le bouton de suggestion IA reste au-dessus : TinyMCE
+                                                remplace le `<textarea>` par une iframe, on ne peut rien
+                                                poser à l'intérieur.
+                                            #}
+                                            {#
+                                                La hauteur est calée depuis l'extérieur : TinyMCE pose
+                                                la sienne en style en ligne (500 px par défaut), et
+                                                `maxHeight` ne borne que la croissance automatique — sans
+                                                greffon `autoresize`, il ne réduit rien. Le `!` l'emporte
+                                                sur le style en ligne et rend la boîte compacte de la
+                                                maquette.
+                                            #}
+                                            <div class="flex flex-col gap-2 [&_.tox-tinymce]:h-[200px]!">
+                                                <twig:Form:Wysiwyg id="riche-{{ index }}-{{ loop.index }}"
+                                                                   name="riche-{{ index }}-{{ loop.index }}"
+                                                                   value="{{ champ.vide ? '' : champ.valeur }}" />
+                                                {% if champ.suggerable %}
+                                                    <div class="flex flex-row justify-end">{{ _self.suggerer() }}</div>
+                                                {% endif %}
                                             </div>
-                                        </div>
-                                        <div class="fiche__editeur-corps">
-                                            <span class="fiche__editeur-texte {{ champ.vide ? 'fiche__editeur-texte--vide' : '' }}">{{ champ.valeur }}</span>
-                                            {% if champ.suggerable %}
-                                                <button class="fiche__suggerer" type="button">
-                                                    {{ ui.icone_etincelle() }} Suggérer
-                                                </button>
+                                        {% else %}
+                                            <div class="min-h-10 box-border flex items-center gap-2 px-2.5 py-2 rounded-xs
+                                                        {{ champ.lectureSeule ? 'bg-neutral-200' : 'bg-primary-5 inset-ring-1 inset-ring-primary' }}"
+                                                 {% if champ.liste %}
+                                                     data-bp-select-target="declencheur"
+                                                     data-action="click->bp-select#basculer"
+                                                     role="button" tabindex="0"
+                                                     aria-haspopup="listbox" aria-expanded="false"
+                                                 {% endif %}>
+                                                <twig:Typography variant="input" ellipsis
+                                                                 textColor="{{ champ.vide ? 'neutral-400' : 'neutral-900' }}"
+                                                                 class="flex-1 min-w-0 {{ champ.vide ? 'italic' : '' }}">{{ champ.valeur }}</twig:Typography>
+
+                                                {% if champ.suggerable %}{{ _self.suggerer() }}{% endif %}
+
+                                                {% if champ.verrouille %}
+                                                    <twig:Icon name="lock" class="w-3.5 h-3.5 shrink-0 text-neutral-400"
+                                                               title="Champ maîtrisé par Salesforce" />
+                                                {% endif %}
+
+                                                {% if champ.liste %}
+                                                    <twig:Icon name="caret-down" class="w-4 h-4 shrink-0 text-neutral-500" />
+                                                {% endif %}
+                                            </div>
+
+                                            {% if champ.liste %}
+                                                {% set liste = listes[champ.label]|default({ type: 'checkboxes', options: [] }) %}
+                                                {{ ui.menu_deroulant(liste.options, liste.type) }}
                                             {% endif %}
-                                        </div>
-                                    </div>
-                                    {% else %}
-
-                                    <div class="fiche__champ-boite
-                                                {{ champ.lectureSeule ? 'fiche__champ-boite--lecture' : '' }}
-                                                {{ champ.vide and not champ.lectureSeule ? 'fiche__champ-boite--vide' : '' }}"
-                                         {% if champ.liste %}
-                                             data-bp-select-target="declencheur"
-                                             data-action="click->bp-select#basculer"
-                                             role="button" tabindex="0"
-                                             aria-haspopup="listbox" aria-expanded="false"
-                                         {% endif %}>
-                                        <span class="fiche__champ-valeur {{ champ.vide ? 'fiche__champ-valeur--vide' : '' }}">{{ champ.valeur }}</span>
-
-                                        {% if champ.suggerable %}
-                                            <button class="fiche__suggerer" type="button">
-                                                {{ ui.icone_etincelle() }} Suggérer
-                                            </button>
-                                        {% endif %}
-
-                                        {% if champ.verrouille %}
-                                            <span class="fiche__cadenas" title="Champ maîtrisé par Salesforce">{{ ui.icone_verrou() }}</span>
-                                        {% endif %}
-
-                                        {% if champ.liste %}
-                                            <span class="fiche__chevron" aria-hidden="true">{{ ui.chevron() }}</span>
                                         {% endif %}
                                     </div>
-
-                                    {% if champ.liste %}
-                                        {% set liste = listes[champ.label]|default({ type: 'checkboxes', options: [] }) %}
-                                        {{ ui.menu_deroulant(liste.options, liste.type) }}
-                                    {% endif %}
-                                    {% endif %}
-                                </div>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                </div>
-            </section>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </section>
             {% endif %}
 
             {% if a_des_collaborateurs %}
@@ -213,50 +225,51 @@
             {% endif %}
 
             {# --------------------------- Suggestions, canaux et historique #}
-            <section class="fiche__carte">
-                <div class="fiche__bloc">
-                    {% if suggestions %}
-                        <h2 class="fiche__section-titre">Suggestions IA en attente</h2>
+            <section class="shrink-0 box-border flex flex-col gap-14 p-14 rounded-[32px]
+                            bg-neutral-100 shadow-(--shadow)">
+                {% if suggestions %}
+                    <div class="flex flex-col gap-4">
+                        <twig:Typography variant="heading-3" element="h2" class="font-[700]!">Suggestions IA en attente</twig:Typography>
                         {% for suggestion in suggestions %}
-                            <div class="fiche__suggestion">
-                                <span class="fiche__suggestion-champ">{{ suggestion.champ }}</span>
-                                <span class="fiche__suggestion-valeur">{{ suggestion.valeur }}</span>
-                                <span class="fiche__suggestion-confiance">{{ suggestion.confiance }}</span>
-                                <button class="fiche__accepter" type="button">Accepter</button>
-                                <button class="fiche__ignorer" type="button">Ignorer</button>
+                            <div class="flex flex-row items-center gap-5 flex-wrap px-5 py-4 rounded-xs bg-primary-5">
+                                <twig:Typography variant="body" bold class="min-w-[200px]">{{ suggestion.champ }}</twig:Typography>
+                                <twig:Typography variant="body" class="flex-1 min-w-0">{{ suggestion.valeur }}</twig:Typography>
+                                <twig:Typography variant="body-sm" textColor="neutral-400">{{ suggestion.confiance }}</twig:Typography>
+                                <twig:Button variant="primary" size="sm">Accepter</twig:Button>
+                                <twig:Button variant="text" size="sm" textColor="neutral-500">Ignorer</twig:Button>
                             </div>
                         {% endfor %}
-                    {% endif %}
-                </div>
+                    </div>
+                {% endif %}
 
-                <div class="fiche__colonnes">
-                    <div class="fiche__colonne fiche__colonne--moitie">
-                        <h2 class="fiche__section-titre">Complétude par canal</h2>
-                        <div class="fiche__canaux">
-                            <div class="fiche__canal fiche__canal--entete">
-                                <span class="fiche__canal-libelle"></span>
-                                <span class="fiche__canal-cellule">FR</span>
-                                <span class="fiche__canal-cellule">EN</span>
+                <div class="flex flex-row gap-14 flex-wrap">
+                    <div class="flex flex-col gap-4 w-[calc(50%-28px)] min-w-[320px]">
+                        <twig:Typography variant="heading-3" element="h2" class="font-[700]!">Complétude par canal</twig:Typography>
+                        <div class="flex flex-col">
+                            <div class="flex flex-row items-center gap-4 px-3 py-2">
+                                <span class="flex-1"></span>
+                                {{ _self.enteteCanal('FR') }}
+                                {{ _self.enteteCanal('EN') }}
                             </div>
                             {% for canal in canaux %}
-                                <div class="fiche__canal">
-                                    <span class="fiche__canal-libelle">{{ canal.libelle }}</span>
-                                    <span class="fiche__canal-valeur fiche__canal-valeur--{{ canal.fr >= 80 ? 'vert' : (canal.fr >= 40 ? 'or' : 'rouge') }}">{{ canal.fr }} %</span>
-                                    <span class="fiche__canal-valeur fiche__canal-valeur--{{ canal.en >= 80 ? 'vert' : (canal.en >= 40 ? 'or' : 'rouge') }}">{{ canal.en }} %</span>
+                                <div class="flex flex-row items-center gap-4 px-3 py-2 border-t border-neutral-200">
+                                    <twig:Typography variant="body" class="flex-1 min-w-0">{{ canal.libelle }}</twig:Typography>
+                                    {{ _self.celluleCanal(canal.fr) }}
+                                    {{ _self.celluleCanal(canal.en) }}
                                 </div>
                             {% endfor %}
                         </div>
                     </div>
 
-                    <div class="fiche__colonne">
-                        <h2 class="fiche__section-titre">Historique · Nom du lieu</h2>
+                    <div class="flex flex-col gap-4 flex-1 min-w-[320px]">
+                        <twig:Typography variant="heading-3" element="h2" class="font-[700]!">Historique · Nom du lieu</twig:Typography>
                         {% for evenement in historique %}
-                            <div class="fiche__historique">
-                                <span class="fiche__historique-barre" aria-hidden="true"></span>
-                                <div class="fiche__historique-corps">
-                                    <span class="fiche__historique-qui">{{ evenement.qui }}</span>
-                                    <span class="fiche__historique-quand">{{ evenement.quand }} · {{ evenement.source }}</span>
-                                    <span class="fiche__historique-changement">{{ evenement.changement }}</span>
+                            <div class="flex flex-row gap-3">
+                                <span class="w-0.5 shrink-0 rounded-full bg-primary-4" aria-hidden="true"></span>
+                                <div class="flex flex-col min-w-0">
+                                    <twig:Typography variant="body" bold>{{ evenement.qui }}</twig:Typography>
+                                    <twig:Typography variant="body-xs" textColor="neutral-400">{{ evenement.quand }} · {{ evenement.source }}</twig:Typography>
+                                    <twig:Typography variant="body-sm" textColor="neutral-500" class="text-pretty">{{ evenement.changement }}</twig:Typography>
                                 </div>
                             </div>
                         {% endfor %}
@@ -264,14 +277,15 @@
                 </div>
             </section>
 
-            <div class="fiche__pied-defilement"></div>
+            <div class="shrink-0 h-2"></div>
         </div>
 
         {# ------------------------------------------------ Barre d'actions fixe #}
-        <div class="fiche__barre">
-            {{ bp.bouton('Annuler', { style: 'outline', size: 'lg', type: 'button' }) }}
-            {{ bp.bouton('Enregistrer les modifications', { style: 'primary', size: 'lg', type: 'button' }) }}
-            <button class="bp-btn bp-btn--lg bp-btn--marine" type="button">Envoyer en validation</button>
+        <div class="shrink-0 h-24 flex items-center justify-center gap-4 bg-primary-4">
+            <twig:Button variant="outline" size="lg">Annuler</twig:Button>
+            <twig:Button variant="primary" size="lg">Enregistrer les modifications</twig:Button>
+            <twig:Button variant="text" size="lg" textColor="neutral-100"
+                         class="bg-primary-3!">Envoyer en validation</twig:Button>
         </div>
 
       </div>
@@ -282,3 +296,95 @@
 
     </div>
 {% endblock %}
+
+{# ------------------------------------------------------------- Macros #}
+
+{#
+    Un groupe du rail. Le titre est calé à gauche des boutons : c'est ce que
+    demande la maquette.
+#}
+{% macro groupe(titre, onglets) %}
+    <div class="flex flex-col shrink-0 gap-[clamp(2px,calc(2px+(100vh-640px)*0.0136),8px)]">
+        {# Intitulé de groupe : noir et gras, il ouvre la section. #}
+        <span class="pl-4 pr-4">
+            <twig:Typography variant="body-sm" textColor="neutral-900" bold>{{ titre }}</twig:Typography>
+        </span>
+        <div class="flex flex-col">
+            {% for onglet in onglets %}
+                <a href="{{ path('app_mdm_fiche_lieu', { section: onglet.index }) }}"
+                   class="flex items-center gap-2 mx-3 px-4 rounded-xs overflow-hidden
+                          py-[clamp(2px,calc(2px+(100vh-640px)*0.0227),12px)]
+                          {{ onglet.actif ? 'bg-linear-(--primary-gradient)' : '' }}"
+                   {{ onglet.actif ? 'aria-current="page"' : '' }}>
+                    {#
+                        Glyphe au turquoise de la marque, jamais au marine : c'est
+                        lui qui porte la couleur, le libellé reste en bleu foncé.
+                        Sur l'entrée active, les deux passent en blanc.
+                    #}
+                    <twig:Icon name="{{ onglet.icone }}"
+                               class="w-5 h-5 shrink-0 {{ onglet.actif ? 'text-neutral-100' : 'text-primary' }}" />
+                    <twig:Typography variant="body" bold ellipsis
+                                     textColor="{{ onglet.actif ? 'neutral-100' : 'primary-3' }}"
+                                     class="flex-1 min-w-0">{{ onglet.nom }}</twig:Typography>
+                    <span class="shrink-0 px-2 py-0.5 rounded-full
+                                 {{ onglet.actif ? 'bg-neutral-100/22' : 'bg-neutral-200' }}">
+                        <twig:Typography variant="body-xs" bold
+                                         textColor="{{ onglet.actif ? 'neutral-100' : 'neutral-500' }}">{{ onglet.completude }} %</twig:Typography>
+                    </span>
+                </a>
+            {% endfor %}
+        </div>
+    </div>
+{% endmacro %}
+
+{% macro legende(fond, texte) %}
+    <span class="flex items-center gap-2">
+        <span class="w-[9px] h-[9px] shrink-0 rounded-full {{ fond }}"></span>
+        <twig:Typography variant="body-sm" textColor="neutral-500">{{ texte }}</twig:Typography>
+    </span>
+{% endmacro %}
+
+{% macro suggerer() %}
+    <button type="button" class="shrink-0 flex items-center gap-1 px-2 py-1 rounded-full bg-primary-4 cursor-pointer">
+        <twig:Icon name="ai" class="w-3.5 h-3.5 text-primary-3" />
+        <twig:Typography variant="body-xs" textColor="primary-3" bold>Suggérer</twig:Typography>
+    </button>
+{% endmacro %}
+
+{% macro enteteCanal(libelle) %}
+    <span class="w-16 text-center">
+        <twig:Typography variant="body-xs" textColor="neutral-500" bold>{{ libelle }}</twig:Typography>
+    </span>
+{% endmacro %}
+
+{#
+    Le ton d'une cellule suit le seuil : vert au-dessus de 80, or au-dessus de
+    40, rouge en dessous. C'est la règle `tonCanal()` de la maquette.
+#}
+{% macro celluleCanal(valeur) %}
+    <span class="w-16 text-center py-1 rounded-full
+                 {{ valeur >= 80 ? 'bg-success-pastel' : (valeur >= 40 ? 'bg-old-gold-pastel' : 'bg-error-pastel') }}">
+        <twig:Typography variant="body-sm" bold>{{ valeur }} %</twig:Typography>
+    </span>
+{% endmacro %}
+
+{% macro pastille(jeton) %}
+    {%- if 'primary-turquoise' == jeton -%}bg-primary
+    {%- elseif 'primary-marine' == jeton -%}bg-primary-3
+    {%- else -%}bg-peach
+    {%- endif -%}
+{% endmacro %}
+
+{% macro fondAutorite(jeton) %}
+    {%- if 'primary-bleu-clair' == jeton -%}bg-primary-4
+    {%- elseif 'secondary-p-che-p-le' == jeton -%}bg-error-pastel
+    {%- else -%}bg-neutral-200
+    {%- endif -%}
+{% endmacro %}
+
+{% macro texteAutorite(jeton) %}
+    {%- if 'primary-marine' == jeton -%}text-primary-3!
+    {%- elseif 'secondary-p-che' == jeton -%}text-peach!
+    {%- else -%}text-neutral-500!
+    {%- endif -%}
+{% endmacro %}

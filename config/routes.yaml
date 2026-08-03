@@ -30,3 +30,19 @@ enrichment_controllers:
 account_controllers:
     resource: '../src/Account/Controller/'
     type: attribute
+
+# ---------------------------------------------------------------------------
+# Alias attendus par les composants importés du portail prestataire
+# ---------------------------------------------------------------------------
+# Les gabarits de `templates/pim/components/` engendrent des URL par nom de
+# route : `Header:Profil` pointe sur la fiche de compte, `Logo` sur l'accueil.
+# Ces noms n'existent pas ici. Plutôt que de retoucher des composants qu'on veut
+# pouvoir retransplanter tels quels, on déclare les alias vers les écrans
+# correspondants du back-office.
+#
+# À remplacer par les vraies routes au fil des intégrations.
+provider_portal_account_personal_information:
+    alias: app_mdm_espace_travail
+
+provider_portal_index:
+    alias: app_mdm_tableau_de_bord

@@ -1,0 +1,30 @@
+# Libellés attendus par les composants importés du portail prestataire.
+#
+# Seules les clés utilisées par les écrans intégrés sont traduites : les autres
+# composants de `templates/pim/components/` portent les leurs, à compléter au
+# fur et à mesure qu'ils entrent dans une page.
+password:
+    requirement:
+        length: 8 caractères
+        upper: 1 majuscule
+        lower: 1 minuscule
+        special: 1 caractère spécial
+        number: 1 chiffre
+
+# Barre supérieure — libellés passés par `|trans` dans `Header:Menu`.
+menu:
+    header:
+        accueil: Accueil
+        referentiel: Référentiel
+        referentiel.toutes: Toutes les fiches
+        referentiel.lieux: Lieux
+        referentiel.restaurants: Restaurants
+        referentiel.activites: Activités
+        referentiel.services: Services événementiels
+        referentiel.plateaux: Plateaux repas
+        fiche: Éditeur de fiche
+        qualite: Qualité
+        medias: Médias
+        imports: Imports & exports
+        synchronisation: Synchronisation
+        administration: Administration

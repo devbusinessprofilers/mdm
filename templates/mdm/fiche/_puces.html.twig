@@ -3,24 +3,29 @@
     Le décompte et l'autorité viennent de la maquette : ces listes sont
     déclarées par le prestataire.
 #}
-{% import 'mdm/_composants.html.twig' as ui %}
-
 {% for groupe in groupes_puces %}
     {% set cochees = groupe.puces|filter(puce => puce.1)|length %}
-    <div class="fiche__puces-groupe">
-        <div class="fiche__puces-entete">
-            <span class="fiche__puces-nom">{{ groupe.nom }}</span>
-            {{ ui.pastille('secondary-p-che', 8) }}
-            <span class="fiche__puces-autorite">Prestataire</span>
-            <span class="fiche__spacer"></span>
-            <span class="fiche__puces-compte">{{ cochees }} sur {{ groupe.puces|length }} sélectionnés</span>
+    <div class="flex flex-col gap-4">
+        <div class="flex flex-row items-center gap-2 flex-wrap">
+            <twig:Typography variant="input" element="span"
+                             class="text-[0.875rem]! leading-[1.375rem]!">{{ groupe.nom }}</twig:Typography>
+            <span class="w-2 h-2 shrink-0 rounded-full bg-peach"></span>
+            <span class="shrink-0 px-2 py-0.5 rounded-full bg-error-pastel">
+                <twig:Typography variant="body-xs" textColor="peach" bold>Prestataire</twig:Typography>
+            </span>
+            <span class="flex-1"></span>
+            <twig:Typography variant="body-sm" textColor="neutral-500">{{ cochees }} sur {{ groupe.puces|length }} sélectionnés</twig:Typography>
         </div>
 
-        <div class="fiche__puces">
+        <div class="flex flex-row flex-wrap gap-2.5">
             {% for puce in groupe.puces %}
-                <button class="fiche__puce {{ puce.1 ? 'fiche__puce--active' : '' }}"
-                        type="button"
-                        aria-pressed="{{ puce.1 ? 'true' : 'false' }}">{{ puce.0 }}</button>
+                <button type="button" aria-pressed="{{ puce.1 ? 'true' : 'false' }}"
+                        class="group/puce h-12 box-border shrink-0 flex items-center px-4 py-2 rounded-lg
+                               cursor-pointer bg-neutral-100 inset-ring-1 inset-ring-neutral-300
+                               aria-pressed:bg-primary aria-pressed:inset-ring-0">
+                    <twig:Typography variant="body-sm" bold class="whitespace-nowrap
+                                     group-aria-pressed/puce:text-neutral-100!">{{ puce.0 }}</twig:Typography>
+                </button>
             {% endfor %}
         </div>
     </div>

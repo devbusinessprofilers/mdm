@@ -312,7 +312,7 @@
                                     pêche le porte, le glyphe d'alerte reste réservé
                                     aux conflits.
                                 #}
-                                <span class="shrink-0 mr-2.5 box-border flex items-center justify-center rounded-md
+                                <span class="shrink-0 mr-2.5 box-border flex items-center justify-center rounded-xxs
                                              {{ compacte ? 'w-[30px] h-6' : 'w-10 h-8' }}
                                              {{ ligne.vignette ? 'bg-primary-4' : 'bg-primary-5 inset-ring-1 inset-ring-peach' }}">
                                     {% if ligne.vignette %}
@@ -322,9 +322,12 @@
                                     {% endif %}
                                 </span>
 
+                                {# Le nom ouvre la fiche : c'est le chemin principal vers l'éditeur. #}
                                 <div class="shrink-0 min-w-0 pr-2.5 flex flex-col {{ compacte ? 'w-[250px]' : 'w-[280px]' }}">
-                                    <twig:Typography variant="{{ compacte ? 'body-sm' : 'body' }}" bold
-                                                     ellipsis>{{ ligne.nom }}</twig:Typography>
+                                    <a href="{{ path('app_mdm_fiche_lieu') }}" class="min-w-0 hover:underline">
+                                        <twig:Typography variant="{{ compacte ? 'body-sm' : 'body' }}" bold
+                                                         ellipsis>{{ ligne.nom }}</twig:Typography>
+                                    </a>
                                     <twig:Typography variant="body-xs" textColor="neutral-500" ellipsis>{{ ligne.sousTitre }}</twig:Typography>
                                 </div>
 
@@ -393,7 +396,10 @@
                                             data-edition-rapide-rang-param="{{ loop.index0 }}"
                                             data-edition-rapide-nom-param="{{ ligne.nom }}"
                                             data-edition-rapide-reference-param="{{ ligne.sousTitre|split(' · ')|last }}"
-                                            data-edition-rapide-ville-param="{{ ligne.sousTitre|split(' · ')|first }}"
+                                            data-edition-rapide-ville-param="{{ ligne.ville }}"
+                                            data-edition-rapide-rue-param="{{ ligne.rue }}"
+                                            data-edition-rapide-cp-param="{{ ligne.codePostal }}"
+                                            data-edition-rapide-gps-param="{{ ligne.gps }}"
                                             data-edition-rapide-gamme-param="lieu"
                                             data-edition-rapide-statut-param="{{ ligne.statut }}"
                                             data-edition-rapide-publiee-param="{{ 'Publiée' == ligne.statut ? '1' : '0' }}"
@@ -513,7 +519,7 @@
                                 <twig:Typography variant="body-xs" textColor="neutral-500">{{ groupe.note }}</twig:Typography>
                             </div>
                             {% for vue in groupe.vues %}
-                                <div class="flex items-center gap-3 px-2.5 py-2.5 rounded-md
+                                <div class="flex items-center gap-3 px-2.5 py-2.5 rounded-[10px]
                                             {{ vue.courante ? 'bg-primary-4' : '' }}">
                                     <twig:Icon name="{{ vue.courante ? 'check-circle' : 'layout' }}"
                                                class="w-[18px] h-[18px] shrink-0 {{ vue.courante ? 'text-primary-3' : 'text-primary' }}" />

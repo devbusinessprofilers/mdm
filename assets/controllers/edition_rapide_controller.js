@@ -6,7 +6,9 @@ import { Controller } from '@hotwired/stimulus';
  * Le crayon d'une ligne transmet la ligne en paramètres ; la modale est unique
  * dans la page et se remplit à l'ouverture. Les quatre états de la maquette
  * (adresse en saisie, erreur, enregistrement, panneau des sites) sont des
- * classes sur la racine.
+ * attributs `data-` sur la racine, que Tailwind diffuse par le groupe `qe`.
+ * Aucun sélecteur de classe ici : tout passe par des cibles Stimulus, pour que
+ * l'habillage puisse bouger sans casser le contrôleur.
  *
  * Raccourcis de la maquette : Échap ferme la couche la plus haute, ⌘/Ctrl + ⏎
  * enregistre, Alt + ← / → passent d'une fiche à l'autre.
@@ -18,7 +20,11 @@ export default class extends Controller {
         'statut', 'jauge', 'taux', 'position', 'rue', 'cp', 'ville', 'gps',
         'verrou', 'boiteGamme', 'sitesCompte', 'sitesPuces', 'sitesDecompte',
         'compteGroupe', 'gerer', 'libelleEnregistrer', 'indice', 'crayon',
+        'classification', 'groupeSite', 'groupeNom', 'site', 'siteNom', 'filtre',
     ];
+
+    /* Attribut de valeur du composant ProgressBar du portail. */
+    static JAUGE = 'data-provider-portal--progress-bar-current-value';
 
     connect() {
         this.rang = 0;
@@ -38,6 +44,15 @@ export default class extends Controller {
         window.clearTimeout(this.minuteur);
     }
 
+    /* Les quatre états de la maquette. */
+    etat(nom, actif) {
+        this.modaleTarget.dataset[nom] = actif ? '1' : '0';
+    }
+
+    actif(nom) {
+        return '1' === this.modaleTarget.dataset[nom];
+    }
+
     // ------------------------------------------------------------ ouverture
 
     ouvrir(evenement) {
@@ -45,7 +60,7 @@ export default class extends Controller {
         this.rang = Number(evenement.params.rang) || 0;
         this.modifiee = true;
         this.modaleTarget.hidden = false;
-        this.modaleTarget.classList.remove('qe--adresse', 'qe--erreur', 'qe--enregistrement', 'qe--sites-ouverts');
+        ['adresse', 'erreur', 'enregistrement', 'sites'].forEach((nom) => this.etat(nom, false));
         this.confirmationTarget.hidden = true;
         this.gererTarget.textContent = 'Gérer';
     }
@@ -53,7 +68,8 @@ export default class extends Controller {
     fermer() {
         this.modaleTarget.hidden = true;
         this.confirmationTarget.hidden = true;
-        this.modaleTarget.classList.remove('qe--sites-ouverts', 'qe--enregistrement');
+        this.etat('sites', false);
+        this.etat('enregistrement', false);
     }
 
     /* La fermeture passe par la confirmation dès qu'un champ a bougé. */
@@ -90,7 +106,7 @@ export default class extends Controller {
 
         this.rang = borne;
         this.remplir(this.parametres(crayon));
-        this.modaleTarget.classList.remove('qe--adresse', 'qe--erreur', 'qe--sites-ouverts');
+        ['adresse', 'erreur', 'sites'].forEach((nom) => this.etat(nom, false));
         this.confirmationTarget.hidden = true;
     }
 
@@ -118,6 +134,7 @@ export default class extends Controller {
         const taux = Number(valeurs.completude) || 0;
         const gamme = valeurs.gamme || 'lieu';
         const libelleGamme = 'restaurant' === gamme ? 'Restaurants' : 'Lieux';
+        const publiee = '1' === String(valeurs.publiee);
 
         this.nomTarget.textContent = valeurs.nom || '';
         this.nomChampTarget.textContent = valeurs.nom || '';
@@ -127,9 +144,13 @@ export default class extends Controller {
         this.indiceGammeTarget.textContent = "d'après la gamme " + libelleGamme;
 
         this.statutTarget.textContent = valeurs.statut || '';
-        this.statutTarget.classList.toggle('qe__badge--publiee', '1' === String(valeurs.publiee));
+        this.statutTarget.classList.toggle('bg-success-pastel', publiee);
+        this.statutTarget.classList.toggle('text-success', publiee);
+        this.statutTarget.classList.toggle('bg-neutral-200', !publiee);
+        this.statutTarget.classList.toggle('text-neutral-500', !publiee);
 
-        this.jaugeTarget.style.setProperty('--qe-taux', taux + '%');
+        /* La jauge est un ProgressBar : on la pilote par sa valeur Stimulus. */
+        this.jaugeTarget.setAttribute(this.constructor.JAUGE, taux);
         this.tauxTarget.textContent = taux + ' %';
         this.positionTarget.textContent = 'Fiche ' + (Number(valeurs.rang ?? this.rang) + 1)
             + ' sur ' + this.crayons.length + ' · ' + (valeurs.ville || '');
@@ -144,32 +165,28 @@ export default class extends Controller {
             + 'sont conservés dans tous les cas.';
 
         // La classification suit la gamme.
-        this.element.querySelectorAll('.qe__classification').forEach((bloc) => {
+        this.classificationTargets.forEach((bloc) => {
             bloc.hidden = bloc.dataset.gamme !== gamme;
         });
     }
 
     // ------------------------------------------------------------- contrôles
 
-    basculerInterrupteur(evenement) {
-        const bouton = evenement.currentTarget;
-        bouton.setAttribute('aria-checked', 'true' === bouton.getAttribute('aria-checked') ? 'false' : 'true');
-        this.modifiee = true;
-    }
-
     basculerVerrou() {
-        const verrouille = this.boiteGammeTarget.classList.toggle('qe__boite-champ--verrouillee');
+        const verrouille = '1' !== this.boiteGammeTarget.dataset.verrouille;
+        this.boiteGammeTarget.dataset.verrouille = verrouille ? '1' : '0';
         this.verrouTarget.textContent = verrouille ? 'Déverrouiller' : 'Verrouiller';
     }
 
     corrigerAdresse() {
-        this.modaleTarget.classList.add('qe--adresse');
+        this.etat('adresse', true);
     }
 
     // ------------------------------------------------- sites de diffusion
 
     basculerSites() {
-        const ouvert = this.modaleTarget.classList.toggle('qe--sites-ouverts');
+        const ouvert = !this.actif('sites');
+        this.etat('sites', ouvert);
         this.gererTarget.textContent = ouvert ? 'Fermer' : 'Gérer';
     }
 
@@ -188,13 +205,11 @@ export default class extends Controller {
     filtrer(evenement) {
         const retenus = 'retenus' === evenement.params.filtre;
 
-        this.element.querySelectorAll('.qe__filtre').forEach((filtre) => {
-            const actif = filtre === evenement.currentTarget;
-            filtre.classList.toggle('qe__filtre--actif', actif);
-            filtre.setAttribute('aria-pressed', actif ? 'true' : 'false');
+        this.filtreTargets.forEach((filtre) => {
+            filtre.setAttribute('aria-pressed', filtre === evenement.currentTarget ? 'true' : 'false');
         });
 
-        this.element.querySelectorAll('.qe__site').forEach((site) => {
+        this.siteTargets.forEach((site) => {
             site.hidden = retenus && 'true' !== site.getAttribute('aria-checked');
         });
     }
@@ -204,20 +219,21 @@ export default class extends Controller {
      * les cases : c'est le seul endroit où la maquette recalcule quelque chose.
      */
     recompterSites() {
-        const groupes = Array.from(this.element.querySelectorAll('.qe__groupe-sites'));
         let retenus = [];
         let total = 0;
 
-        groupes.forEach((groupe, rang) => {
-            const sites = Array.from(groupe.querySelectorAll('.qe__site'));
-            const coches = sites.filter((s) => 'true' === s.getAttribute('aria-checked'));
+        this.groupeSiteTargets.forEach((groupe, rang) => {
+            const sites = this.siteTargets.filter((site) => groupe.contains(site));
+            const coches = sites.filter((site) => 'true' === site.getAttribute('aria-checked'));
 
             total += sites.length;
-            retenus = retenus.concat(coches.map((s) => s.querySelector('.qe__site-nom').textContent));
+            retenus = retenus.concat(coches.map(
+                (site) => this.siteNomTargets.find((nom) => site.contains(nom)).textContent
+            ));
 
             this.compteGroupeTargets[rang].textContent = coches.length + '/' + sites.length;
             this.sitesDecompteTarget.children[rang].textContent =
-                groupe.querySelector('.qe__groupe-nom').textContent.trim()
+                this.groupeNomTargets[rang].textContent.trim()
                 + ' ' + coches.length + '/' + sites.length;
         });
 
@@ -232,19 +248,30 @@ export default class extends Controller {
         this.sitesPucesTarget.replaceChildren(...puces);
     }
 
+    /*
+     * Même composition que la puce du gabarit : enveloppe teintée, texte
+     * `body-xs` gras. Les classes sont écrites en toutes lettres pour que
+     * Tailwind les voie à la compilation.
+     */
     puce(libelle, reste) {
-        const span = document.createElement('span');
-        span.className = 'qe__puce' + (reste ? ' qe__puce--reste' : '');
-        span.textContent = libelle;
+        const enveloppe = document.createElement('span');
+        const texte = document.createElement('span');
 
-        return span;
+        enveloppe.className = 'inline-flex items-center box-border gap-[5px] px-2 py-[3px] '
+            + 'rounded-lg whitespace-nowrap ' + (reste ? 'bg-neutral-200' : 'bg-primary-4');
+        texte.className = 'antialiased text-[0.625rem] leading-[1rem] font-sans font-[900] '
+            + (reste ? 'text-neutral-500' : 'text-primary-3');
+        texte.textContent = libelle;
+        enveloppe.append(texte);
+
+        return enveloppe;
     }
 
     // --------------------------------------------------------- enregistrement
 
     enregistrer() {
         this.confirmationTarget.hidden = true;
-        this.modaleTarget.classList.add('qe--enregistrement');
+        this.etat('enregistrement', true);
         this.libelleEnregistrerTarget.textContent = 'Enregistrement…';
         this.indiceTarget.textContent = 'Enregistrement de 4 modifications…';
 
@@ -270,7 +297,7 @@ export default class extends Controller {
 
             if (!this.confirmationTarget.hidden) {
                 this.confirmationTarget.hidden = true;
-            } else if (this.modaleTarget.classList.contains('qe--sites-ouverts')) {
+            } else if (this.actif('sites')) {
                 this.basculerSites();
             } else {
                 this.tenterFermer();

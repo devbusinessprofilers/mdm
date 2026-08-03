@@ -1,6 +1,13 @@
+{#
+    ADAPTATION LOCALE du composant du portail prestataire.
+
+    L'original pointe sur `path('provider_portal_index')` et `/img/logo.svg`.
+    Ici la route d'accueil s'appelle autrement et le lockup fourni est un PNG
+    couleur passé par AssetMapper. Seules ces deux lignes diffèrent ; à
+    réconcilier au moment de reverser le travail dans nodevo.
+#}
 <div{{ attributes }}>
-    <a href="{{ path('provider_portal_index') }}" title="Tableau de bord" class="block w-full focus:outline-none">
-        <img class="w-full" src="{{ asset('/img/logo.svg') }}" alt="Logo" />
+    <a href="{{ path('app_mdm_espace_travail') }}" title="Tableau de bord" class="block w-full focus:outline-none">
+        <img class="w-full" src="{{ asset('images/brand/bp-logo-couleur.png') }}" alt="Business Profilers" />
     </a>
 </div>
-

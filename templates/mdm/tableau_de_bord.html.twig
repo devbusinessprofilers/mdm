@@ -1,0 +1,538 @@
+{#
+    Maquette : « Tableau de bord.dc.html » — écran d'accueil du back-office.
+
+    Quatre zones empilées, un rail qui les suit au défilement. Les cinq états du
+    handoff se choisissent par la query string ; le sélecteur d'états de la
+    maquette est l'habillage de son propre visualiseur, il n'est pas intégré.
+
+    Le rail et le contenu sont frères sous un même contrôleur Stimulus, d'où le
+    `data-controller` posé sur `main_attributs`.
+#}
+{% extends 'mdm/base.html.twig' %}
+
+{% set ecran = 'accueil' %}
+
+{% set carte = 'flex flex-col box-border gap-4 px-6 py-[22px] rounded-[20px] bg-neutral-100 shadow-(--shadow)' %}
+{% set pilule = 'shrink-0 whitespace-nowrap px-[9px] py-[3px] rounded-lg' %}
+{% set entete_table = 'flex items-center h-9 px-4 bg-primary-5 border-b border-neutral-200' %}
+
+{#
+    Les jetons pâles sont des surfaces, jamais du texte. Le signal du palier
+    reste au fond ; le premier plan reste marine, qui passe sur les trois
+    surfaces et sert déjà de couleur de texte à la colonne Total — la grille se
+    lit donc comme un seul tableau.
+#}
+{% set paliers = {
+    'complet': 'bg-success-pastel',
+    'publiable': 'bg-peach-pastel',
+    'insuffisant': 'bg-error-pastel',
+    'total': 'bg-primary-4',
+    'grand': 'bg-linear-(--primary-gradient)',
+} %}
+
+{% block title %}Tableau de bord{% endblock %}
+
+{% block main_attributs %}data-controller="tableau-de-bord"{% endblock %}
+
+{% block rail %}
+    <nav class="flex flex-col shrink-0 box-border w-[284px] bg-neutral-100 border-r border-neutral-200"
+         aria-label="Zones du tableau de bord">
+        <div class="flex flex-col shrink-0 gap-[3px] px-4 pt-5 pb-3">
+            <twig:Typography variant="body-xs" bold textColor="neutral-500"
+                             class="px-1 pb-1.5 tracking-[0.8px] uppercase">Zones du tableau de bord</twig:Typography>
+
+            {% for zone in vue.zones %}
+                <button type="button" aria-current="{{ zone.actif ? 'true' : 'false' }}"
+                        class="group/zone flex items-center gap-2 w-full px-3.5 py-2.5 rounded-xs
+                               text-left cursor-pointer aria-[current=true]:bg-linear-(--primary-gradient)"
+                        data-tableau-de-bord-target="entree"
+                        data-action="tableau-de-bord#aller"
+                        data-tableau-de-bord-zone-param="{{ loop.index0 }}">
+                    <twig:Icon name="{{ zone.icone }}" aria-hidden="true"
+                               class="shrink-0 w-4 h-4 mx-0.5 text-primary group-aria-[current=true]/zone:text-neutral-100" />
+                    <twig:Typography variant="body-sm" bold ellipsis
+                                     class="flex-1 min-w-0 group-aria-[current=true]/zone:text-neutral-100!">{{ zone.titre }}</twig:Typography>
+                    <twig:Typography variant="body-xs" bold textColor="neutral-500"
+                                     class="shrink-0 px-[7px] py-px rounded-lg bg-neutral-200
+                                            group-aria-[current=true]/zone:bg-neutral-100
+                                            group-aria-[current=true]/zone:text-primary-3!">{{ zone.badge }}</twig:Typography>
+                </button>
+            {% endfor %}
+        </div>
+
+        <span class="flex-1"></span>
+
+        <div class="shrink-0 flex flex-col gap-2 mx-4 mb-5 p-3.5 rounded-[12px] bg-primary-4">
+            <twig:Typography variant="body-sm" bold textColor="primary-3">Disposition</twig:Typography>
+            <twig:Typography variant="body-xs" textColor="neutral-500" class="text-pretty">
+                {{- vue.parametrage
+                    ? 'Paramétrage en cours — les blocs sont déplaçables.'
+                    : 'Disposition personnelle enregistrée pour votre compte.' -}}
+            </twig:Typography>
+            <twig:Button asLink full size="sm"
+                         variant="{{ vue.parametrage ? 'primary' : 'outline' }}"
+                         href="{{ path('app_mdm_tableau_de_bord', vue.parametrage ? {} : { etat: 'param' }) }}"
+            >{{ vue.parametrage ? 'Terminer le paramétrage' : 'Paramétrer le tableau de bord' }}</twig:Button>
+        </div>
+    </nav>
+{% endblock %}
+
+{% block contenu %}
+    <div class="shrink-0 flex items-end justify-between gap-6 px-10 pt-[22px] pb-4">
+        <div class="flex flex-col gap-1 min-w-0">
+            <twig:Typography variant="heading-2" element="h1"
+                             class="sm:text-[1.625rem]! sm:leading-[2.125rem]! font-[700]!">{{ vue.salutation }}</twig:Typography>
+            <twig:Typography variant="body" element="p" textColor="neutral-500">{{ vue.sousTitre }}</twig:Typography>
+        </div>
+
+        <div class="flex items-center gap-2.5 shrink-0">
+            <div class="flex items-center gap-0.5 p-[3px] rounded-lg bg-neutral-100
+                        inset-ring-1 inset-ring-neutral-200">
+                {% for periode in vue.periodes %}
+                    {% set retenue = periode == vue.periode %}
+                    <a href="{{ path('app_mdm_tableau_de_bord', { etat: vue.etat, periode: periode, croisement: vue.croisementMode }) }}"
+                       class="flex items-center h-7 px-3 rounded-lg whitespace-nowrap
+                              {{ retenue ? 'bg-linear-(--primary-gradient)' : '' }}"
+                       {{ retenue ? 'aria-current="true"' : '' }}>
+                        <twig:Typography variant="body-sm" bold="{{ retenue }}"
+                                         textColor="{{ retenue ? 'neutral-100' : 'neutral-500' }}">{{ periode }}</twig:Typography>
+                    </a>
+                {% endfor %}
+            </div>
+
+            {# Filtres décoratifs : la maquette ne leur donne pas de menu. #}
+            {{ _self.filtre('Pays', 'Tous') }}
+            {{ _self.filtre('Typologie', 'Toutes') }}
+        </div>
+    </div>
+
+    <div class="relative flex-1 min-h-0 flex flex-col gap-[18px] px-10 pb-8 overflow-y-auto scrollbar"
+         data-tableau-de-bord-target="contenu">
+
+        {% if vue.parametrage %}
+            <div class="shrink-0 flex items-center gap-3.5 px-5 py-3.5 rounded-sm
+                        bg-primary-4 inset-ring-1 inset-ring-primary">
+                <twig:Icon name="layout" aria-hidden="true" class="shrink-0 w-[22px] h-[22px] text-primary" />
+                <div class="flex flex-col flex-1 min-w-0 gap-0.5">
+                    <twig:Typography variant="body" bold textColor="primary-3">Mode paramétrage</twig:Typography>
+                    <twig:Typography variant="body-sm" textColor="neutral-500">Réordonnez les blocs par les poignées,
+                        masquez ceux qui ne vous servent pas. La disposition est enregistrée sur votre compte, pas sur
+                        celui de l'équipe.</twig:Typography>
+                </div>
+                <twig:Button variant="text" size="sm" textColor="neutral-500" class="shrink-0">Réinitialiser</twig:Button>
+                <twig:Button asLink variant="primary" size="sm" class="shrink-0"
+                             href="{{ path('app_mdm_tableau_de_bord') }}">Enregistrer la disposition</twig:Button>
+            </div>
+        {% endif %}
+
+        {% for zone in vue.zones %}
+            <div data-tableau-de-bord-target="zone"
+                 class="shrink-0 flex flex-col gap-3.5
+                        {{ vue.parametrage ? '-mx-4 p-4 rounded-md bg-neutral-100/55 inset-ring-2 inset-ring-primary' : '' }}">
+
+                <div class="flex items-center gap-3">
+                    {% if vue.parametrage %}
+                        <span class="flex items-center shrink-0 cursor-grab text-primary" aria-hidden="true">
+                            <twig:Icon name="arrows-out-cardinal" class="w-[18px] h-[18px]" />
+                        </span>
+                    {% endif %}
+                    <span class="flex items-center justify-center shrink-0 w-6 h-6 rounded-lg
+                                 bg-linear-(--primary-gradient)">
+                        <twig:Typography variant="body-xs" bold textColor="neutral-100">{{ zone.numero }}</twig:Typography>
+                    </span>
+                    <twig:Typography variant="subtitle" element="h2"
+                                     class="text-[1.125rem]! leading-[1.625rem]! font-[700]!">{{ zone.titre }}</twig:Typography>
+                    <twig:Typography variant="body-sm" textColor="neutral-500">{{ zone.sousTitre }}</twig:Typography>
+                    <span class="flex-1"></span>
+                    {% if vue.parametrage %}
+                        <twig:Button variant="text" size="sm" icon="eye" iconColor="neutral-500"
+                                     textColor="neutral-500" class="shrink-0">Masquer ce bloc</twig:Button>
+                    {% elseif zone.avecResume %}
+                        <twig:Typography variant="body-sm" bold textColor="neutral-500"
+                                         class="shrink-0">{{ zone.resume }}</twig:Typography>
+                    {% endif %}
+                </div>
+
+                {% if 'files' == zone.cle %}{{ _self.zoneFiles(vue) }}
+                {% elseif 'sante' == zone.cle %}{{ _self.zoneSante(vue, carte, paliers, entete_table) }}
+                {% elseif 'activite' == zone.cle %}{{ _self.zoneActivite(vue, carte, entete_table) }}
+                {% else %}{{ _self.zoneMedias(vue, carte) }}
+                {% endif %}
+            </div>
+        {% endfor %}
+
+        {% if vue.parametrage %}
+            <div class="shrink-0 flex flex-col gap-3 px-6 py-[18px] rounded-[20px]
+                        bg-neutral-100 inset-ring-1 inset-ring-neutral-200">
+                <twig:Typography variant="body-sm" bold>Blocs masqués</twig:Typography>
+                <div class="flex flex-row flex-wrap gap-2.5">
+                    {% for masque in ['Fiches publiées par pays', 'Volume de mises à jour', 'Vidéos'] %}
+                        <twig:Button variant="outline" size="sm" icon="eye">{{ masque }}</twig:Button>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}
+
+
+{# ==================================================================== Zone 1 #}
+
+{#
+    Six files de travail, pas des statistiques. Chacune porte son volume normal :
+    trois traitements en échec, c'est grave ; cent cinquante fiches en attente de
+    publication, c'est un mardi. La sévérité se lit en ratio à ce volume.
+
+    La pêche reste ce qu'en fait le socle — un anneau et une surface pâle. Le
+    texte posé dessus prend le rouge, lisible et de la même famille.
+#}
+{% macro zoneFiles(vue) %}
+    {% if vue.chargement %}
+        {{ _self.squelette('h-[152px]', 6) }}
+    {% elseif vue.vide %}
+        <div class="flex items-center gap-4 px-[30px] py-[26px] rounded-[20px] bg-neutral-100 shadow-(--shadow)">
+            <twig:Icon name="ok-circle" aria-hidden="true" class="shrink-0 w-[34px] h-[34px] text-success" />
+            <div class="flex flex-col flex-1 min-w-0 gap-[3px]">
+                <twig:Typography variant="subtitle" class="text-[1.125rem]! leading-[1.625rem]! font-[700]!">Rien à traiter ce matin.</twig:Typography>
+                <twig:Typography variant="body-sm" textColor="neutral-500">Les six files sont vides — dernière relevée
+                    il y a 2 minutes. La santé du référentiel reste consultable ci-dessous.</twig:Typography>
+            </div>
+            <div class="flex flex-row shrink-0 gap-2">
+                {% for tag in ['Référencement', 'Validation', 'Publication', 'Accès', 'Anomalies', 'Traitements'] %}
+                    <span class="shrink-0 whitespace-nowrap px-[9px] py-[3px] rounded-lg bg-success-pastel">
+                        <twig:Typography variant="body-xs" bold textColor="primary-3">{{ tag }}</twig:Typography>
+                    </span>
+                {% endfor %}
+            </div>
+        </div>
+    {% else %}
+        <div class="flex flex-row gap-3.5">
+            {% for file in vue.files %}
+                {% set chaude = 'hot' == file.severite %}
+                {% set tiede = 'warn' == file.severite %}
+                <button type="button"
+                        class="flex flex-col flex-1 min-w-0 items-stretch gap-1.5 box-border
+                               px-5 py-[18px] rounded-[20px] text-left cursor-pointer
+                               {{ chaude
+                                  ? 'bg-error-pastel inset-ring-1 inset-ring-error'
+                                  : (tiede ? 'bg-peach-pastel inset-ring-1 inset-ring-peach'
+                                           : 'bg-neutral-100 shadow-(--shadow)') }}">
+                    <div class="flex items-center justify-between gap-2">
+                        <twig:Icon name="{{ file.icone }}" aria-hidden="true"
+                                   class="shrink-0 w-5 h-5
+                                          {{ chaude ? 'text-error' : (tiede ? 'text-peach' : 'text-primary-3') }}
+                                          {{ 'spinner' == file.icone and file.brut > 0 ? 'animate-spin' : '' }}" />
+                        {% if chaude or tiede %}
+                            <span class="shrink-0 whitespace-nowrap px-[9px] py-[3px] rounded-lg bg-neutral-100">
+                                <twig:Typography variant="body-xs" bold textColor="error">{{ file.etiquette }}</twig:Typography>
+                            </span>
+                        {% endif %}
+                    </div>
+                    <twig:Typography variant="heading-2"
+                                     textColor="{{ chaude or tiede ? 'error' : 'primary-3' }}"
+                                     class="font-[700]!">{{ file.compte }}</twig:Typography>
+                    <twig:Typography variant="body-sm" bold class="text-pretty">{{ file.libelle }}</twig:Typography>
+                    <div class="flex items-center gap-[5px]">
+                        <twig:Typography variant="body-xs">{{ file.indice }}</twig:Typography>
+                        <twig:Icon name="arrow-right" aria-hidden="true" class="shrink-0 w-3 h-3 text-primary" />
+                    </div>
+                </button>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endmacro %}
+
+
+{# ==================================================================== Zone 2 #}
+
+{% macro zoneSante(vue, carte, paliers, entete_table) %}
+    {% if vue.chargement %}
+        <div class="flex flex-row gap-[18px]">
+            <div class="h-[268px] w-[470px] shrink-0 rounded-[20px] bg-neutral-200 animate-pulse"></div>
+            <div class="h-[268px] flex-1 min-w-0 rounded-[20px] bg-neutral-200 animate-pulse"></div>
+        </div>
+    {% else %}
+        <div class="flex flex-row gap-[18px] items-stretch">
+
+            <div class="flex flex-col shrink-0 w-[470px] gap-[18px]">
+                <div class="{{ carte }}">
+                    <div class="flex flex-row gap-6">
+                        {{ _self.indicateur('Fiches au référentiel', vue.fichesTotal,
+                            'dont ' ~ vue.publieesTotal ~ ' publiées · ' ~ vue.publieesPart ~ ' %') }}
+                        {{ _self.indicateur('Complétude globale', vue.completudeGlobale ~ ' %',
+                            '+3 pts sur ' ~ vue.periode|lower) }}
+                    </div>
+                    <div class="h-2 rounded-lg bg-neutral-200 overflow-hidden">
+                        <div class="h-full rounded-lg bg-linear-(--primary-gradient)"
+                             style="width: {{ vue.completudeGlobale }}%"></div>
+                    </div>
+                    <div class="flex flex-row flex-wrap gap-[18px]">
+                        {{ _self.legende('Complet ≥ 75 %', 'bg-success') }}
+                        {{ _self.legende('Publiable 60-74 %', 'bg-peach') }}
+                        {{ _self.legende('Insuffisant < 60 %', 'bg-error') }}
+                    </div>
+                </div>
+
+                <div class="{{ carte }}">
+                    <div class="flex items-baseline justify-between gap-3">
+                        <twig:Typography variant="body-sm" bold>Champs les moins renseignés</twig:Typography>
+                        <twig:Typography variant="body-sm" bold textColor="primary-3">Tout voir</twig:Typography>
+                    </div>
+                    <div class="flex flex-col gap-0.5">
+                        {% for champ in vue.champsFaibles %}
+                            <button type="button"
+                                    class="flex items-center gap-2.5 px-2.5 py-2 rounded-xs text-left cursor-pointer">
+                                <span class="shrink-0 w-1.5 h-1.5 rounded-lg bg-peach" aria-hidden="true"></span>
+                                <twig:Typography variant="body-sm" ellipsis class="flex-1 min-w-0">{{ champ.libelle }}</twig:Typography>
+                                <twig:Typography variant="body-sm" bold textColor="error"
+                                                 class="w-[46px] shrink-0 text-right">{{ champ.taux }}</twig:Typography>
+                                <twig:Typography variant="body-xs" textColor="neutral-400"
+                                                 class="w-24 shrink-0 text-right">{{ champ.compte }}</twig:Typography>
+                            </button>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            {# La mesure à deux dimensions est un tableau, jamais une rangée de compteurs. #}
+            <div class="{{ carte }} flex-1 min-w-0">
+                <div class="flex items-center justify-between gap-4">
+                    <div class="flex flex-col gap-0.5 min-w-0">
+                        <twig:Typography variant="body-sm" bold>Croisement pays × typologie</twig:Typography>
+                        <twig:Typography variant="body-sm" textColor="neutral-500">{{ vue.croisementSousTitre }}</twig:Typography>
+                    </div>
+                    <div class="flex items-center shrink-0 gap-0.5 p-[3px] rounded-lg bg-neutral-200">
+                        {{ _self.bascule(vue, 'completude', 'Complétude') }}
+                        {{ _self.bascule(vue, 'publiees', 'Fiches publiées') }}
+                    </div>
+                </div>
+
+                <div class="rounded-sm overflow-hidden inset-ring-1 inset-ring-neutral-200">
+                    <div class="{{ entete_table }}" role="row">
+                        {{ _self.colonne('Typologie', 'w-[148px] text-left') }}
+                        {% for pays in vue.croisementPays %}
+                            {{ _self.colonne(pays, 'w-24 text-center') }}
+                        {% endfor %}
+                        {{ _self.colonne('Total', 'w-24 text-center') }}
+                    </div>
+
+                    {% for ligne in vue.croisementLignes %}
+                        <div class="flex items-center h-11 px-4 {{ loop.first ? '' : 'border-t border-neutral-200' }}
+                                    {{ ligne.totaux ? 'bg-primary-5' : '' }}" role="row">
+                            <twig:Typography variant="body-sm" bold ellipsis
+                                             textColor="{{ ligne.totaux ? 'primary-3' : 'neutral-900' }}"
+                                             class="w-[148px] shrink-0">{{ ligne.nom }}</twig:Typography>
+                            {% for cellule in ligne.cellules %}
+                                {{ _self.cellule(cellule, paliers, vue.croisementMode) }}
+                            {% endfor %}
+                            {{ _self.cellule(ligne.total, paliers, vue.croisementMode) }}
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <div class="flex items-center gap-2.5">
+                    <twig:Icon name="info-circle" aria-hidden="true" class="shrink-0 w-3.5 h-3.5 text-neutral-400" />
+                    <twig:Typography variant="body-xs" textColor="neutral-400">Chaque cellule ouvre la liste filtrée
+                        sur ce couple pays / typologie.</twig:Typography>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+{% endmacro %}
+
+
+{# ==================================================================== Zone 3 #}
+
+{% macro zoneActivite(vue, carte, entete_table) %}
+    {% if vue.chargement %}
+        <div class="flex flex-row gap-[18px]">
+            <div class="h-[232px] flex-1 min-w-0 rounded-[20px] bg-neutral-200 animate-pulse"></div>
+            <div class="h-[232px] w-[340px] shrink-0 rounded-[20px] bg-neutral-200 animate-pulse"></div>
+        </div>
+    {% else %}
+        <div class="flex flex-row gap-[18px] items-stretch">
+            <div class="{{ carte }} flex-1 min-w-0">
+                <div class="flex items-baseline justify-between gap-3">
+                    <twig:Typography variant="body-sm" bold>Activité par utilisateur</twig:Typography>
+                    <twig:Typography variant="body-sm" bold textColor="primary-3">Sur {{ vue.periode|lower }}</twig:Typography>
+                </div>
+
+                <div class="rounded-sm overflow-hidden inset-ring-1 inset-ring-neutral-200">
+                    <div class="{{ entete_table }}" role="row">
+                        {{ _self.colonne('Utilisateur', 'w-[190px] text-left') }}
+                        {{ _self.colonne('Créées', 'w-[90px] text-right') }}
+                        {{ _self.colonne('Enrichies', 'w-[110px] text-right') }}
+                        {{ _self.colonne('Validées', 'w-[100px] text-right') }}
+                        {{ _self.colonne("Part de l'activité", 'w-[170px] text-left') }}
+                    </div>
+
+                    {% for ligne in vue.utilisateurs %}
+                        <button type="button" role="row"
+                                class="flex items-center w-full h-11 px-4 box-border text-left cursor-pointer
+                                       {{ loop.first ? '' : 'border-t border-neutral-200' }}">
+                            <twig:Typography variant="body-sm" bold ellipsis class="w-[190px] shrink-0">{{ ligne.nom }}</twig:Typography>
+                            <twig:Typography variant="body-sm" textColor="neutral-500" class="w-[90px] shrink-0 text-right">{{ ligne.creees }}</twig:Typography>
+                            <twig:Typography variant="body-sm" bold class="w-[110px] shrink-0 text-right">{{ ligne.enrichies }}</twig:Typography>
+                            <twig:Typography variant="body-sm" textColor="neutral-500" class="w-[100px] shrink-0 text-right">{{ ligne.validees }}</twig:Typography>
+                            <span class="flex items-center shrink-0 w-[170px] gap-[9px] pl-4 box-border">
+                                <span class="flex-1 min-w-0 h-1.5 rounded-lg bg-neutral-200 overflow-hidden">
+                                    <span class="block h-full rounded-lg bg-linear-(--primary-gradient)"
+                                          style="width: {{ ligne.partBrute }}%"></span>
+                                </span>
+                                <twig:Typography variant="body-xs" bold textColor="neutral-500"
+                                                 class="w-[34px] shrink-0 text-right">{{ ligne.part }}</twig:Typography>
+                            </span>
+                        </button>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="flex flex-col shrink-0 w-[340px] gap-[18px]">
+                <div class="{{ carte }}">
+                    <div class="flex flex-col gap-3.5">
+                        {% for indicateur in vue.indicateursEquipe %}
+                            <button type="button"
+                                    class="flex items-center w-full gap-3 px-3.5 py-3 box-border
+                                           rounded-[12px] bg-primary-5 cursor-pointer">
+                                <twig:Icon name="{{ indicateur.icone }}" aria-hidden="true"
+                                           class="shrink-0 w-5 h-5 {{ indicateur.teinte }}" />
+                                <div class="flex flex-col flex-1 min-w-0 gap-px text-left">
+                                    <twig:Typography variant="body-sm" textColor="neutral-500">{{ indicateur.libelle }}</twig:Typography>
+                                    <twig:Typography variant="subtitle" class="font-[700]!">{{ indicateur.valeur }}</twig:Typography>
+                                </div>
+                                <span class="shrink-0 whitespace-nowrap px-[9px] py-[3px] rounded-lg bg-success-pastel">
+                                    <twig:Typography variant="body-xs" bold textColor="primary-3">{{ indicateur.delta }}</twig:Typography>
+                                </span>
+                            </button>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="{{ carte }}">
+                    <twig:Typography variant="body-sm" bold>Dernières publications</twig:Typography>
+                    <div class="flex flex-col gap-0.5">
+                        {% for publication in vue.publications %}
+                            <button type="button"
+                                    class="flex items-center w-full gap-2.5 px-2.5 py-[7px] box-border
+                                           rounded-xs text-left cursor-pointer">
+                                <span class="shrink-0 w-2 h-2 rounded-lg bg-success" aria-hidden="true"></span>
+                                <div class="flex flex-col flex-1 min-w-0 text-left">
+                                    <twig:Typography variant="body-sm" bold ellipsis>{{ publication.nom }}</twig:Typography>
+                                    <twig:Typography variant="body-xs" textColor="neutral-400">{{ publication.meta }}</twig:Typography>
+                                </div>
+                                <twig:Typography variant="body-xs" textColor="neutral-400"
+                                                 class="shrink-0 whitespace-nowrap">{{ publication.quand }}</twig:Typography>
+                            </button>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+{% endmacro %}
+
+
+{# ==================================================================== Zone 4 #}
+
+{% macro zoneMedias(vue, carte) %}
+    {% if vue.chargement %}
+        <div class="h-28 rounded-[20px] bg-neutral-200 animate-pulse"></div>
+    {% else %}
+        <div class="{{ carte }}">
+            <div class="flex flex-row items-center gap-[30px]">
+                <button type="button" class="flex items-center shrink-0 gap-3 cursor-pointer">
+                    <twig:Icon name="images" aria-hidden="true" class="shrink-0 w-[22px] h-[22px] text-primary" />
+                    <span class="flex flex-col gap-px min-w-0 text-left">
+                        <twig:Typography variant="body-sm" textColor="neutral-500">Médias au catalogue</twig:Typography>
+                        <twig:Typography variant="heading-3" class="font-[700]!">{{ vue.mediasTotal }}</twig:Typography>
+                    </span>
+                </button>
+
+                <div class="flex flex-col flex-1 min-w-0 gap-[7px]">
+                    <div class="flex items-baseline justify-between gap-3">
+                        <twig:Typography variant="body-sm" bold>Consommation de stockage</twig:Typography>
+                        <twig:Typography variant="body-sm" textColor="neutral-500">{{ vue.stockageNote }}</twig:Typography>
+                    </div>
+                    <div class="flex h-2.5 rounded-lg bg-neutral-200 overflow-hidden">
+                        {% for segment in vue.segments %}
+                            <div class="{{ segment.teinte }}" style="width: {{ segment.part }}%"></div>
+                        {% endfor %}
+                    </div>
+                    <div class="flex flex-row flex-wrap gap-[18px]">
+                        {% for segment in vue.segments %}
+                            {{ _self.legende(segment.libelle, segment.teinte) }}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+{% endmacro %}
+
+
+{# =================================================================== Communs #}
+
+{% macro filtre(cle, valeur) %}
+    <button type="button"
+            class="flex items-center shrink-0 h-[34px] gap-[7px] px-3.5 rounded-lg
+                   bg-neutral-100 inset-ring-1 inset-ring-neutral-200 cursor-pointer">
+        <twig:Typography variant="body-sm" textColor="neutral-500">{{ cle }}</twig:Typography>
+        <twig:Typography variant="body-sm" bold textColor="primary-3">{{ valeur }}</twig:Typography>
+        <twig:Icon name="caret-down" aria-hidden="true" class="shrink-0 w-3.5 h-3.5 text-neutral-500" />
+    </button>
+{% endmacro %}
+
+{# Bascule du tableau croisé : taux de complétude ou nombre de fiches publiées. #}
+{% macro bascule(vue, mode, libelle) %}
+    {% set retenu = mode == vue.croisementMode %}
+    <a href="{{ path('app_mdm_tableau_de_bord', { etat: vue.etat, periode: vue.periode, croisement: mode }) }}"
+       class="flex items-center h-[26px] px-3 rounded-lg whitespace-nowrap
+              {{ retenu ? 'bg-neutral-100 shadow-[0_1px_3px_rgba(0,0,0,0.10)]' : '' }}"
+       {{ retenu ? 'aria-current="true"' : '' }}>
+        <twig:Typography variant="body-sm" bold="{{ retenu }}"
+                         textColor="{{ retenu ? 'primary-3' : 'neutral-500' }}">{{ libelle }}</twig:Typography>
+    </a>
+{% endmacro %}
+
+{% macro indicateur(libelle, valeur, note) %}
+    <button type="button" class="flex flex-col flex-1 min-w-0 items-start gap-[3px] text-left cursor-pointer">
+        <twig:Typography variant="body-xs" bold textColor="neutral-500"
+                         class="tracking-[0.4px] uppercase">{{ libelle }}</twig:Typography>
+        <twig:Typography variant="heading-2" class="font-[700]!">{{ valeur }}</twig:Typography>
+        <twig:Typography variant="body-sm" textColor="neutral-500">{{ note }}</twig:Typography>
+    </button>
+{% endmacro %}
+
+{% macro legende(libelle, teinte) %}
+    <div class="flex items-center gap-[7px]">
+        <span class="block shrink-0 w-2.5 h-2.5 rounded-lg {{ teinte }}" aria-hidden="true"></span>
+        <twig:Typography variant="body-xs" textColor="neutral-500">{{ libelle }}</twig:Typography>
+    </div>
+{% endmacro %}
+
+{% macro colonne(libelle, classe) %}
+    <span class="shrink-0 box-border whitespace-nowrap {{ classe }}" role="columnheader">
+        <twig:Typography variant="body-xs" bold textColor="neutral-500"
+                         class="tracking-[0.3px] uppercase">{{ libelle }}</twig:Typography>
+    </span>
+{% endmacro %}
+
+{% macro cellule(cellule, paliers, mode) %}
+    {% set enPourcentage = 'completude' == mode %}
+    {% set fond = enPourcentage or cellule.palier in ['total', 'grand']
+                  ? paliers[cellule.palier] : '' %}
+    <button type="button"
+            class="flex items-center justify-center shrink-0 w-24 h-[30px] box-border
+                   rounded-xs cursor-pointer {{ fond }}">
+        <twig:Typography variant="body-sm" bold
+                         textColor="{{ 'grand' == cellule.palier ? 'neutral-100' : 'primary-3' }}">{{ cellule.libelle }}</twig:Typography>
+    </button>
+{% endmacro %}
+
+{% macro squelette(hauteur, compte) %}
+    <div class="flex flex-row gap-3.5">
+        {% for rang in 1..compte %}
+            <div class="flex-1 min-w-0 {{ hauteur }} rounded-[20px] bg-neutral-200 animate-pulse"></div>
+        {% endfor %}
+    </div>
+{% endmacro %}

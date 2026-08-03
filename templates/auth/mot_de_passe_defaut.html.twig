@@ -5,8 +5,5 @@
     de photo, on affiche donc l'avatar générique.
 #}
 {% extends 'auth/mot_de_passe.html.twig' %}
-{% import 'auth/_composants.html.twig' as ui %}
 
-{% block classe_carte %}auth-card--mot-de-passe-defaut{% endblock %}
-
-{% block avatar_compte %}{{ ui.avatar('defaut', 72) }}{% endblock %}
+{% block avatar_compte %}<twig:Badge icon="user" class="w-18" />{% endblock %}

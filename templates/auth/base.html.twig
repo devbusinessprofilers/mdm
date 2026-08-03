@@ -2,33 +2,52 @@
     Coquille commune aux écrans « Connexion & mot de passe ».
 
     Structure reprise de la maquette : une carte de 1536 × 800 dans laquelle le
-    panneau blanc de droite chevauche le visuel de gauche.
+    panneau blanc de droite chevauche le visuel de gauche. Sous 1280 px le
+    visuel disparaît et le panneau repasse en flux normal — le handoff ne
+    fournit que des cadres desktop, ce repli est une proposition d'intégration.
 #}
 {% extends 'base.html.twig' %}
 
-{% block body_class %}auth-body{% endblock %}
-
-{% block stylesheets %}
-    {#
-        Polices de la charte. Le handoff les charge depuis Google Fonts ; on
-        reprend la même source pour rester fidèle au rendu.
-        À arbitrer avant mise en production : héberger ces fichiers en local
-        évite un appel tiers et la question RGPD qui va avec.
-    #}
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&family=Ubuntu+Sans:wght@100..800&family=Roboto:wght@400;500;700&display=swap">
-{% endblock %}
+{% block body_class %}bg-primary-5 antialiased{% endblock %}
 
 {% block body %}
-    <main class="auth-page">
-        <div class="auth-card {% block classe_carte %}{% endblock %}">
-            <div class="auth-card__visual" aria-hidden="true">
-                <div class="auth-card__visual-media"></div>
+    <main class="flex flex-col items-center justify-center box-border min-h-screen py-8 min-[600px]:py-20">
+        <div class="relative shrink-0 w-full max-w-[calc(100%-32px)]
+                    min-[600px]:max-w-[560px]
+                    min-[1280px]:w-[1536px] min-[1280px]:max-w-[calc(100%-64px)] min-[1280px]:h-[800px]">
+
+            {#
+                Photo de gauche.
+
+                Les fichiers d'origine n'ont pas pu être récupérés (voir
+                README-INTEGRATION.md) : le visuel retombe sur un dégradé de
+                marque. Pour brancher la vraie photo, déposer le fichier dans
+                assets/images/auth/ et remplacer le dégradé par un utilitaire
+                d'image de fond, avec le cadrage relevé dans la maquette.
+
+                Attention : ne pas écrire ici d'exemple contenant un appel de
+                fonction CSS d'URL. Tailwind lit le fichier en texte brut,
+                commentaires Twig compris, et fabriquerait une classe dont
+                AssetMapper échouerait ensuite à résoudre la cible.
+            #}
+            <div class="hidden min-[1280px]:block absolute top-0 left-0 w-[52.164%] h-full
+                        rounded-[30px] overflow-hidden bg-neutral-100" aria-hidden="true">
+                <div class="w-full h-full bg-cover bg-center bg-no-repeat
+                            bg-[linear-gradient(140deg,var(--color-primary-3)_0%,var(--color-primary)_55%,var(--color-neon)_100%)]"></div>
             </div>
 
-            <div class="auth-card__panel {% block classe_panneau %}{% endblock %}">
+            {#
+                47.836 % de décalage : le panneau mord de 66,5 px sur la photo.
+                Le padding horizontal est en pourcentage de la carte (199 / 1536),
+                ce qui redonne les 403,242 px de contenu de la maquette.
+            #}
+            <div class="relative flex flex-col items-center justify-center box-border w-full
+                        px-6 py-10 min-[600px]:px-10 min-[600px]:py-14
+                        min-[1280px]:absolute min-[1280px]:top-0 min-[1280px]:left-[47.836%]
+                        min-[1280px]:w-[52.164%] min-[1280px]:h-full
+                        min-[1280px]:px-[12.956%] min-[1280px]:py-[104px]
+                        rounded-md bg-neutral-100 shadow-(--shadow)
+                        {% block classe_panneau %}gap-6{% endblock %}">
                 {% block panneau %}{% endblock %}
             </div>
         </div>

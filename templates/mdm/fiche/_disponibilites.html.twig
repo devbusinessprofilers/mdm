@@ -1,54 +1,45 @@
 {#
     Carte « Disponibilités » — portée par « Informations générales » et
     « Restauration ». Seule la première propose le choix « lieu privatisable ».
+
+    Les interrupteurs et les boutons radio sont ceux du portail : de vrais
+    `input`, donc de vraies coutures pour un formulaire.
 #}
-<section class="fiche__carte">
-    <h2 class="fiche__section-titre">Disponibilités</h2>
+{#
+    L'écart entre les quatre blocs est à 32 px, pas aux 56 px des cartes de
+    section : celles-là n'ont que deux enfants, ici il y en a quatre et la carte
+    se délitait en autant d'îlots.
+#}
+<section class="shrink-0 box-border flex flex-col gap-8 p-14 rounded-[32px]
+                bg-neutral-100 shadow-(--shadow)">
+    <twig:Typography variant="heading-3" element="h2" class="font-[700]!">Disponibilités</twig:Typography>
 
     {% if a_privatisation %}
-        <div class="fiche__privatisation">
-            <span class="fiche__champ-label">Lieu privatisable*</span>
-            <div class="fiche__radios">
-                <label class="fiche__radio">
-                    <span class="fiche__radio-puce fiche__radio-puce--active" aria-hidden="true"></span>
-                    <input class="sr-only" type="radio" name="privatisable" value="oui" checked>
-                    <span>Oui</span>
-                </label>
-                <label class="fiche__radio">
-                    <span class="fiche__radio-puce" aria-hidden="true"></span>
-                    <input class="sr-only" type="radio" name="privatisable" value="non">
-                    <span>Non</span>
-                </label>
+        <div class="flex flex-col gap-2">
+            {{ _self.label('Lieu privatisable*') }}
+            <div class="flex flex-row gap-10">
+                <twig:Form:RadioItem id="privatisable-oui" name="privatisable" value="oui" checked>Oui</twig:Form:RadioItem>
+                <twig:Form:RadioItem id="privatisable-non" name="privatisable" value="non">Non</twig:Form:RadioItem>
             </div>
         </div>
     {% endif %}
 
-    <div class="fiche__horaires">
-        <span class="fiche__sous-titre">Horaires</span>
-        <div class="fiche__jours">
+    <div class="flex flex-col gap-4">
+        <twig:Typography variant="subtitle" bold>Horaires</twig:Typography>
+        <div class="flex flex-row gap-6 items-start flex-wrap">
             {% for jour in jours %}
-                <div class="fiche__jour">
-                    <div class="fiche__jour-entete">
-                        <span class="fiche__bascule {{ jour.ouvert ? 'fiche__bascule--active' : '' }}"
-                              role="switch"
-                              aria-checked="{{ jour.ouvert ? 'true' : 'false' }}"
-                              aria-label="{{ jour.nom }}"
-                              tabindex="0">
-                            <span class="fiche__bascule-bouton"></span>
-                        </span>
-                        <span class="fiche__jour-nom">{{ jour.nom }}</span>
+                <div class="flex flex-col gap-2 flex-1 basis-32 min-w-0">
+                    <div class="flex flex-row items-center gap-2">
+                        <twig:Form:SwitchButton id="jour-{{ loop.index }}" name="jour-{{ loop.index }}"
+                                                checked="{{ jour.ouvert }}" class="shrink-0" />
+                        <twig:Typography variant="input" element="span"
+                                         class="text-[0.875rem]! leading-[1.375rem]! whitespace-nowrap">{{ jour.nom }}</twig:Typography>
                     </div>
 
                     {% if jour.ouvert %}
-                        <div class="fiche__creneaux">
-                            <div class="fiche__creneau">
-                                <span class="fiche__champ-label">Ouverture</span>
-                                <div class="fiche__heure">08:00</div>
-                            </div>
-                            <div class="fiche__creneau">
-                                <span class="fiche__champ-label">Fermeture</span>
-                                <div class="fiche__heure">18:00</div>
-                            </div>
+                        <div class="flex flex-row gap-2">
+                            {{ _self.heure('Ouverture', '08:00') }}
+                            {{ _self.heure('Fermeture', '18:00') }}
                         </div>
                     {% endif %}
                 </div>
@@ -56,42 +47,49 @@
         </div>
     </div>
 
-    <div class="fiche__fermetures">
-        <div class="fiche__fermetures-entete">
-            <span class="fiche__sous-titre">Périodes de fermeture</span>
-            <button class="bp-btn bp-btn--lg bp-btn--outline" type="button">
-                <span class="bp-btn__icon">
-                    <svg width="24" height="24" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                        <path d="M8 2.5v11M2.5 8h11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
-                    </svg>
-                </span>
-                Ajouter une période
-            </button>
+    <div class="flex flex-col gap-4">
+        <div class="flex flex-row items-center gap-6">
+            <twig:Typography variant="subtitle" bold class="flex-1">Périodes de fermeture</twig:Typography>
+            <twig:Button variant="outline" size="lg" icon="plus">Ajouter une période</twig:Button>
         </div>
 
         {% for periode in periodes %}
-            <div class="fiche__periode">
-                <div class="fiche__periode-champ">
-                    <span class="fiche__champ-label">Nom de la période</span>
-                    <div class="fiche__periode-boite">{{ periode.nom }}</div>
-                </div>
-                <div class="fiche__periode-champ">
-                    <span class="fiche__champ-label">Date(s) de fermeture</span>
-                    <div class="fiche__periode-boite fiche__periode-boite--dates">
-                        <span>{{ periode.dates }}</span>
-                        <svg width="20" height="20" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                            <rect x="1.5" y="3" width="13" height="11.5" rx="2" stroke="var(--primary-turquoise)" stroke-width="1.3"></rect>
-                            <path d="M1.5 6.5h13M5 1.5V4M11 1.5V4" stroke="var(--primary-turquoise)" stroke-width="1.3" stroke-linecap="round"></path>
-                        </svg>
+            <div class="flex flex-row gap-6 items-end self-stretch">
+                <div class="flex flex-col gap-1 flex-1 min-w-0">
+                    {{ _self.label('Nom de la période') }}
+                    <div class="h-10 box-border flex items-center px-3 rounded-xs
+                                bg-primary-5 inset-ring-1 inset-ring-primary">
+                        <twig:Typography variant="input">{{ periode.nom }}</twig:Typography>
                     </div>
                 </div>
-                <button class="fiche__periode-supprimer" type="button" aria-label="Supprimer la période">
-                    <svg width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                        <path d="M2.5 4h11M6.5 4V2.5h3V4M4 4v9.5a1 1 0 001 1h6a1 1 0 001-1V4M6.5 7v5M9.5 7v5"
-                              stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"></path>
-                    </svg>
+                <div class="flex flex-col gap-1 flex-1 min-w-0">
+                    {{ _self.label('Date(s) de fermeture') }}
+                    <div class="h-10 box-border flex items-center gap-2 px-3 rounded-xs
+                                bg-primary-5 inset-ring-1 inset-ring-primary">
+                        <twig:Typography variant="input" class="flex-1 min-w-0">{{ periode.dates }}</twig:Typography>
+                        <twig:Icon name="calendar" class="w-5 h-5 shrink-0 text-primary" />
+                    </div>
+                </div>
+                <button type="button" aria-label="Supprimer la période"
+                        class="w-6 h-10 shrink-0 flex items-center justify-center cursor-pointer text-neutral-900">
+                    <twig:Icon name="trash" class="w-[18px] h-[18px]" />
                 </button>
             </div>
         {% endfor %}
     </div>
 </section>
+
+{% macro label(texte) %}
+    <twig:Typography variant="input" element="span"
+                     class="text-[0.875rem]! leading-[1.375rem]!">{{ texte }}</twig:Typography>
+{% endmacro %}
+
+{% macro heure(libelle, valeur) %}
+    <div class="flex flex-col gap-1">
+        {{ _self.label(libelle) }}
+        <div class="h-10 w-[76px] box-border flex items-center px-3 rounded-xs
+                    bg-primary-5 inset-ring-1 inset-ring-primary">
+            <twig:Typography variant="input">{{ valeur }}</twig:Typography>
+        </div>
+    </div>
+{% endmacro %}

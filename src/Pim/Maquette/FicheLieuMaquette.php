@@ -36,6 +36,24 @@ final class FicheLieuMaquette
      * « Paramètres ». La maquette a fait passer « Booster ma visibilité » de
      * Paramètres à Ma fiche : la coupure est à 13, plus à 12.
      */
+    /**
+     * Correspondance entre les noms de glyphes du handoff et ceux du jeu
+     * d'icônes du portail prestataire. Elle vit ici, pas dans les données :
+     * `FicheLieuDonnees` est généré depuis le handoff et ne doit pas être
+     * retouché à la main.
+     *
+     * @var array<string, string>
+     */
+    private const ICONES_PORTAIL = [
+        'info' => 'info-circle',
+        'mappin' => 'pin',
+        'userrect' => 'user-rectangle',
+        'fork' => 'utensils',
+        'bike' => 'biking',
+        'euro' => 'currency-euro',
+        'okcircle' => 'check-circle',
+    ];
+
     public const SECTIONS_MA_FICHE = 13;
 
     public const TITRE = 'Jeanne & The Forest - Château de Montvillargenne';
@@ -59,21 +77,29 @@ final class FicheLieuMaquette
     /** @var list<string> */
     private const JOURS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 
-    /** @var list<array{string, string}> Intitulé de colonne et nom du glyphe */
+    /**
+     * Intitulé de colonne et icône du portail.
+     *
+     * Les glyphes du handoff (Metre1, RUnionU, TablesRondes…) sont en commentaire :
+     * le jeu d'icônes du portail couvre déjà les treize configurations, on prend
+     * les siennes plutôt que de transcrire les tracés de la maquette.
+     *
+     * @var list<array{string, string}>
+     */
     public const COLONNES_CAPACITES = [
-        ['m³', 'Metre1'],
-        ['Théâtre', 'RUnionConfRence'],
-        ['Réunion', 'RUnionRectangle'],
-        ['En U', 'RUnionU'],
-        ['Classe', 'RUnionClassroom'],
-        ['Cabaret', 'TablesRondes'],
-        ['Banquet', 'RUnionCercle'],
-        ['Cocktail', 'Cocktail'],
-        ['Lumière naturelle', 'Sunlight'],
-        ['Climatisé', 'Wind'],
-        ['PMR', 'Pmr'],
-        ['Espace dansant', 'Dance'],
-        ['Plan', 'FilePdf2'],
+        ['m³', 'cube'],                 // Metre1
+        ['Théâtre', 'conference'],      // RUnionConfRence
+        ['Réunion', 'meeting'],         // RUnionRectangle
+        ['En U', 'u-meeting'],          // RUnionU
+        ['Classe', 'classroom'],        // RUnionClassroom
+        ['Cabaret', 'cabaret'],         // TablesRondes
+        ['Banquet', 'banquet'],         // RUnionCercle
+        ['Cocktail', 'cocktail'],       // Cocktail
+        ['Lumière naturelle', 'sun'],   // Sunlight
+        ['Climatisé', 'wind'],          // Wind
+        ['PMR', 'wheel-chair'],         // Pmr
+        ['Espace dansant', 'dance'],    // Dance
+        ['Plan', 'file-pdf'],           // FilePdf2
     ];
 
     /**
@@ -118,7 +144,7 @@ final class FicheLieuMaquette
             $onglets[] = [
                 'index' => $index,
                 'nom' => $section['nom'],
-                'icone' => $section['icone'],
+                'icone' => self::ICONES_PORTAIL[$section['icone']] ?? $section['icone'],
                 'completude' => $section['completude'],
                 'actif' => $index === $actif,
             ];

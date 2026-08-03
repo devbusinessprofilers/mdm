@@ -1,29 +1,27 @@
 {# Maquette : S1 · Mot de passe oublié — Desktop (nœud Figma 74:2380) #}
 {% extends 'auth/base.html.twig' %}
-{% import 'auth/_composants.html.twig' as ui %}
 
 {% block title %}Mot de passe oublié{% endblock %}
 
-{% block classe_carte %}auth-card--mot-de-passe-oublie{% endblock %}
-
 {% block panneau %}
-    <div class="auth-header">
-        {{ ui.pastille_cadenas() }}
+    <div class="flex flex-col items-center self-stretch shrink-0 gap-6">
+        <twig:Badge icon="lock" class="w-16" />
 
-        <div class="auth-titlegroup">
-            <h1 class="auth-title">Mot de passe oublié</h1>
-            <p class="auth-subtitle">Réinitialisez votre accès</p>
+        <div class="flex flex-col items-center self-stretch shrink-0 gap-1">
+            <twig:Typography variant="heading-1" element="h1" center
+                             class="self-stretch font-[700]!">Mot de passe oublié</twig:Typography>
+            <twig:Typography variant="body-lg" element="p" center
+                             class="self-stretch">Réinitialisez votre accès</twig:Typography>
         </div>
     </div>
 
-    <form class="auth-form auth-form--centre" method="post" action="">
-        {{ ui.champ('Votre email', 'email', {
-            type: 'email',
-            placeholder: 'Votre email',
-            autocomplete: 'email',
-            required: true
-        }) }}
+    <form class="flex flex-col items-center self-stretch shrink-0 gap-4" method="post" action="">
+        <div class="flex flex-col gap-1 self-stretch">
+            <twig:Typography variant="body" element="label" for="champ-email">Votre email*</twig:Typography>
+            <twig:Form:TextInput id="champ-email" name="email" placeholder="Votre email"
+                                 inputAttributes="{{ { type: 'email', autocomplete: 'email', required: 'required' } }}" />
+        </div>
 
-        {{ ui.bouton('Recevoir un lien', { style: 'primary', size: 'lg', block: true }) }}
+        <twig:Button variant="primary" size="lg" full>Recevoir un lien</twig:Button>
     </form>
 {% endblock %}

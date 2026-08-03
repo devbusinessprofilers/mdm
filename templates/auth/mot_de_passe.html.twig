@@ -1,42 +1,44 @@
 {# Maquette : S1 · Mot de passe — Desktop (nœud Figma 74:1914) #}
 {% extends 'auth/base.html.twig' %}
-{% import 'auth/_composants.html.twig' as ui %}
 
 {% block title %}Connectez-vous{% endblock %}
 
-{% block classe_carte %}auth-card--mot-de-passe{% endblock %}
-
 {# Surchargé par « mot de passe — user défaut », qui affiche l'avatar générique. #}
-{% block avatar_compte %}{{ ui.avatar('photo', 72) }}{% endblock %}
+{% block avatar_compte %}<twig:Badge pictureUrl="{{ asset('images/auth/avatar-user.png') }}"
+                                     pictureText="Photo de profil" class="w-18" />{% endblock %}
 
 {% block panneau %}
-    <div class="auth-header">
-        <h1 class="auth-title">Connectez-vous</h1>
+    <div class="flex flex-col items-center self-stretch shrink-0 gap-6">
+        <twig:Typography variant="heading-1" element="h1" center
+                         class="self-stretch font-[700]!">Connectez-vous</twig:Typography>
 
-        <div class="auth-account">
+        <div class="flex flex-col items-center shrink-0 gap-2">
             {{ block('avatar_compte') }}
 
-            <p class="auth-account__mail">contact@businessprofilers.fr</p>
+            <twig:Typography variant="body" element="p" bold center
+                             class="w-[267px]">contact@businessprofilers.fr</twig:Typography>
 
-            {{ ui.bouton('Utiliser un autre compte', {
-                style: 'outline',
-                size: 'lg',
-                href: path('app_auth_connexion')
-            }) }}
+            <twig:Button asLink variant="outline" size="lg"
+                         href="{{ path('app_auth_connexion') }}">Utiliser un autre compte</twig:Button>
         </div>
     </div>
 
-    <form class="auth-form" method="post" action="">
-        {{ ui.champ('Saisissez votre mot de passe', 'password', {
-            type: 'password',
-            placeholder: 'Saisissez votre mot de passe',
-            autocomplete: 'current-password',
-            required: true,
-            toggle: true
-        }) }}
+    <form class="flex flex-col items-stretch self-stretch shrink-0 gap-4" method="post" action="">
+        <div class="flex flex-col gap-1 self-stretch">
+            <twig:Typography variant="body" element="label"
+                             for="champ-password">Saisissez votre mot de passe*</twig:Typography>
+            <twig:Form:Password id="champ-password" name="password"
+                                placeholder="Saisissez votre mot de passe"
+                                autocomplete="current-password" required />
+        </div>
 
-        <a class="auth-link" href="{{ path('app_auth_mot_de_passe_oublie') }}">Mot de passe oublié ?</a>
+        {# ÉCART : rendu comme un lien réel (la maquette l'affiche en texte simple). #}
+        <a class="self-stretch text-neutral-900 no-underline hover:text-primary-3 hover:underline
+                  focus-visible:text-primary-3 focus-visible:underline"
+           href="{{ path('app_auth_mot_de_passe_oublie') }}">
+            <twig:Typography variant="body-lg" textColor="controlled">Mot de passe oublié ?</twig:Typography>
+        </a>
 
-        {{ ui.bouton('Se connecter', { style: 'primary', size: 'lg', block: true }) }}
+        <twig:Button variant="primary" size="lg" full>Se connecter</twig:Button>
     </form>
 {% endblock %}

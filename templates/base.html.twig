@@ -1,5 +1,7 @@
 <!DOCTYPE html>
-<html>
+{# `lang` sert autant aux lecteurs d'écran qu'au contrôleur `wysiwyg`, qui y lit
+   la langue de l'éditeur de texte enrichi. #}
+<html lang="{{ app.request.locale|default('fr') }}">
     <head>
         <meta charset="UTF-8">
         <title>{% block title %}Welcome!{% endblock %}</title>

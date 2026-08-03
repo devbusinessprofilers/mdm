@@ -1,114 +1,166 @@
 {# Maquette : « MDM Business Profilers » · écran `accueil` — Mon espace de travail #}
 {% extends 'mdm/base.html.twig' %}
-{% import 'mdm/_composants.html.twig' as ui %}
 
-{% set ecran = 'accueil' %}
+{% set ecran = 'travail' %}
+
+{#
+    Les familles de fiches du référentiel portent encore les noms de jetons du
+    handoff ; on les traduit ici vers ceux du portail. La carte est dans la vue
+    plutôt que dans la maquette pour que Tailwind voie les classes en clair.
+#}
+{% set teintes = {
+    'primary-turquoise': 'bg-primary',
+    'primary-marine': 'bg-primary-3',
+    'secondary-p-che': 'bg-peach',
+    'secondary-premium': 'bg-old-gold',
+    'secondary-vert': 'bg-success',
+} %}
+
+{% set echeances = {
+    'urgent': 'bg-error-pastel text-error',
+    'proche': 'bg-old-gold-pastel text-neutral-900',
+    'neutre': 'bg-neutral-200 text-neutral-900',
+} %}
 
 {% block title %}Mon espace de travail{% endblock %}
 
 {% block contenu %}
-    <div class="ws">
+    <div class="flex flex-col flex-1 min-h-0 gap-5 px-4 pt-5 pb-6 sm:px-8 sm:pt-7 sm:pb-8
+                overflow-y-auto scrollbar">
 
-        <div class="ws__top">
-            <div class="ws__greeting">
-                <h1 class="ws__hello">{{ vue.salutation }}</h1>
-                <p class="ws__hello-sub">{{ vue.sousTitre }}</p>
+        <div class="flex items-end justify-between gap-7 flex-wrap">
+            <div class="flex flex-col gap-1 min-w-0">
+                <twig:Typography variant="heading-2" element="h1"
+                                 class="sm:text-[1.625rem]! sm:leading-[2.125rem]! font-[700]!">{{ vue.salutation }}</twig:Typography>
+                <twig:Typography variant="body" element="p" textColor="neutral-500">{{ vue.sousTitre }}</twig:Typography>
             </div>
 
             {#
                 Sélecteur de rôle. La maquette le traite comme un bouton d'état ;
                 côté intégration ce sont des liens, l'écran étant rendu par le
                 serveur pour chaque rôle.
+
+                ÉCART ASSUMÉ : l'état retenu est un aplat marine, là où le bouton
+                du portail passe au dégradé de marque. On suit la maquette.
             #}
-            <div class="ws__roles">
-                <span class="ws__roles-label">Rôle&nbsp;:</span>
+            <div class="flex items-center gap-2.5 shrink-0">
+                <twig:Typography variant="body" textColor="neutral-500">Rôle&nbsp;:</twig:Typography>
                 {% for cle, libelle in roles %}
-                    <a class="ws__role {{ cle == role ? 'ws__role--actif' : '' }}"
-                       href="{{ path('app_mdm_espace_travail', { role: cle }) }}"
-                       {{ cle == role ? 'aria-current="true"' : '' }}>{{ libelle }}</a>
+                    {% set retenu = cle == role %}
+                    <a href="{{ path('app_mdm_espace_travail', { role: cle }) }}"
+                       class="inline-flex items-center box-border h-10 px-4 rounded-lg whitespace-nowrap
+                              focus-visible:outline-2 focus-visible:outline-primary-3 focus-visible:outline-offset-2
+                              {{ retenu
+                                 ? 'bg-primary-3'
+                                 : 'bg-neutral-100 inset-ring-1 inset-ring-neutral-300 hover:bg-primary-4' }}"
+                       {{ retenu ? 'aria-current="true"' : '' }}>
+                        <twig:Typography variant="body" bold
+                                         textColor="{{ retenu ? 'neutral-100' : 'neutral-900' }}">{{ libelle }}</twig:Typography>
+                    </a>
                 {% endfor %}
             </div>
         </div>
 
-        <ul class="ws__queues">
+        <ul class="grid grid-cols-1 min-[900px]:grid-cols-2 min-[1366px]:grid-cols-4 gap-4 m-0 p-0 list-none">
             {% for compteur in vue.compteurs %}
-                <li class="ws__queue">
-                    <div class="ws__queue-head">
-                        {{ ui.pastille(compteur.couleur, 10) }}
-                        <span class="ws__queue-label">{{ compteur.libelle }}</span>
+                <li class="flex flex-col gap-2 px-[22px] py-5 rounded-[20px]
+                           bg-neutral-100 shadow-(--shadow) cursor-pointer">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <span class="shrink-0 w-2.5 h-2.5 rounded-lg {{ teintes[compteur.couleur] ?? 'bg-neutral-400' }}"
+                              aria-hidden="true"></span>
+                        <twig:Typography variant="body" bold ellipsis class="flex-1 min-w-0">{{ compteur.libelle }}</twig:Typography>
                     </div>
-                    <span class="ws__queue-count">{{ compteur.valeur }}</span>
-                    <div class="ws__queue-foot">
-                        <span class="ws__queue-note">{{ compteur.note }}</span>
+                    <twig:Typography variant="heading-2" class="font-[700]!">{{ compteur.valeur }}</twig:Typography>
+                    <div class="flex items-center justify-between gap-3">
+                        <twig:Typography variant="body-sm" textColor="neutral-400"
+                                         class="flex-1 min-w-0">{{ compteur.note }}</twig:Typography>
                         {# Destination : la file correspondante, pas encore intégrée. #}
-                        {{ ui.lien('Ouvrir', 'ws__queue-link') }}
+                        {{ _self.lien('Ouvrir', 'shrink-0 text-[0.75rem] leading-5 font-[900] text-primary hover:underline') }}
                     </div>
                 </li>
             {% endfor %}
         </ul>
 
-        <div class="ws__cols">
+        <div class="flex flex-col min-[1366px]:flex-row items-stretch min-[1366px]:items-start gap-4">
 
-            <section class="ws__card ws__card--principal">
-                <div class="ws__card-head">
-                    <h2 class="ws__card-title">{{ vue.titre }}</h2>
-                    <span class="ws__card-sub">{{ vue.tri }}</span>
+            <section class="flex flex-col flex-1 min-w-0 gap-3.5 px-[26px] py-6 rounded-[20px]
+                            bg-neutral-100 shadow-(--shadow)">
+                <div class="flex items-baseline justify-between gap-4">
+                    <twig:Typography variant="heading-3" element="h2" class="font-[700]!">{{ vue.titre }}</twig:Typography>
+                    <twig:Typography variant="body-sm" textColor="neutral-500">{{ vue.tri }}</twig:Typography>
                 </div>
 
-                <table class="ws__table">
+                {#
+                    Rendu en <table> plutôt qu'en div : c'est bien un tableau de
+                    données, et l'en-tête doit rester lisible par un lecteur
+                    d'écran. Les largeurs de colonnes sont celles de la maquette.
+                #}
+                <table class="w-full table-fixed border-separate border-spacing-0">
                     <thead>
                         <tr>
-                            <th class="ws__col-fiche" scope="col">Fiche</th>
-                            <th class="ws__col-typologie" scope="col">Typologie</th>
-                            <th class="ws__col-motif" scope="col">Motif</th>
-                            <th class="ws__col-echeance" scope="col">Échéance</th>
-                            <th class="ws__col-action" scope="col">Action</th>
+                            {{ _self.entete('Fiche', 'w-[330px] pl-4 rounded-l-xs') }}
+                            {{ _self.entete('Typologie', 'w-[176px]') }}
+                            {{ _self.entete('Motif', 'w-auto') }}
+                            {{ _self.entete('Échéance', 'w-[130px]') }}
+                            {{ _self.entete('Action', 'w-[128px] pr-4 rounded-r-xs text-right') }}
                         </tr>
                     </thead>
                     <tbody>
                         {% for ligne in vue.lignes %}
                             <tr>
-                                <td class="ws__cell-fiche">{{ ligne.fiche }}</td>
-                                <td>
-                                    <span class="ws__cell-typologie">
-                                        {{ ui.pastille(ligne.typologieCouleur) }}
-                                        <span>{{ ligne.typologie }}</span>
+                                <td class="box-border h-12 pl-4 pr-3 border-b border-neutral-200 truncate">
+                                    <twig:Typography variant="body" bold>{{ ligne.fiche }}</twig:Typography>
+                                </td>
+                                <td class="box-border h-12 pr-3 border-b border-neutral-200">
+                                    <span class="flex items-center gap-2 min-w-0 h-12 overflow-hidden">
+                                        <span class="shrink-0 w-2 h-2 rounded-lg {{ teintes[ligne.typologieCouleur] ?? 'bg-neutral-400' }}"
+                                              aria-hidden="true"></span>
+                                        <twig:Typography variant="body" ellipsis class="min-w-0">{{ ligne.typologie }}</twig:Typography>
                                     </span>
                                 </td>
-                                <td class="ws__cell-motif">{{ ligne.motif }}</td>
-                                <td>
-                                    <span class="mdm-pill {{ ligne.echeanceTon != 'neutre' ? 'mdm-pill--' ~ ligne.echeanceTon : '' }}">
-                                        {{ ligne.echeance }}
+                                <td class="box-border h-12 pr-3 border-b border-neutral-200 truncate">
+                                    <twig:Typography variant="body" textColor="neutral-500">{{ ligne.motif }}</twig:Typography>
+                                </td>
+                                <td class="box-border h-12 pr-3 border-b border-neutral-200">
+                                    <span class="inline-block px-2.5 py-1 rounded-lg whitespace-nowrap
+                                                 {{ echeances[ligne.echeanceTon] ?? echeances.neutre }}">
+                                        <twig:Typography variant="body-xs" bold textColor="controlled">{{ ligne.echeance }}</twig:Typography>
                                     </span>
                                 </td>
                                 {# Destination : la fiche concernée, écran pas encore intégré. #}
-                                <td>{{ ui.lien(ligne.action, 'ws__cell-action') }}</td>
+                                <td class="box-border h-12 pr-4 border-b border-neutral-200 text-right">
+                                    {{ _self.lien(ligne.action, 'block text-[0.75rem] leading-5 font-[900] text-primary text-right hover:underline') }}
+                                </td>
                             </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </section>
 
-            <div class="ws__aside">
-                <section class="ws__card">
-                    <h2 class="ws__card-title">Raccourcis</h2>
-                    <ul class="ws__shortcuts">
+            <div class="flex flex-col shrink-0 gap-4 w-full min-[1366px]:w-[360px] min-[1600px]:w-[440px]">
+                <section class="flex flex-col gap-3.5 px-[26px] py-6 rounded-[20px]
+                                bg-neutral-100 shadow-(--shadow)">
+                    <twig:Typography variant="heading-3" element="h2" class="font-[700]!">Raccourcis</twig:Typography>
+                    <ul class="flex flex-wrap gap-2.5 m-0 p-0 list-none">
                         {% for raccourci in vue.raccourcis %}
-                            <li>{{ ui.lien(raccourci, 'ws__shortcut') }}</li>
+                            <li>{{ _self.lien(raccourci, 'inline-block px-4 py-2.5 rounded-lg bg-primary-4
+                                                       text-[0.75rem] leading-5 font-[900] text-primary-3
+                                                       hover:bg-primary hover:text-neutral-100') }}</li>
                         {% endfor %}
                     </ul>
                 </section>
 
-                <section class="ws__card ws__card--activite">
-                    <h2 class="ws__card-title">Activité récente</h2>
-                    <ul class="ws__activity">
+                <section class="flex flex-col gap-4 px-[26px] py-6 rounded-[20px]
+                                bg-neutral-100 shadow-(--shadow)">
+                    <twig:Typography variant="heading-3" element="h2" class="font-[700]!">Activité récente</twig:Typography>
+                    <ul class="flex flex-col gap-4 m-0 p-0 list-none">
                         {% for evenement in vue.activite %}
-                            <li class="ws__activity-item">
-                                <span class="ws__activity-bar" aria-hidden="true"></span>
-                                <div class="ws__activity-body">
-                                    <span class="ws__activity-who">{{ evenement.qui }}</span>
-                                    <span class="ws__activity-what">{{ evenement.quoi }}</span>
-                                    <span class="ws__activity-when">{{ evenement.quand }}</span>
+                            <li class="flex items-start gap-3">
+                                <span class="shrink-0 self-stretch w-[3px] rounded-[3px] bg-primary-4" aria-hidden="true"></span>
+                                <div class="flex flex-col gap-0.5 min-w-0">
+                                    <twig:Typography variant="body" bold>{{ evenement.qui }}</twig:Typography>
+                                    <twig:Typography variant="body">{{ evenement.quoi }}</twig:Typography>
+                                    <twig:Typography variant="body-sm" textColor="neutral-500">{{ evenement.quand }}</twig:Typography>
                                 </div>
                             </li>
                         {% endfor %}
@@ -119,3 +171,31 @@
         </div>
     </div>
 {% endblock %}
+
+{% macro entete(libelle, classe) %}
+    <th scope="col" class="box-border h-10 p-0 bg-primary-5 text-left whitespace-nowrap {{ classe }}">
+        <twig:Typography variant="body-sm" bold textColor="neutral-500">{{ libelle }}</twig:Typography>
+    </th>
+{% endmacro %}
+
+{#
+    Convention de branchement des liens.
+
+    Un écran intégré reçoit son `href` : le lien est un <a> normal. Un écran pas
+    encore intégré n'en reçoit pas — on rend un élément inerte plutôt qu'un
+    `href="#"`, qui remonterait la page et laisserait croire que la destination
+    existe. L'apparence au repos est identique dans les deux cas, seuls le
+    curseur et l'infobulle changent.
+
+    Brancher un écran = ajouter son `path()` en troisième argument.
+#}
+{% macro lien(libelle, classe, href = null) %}
+    {% if href %}
+        <a class="{{ classe }}" href="{{ href }}">{{ libelle }}</a>
+    {% else %}
+        <span class="{{ classe }} cursor-default hover:no-underline"
+              role="link"
+              aria-disabled="true"
+              title="Écran non encore intégré">{{ libelle }}</span>
+    {% endif %}
+{% endmacro %}

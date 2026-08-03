@@ -20,7 +20,8 @@ namespace App\Pim\Maquette;
  * @phpstan-type GroupeFiltre array{nom: string, etiquette: string, facettes: list<Facette>}
  * @phpstan-type Badge array{cle: string, valeur: string}
  * @phpstan-type Colonne array{label: string, largeur: int, alignement: string}
- * @phpstan-type Ligne array{nom: string, sousTitre: string, gamme: string, type: string, pays: string,
+ * @phpstan-type Ligne array{nom: string, sousTitre: string, ville: string, rue: string,
+ *     codePostal: string, gps: string, gamme: string, type: string, pays: string,
  *     statut: string, statutTon: string, completude: int, palier: string, canaux: string,
  *     canauxNuls: bool, actif: bool, premium: bool, quand: string, auteur: string, vignette: bool,
  *     marque: string, selectionnee: bool}
@@ -591,10 +592,16 @@ final class ListeFichesMaquette
                 $quand, $auteur, $vignette, $marque] = $fiche;
 
             $reference = 'MDM-' . (482001 + (int) array_search($fiche, self::FICHES, true));
+            // La modale d'édition rapide affiche l'adresse résolue de la ligne.
+            [$rue, $codePostal, $gps] = ReferentielMaquette::adresse($ville);
 
             $lignes[] = [
                 'nom' => $nom,
                 'sousTitre' => $ville . ' · ' . $reference,
+                'ville' => $ville,
+                'rue' => $rue,
+                'codePostal' => $codePostal,
+                'gps' => $gps,
                 'gamme' => $gamme,
                 'type' => $type,
                 'pays' => $pays,

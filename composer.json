@@ -46,12 +46,14 @@
         "symfony/ux-icons": "^2.36",
         "symfony/ux-live-component": "^2.36",
         "symfony/ux-map": "^2.36",
+        "symfony/ux-translator": "^2.36",
         "symfony/ux-turbo": "^2.36",
         "symfony/ux-twig-component": "^2.36",
         "symfony/validator": "7.4.*",
         "symfony/web-link": "7.4.*",
         "symfony/yaml": "7.4.*",
         "symfonycasts/tailwind-bundle": "^0.11",
+        "tinymce/tinymce": "^8.8",
         "twig/extra-bundle": "^2.12|^3.0",
         "twig/intl-extra": "^3.26",
         "twig/twig": "^2.12|^3.0"
@@ -92,11 +94,14 @@
             "assets:install %PUBLIC_DIR%": "symfony-cmd",
             "importmap:install": "symfony-cmd"
         },
+        "tinymce:deploy": "php bin/deployer-tinymce.php",
         "post-install-cmd": [
-            "@auto-scripts"
+            "@auto-scripts",
+            "@tinymce:deploy"
         ],
         "post-update-cmd": [
-            "@auto-scripts"
+            "@auto-scripts",
+            "@tinymce:deploy"
         ],
         "test": "phpunit"
     },

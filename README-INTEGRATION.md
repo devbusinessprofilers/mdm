@@ -12,7 +12,41 @@ Ce document ne couvre que l'**intégration front**. Aucune logique métier,
 aucune authentification : les contrôleurs se contentent de rendre les gabarits
 et les formulaires ne sont pas traités.
 
-Les deux handoffs partagent le même socle : `assets/styles/tokens.css`.
+## Socle : le design system du portail prestataire
+
+Les treize écrans sont bâtis sur les **composants Twig du portail** repris de
+`C:\wamp64\www
+odevo` — 88 classes de composants, 72 gabarits, 21 énumérations,
+162 modèles, 124 icônes, plus le thème Tailwind v4 (`assets/styles/app.css`).
+
+**Il n'y a plus une seule classe CSS maison dans les gabarits.** Les sept
+feuilles de style d'origine (5 277 lignes : `tokens`, `components`, `app-shell`,
+`fiche`, `workspace`, `edition-rapide`, `auth`) ont été supprimées ; `app.js`
+ne charge plus que `app.css`.
+
+Un composant importé n'a été modifié qu'une fois : `Logo.html.twig`, dont le
+lien et le fichier image pointent vers ce projet. La modification est signalée
+en tête du fichier par un commentaire `ADAPTATION LOCALE`.
+
+### Chaîne de compilation
+
+Les assets ne sont **pas** servis dynamiquement dans cette installation : le
+serveur lit `public/assets/`. Après toute modification d'un gabarit, d'un
+contrôleur Stimulus ou d'une classe Tailwind :
+
+```
+php bin/console tailwind:build
+rm -rf public/assets && php bin/console asset-map:compile
+```
+
+Sans le second couple de commandes, le navigateur continue de servir l'ancien
+build — et une simple suppression de `public/assets` sans recompilation met
+toutes les ressources en 404.
+
+> **Piège** : Tailwind lit les gabarits en texte brut, **commentaires Twig
+> compris**. Écrire un exemple de classe contenant un appel `url()` dans un
+> commentaire fabrique une vraie règle CSS, et AssetMapper échoue ensuite à
+> résoudre la cible — toutes les pages tombent en erreur 500.
 
 ---
 
@@ -37,48 +71,54 @@ Handoff `Espace prestataire.dc.html`.
 
 ```
 assets/
-  styles/
-    tokens.css        variables de la charte (couleurs, typo, espacements)
-    components.css    bouton, champ, tag, avatar, pastille, jauge, séparateur
-    auth.css          mise en page des écrans de connexion
-  controllers/
-    bp_password_controller.js   bascule d'affichage du mot de passe
-  images/auth/
-    avatar-user.png   photo de l'utilisateur identifié
+  styles/app.css              thème du portail + Tailwind (feuille unique)
+  images/auth/avatar-user.png photo de l'utilisateur identifié
 
 templates/auth/
-  base.html.twig        coquille commune (carte + visuel + panneau)
-  _composants.html.twig macros Twig : bouton, champ, tag, avatar, icônes, jauge
+  base.html.twig              coquille commune (carte + visuel + panneau)
+  connexion.html.twig  mot_de_passe.html.twig  mot_de_passe_defaut.html.twig
+  mot_de_passe_oublie.html.twig  creation_mot_de_passe.html.twig
+
+translations/messages.fr.yaml  libellés attendus par les composants importés
 
 src/Account/Controller/AuthController.php   les 5 routes
 ```
 
-Les feuilles de style sont chargées par `assets/app.js`, dans cet ordre :
-`tokens` → `components` → `app` → `auth`.
+`templates/auth/_composants.html.twig` (bouton, champ, tag, avatar, jauge) a été
+supprimé : les composants du portail couvrent tout.
 
-## Utiliser les composants
+## Composants utilisés
 
-```twig
-{% import 'auth/_composants.html.twig' as ui %}
+| Élément de la maquette | Composant du portail |
+|---|---|
+| Bouton primaire / contour | `<twig:Button variant="primary\|outline" size="lg" full>` |
+| Champ texte / email | `<twig:Form:TextInput>` |
+| Champ mot de passe + œil | `<twig:Form:Password>` |
+| Jauge de robustesse + 5 règles | `<twig:Form:Password withControl>` |
+| Pastille cadenas, avatar | `<twig:Badge icon="lock">`, `<twig:Badge pictureUrl="…">` |
+| Tous les textes | `<twig:Typography variant="…">` |
 
-{{ ui.bouton('Continuer', { style: 'primary', size: 'lg', block: true }) }}
-{{ ui.bouton('Annuler', { style: 'outline', href: path('...') }) }}
+`withControl` est un gain net sur la maquette : celle-ci figeait la jauge à 49 %
+avec trois règles vertes. Le composant les **calcule à la frappe** — vérifié :
+`abc` → 20 %, `abcdefgh` → 40 %, `Abcdefgh1` → 80 %, `Abcdefgh1!` → 100 %, avec
+les bonnes règles qui passent au vert.
 
-{{ ui.champ('Email', 'email', {
-    type: 'email', placeholder: 'Votre e-mail professionnel', required: true
-}) }}
+Les cinq libellés de règles passent par `|trans` ; ils sont dans
+`translations/messages.fr.yaml`. La locale par défaut est passée de `en` à `fr`.
 
-{{ ui.avatar('photo', 72) }}
-{{ ui.regle('8 caractères', 'valide') }}
-{{ ui.jauge(49, 'moyen') }}
-```
+## Écarts assumés
 
-Les 9 variantes du composant Figma `Button` sont disponibles via les classes
-`bp-btn--primary|outline|text` × `bp-btn--lg|sm`, plus l'état désactivé.
+### Le bouton « Traduire » a été retiré
 
----
+La maquette pose trois actions en tête de fiche : « Enrichir ce qui manque »,
+« Extraire d'un document », « Traduire ». La troisième n'est plus rendue.
 
-## Écarts assumés par rapport à la maquette
+Décision de l'équipe back : la traduction est un traitement de fond, déclenché à
+la validation de la fiche. Un bouton obligerait à y penser après chaque
+modification, et des fiches passeraient à travers.
+
+**Ne pas le « restaurer » en comparant à la maquette** — c'est un écart voulu.
+ par rapport à la maquette
 
 Chaque écart est également commenté à l'endroit concerné dans le CSS
 (rechercher `ÉCART`).
@@ -108,18 +148,13 @@ Les 4 photos JPEG du handoff **n'ont pas pu être récupérées** : l'API de lec
 du projet Design plafonne à 256 Ko par fichier, soit ~192 Ko de binaire, et les
 4 fichiers dépassent ce seuil. Ils reviennent tronqués, sans marqueur de fin.
 
-En attendant, `.auth-card__visual-media` retombe sur un dégradé de marque.
+En attendant, le panneau de gauche retombe sur un dégradé de marque, posé en
+Tailwind dans `auth/base.html.twig`.
 
 **Pour brancher les vraies photos**, déposer les fichiers dans
-`assets/images/auth/` puis ajouter dans `auth.css` :
-
-```css
-.auth-card--connexion {
-    --auth-visual-image: url('../images/auth/connexion.jpg');
-    --auth-visual-position: 152.992% 45.876%;
-    --auth-visual-size: 121.387% 89.648%;
-}
-```
+`assets/images/auth/` puis remplacer le dégradé par un utilitaire d'image de
+fond avec le cadrage de l'écran concerné. Le `base.html.twig` est partagé par
+les cinq écrans : ajouter un bloc surchargeable si les cadrages diffèrent.
 
 Cadrages relevés dans la maquette :
 
@@ -150,9 +185,10 @@ l'écran par un autre canal (export direct, capture annotée).
 
 Le handoff ne fournit que des maquettes desktop (1920 × 1080). En dessous de
 1280 px, le visuel de gauche est masqué et le panneau passe en flux normal,
-limité à 560 px. Sous 600 px, les titres basculent sur les tokens
-`--mobile-titre-*`. **Ces règles sont une proposition d'intégration, pas une
-reprise de maquette** : à valider par le design.
+limité à 560 px. Les titres suivent la variante `heading-1` du portail, qui
+bascule d'elle-même de 40/48 à 32/40 — exactement les deux paliers de la
+maquette. **Ces règles sont une proposition d'intégration, pas une reprise de
+maquette** : à valider par le design.
 
 ## Polices
 
@@ -170,13 +206,89 @@ Handoff `MDM Business Profilers.dc.html`.
 
 | Écran de la maquette | Identifiant | Route |
 |---|---|---|
-| Mon espace de travail | `accueil` | `/espace-de-travail` |
+| **Tableau de bord** (accueil) | `accueil` | `/` |
+| Mon espace de travail | `travail` | `/espace-de-travail` |
 | Liste des fiches | `liste` | `/referentiel?etat=nominal` |
 | Liste des fiches · Lieux | `liste` | `/referentiel/lieux` |
 | Éditeur de fiche Lieu | `fiche` | `/referentiel/lieux/fiche?section=0..15` |
 | Création d'une fiche | `creation` | `/referentiel/fiche/nouvelle?etat=vierge` |
 
 ---
+
+## « Tableau de bord » — écran d'accueil
+
+**`/`** · gabarit `mdm/tableau_de_bord.html.twig` ·
+`src/Pim/Maquette/TableauDeBordMaquette.php`.
+
+Maquette `Tableau de bord.dc.html`. C'est la page d'accueil de l'application :
+la racine la sert, et c'est le chemin qu'engendre
+`path('app_mdm_tableau_de_bord')`. `/tableau-de-bord` reste servi par une route
+d'alias, pour ne pas casser les liens déjà partagés.
+
+Le `HomeController` du squelette et son gabarit vide `pim/home.html.twig` ont
+été retirés : ils occupaient `/` et n'affichaient rien. Leur test
+(`HomeControllerTest`, qui vérifiait que la racine rendait un corps vide) est
+remplacé par `TableauDeBordControllerTest`.
+
+« Mon espace de travail » reste accessible sur sa route et garde son entrée de
+rail — rien n'a été supprimé de ce côté.
+
+### Quatre zones, un rail qui les suit
+
+| Zone | Contenu |
+|---|---|
+| 1 · À traiter | six files de travail |
+| 2 · Santé du référentiel | indicateurs, champs faibles, croisement pays × typologie |
+| 3 · Activité des équipes | activité par utilisateur, indicateurs, dernières publications |
+| 4 · Médias et stockage | volume et consommation |
+
+Le rail se met à jour au défilement — `assets/controllers/tableau_de_bord_controller.js`,
+comportement repris de la maquette, y compris sa règle de fin de liste : arrivé
+en bas, le repère suit la **dernière** zone au moins partiellement visible. Une
+règle « plus grande surface visible » exclurait structurellement une zone finale
+courte, et le clic qui amène jusqu'ici serait écrasé par le même gestionnaire.
+
+### Les cinq états
+
+Le sélecteur d'états de la maquette est l'habillage de son propre visualiseur :
+il n'est pas intégré. Les états passent par la query string.
+
+| État | URL |
+|---|---|
+| Vue nominale | `/` |
+| Zone 1 vide | `/?etat=vide` |
+| Volume d'alertes élevé | `?etat=fort` |
+| Chargement progressif | `?etat=chargement` |
+| Mode paramétrage | `?etat=param` |
+
+Deux bascules supplémentaires : `?periode=7 jours|30 jours|Trimestre|Année` et
+`?croisement=completude|publiees` pour le tableau croisé.
+
+### Rien n'est recopié : tout est dérivé
+
+Seules les constantes du handoff sont reprises. Sévérités, totaux, moyennes
+pondérées sont **recalculés** en PHP comme dans la maquette, pour qu'un chiffre
+de tête ne puisse pas contredire le tableau qu'il résume.
+
+- La **sévérité d'une file** est un ratio à son volume normal, jamais un absolu :
+  trois traitements en échec, c'est grave ; cent cinquante fiches en attente de
+  publication, c'est un mardi. Seuils : ×1,5 attention, ×3 critique. Un
+  traitement échoué est un état, pas un volume — toute occurrence est critique.
+- La **complétude globale** est pondérée par le nombre de fiches, pas une
+  moyenne de moyennes. L'indicateur, la barre, le badge du rail et le total du
+  tableau la lisent tous.
+
+Les chiffres ont été confrontés à ceux du handoff, rejoué en Node : complétude
+73 %, 15 906 fiches publiées (84 %), files 126 / 0 / 453 selon l'état, et les
+36 cellules du croisement. Tout concorde.
+
+### Observation à remonter au design
+
+En zone 3, la colonne de droite (indicateurs + dernières publications) est
+nettement plus haute que le tableau d'activité, et la rangée est en
+`align-items: stretch`. La carte de gauche s'étire donc et laisse ~300 px de
+vide sous son tableau. C'est le comportement exact de la maquette — reproduit
+tel quel — mais ça se voit.
 
 ## « Mon espace de travail »
 
@@ -192,24 +304,79 @@ Un rôle inconnu retombe silencieusement sur Supply.
 
 ```
 assets/
-  styles/
-    app-shell.css   barre supérieure, rail de navigation, pastilles, pilules
-    workspace.css   écran « Mon espace de travail »
-  images/brand/
-    bp-mark.png     rond de marque
+  styles/app.css                 thème du portail + Tailwind (feuille unique)
+  images/brand/bp-logo-couleur.png
+  controllers/                   liste, creation, edition_rapide, collaborateurs
+  controllers/provider-portal/   13 contrôleurs du portail (progress-bar, modal…)
 
 templates/mdm/
-  base.html.twig          coquille : header + rail + zone de contenu
-  _composants.html.twig   macros : icônes, pastille, entrée de rail, entrée de nav
-  espace_travail.html.twig
+  base.html.twig            coquille : header + rail + zone de contenu
+  _composants.html.twig     ce qu'il reste : icônes héritées, menu déroulant,
+                            barre de texte enrichi
+  espace_travail.html.twig  liste_fiches.html.twig  creation_fiche.html.twig
+  fiche_lieu.html.twig      _edition_rapide.html.twig
+  fiche/                    7 partiels de sections
 
-src/Pim/Controller/EspaceTravailController.php
-src/Pim/Maquette/EspaceTravailMaquette.php   contenu de démonstration
+templates/pim/               72 gabarits de composants importés — NE PAS MODIFIER
+src/Pim/Twig/Components/     88 classes de composants importées
+src/Pim/Enum/ProviderPortal/ 21 énumérations importées
+src/Pim/Maquette/            contenu de démonstration
 ```
+
+Le rail est une macro locale de `base.html.twig` (`_self.groupe`,
+`_self.entree`) — plus de dépendance à `_composants.html.twig` pour la coquille.
+
+La **barre supérieure**, elle, est intégralement celle du portail.
+
+**`FicheLieuDonnees.php` est généré. Ne pas l'éditer à la main.**
 
 `EspaceTravailMaquette` porte les données des trois rôles telles que définies
 dans la maquette. **C'est du contenu jetable** : il disparaîtra dès qu'un
 service métier alimentera l'écran.
+
+## La barre supérieure
+
+Montée sur les composants du portail, sans une ligne de retouche :
+
+| Composant | Rôle |
+|---|---|
+| `Logo` | lien vers l'accueil |
+| `Header:Menu` | la navigation, avec `NavLink`, `DropdownNavLink` et `Sticker` |
+| `Header:Profil` | photo et nom de l'utilisateur identifié |
+| `Header:LanguageSwitcher` | drapeau et bascule de langue |
+| `Header:Menu:BurgerMenu` | la même navigation sous 1536 px |
+
+`Header:Menu` de nodevo construit son menu dans son constructeur, en citant des
+routes qui n'existent pas ici. On ne l'a pas modifié : `items` et `user` sont
+des propriétés publiques, on leur passe simplement le contenu du back-office —
+`EnteteMaquette`, exposé aux gabarits par `EnteteExtension`.
+
+« Référentiel » est rendu en menu déroulant, comme « Fiches » dans le portail :
+ses six familles y sont, avec leurs glyphes.
+
+### Trois aménagements, tous hors des composants
+
+1. **Alias de routes** (`config/routes.yaml`). Les gabarits importés engendrent
+   des URL par nom : `Header:Profil` vers `provider_portal_account_personal_information`,
+   `Logo` vers `provider_portal_index`. Ces noms sont déclarés en alias vers les
+   écrans MDM correspondants, plutôt que retouchés dans les composants.
+2. **Avatar** déposé en `public/img/mock/avatar.png`, l'emplacement exact que
+   cite `UserDTO::mock()`. Le profil du menu mobile construit son propre DTO,
+   hors de portée d'un paramètre — servir le fichier là où il est attendu règle
+   les deux cas d'un coup.
+3. **Écran d'attente** (`/a-venir/{ecran}`). `NavLink` rend chaque feuille avec
+   `path(route)` : une entrée sans route lève une erreur. Les six écrans pas
+   encore intégrés pointent donc vers une page qui dit ce qu'il en est, au lieu
+   d'un lien mort ou d'un menu amputé. **À supprimer au fil des intégrations.**
+
+### Deux écarts assumés
+
+- **Le champ de recherche du handoff MDM a été retiré.** L'en-tête du portail
+  n'en a pas, et huit entrées plus la recherche débordent : les libellés se
+  cassaient sur trois lignes. Le bloc est prêt à revenir.
+- Les libellés du portail ne sont pas insécables ; à huit entrées ils se
+  coupent. `[&_a]:whitespace-nowrap` est posé sur l'appel de `Header:Menu`,
+  depuis l'extérieur.
 
 ## Branchement des liens
 
@@ -227,7 +394,9 @@ L'apparence au repos est identique dans les deux cas — seuls le curseur et le
 retour au survol changent — pour ne pas s'écarter de la maquette.
 
 **Brancher un écran fraîchement intégré = ajouter `href: path('sa_route')` à
-son appel de macro.** Rien d'autre à toucher.
+son entrée** — dans le tableau `_self.groupe(...)` de `mdm/base.html.twig` pour
+le rail, ou en troisième argument de `_self.lien(...)` dans
+`espace_travail.html.twig`. Rien d'autre à toucher.
 
 État actuel du chrome :
 
@@ -259,7 +428,7 @@ Identifiants d'écran reconnus par le rail : `accueil`, `general`, `liste`,
 
 | # | Constat dans la maquette | Décision d'intégration |
 |---|---|---|
-| 1 | L'en-tête affiche un logo de 200 × 40 (`assets/bp-logo.png`) que le plafond de lecture de 256 Ko rend inaccessible. | Lockup composé du « mark » rond (récupéré, 91 Ko) et du nom en texte. Pour revenir au logo d'origine : masquer `.mdm-logo__wordmark` et remplacer l'image de `.mdm-logo__mark`. |
+| 1 | L'en-tête affiche un logo de 200 × 40 que le plafond de lecture de 256 Ko rendait inaccessible. | Résolu : le logo couleur fourni est en place, servi par le composant `<twig:Logo>` du portail (`assets/images/brand/bp-logo-couleur.png`). |
 | 2 | Le champ de recherche est un libellé statique. | Rendu en `<input type="search">` avec libellé accessible. |
 | 3 | Le tableau des priorités est une pile de `div`. | Rendu en `<table>` : c'est un tableau de données, son en-tête doit être annoncé par un lecteur d'écran. Largeurs de colonnes inchangées. |
 | 4 | Le sélecteur de rôle est un bouton d'état local. | Rendu en liens, l'écran étant produit côté serveur pour chaque rôle. |
@@ -510,12 +679,9 @@ Les 19 champs de type `sel` de l'éditeur de fiche portent désormais le menu
 déroulant du design system. Molécules reprises de `ds/components-part2.js` et
 `ds/components-part3.js` :
 
-| Molécule | Implémentation |
-|---|---|
-| `MenuDropdown` type `list checkboxes` | `.bp-menu` — 210 px |
-| `MenuDropdown` type `poi` | `.bp-menu--poi` — 432 px |
-| `MenuListItem` (select oui/non) | `.bp-menu-item` |
-| `Checkboxes` (type × state) | `.bp-checkbox`, 4 états |
+La macro `menu_deroulant` de `mdm/_composants.html.twig` les rend en Tailwind :
+enveloppe ancrée sous le champ, liste défilante, cases cochées pilotées par
+`aria-selected` via la variante `group-aria-selected/option`.
 
 La barre de défilement du composant — piste blanche, curseur turquoise de
 8 px — fait partie de la molécule et est reproduite.
@@ -556,3 +722,159 @@ au profit du rail de la molécule. « Région » et ses 13 entrées le démontre
 | 3 | Les libellés sont en `nowrap` : « Aéroport Inter. Amiens Henry Potez - Albert Méaulte (40 km) » était coupé net. | **Le libellé s'enroule**, l'entrée grandit. La case reste alignée sur la première ligne. |
 
 Les points 2 et 3 ont été arbitrés avec le demandeur.
+
+---
+
+# Vérification
+
+Tous les écrans sont mesurés dans un navigateur réel (Selenium, 1920 × 1080)
+après chaque campagne de modification. Dernier passage :
+
+| Contrôle | Résultat |
+|---|---|
+| Écrans et états rendus sans exception | 19 / 19 |
+| Classes CSS maison restantes dans le DOM | **0** |
+| Erreurs console | aucune |
+| PHPStan niveau 8 | aucune erreur |
+| `lint:twig` | 95 gabarits valides |
+| `phpunit` | 5 tests, 15 assertions |
+
+Les états qui ne s'atteignent qu'à l'usage sont exercés par script plutôt que
+constatés à l'œil :
+
+- **Édition rapide** — les quatre états (adresse, erreur, enregistrement,
+  panneau des sites) plus le recomptage : cocher deux sites passe le compteur à
+  « 9 sur 31 », reconstruit les cinq puces de résumé, et le filtre « Retenus »
+  ne laisse que 9 lignes sur 31.
+- **Création du mot de passe** — la jauge suit la frappe (20 → 40 → 80 → 100 %)
+  et les cinq règles passent au vert dans l'ordre attendu.
+- **Matrice de capacités** — 16 colonnes, 5 salles, et **20 vraies cases à
+  cocher** en mode édition.
+- **Tableau de bord** — les cinq états rendent ; le rail suit le défilement
+  (clic sur la zone 3 → `scrollTop 732`, repère sur la 3ᵉ entrée ; défilement en
+  bas → repère sur la 4ᵉ) ; les chiffres dérivés concordent avec le handoff.
+- **Texte enrichi** — TinyMCE 8.8.2 monte sur les deux champs riches, la barre
+  rend les 10 boutons de la maquette **en français** (Annuler, Refaire, Gras,
+  Italique, les quatre alignements, Liste à puces, Émojis), l'habillage du
+  portail s'applique (cadre `rgb(51,160,190)`, rayon 16 px, en-tête
+  `rgb(228,247,252)` de 36 px). L'éditeur est bien en écriture — `mode design`,
+  `contentEditable true`, aucun bandeau — et une frappe au clavier se retrouve
+  dans le `<textarea>`.
+
+## Ce qui reste ouvert
+
+| Point | Détail |
+|---|---|
+| `S4.MailInvitation` | toujours au-delà du plafond de lecture de 256 Ko |
+| Photos des panneaux d'authentification | idem — dégradé de marque en attendant |
+| Photo de salle (`assets/salle.jpg`) | idem — emplacement teinté au bon gabarit |
+| Sites de diffusion (édition rapide) | seule liste restée en `<button role="checkbox">` : le filtrage et le verrouillage des sites obligatoires s'y appuient. Partout ailleurs — interrupteurs, cases de capacités, mots de passe — ce sont de vrais `<input>`. |
+
+## Éditeur de texte enrichi
+
+Les deux champs riches — « Paragraphe de description générale » (Description) et
+« Descriptif des salles de séminaires » (Réunion) — utilisent
+`<twig:Form:Wysiwyg>`, monté sur **TinyMCE 8.8.2**. La barre d'outils est
+exactement celle de la maquette : annuler, rétablir, gras, italique, les quatre
+alignements, la liste à puces, l'émoji. Elle est cette fois fonctionnelle, et la
+saisie se recopie dans le `<textarea>` : les devs récupèrent le HTML au POST.
+
+L'habillage vient de `assets/styles/tinymce/wysiwyg.css`, importé du portail —
+cadre `primary`, coins à 16 px, en-tête `primary-4` de 36 px.
+
+### Auto-hébergé, pas de clé d'API
+
+Le portail charge TinyMCE depuis `cdn.tiny.cloud` avec une clé
+(`%env(TINYMCE_API_KEY)%`). Ici il est **auto-hébergé** : pas de credential à
+porter d'un projet à l'autre, pas d'appel tiers — la même question RGPD que
+pour les polices Google se poserait sinon.
+
+```
+composer require tinymce/tinymce   # → vendor/, puis copie automatique
+composer run tinymce:deploy        # recopie vendor/ → public/tinymce/
+```
+
+Le déploiement est rejoué par `post-install-cmd` et `post-update-cmd`, donc un
+`composer install` sur un poste neuf suffit. `public/tinymce/` (12 Mo, 273
+fichiers) est **généré** : ne rien y déposer à la main.
+
+TinyMCE 8 auto-hébergé est sous GPL v2+ ; d'où `license_key: 'gpl'` dans les
+options, sans quoi l'éditeur affiche un bandeau d'avertissement.
+
+### Le contrôleur est celui du portail, à l'octet près
+
+`assets/controllers/provider-portal/wysiwyg_controller.js` est une copie
+conforme de `nodevo/assets/controllers/wysiwyg_controller.js` — `diff` ne
+renvoie rien. Il tire `getDefaultLocale()` de `@symfony/ux-translator`, d'où
+`composer require symfony/ux-translator:^2.36`, la même contrainte que chez eux.
+`getDefaultLocale()` lit `<html lang>`, posé dans `templates/base.html.twig`.
+
+Deux réglages que l'auto-hébergement impose sont donc portés **par le gabarit**,
+pas par le contrôleur.
+
+#### Déclaration de licence
+
+Depuis TinyMCE 7, une instance auto-hébergée sans clé **se met en lecture seule**
+et affiche un bandeau. Constaté : `mode readonly`, `contentEditable false`,
+« The editor is disabled because a TinyMCE license key has not been provided ».
+Le portail n'a pas le problème, il passe par le CDN avec sa clé d'API.
+
+`mdm/base.html.twig` déclare donc l'usage sous GPL juste après le script :
+
+```twig
+<script>tinymce.overrideDefaults({ license_key: 'gpl' });</script>
+```
+
+`overrideDefaults` s'applique à toutes les instances sans que l'appelant ait à
+le savoir — le contrôleur reste intact.
+
+#### Catalogue de langue
+
+Le paquet Composer n'embarque aucune traduction ; Tiny les distribue à part.
+Elles sont versionnées dans `resources/tinymce-langs/` et recopiées vers
+`public/tinymce/langs/` par le script de déploiement — sans quoi le prochain
+`composer install` les effacerait.
+
+⚠️ **Le contrôleur demande `language: 'fr-FR'` alors que TinyMCE nomme ses
+paquets `fr_FR`.** La requête `langs/fr-FR.js` partait en 404 et l'interface
+retombait en anglais — **c'est le cas sur le portail aussi**. Le dossier contient
+donc les deux fichiers : `fr_FR.js` (le catalogue officiel) et `fr-FR.js`, le
+même contenu réenregistré sous le code que réclame le contrôleur.
+
+`resources/tinymce-langs/fr-FR.js` est à supprimer le jour où le contrôleur
+demandera `fr_FR`. **C'est un correctif à remonter au portail.**
+
+### Hauteur
+
+`maxHeight` ne borne que la croissance automatique ; sans greffon `autoresize`
+il ne réduit rien, et TinyMCE garde ses 500 px par défaut. La boîte est ramenée
+à 200 px par `[&_.tox-tinymce]:h-[200px]!` sur l'enveloppe, dans
+`fiche_lieu.html.twig` — depuis l'extérieur, là encore sans toucher au composant.
+
+### Passer au CDN comme le portail
+
+Si vous préférez aligner l'infrastructure sur nodevo plutôt que sur ce projet :
+remplacer la balise `<script>` de `mdm/base.html.twig` par celle du portail,
+retirer l'appel à `overrideDefaults`, câbler `TINYMCE_API_KEY`, et supprimer
+`resources/tinymce-langs/` ainsi que le bloc « langues » du script de
+déploiement. Le contrôleur, lui, ne bouge pas.
+
+## Quatre défauts relevés dans le code importé
+
+À remonter à l'équipe du portail, ils ne concernent pas ce projet :
+
+1. Les gabarits de composants appellent des identifiants Stimulus
+   `provider-portal--*` alors que les contrôleurs du portail sont à plat.
+   Ici, ils ont été rangés dans `assets/controllers/provider-portal/`, ce qui
+   rétablit la correspondance — sans quoi barres de progression, modales et
+   menus ne se lient à rien.
+2. `Badge` n'affiche jamais `pictureText` : il ne s'en sert que comme texte
+   alternatif de l'image. Un badge sans image ni icône rend un rond vide.
+3. Le contrôleur `wysiwyg` demande `language: 'fr-FR'` là où TinyMCE nomme ses
+   catalogues `fr_FR`. La requête `langs/fr-FR.js` part en 404 et l'éditeur
+   retombe en anglais — sur le portail comme ici. Un caractère à changer.
+4. `Button::initIconColor()` et `initTextColor()` appellent
+   `TypographyTextColorEnum::tryFrom($valeur)` sans écarter `null`, ce que PHP
+   déprécie depuis 8.1. Chaque rendu de page en émet quelques-unes ; la suite de
+   tests en relève six. `null !== $valeur ? tryFrom($valeur) : null` suffit.
+   Rien n'a été touché ici : le code importé reste transplantable tel quel.

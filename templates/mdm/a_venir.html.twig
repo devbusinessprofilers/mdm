@@ -1,0 +1,31 @@
+{#
+    Écran d'attente : la destination existe, l'écran pas encore.
+
+    Rendu dans la coquille habituelle pour que la navigation reste cohérente —
+    l'entrée de menu se marque active, le rail est en place. À supprimer quand
+    le dernier écran du menu est intégré.
+#}
+{% extends 'mdm/base.html.twig' %}
+
+{% set ecran = ecran %}
+
+{% block title %}{{ titre }}{% endblock %}
+
+{% block contenu %}
+    <div class="flex flex-col flex-1 min-h-0 items-center justify-center gap-6 px-10 py-12">
+        <twig:Badge icon="layout" class="w-16" />
+
+        <div class="flex flex-col items-center gap-2 max-w-[520px]">
+            <twig:Typography variant="heading-2" element="h1" center
+                             class="sm:text-[1.625rem]! sm:leading-[2.125rem]! font-[700]!">{{ titre }}</twig:Typography>
+            <twig:Typography variant="body" element="p" textColor="neutral-500" center class="text-pretty">
+                Cet écran n'est pas encore intégré. Son entrée de menu est en place et
+                pointe déjà ici : le jour où le gabarit arrive, il n'y a qu'à remplacer
+                sa route dans <span class="font-[900]">EnteteMaquette</span>.
+            </twig:Typography>
+        </div>
+
+        <twig:Button asLink variant="outline" size="lg"
+                     href="{{ path('app_mdm_tableau_de_bord') }}">Revenir au tableau de bord</twig:Button>
+    </div>
+{% endblock %}

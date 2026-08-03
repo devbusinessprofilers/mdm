@@ -5,11 +5,30 @@
     marquer l'entrée active du rail et de la navigation.
 #}
 {% extends 'base.html.twig' %}
-{% import 'mdm/_composants.html.twig' as ui %}
 
 {% set ecran = ecran|default('') %}
 
-{% block body_class %}mdm-body{% endblock %}
+{# Menu et profil de la barre supérieure, exposés par `EnteteExtension`. #}
+{% set entete_menu = entete_menu() %}
+{% set entete_utilisateur = entete_utilisateur() %}
+
+{#
+    Le rail ne défile pas : la maquette le déclare en `overflow: hidden`.
+    Seule la zone de contenu défile.
+
+    Conséquence à traiter : la maquette tient dans son cadre de 1080 px, mais un
+    navigateur réel n'offre qu'environ 930 px de viewport sur un écran 1080p —
+    les dernières entrées seraient coupées. Le rythme vertical est donc indexé
+    sur la hauteur disponible : valeurs exactes de la maquette à 1080 px,
+    compression linéaire jusqu'à 750 px. Tailles de texte et d'icônes
+    inchangées, seuls les espacements se resserrent.
+#}
+{% set rail_pad_y = 'py-[clamp(6px,calc(6px+(100vh-640px)*0.05),28px)]' %}
+{% set rail_group_gap = 'gap-[clamp(6px,calc(6px+(100vh-640px)*0.0455),26px)]' %}
+{% set rail_title_gap = 'gap-[clamp(2px,calc(2px+(100vh-640px)*0.0136),8px)]' %}
+{% set rail_item_pad_y = 'py-[clamp(2px,calc(2px+(100vh-640px)*0.0227),12px)]' %}
+
+{% block body_class %}antialiased{% endblock %}
 
 {% block stylesheets %}
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -18,123 +37,189 @@
           href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&family=Ubuntu+Sans:wght@400;500;700;800&display=swap">
 {% endblock %}
 
+{#
+    TinyMCE, moteur du composant `Form:Wysiwyg` du portail.
+
+    Auto-hébergé depuis `public/tinymce/` — le portail le tire du CDN
+    `cdn.tiny.cloud` avec une clé d'API ; ici pas de credential à porter ni
+    d'appel tiers. Le dossier est redéployé par `composer run tinymce:deploy`.
+
+    Chargé avant l'importmap : ce n'est pas un module, et `tinymce` doit exister
+    quand Stimulus connecte le contrôleur. Le chemin passe par `basePath` et non
+    par `asset()` — le dossier est servi tel quel, il n'est pas dans l'asset map.
+    TinyMCE déduit lui-même l'emplacement de ses skins et greffons de ce `src`.
+#}
+{% block javascripts %}
+    <script src="{{ app.request.basePath }}/tinymce/tinymce.min.js" referrerpolicy="origin"></script>
+    {#
+        Déclaration de licence, posée ici et non dans le contrôleur `wysiwyg` :
+        celui-ci est repris du portail à l'octet près et ne doit pas diverger.
+
+        Depuis TinyMCE 7, une instance auto-hébergée sans clé se met en lecture
+        seule et affiche un bandeau d'avertissement. Le portail n'a pas le
+        problème : il passe par le CDN avec une clé d'API. `gpl` déclare l'usage
+        sous GNU GPL v2+, l'une des deux licences du paquet auto-hébergé.
+
+        `overrideDefaults` s'applique à toutes les instances sans que l'appelant
+        ait à le savoir.
+    #}
+    <script>tinymce.overrideDefaults({ license_key: 'gpl' });</script>
+    {{ parent() }}
+{% endblock %}
+
 {% block body %}
-    <div class="mdm-app">
+    {#
+        `relative` n'est pas décoratif : sans lui, tout descendant en position
+        absolue dont les parents sont statiques prend le bloc conteneur initial
+        pour référence, échappe à `overflow: hidden` et allonge le document.
+        C'est ce qui arrivait aux libellés `sr-only` des cellules de tableau :
+        40 libellés de 1 px posés jusqu'à 2 143 px donnaient une page trois fois
+        trop haute, vide sous les écrans de liste.
+    #}
+    <div class="relative flex flex-col h-screen overflow-hidden
+                bg-[linear-gradient(180deg,var(--color-primary-5)_0%,var(--color-neutral-100)_100%)]">
 
-        <header class="mdm-header">
-            <div class="mdm-header__start">
-                {#
-                    Le lockup fourni est monochrome blanc : il est peint en
-                    marine par masque CSS, la couleur du nom qu'il remplace.
-                #}
-                <a class="mdm-logo" href="{{ path('app_mdm_espace_travail') }}">
-                    <span class="mdm-logo__lockup" role="img" aria-label="Business Profilers"></span>
-                    <span class="mdm-logo__filet" aria-hidden="true"></span>
-                    <span class="mdm-logo__product">Référentiel</span>
-                </a>
+        {#
+            En-tête du portail, monté sur ses composants : `Logo`,
+            `Header:Menu`, `Header:Profil`, `Header:LanguageSwitcher` et
+            `Header:Menu:BurgerMenu`. Mêmes classes, même structure que
+            `pim/layout/_header.html.twig`.
 
-                <nav class="mdm-nav" aria-label="Navigation principale">
-                    {{ ui.nav_item('Accueil', ecran == 'accueil', path('app_mdm_espace_travail')) }}
-                    {{ ui.nav_item('Référentiel', ecran in ['general', 'liste', 'fiche', 'salles'], path('app_mdm_referentiel_general')) }}
-                    {{ ui.nav_item('Qualité', ecran == 'qualite') }}
-                    {{ ui.nav_item('Médias', ecran == 'medias') }}
-                    {{ ui.nav_item('Imports & exports', ecran == 'imports') }}
-                    {{ ui.nav_item('Synchronisation', ecran == 'sync') }}
-                    {{ ui.nav_item('Administration', ecran in ['admin', 'composants']) }}
-                </nav>
+            Rien n'est retouché côté composants : leur `Menu` cite les routes de
+            nodevo, on leur passe simplement le menu et l'utilisateur du
+            back-office par `items` et `user` — voir `EnteteMaquette`.
+
+            ÉCART : le champ de recherche du handoff MDM a été retiré. L'en-tête
+            du portail n'en a pas, et les huit entrées du menu MDM plus la
+            recherche débordent : les libellés se cassaient sur trois lignes.
+            Le bloc est prêt à revenir si le besoin se confirme.
+        #}
+        <header class="shrink-0 flex gap-2 xs:gap-8 items-center justify-between px-6 py-4 sm:px-8
+                       bg-neutral-100 shadow-(--shadow) z-2 max-h-(--navbar-height)">
+            <div class="flex items-center gap-8 min-w-0">
+                <twig:Logo class="w-[186px] shrink-0" />
+                <twig:Header:Menu items="{{ entete_menu }}"
+                                  class="hidden 2xl:block [&_a]:whitespace-nowrap [&_ul]:gap-6" />
             </div>
 
-            <div class="mdm-header__end">
-                <div class="mdm-search">
-                    <svg class="mdm-search__icon" width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                        <circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.6"></circle>
-                        <path d="M10.8 10.8L14 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
-                    </svg>
-                    {# ÉCART : la maquette affiche un libellé statique, rendu ici en champ réel. #}
-                    <input class="mdm-search__input" type="search" aria-label="Rechercher"
-                           placeholder="Rechercher une fiche, un SIRET…">
-                </div>
-
-                <div class="mdm-user">
-                    <span class="mdm-user__avatar" aria-hidden="true">CP</span>
-                    <span class="mdm-user__identity">
-                        <span class="mdm-user__name">Clémence Philips</span>
-                        <span class="mdm-user__role">Équipe Supply</span>
-                    </span>
-                </div>
+            <div class="hidden 2xl:flex items-center gap-8 shrink-0">
+                <twig:Header:Profil user="{{ entete_utilisateur }}"
+                                    currentRoute="{{ app.request.attributes.get('_route') }}"
+                                    route="app_mdm_espace_travail" />
+                <twig:Header:LanguageSwitcher />
             </div>
+
+            <twig:Header:Menu:BurgerMenu items="{{ entete_menu }}" class="2xl:hidden" />
         </header>
 
         {#
             Le rail et le contenu sont frères : un contrôleur Stimulus qui doit
             piloter les deux se pose ici.
         #}
-        <div class="mdm-main" {% block main_attributs %}{% endblock %}>
+        <div class="mdm-main flex flex-1 min-h-0" {% block main_attributs %}{% endblock %}>
             {#
                 L'éditeur de fiche remplace ce rail par les sections de la
                 fiche : il surcharge le bloc `rail`.
+
+                ÉCART : 328 px au lieu des 284 px de la maquette. À 284, cinq
+                intitulés de section de la fiche sont tronqués — « Localisation &
+                accessibilité » demande 171 px pour 138 disponibles. 328 px
+                laisse 182 px au libellé, soit 11 px de marge sur le plus large.
             #}
             {% block rail %}
-            <nav class="mdm-rail" aria-label="Sections du référentiel">
-                <div class="mdm-rail__group">
-                    <span class="mdm-rail__title">Référentiel</span>
-                    <div class="mdm-rail__items">
-                        {{ ui.rail_item('Toutes les fiches', {
-                            icone: 'eye',
-                            compteur: '18 953',
-                            actif: ecran == 'general',
-                            href: path('app_mdm_referentiel_general')
-                        }) }}
-                        {{ ui.rail_item('Lieux', {
-                            icone: 'bed',
-                            compteur: '12 480',
-                            actif: ecran in ['liste', 'salles'],
-                            href: path('app_mdm_lieux')
-                        }) }}
-                        {{ ui.rail_item('Restaurants', { icone: 'fork', compteur: '3 210' }) }}
-                        {{ ui.rail_item('Activités', { icone: 'check', compteur: '1 884' }) }}
-                        {{ ui.rail_item('Services événementiels', { icone: 'info', compteur: '962' }) }}
-                        {{ ui.rail_item('Plateaux repas', { icone: 'fork', compteur: '417' }) }}
-                    </div>
-                </div>
+            <nav class="flex flex-col shrink-0 box-border w-[328px] pl-5 pr-3 overflow-hidden
+                        {{ rail_pad_y }} {{ rail_group_gap }}"
+                 aria-label="Sections du référentiel">
+                {{ _self.groupe('Référentiel', [
+                    { libelle: 'Toutes les fiches', icone: 'eye', compteur: '18 953',
+                      actif: ecran == 'general', href: path('app_mdm_referentiel_general') },
+                    { libelle: 'Lieux', icone: 'bed', compteur: '12 480',
+                      actif: ecran in ['liste', 'salles'], href: path('app_mdm_lieux') },
+                    { libelle: 'Restaurants', icone: 'utensils', compteur: '3 210' },
+                    { libelle: 'Activités', icone: 'check', compteur: '1 884' },
+                    { libelle: 'Services événementiels', icone: 'info-circle', compteur: '962' },
+                    { libelle: 'Plateaux repas', icone: 'utensils', compteur: '417' },
+                ], rail_title_gap, rail_item_pad_y) }}
 
-                <div class="mdm-rail__group">
-                    <span class="mdm-rail__title">Travail en cours</span>
-                    <div class="mdm-rail__items">
-                        {{ ui.rail_item('Mon espace de travail', {
-                            icone: 'check',
-                            actif: ecran == 'accueil',
-                            href: path('app_mdm_espace_travail')
-                        }) }}
-                        {{ ui.rail_item('Mes fiches assignées', { icone: 'user', compteur: '38' }) }}
-                        {{ ui.rail_item('En attente de validation', { icone: 'check', compteur: '14' }) }}
-                        {{ ui.rail_item('Contributions prestataires', { icone: 'user', compteur: '62' }) }}
-                    </div>
-                </div>
+                {{ _self.groupe('Travail en cours', [
+                    { libelle: 'Tableau de bord', icone: 'squares-four',
+                      actif: ecran == 'accueil', href: path('app_mdm_tableau_de_bord') },
+                    { libelle: 'Mon espace de travail', icone: 'check',
+                      actif: ecran == 'travail', href: path('app_mdm_espace_travail') },
+                    { libelle: 'Mes fiches assignées', icone: 'user', compteur: '38' },
+                    { libelle: 'En attente de validation', icone: 'check', compteur: '14' },
+                    { libelle: 'Contributions prestataires', icone: 'user', compteur: '62' },
+                ], rail_title_gap, rail_item_pad_y) }}
 
-                <div class="mdm-rail__group">
-                    <span class="mdm-rail__title">Contrôle</span>
-                    <div class="mdm-rail__items">
-                        {{ ui.rail_item('Tableau de bord qualité', { icone: 'eye', actif: ecran == 'qualite' }) }}
-                        {{ ui.rail_item('Anomalies', { icone: 'info', compteur: '318' }) }}
-                        {{ ui.rail_item('Synchronisations', { icone: 'check', actif: ecran == 'sync' }) }}
-                    </div>
-                </div>
+                {{ _self.groupe('Contrôle', [
+                    { libelle: 'Tableau de bord qualité', icone: 'eye', actif: ecran == 'qualite' },
+                    { libelle: 'Anomalies', icone: 'info-circle', compteur: '318' },
+                    { libelle: 'Synchronisations', icone: 'check', actif: ecran == 'sync' },
+                ], rail_title_gap, rail_item_pad_y) }}
 
-                <div class="mdm-rail__group">
-                    <span class="mdm-rail__title">Paramétrage</span>
-                    <div class="mdm-rail__items">
-                        {{ ui.rail_item('Champs & taxonomies', { icone: 'pencil', actif: ecran in ['admin', 'composants'] }) }}
-                        {{ ui.rail_item('Rôles & droits', { icone: 'lock' }) }}
-                    </div>
-                </div>
+                {{ _self.groupe('Paramétrage', [
+                    { libelle: 'Champs & taxonomies', icone: 'pencil', actif: ecran in ['admin', 'composants'] },
+                    { libelle: 'Rôles & droits', icone: 'lock' },
+                ], rail_title_gap, rail_item_pad_y) }}
             </nav>
             {% endblock %}
 
-            <div class="mdm-content">
+            <div class="flex flex-col flex-1 min-w-0 min-h-0">
                 {% block contenu %}{% endblock %}
             </div>
         </div>
 
     </div>
 {% endblock %}
+
+{#
+    Un groupe du rail. L'intitulé est posé en retrait à gauche des entrées : il
+    démarre avant leurs icônes, pas au-dessus d'elles.
+
+    Sur les écrans très bas (portables 1366 × 768 et moins) l'interligne des
+    intitulés se resserre encore, pour que les quinze entrées restent toutes
+    atteignables sans ascenseur.
+#}
+{% macro groupe(titre, entrees, ecart_titre, ecart_item) %}
+    <div class="flex flex-col {{ ecart_titre }}">
+        <twig:Typography variant="body" bold
+                         class="pl-2 pr-4 [@media(max-height:700px)]:leading-[1.125rem]!">{{ titre }}</twig:Typography>
+        <div class="flex flex-col">
+            {% for entree in entrees %}
+                {{ _self.entree(entree, ecart_item) }}
+            {% endfor %}
+        </div>
+    </div>
+{% endmacro %}
+
+{#
+    Convention de branchement : un écran intégré reçoit son `href` et rend un
+    lien normal. Un écran pas encore intégré n'en reçoit pas — on rend un
+    élément inerte plutôt qu'un `href="#"`, qui remonterait la page et
+    laisserait croire que la destination existe. L'apparence au repos est
+    identique dans les deux cas, seul le curseur change.
+#}
+{% macro entree(entree, ecart_item) %}
+    {% set actif = entree.actif|default(false) %}
+    {% set href = entree.href|default(null) %}
+    <{{ href ? 'a' : 'span' }}
+       class="group/entree flex items-center gap-2 box-border px-4 {{ ecart_item }}
+              rounded-xs overflow-hidden
+              {{ actif
+                 ? 'bg-linear-(--primary-gradient)'
+                 : (href ? 'cursor-pointer hover:bg-primary-4' : 'cursor-default') }}"
+       {% if href %}href="{{ href }}"{% else %}role="link" aria-disabled="true" title="Écran non encore intégré"{% endif %}
+       {{ actif ? 'aria-current="page"' : '' }}>
+        <twig:Icon name="{{ entree.icone|default('info-circle') }}" aria-hidden="true"
+                   class="shrink-0 self-center w-4 h-4 mx-1 {{ actif ? 'text-neutral-100' : 'text-primary' }}" />
+        <twig:Typography variant="body" bold ellipsis
+                         textColor="{{ actif ? 'neutral-100' : 'primary-3' }}"
+                         class="flex-1 min-w-0">{{ entree.libelle }}</twig:Typography>
+        {% if entree.compteur is defined %}
+            <twig:Typography variant="body-xs" bold
+                             textColor="{{ actif ? 'primary-3' : 'neutral-500' }}"
+                             class="shrink-0 px-[7px] py-0.5 rounded-lg
+                                    {{ actif ? 'bg-neutral-100' : 'bg-neutral-200' }}">{{ entree.compteur }}</twig:Typography>
+        {% endif %}
+    </{{ href ? 'a' : 'span' }}>
+{% endmacro %}

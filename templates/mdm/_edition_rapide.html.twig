@@ -5,71 +5,98 @@
     Une seule instance par page : le crayon transmet la ligne par paramètres
     Stimulus et le contrôleur `edition-rapide` remplit l'en-tête et l'adresse.
 
-    Quatre états, portés par des classes sur la racine :
-      qe--adresse         adresse en cours de frappe, panneau de suggestions
-      qe--erreur          nom vide, anneau pêche et alerte en pied
-      qe--enregistrement  corps estompé, jauge de progression
-      qe--sites-ouverts   panneau des sites de diffusion déployé
+    Quatre états, portés par des attributs `data-` sur la racine — le groupe
+    Tailwind `qe` les diffuse à tout l'arbre :
+      data-adresse="1"        adresse en cours de frappe, panneau de suggestions
+      data-erreur="1"         nom vide, anneau pêche et alerte en pied
+      data-enregistrement="1" corps estompé, jauge de progression
+      data-sites="1"          panneau des sites de diffusion déployé
 
     Variables : sites_groupes, sites_compte, sites_puces, sites_decompte,
     classifications, gammes, suggestions_adresse, requete_adresse,
     modifications_en_cours, lignes.
 #}
-{% import 'mdm/_composants.html.twig' as ui %}
+{% set puce = 'inline-flex items-center box-border gap-[5px] px-2 py-[3px] rounded-lg whitespace-nowrap' %}
 
-<div class="qe" data-edition-rapide-target="modale" hidden>
-    <div class="qe__voile" data-action="click->edition-rapide#tenterFermer"></div>
+<div class="group/qe fixed inset-0 z-40 grid place-items-center [&[hidden]]:hidden!"
+     data-edition-rapide-target="modale"
+     data-adresse="0" data-erreur="0" data-enregistrement="0" data-sites="0"
+     hidden>
+    <div class="absolute inset-0 bg-primary-3/35" data-action="click->edition-rapide#tenterFermer"></div>
 
-    <div class="qe__boite" role="dialog" aria-modal="true"
-         aria-label="Édition rapide de la fiche">
+    <div class="relative z-[1] flex flex-col box-border
+                w-[min(1240px,calc(100vw-64px))] h-[min(848px,calc(100vh-116px))]
+                rounded-[24px] bg-neutral-100 shadow-[0_32px_80px_rgba(3,74,94,0.32)]"
+         role="dialog" aria-modal="true" aria-label="Édition rapide de la fiche">
 
         {# ------------------------------------------------------- En-tête #}
-        <div class="qe__entete">
-            <div class="qe__identite">
-                <div class="qe__identite-ligne">
-                    <span class="qe__nom" data-edition-rapide-target="nom"></span>
-                    <span class="qe__badge qe__badge--gamme" data-edition-rapide-target="gamme"></span>
-                    <span class="qe__badge" data-edition-rapide-target="statut"></span>
-                    <span class="qe__reference" data-edition-rapide-target="reference"></span>
+        <div class="flex items-start shrink-0 gap-5 px-7 pt-5 pb-4 border-b border-neutral-200">
+            <div class="flex flex-col flex-1 min-w-0 gap-[7px]">
+                <div class="flex items-center gap-2.5 flex-wrap">
+                    <twig:Typography variant="subtitle" class="font-[700]!"
+                                     data-edition-rapide-target="nom" />
+                    <twig:Typography variant="body-xs" bold textColor="primary-3"
+                                     class="{{ puce }} bg-primary-4"
+                                     data-edition-rapide-target="gamme" />
+                    {# Teinte posée par le contrôleur, selon le statut de la ligne. #}
+                    <twig:Typography variant="body-xs" bold textColor="neutral-500"
+                                     class="{{ puce }} bg-neutral-200"
+                                     data-edition-rapide-target="statut" />
+                    <twig:Typography variant="body-xs" textColor="neutral-400"
+                                     data-edition-rapide-target="reference" />
                 </div>
-                <div class="qe__identite-ligne qe__identite-ligne--mesure">
-                    <span class="qe__libelle-mesure">Complétude</span>
-                    <span class="qe__jauge">
-                        <span class="qe__jauge-remplissage" data-edition-rapide-target="jauge"></span>
-                    </span>
-                    <span class="qe__taux" data-edition-rapide-target="taux"></span>
-                    <span class="qe__separateur" aria-hidden="true"></span>
-                    <span class="qe__position" data-edition-rapide-target="position"></span>
+
+                <div class="flex items-center gap-2.5 flex-nowrap">
+                    <twig:Typography variant="body-xs" textColor="neutral-500">Complétude</twig:Typography>
+                    {# `w-full` est dans la base du composant : il faut l'emporter. #}
+                    <twig:ProgressBar value="0" large class="w-[168px]! shrink-0"
+                                      data-edition-rapide-target="jauge" />
+                    <twig:Typography variant="body-xs" bold textColor="primary-3"
+                                     data-edition-rapide-target="taux" />
+                    <span class="shrink-0 w-px h-3.5 bg-neutral-200" aria-hidden="true"></span>
+                    <twig:Typography variant="body-xs" textColor="neutral-400"
+                                     data-edition-rapide-target="position" />
                 </div>
             </div>
 
-            <div class="qe__navigation">
-                <button class="qe__nav" type="button" title="Fiche précédente"
-                        data-action="edition-rapide#precedente">
-                    <span class="sr-only">Fiche précédente</span>{{ ui.icone('caretleft') }}
-                </button>
-                <button class="qe__nav" type="button" title="Fiche suivante"
-                        data-action="edition-rapide#suivante">
-                    <span class="sr-only">Fiche suivante</span>{{ ui.icone('caretright') }}
-                </button>
-                <span class="qe__separateur qe__separateur--nav" aria-hidden="true"></span>
-                <button class="qe__fermer" type="button" title="Fermer"
+            <div class="flex items-center shrink-0 gap-1.5">
+                {{ _self.nav('caret-left', 'Fiche précédente', 'precedente') }}
+                {{ _self.nav('caret-right', 'Fiche suivante', 'suivante') }}
+                <span class="shrink-0 w-px h-5 mx-[3px] bg-neutral-200" aria-hidden="true"></span>
+                <button type="button" title="Fermer"
+                        class="flex items-center justify-center shrink-0 box-border w-8 h-8
+                               rounded-lg bg-neutral-200 text-neutral-900 cursor-pointer"
                         data-action="edition-rapide#tenterFermer">
                     <span class="sr-only">Fermer</span>
-                    <span aria-hidden="true">×</span>
+                    <twig:Icon name="cross" class="w-4 h-4" />
                 </button>
             </div>
         </div>
 
         {# Jauge d'enregistrement : visible dans le seul état « enregistrement ». #}
-        <div class="qe__progression" aria-hidden="true"><span></span></div>
+        <div class="hidden group-data-[enregistrement=1]/qe:block shrink-0 overflow-hidden
+                    h-[3px] bg-neutral-200" aria-hidden="true">
+            <span class="block w-[62%] h-full bg-linear-(--primary-gradient)"></span>
+        </div>
 
-        {# ---------------------------------------------------------- Corps #}
-        <div class="qe__corps">
+        {#
+            ---------------------------------------------------------- Corps
 
-            <div class="qe__colonne">
+            Les deux panneaux flottants — suggestions d'adresse et sites de
+            diffusion — sont en absolu et seraient rognés par ce défilement.
+            La maquette réserve 150 px en pied, ce qui suffit dans son cadre de
+            1 080 px mais pas en dessous. Le pied est conservé et complété par
+            une réserve exacte sur le bloc porteur : décalage plus hauteur.
+        #}
+        <div class="grid grid-cols-1 min-[1100px]:grid-cols-2 items-start flex-1 min-h-0
+                    gap-x-10 gap-y-[22px] px-7 pt-5 pb-6 overflow-y-auto scrollbar
+                    group-data-[adresse=1]/qe:pb-[150px]
+                    group-data-[enregistrement=1]/qe:opacity-50
+                    group-data-[enregistrement=1]/qe:pointer-events-none">
 
-                <section class="qe__groupe">
+            <div class="flex flex-col min-w-0 gap-[22px]">
+
+                <section class="flex flex-col gap-3">
                     {{ _self.titre_groupe('Statut et référencement') }}
 
                     {{ _self.interrupteur('Actif', 'actif', true) }}
@@ -78,94 +105,113 @@
                         'Affiche la mention « recommandé par Business Profilers » sur les canaux de diffusion.'
                     ) }}
 
-                    <div class="qe__champ">
-                        <div class="qe__champ-tete">
-                            <span class="qe__label">Gamme</span>
-                            <button class="qe__lien" type="button"
+                    <div class="flex flex-col gap-1">
+                        <div class="flex items-baseline gap-2">
+                            <twig:Typography variant="body" class="flex-1">Gamme</twig:Typography>
+                            <button type="button"
                                     data-edition-rapide-target="verrou"
-                                    data-action="edition-rapide#basculerVerrou">Déverrouiller</button>
+                                    data-action="edition-rapide#basculerVerrou">
+                                <twig:Typography variant="body-xs" bold textColor="primary"
+                                                 class="shrink-0 underline underline-offset-2 cursor-pointer">Déverrouiller</twig:Typography>
+                            </button>
                         </div>
-                        <div class="qe__boite-champ qe__boite-champ--verrouillee"
-                             data-edition-rapide-target="boiteGamme">
-                            <span class="qe__cadenas" aria-hidden="true">{{ ui.icone('lock') }}</span>
-                            <span class="qe__valeur" data-edition-rapide-target="gammeChamp"></span>
-                            <span class="qe__caret" aria-hidden="true">{{ ui.icone('caret') }}</span>
+                        {# Le cadenas et le caret s'excluent : verrouillé ou non. #}
+                        <div class="group/gamme {{ _self.champ() }} data-[verrouille=1]:bg-neutral-200
+                                    data-[verrouille=1]:inset-ring-neutral-300 data-[verrouille=1]:cursor-default"
+                             data-verrouille="1" data-edition-rapide-target="boiteGamme">
+                            <twig:Icon name="lock" aria-hidden="true"
+                                       class="hidden group-data-[verrouille=1]/gamme:block shrink-0 w-[15px] h-[15px] text-neutral-500" />
+                            <twig:Typography variant="input" class="flex-1 min-w-0 truncate"
+                                             data-edition-rapide-target="gammeChamp" />
+                            <twig:Icon name="caret-down" aria-hidden="true"
+                                       class="block group-data-[verrouille=1]/gamme:hidden shrink-0 w-3.5 h-3.5 text-neutral-500" />
                         </div>
                     </div>
                 </section>
 
-                <section class="qe__groupe">
+                <section class="flex flex-col gap-3">
                     {{ _self.titre_groupe('Identité et localisation') }}
 
-                    <div class="qe__champ">
-                        <span class="qe__label">Nom {{ _self.etoile() }}</span>
-                        <div class="qe__boite-champ" data-edition-rapide-target="boiteNom">
-                            <span class="qe__valeur" data-edition-rapide-target="nomChamp"></span>
-                            <span class="qe__alerte-icone" aria-hidden="true">{{ ui.icone('warn') }}</span>
+                    <div class="flex flex-col gap-1">
+                        {{ _self.label('Nom', true) }}
+                        <div class="{{ _self.champ() }} group-data-[erreur=1]/qe:inset-ring-peach"
+                             data-edition-rapide-target="boiteNom">
+                            <twig:Typography variant="input"
+                                             class="flex-1 min-w-0 truncate group-data-[erreur=1]/qe:text-neutral-500!"
+                                             data-edition-rapide-target="nomChamp" />
+                            <twig:Icon name="warning" aria-hidden="true"
+                                       class="hidden group-data-[erreur=1]/qe:block shrink-0 w-4 h-4 text-peach" />
                         </div>
-                        <span class="qe__erreur">Le nom est obligatoire pour publier la fiche.</span>
+                        <twig:Typography variant="body-xs" bold textColor="error"
+                                         class="hidden group-data-[erreur=1]/qe:block text-peach!">Le nom est obligatoire pour publier la fiche.</twig:Typography>
                     </div>
 
-                    <div class="qe__champ qe__champ--adresse">
-                        <span class="qe__label">Adresse postale {{ _self.etoile() }}</span>
+                    <div class="relative flex flex-col gap-1 group-data-[adresse=1]/qe:min-h-[312px]">
+                        {{ _self.label('Adresse postale', true) }}
 
                         {# Saisie : champ de recherche et panneau de suggestions. #}
-                        <div class="qe__saisie">
-                            <div class="qe__boite-champ qe__boite-champ--saisie">
-                                <span class="qe__loupe" aria-hidden="true">{{ ui.icone('search') }}</span>
-                                <span class="qe__valeur">{{ requete_adresse }}</span>
-                                <span class="qe__curseur" aria-hidden="true"></span>
+                        <div class="hidden group-data-[adresse=1]/qe:block">
+                            <div class="{{ _self.champ() }} inset-ring-2!">
+                                <twig:Icon name="magnifying-glass" aria-hidden="true"
+                                           class="shrink-0 w-[15px] h-[15px] text-primary" />
+                                <twig:Typography variant="input" class="flex-1 min-w-0 truncate">{{ requete_adresse }}</twig:Typography>
+                                <span class="shrink-0 w-px h-[15px] bg-neutral-900" aria-hidden="true"></span>
                             </div>
-                            <div class="qe__suggestions">
+
+                            <div class="absolute left-0 right-0 top-[74px] z-[5] flex flex-col overflow-hidden
+                                        rounded-[12px] border border-neutral-200 bg-neutral-100
+                                        shadow-[0_16px_40px_rgba(3,74,94,0.22)]">
                                 {% for suggestion in suggestions_adresse %}
-                                    <div class="qe__suggestion {{ loop.first ? 'qe__suggestion--active' : '' }}">
-                                        <span class="qe__epingle" aria-hidden="true">{{ ui.icone('mappin') }}</span>
-                                        <span class="qe__suggestion-texte">
-                                            <span class="qe__suggestion-titre">{{ suggestion[0] }}</span>
-                                            <span class="qe__suggestion-detail">{{ suggestion[1] }}</span>
+                                    <div class="group/sugg flex items-center gap-[9px] px-3 py-2 cursor-pointer
+                                                border-b border-neutral-200 last-of-type:border-b-0
+                                                {{ loop.first ? 'bg-primary-4' : '' }}">
+                                        <twig:Icon name="pin" aria-hidden="true"
+                                                   class="shrink-0 w-[15px] h-[15px] {{ loop.first ? 'text-primary' : 'text-neutral-500' }}" />
+                                        <span class="flex flex-col min-w-0">
+                                            <twig:Typography variant="input" bold class="truncate">{{ suggestion[0] }}</twig:Typography>
+                                            <twig:Typography variant="body-xs" textColor="neutral-500" class="truncate">{{ suggestion[1] }}</twig:Typography>
                                         </span>
                                     </div>
                                 {% endfor %}
-                                <div class="qe__suggestions-pied">
-                                    <span>↑↓ parcourir · ⏎ retenir · Échap fermer</span>
+                                <div class="flex items-center gap-2 px-3 py-2 border-t border-neutral-200">
+                                    <twig:Typography variant="body-xs" textColor="neutral-400">↑↓ parcourir · ⏎ retenir · Échap fermer</twig:Typography>
                                 </div>
                             </div>
                         </div>
 
                         {# Résolu : l'adresse en cinq lignes, plus « Corriger ». #}
-                        <div class="qe__adresse">
-                            <span class="qe__epingle qe__epingle--carte" aria-hidden="true">{{ ui.icone('mappin') }}</span>
-                            <div class="qe__adresse-grille">
-                                <span class="qe__adresse-cle">Rue</span>
-                                <span class="qe__adresse-valeur" data-edition-rapide-target="rue"></span>
-                                <span class="qe__adresse-cle">Code postal</span>
-                                <span class="qe__adresse-valeur" data-edition-rapide-target="cp"></span>
-                                <span class="qe__adresse-cle">Ville</span>
-                                <span class="qe__adresse-valeur" data-edition-rapide-target="ville"></span>
-                                <span class="qe__adresse-cle">Pays</span>
-                                <span class="qe__adresse-valeur">France</span>
-                                <span class="qe__adresse-cle">GPS</span>
-                                <span class="qe__adresse-valeur" data-edition-rapide-target="gps"></span>
+                        <div class="flex items-start box-border gap-2.5 min-h-10 px-3 py-2.5 rounded-xs
+                                    bg-primary-5 inset-ring-1 inset-ring-primary
+                                    group-data-[adresse=1]/qe:hidden">
+                            <twig:Icon name="pin" aria-hidden="true" class="shrink-0 w-4 h-4 text-primary" />
+                            <div class="grid grid-cols-[68px_1fr] flex-1 min-w-0 gap-y-0.5 gap-x-2.5">
+                                {{ _self.adresse('Rue', 'rue') }}
+                                {{ _self.adresse('Code postal', 'cp') }}
+                                {{ _self.adresse('Ville', 'ville') }}
+                                {{ _self.adresse('Pays', null, 'France') }}
+                                {{ _self.adresse('GPS', 'gps') }}
                             </div>
-                            <button class="qe__lien" type="button"
-                                    data-action="edition-rapide#corrigerAdresse">Corriger</button>
+                            <button type="button" data-action="edition-rapide#corrigerAdresse">
+                                <twig:Typography variant="body-xs" bold textColor="primary"
+                                                 class="shrink-0 underline underline-offset-2 cursor-pointer">Corriger</twig:Typography>
+                            </button>
                         </div>
                     </div>
 
-                    <div class="qe__champ">
-                        <span class="qe__label">Pays {{ _self.etoile() }}</span>
-                        <div class="qe__boite-champ">
-                            <span class="qe__valeur">France</span>
-                            <span class="qe__mention">via adresse</span>
-                            <span class="qe__caret" aria-hidden="true">{{ ui.icone('caret') }}</span>
+                    <div class="flex flex-col gap-1">
+                        {{ _self.label('Pays', true) }}
+                        <div class="{{ _self.champ() }}">
+                            <twig:Typography variant="input" class="flex-1 min-w-0 truncate">France</twig:Typography>
+                            <twig:Typography variant="body-xs" textColor="neutral-400" class="shrink-0">via adresse</twig:Typography>
+                            <twig:Icon name="caret-down" aria-hidden="true" class="shrink-0 w-3.5 h-3.5 text-neutral-500" />
                         </div>
                     </div>
                 </section>
             </div>
 
-            <div class="qe__colonne">
+            <div class="flex flex-col min-w-0 gap-[22px]">
 
-                <section class="qe__groupe">
+                <section class="flex flex-col gap-3">
                     {{ _self.titre_groupe('Classification', true) }}
 
                     {#
@@ -174,24 +220,28 @@
                         gamme » reste vraie si les noms changent.
                     #}
                     {% for cle, champs in classifications %}
-                        <div class="qe__classification" data-gamme="{{ cle }}"
+                        <div class="flex flex-col gap-3 [&[hidden]]:hidden!" data-gamme="{{ cle }}"
+                             data-edition-rapide-target="classification"
                              {{ 'lieu' == cle ? '' : 'hidden' }}>
                             {% for champ in champs %}
-                                <div class="qe__champ">
-                                    <div class="qe__champ-tete">
-                                        <span class="qe__label">{{ champ.label }}</span>
-                                        <span class="qe__compte">{{ champ.compte }}</span>
+                                <div class="flex flex-col gap-1">
+                                    <div class="flex items-baseline gap-2">
+                                        <twig:Typography variant="body" class="flex-1">{{ champ.label }}</twig:Typography>
+                                        <twig:Typography variant="body-xs" textColor="neutral-400"
+                                                         class="shrink-0 whitespace-nowrap">{{ champ.compte }}</twig:Typography>
                                     </div>
-                                    <div class="qe__boite-champ qe__boite-champ--puces">
+                                    <div class="flex flex-wrap items-center box-border gap-[5px] min-h-10
+                                                px-2.5 py-[7px] rounded-xs bg-primary-5
+                                                inset-ring-1 inset-ring-primary cursor-text">
                                         {% for valeur in champ.valeurs %}
-                                            <span class="qe__puce">
-                                                <span>{{ valeur }}</span>
-                                                <span class="qe__puce-retrait" role="button"
-                                                      aria-label="Retirer {{ valeur }}">×</span>
+                                            <span class="{{ puce }} bg-primary-4">
+                                                <twig:Typography variant="body-xs" bold textColor="primary-3">{{ valeur }}</twig:Typography>
+                                                <span role="button" aria-label="Retirer {{ valeur }}"
+                                                      class="text-[0.8125rem] leading-[0.8125rem] text-primary cursor-pointer">×</span>
                                             </span>
                                         {% endfor %}
-                                        <span class="qe__espace"></span>
-                                        <span class="qe__caret" aria-hidden="true">{{ ui.icone('caret') }}</span>
+                                        <span class="flex-1 min-w-6"></span>
+                                        <twig:Icon name="caret-down" aria-hidden="true" class="shrink-0 w-3.5 h-3.5 text-neutral-500" />
                                     </div>
                                 </div>
                             {% endfor %}
@@ -199,71 +249,101 @@
                     {% endfor %}
                 </section>
 
-                <section class="qe__groupe qe__groupe--sites">
+                <section class="relative flex flex-col gap-3 group-data-[sites=1]/qe:min-h-[464px]">
                     {{ _self.titre_groupe('Visibilité') }}
 
-                    <div class="qe__champ qe__champ--sites">
-                        <div class="qe__champ-tete">
-                            <span class="qe__label">Sites de diffusion</span>
-                            <span class="qe__compte qe__compte--fort"
-                                  data-edition-rapide-target="sitesCompte">{{ sites_compte }}</span>
+                    <div class="flex flex-col gap-1.5">
+                        <div class="flex items-baseline gap-2">
+                            <twig:Typography variant="body" class="flex-1">Sites de diffusion</twig:Typography>
+                            <twig:Typography variant="body-xs" bold textColor="primary-3"
+                                             class="shrink-0 whitespace-nowrap"
+                                             data-edition-rapide-target="sitesCompte">{{ sites_compte }}</twig:Typography>
                         </div>
 
-                        <div class="qe__boite-champ qe__boite-champ--resume">
-                            <div class="qe__puces-sites" data-edition-rapide-target="sitesPuces">
-                                {% for puce in sites_puces %}
-                                    <span class="qe__puce {{ puce.reste ? 'qe__puce--reste' : '' }}">{{ puce.libelle }}</span>
+                        <div class="flex items-center box-border gap-2.5 h-10 py-[7px] pl-2.5 pr-2
+                                    rounded-xs bg-primary-5 inset-ring-1 inset-ring-primary">
+                            <div class="flex flex-wrap flex-1 min-w-0 gap-[5px]"
+                                 data-edition-rapide-target="sitesPuces">
+                                {% for p in sites_puces %}
+                                    <span class="{{ puce }} {{ p.reste ? 'bg-neutral-200' : 'bg-primary-4' }}">
+                                        <twig:Typography variant="body-xs" bold
+                                                         textColor="{{ p.reste ? 'neutral-500' : 'primary-3' }}">{{ p.libelle }}</twig:Typography>
+                                    </span>
                                 {% endfor %}
                             </div>
-                            <button class="qe__gerer" type="button"
+                            <button type="button"
+                                    class="shrink-0 box-border h-[26px] px-3 rounded-lg bg-neutral-100
+                                           shadow-[0_1px_3px_rgba(0,0,0,0.12)] cursor-pointer"
                                     data-edition-rapide-target="gerer"
-                                    data-action="edition-rapide#basculerSites">Gérer</button>
+                                    data-action="edition-rapide#basculerSites">
+                                <twig:Typography variant="body-xs" bold textColor="primary-3">Gérer</twig:Typography>
+                            </button>
                         </div>
 
-                        <div class="qe__decompte" data-edition-rapide-target="sitesDecompte">
+                        <div class="flex flex-wrap gap-x-3.5 gap-y-1" data-edition-rapide-target="sitesDecompte">
                             {% for ligne in sites_decompte %}
-                                <span>{{ ligne }}</span>
+                                <twig:Typography variant="body-xs" textColor="neutral-400">{{ ligne }}</twig:Typography>
                             {% endfor %}
                         </div>
                     </div>
 
                     {# ------------------------------- Panneau des sites #}
-                    <div class="qe__panneau">
-                        <div class="qe__panneau-tete">
-                            <div class="qe__boite-champ qe__boite-champ--recherche">
-                                <span class="qe__loupe" aria-hidden="true">{{ ui.icone('search') }}</span>
-                                <span class="qe__valeur qe__valeur--indicative">Rechercher un site</span>
+                    <div class="absolute left-0 right-0 top-[116px] z-[6] hidden group-data-[sites=1]/qe:flex
+                                flex-col overflow-hidden h-[348px] rounded-[12px]
+                                border border-neutral-200 bg-neutral-100
+                                shadow-[0_16px_40px_rgba(3,74,94,0.22)]">
+                        <div class="flex flex-col shrink-0 gap-2 px-3 py-2.5 border-b border-neutral-200">
+                            <div class="flex items-center box-border gap-2 min-h-[34px] px-2.5 py-1.5
+                                        rounded-xs bg-primary-5 inset-ring-1 inset-ring-primary cursor-text">
+                                <twig:Icon name="magnifying-glass" aria-hidden="true"
+                                           class="shrink-0 w-3.5 h-3.5 text-neutral-500" />
+                                <twig:Typography variant="input" textColor="neutral-500"
+                                                 class="flex-1 min-w-0 truncate">Rechercher un site</twig:Typography>
                             </div>
-                            <div class="qe__filtres">
-                                <button class="qe__filtre qe__filtre--actif" type="button"
-                                        aria-pressed="true"
-                                        data-action="edition-rapide#filtrer"
-                                        data-edition-rapide-filtre-param="tous">Tous</button>
-                                <button class="qe__filtre" type="button"
-                                        aria-pressed="false"
-                                        data-action="edition-rapide#filtrer"
-                                        data-edition-rapide-filtre-param="retenus">Retenus</button>
+                            <div class="flex items-center gap-2">
+                                {{ _self.filtre('Tous', 'tous', true) }}
+                                {{ _self.filtre('Retenus', 'retenus', false) }}
                             </div>
                         </div>
 
-                        <div class="qe__panneau-liste">
+                        <div class="flex-1 min-h-0 py-1.5 overflow-y-auto scrollbar">
                             {% for groupe in sites_groupes %}
-                                <div class="qe__groupe-sites">
-                                    <div class="qe__groupe-tete">
-                                        <span class="qe__groupe-nom">{{ groupe.nom }}</span>
-                                        <span class="qe__groupe-compte"
-                                              data-edition-rapide-target="compteGroupe">{{ groupe.compte }}</span>
+                                <div class="flex flex-col" data-edition-rapide-target="groupeSite">
+                                    <div class="flex items-center gap-2 px-3 pt-[7px] pb-[5px] bg-primary-5">
+                                        <twig:Typography variant="body-xs" bold textColor="neutral-500"
+                                                         class="flex-1 tracking-[0.6px] uppercase"
+                                                         data-edition-rapide-target="groupeNom">{{ groupe.nom }}</twig:Typography>
+                                        <twig:Typography variant="body-xs" bold textColor="primary-3"
+                                                         data-edition-rapide-target="compteGroupe">{{ groupe.compte }}</twig:Typography>
                                     </div>
                                     {% for site in groupe.sites %}
-                                        <button class="qe__site" type="button"
-                                                role="checkbox"
+                                        {#
+                                            Le site obligatoire reste coché : la maquette
+                                            l'estompe et ôte le curseur.
+                                        #}
+                                        <button type="button" role="checkbox"
                                                 aria-checked="{{ site.retenu ? 'true' : 'false' }}"
+                                                class="group/site flex items-center gap-[9px] w-full px-3 py-1.5
+                                                       text-left cursor-pointer [&[hidden]]:hidden!
+                                                       aria-checked:bg-primary-5 aria-disabled:cursor-default"
                                                 {{ site.verrouille ? 'data-verrouille="1" aria-disabled="true"' : '' }}
+                                                data-edition-rapide-target="site"
                                                 data-action="edition-rapide#basculerSite">
-                                            <span class="qe__case" aria-hidden="true">✓</span>
-                                            <span class="qe__site-nom">{{ site.libelle }}</span>
+                                            <span class="flex items-center justify-center shrink-0 box-border w-[18px] h-[18px]
+                                                         rounded-[4px] inset-ring-1 inset-ring-neutral-300
+                                                         group-aria-checked/site:bg-primary group-aria-checked/site:inset-ring-primary
+                                                         group-aria-disabled/site:opacity-55" aria-hidden="true">
+                                                <twig:Icon name="check" class="w-3 h-3 text-neutral-100 hidden group-aria-checked/site:block" />
+                                            </span>
+                                            <twig:Typography variant="input" class="flex-1 min-w-0 truncate group-aria-checked/site:font-[900]"
+                                                             data-edition-rapide-target="siteNom">{{ site.libelle }}</twig:Typography>
                                             {% if site.mention %}
-                                                <span class="qe__mention-site qe__mention-site--{{ 'payant' == site.mention ? 'payant' : 'requis' }}">{{ site.mention }}</span>
+                                                <span class="shrink-0 box-border px-1.5 py-0.5 rounded-lg
+                                                             {{ 'payant' == site.mention ? 'bg-old-gold-pastel' : 'bg-neutral-200' }}">
+                                                    <twig:Typography variant="body-xs" bold
+                                                                     textColor="{{ 'payant' == site.mention ? 'old-gold' : 'neutral-500' }}"
+                                                                     class="text-[0.5625rem]! leading-4! tracking-[0.4px] uppercase">{{ site.mention }}</twig:Typography>
+                                                </span>
                                             {% endif %}
                                         </button>
                                     {% endfor %}
@@ -271,10 +351,14 @@
                             {% endfor %}
                         </div>
 
-                        <div class="qe__panneau-pied">
-                            <span>Espace pour cocher · Échap fermer</span>
-                            <button class="qe__appliquer" type="button"
-                                    data-action="edition-rapide#basculerSites">Appliquer</button>
+                        <div class="flex items-center shrink-0 gap-2.5 px-3 py-[9px] border-t border-neutral-200">
+                            <twig:Typography variant="body-xs" textColor="neutral-400" class="flex-1">Espace pour cocher · Échap fermer</twig:Typography>
+                            <button type="button"
+                                    class="shrink-0 box-border h-7 px-3.5 rounded-lg
+                                           bg-linear-(--primary-gradient) cursor-pointer"
+                                    data-action="edition-rapide#basculerSites">
+                                <twig:Typography variant="body-xs" bold textColor="neutral-100">Appliquer</twig:Typography>
+                            </button>
                         </div>
                     </div>
                 </section>
@@ -282,86 +366,136 @@
         </div>
 
         {# ----------------------------------------------------------- Pied #}
-        <div class="qe__pied">
-            <div class="qe__pied-message">
-                <span class="qe__alerte">
-                    <span class="qe__alerte-icone" aria-hidden="true">{{ ui.icone('warn') }}</span>
-                    <span>1 champ obligatoire à corriger</span>
+        <div class="flex items-center shrink-0 gap-4 px-7 py-3.5 border-t border-neutral-200
+                    rounded-b-[24px] bg-primary-5">
+            <div class="flex items-center flex-1 min-w-0 gap-2.5">
+                <span class="hidden group-data-[erreur=1]/qe:flex items-center gap-2.5">
+                    <twig:Icon name="warning" aria-hidden="true" class="shrink-0 w-[15px] h-[15px] text-peach" />
+                    <twig:Typography variant="body-sm" bold class="text-peach!">1 champ obligatoire à corriger</twig:Typography>
                 </span>
-                <span class="qe__indice" data-edition-rapide-target="indice">⌘ ⏎ enregistrer · ⇧ ⌘ ⏎ enregistrer et suivante · Échap fermer</span>
+                <twig:Typography variant="body-xs" textColor="neutral-400"
+                                 class="group-data-[erreur=1]/qe:hidden"
+                                 data-edition-rapide-target="indice">⌘ ⏎ enregistrer · ⇧ ⌘ ⏎ enregistrer et suivante · Échap fermer</twig:Typography>
             </div>
 
-            <button class="qe__bouton qe__bouton--fantome" type="button"
-                    data-action="edition-rapide#tenterFermer">Annuler</button>
-            <button class="qe__bouton qe__bouton--contour" type="button"
-                    data-action="edition-rapide#enregistrer">Enregistrer</button>
-            <button class="qe__bouton qe__bouton--primaire" type="button"
-                    data-action="edition-rapide#enregistrer">
-                <span class="qe__rouet" aria-hidden="true">{{ ui.icone('spinner') }}</span>
-                <span data-edition-rapide-target="libelleEnregistrer">Enregistrer et suivante</span>
-                <span class="qe__fleche" aria-hidden="true">{{ ui.icone('arrowright') }}</span>
-            </button>
+            <twig:Button variant="text" size="md" textColor="neutral-500"
+                         data-action="edition-rapide#tenterFermer">Annuler</twig:Button>
+            <twig:Button variant="outline" size="md" textColor="primary-3"
+                         class="group-data-[enregistrement=1]/qe:opacity-50"
+                         data-action="edition-rapide#enregistrer">Enregistrer</twig:Button>
+            <twig:Button variant="primary" size="md"
+                         class="group-data-[enregistrement=1]/qe:opacity-75"
+                         data-action="edition-rapide#enregistrer">
+                <span class="inline-flex items-center gap-2 align-middle">
+                    <twig:Icon name="spinner" aria-hidden="true"
+                               class="hidden group-data-[enregistrement=1]/qe:inline-block w-[15px] h-[15px] animate-spin" />
+                    <span data-edition-rapide-target="libelleEnregistrer">Enregistrer et suivante</span>
+                    <twig:Icon name="arrow-right" aria-hidden="true"
+                               class="w-[15px] h-[15px] group-data-[enregistrement=1]/qe:hidden" />
+                </span>
+            </twig:Button>
         </div>
     </div>
 
     {# -------------------------------------- Confirmation de fermeture #}
-    <div class="qe__confirmation" data-edition-rapide-target="confirmation" hidden>
-        <div class="qe__confirmation-boite" role="dialog" aria-modal="true"
-             aria-label="Modifications non enregistrées">
-            <div class="qe__confirmation-tete">
-                <span class="qe__alerte-icone qe__alerte-icone--grande" aria-hidden="true">{{ ui.icone('warn') }}</span>
-                <div class="qe__confirmation-texte">
-                    <span class="qe__confirmation-titre">Modifications non enregistrées</span>
-                    <span class="qe__confirmation-corps" data-edition-rapide-target="confirmationCorps"></span>
+    <div class="absolute inset-0 z-[2] grid place-items-center bg-primary-3/30 [&[hidden]]:hidden!"
+         data-edition-rapide-target="confirmation" hidden>
+        <div class="flex flex-col box-border gap-3.5 w-[min(470px,calc(100vw-48px))] px-7 py-[26px]
+                    rounded-[20px] bg-neutral-100 shadow-[0_24px_64px_rgba(3,74,94,0.28)]"
+             role="dialog" aria-modal="true" aria-label="Modifications non enregistrées">
+            <div class="flex items-start gap-3">
+                <twig:Icon name="warning" aria-hidden="true" class="shrink-0 w-[22px] h-[22px] text-peach" />
+                <div class="flex flex-col flex-1 min-w-0 gap-[5px]">
+                    <twig:Typography variant="body-lg" class="font-[700]!">Modifications non enregistrées</twig:Typography>
+                    <twig:Typography variant="body" textColor="neutral-500" class="text-pretty"
+                                     data-edition-rapide-target="confirmationCorps" />
                 </div>
             </div>
 
-            <div class="qe__modifications">
+            <div class="flex flex-col gap-1 px-3 py-2.5 rounded-[12px] bg-primary-5">
                 {% for modification in modifications_en_cours %}
-                    <div class="qe__modification">
-                        <span class="qe__modification-point" aria-hidden="true"></span>
-                        <span class="qe__modification-champ">{{ modification[0] }}</span>
-                        <span class="qe__modification-detail">{{ modification[1] }}</span>
+                    <div class="flex items-baseline gap-2">
+                        <span class="shrink-0 w-1 h-1 rounded-lg bg-primary" aria-hidden="true"></span>
+                        <twig:Typography variant="body-sm" bold>{{ modification[0] }}</twig:Typography>
+                        <twig:Typography variant="body-sm" textColor="neutral-500" class="min-w-0 truncate">{{ modification[1] }}</twig:Typography>
                     </div>
                 {% endfor %}
             </div>
 
-            <div class="qe__confirmation-actions">
-                <span class="qe__indice">Échap revient à l'édition</span>
-                <button class="qe__bouton qe__bouton--fantome qe__bouton--abandon" type="button"
-                        data-action="edition-rapide#abandonner">Fermer sans enregistrer</button>
-                <button class="qe__bouton qe__bouton--primaire" type="button"
-                        data-action="edition-rapide#enregistrer">Enregistrer</button>
+            <div class="flex items-center gap-2.5 pt-0.5">
+                <twig:Typography variant="body-xs" textColor="neutral-400" class="flex-1">Échap revient à l'édition</twig:Typography>
+                <twig:Button variant="text" size="md" textColor="error" class="text-peach!"
+                             data-action="edition-rapide#abandonner">Fermer sans enregistrer</twig:Button>
+                <twig:Button variant="primary" size="md"
+                             data-action="edition-rapide#enregistrer">Enregistrer</twig:Button>
             </div>
         </div>
     </div>
 </div>
 
-{% macro etoile() %}<span class="qe__requis">*</span>{% endmacro %}
+{# Le champ du portail : 40 de haut, fond bleuté, anneau turquoise 1 px. #}
+{% macro champ() %}flex items-center box-border gap-2 h-10 px-3 py-2 rounded-xs bg-primary-5 inset-ring-1 inset-ring-primary cursor-text{% endmacro %}
+
+{% macro label(texte, requis = false) %}
+    <twig:Typography variant="body">{{ texte }}{% if requis %} <span class="text-peach">*</span>{% endif %}</twig:Typography>
+{% endmacro %}
+
+{% macro nav(icone, libelle, action) %}
+    <button type="button" title="{{ libelle }}"
+            class="flex items-center justify-center shrink-0 box-border w-8 h-8 rounded-lg
+                   border border-neutral-300 bg-neutral-100 text-neutral-900 cursor-pointer"
+            data-action="edition-rapide#{{ action }}">
+        <span class="sr-only">{{ libelle }}</span>
+        <twig:Icon name="{{ icone }}" class="w-[15px] h-[15px]" />
+    </button>
+{% endmacro %}
 
 {% macro titre_groupe(titre, avec_indice = false) %}
-    <div class="qe__groupe-titre">
-        <span>{{ titre }}</span>
-        <span class="qe__filet" aria-hidden="true"></span>
+    <div class="flex items-center gap-2.5">
+        <twig:Typography variant="body" textColor="primary-3" class="font-[700]! whitespace-nowrap">{{ titre }}</twig:Typography>
+        <span class="flex-1 h-px bg-neutral-200" aria-hidden="true"></span>
         {% if avec_indice %}
-            <span class="qe__indice-gamme" data-edition-rapide-target="indiceGamme"></span>
+            <twig:Typography variant="body-xs" textColor="neutral-500" class="whitespace-nowrap"
+                             data-edition-rapide-target="indiceGamme" />
         {% endif %}
     </div>
 {% endmacro %}
 
 {% macro interrupteur(libelle, cle, actif, aide = null) %}
-    <div class="qe__bascule-champ">
-        <div class="qe__bascule-ligne">
-            <span class="qe__label">{{ libelle }}</span>
-            <button class="qe__bascule" type="button"
-                    role="switch" aria-checked="{{ actif ? 'true' : 'false' }}"
-                    data-action="edition-rapide#basculerInterrupteur">
-                <span class="sr-only">{{ libelle }}</span>
-                <span class="qe__bascule-bouton" aria-hidden="true"></span>
-            </button>
+    <div class="flex flex-col gap-[3px]">
+        <div class="flex items-center gap-3 min-h-[30px]">
+            <twig:Typography variant="body" class="flex-1 min-w-0">{{ libelle }}</twig:Typography>
+            <twig:Form:SwitchButton id="qe-{{ cle }}" name="qe-{{ cle }}"
+                                    checked="{{ actif }}" class="shrink-0" />
         </div>
         {% if aide %}
-            <span class="qe__aide">{{ aide }}</span>
+            <twig:Typography variant="body-xs" textColor="neutral-500" class="max-w-[400px]">{{ aide }}</twig:Typography>
         {% endif %}
     </div>
+{% endmacro %}
+
+{#
+    Une ligne de l'adresse résolue. « Pays » est le seul libellé figé de la
+    maquette : il n'a pas de cible, le contrôleur n'a rien à y écrire.
+#}
+{% macro adresse(cle, cible, valeur = '') %}
+    <twig:Typography variant="body-xs" textColor="neutral-400" class="leading-[1.125rem]!">{{ cle }}</twig:Typography>
+    {% if cible %}
+        <twig:Typography variant="input" class="truncate leading-[1.125rem]!"
+                         data-edition-rapide-target="{{ cible }}" />
+    {% else %}
+        <twig:Typography variant="input" class="truncate leading-[1.125rem]!">{{ valeur }}</twig:Typography>
+    {% endif %}
+{% endmacro %}
+
+{% macro filtre(libelle, valeur, actif) %}
+    <button type="button" aria-pressed="{{ actif ? 'true' : 'false' }}"
+            class="group/filtre box-border h-6 px-2.5 rounded-lg bg-neutral-200 cursor-pointer
+                   aria-pressed:bg-primary"
+            data-edition-rapide-target="filtre"
+            data-action="edition-rapide#filtrer"
+            data-edition-rapide-filtre-param="{{ valeur }}">
+        <twig:Typography variant="body-xs" bold textColor="neutral-500"
+                         class="group-aria-pressed/filtre:text-neutral-100!">{{ libelle }}</twig:Typography>
+    </button>
 {% endmacro %}

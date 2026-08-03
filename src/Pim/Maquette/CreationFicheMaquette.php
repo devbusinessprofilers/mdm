@@ -57,8 +57,8 @@ final class CreationFicheMaquette
      */
     private const GAMMES = [
         ['lieu', 'Lieux', 'Château, hôtel, salle', 'bed'],
-        ['resto', 'Restaurants', 'Table, brasserie', 'fork'],
-        ['activite', 'Activités', 'Team building, loisirs', 'bike'],
+        ['resto', 'Restaurants', 'Table, brasserie', 'utensils'],
+        ['activite', 'Activités', 'Team building, loisirs', 'biking'],
         ['service', 'Prestataires de services', 'Traiteur, audiovisuel', 'users'],
         ['plateau', 'Plateaux repas', 'Catalogue produits', 'note'],
     ];
@@ -69,11 +69,11 @@ final class CreationFicheMaquette
     /** @var list<array{string, string, string, string}> titre, description, glyphe, type */
     private const BLOCS = [
         ['Gamme', 'Le seul choix ouvert du cycle de vie : il fixe la structure de la fiche.', 'layout', 'gamme'],
-        ['Identité et localisation', 'Ce qui rend la fiche identifiable et situable dans le référentiel.', 'info', 'identite'],
+        ['Identité et localisation', 'Ce qui rend la fiche identifiable et situable dans le référentiel.', 'info-circle', 'identite'],
         ['Classification', 'Les axes qui déterminent où la fiche apparaît dans les recherches.', 'confetti', 'classif'],
-        ['Statut et référencement', "Visibilité dans le référentiel et niveau d'adhésion.", 'okcircle', 'statut'],
+        ['Statut et référencement', "Visibilité dans le référentiel et niveau d'adhésion.", 'check-circle', 'statut'],
         ['Visibilité', 'Les canaux publics sur lesquels la fiche sera diffusée.', 'eye', 'visibilite'],
-        ['Contact prestataire', 'Créé dans le CRM en même temps que la fiche.', 'userrect', 'contact'],
+        ['Contact prestataire', 'Créé dans le CRM en même temps que la fiche.', 'user-rectangle', 'contact'],
         ['Accès extranet', 'Transmission des identifiants du portail prestataire.', 'lock', 'acces'],
     ];
 
@@ -425,7 +425,7 @@ final class CreationFicheMaquette
 
             'barre' => [
                 'ton' => $erreurs ? 'erreur' : ($occupe ? 'occupe' : ($choisie ? 'pret' : 'attente')),
-                'icone' => $erreurs ? 'warn' : ($occupe ? 'spinner' : ($choisie ? 'okcircle' : 'info')),
+                'icone' => $erreurs ? 'warning' : ($occupe ? 'spinner' : ($choisie ? 'check-circle' : 'info-circle')),
                 'note' => match (true) {
                     $erreurs => 'Corrigez les champs signalés pour créer la fiche.',
                     $occupe => 'Création en cours — ne fermez pas la page.',

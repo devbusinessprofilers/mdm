@@ -4,31 +4,39 @@
     dans `_panneau_collaborateur.html.twig`.
 #}
 {% set colonnes = constant('App\\Pim\\Maquette\\FicheLieuMaquette::COLONNES_COLLABORATEURS') %}
+{% set grille = 'grid-cols-[84px_96px_84px_1fr_116px_104px_78px_78px_78px_62px]' %}
 
-<section class="fiche__carte fiche__carte--collab">
-    <h2 class="fiche__section-titre">Collaborateurs ayant accès à cette fiche</h2>
+<section class="shrink-0 box-border flex flex-col gap-6 p-14 rounded-[32px]
+                bg-neutral-100 shadow-(--shadow)">
+    <twig:Typography variant="heading-3" element="h2" class="font-[700]!">Collaborateurs ayant accès à cette fiche</twig:Typography>
 
-    <div class="collab">
-        <div class="collab__entete" role="row">
+    <div class="flex flex-col self-stretch">
+        <div class="grid {{ grille }} gap-1.5 box-border px-3 py-2.5 rounded-xs bg-primary-4" role="row">
             {% for colonne in colonnes %}
-                <span class="collab__colonne" role="columnheader">{{ colonne }}</span>
+                <span role="columnheader">
+                    <twig:Typography variant="body-xs" textColor="primary-3" bold>{{ colonne }}</twig:Typography>
+                </span>
             {% endfor %}
         </div>
 
         {% for ligne in collaborateurs %}
-            <div class="collab__ligne" role="row">
-                {{ _self.pastille_droit(ligne.principal, 'Contact principal') }}
-                <span class="collab__cellule collab__cellule--nom">{{ ligne.nom }}</span>
-                <span class="collab__cellule">{{ ligne.prenom }}</span>
-                <span class="collab__cellule">{{ ligne.email }}</span>
-                <span class="collab__cellule collab__cellule--tel">{{ ligne.telephone }}</span>
-                <span class="collab__cellule">{{ ligne.role }}</span>
-                {{ _self.pastille_droit(ligne.demandes, 'Traite les demandes') }}
-                {{ _self.pastille_droit(ligne.contenus, 'Traite les contenus') }}
-                {{ _self.pastille_droit(ligne.paiements, 'Traite les paiements') }}
+            <div class="grid {{ grille }} gap-1.5 items-center box-border px-3 py-3.5
+                        border-b border-neutral-200" role="row">
+                {{ _self.droit(ligne.principal, 'Contact principal') }}
+                {{ _self.cellule(ligne.nom, true) }}
+                {{ _self.cellule(ligne.prenom) }}
+                {{ _self.cellule(ligne.email) }}
+                {# Le numéro n'est jamais tronqué : la colonne est dimensionnée pour lui. #}
+                <span class="whitespace-nowrap">
+                    <twig:Typography variant="body-sm">{{ ligne.telephone }}</twig:Typography>
+                </span>
+                {{ _self.cellule(ligne.role) }}
+                {{ _self.droit(ligne.demandes, 'Traite les demandes') }}
+                {{ _self.droit(ligne.contenus, 'Traite les contenus') }}
+                {{ _self.droit(ligne.paiements, 'Traite les paiements') }}
 
-                <div class="collab__actions">
-                    <button class="collab__action" type="button"
+                <div class="flex items-center gap-2.5">
+                    <button type="button" class="flex shrink-0 cursor-pointer text-neutral-900"
                             data-action="collaborateurs#editer"
                             data-collaborateurs-nom-param="{{ ligne.nom }}"
                             data-collaborateurs-prenom-param="{{ ligne.prenom }}"
@@ -37,13 +45,17 @@
                             data-collaborateurs-role-param="{{ ligne.role }}"
                             data-collaborateurs-principal-param="{{ ligne.principal ? '1' : '0' }}">
                         <span class="sr-only">Modifier {{ ligne.prenom }} {{ ligne.nom }}</span>
-                        {{ _self.crayon(17) }}
+                        <twig:Icon name="pencil" class="w-[17px] h-[17px]" />
                     </button>
 
+                    {#
+                        Le contact principal n'a pas de corbeille : il faut d'abord
+                        désigner quelqu'un d'autre.
+                    #}
                     {% if ligne.supprimable %}
-                        <button class="collab__action" type="button">
+                        <button type="button" class="flex shrink-0 cursor-pointer text-neutral-900">
                             <span class="sr-only">Supprimer {{ ligne.prenom }} {{ ligne.nom }}</span>
-                            {{ _self.corbeille(17) }}
+                            <twig:Icon name="trash" class="w-[17px] h-[17px]" />
                         </button>
                     {% endif %}
                 </div>
@@ -52,40 +64,31 @@
     </div>
 </section>
 
+{% macro cellule(valeur, gras = false) %}
+    <span class="min-w-0 truncate">
+        <twig:Typography variant="body-sm" bold="{{ gras }}">{{ valeur }}</twig:Typography>
+    </span>
+{% endmacro %}
+
 {#
     Pastille de droit : disque vert coché quand le droit est accordé, cercle
     gris barré sinon.
 #}
-{% macro pastille_droit(actif, libelle) %}
-    <span class="collab__pastille" role="cell">
+{% macro droit(actif, libelle) %}
+    <span class="flex items-center" role="cell">
         <span class="sr-only">{{ libelle }} : {{ actif ? 'oui' : 'non' }}</span>
         {% if actif %}
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                <circle cx="10" cy="10" r="9" fill="var(--secondary-vert)"/>
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true" class="shrink-0">
+                <circle cx="10" cy="10" r="9" fill="var(--color-success)"/>
                 <path d="M5.8 10.2l2.6 2.6 5.2-5.2" stroke="#fff" stroke-width="1.8"
                       stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
         {% else %}
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                <circle cx="10" cy="10" r="8.4" stroke="var(--neutral-400)" stroke-width="1.2"/>
-                <path d="M7 7l6 6M13 7l-6 6" stroke="var(--neutral-400)" stroke-width="1.2"
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true" class="shrink-0">
+                <circle cx="10" cy="10" r="8.4" stroke="var(--color-neutral-400)" stroke-width="1.2"/>
+                <path d="M7 7l6 6M13 7l-6 6" stroke="var(--color-neutral-400)" stroke-width="1.2"
                       stroke-linecap="round"/>
             </svg>
         {% endif %}
     </span>
-{% endmacro %}
-
-{% macro crayon(taille) %}
-    <svg width="{{ taille }}" height="{{ taille }}" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-        <path d="M11.3 1.7a1.4 1.4 0 012 2l-7.4 7.4-2.7.7.7-2.7 7.4-7.4z" stroke="currentColor"
-              stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M2 14h12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
-    </svg>
-{% endmacro %}
-
-{% macro corbeille(taille) %}
-    <svg width="{{ taille }}" height="{{ taille }}" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-        <path d="M2.5 4h11M6.5 4V2.5h3V4M4 4v9.5a1 1 0 001 1h6a1 1 0 001-1V4M6.5 7v5M9.5 7v5"
-              stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>
 {% endmacro %}

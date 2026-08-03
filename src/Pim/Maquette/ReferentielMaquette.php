@@ -109,7 +109,6 @@ final class ReferentielMaquette
         "Les Rives d'Argent", 'Le Jardin Secret',
     ];
 
-    /** @var list<string> */
     /**
      * Adresse postale par ville : rue, code postal, coordonnées GPS. La modale
      * d'édition rapide résout l'adresse depuis la ville de la ligne.
@@ -144,6 +143,16 @@ final class ReferentielMaquette
         'Étretat' => ['3 rue Adolphe Boissaye', '76790', '49,7073 · 0,2039'],
         'Megève' => ['114 route du Palais des Sports', '74120', '45,8567 · 6,6178'],
     ];
+
+    /**
+     * Adresse d'une ville, pour les crayons de « Liste des fiches ».
+     *
+     * @return array{string, string, string} rue, code postal, GPS
+     */
+    public static function adresse(string $ville): array
+    {
+        return self::ADRESSES[$ville] ?? ['', '', ''];
+    }
 
     /** @var array<string, string> Libellé de la gamme, affiché en badge */
     public const GAMMES = ['lieu' => 'Lieux', 'restaurant' => 'Restaurants'];
