@@ -34,11 +34,6 @@ final class RestaurantType extends AbstractType
     {
         $builder
             ->add(
-                'code',
-                IntegerType::class,
-                $this->field('Code', 'code', 'changeCode'),
-            )
-            ->add(
                 'label',
                 TextType::class,
                 $this->field('Nom du restaurant', 'label', 'changeLabel'),
@@ -143,7 +138,11 @@ final class RestaurantType extends AbstractType
                 'allow_delete' => true,
                 'by_reference' => false,
                 'prototype' => true,
-            ])
+            ] + $this->collectionAccessors(
+                'periodesFermeture',
+                'addPeriodeFermeture',
+                'removePeriodeFermeture',
+            ))
             ->add('localisation', LocalisationType::class, [
                 'label' => 'Localisation',
                 'required' => false,
@@ -165,7 +164,7 @@ final class RestaurantType extends AbstractType
                 'allow_delete' => true,
                 'by_reference' => false,
                 'prototype' => true,
-            ])
+            ] + $this->collectionAccessors('acces', 'addAcces', 'removeAcces'))
             ->add(
                 'accesPmr',
                 ChoiceType::class,
@@ -237,7 +236,7 @@ final class RestaurantType extends AbstractType
             'allow_delete' => true,
             'by_reference' => false,
             'prototype' => true,
-        ]);
+        ] + $this->collectionAccessors('salles', 'addSalle', 'removeSalle'));
 
         $this->selection(
             $builder,
@@ -389,6 +388,37 @@ final class RestaurantType extends AbstractType
             'choice_value' => static fn (
                 ?bool $value,
             ): string => null === $value ? '' : ($value ? '1' : '0'),
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function collectionAccessors(
+        string $getter,
+        string $adder,
+        string $remover,
+    ): array {
+        return [
+            'getter' => static fn (
+                Restaurant $restaurant,
+            ): Collection => $restaurant->{$getter}(),
+            'setter' => static function (
+                Restaurant &$restaurant,
+                iterable $submitted,
+            ) use ($getter, $adder, $remover): void {
+                $submitted = is_array($submitted)
+                    ? $submitted
+                    : iterator_to_array($submitted);
+
+                foreach ($restaurant->{$getter}()->toArray() as $existing) {
+                    if (!in_array($existing, $submitted, true)) {
+                        $restaurant->{$remover}($existing);
+                    }
+                }
+
+                foreach ($submitted as $item) {
+                    $restaurant->{$adder}($item);
+                }
+            },
         ];
     }
 

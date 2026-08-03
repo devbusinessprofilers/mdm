@@ -46,7 +46,6 @@ final class LieuPersistenceTest extends KernelTestCase
     public function testLieuAndLocalisationArePersistedAndRemovedTogether(): void
     {
         $lieu = new Lieu();
-        $lieu->changeCode(42);
         $lieu->changeLabel('Palais des congrès');
         $firstLocalisation = new Localisation();
         $firstLocalisation->changeCodePostal('06000');
@@ -80,7 +79,6 @@ final class LieuPersistenceTest extends KernelTestCase
         $expected = [];
         for ($index = 1; $index <= 7; ++$index) {
             $lieu = new Lieu();
-            $lieu->changeCode($index);
             $lieu->changeLabel('Lieu '.$index);
             if (0 === $index % 2) {
                 $lieu->fiche()->publishForImport();
@@ -112,7 +110,6 @@ final class LieuPersistenceTest extends KernelTestCase
     public function testTwoEavReplacementsInitializeTheCollectionOnlyOnce(): void
     {
         $lieu = new Lieu();
-        $lieu->changeCode(42);
         $this->entityManager->persist($lieu);
         $this->entityManager->flush();
         $ficheId = $lieu->fiche()->id();

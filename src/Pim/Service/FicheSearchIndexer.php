@@ -6,11 +6,13 @@ namespace App\Pim\Service;
 
 use App\Pim\Entity\Fiche;
 use App\Pim\Entity\FicheSearchDocument;
+use App\Pim\Message\CalculateFicheCompleteness;
 use App\Pim\Repository\LieuRepository;
 use App\Pim\Repository\ActiviteRepository;
 use App\Pim\Repository\ServiceEvenementielRepository;
 use App\Pim\Repository\RestaurantRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use App\Shared\Outbox\OutboxPublisherInterface;
 
 final readonly class FicheSearchIndexer
 {
@@ -20,6 +22,7 @@ final readonly class FicheSearchIndexer
         private ActiviteRepository $activites,
         private ServiceEvenementielRepository $services,
         private RestaurantRepository $restaurants,
+        private OutboxPublisherInterface $outbox,
     ) {
     }
 
@@ -33,7 +36,7 @@ final readonly class FicheSearchIndexer
         $activeFixedLocation = (null === $activite || 'fixe' === $activite->modeIntervention()?->value)
             && (null === $service || 'fixe' === $service->modeIntervention()?->value);
         $content = implode(' ', array_filter([
-            null === $fiche->code() ? null : (string) $fiche->code(),
+            (string) $fiche->code(),
             $fiche->label(),
             $activeFixedLocation ? $location?->ruePostale() : null, $activeFixedLocation ? $location?->codePostal() : null, $activeFixedLocation ? $location?->ville() : null, $activeFixedLocation ? $location?->pays() : null,
             $lieu?->descGenerale(),
@@ -63,6 +66,7 @@ final readonly class FicheSearchIndexer
         } elseif ($document->sourceVersion() < $fiche->version()) {
             $document->reindex($content, $fiche->version());
         }
+        $this->outbox->enqueue(new CalculateFicheCompleteness($fiche->idString()));
         $this->entityManager->flush();
     }
 }

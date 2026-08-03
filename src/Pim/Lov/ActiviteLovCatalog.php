@@ -47,7 +47,7 @@ final class ActiviteLovCatalog
     /** @return array<string, string> */
     public static function choicesFor(string $attributeCode): array
     {
-        return self::CHOICES[$attributeCode] ?? [];
+        return LovRuntimeCatalog::choices($attributeCode) ?? self::CHOICES[$attributeCode] ?? [];
     }
 
     /** @return array<string, array<string, string>> */
@@ -65,6 +65,8 @@ final class ActiviteLovCatalog
         string $attributeCode,
         string $valueCode,
     ): int {
+        $runtimeId = LovRuntimeCatalog::valueId($attributeCode, $valueCode);
+        if (null !== $runtimeId) { return $runtimeId; }
         if (!isset(self::CHOICES[$attributeCode][$valueCode])) {
             throw new \InvalidArgumentException('Valeur de LOV Activité inconnue.');
         }
@@ -76,6 +78,8 @@ final class ActiviteLovCatalog
         string $attributeCode,
         int $valueId,
     ): string {
+        $runtimeCode = LovRuntimeCatalog::valueCode($valueId);
+        if (null !== $runtimeCode) { return $runtimeCode; }
         foreach (self::choicesFor($attributeCode) as $code => $_label) {
             if (self::valueId($attributeCode, $code) === $valueId) {
                 return $code;

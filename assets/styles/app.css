@@ -471,6 +471,10 @@
     .admin-page-list { @apply divide-y divide-slate-200; }
     .admin-page-item { @apply grid gap-2 py-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center; }
     .admin-page-item > div:first-child { @apply grid min-w-0 gap-1; }
+    .translation-field { @apply grid gap-4; }
+    .translation-grid { @apply grid gap-4 lg:grid-cols-2 xl:grid-cols-3; }
+    .translation-cell { @apply grid content-start gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4; }
+    .translation-cell form { @apply grid gap-3; }
     .admin-page-item code { @apply overflow-x-auto text-xs text-slate-500; }
     .admin-page-meta { @apply flex flex-wrap items-center gap-2 text-xs text-slate-500 md:justify-end; }
 }

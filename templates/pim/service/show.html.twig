@@ -11,12 +11,14 @@
             <h1>{{ service.label ?? 'Sans libellé' }}</h1>
         </div>
         <div class="table-actions">
+            <a class="btn btn-secondary" href="{{ path('app_enrichment_fiche_translation_show', {id: service.id}) }}">Traductions</a>
             <a class="btn" href="{{ path('app_pim_service_edit', {id: service.id}) }}">Modifier</a>
             {% if is_granted('ROLE_BP_VALIDATOR') %}
                 <a class="btn btn-secondary" href="{{ path('app_pim_service_history', {id: service.id}) }}">Historique</a>
             {% endif %}
         </div>
     </header>
+    {% include 'pim/_completeness.html.twig' with {entity: service} only %}
     <section class="card">
         <dl class="definition-list">
             <dt>Code</dt>

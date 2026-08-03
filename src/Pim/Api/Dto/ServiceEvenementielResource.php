@@ -316,10 +316,13 @@ final readonly class ServiceEvenementielResource
      */
     public function __construct(
         #[ApiProperty(identifier: true)] public string $id,
-        public ?int $code,
+        public int $code,
         public ?string $label,
         public string $status,
         public int $completeness,
+        /** @var array{marketplace: int, thematicSites: int, salesforce: int, providerPortal: int} */
+        public array $completenessByChannel,
+        public ?string $completenessCalculatedAt,
         public int $version,
         public ?string $publishedAt,
         public string $updatedAt,

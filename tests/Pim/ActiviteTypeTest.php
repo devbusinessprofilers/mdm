@@ -20,6 +20,7 @@ final class ActiviteTypeTest extends KernelTestCase
         $form = $factory->create(ActiviteType::class, $a, [
             'csrf_protection' => false,
         ]);
+        self::assertFalse($form->has('code'));
         foreach (
             [
                 'prestataire',

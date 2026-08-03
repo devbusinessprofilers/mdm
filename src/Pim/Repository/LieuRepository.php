@@ -53,7 +53,7 @@ final class LieuRepository extends ServiceEntityRepository
                 f.code,
                 f.label,
                 f.status,
-                f.completeness,
+                l.completeness_global AS completeness,
                 f.updated_at,
                 loc.ville
             FROM pim_fiche f
@@ -67,7 +67,7 @@ final class LieuRepository extends ServiceEntityRepository
             $limit + 1,
         );
 
-        /** @var list<array{id: string, code: int|string|null, label: string|null, status: string, completeness: int|string, updated_at: string, ville: string|null}> $rows */
+        /** @var list<array{id: string, code: int|string, label: string|null, status: string, completeness: int|string, updated_at: string, ville: string|null}> $rows */
         $rows = $this->getEntityManager()->getConnection()->executeQuery($sql, $parameters, $types)->fetchAllAssociative();
         $hasNext = count($rows) > $limit;
         $rows = array_slice($rows, 0, $limit);
@@ -117,14 +117,14 @@ final class LieuRepository extends ServiceEntityRepository
         }
 
         $binaryIds = array_map(static fn (string $id): string => Ulid::fromString($id)->toBinary(), $ids);
-        /** @var list<array{id: string, code: int|string|null, label: string|null, status: string, completeness: int|string, updated_at: string, ville: string|null}> $rows */
+        /** @var list<array{id: string, code: int|string, label: string|null, status: string, completeness: int|string, updated_at: string, ville: string|null}> $rows */
         $rows = $this->getEntityManager()->getConnection()->executeQuery(<<<'SQL'
             SELECT
                 f.id,
                 f.code,
                 f.label,
                 f.status,
-                f.completeness,
+                l.completeness_global AS completeness,
                 f.updated_at,
                 loc.ville
             FROM pim_fiche f
@@ -148,12 +148,12 @@ final class LieuRepository extends ServiceEntityRepository
         )));
     }
 
-    /** @param array{id: string, code: int|string|null, label: string|null, status: string, completeness: int|string, updated_at: string, ville: string|null} $row */
+    /** @param array{id: string, code: int|string, label: string|null, status: string, completeness: int|string, updated_at: string, ville: string|null} $row */
     private static function toListItem(array $row): LieuListItem
     {
         return new LieuListItem(
             id: (string) Ulid::fromBinary($row['id']),
-            code: null === $row['code'] ? null : (int) $row['code'],
+            code: (int) $row['code'],
             label: $row['label'],
             ville: $row['ville'],
             status: StatutFiche::from($row['status']),

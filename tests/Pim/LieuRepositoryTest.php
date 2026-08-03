@@ -44,7 +44,6 @@ final class LieuRepositoryTest extends KernelTestCase
     public function testFindOneByFicheWithLocalisationHydratesWithoutLazyLoads(): void
     {
         $lieu = new Lieu();
-        $lieu->changeCode(42);
         $lieu->changeLabel('Palais des congrès');
         $localisation = new Localisation();
         $localisation->changeCodePostal('06000');

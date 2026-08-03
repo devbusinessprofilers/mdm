@@ -21,6 +21,8 @@ final class LieuTypeTest extends KernelTestCase
         $lieu = new Lieu();
         $form = $factory->create(LieuType::class, $lieu, ['csrf_protection' => false]);
 
+        self::assertFalse($form->has('code'));
+
         foreach (['informationsGenerales', 'disponibilites', 'accessibiliteDescription', 'hebergement', 'syntheseSalles', 'equipementsServices', 'rse', 'loisirs', 'restauration', 'visibilite', 'administratif', 'tarification'] as $section) {
             self::assertTrue($form->has($section), $section);
         }
@@ -30,7 +32,6 @@ final class LieuTypeTest extends KernelTestCase
         self::assertCount(22, $form->get('tarification'));
 
         $form->submit([
-            'code' => '99',
             'label' => 'Lieu Bible',
             'accessibiliteDescription' => ['descGeneralePointInteret' => 'Musée à proximité'],
             'rse' => ['rseDescGenerale' => 'Engagement complet'],
@@ -53,7 +54,6 @@ final class LieuTypeTest extends KernelTestCase
         $form = $factory->create(LieuType::class, $lieu, ['csrf_protection' => false]);
 
         $form->submit([
-            'code' => '42',
             'label' => 'Lieu test',
             'generaleTypologie' => ['GENERALE_TYPOLOGIE_20'],
             'generaleWebsiteUrl' => 'https://example.test',
@@ -93,7 +93,6 @@ final class LieuTypeTest extends KernelTestCase
         $form = $factory->create(LieuType::class, new Lieu(), ['csrf_protection' => false]);
 
         $form->submit([
-            'code' => '43',
             'label' => 'Lieu avec coordonnée invalide',
             'localisation' => [
                 'pays' => 'France', 'countryCode' => 'FR', 'region' => '', 'departement' => '',
@@ -114,7 +113,6 @@ final class LieuTypeTest extends KernelTestCase
         $form = $factory->create(LieuType::class, new Lieu(), ['csrf_protection' => false]);
 
         $form->submit([
-            'code' => '44',
             'label' => 'Lieu avec nouvelle photo',
             'ressources' => [[
                 'nature' => 'photo',

@@ -14,7 +14,13 @@ final class ServiceOpenApiTest extends KernelTestCase
         self::bootKernel();
         $factory = self::getContainer()->get(OpenApiFactoryInterface::class);
         self::assertInstanceOf(OpenApiFactoryInterface::class, $factory);
-        $paths = $factory([])->getPaths()->getPaths();
+        $openApi = $factory([]);
+        $paths = $openApi->getPaths()->getPaths();
+        $schemas = $openApi->getComponents()->getSchemas();
+        self::assertInstanceOf(\ArrayObject::class, $schemas);
+        $patchSchema = $schemas['ServiceEvenementiel.ServiceEvenementielPatchInput.jsonMergePatch'] ?? null;
+        self::assertInstanceOf(\ArrayObject::class, $patchSchema);
+        self::assertArrayNotHasKey('code', (array) ($patchSchema['properties'] ?? []));
 
         foreach (
             [

@@ -28,7 +28,7 @@ final class ValidLieuValidator extends ConstraintValidator
         }
         $this->length(
             $value->label(),
-            69,
+            Lieu::LABEL_MAX_LENGTH,
             'label',
             'Le nom du lieu ne peut pas dépasser 69 caractères.',
         );
@@ -43,7 +43,7 @@ final class ValidLieuValidator extends ConstraintValidator
         }
         $this->length(
             $value->generaleWebsiteUrl(),
-            100,
+            Lieu::WEBSITE_MAX_LENGTH,
             'generaleWebsiteUrl',
             'Le site officiel ne peut pas dépasser 100 caractères.',
         );
@@ -59,26 +59,26 @@ final class ValidLieuValidator extends ConstraintValidator
         }
         $this->length(
             $value->descGenerale(),
-            1000,
+            Lieu::DESCRIPTION_MAX_LENGTH,
             'accessibiliteDescription.descGenerale',
             'La description générale ne peut pas dépasser 1 000 caractères.',
         );
         $this->length(
             $value->chambreDescGenerale(),
-            1000,
+            Lieu::DESCRIPTION_MAX_LENGTH,
             'hebergement.chambreDescGenerale',
             'La description de l’hébergement ne peut pas dépasser 1 000 caractères.',
         );
         $this->length(
             $value->pmrDetails(),
-            150,
+            Lieu::PMR_DETAILS_MAX_LENGTH,
             'accessibiliteDescription.pmrDetails',
             'Les détails PMR ne peuvent pas dépasser 150 caractères.',
         );
         foreach (['atout1', 'atout2', 'atout3', 'atout4', 'atout5'] as $field) {
             $this->length(
                 $value->{$field}(),
-                35,
+                Lieu::ATOUT_MAX_LENGTH,
                 'accessibiliteDescription.'.$field,
                 'Un atout ne peut pas dépasser 35 caractères.',
             );

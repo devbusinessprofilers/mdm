@@ -21,7 +21,15 @@ final class LieuTest extends TestCase
         $lieu = new Lieu();
 
         self::assertMatchesRegularExpression('/^[0-9A-HJKMNP-TV-Z]{26}$/', $lieu->id());
-        self::assertNull($lieu->code());
+        $this->expectException(\LogicException::class);
+        $this->expectExceptionMessage('sera attribué lors de son enregistrement');
+        $lieu->code();
+    }
+
+    public function testDraftHasDictionaryDefaults(): void
+    {
+        $lieu = new Lieu();
+
         self::assertNull($lieu->label());
         self::assertFalse($lieu->generaleEtabRp());
         self::assertFalse($lieu->dispoLieuPrivatisable());
@@ -39,13 +47,11 @@ final class LieuTest extends TestCase
         $previousUpdate = $lieu->updatedAt();
         usleep(1_000);
 
-        $lieu->changeCode(42);
         $lieu->changeLabel(' Palais des congrès ');
         $lieu->changeLocalisation($localisation);
         $lieu->administratif()->changeInfoLegaleNom(' Business Profilers SAS ');
         $lieu->tarification()->changeSeminaireJourneeJourneeEtude('125.50');
 
-        self::assertSame(42, $lieu->code());
         self::assertSame('Palais des congrès', $lieu->label());
         self::assertSame($localisation, $lieu->localisation());
         self::assertSame('Business Profilers SAS', $lieu->administratif()->infoLegaleNom());

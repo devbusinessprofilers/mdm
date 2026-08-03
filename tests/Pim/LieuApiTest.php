@@ -65,7 +65,6 @@ final class LieuApiTest extends WebTestCase
     {
         $client = $this->client();
         $lieu = new Lieu();
-        $lieu->changeCode(4201);
         $lieu->changeLabel('Lieu API initial');
         $lieu->fiche()->publishForImport();
         $this->entityManager->persist($lieu);
@@ -193,8 +192,8 @@ final class LieuApiTest extends WebTestCase
         $media = $this->json($client);
         self::assertSame('PHOTO_PRINCIPALE', $media['usage']);
         self::assertSame('Façade', $media['legende']);
-        self::assertCount(6, $media['variants']);
-        self::assertSame(['large', 'medium_2', 'medium', 'small', 'map', 'cart'], array_column($media['variants'], 'name'));
+        self::assertCount(7, $media['variants']);
+        self::assertSame(['hd', 'large', 'medium_2', 'medium', 'small', 'map', 'cart'], array_column($media['variants'], 'name'));
         self::assertSame(1, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM dam_media_asset'));
         self::assertGreaterThanOrEqual(2, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM outbox_message'));
     }

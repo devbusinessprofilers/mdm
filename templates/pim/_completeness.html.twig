@@ -1,0 +1,13 @@
+{% set scores = [
+    {label: 'Global', value: entity.completeness},
+    {label: 'Marketplace', value: entity.completenessMarketplace},
+    {label: 'Sites thématiques', value: entity.completenessThematicSites},
+    {label: 'Salesforce', value: entity.completenessSalesforce},
+    {label: 'Portail prestataire', value: entity.completenessProviderPortal}
+] %}
+<section class="card">
+    <div class="section-heading"><div><p class="page-kicker">Qualité des données</p><h2>Complétude</h2></div>{% if entity.completenessCalculatedAt %}<small>Calculée le {{ entity.completenessCalculatedAt|date('d/m/Y à H:i') }}</small>{% else %}<span class="badge badge-info">En attente</span>{% endif %}</div>
+    <div class="dashboard-grid">
+        {% for score in scores %}<div><strong>{{ entity.completenessCalculatedAt ? score.value ~ ' %' : 'En attente' }}</strong><p>{{ score.label }}</p></div>{% endfor %}
+    </div>
+</section>

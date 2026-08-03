@@ -10,7 +10,7 @@ final readonly class LieuListItem
 {
     public function __construct(
         public string $id,
-        public ?int $code,
+        public int $code,
         public ?string $label,
         public ?string $ville,
         public StatutFiche $status,

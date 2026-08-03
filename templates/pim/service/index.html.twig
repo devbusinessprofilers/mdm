@@ -8,7 +8,7 @@
         <div class="page-header-copy">
             <p class="page-kicker">Catalogue</p>
             <h1>Services événementiels</h1>
-            <p class="page-description">Consultez et maintenez les fiches Service du PIM.</p>
+            <p class="page-description">Consultez et maintenez les fiches Service du PIM — {{ total_count }} fiche{{ total_count == 1 ? '' : 's' }} au total.</p>
         </div>
         <a class="btn" href="{{ path('app_pim_service_new') }}">Créer un service</a>
     </header>

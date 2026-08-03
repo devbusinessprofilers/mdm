@@ -12,6 +12,7 @@ use App\Dam\Message\DeleteMedia;
 use App\Dam\Service\FicheDocumentUploader;
 use App\Dam\Service\FicheImageUploader;
 use App\Dam\Service\ImageVariantRegistry;
+use App\Enrichment\Service\FicheTranslationScheduler;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Enum\NatureRessource;
@@ -25,6 +26,7 @@ use App\Pim\Message\IndexFiche;
 use App\Pim\ReadModel\FicheCursor;
 use App\Pim\Repository\RestaurantRepository;
 use App\Pim\Repository\LocalisationRepository;
+use App\Pim\Service\FicheCountProvider;
 use App\Pim\Validation\ValidationGroups;
 use App\Shared\Form\ActionType;
 use App\Shared\Message\MediaUploaded;
@@ -53,6 +55,7 @@ final class RestaurantController extends AbstractController
         private readonly FicheImageUploader $imageUploader,
         private readonly FicheDocumentUploader $documentUploader,
         private readonly LocalisationRepository $locations,
+        private readonly FicheTranslationScheduler $translationScheduler,
     ) {
     }
 
@@ -61,6 +64,7 @@ final class RestaurantController extends AbstractController
         Request $request,
         RestaurantRepository $repository,
         SearchEngineInterface $search,
+        FicheCountProvider $counts,
     ): Response {
         $form = $this->createForm(
             RestaurantSearchType::class,
@@ -124,7 +128,9 @@ final class RestaurantController extends AbstractController
             'query' => $text,
             'result_count' => $count,
             'search_form' => $form->createView(),
-            'pending_count' => $repository->countByStatus(
+            'total_count' => $counts->totalByType(TypeFiche::Restaurant),
+            'pending_count' => $counts->countByStatus(
+                TypeFiche::Restaurant,
                 StatutFiche::EnAttenteValidation,
             ),
         ]);
@@ -601,6 +607,7 @@ final class RestaurantController extends AbstractController
 
         if ($form->isSubmitted() && $form->isValid()) {
             $change($restaurant, $this->actor());
+            $this->translationScheduler->schedule($restaurant->fiche());
             $outbox->enqueue(new IndexFiche($restaurant->fiche()->idString()));
             $entityManager->flush();
         }

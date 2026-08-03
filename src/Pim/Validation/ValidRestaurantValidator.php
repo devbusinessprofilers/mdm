@@ -28,7 +28,7 @@ final class ValidRestaurantValidator extends ConstraintValidator
         }
 
         $this->maximumLength($value->label(), 255, 'label');
-        $this->validUrl($value->siteOfficiel(), 100, 'siteOfficiel');
+        $this->validUrl($value->siteOfficiel(), Restaurant::WEBSITE_MAX_LENGTH, 'siteOfficiel');
         $this->validUrl($value->youtubeUrl(), 255, 'youtubeUrl');
 
         if (count($value->atouts()) > 5) {
@@ -187,7 +187,6 @@ final class ValidRestaurantValidator extends ConstraintValidator
     {
         foreach (
             [
-                'code' => $value->code(),
                 'label' => $value->label(),
                 'siteOfficiel' => $value->siteOfficiel(),
                 'heureOuverture' => $value->heureOuverture(),

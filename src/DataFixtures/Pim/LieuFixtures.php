@@ -8,7 +8,6 @@ use App\Pim\Entity\FicheSearchDocument;
 use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Entity\Lieu\Salle;
 use App\Pim\Entity\Localisation;
-use App\Pim\Enum\TypeFiche;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Bundle\FixturesBundle\FixtureGroupInterface;
 use Doctrine\ORM\EntityManagerInterface;
@@ -61,7 +60,7 @@ final class LieuFixtures extends Fixture implements FixtureGroupInterface
 
         $count = $this->fixtureCount();
         $randomizer = new Randomizer(new Mt19937(20_260_729));
-        $firstCode = $this->nextAvailableCode($manager);
+        $firstCode = PimFixtureTools::nextCode($manager);
 
         for ($offset = 0; $offset < $count; ++$offset) {
             $code = $firstCode + $offset;
@@ -70,7 +69,6 @@ final class LieuFixtures extends Fixture implements FixtureGroupInterface
             $label = sprintf('%s %s %05d', $name, $city['ville'], $code);
 
             $lieu = new Lieu();
-            $lieu->changeCode($code);
             $lieu->changeLabel($label);
             $lieu->changeGeneraleTypologie([sprintf('GENERALE_TYPOLOGIE_%d', $randomizer->getInt(1, 40))]);
             $lieu->changeGeneraleWebsiteUrl(sprintf('https://lieu-%d.example.test', $code));
@@ -143,16 +141,6 @@ final class LieuFixtures extends Fixture implements FixtureGroupInterface
         }
 
         return $count;
-    }
-
-    private function nextAvailableCode(EntityManagerInterface $manager): int
-    {
-        $maximum = $manager->getConnection()->fetchOne(
-            'SELECT MAX(code) FROM pim_fiche WHERE type = :type',
-            ['type' => TypeFiche::Lieu->value],
-        );
-
-        return (false === $maximum || null === $maximum ? 0 : (int) $maximum) + 1;
     }
 
     private function resetDoctrineDebugData(): void

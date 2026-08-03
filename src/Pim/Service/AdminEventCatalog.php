@@ -47,7 +47,7 @@ final class AdminEventCatalog
                 'transport' => 'dam',
                 'worker' => 'worker-dam',
                 'handler' => MediaUploadedHandler::class,
-                'result' => 'Lit l’original privé, génère les six variantes WebP publiques et marque le média comme traité.',
+                'result' => 'Lit l’original privé, génère les sept variantes WebP publiques et marque le média comme traité.',
                 'next' => 'Émet « Image traitée ».',
             ],
             [
@@ -69,7 +69,7 @@ final class AdminEventCatalog
                 'transport' => 'dam',
                 'worker' => 'worker-dam',
                 'handler' => RegenerateMediaHandler::class,
-                'result' => 'Recrée et remplace les six variantes publiques à partir de l’original privé.',
+                'result' => 'Recrée et remplace les sept variantes publiques à partir de l’original privé.',
                 'next' => null,
             ],
             [

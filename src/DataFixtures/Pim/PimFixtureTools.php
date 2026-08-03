@@ -40,10 +40,10 @@ final class PimFixtureTools
 
     public static function nextCode(EntityManagerInterface $manager): int
     {
-        $maximum = $manager->getConnection()->fetchOne(
-            'SELECT MAX(code) FROM pim_fiche',
+        $lastValue = $manager->getConnection()->fetchOne(
+            'SELECT last_value FROM pim_fiche_code_counter WHERE id = 1',
         );
 
-        return (false === $maximum || null === $maximum ? 0 : (int) $maximum) + 1;
+        return (false === $lastValue ? 0 : (int) $lastValue) + 1;
     }
 }

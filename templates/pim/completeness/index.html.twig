@@ -1,0 +1,22 @@
+{% extends 'base.html.twig' %}
+{% block title %}Configuration de la complétude{% endblock %}
+{% block body %}
+<main class="page">
+    <header class="page-header"><div><p class="page-kicker">Administration</p><h1>Complétude des fiches</h1><p>Poids, formule et canaux de chaque champ métier.</p></div></header>
+    <section class="card">
+        {{ form(search_form) }}
+    </section>
+    <section class="dashboard-grid">
+        {% for type in types %}<article class="card"><p class="page-kicker">{{ type.value|replace({'_': ' '}) }}</p><strong>Révision {{ status[type.value].revision }}</strong><p>{{ status[type.value].pending }} fiche(s) en attente</p></article>{% endfor %}
+    </section>
+    <section class="card table-wrapper"><table><thead><tr><th>Type</th><th>Code Bible</th><th>Champ</th><th>Condition</th><th>Formule</th><th>Poids</th><th>Cible</th><th>Canaux</th><th></th></tr></thead><tbody>
+        {% for row in rows %}{% set config = row.configuration %}{% set definition = row.definition %}<tr>
+            <td>{{ config.ficheType.value|replace({'_': ' '}) }}</td><td><code>{{ config.fieldCode }}</code></td><td>{{ config.label }}</td>
+            <td>{{ definition.conditionLabel ?? 'Toujours' }}</td><td>{{ config.formula.label }}</td><td>{{ config.weight }}</td>
+            <td>{% if row.effective_target %}{{ row.effective_target }} <small>({{ config.targetLengthOverride ? 'configuration' : 'entité' }})</small>{% else %}—{% endif %}</td>
+            <td>{% set channels = [] %}{% if config.marketplace %}{% set channels = channels|merge(['Marketplace']) %}{% endif %}{% if config.thematicSites %}{% set channels = channels|merge(['Sites']) %}{% endif %}{% if config.salesforce %}{% set channels = channels|merge(['Salesforce']) %}{% endif %}{% if config.providerPortal %}{% set channels = channels|merge(['Portail']) %}{% endif %}{{ channels|join(', ') ?: 'Aucun' }}</td>
+            <td><a class="btn btn-secondary" href="{{ path('app_pim_completeness_edit', {id: config.id}) }}">Modifier</a></td>
+        </tr>{% else %}<tr><td colspan="9">Aucun champ trouvé.</td></tr>{% endfor %}
+    </tbody></table></section>
+</main>
+{% endblock %}

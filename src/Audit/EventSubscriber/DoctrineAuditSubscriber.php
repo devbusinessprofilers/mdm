@@ -28,6 +28,7 @@ use App\Pim\Enum\NatureRessource;
 use Doctrine\Bundle\DoctrineBundle\Attribute\AsDoctrineListener;
 use Doctrine\ORM\Event\OnFlushEventArgs;
 use Doctrine\ORM\Events;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
 #[AsDoctrineListener(event: Events::onFlush)]
 final readonly class DoctrineAuditSubscriber
@@ -38,14 +39,28 @@ final readonly class DoctrineAuditSubscriber
         'version',
         'villeNormalisee',
         'addressFingerprint',
+        'completenessGlobal',
+        'completenessMarketplace',
+        'completenessThematicSites',
+        'completenessSalesforce',
+        'completenessProviderPortal',
+        'completenessCalculatedAt',
+        'completenessRevision',
     ];
 
-    public function __construct(private AuditContext $context)
-    {
+    public function __construct(
+        private AuditContext $context,
+        #[Autowire(env: 'bool:AUDIT_ENABLED')]
+        private bool $enabled = true,
+    ) {
     }
 
     public function onFlush(OnFlushEventArgs $event): void
     {
+        if (!$this->enabled) {
+            return;
+        }
+
         $entityManager = $event->getObjectManager();
         $uow = $entityManager->getUnitOfWork();
         $operations = [

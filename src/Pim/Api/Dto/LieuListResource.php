@@ -8,7 +8,7 @@ final readonly class LieuListResource
 {
     public function __construct(
         public string $id,
-        public ?int $code,
+        public int $code,
         public ?string $label,
         public ?string $ville,
         public string $status,

@@ -69,7 +69,6 @@ final class LieuControllerTest extends WebTestCase
         self::assertSelectorTextContains('h1', 'Nouveau lieu');
 
         $client->submitForm('Enregistrer', [
-            'lieu[code]' => '101',
             'lieu[label]' => 'Lieu CRUD temporaire',
             'lieu[generaleTypologie]' => ['GENERALE_TYPOLOGIE_20'],
             'lieu[generaleWebsiteUrl]' => 'https://example.test',
@@ -138,7 +137,6 @@ final class LieuControllerTest extends WebTestCase
         StatutFiche $status,
     ): Lieu {
         $lieu = new Lieu();
-        $lieu->changeCode($code);
         $lieu->changeLabel($label);
         $localisation = new Localisation();
         $localisation->changeVille($ville);

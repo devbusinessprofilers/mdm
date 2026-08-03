@@ -10,8 +10,9 @@
             <p class="page-kicker">Fiche Lieu</p>
             <h1>{{ lieu.label ?? 'Sans libellé' }}</h1>
         </div>
-        <div>{% if is_granted('ROLE_BP_VALIDATOR') %}<a class="btn" href="{{ path('app_pim_lieu_history', {id: lieu.id}) }}">Historique</a>{% endif %} {% if is_granted('FICHE_EDIT', lieu.fiche) %}<a class="btn" href="{{ path('app_pim_lieu_edit', {id: lieu.id}) }}">Modifier</a>{% endif %}</div>
+        <div><a class="btn btn-secondary" href="{{ path('app_enrichment_fiche_translation_show', {id: lieu.id}) }}">Traductions</a> {% if is_granted('ROLE_BP_VALIDATOR') %}<a class="btn" href="{{ path('app_pim_lieu_history', {id: lieu.id}) }}">Historique</a>{% endif %} {% if is_granted('FICHE_EDIT', lieu.fiche) %}<a class="btn" href="{{ path('app_pim_lieu_edit', {id: lieu.id}) }}">Modifier</a>{% endif %}</div>
     </header>
+    {% include 'pim/_completeness.html.twig' with {entity: lieu} only %}
     <section class="card">
     <dl class="definition-list">
         <dt>Code</dt><dd>{{ lieu.code ?? '—' }}</dd>

@@ -9,11 +9,6 @@ final class ActivitePatchInput
     /** @var array<string,mixed> */
     private array $payload = [];
 
-    public function setCode(?int $v): void
-    {
-        $this->payload['code'] = $v;
-    }
-
     public function setLabel(?string $v): void
     {
         $this->payload['label'] = $v;

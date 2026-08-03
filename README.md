@@ -57,14 +57,14 @@ Légende : `[x]` terminé, `[~]` partiel, `[ ]` à faire.
   workflow, recherche, audit, DAM, API externe, fixtures et commande de
   validation livrés. L’autocomplétion géographique et la minicarte sont
   reportées au passage au front.
-- [ ] Traiteurs et Plateaux-repas
+- [ ] Traiteurs et Plateaux-repas : A NE PAS FAIRE POUR LE MOMENT
 - [~] Imports : LOV Prestataire CSV et commandes de contrôle Lieu/Activité/Service disponibles ; imports métier génériques, exports et synchronisations à faire
-- [~] Dashboards et qualité des données : supervision technique disponible ; indicateurs métier et complétude globale à faire
-- [ ] Traduction, OCR et enrichissement IA
+- [~] Dashboards et qualité des données : supervision technique et complétude configurable globale/par canal livrées ; autres indicateurs métier à faire
+- [~] Traduction Google asynchrone des fiches et LOV et vues de suivi livrées ; OCR et enrichissement IA reportés au lot IA ultérieur
 - [ ] Déploiement Upsun et stockage OVH de production
 
 La dernière vérification locale couvre les migrations MariaDB jusqu’à
-`Version20260731201000`, un schéma Doctrine synchronisé, 209 tests (950
+`Version20260803110000`, un schéma Doctrine synchronisé, 220 tests (1 011
 assertions), l’analyse PHPStan, les templates Twig et l’export OpenAPI. Les
 formulaires PIM sont construits avec les FormTypes Symfony et rendus par les
 helpers Twig ; aucun formulaire métier n’est écrit directement en HTML.
@@ -285,6 +285,27 @@ Tous les appels externes utilisent timeout, retry avec backoff, idempotence, jou
 
 ### Étape 7 — Construire les dashboards
 
+La complétude est calculée pour les Lieux, Activités, Restaurants et Services
+événementiels. Le Super Admin configure les poids, la formule et les canaux sur
+`/admin/completude`. Les scores global, Marketplace, sites thématiques,
+Salesforce et Portail Prestataire sont stockés dans chaque entité métier et
+recalculés par le worker `completeness` après la réindexation.
+
+La formule `presence` attribue tout le poids à une valeur renseignée. La formule
+`length_ratio` attribue une fraction du poids selon la longueur cible. Cette
+cible provient par défaut de l'attribut `CompletenessTarget` de l'entité et peut
+être surchargée dans l'administration sans dépasser la limite de l'entité. Le
+champ Photo est rempli uniquement lorsqu'une image DAM traitée dispose des
+droits de diffusion. Chaque modification de configuration est historisée avec
+son auteur, ses valeurs avant/après et la révision déclenchée.
+
+Le catalogue est synchronisé explicitement avec
+`app:completeness:sync-config`. Une modification lance un recalcul par lots avec
+`app:completeness:recalculate`, sans charger toutes les fiches dans la file en
+une seule fois. `app:completeness:status` affiche la progression et retourne un
+code de succès uniquement lorsque toutes les fiches portent la révision
+courante. Le premier calcul doit être terminé avant l'ouverture du site.
+
 Afficher au minimum :
 
 - fiches totales, publiées et en attente ;
@@ -298,16 +319,235 @@ Afficher au minimum :
 
 Ajouter un cron de relance des fiches incomplètes et les alertes d'exploitation.
 
-### Étape 8 — Ajouter l'enrichissement et l'IA
+### Étape 8 — Livrer la traduction ; reporter l'OCR au lot IA
 
-1. Garder une interface `EnrichmentProvider` indépendante du fournisseur.
-2. Ajouter traduction, reformulation et génération de descriptions.
-3. Ajouter OCR et extraction depuis PDF, images et tableurs.
-4. Proposer le préremplissage des salles, capacités, équipements et services.
-5. Ajouter tagging photo, Google Business Profile et enrichissement public traçable.
-6. Marquer chaque proposition comme provisoire avec sa source.
+La traduction constitue le socle livré du lot Enrichment. L'OCR, l'extraction
+documentaire, la génération de contenu et les autres fonctions d'IA ne font pas
+partie du lot actuel : ils sont reportés ensemble dans un lot IA ultérieur,
+après un cadrage métier, juridique, budgétaire et technique distinct.
 
-**Règle absolue :** aucun contenu produit par l'IA n'est publié sans validation humaine.
+#### 8.1 Cadrer les données et les usages
+
+1. Utiliser le français comme langue source. Les langues de la V1 sont le
+   français, l'anglais, l'espagnol, l'italien, le néerlandais, le portugais et
+   l'allemand, soit les locales `fr`, `en`, `es`, `it`, `nl`, `pt` et `de`.
+2. Traduire les contenus métier des fiches : noms, descriptions, légendes,
+   informations d'accès et textes commerciaux, y compris ceux des sous-entités
+   comme les salles et les offres.
+3. Exclure de la traduction les codes, adresses, URLs, emails, crédits et
+   sources documentaires, données techniques, commentaires de validation et
+   valeurs d'audit.
+4. Traduire les libellés des LOV et toutes leurs valeurs dans les six langues
+   cibles.
+5. Utiliser Google Cloud Translation pour la V1, sans coupler le domaine PIM à
+   ce fournisseur.
+6. Lister les documents acceptés par l'OCR, leur taille et leur nombre de pages
+   maximum, ainsi que les données métier attendues.
+
+#### 8.2 Construire le socle technique
+
+1. Créer des contrats de traduction et d'OCR indépendants des fournisseurs,
+   avec un adaptateur Google pour la traduction.
+2. Stocker chaque traduction avec sa fiche ou sa valeur LOV, son chemin métier,
+   sa locale, la valeur source, son empreinte, la valeur traduite, son origine
+   Google ou manuelle, son statut, son erreur et ses dates de traitement.
+3. Utiliser les statuts `en_attente`, `en_cours`, `disponible`, `obsolete` et
+   `en_erreur`. Une traduction en erreur doit pouvoir être relancée.
+4. Exécuter les traitements dans la file Messenger `enrichment`, via l'outbox,
+   avec idempotence, timeout, retry avec backoff et file d'échec.
+5. Utiliser une empreinte de la source, de la langue cible et de la version du
+   fournisseur pour éviter un retraitement identique et détecter les
+   traductions devenues obsolètes.
+6. Placer le projet, les identifiants et les secrets Google uniquement dans les
+   secrets Upsun ou dans l'environnement local non versionné.
+
+#### 8.3 Traduire les fiches publiées
+
+1. Lorsqu'une fiche atteint le statut `publiee`, envoyer dans l'outbox une
+   demande de traduction vers `en`, `es`, `it`, `nl`, `pt` et `de`.
+2. Rendre automatiquement disponibles les traductions retournées par Google,
+   sans bloquer la publication de la fiche.
+3. Lors d'une modification puis d'une republication, comparer les empreintes et
+   retraduire uniquement les champs français qui ont changé.
+4. Permettre aux éditeurs autorisés sur la fiche de consulter les traductions et
+   aux validateurs BP de les corriger ou de relancer un traitement en erreur.
+5. Ne jamais écraser une correction manuelle. Si la source française change,
+   conserver la correction avec le statut `obsolete` et afficher séparément la
+   nouvelle suggestion Google.
+6. Ajouter depuis chaque vue de fiche un accès **Traductions**. La page affiche,
+   pour chaque champ traduisible, le texte français, les six traductions, leur
+   origine, leur statut, leur erreur éventuelle et leur date de mise à jour.
+7. Journaliser dans l'audit l'auteur et la valeur de chaque correction manuelle.
+
+#### 8.4 Administrer et traduire les LOV
+
+1. Faire de MariaDB la source de vérité des LOV. Les catalogues PHP statiques ne
+   doivent plus fournir les valeurs aux formulaires, validations, API ou index.
+2. Conserver les codes et identifiants existants pendant cette bascule.
+3. Ajouter dans la navigation des validateurs BP une page **Listes de valeurs**,
+   paginée et recherchable. Elle affiche le code et le libellé français de
+   chaque LOV, son nombre de valeurs et sa couverture de traduction.
+4. Ajouter une page de détail par LOV affichant le code, le libellé français et
+   les traductions `en`, `es`, `it`, `nl`, `pt` et `de` de chaque valeur, ainsi
+   que sa position et son statut actif.
+5. Permettre aux validateurs BP d'ajouter une valeur, modifier ses libellés et
+   traductions, changer sa position, relancer Google ou la désactiver. La
+   création d'une nouvelle définition de LOV n'entre pas dans ce lot.
+6. Rendre le code d'une valeur immuable après sa création. Une valeur déjà
+   utilisée n'est jamais supprimée : elle est désactivée et reste lisible sur les
+   fiches existantes, mais n'est plus proposée pour une nouvelle sélection.
+7. Générer les nouveaux identifiants selon le calcul stable actuel et refuser
+   toute collision globale avant l'enregistrement.
+8. Après l'ajout d'une valeur ou la modification de son libellé français,
+   déclencher ses six traductions Google en arrière-plan sans bloquer la page.
+
+#### 8.5 Livrer l'OCR et l'extraction documentaire
+
+> **Statut : reporté au lot IA.** Cette étape n'est pas à implémenter dans le
+> lot traduction actuel. Le plan ci-dessous est conservé comme cadrage de la
+> future phase IA.
+
+##### 8.5.1 Comprendre ce que fait l'OCR
+
+L'**OCR**, ou **reconnaissance optique de caractères**, transforme en texte
+exploitable les mots visibles dans une image ou dans un document numérisé. Par
+exemple, une fiche technique scannée ne contient pour l'ordinateur qu'une image
+de pixels : l'OCR repère les lignes, reconnaît les caractères et restitue le
+texte avec sa page, sa position et un indice de confiance.
+
+L'OCR ne doit pas être confondu avec l'IA générative : il retranscrit un contenu
+existant, il ne rédige pas de nouveau contenu. Il ne remplace pas non plus
+l'extraction native : un PDF qui contient déjà du texte, un document Word ou un
+tableur Excel doit être lu directement afin de conserver une meilleure fidélité.
+L'OCR est réservé aux images et aux pages scannées. Dans tous les cas, les
+valeurs destinées au PIM restent des propositions soumises à validation humaine.
+
+##### 8.5.2 Cadrer le périmètre V1
+
+1. Recenser avec le métier les documents utiles : fiches techniques, menus,
+   plans de salles, brochures, attestations et justificatifs RSE.
+2. Accepter en V1 les images `JPEG`, `PNG` et `TIFF`, les PDF textuels ou
+   scannés, ainsi que `DOCX` et `XLSX` pour l'extraction native. Refuser les
+   archives, exécutables et formats non autorisés.
+3. Faire valider puis rendre configurables les limites de taille, de pages, de
+   résolution et de durée. La proposition initiale est de 20 Mo par image ou
+   document Office et de 50 Mo ou 100 pages par PDF.
+4. Définir par type de document les informations recherchées et leur chemin
+   PIM : capacités, surfaces, horaires, services, équipements, engagements RSE
+   ou textes descriptifs.
+5. Exclure de la V1 la reconnaissance manuscrite, la traduction automatique du
+   document, la génération de texte et toute interprétation libre par un LLM.
+
+##### 8.5.3 Construire le modèle et le pipeline
+
+1. Créer un contrat `DocumentTextExtractorInterface` indépendant du fournisseur
+   et deux familles d'adaptateurs : extraction native et OCR. Comparer sur un
+   corpus BP un service cloud et une solution locale avant de retenir le
+   fournisseur de production.
+2. Créer une extraction liée à la fiche, à la ressource DAM et à l'empreinte de
+   l'original. Stocker le type MIME, la langue détectée, le fournisseur et sa
+   version, le nombre de pages, le statut, l'erreur et les dates de traitement.
+3. Conserver pour chaque page le texte et les blocs reconnus avec leurs
+   coordonnées, leur ordre de lecture et leur confiance. Placer les résultats
+   volumineux dans le stockage objet privé et seulement leurs métadonnées et
+   index utiles dans MariaDB.
+4. Utiliser les statuts d'extraction `en_attente`, `en_cours`, `disponible`,
+   `en_erreur` et `obsolete`. Une nouvelle version du fichier rend l'ancienne
+   extraction obsolète sans supprimer son historique.
+5. Déclencher un message `ExtractDocumentText` dans la file `enrichment` via
+   l'outbox. L'empreinte du fichier, la version de l'extracteur et un identifiant
+   de traitement garantissent l'idempotence et empêchent les doublons.
+6. Lire uniquement l'original privé autorisé du DAM, au moyen d'une URL
+   présignée de courte durée ou d'un flux interne. Le worker ne doit jamais
+   rendre le document public pour pouvoir l'analyser.
+
+##### 8.5.4 Produire des propositions PIM traçables
+
+1. Créer des règles explicites et versionnées pour repérer puis normaliser les
+   valeurs : nombres et unités, horaires, capacités, listes et libellés de LOV.
+2. Enregistrer chaque proposition avec le chemin du champ PIM, la valeur brute,
+   la valeur normalisée, la règle utilisée, la confiance, la page et la zone
+   d'origine. Les statuts sont `a_valider`, `acceptee`, `rejetee` et `obsolete`.
+3. Ne jamais écrire automatiquement dans une fiche. Une acceptation explicite
+   applique la valeur au moyen des services et validations du domaine, puis
+   crée une révision d'audit avec le document, la page et l'utilisateur.
+4. Conserver la valeur déjà présente dans le PIM et signaler les conflits. La
+   proposition ne remplace une donnée existante qu'après confirmation humaine.
+5. Une proposition rejetée reste consultable pour la traçabilité et n'est pas
+   recréée tant que le document, la règle ou le champ source n'a pas changé.
+
+##### 8.5.5 Ajouter les vues de traitement et de validation
+
+1. Ajouter depuis chaque fiche une vue **Extraction documentaire** qui liste les
+   documents, leur type, leur version, leur statut, leur date, leur nombre de
+   pages et leur erreur éventuelle.
+2. Permettre aux utilisateurs autorisés de demander ou relancer une extraction.
+   Réserver l'acceptation et le rejet des propositions aux validateurs BP.
+3. Afficher côte à côte le document, la zone reconnue, le texte brut, la valeur
+   normalisée, le champ PIM ciblé et sa valeur actuelle.
+4. Permettre la correction de la valeur proposée avant acceptation, sans
+   modifier le texte OCR brut qui constitue la preuve de ce qui a été lu.
+5. Ajouter des filtres par statut, document, type de proposition et niveau de
+   confiance, ainsi qu'une validation unitaire ou groupée avec confirmation.
+
+##### 8.5.6 Déployer progressivement
+
+1. Constituer un corpus de recette anonymisé couvrant documents propres,
+   scans inclinés, faible contraste, tableaux, plusieurs langues et documents
+   volontairement invalides.
+2. Mesurer séparément la qualité de transcription et la qualité du mapping PIM :
+   taux de caractères corrects, champs correctement proposés, faux positifs,
+   temps de traitement et coût par page.
+3. Commencer par un seul type de document et quelques champs simples, faire
+   valider les résultats par le métier, puis élargir progressivement le corpus.
+4. Prévoir un interrupteur par environnement, par type de document et par
+   fournisseur, ainsi qu'une procédure de reprise des traitements en échec.
+
+**Terminé quand :** un document autorisé peut être extrait de manière
+asynchrone et idempotente ; son texte, ses pages et ses zones sont consultables ;
+une proposition PIM traçable peut être corrigée, acceptée ou rejetée par un
+validateur sans qu'aucune donnée soit publiée automatiquement.
+
+#### 8.6 Sécuriser, tester et superviser
+
+1. Ne pas envoyer au fournisseur un document sans base légale ni droit d'usage ;
+   interdire son utilisation pour l'entraînement et limiter sa conservation.
+2. Contrôler le type MIME réel, analyser les fichiers avec l'antivirus du DAM et
+   maintenir les documents en quarantaine tant que le contrôle n'est pas validé.
+3. Chiffrer les originaux et les extractions au repos et en transit, limiter les
+   URLs présignées au strict nécessaire et appliquer une durée de conservation
+   validée par le métier et le DPO.
+4. Ne pas placer le contenu des documents ou les données personnelles dans les
+   logs techniques.
+5. Tester les droits, l'idempotence, la traduction d'une fiche lors de sa
+   publication, la republication partielle, la protection des corrections
+   manuelles, les erreurs du fournisseur et la reprise Messenger.
+6. Tester l'ajout, la modification, l'ordre et la désactivation d'une valeur
+   LOV, l'immuabilité de son code et son utilisation par les formulaires, l'API,
+   la recherche et les fiches existantes.
+7. Tester les formats et limites OCR, les fichiers corrompus, l'idempotence, le
+   changement de version d'un document, les droits, la relance, les conflits de
+   champs et la traçabilité des acceptations ou rejets.
+8. Mesurer volumes, durées, taux d'erreur, qualité, coût par traitement et âge
+   du plus ancien message.
+9. Déployer d'abord sur un petit corpus validé par le métier avant d'élargir les
+   langues, les types de documents et les volumes.
+
+**Lot traduction terminé quand :** une traduction peut être demandée, traitée
+de façon asynchrone, consultée, corrigée et auditée ; les six langues cibles
+sont visibles sur chaque fiche publiée et chaque valeur LOV, sans écraser une
+correction manuelle. Les critères de fin de l'OCR sont conservés en section 8.5
+pour le futur lot IA.
+
+#### 8.7 IA — phase ultérieure
+
+L'OCR et l'extraction documentaire sont reportés dans ce lot avec la
+reformulation, la génération de descriptions, le préremplissage intelligent, le
+tagging automatique des médias et l'enrichissement depuis des sources publiques.
+Aucun fournisseur OCR ni modèle d'IA n'est retenu dans le lot traduction actuel.
+
+**Règle absolue pour cette future phase :** aucun contenu produit par l'IA ne
+sera publié sans validation humaine.
 
 ### Étape 9 — Durcir et mettre en production
 
@@ -375,7 +615,75 @@ Ce guide synthétise les documents du dossier `Documents BP/Cahier des charges/D
 
 En cas de contradiction, faire valider la règle par le métier, l'ajouter dans une décision d'architecture, puis protéger cette décision par un test.
 
-## 8. Documentation d'exploitation
+## 8. Arbitrages des workflows du cahier des charges — 31 juillet 2026
+
+Décisions métier prises sur chaque workflow identifié dans le cahier des
+charges. Légende : **Oui** = à faire ou à conserver, **Non** = écarté,
+**Peut-être** = à arbitrer plus tard.
+
+### Cycle de vie des fiches
+
+- **Oui** — Workflow de statuts `en_cours -> validee -> publiee -> archivee` (déjà livré, à conserver).
+- **Non** — Workflow de validation multi-niveaux (CDC §4) : le workflow simple à quatre statuts suffit.
+- **Non** — Statuts de publication distincts `non publié / publié` par canal (CDC §6.3).
+- **Oui** — Validation bloquée sous le nombre minimum de photos (4 pour Lieux, 1 pour les autres).
+- **Oui** — Alerte non bloquante de doublon d'adresse à la création (Lieux et Restaurants).
+- **Peut-être** — Workflows paramétrables depuis l'administration (CDC §7).
+
+### Comptes et onboarding
+
+- **Oui** — Onboarding prestataire (CDC §3.1). Attention au périmètre : le compte est **créé sur la Marketplace BP (site externe)**, y compris l'invitation email, l'activation et le mot de passe. Le PIM ne crée pas ce compte : il gère uniquement son existence dans le référentiel (pré-création de la référence) et son rattachement aux fiches prestataires.
+- **Oui** — Création d'utilisateur par le Super Admin avec mot de passe auto-généré et email d'activation automatique (CDC §3.2).
+- **Oui** — Anti-doublon email : proposition automatique d'affilier la fiche au compte existant et bouton de renvoi des identifiants (CDC §3.2/3.7).
+- **Oui** — Modification d'utilisateur avec renvoi d'email d'activation ou de réinitialisation (CDC §3.3).
+- **Oui** — Suppression d'un utilisateur (CDC §3.4).
+
+### DAM
+
+- **Oui** — Circuit de diffusion : upload (Portail ou PIM), DAM, génération des URLs, renvoi au PIM, diffusion vers tous les canaux (CDC §A.2).
+- **Oui** — Rejet automatique des médias non conformes avec message listant les fichiers refusés et les motifs (CDC §A.2).
+- **Oui** — Classement des photos par catégories avec association d'une photo à une salle de réunion précise (CDC §A.2).
+- **Oui** — Pipeline asynchrone `MediaUploaded -> workers -> rendus -> MediaProcessed` avec retry puis dead-letter (déjà livré, à conserver).
+- **Peut-être** — Workflow antivirus `pending_scan -> clean / infected / scan_error` avec quarantaine ClamAV.
+
+### ETL et synchronisations
+
+- **Oui** — Synchronisation bidirectionnelle Salesforce, MDM et Portail Prestataire avec webhooks et réconciliation (CDC §2/§6).
+- **Oui** — Chaîne d'import complète : fichiers Excel/CSV/XML/JSON, transformations, mapping, rapports détaillés avec reprise sur erreur (CDC §6.2).
+- **Oui** — Publication omnicanale pilotée par le MDM : Salesforce, Marketplace BP, Portail Prestataires, WordPress, API publiques futures (CDC §6.3).
+- **Peut-être** — Traitement des demandes de référencement émanant de Salesforce (CDC §8.1).
+
+### Traduction et OCR
+
+- **Oui** — Traduction Google asynchrone des fiches après publication, du
+  français vers l'anglais, l'espagnol, l'italien, le néerlandais, le portugais
+  et l'allemand.
+- **Oui** — Traduction des libellés et valeurs LOV, avec une vue d'administration
+  réservée aux validateurs BP pour ajouter, corriger, ordonner ou désactiver une
+  valeur sans modifier son code.
+- **Oui** — Vue des traductions depuis chaque fiche, consultation par les
+  éditeurs autorisés et correction manuelle par les validateurs BP.
+- **Reporté au lot IA** — Extraction documentaire OCR (image et PDF scanné) et
+  extraction native des PDF textuels, fichiers Excel et Word (CDC §10.2).
+- **Oui** — Les traductions Google sont disponibles automatiquement. Une
+  correction manuelle n'est jamais écrasée et devient `obsolete` si sa source
+  française change.
+
+### IA — phase ultérieure
+
+- **Reporté** — OCR des images et PDF scannés, extraction native des documents
+  textuels et création de propositions PIM soumises à validation humaine.
+- **Reporté** — Création automatique de fiche avec attribution de la visibilité géographique selon l'adresse (CDC §10.1).
+- **Reporté** — Génération et reformulation de textes avec pictogramme « provisoire » et validation humaine obligatoire (CDC §10.2).
+- **Reporté** — Préremplissage intelligent des salles, chambres, couverts et équipements à partir des extractions documentaires (CDC §10.2).
+- **Reporté** — Tagging automatique des médias par catégories (CDC §10.4).
+
+### Gouvernance et supervision
+
+- **Oui** — Data Governance Workspace : comparatif Salesforce / MDM / Plateforme BP, scoring de qualité, anomalies et notifications (CDC §9).
+- **Oui** — Cron de relance des fiches incomplètes avec emails automatiques aux prestataires.
+
+## 9. Documentation d'exploitation
 
 - [Workers et files Symfony Messenger](docs/runbooks/messenger.md)
 - [Module PIM](src/Pim/README.md)

@@ -60,7 +60,6 @@ final class ActiviteFixtures extends Fixture implements FixtureGroupInterface
             $mobile = 0 === $offset % 2;
 
             $activity = new Activite();
-            $activity->changeCode($code);
             $activity->changeLabel($label);
             $activity->changeTypes([
                 0 === $offset % 3 ? 'TYPE_EXT_INT_1' : 'TYPE_EXT_INT_2',

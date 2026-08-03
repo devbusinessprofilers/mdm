@@ -8,7 +8,7 @@
         <div class="page-header-copy">
             <p class="page-kicker">Catalogue</p>
             <h1>Restaurants</h1>
-            <p class="page-description">Consultez et maintenez les fiches Restaurant du PIM.</p>
+            <p class="page-description">Consultez et maintenez les fiches Restaurant du PIM — {{ total_count }} fiche{{ total_count == 1 ? '' : 's' }} au total.</p>
         </div>
         <a class="btn" href="{{ path('app_pim_restaurant_new') }}">Créer un restaurant</a>
     </header>

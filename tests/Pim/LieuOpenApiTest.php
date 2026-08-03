@@ -15,6 +15,11 @@ final class LieuOpenApiTest extends KernelTestCase
         self::bootKernel();
         $openApi = self::getContainer()->get(OpenApiFactoryInterface::class)([]);
         $paths = $openApi->getPaths()->getPaths();
+        $schemas = $openApi->getComponents()->getSchemas();
+        self::assertInstanceOf(\ArrayObject::class, $schemas);
+        $patchSchema = $schemas['Lieu.LieuPatchInput.jsonMergePatch'] ?? null;
+        self::assertInstanceOf(\ArrayObject::class, $patchSchema);
+        self::assertArrayNotHasKey('code', (array) ($patchSchema['properties'] ?? []));
 
         foreach (['/api/v1/lieux', '/api/v1/lieux/{id}', '/api/v1/lieux/{lieuId}/medias', '/api/v1/lieux/{lieuId}/medias/ordre', '/api/v1/lieux/{lieuId}/medias/{resourceId}', '/api/v1/lieux/{lieuId}/medias/{resourceId}/fichier'] as $path) {
             self::assertArrayHasKey($path, $paths);

@@ -48,6 +48,16 @@ framework:
                     delay: 10000
                     multiplier: 2
                     max_delay: 60000
+            completeness:
+                dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
+                options:
+                    queue_name: completeness
+                    redeliver_timeout: 900
+                retry_strategy:
+                    max_retries: 5
+                    delay: 1000
+                    multiplier: 2
+                    max_delay: 60000
             mail:
                 dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
                 options:
@@ -75,6 +85,8 @@ framework:
             'App\Account\Message\*': mail
             App\Shared\Message\MediaUploaded: dam
             App\Shared\Message\MediaProcessed: pim
+            App\Pim\Message\CalculateFicheCompleteness: completeness
+            App\Pim\Message\RecalculateCompletenessBatch: completeness
             'App\Pim\Message\*': pim
             'App\Dam\Message\*': dam
             'App\Etl\Message\*': etl
@@ -95,6 +107,9 @@ when@test:
                     dsn: 'in-memory://'
                     options: { serialize: true }
                 enrichment:
+                    dsn: 'in-memory://'
+                    options: { serialize: true }
+                completeness:
                     dsn: 'in-memory://'
                     options: { serialize: true }
                 mail:

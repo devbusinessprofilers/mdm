@@ -62,7 +62,6 @@ final class RestaurantFixtures extends Fixture implements FixtureGroupInterface
             $label = sprintf('%s %05d', $definition['label'], $code);
 
             $restaurant = new Restaurant();
-            $restaurant->changeCode($code);
             $restaurant->changeLabel($label);
             $restaurant->changeTypesRestaurant([$definition['type']]);
             $restaurant->changeTypesCuisine([$definition['cuisine']]);

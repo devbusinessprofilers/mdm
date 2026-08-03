@@ -484,7 +484,7 @@ final class LieuLovCatalog
     /** @return array<string, string> */
     public static function choicesFor(string $attributeCode): array
     {
-        return self::CHOICES[$attributeCode] ?? [];
+        return LovRuntimeCatalog::choices($attributeCode) ?? self::CHOICES[$attributeCode] ?? [];
     }
 
     /** @return array<string, array<string, string>> */
@@ -504,6 +504,8 @@ final class LieuLovCatalog
 
     public static function valueId(string $attributeCode, string $valueCode): int
     {
+        $runtimeId = LovRuntimeCatalog::valueId($attributeCode, $valueCode);
+        if (null !== $runtimeId) { return $runtimeId; }
         self::assertValid($attributeCode, $valueCode);
 
         // These stable IDs must remain globally unique across every LOV because
@@ -513,6 +515,8 @@ final class LieuLovCatalog
 
     public static function valueCode(int $valueId): string
     {
+        $runtimeCode = LovRuntimeCatalog::valueCode($valueId);
+        if (null !== $runtimeCode) { return $runtimeCode; }
         foreach (self::CHOICES as $attributeCode => $choices) {
             foreach ($choices as $valueCode => $_label) {
                 if (self::valueId($attributeCode, $valueCode) === $valueId) {

@@ -33,11 +33,6 @@ final class ActiviteType extends AbstractType
     public function buildForm(FormBuilderInterface $b, array $options): void
     {
         $b->add(
-            'code',
-            IntegerType::class,
-            $this->field('Code', 'code', 'changeCode'),
-        )
-            ->add(
                 'label',
                 TextType::class,
                 $this->field('Nom de l’activité', 'label', 'changeLabel'),

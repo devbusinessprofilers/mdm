@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Pim\Entity\Restaurant;
 
+use App\Pim\Attribute\CompletenessTarget;
+use App\Pim\Entity\CompletenessScoresTrait;
 use App\Pim\Entity\Fiche;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Entity\Localisation;
@@ -20,6 +22,7 @@ use Symfony\Component\Uid\Ulid;
 
 #[ORM\Entity(repositoryClass: RestaurantRepository::class)]
 #[ORM\Table(name: 'pim_restaurant')]
+#[ORM\Index(name: 'IDX_RESTAURANT_COMPLETENESS_REVISION', columns: ['completeness_revision'])]
 #[ORM\HasLifecycleCallbacks]
 #[ValidRestaurant(groups: ['Draft'])]
 #[ValidRestaurant(groups: ['Submission'])]
@@ -28,6 +31,9 @@ class Restaurant
     use TimestampableTrait {
         touch as touchDetail;
     }
+    use CompletenessScoresTrait;
+
+    public const WEBSITE_MAX_LENGTH = 100;
 
     #[ORM\Id]
     #[ORM\Column(type: 'ulid', unique: true)]
@@ -37,7 +43,8 @@ class Restaurant
     #[ORM\JoinColumn(name: 'fiche_id', nullable: false, unique: true, onDelete: 'CASCADE')]
     private Fiche $fiche;
 
-    #[ORM\Column(length: 100, nullable: true)]
+    #[ORM\Column(length: self::WEBSITE_MAX_LENGTH, nullable: true)]
+    #[CompletenessTarget(self::WEBSITE_MAX_LENGTH)]
     private ?string $siteOfficiel = null;
 
     #[ORM\Column(nullable: true)]
@@ -115,14 +122,9 @@ class Restaurant
         return $this->fiche;
     }
 
-    public function code(): ?int
+    public function code(): int
     {
         return $this->fiche->code();
-    }
-
-    public function changeCode(?int $value): void
-    {
-        $this->fiche->changeCode($value);
     }
 
     public function label(): ?string

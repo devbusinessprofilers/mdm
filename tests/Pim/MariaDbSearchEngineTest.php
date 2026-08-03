@@ -65,7 +65,7 @@ final class MariaDbSearchEngineTest extends KernelTestCase
         self::assertSame([$lyon->id()], $this->ids($statusPage->results));
         self::assertSame(1, $statusPage->totalCount);
 
-        $codePage = $this->search('7');
+        $codePage = $this->search((string) $paris->code());
         self::assertSame($paris->id(), $codePage->results[0]->id ?? null);
     }
 
@@ -153,7 +153,6 @@ final class MariaDbSearchEngineTest extends KernelTestCase
     private function createLieu(int $code, string $label, string $ville, StatutFiche $status): Lieu
     {
         $lieu = new Lieu();
-        $lieu->changeCode($code);
         $lieu->changeLabel($label);
         $lieu->changeDescGenerale('Description événementielle du lieu.');
         $localisation = new Localisation();

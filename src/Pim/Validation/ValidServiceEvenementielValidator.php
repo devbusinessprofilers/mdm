@@ -110,7 +110,6 @@ final class ValidServiceEvenementielValidator extends ConstraintValidator
     {
         foreach (
             [
-                "code" => $value->code(),
                 "label" => $value->label(),
                 "descriptionGenerale" => $value->descriptionGenerale(),
                 "modeIntervention" => $value->modeIntervention(),

@@ -57,7 +57,6 @@ final class ServiceFixtures extends Fixture implements FixtureGroupInterface
             $mobile = 0 === $offset % 2;
 
             $service = new ServiceEvenementiel();
-            $service->changeCode($code);
             $service->changeLabel($label);
             $service->changePrestations([$definition['code']]);
             $service->changeDescriptionGenerale(

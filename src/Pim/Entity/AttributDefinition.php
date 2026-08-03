@@ -19,8 +19,6 @@ class AttributDefinition
         private string $code,
         #[ORM\Column(length: 255)]
         private string $label,
-        #[ORM\Column(type: 'smallint', options: ['unsigned' => true, 'default' => 0])]
-        private int $completenessWeight = 0,
         #[ORM\Column(options: ['default' => false])]
         private bool $translatable = false,
         #[ORM\Column(options: ['default' => true])]
@@ -33,4 +31,6 @@ class AttributDefinition
     public function id(): int { return $this->id; }
     public function code(): string { return $this->code; }
     public function label(): string { return $this->label; }
+    public function translatable(): bool { return $this->translatable; }
+    public function changeLabel(string $label): void { $this->label = trim($label); }
 }

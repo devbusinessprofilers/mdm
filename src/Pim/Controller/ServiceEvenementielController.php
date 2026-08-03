@@ -12,6 +12,7 @@ use App\Dam\Message\DeleteMedia;
 use App\Dam\Service\FicheDocumentUploader;
 use App\Dam\Service\FicheImageUploader;
 use App\Dam\Service\ImageVariantRegistry;
+use App\Enrichment\Service\FicheTranslationScheduler;
 use App\Pim\Entity\Service\ServiceEvenementiel;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Enum\NatureRessource;
@@ -24,6 +25,7 @@ use App\Pim\Form\LieuDocumentReplaceType;
 use App\Pim\Message\IndexFiche;
 use App\Pim\ReadModel\FicheCursor;
 use App\Pim\Repository\ServiceEvenementielRepository;
+use App\Pim\Service\FicheCountProvider;
 use App\Pim\Validation\ValidationGroups;
 use App\Shared\Form\ActionType;
 use App\Shared\Message\MediaUploaded;
@@ -50,6 +52,7 @@ final class ServiceEvenementielController extends AbstractController
         private readonly FormFactoryInterface $forms,
         private readonly FicheImageUploader $imageUploader,
         private readonly FicheDocumentUploader $documentUploader,
+        private readonly FicheTranslationScheduler $translationScheduler,
     ) {}
 
     #[Route("", name: "index", methods: ["GET"])]
@@ -57,6 +60,7 @@ final class ServiceEvenementielController extends AbstractController
         Request $request,
         ServiceEvenementielRepository $repo,
         SearchEngineInterface $search,
+        FicheCountProvider $counts,
     ): Response {
         $form = $this->createForm(
             ServiceSearchType::class,
@@ -114,7 +118,11 @@ final class ServiceEvenementielController extends AbstractController
             "query" => $text,
             "result_count" => $count,
             "search_form" => $form->createView(),
-            "pending_count" => $repo->countByStatus(
+            "total_count" => $counts->totalByType(
+                TypeFiche::ServiceEvenementiel,
+            ),
+            "pending_count" => $counts->countByStatus(
+                TypeFiche::ServiceEvenementiel,
                 StatutFiche::EnAttenteValidation,
             ),
         ]);
@@ -640,6 +648,7 @@ final class ServiceEvenementielController extends AbstractController
         $f->handleRequest($r);
         if ($f->isSubmitted() && $f->isValid()) {
             $change($service, $this->actor());
+            $this->translationScheduler->schedule($service->fiche());
             $o->enqueue(new IndexFiche($service->fiche()->idString()));
             $em->flush();
         }

@@ -52,7 +52,7 @@ final class ActiviteRepository extends ServiceEntityRepository
             $types['id'] = ParameterType::BINARY;
         }
         $sql = sprintf(
-            'SELECT STRAIGHT_JOIN f.id, f.code, f.label, f.status, f.completeness, f.updated_at, CASE WHEN a.mode_intervention = \'fixe\' THEN loc.ville ELSE NULL END ville FROM pim_fiche f INNER JOIN pim_activite a ON a.fiche_id = f.id LEFT JOIN pim_localisation loc ON loc.id = f.localisation_id WHERE %s ORDER BY f.updated_at DESC, f.id DESC LIMIT %d',
+            'SELECT STRAIGHT_JOIN f.id, f.code, f.label, f.status, a.completeness_global AS completeness, f.updated_at, CASE WHEN a.mode_intervention = \'fixe\' THEN loc.ville ELSE NULL END ville FROM pim_fiche f INNER JOIN pim_activite a ON a.fiche_id = f.id LEFT JOIN pim_localisation loc ON loc.id = f.localisation_id WHERE %s ORDER BY f.updated_at DESC, f.id DESC LIMIT %d',
             implode(' AND ', $conditions),
             $limit + 1,
         );
@@ -103,7 +103,7 @@ final class ActiviteRepository extends ServiceEntityRepository
         $rows = $this->getEntityManager()
             ->getConnection()
             ->executeQuery(
-                'SELECT f.id,f.code,f.label,f.status,f.completeness,f.updated_at,CASE WHEN a.mode_intervention=\'fixe\' THEN loc.ville ELSE NULL END ville FROM pim_fiche f INNER JOIN pim_activite a ON a.fiche_id=f.id LEFT JOIN pim_localisation loc ON loc.id=f.localisation_id WHERE f.type=:type AND f.id IN (:ids)',
+                'SELECT f.id,f.code,f.label,f.status,a.completeness_global AS completeness,f.updated_at,CASE WHEN a.mode_intervention=\'fixe\' THEN loc.ville ELSE NULL END ville FROM pim_fiche f INNER JOIN pim_activite a ON a.fiche_id=f.id LEFT JOIN pim_localisation loc ON loc.id=f.localisation_id WHERE f.type=:type AND f.id IN (:ids)',
                 ['type' => TypeFiche::Activite->value, 'ids' => $binary],
                 [
                     'type' => ParameterType::STRING,
@@ -133,7 +133,7 @@ final class ActiviteRepository extends ServiceEntityRepository
     {
         return new ActiviteListItem(
             (string) Ulid::fromBinary($row['id']),
-            null === $row['code'] ? null : (int) $row['code'],
+            (int) $row['code'],
             $row['label'],
             $row['ville'],
             StatutFiche::from($row['status']),

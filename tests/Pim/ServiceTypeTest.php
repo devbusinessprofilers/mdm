@@ -21,6 +21,7 @@ final class ServiceTypeTest extends KernelTestCase
         $form = $factory->create(ServiceEvenementielType::class, $service, [
             "csrf_protection" => false,
         ]);
+        self::assertFalse($form->has("code"));
 
         foreach (
             [

@@ -1,0 +1,54 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Enrichment\Service;
+
+use App\Enrichment\Entity\FicheTranslation;
+use App\Enrichment\Enum\SupportedLocale;
+use App\Enrichment\Message\TranslatePublishedFiche;
+use App\Enrichment\Repository\FicheTranslationRepository;
+use App\Pim\Entity\Fiche;
+use App\Pim\Enum\StatutFiche;
+use App\Shared\Outbox\OutboxPublisherInterface;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\Uid\Ulid;
+
+final readonly class FicheTranslationScheduler
+{
+    public function __construct(
+        private FicheTranslationSourceExtractor $extractor,
+        private FicheTranslationRepository $translations,
+        private EntityManagerInterface $entityManager,
+        private OutboxPublisherInterface $outbox,
+    ) {}
+
+    public function schedule(Fiche $fiche): int
+    {
+        if (StatutFiche::Publiee !== $fiche->status()) { return 0; }
+        $sources = $this->extractor->extract($fiche);
+        $paths = array_fill_keys(array_map(static fn (TranslationSource $source): string => $source->path, $sources), true);
+        $scheduled = 0;
+        foreach (SupportedLocale::targets() as $locale) {
+            $token = (string) new Ulid();
+            $localeScheduled = false;
+            foreach ($sources as $source) {
+                $translation = $this->translations->findOne($fiche, $source->path, $locale);
+                if (!$translation instanceof FicheTranslation) {
+                    $translation = new FicheTranslation($fiche, $source->path, $source->label, $locale, $source->value);
+                    $this->entityManager->persist($translation);
+                }
+                $localeScheduled = $translation->schedule($source->label, $source->value, $token) || $localeScheduled;
+            }
+            if ($localeScheduled) {
+                $this->outbox->enqueue(new TranslatePublishedFiche($fiche->idString(), $locale->value, $token));
+                ++$scheduled;
+            }
+        }
+        foreach ($this->translations->forFiche($fiche) as $translation) {
+            if (!isset($paths[$translation->fieldPath()])) { $translation->markObsolete(); }
+        }
+
+        return $scheduled;
+    }
+}

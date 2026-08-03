@@ -1,0 +1,11 @@
+{% extends 'base.html.twig' %}
+{% block title %}{{ attribute.label }}{% endblock %}
+{% block body %}
+<main class="page">
+    <a class="back-link" href="{{ path('app_pim_lov_index') }}">← Retour aux LOV</a>
+    <header class="page-header"><div><p class="page-kicker"><code>{{ attribute.code }}</code></p><h1>{{ attribute.label }}</h1></div><a class="btn" href="{{ path('app_pim_lov_new', {code: attribute.code}) }}">Ajouter une valeur</a></header>
+    <section class="card table-wrapper"><table><thead><tr><th>Code</th><th>FR</th><th>EN</th><th>ES</th><th>IT</th><th>NL</th><th>PT</th><th>DE</th><th>État</th><th></th></tr></thead><tbody>
+    {% for value in values %}<tr><td><code>{{ value.code }}</code></td><td>{{ value.label }}</td>{% for locale in ['en','es','it','nl','pt','de'] %}<td>{% set translation = translations[value.id][locale] ?? null %}{{ translation ? (translation.translatedLabel ?? '—') : '—' }}{% if translation %}<br><small>{{ translation.status.value }}</small>{% endif %}</td>{% endfor %}<td>{{ value.active ? 'Active' : 'Inactive' }}</td><td><a class="btn btn-secondary" href="{{ path('app_pim_lov_edit', {code: attribute.code, id: value.id}) }}">Modifier</a>{{ form(retry_forms[value.id]) }}</td></tr>{% else %}<tr><td colspan="10">Aucune valeur.</td></tr>{% endfor %}
+    </tbody></table></section>
+</main>
+{% endblock %}

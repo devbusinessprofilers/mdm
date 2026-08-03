@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Pim\Entity\Lieu;
 
+use App\Pim\Attribute\CompletenessTarget;
+use App\Pim\Entity\CompletenessScoresTrait;
 use App\Pim\Entity\Fiche;
 use App\Pim\Entity\Localisation;
 use App\Pim\Lov\LieuLovCatalog;
@@ -19,12 +21,20 @@ use Symfony\Component\Uid\Ulid;
 
 #[ORM\Entity(repositoryClass: LieuRepository::class)]
 #[ORM\Table(name: 'pim_lieu')]
+#[ORM\Index(name: 'IDX_LIEU_COMPLETENESS_REVISION', columns: ['completeness_revision'])]
 #[ORM\HasLifecycleCallbacks]
 #[ValidLieu(groups: ['Draft'])]
 #[ValidLieu(groups: ['Submission'])]
 class Lieu
 {
     use TimestampableTrait { touch as touchDetail; }
+    use CompletenessScoresTrait;
+
+    public const LABEL_MAX_LENGTH = 69;
+    public const WEBSITE_MAX_LENGTH = 100;
+    public const PMR_DETAILS_MAX_LENGTH = 150;
+    public const DESCRIPTION_MAX_LENGTH = 1000;
+    public const ATOUT_MAX_LENGTH = 35;
 
     #[ORM\Id]
     #[ORM\Column(type: 'ulid', unique: true)]
@@ -69,7 +79,8 @@ class Lieu
     private bool $generaleEtabRp = false;
 
     // Site web officiel (Bible row 8)
-    #[ORM\Column(name: 'generale_website_url', length: 255, nullable: true)]
+    #[ORM\Column(name: 'generale_website_url', length: self::WEBSITE_MAX_LENGTH, nullable: true)]
+    #[CompletenessTarget(self::WEBSITE_MAX_LENGTH)]
     private ?string $generaleWebsiteUrl = null;
 
     // Événements de prédilection (Bible row 9)
@@ -109,7 +120,8 @@ class Lieu
     private bool $pmrAcces = false;
 
     // Détails des accès PMR  (Bible row 36)
-    #[ORM\Column(name: 'pmr_details', type: Types::TEXT, nullable: true)]
+    #[ORM\Column(name: 'pmr_details', length: self::PMR_DETAILS_MAX_LENGTH, nullable: true)]
+    #[CompletenessTarget(self::PMR_DETAILS_MAX_LENGTH)]
     private ?string $pmrDetails = null;
 
     // Thématique (Bible row 37)
@@ -119,7 +131,8 @@ class Lieu
     // Ambiance (Bible row 39)
 
     // Texte de description (Bible row 40)
-    #[ORM\Column(name: 'desc_generale', type: Types::TEXT, nullable: true)]
+    #[ORM\Column(name: 'desc_generale', length: self::DESCRIPTION_MAX_LENGTH, nullable: true)]
+    #[CompletenessTarget(self::DESCRIPTION_MAX_LENGTH)]
     private ?string $descGenerale = null;
 
     // Points d'intérêt à moins de 15 minutes à pied (Bible row 34)
@@ -127,23 +140,28 @@ class Lieu
     private ?string $descGeneralePointInteret = null;
 
     // Plus n°1 (Bible row 41)
-    #[ORM\Column(name: 'atout_1', length: 255, nullable: true)]
+    #[ORM\Column(name: 'atout_1', length: self::ATOUT_MAX_LENGTH, nullable: true)]
+    #[CompletenessTarget(self::ATOUT_MAX_LENGTH)]
     private ?string $atout1 = null;
 
     // Plus n°2 (Bible row 42)
-    #[ORM\Column(name: 'atout_2', length: 255, nullable: true)]
+    #[ORM\Column(name: 'atout_2', length: self::ATOUT_MAX_LENGTH, nullable: true)]
+    #[CompletenessTarget(self::ATOUT_MAX_LENGTH)]
     private ?string $atout2 = null;
 
     // Plus n°3 (Bible row 43)
-    #[ORM\Column(name: 'atout_3', length: 255, nullable: true)]
+    #[ORM\Column(name: 'atout_3', length: self::ATOUT_MAX_LENGTH, nullable: true)]
+    #[CompletenessTarget(self::ATOUT_MAX_LENGTH)]
     private ?string $atout3 = null;
 
     // Plus n°4 (Bible row 44)
-    #[ORM\Column(name: 'atout_4', length: 255, nullable: true)]
+    #[ORM\Column(name: 'atout_4', length: self::ATOUT_MAX_LENGTH, nullable: true)]
+    #[CompletenessTarget(self::ATOUT_MAX_LENGTH)]
     private ?string $atout4 = null;
 
     // Plus n°5 (Bible row 45)
-    #[ORM\Column(name: 'atout_5', length: 255, nullable: true)]
+    #[ORM\Column(name: 'atout_5', length: self::ATOUT_MAX_LENGTH, nullable: true)]
+    #[CompletenessTarget(self::ATOUT_MAX_LENGTH)]
     private ?string $atout5 = null;
 
     // Mon établissement dispose d'hébergement ? (Bible row 46)
@@ -171,7 +189,8 @@ class Lieu
     private ?int $chambreCapaciteTotale = null;
 
     // Texte de description générale (Bible row 52)
-    #[ORM\Column(name: 'chambre_desc_generale', type: Types::TEXT, nullable: true)]
+    #[ORM\Column(name: 'chambre_desc_generale', length: self::DESCRIPTION_MAX_LENGTH, nullable: true)]
+    #[CompletenessTarget(self::DESCRIPTION_MAX_LENGTH)]
     private ?string $chambreDescGenerale = null;
 
     // Equipements (Bible row 53)
@@ -459,14 +478,9 @@ class Lieu
         }
     }
 
-    public function code(): ?int
+    public function code(): int
     {
         return $this->fiche->code();
-    }
-
-    public function changeCode(?int $value): void
-    {
-        $this->fiche->changeCode($value);
     }
 
     public function label(): ?string

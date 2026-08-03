@@ -12,6 +12,7 @@ use App\Dam\Message\DeleteMedia;
 use App\Dam\Service\FicheDocumentUploader;
 use App\Dam\Service\FicheImageUploader;
 use App\Dam\Service\ImageVariantRegistry;
+use App\Enrichment\Service\FicheTranslationScheduler;
 use App\Pim\Entity\Activite\Activite;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Enum\NatureRessource;
@@ -24,6 +25,7 @@ use App\Pim\Form\LieuDocumentReplaceType;
 use App\Pim\Message\IndexFiche;
 use App\Pim\ReadModel\FicheCursor;
 use App\Pim\Repository\ActiviteRepository;
+use App\Pim\Service\FicheCountProvider;
 use App\Pim\Validation\ValidationGroups;
 use App\Shared\Form\ActionType;
 use App\Shared\Message\MediaUploaded;
@@ -50,6 +52,7 @@ final class ActiviteController extends AbstractController
         private readonly FormFactoryInterface $forms,
         private readonly FicheImageUploader $imageUploader,
         private readonly FicheDocumentUploader $documentUploader,
+        private readonly FicheTranslationScheduler $translationScheduler,
     ) {
     }
 
@@ -58,6 +61,7 @@ final class ActiviteController extends AbstractController
         Request $request,
         ActiviteRepository $repo,
         SearchEngineInterface $search,
+        FicheCountProvider $counts,
     ): Response {
         $form = $this->createForm(
             ActiviteSearchType::class,
@@ -115,7 +119,9 @@ final class ActiviteController extends AbstractController
             'query' => $text,
             'result_count' => $count,
             'search_form' => $form->createView(),
-            'pending_count' => $repo->countByStatus(
+            'total_count' => $counts->totalByType(TypeFiche::Activite),
+            'pending_count' => $counts->countByStatus(
+                TypeFiche::Activite,
                 StatutFiche::EnAttenteValidation,
             ),
         ]);
@@ -630,6 +636,7 @@ final class ActiviteController extends AbstractController
         $f->handleRequest($r);
         if ($f->isSubmitted() && $f->isValid()) {
             $change($a, $this->actor());
+            $this->translationScheduler->schedule($a->fiche());
             $o->enqueue(new IndexFiche($a->fiche()->idString()));
             $em->flush();
         }

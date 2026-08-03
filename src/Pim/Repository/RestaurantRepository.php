@@ -55,7 +55,7 @@ final class RestaurantRepository extends ServiceEntityRepository
         }
 
         $sql = sprintf(
-            'SELECT f.id, f.code, f.label, f.status, f.completeness, f.updated_at, loc.ville '
+            'SELECT f.id, f.code, f.label, f.status, r.completeness_global AS completeness, f.updated_at, loc.ville '
             .'FROM pim_fiche f '
             .'INNER JOIN pim_restaurant r ON r.fiche_id = f.id '
             .'LEFT JOIN pim_localisation loc ON loc.id = f.localisation_id '
@@ -107,7 +107,7 @@ final class RestaurantRepository extends ServiceEntityRepository
         $rows = $this->getEntityManager()
             ->getConnection()
             ->executeQuery(
-                'SELECT f.id, f.code, f.label, f.status, f.completeness, f.updated_at, loc.ville '
+                'SELECT f.id, f.code, f.label, f.status, r.completeness_global AS completeness, f.updated_at, loc.ville '
                 .'FROM pim_fiche f '
                 .'INNER JOIN pim_restaurant r ON r.fiche_id = f.id '
                 .'LEFT JOIN pim_localisation loc ON loc.id = f.localisation_id '
@@ -149,7 +149,7 @@ final class RestaurantRepository extends ServiceEntityRepository
     {
         return new RestaurantListItem(
             (string) Ulid::fromBinary($row['id']),
-            null === $row['code'] ? null : (int) $row['code'],
+            (int) $row['code'],
             $row['label'],
             $row['ville'],
             StatutFiche::from($row['status']),

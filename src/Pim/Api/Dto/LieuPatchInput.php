@@ -12,12 +12,9 @@ use ApiPlatform\Metadata\ApiProperty;
  */
 final class LieuPatchInput
 {
-    private bool $codeDefined = false;
     private bool $labelDefined = false;
     private bool $generaleTypologieDefined = false;
     private bool $generaleWebsiteUrlDefined = false;
-    #[ApiProperty(example: 12345)]
-    private ?int $code = null;
     #[ApiProperty(example: 'Hôtel des Lumières')]
     private ?string $label = null;
     /** @var list<string> */
@@ -55,17 +52,6 @@ final class LieuPatchInput
     public ?array $periodesFermeture = null;
     /** @var list<array<string, mixed>>|null */
     public ?array $acces = null;
-
-    public function setCode(?int $code): void
-    {
-        $this->codeDefined = true;
-        $this->code = $code;
-    }
-
-    public function getCode(): ?int
-    {
-        return $this->code;
-    }
 
     public function setLabel(?string $label): void
     {
@@ -106,9 +92,6 @@ final class LieuPatchInput
     public function payload(): array
     {
         $payload = [];
-        if ($this->codeDefined) {
-            $payload['code'] = $this->code;
-        }
         if ($this->labelDefined) {
             $payload['label'] = $this->label;
         }

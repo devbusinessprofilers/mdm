@@ -123,7 +123,7 @@ use App\Pim\Api\State\LieuPatchProcessor;
                 openapi: new Operation(
                     tags: ['Médias Lieux'],
                     summary: 'Téléverser une image',
-                    description: 'Le traitement DAM et les six variantes sont déclenchés via l’outbox.',
+                    description: 'Le traitement DAM et les sept variantes sont déclenchés via l’outbox.',
                     parameters: [
                         new Parameter(
                             'If-Match',
@@ -338,10 +338,13 @@ final readonly class LieuResource
      */
     public function __construct(
         #[ApiProperty(identifier: true)] public string $id,
-        public ?int $code,
+        public int $code,
         public ?string $label,
         public string $status,
         public int $completeness,
+        /** @var array{marketplace: int, thematicSites: int, salesforce: int, providerPortal: int} */
+        public array $completenessByChannel,
+        public ?string $completenessCalculatedAt,
         public int $version,
         public ?string $publishedAt,
         public string $updatedAt,

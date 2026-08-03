@@ -9,11 +9,6 @@ final class RestaurantPatchInput
     /** @var array<string, mixed> */
     private array $payload = [];
 
-    public function setCode(?int $value): void
-    {
-        $this->payload['code'] = $value;
-    }
-
     public function setLabel(?string $value): void
     {
         $this->payload['label'] = $value;

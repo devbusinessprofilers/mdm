@@ -17,7 +17,6 @@ use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\CollectionType;
 use Symfony\Component\Form\Extension\Core\Type\FileType;
-use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\MoneyType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
@@ -36,11 +35,6 @@ final class ServiceEvenementielType extends AbstractType
         array $options,
     ): void {
         $builder
-            ->add(
-                "code",
-                IntegerType::class,
-                $this->field("Code", "code", "changeCode"),
-            )
             ->add(
                 "label",
                 TextType::class,

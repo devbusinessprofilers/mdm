@@ -13,6 +13,7 @@
         </div>
 
         <div class="table-actions">
+            <a class="btn btn-secondary" href="{{ path('app_enrichment_fiche_translation_show', {id: activite.id}) }}">Traductions</a>
             <a class="btn" href="{{ path('app_pim_activite_edit', {id: activite.id}) }}">Modifier</a>
 
             {% if is_granted('ROLE_BP_VALIDATOR') %}
@@ -25,6 +26,7 @@
             {% endif %}
         </div>
     </header>
+    {% include 'pim/_completeness.html.twig' with {entity: activite} only %}
 
     <section class="card">
         <dl class="definition-list">

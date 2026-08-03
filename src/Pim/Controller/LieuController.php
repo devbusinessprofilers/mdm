@@ -13,6 +13,7 @@ use App\Dam\Service\ImageVariantRegistry;
 use App\Dam\Service\LieuDocumentPresenter;
 use App\Dam\Service\LieuImageUploader;
 use App\Dam\Service\LieuPhotoPresenter;
+use App\Enrichment\Service\FicheTranslationScheduler;
 use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Enum\NatureRessource;
@@ -29,6 +30,7 @@ use App\Pim\Form\LieuType;
 use App\Pim\Message\IndexFiche;
 use App\Pim\ReadModel\FicheCursor;
 use App\Pim\Repository\LieuRepository;
+use App\Pim\Service\FicheCountProvider;
 use App\Pim\Validation\ValidationGroups;
 use App\Shared\Form\ActionType;
 use App\Shared\Message\MediaUploaded;
@@ -58,6 +60,7 @@ final class LieuController extends AbstractController
         private readonly LieuPhotoPresenter $photoPresenter,
         private readonly LieuDocumentPresenter $documentPresenter,
         private readonly CsrfTokenManagerInterface $csrfTokens,
+        private readonly FicheTranslationScheduler $translationScheduler,
     ) {
     }
 
@@ -66,6 +69,7 @@ final class LieuController extends AbstractController
         Request $request,
         LieuRepository $repository,
         SearchEngineInterface $searchEngine,
+        FicheCountProvider $counts,
     ): Response {
         $searchForm = $this->createForm(
             LieuSearchType::class,
@@ -127,7 +131,9 @@ final class LieuController extends AbstractController
             'query' => $text,
             'result_count' => $resultCount,
             'search_form' => $searchForm->createView(),
-            'pending_count' => $repository->countByStatus(
+            'total_count' => $counts->totalByType(TypeFiche::Lieu),
+            'pending_count' => $counts->countByStatus(
+                TypeFiche::Lieu,
                 StatutFiche::EnAttenteValidation,
             ),
         ]);
@@ -327,6 +333,7 @@ final class LieuController extends AbstractController
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
             $lieu->fiche()->validateAndPublish($this->actorId());
+            $this->translationScheduler->schedule($lieu->fiche());
             $outbox->enqueue(new IndexFiche($lieu->fiche()->idString()));
             $entityManager->flush();
             $this->addFlash('success', 'Fiche validée et publiée.');

@@ -21,6 +21,7 @@ final class RestaurantTypeTest extends KernelTestCase
         $form = $factory->create(RestaurantType::class, $restaurant, [
             'csrf_protection' => false,
         ]);
+        self::assertFalse($form->has('code'));
 
         foreach (
             [

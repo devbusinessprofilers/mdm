@@ -23,7 +23,7 @@ final class FicheAutocompleteType extends AbstractType
             'choice_label' => static function (Fiche $fiche): string {
                 $label = $fiche->label() ?? 'Sans libellé';
 
-                return null === $fiche->code() ? $label : sprintf('%d — %s', $fiche->code(), $label);
+                return sprintf('%d — %s', $fiche->code(), $label);
             },
             'searchable_fields' => ['label'],
             'max_results' => 20,

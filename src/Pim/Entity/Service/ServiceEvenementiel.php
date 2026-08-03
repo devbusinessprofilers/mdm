@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Pim\Entity\Service;
 
+use App\Pim\Entity\CompletenessScoresTrait;
 use App\Pim\Entity\Fiche;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Entity\Localisation;
@@ -20,6 +21,7 @@ use Symfony\Component\Uid\Ulid;
 
 #[ORM\Entity(repositoryClass: ServiceEvenementielRepository::class)]
 #[ORM\Table(name: "pim_service_evenementiel")]
+#[ORM\Index(name: "IDX_SERVICE_EVENEMENTIEL_COMPLETENESS_REVISION", columns: ["completeness_revision"])]
 #[ORM\HasLifecycleCallbacks]
 #[ValidServiceEvenementiel(groups: ["Draft"])]
 #[ValidServiceEvenementiel(groups: ["Submission"])]
@@ -28,6 +30,7 @@ class ServiceEvenementiel
     use TimestampableTrait {
         touch as touchDetail;
     }
+    use CompletenessScoresTrait;
 
     #[ORM\Id]
     #[ORM\Column(type: "ulid", unique: true)]
@@ -133,14 +136,9 @@ class ServiceEvenementiel
         return $this->fiche;
     }
 
-    public function code(): ?int
+    public function code(): int
     {
         return $this->fiche->code();
-    }
-
-    public function changeCode(?int $value): void
-    {
-        $this->fiche->changeCode($value);
     }
 
     public function label(): ?string

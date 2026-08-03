@@ -24,7 +24,7 @@ final class ServiceLovCatalog
     /** @return array<string, string> */
     public static function prestations(): array
     {
-        return self::PRESTATIONS;
+        return LovRuntimeCatalog::choices('TYPE_PRESTATAIRE') ?? self::PRESTATIONS;
     }
 
     public static function attributeId(): int
@@ -34,6 +34,8 @@ final class ServiceLovCatalog
 
     public static function valueId(string $code): int
     {
+        $runtimeId = LovRuntimeCatalog::valueId('TYPE_PRESTATAIRE', $code);
+        if (null !== $runtimeId) { return $runtimeId; }
         if (!isset(self::PRESTATIONS[$code])) {
             throw new \InvalidArgumentException("Prestation Service inconnue.");
         }
@@ -43,6 +45,8 @@ final class ServiceLovCatalog
 
     public static function valueCode(int $id): string
     {
+        $runtimeCode = LovRuntimeCatalog::valueCode($id);
+        if (null !== $runtimeCode) { return $runtimeCode; }
         foreach (array_keys(self::PRESTATIONS) as $code) {
             if (self::valueId($code) === $id) {
                 return $code;

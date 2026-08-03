@@ -19,8 +19,8 @@ use Symfony\Component\Uid\Ulid;
 #[ORM\Table(name: 'pim_fiche')]
 #[
     ORM\UniqueConstraint(
-        name: 'UNIQ_PIM_FICHE_TYPE_CODE',
-        columns: ['type', 'code'],
+        name: 'UNIQ_PIM_FICHE_CODE',
+        columns: ['code'],
     ),
 ]
 #[
@@ -29,6 +29,7 @@ use Symfony\Component\Uid\Ulid;
         columns: ['type', 'updated_at', 'id'],
     ),
 ]
+#[ORM\Index(name: 'IDX_PIM_FICHE_TYPE_ID', columns: ['type', 'id'])]
 #[
     ORM\Index(
         name: 'IDX_PIM_FICHE_TYPE_STATUS_UPDATED',
@@ -52,19 +53,19 @@ class Fiche
     private Ulid $id;
     #[ORM\Column(length: 32, enumType: TypeFiche::class)]
     private TypeFiche $type;
-    #[ORM\Column(options: ['unsigned' => true], nullable: true)]
+    #[
+        ORM\Column(
+            options: ['unsigned' => true],
+            insertable: false,
+            updatable: false,
+            generated: 'INSERT',
+        ),
+    ]
     private ?int $code = null;
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $label = null;
     #[ORM\Column(length: 32, enumType: StatutFiche::class)]
     private StatutFiche $status = StatutFiche::EnCours;
-    #[
-        ORM\Column(
-            type: Types::SMALLINT,
-            options: ['unsigned' => true, 'default' => 0],
-        ),
-    ]
-    private int $completeness = 0;
     #[ORM\Version]
     #[
         ORM\Column(
@@ -145,8 +146,14 @@ class Fiche
         return $this->type;
     }
 
-    public function code(): ?int
+    public function code(): int
     {
+        if (null === $this->code) {
+            throw new \LogicException(
+                'Le code de la fiche sera attribué lors de son enregistrement.',
+            );
+        }
+
         return $this->code;
     }
 
@@ -158,11 +165,6 @@ class Fiche
     public function status(): StatutFiche
     {
         return $this->status;
-    }
-
-    public function completeness(): int
-    {
-        return $this->completeness;
     }
 
     public function version(): int
@@ -232,24 +234,9 @@ class Fiche
         }
     }
 
-    public function changeCode(?int $code): void
-    {
-        $this->code = $code;
-        $this->markChanged();
-    }
-
     public function changeLabel(?string $label): void
     {
         $this->label = self::normalize($label);
-        $this->markChanged();
-    }
-
-    public function changeCompleteness(int $value): void
-    {
-        if ($value < 0 || $value > 100) {
-            throw new \InvalidArgumentException('La complétude doit être comprise entre 0 et 100.');
-        }
-        $this->completeness = $value;
         $this->markChanged();
     }
 

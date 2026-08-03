@@ -1,0 +1,60 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Traductions de {{ fiche.label ?? fiche.code }}{% endblock %}
+
+{% block body %}
+<main class="page">
+    {% set show_route = {
+        'lieu': 'app_pim_lieu_show',
+        'activite': 'app_pim_activite_show',
+        'restaurant': 'app_pim_restaurant_show',
+        'service_evenementiel': 'app_pim_service_show'
+    }[fiche.type.value] %}
+    <a class="back-link" href="{{ path(show_route, {id: fiche.idString}) }}">← Retour à la fiche</a>
+    <header class="page-header">
+        <div>
+            <p class="page-kicker">Traductions</p>
+            <h1>{{ fiche.label ?? 'Fiche ' ~ fiche.code }}</h1>
+            <p>Tous les champs traduisibles de la fiche et leurs six langues cibles.</p>
+        </div>
+        {% if is_granted('ROLE_BP_VALIDATOR') %}{{ form(retry_form) }}{% endif %}
+    </header>
+
+    {% for field in fields %}
+        <section class="card translation-field">
+            <div class="section-heading">
+                <div><p class="page-kicker"><code>{{ field.path }}</code></p><h2>{{ field.label }}</h2></div>
+                {% if field.value is empty %}<span class="badge">Source non renseignée</span>{% endif %}
+            </div>
+            <p><strong>Source française</strong><br>{{ field.value ?: '—' }}</p>
+
+            <div class="translation-grid">
+                {% for locale in locales %}
+                    {% set translation = translations[field.path][locale.value] ?? null %}
+                    <article class="translation-cell">
+                        <div class="section-heading">
+                            <strong>{{ locale.label }}</strong>
+                            {% if translation %}<span class="badge badge-info">{{ translation.status.value|replace({'_': ' '}) }}</span>{% endif %}
+                        </div>
+                        {% if translation %}
+                            <p>{{ translation.translatedText ?? '—' }}</p>
+                            {% if translation.origin %}<small>Origine : {{ translation.origin.value }}</small>{% endif %}
+                            {% if translation.suggestedText %}<p><strong>Suggestion Google</strong><br>{{ translation.suggestedText }}</p>{% endif %}
+                            {% if translation.lastError %}<p class="flash-error">{{ translation.lastError }}</p>{% endif %}
+                        {% elseif field.value is not empty %}
+                            <p class="empty-state">Aucune traduction.</p>
+                        {% else %}
+                            <p class="empty-state">Renseignez d'abord le champ français.</p>
+                        {% endif %}
+                        {% if correction_forms[field.path][locale.value] is defined %}
+                            {{ form(correction_forms[field.path][locale.value]) }}
+                        {% endif %}
+                    </article>
+                {% endfor %}
+            </div>
+        </section>
+    {% else %}
+        <section class="card"><p class="empty-state">Aucun champ traduisible disponible pour cette fiche.</p></section>
+    {% endfor %}
+</main>
+{% endblock %}

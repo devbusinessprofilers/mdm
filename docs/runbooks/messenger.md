@@ -1,7 +1,7 @@
 # Exploitation de Symfony Messenger
 
 La V1 utilise MariaDB et le transport Doctrine. Les files `pim`, `dam`,
-`etl`, `enrichment` et `mail` sont consommées par des processus séparés afin
+`etl`, `enrichment`, `completeness` et `mail` sont consommées par des processus séparés afin
 qu'un traitement lent ne bloque pas les autres domaines. Le processus
 `worker-outbox` relaie les événements enregistrés avec les transactions métier.
 
@@ -15,7 +15,7 @@ docker compose exec php php bin/console doctrine:migrations:migrate --no-interac
 
 ## Workers locaux
 
-Démarrer l'application, les cinq consumers Messenger et le relay outbox :
+Démarrer l'application, les six consumers Messenger et le relay outbox :
 
 ```bash
 docker compose --profile workers up -d
@@ -25,7 +25,7 @@ Afficher leur état et suivre leurs logs :
 
 ```bash
 docker compose --profile workers ps
-docker compose logs --follow worker-outbox worker-pim worker-dam worker-etl worker-enrichment worker-mail
+docker compose logs --follow worker-outbox worker-pim worker-dam worker-etl worker-enrichment worker-completeness worker-mail
 ```
 
 Demander un arrêt propre, puis recréer les processus :
@@ -35,16 +35,45 @@ docker compose exec php php bin/console messenger:stop-workers
 docker compose --profile workers up -d --force-recreate
 ```
 
+Après une modification de l’image PHP ou de l’entrypoint worker, reconstruire
+toutes les images de workers avant de les recréer :
+
+```bash
+docker compose build worker-pim worker-dam worker-etl worker-enrichment worker-completeness worker-mail worker-outbox
+docker compose --profile workers up -d --force-recreate
+```
+
 Les workers redémarrent aussi automatiquement après une heure, lorsqu'ils
 atteignent leur limite mémoire ou après dix erreurs worker consécutives.
 
-Chaque conteneur worker utilise `APP_CACHE_DIR=/tmp/mdm-worker-cache`. Son
+Chaque conteneur worker utilise `APP_CACHE_DIR=/tmp/mdm-worker-cache`. Au
+démarrage, `worker-entrypoint` vérifie ce chemin et supprime uniquement le cache
+de l'environnement courant avant de compiler le conteneur Symfony. Son
 conteneur Symfony compilé est ainsi isolé de `var/cache` monté depuis l'hôte :
 un `cache:clear`, une analyse statique ou une compilation d'assets ne peut plus
 invalider les classes d'un worker déjà en cours d'exécution.
 
 Le worker `dam` requiert aussi la commande ImageMagick `convert`, installée
 dans l'image PHP, pour produire les variantes WebP.
+
+Le worker `completeness` calcule les cinq scores après chaque réindexation. Un
+recalcul massif est découpé en lots chaînés de 250 fiches par défaut :
+
+```bash
+docker compose exec php php bin/console app:completeness:sync-config --type=all
+docker compose exec php php bin/console app:completeness:recalculate --type=all
+docker compose exec php php bin/console app:completeness:status
+```
+
+La synchronisation du catalogue est une étape explicite de déploiement. Les
+pages d'administration et les workers ne créent jamais de configuration. Un
+changement de catalogue planifie automatiquement le recalcul des types touchés.
+Pour le premier rattrapage volumineux, quatre consumers peuvent être lancés
+temporairement avec `docker compose --profile workers up -d --scale
+worker-completeness=4`, puis ramenés à une instance.
+
+Le site ne doit être ouvert qu'une fois `app:completeness:status` terminé avec
+succès, `messenger:failed:show --stats` vide et l'outbox sans événement bloqué.
 
 Les notifications applicatives sont routées vers le transport `mail`, puis le
 handler appelle Mailer en mode synchrone dans ce worker. Ne pas router

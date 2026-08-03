@@ -13,7 +13,6 @@ use Doctrine\Common\Collections\Collection;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\CollectionType;
-use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\UrlType;
@@ -29,14 +28,13 @@ final class LieuType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
-            ->add('code', IntegerType::class, $this->field('Code', 'code', 'changeCode', false))
             ->add('label', TextType::class, $this->field('Libellé', 'label', 'changeLabel'))
             ->add('generaleTypologie', ChoiceType::class, $this->field('Typologie', 'generaleTypologie', 'changeGeneraleTypologie', false) + [
                 'choices' => array_flip(LieuLovCatalog::choicesFor('GENERALE_TYPOLOGIE')),
                 'multiple' => true,
             ])
             ->add('generaleWebsiteUrl', UrlType::class, $this->field('Site web officiel', 'generaleWebsiteUrl', 'changeGeneraleWebsiteUrl', false) + [
-                'constraints' => [new \Symfony\Component\Validator\Constraints\Length(max: 100), new \Symfony\Component\Validator\Constraints\Url(requireTld: true)],
+                'constraints' => [new \Symfony\Component\Validator\Constraints\Length(max: Lieu::WEBSITE_MAX_LENGTH), new \Symfony\Component\Validator\Constraints\Url(requireTld: true)],
             ])
             ->add('informationsGenerales', MethodMappedFieldsType::class, $this->section(LieuFormCatalog::general()))
             ->add('disponibilites', MethodMappedFieldsType::class, $this->section(LieuFormCatalog::availability()))

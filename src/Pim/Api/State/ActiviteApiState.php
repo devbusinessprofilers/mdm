@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Pim\Api\State;
 
 use App\Pim\Api\Exception\ApiProblemException;
+use App\Enrichment\Service\FicheTranslationScheduler;
 use App\Pim\Entity\Activite\Activite;
 use App\Pim\Message\IndexFiche;
 use App\Pim\Repository\ActiviteRepository;
@@ -20,6 +21,7 @@ final readonly class ActiviteApiState
         private RequestStack $requests,
         private EntityManagerInterface $em,
         private OutboxPublisherInterface $outbox,
+        private FicheTranslationScheduler $translationScheduler,
     ) {
     }
 
@@ -51,6 +53,7 @@ final readonly class ActiviteApiState
 
     public function flushAndIndex(Activite $a): void
     {
+        $this->translationScheduler->schedule($a->fiche());
         $this->outbox->enqueue(new IndexFiche($a->id()));
         $this->em->flush();
     }

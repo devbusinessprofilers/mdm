@@ -7,6 +7,7 @@
 # Put parameters here that don't need to change on each machine where the app is deployed
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
+    env(AUDIT_ENABLED): '1'
     env(TEST_MESSENGER_PIM_DSN): 'in-memory://?serialize=true'
     env(EXTERNAL_SITE_JWT_ISSUER): 'external-site'
     env(EXTERNAL_SITE_JWT_AUDIENCE): 'mdm'
@@ -16,6 +17,8 @@ parameters:
     env(S3_SECRET_KEY): ''
     env(MAILER_FROM): 'noreply@businessprofilers.fr'
     env(INVITATION_SIGNING_KEY): ''
+    env(GOOGLE_TRANSLATE_API_KEY): ''
+    env(GOOGLE_TRANSLATE_ENDPOINT): 'https://translation.googleapis.com/language/translate/v2'
 
 services:
     # default configuration for services in *this* file
@@ -36,6 +39,8 @@ services:
     App\Shared\Outbox\OutboxRelay:
         arguments:
             $serializer: '@messenger.transport.symfony_serializer'
+
+    App\Pim\Completeness\CompletenessMediaAssetLookupInterface: '@App\Pim\Completeness\DoctrineCompletenessMediaAssetLookup'
 
     App\DataFixtures\Pim\LieuFixtures:
         arguments:
@@ -106,6 +111,13 @@ services:
     App\Dam\Service\PublicMediaUrlGenerator:
         arguments:
             $baseUrl: '%env(S3_PUBLIC_BASE_URL)%'
+
+    App\Enrichment\Service\GoogleTranslationProvider:
+        arguments:
+            $apiKey: '%env(GOOGLE_TRANSLATE_API_KEY)%'
+            $endpoint: '%env(GOOGLE_TRANSLATE_ENDPOINT)%'
+
+    App\Enrichment\Service\TranslationProviderInterface: '@App\Enrichment\Service\GoogleTranslationProvider'
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones

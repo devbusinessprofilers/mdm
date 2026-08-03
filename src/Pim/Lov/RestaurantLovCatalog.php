@@ -180,7 +180,7 @@ final class RestaurantLovCatalog
     /** @return array<string, string> */
     public static function values(string $attribute): array
     {
-        return self::VALUES[$attribute]
+        return LovRuntimeCatalog::choices($attribute) ?? self::VALUES[$attribute]
             ?? throw new \InvalidArgumentException('Attribut Restaurant inconnu.');
     }
 
@@ -199,6 +199,8 @@ final class RestaurantLovCatalog
 
     public static function valueId(string $attribute, string $code): int
     {
+        $runtimeId = LovRuntimeCatalog::valueId($attribute, $code);
+        if (null !== $runtimeId) { return $runtimeId; }
         if (!isset(self::values($attribute)[$code])) {
             throw new \InvalidArgumentException('Valeur Restaurant inconnue.');
         }
@@ -208,6 +210,8 @@ final class RestaurantLovCatalog
 
     public static function valueCode(string $attribute, int $id): string
     {
+        $runtimeCode = LovRuntimeCatalog::valueCode($id);
+        if (null !== $runtimeCode) { return $runtimeCode; }
         foreach (array_keys(self::values($attribute)) as $code) {
             if (self::valueId($attribute, $code) === $id) {
                 return $code;

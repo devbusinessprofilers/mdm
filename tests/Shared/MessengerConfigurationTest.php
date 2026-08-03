@@ -6,6 +6,7 @@ namespace App\Tests\Shared;
 
 use App\Shared\Message\MediaProcessed;
 use App\Shared\Message\MediaUploaded;
+use App\Pim\Message\CalculateFicheCompleteness;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
@@ -66,6 +67,14 @@ final class MessengerConfigurationTest extends KernelTestCase
         self::assertInstanceOf(MediaProcessed::class, $message);
         self::assertSame('media-42', $message->mediaId);
         self::assertSame('processed', $message->status);
+    }
+
+    public function testCompletenessMessagesUseTheDedicatedTransport(): void
+    {
+        $this->messageBus()->dispatch(new CalculateFicheCompleteness('01KYW9WA9P1D5QG5PDHCQC1JQV'));
+
+        self::assertCount(1, $this->transport('completeness')->getSent());
+        self::assertSame([], $this->transport('pim')->getSent());
     }
 
     /**
@@ -136,6 +145,7 @@ final class MessengerConfigurationTest extends KernelTestCase
         yield 'dam' => ['dam', [5000, 10000, 20000, 40000, 60000]];
         yield 'etl' => ['etl', [10000, 20000, 40000, 60000, 60000]];
         yield 'enrichment' => ['enrichment', [10000, 20000, 40000, 60000, 60000]];
+        yield 'completeness' => ['completeness', [1000, 2000, 4000, 8000, 16000]];
         yield 'mail' => ['mail', [10000, 20000, 40000, 60000, 60000]];
     }
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Pim\Api\State;
 
 use App\Pim\Api\Exception\ApiProblemException;
+use App\Enrichment\Service\FicheTranslationScheduler;
 use App\Pim\Entity\Service\ServiceEvenementiel;
 use App\Pim\Message\IndexFiche;
 use App\Pim\Repository\ServiceEvenementielRepository;
@@ -20,6 +21,7 @@ final readonly class ServiceEvenementielApiState
         private RequestStack $requests,
         private EntityManagerInterface $em,
         private OutboxPublisherInterface $outbox,
+        private FicheTranslationScheduler $translationScheduler,
     ) {}
 
     public function service(string $id): ServiceEvenementiel
@@ -63,6 +65,7 @@ final readonly class ServiceEvenementielApiState
 
     public function flushAndIndex(ServiceEvenementiel $a): void
     {
+        $this->translationScheduler->schedule($a->fiche());
         $this->outbox->enqueue(new IndexFiche($a->id()));
         $this->em->flush();
     }
