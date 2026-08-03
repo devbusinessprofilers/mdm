@@ -10,6 +10,7 @@ final class ImageVariantRegistry
     public static function all(): array
     {
         return [
+            'hd' => ['width' => 1920, 'height' => 1080],
             'large' => ['width' => 960, 'height' => 480],
             'medium_2' => ['width' => 320, 'height' => 190],
             'medium' => ['width' => 300, 'height' => 150],
