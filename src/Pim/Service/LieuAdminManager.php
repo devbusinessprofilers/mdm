@@ -9,6 +9,7 @@ use App\Dam\Message\DeleteMedia;
 use App\Dam\Message\UnpublishDocument;
 use App\Dam\Service\ImageVariantRegistry;
 use App\Dam\Service\LieuImageUploader;
+use App\Enrichment\Service\FicheTranslationScheduler;
 use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Enum\NatureRessource;
@@ -25,6 +26,7 @@ final readonly class LieuAdminManager
         private EntityManagerInterface $entityManager,
         private OutboxPublisherInterface $outbox,
         private LieuImageUploader $imageUploader,
+        private FicheTranslationScheduler $translationScheduler,
     ) {}
 
     /** @return list<string> */
@@ -57,6 +59,7 @@ final readonly class LieuAdminManager
                 if ('' !== $removed) { $this->outbox->enqueue(new DeleteMedia($removed)); }
             }
             $this->entityManager->persist($lieu);
+            $this->translationScheduler->schedule($lieu->fiche());
             $this->outbox->enqueue(new IndexFiche($lieu->fiche()->idString()));
             $this->entityManager->flush();
         } catch (\Throwable $exception) {

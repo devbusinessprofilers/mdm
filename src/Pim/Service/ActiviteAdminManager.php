@@ -10,6 +10,7 @@ use App\Dam\Message\DeleteMedia;
 use App\Dam\Service\FicheDocumentUploader;
 use App\Dam\Service\FicheImageUploader;
 use App\Dam\Service\ImageVariantRegistry;
+use App\Enrichment\Service\FicheTranslationScheduler;
 use App\Pim\Entity\Activite\Activite;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Enum\NatureRessource;
@@ -27,6 +28,7 @@ final readonly class ActiviteAdminManager
         private OutboxPublisherInterface $outbox,
         private FicheImageUploader $imageUploader,
         private FicheDocumentUploader $documentUploader,
+        private FicheTranslationScheduler $translationScheduler,
     ) {}
 
     /** @return list<string> */
@@ -85,6 +87,7 @@ final readonly class ActiviteAdminManager
                 }
             }
             $this->entityManager->persist($activite);
+            $this->translationScheduler->schedule($activite->fiche());
             $this->outbox->enqueue(new IndexFiche($activite->fiche()->idString()));
             $this->entityManager->flush();
         } catch (\Throwable $exception) {
