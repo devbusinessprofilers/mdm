@@ -58,7 +58,7 @@ Légende : `[x]` terminé, `[~]` partiel, `[ ]` à faire.
   validation livrés. L’autocomplétion géographique et la minicarte sont
   reportées au passage au front.
 - [ ] Traiteurs et Plateaux-repas : A NE PAS FAIRE POUR LE MOMENT
-- [~] Imports : LOV Prestataire CSV et commandes de contrôle Lieu/Activité/Service disponibles ; imports métier génériques, exports et synchronisations à faire
+- [~] Imports : import CSV de fiches Lieu/Activité/Restaurant/Service depuis `/admin/import-fiches` (modèle CSV par type avec colonnes, collections et LOV ; upsert par code ; jobs asynchrones sur la file `etl` avec rapport d'erreurs ligne par ligne), LOV Prestataire CSV et commandes de contrôle disponibles ; formats Excel/XML/JSON, exports et synchronisations à faire
 - [~] Dashboards et qualité des données : supervision technique et complétude configurable globale/par canal livrées ; autres indicateurs métier à faire
 - [~] Traduction Google asynchrone des fiches et LOV et vues de suivi livrées ; OCR et enrichissement IA reportés au lot IA ultérieur
 - [ ] Déploiement Upsun et stockage OVH de production

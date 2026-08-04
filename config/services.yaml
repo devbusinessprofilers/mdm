@@ -121,3 +121,15 @@ services:
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
+
+    App\Etl\Service\FicheImportJobManager:
+        arguments:
+            $importDir: '%kernel.project_dir%/var/import'
+
+    App\Etl\MessageHandler\StartFicheImportHandler:
+        arguments:
+            $importDir: '%kernel.project_dir%/var/import'
+
+    App\Etl\MessageHandler\ProcessFicheImportBatchHandler:
+        arguments:
+            $importDir: '%kernel.project_dir%/var/import'

@@ -118,6 +118,17 @@ Le rejeu global de la file est interdit sans validation préalable de son
 contenu. Un message correctement acquitté est supprimé automatiquement de la
 table Doctrine ; il n'existe donc pas de purge des messages terminés.
 
+### Jobs d'import de fiches bloqués
+
+Un import CSV (`/admin/import-fiches`) est découpé en messages
+`ProcessFicheImportBatch` chaînés sur la file `etl`, chaque lot étant commité
+avec sa progression (`last_processed_line` sur `etl_import_job`). Si un lot
+épuise ses 5 tentatives, le job reste `en_cours` et le message part dans la
+file `failed` : le rejeu (`messenger:failed:retry`) reprend exactement au bon
+lot, les lignes déjà commitées ne sont jamais retraitées. Un job `echoue`
+(fichier illisible, colonnes inconnues, volume > 5000 lignes) se corrige en
+réimportant un nouveau fichier.
+
 ## Convention d'idempotence
 
 Chaque message doit porter une clé métier stable. Chaque handler doit pouvoir

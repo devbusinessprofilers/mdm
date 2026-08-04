@@ -1,0 +1,63 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Import {{ job.originalFilename }}{% endblock %}
+
+{% block body %}
+<main class="page page-narrow">
+    <a class="back-link" href="{{ path('app_etl_import_index') }}">← Retour aux imports</a>
+    <header class="page-header">
+        <div>
+            <p class="page-kicker">Import de fiches — {{ job.type.value }}</p>
+            <h1>{{ job.originalFilename }}</h1>
+        </div>
+    </header>
+
+    <section class="card">
+        <dl>
+            <dt>Statut</dt>
+            <dd>{{ job.status.label }}{% if job.failureMessage %} — {{ job.failureMessage }}{% endif %}</dd>
+            <dt>Progression</dt>
+            <dd>{{ job.processedLines }}{% if job.totalLines %} / {{ job.totalLines }}{% endif %} ligne(s) traitée(s)</dd>
+            <dt>Résultat</dt>
+            <dd>{{ job.createdCount }} créée(s), {{ job.updatedCount }} mise(s) à jour, {{ job.errorCount }} erreur(s)</dd>
+            <dt>Lancé par</dt>
+            <dd>{{ job.createdBy }} le {{ job.createdAt|date('d/m/Y H:i') }}</dd>
+            {% if job.finishedAt %}
+                <dt>Terminé le</dt>
+                <dd>{{ job.finishedAt|date('d/m/Y H:i') }}</dd>
+            {% endif %}
+        </dl>
+        {% if not job.isTerminal %}
+            <p role="status">Traitement en cours : rechargez la page pour actualiser la progression.</p>
+        {% endif %}
+    </section>
+
+    <section class="card table-wrapper">
+        <h2>Erreurs ({{ errorTotal }})</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Ligne</th>
+                    <th>Colonne</th>
+                    <th>Message</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for error in errors %}
+                <tr>
+                    <td>{{ error.lineNumber }}</td>
+                    <td>{% if error.columnName %}<code>{{ error.columnName }}</code>{% else %}—{% endif %}</td>
+                    <td>{{ error.message }}</td>
+                </tr>
+            {% else %}
+                <tr><td colspan="3">Aucune erreur enregistrée.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </section>
+    <nav class="table-actions">
+        {% if page > 1 %}<a class="btn btn-secondary" href="{{ path('app_etl_import_show', {id: job.idString, page: page - 1}) }}">Précédent</a>{% endif %}
+        {% if errorTotal > page * limit %}<a class="btn btn-secondary" href="{{ path('app_etl_import_show', {id: job.idString, page: page + 1}) }}">Suivant</a>{% endif %}
+    </nav>
+</main>
+{% endblock %}

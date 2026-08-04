@@ -27,7 +27,10 @@
                         <a class="nav-link" href="{{ path('app_pim_activite_index') }}">Activités</a>
                         <a class="nav-link" href="{{ path('app_pim_restaurant_index') }}">Restaurants</a>
                         <a class="nav-link" href="{{ path('app_pim_service_index') }}">Services</a>
-                        {% if is_granted('ROLE_BP_VALIDATOR') %}<a class="nav-link" href="{{ path('app_pim_lov_index') }}">Listes de valeurs</a>{% endif %}
+                        {% if is_granted('ROLE_BP_VALIDATOR') %}
+                            <a class="nav-link" href="{{ path('app_pim_lov_index') }}">Listes de valeurs</a>
+                            <a class="nav-link" href="{{ path('app_etl_import_index') }}">Import de fiches</a>
+                        {% endif %}
                         {% set header_search_form_view = global_search_form() %}
                         {{ form(header_search_form_view) }}
                     {% endif %}

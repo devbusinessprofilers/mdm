@@ -1,0 +1,72 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Import de fiches{% endblock %}
+
+{% block body %}
+{% set type_labels = {
+    'lieu': 'Lieu',
+    'activite': 'Activité',
+    'restaurant': 'Restaurant',
+    'service_evenementiel': 'Service événementiel',
+} %}
+<main class="page">
+    <header class="page-header">
+        <div>
+            <p class="page-kicker">Administration</p>
+            <h1>Import de fiches</h1>
+        </div>
+    </header>
+
+    <section class="card">
+        <h2>1. Télécharger un modèle CSV</h2>
+        <p>Le modèle contient toutes les colonnes du type choisi, une ligne d'aide et la liste des valeurs autorisées (LOV). Les lignes commençant par <code>#</code> sont ignorées à l'import.</p>
+        <nav class="table-actions">
+            {% for type in types %}
+                <a class="btn btn-secondary" href="{{ path('app_etl_import_template', {type: type.value}) }}">Modèle {{ type_labels[type.value] }}</a>
+            {% endfor %}
+        </nav>
+    </section>
+
+    <section class="card">
+        <h2>2. Importer un fichier rempli</h2>
+        <p>Le fichier est traité en arrière-plan par lots : suivez la progression et le rapport d'erreurs depuis le tableau ci-dessous. Une ligne avec un <code>code</code> existant met à jour la fiche ; les cellules vides ne modifient rien, la valeur <code>NULL</code> vide le champ.</p>
+        {{ form(form) }}
+    </section>
+
+    <section class="card table-wrapper">
+        <h2>Imports récents</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Type</th>
+                    <th>Fichier</th>
+                    <th>Statut</th>
+                    <th>Progression</th>
+                    <th>Créées</th>
+                    <th>Mises à jour</th>
+                    <th>Erreurs</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for job in jobs %}
+                <tr>
+                    <td>{{ job.createdAt|date('d/m/Y H:i') }}</td>
+                    <td>{{ type_labels[job.type.value] ?? job.type.value }}</td>
+                    <td>{{ job.originalFilename }}</td>
+                    <td>{{ job.status.label }}</td>
+                    <td>{{ job.processedLines }}{% if job.totalLines %} / {{ job.totalLines }}{% endif %}</td>
+                    <td>{{ job.createdCount }}</td>
+                    <td>{{ job.updatedCount }}</td>
+                    <td>{{ job.errorCount }}</td>
+                    <td><a class="btn btn-secondary" href="{{ path('app_etl_import_show', {id: job.idString}) }}">Détail</a></td>
+                </tr>
+            {% else %}
+                <tr><td colspan="9">Aucun import pour le moment.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </section>
+</main>
+{% endblock %}
