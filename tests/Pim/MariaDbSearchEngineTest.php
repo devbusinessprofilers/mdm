@@ -5,11 +5,15 @@ declare(strict_types=1);
 namespace App\Tests\Pim;
 
 use App\Pim\Entity\Lieu\Lieu;
+use App\Pim\Entity\Activite\Activite;
 use App\Pim\Entity\Localisation;
+use App\Pim\Entity\Restaurant\Restaurant;
+use App\Pim\Entity\Service\ServiceEvenementiel;
 use App\Pim\Enum\StatutFiche;
 use App\Pim\Enum\TypeFiche;
 use App\Pim\Repository\LieuRepository;
 use App\Pim\Service\FicheSearchIndexer;
+use App\Pim\Service\GlobalSearchProvider;
 use App\Pim\Service\MariaDbSearchEngine;
 use App\Shared\Search\SearchQuery;
 use Doctrine\DBAL\Connection;
@@ -141,6 +145,88 @@ final class MariaDbSearchEngineTest extends KernelTestCase
         ));
     }
 
+    public function testGlobalSearchHydratesAllSupportedTypesFiltersAndPaginates(): void
+    {
+        $lieu = new Lieu();
+        $lieu->changeLabel('Horizon lieu');
+        $lieu->changeLocalisation($this->localisation('Paris'));
+
+        $activite = new Activite();
+        $activite->changeLabel('Horizon activité');
+
+        $restaurant = new Restaurant();
+        $restaurant->changeLabel('Horizon restaurant');
+        $restaurant->changeLocalisation($this->localisation('Lyon'));
+        $restaurant->fiche()->publishForImport();
+        $restaurant->fiche()->archive('test');
+
+        $service = new ServiceEvenementiel();
+        $service->changeLabel('Horizon service');
+
+        foreach ([$lieu, $activite, $restaurant, $service] as $entity) {
+            $this->entityManager->persist($entity);
+        }
+        $this->entityManager->flush();
+        foreach ([$lieu, $activite, $restaurant, $service] as $entity) {
+            $this->entityManager->persist(new \App\Pim\Entity\FicheSearchDocument(
+                $entity->fiche(),
+                implode(' ', [$entity->code(), $entity->label(), 'horizon']),
+                $entity->fiche()->version(),
+            ));
+        }
+        $this->entityManager->flush();
+
+        $provider = self::getContainer()->get(GlobalSearchProvider::class);
+        self::assertInstanceOf(GlobalSearchProvider::class, $provider);
+        $rawPage = $this->searchEngine->search(new SearchQuery('horizon', [
+            'type' => [
+                TypeFiche::Lieu->value,
+                TypeFiche::Activite->value,
+                TypeFiche::Restaurant->value,
+                TypeFiche::ServiceEvenementiel->value,
+            ],
+        ]));
+        $globalPage = $provider->search('horizon');
+
+        self::assertSame(4, $globalPage->totalCount);
+        self::assertSame(
+            $this->ids($rawPage->results),
+            array_map(static fn ($result): string => $result->item->id, $globalPage->results),
+        );
+        self::assertEqualsCanonicalizing(
+            [TypeFiche::Lieu, TypeFiche::Activite, TypeFiche::Restaurant, TypeFiche::ServiceEvenementiel],
+            array_map(static fn ($result): TypeFiche => $result->item->type, $globalPage->results),
+        );
+        foreach ($globalPage->results as $result) {
+            self::assertStringContainsString($result->item->id, $result->showUrl);
+            self::assertStringContainsString($result->item->id.'/modifier', $result->editUrl);
+        }
+
+        $codePage = $provider->search((string) $lieu->code());
+        self::assertSame($lieu->id(), $codePage->results[0]->item->id ?? null);
+
+        $archivePage = $provider->search('horizon', TypeFiche::Restaurant, StatutFiche::Archivee);
+        self::assertSame([$restaurant->id()], array_map(static fn ($result): string => $result->item->id, $archivePage->results));
+
+        $pagedIds = [];
+        $cursor = null;
+        do {
+            $page = $provider->search('horizon', limit: 2, cursor: $cursor);
+            $pagedIds = [...$pagedIds, ...array_map(static fn ($result): string => $result->item->id, $page->results)];
+            $cursor = $page->nextCursor;
+        } while (null !== $cursor);
+        self::assertCount(4, $pagedIds);
+        self::assertCount(4, array_unique($pagedIds));
+
+        $debugDataHolder = self::getContainer()->get('doctrine.debug_data_holder');
+        $debugDataHolder->reset();
+        $items = self::getContainer()->get(\App\Pim\Repository\FicheRepository::class)->findGlobalSearchItemsByIds($pagedIds);
+        $queries = array_merge(...array_values($debugDataHolder->getData()));
+        $selects = array_filter($queries, static fn (array $query): bool => str_starts_with(ltrim((string) $query['sql']), 'SELECT'));
+        self::assertCount(1, $selects);
+        self::assertSame($pagedIds, array_map(static fn ($item): string => $item->id, $items));
+    }
+
     /** @param array<string, scalar|null> $filters */
     private function search(string $text, array $filters = []): \App\Shared\Search\SearchPage
     {
@@ -172,6 +258,15 @@ final class MariaDbSearchEngineTest extends KernelTestCase
         return $lieu;
     }
 
+    private function localisation(string $ville): Localisation
+    {
+        $localisation = new Localisation();
+        $localisation->changeVille($ville);
+        $localisation->changePays('France');
+
+        return $localisation;
+    }
+
     /** @param list<\App\Shared\Search\SearchResult> $results
      *  @return list<string>
      */
@@ -186,6 +281,9 @@ final class MariaDbSearchEngineTest extends KernelTestCase
         $this->connection->executeStatement('DELETE FROM pim_fiche_attribute_value');
         $this->connection->executeStatement('DELETE FROM pim_lieu_administratif');
         $this->connection->executeStatement('DELETE FROM pim_lieu_tarification');
+        $this->connection->executeStatement('DELETE FROM pim_activite');
+        $this->connection->executeStatement('DELETE FROM pim_restaurant');
+        $this->connection->executeStatement('DELETE FROM pim_service_evenementiel');
         $this->connection->executeStatement('DELETE FROM pim_lieu');
         $this->connection->executeStatement('DELETE FROM pim_fiche');
         $this->connection->executeStatement('DELETE FROM pim_localisation');

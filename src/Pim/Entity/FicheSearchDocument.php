@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace App\Pim\Entity;
 
+use App\Pim\Repository\FicheSearchDocumentRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: FicheSearchDocumentRepository::class)]
 #[ORM\Table(name: 'pim_fiche_search')]
 #[ORM\Index(name: 'FTX_PIM_FICHE_SEARCH', columns: ['content'], flags: ['fulltext'])]
 class FicheSearchDocument

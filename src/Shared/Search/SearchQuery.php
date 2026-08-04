@@ -6,7 +6,7 @@ namespace App\Shared\Search;
 
 final readonly class SearchQuery
 {
-    /** @param array<string, scalar|null> $filters */
+    /** @param array<string, scalar|list<scalar>|null> $filters */
     public function __construct(
         public string $text,
         public array $filters = [],

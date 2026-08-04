@@ -37,7 +37,7 @@ final class LieuSearchType extends AbstractType
 
     public function configureOptions(OptionsResolver $resolver): void
     {
-        $resolver->setDefaults(['data_class' => null, 'method' => 'GET', 'csrf_protection' => false]);
+        $resolver->setDefaults(['data_class' => null, 'method' => 'GET', 'csrf_protection' => false, 'allow_extra_fields' => true]);
     }
 
     public function getBlockPrefix(): string

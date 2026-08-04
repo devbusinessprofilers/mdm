@@ -54,6 +54,7 @@ final class RestaurantSearchType extends AbstractType
             'data_class' => null,
             'method' => 'GET',
             'csrf_protection' => false,
+            'allow_extra_fields' => true,
         ]);
     }
 

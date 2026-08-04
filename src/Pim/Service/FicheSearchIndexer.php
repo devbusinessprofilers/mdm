@@ -11,6 +11,7 @@ use App\Pim\Repository\LieuRepository;
 use App\Pim\Repository\ActiviteRepository;
 use App\Pim\Repository\ServiceEvenementielRepository;
 use App\Pim\Repository\RestaurantRepository;
+use App\Pim\Repository\FicheSearchDocumentRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use App\Shared\Outbox\OutboxPublisherInterface;
 
@@ -22,6 +23,7 @@ final readonly class FicheSearchIndexer
         private ActiviteRepository $activites,
         private ServiceEvenementielRepository $services,
         private RestaurantRepository $restaurants,
+        private FicheSearchDocumentRepository $searchDocuments,
         private OutboxPublisherInterface $outbox,
     ) {
     }
@@ -58,8 +60,7 @@ final readonly class FicheSearchIndexer
             ]),
         ], static fn (?string $value): bool => null !== $value && '' !== $value));
 
-        $repository = $this->entityManager->getRepository(FicheSearchDocument::class);
-        $document = $repository->find($fiche);
+        $document = $this->searchDocuments->findForFiche($fiche);
         if (!$document instanceof FicheSearchDocument) {
             $document = new FicheSearchDocument($fiche, $content, $fiche->version());
             $this->entityManager->persist($document);
