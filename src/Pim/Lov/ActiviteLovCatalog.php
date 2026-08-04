@@ -80,8 +80,9 @@ final class ActiviteLovCatalog
     ): string {
         $runtimeCode = LovRuntimeCatalog::valueCode($valueId);
         if (null !== $runtimeCode) { return $runtimeCode; }
-        foreach (self::choicesFor($attributeCode) as $code => $_label) {
-            if (self::valueId($attributeCode, $code) === $valueId) {
+        $choices = self::CHOICES[$attributeCode] ?? throw new \InvalidArgumentException('Attribut de LOV Activité inconnu.');
+        foreach ($choices as $code => $_label) {
+            if (self::stableId('value:'.$attributeCode.':'.$code) === $valueId) {
                 return $code;
             }
         }

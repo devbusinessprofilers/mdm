@@ -212,8 +212,9 @@ final class RestaurantLovCatalog
     {
         $runtimeCode = LovRuntimeCatalog::valueCode($id);
         if (null !== $runtimeCode) { return $runtimeCode; }
-        foreach (array_keys(self::values($attribute)) as $code) {
-            if (self::valueId($attribute, $code) === $id) {
+        $values = self::VALUES[$attribute] ?? throw new \InvalidArgumentException('Attribut Restaurant inconnu.');
+        foreach (array_keys($values) as $code) {
+            if (self::stableId('value:'.$attribute.':'.$code) === $id) {
                 return $code;
             }
         }

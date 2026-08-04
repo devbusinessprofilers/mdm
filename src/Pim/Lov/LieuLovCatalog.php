@@ -519,7 +519,7 @@ final class LieuLovCatalog
         if (null !== $runtimeCode) { return $runtimeCode; }
         foreach (self::CHOICES as $attributeCode => $choices) {
             foreach ($choices as $valueCode => $_label) {
-                if (self::valueId($attributeCode, $valueCode) === $valueId) {
+                if (self::stableIntegerId('value:'.$attributeCode.':'.$valueCode) === $valueId) {
                     return $valueCode;
                 }
             }

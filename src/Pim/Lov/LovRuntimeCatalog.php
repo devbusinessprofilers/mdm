@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Pim\Lov;
 
-use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception;
+use App\Pim\Repository\ValeurAttributRepository;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\Messenger\Event\WorkerMessageReceivedEvent;
@@ -17,7 +17,7 @@ final class LovRuntimeCatalog
     /** @var array<int, array{attribute: string, code: string}> */
     private static array $ids = [];
 
-    public function __construct(private readonly Connection $connection) {}
+    public function __construct(private readonly ValeurAttributRepository $valuesRepository) {}
 
     #[AsEventListener(priority: 100)]
     public function onRequest(RequestEvent $event): void
@@ -35,13 +35,7 @@ final class LovRuntimeCatalog
     public function reload(): void
     {
         try {
-            $schema = $this->connection->createSchemaManager();
-            if (!$schema->tablesExist(['pim_attribute_value', 'pim_attribute_definition'])) { return; }
-            $hasActive = isset($schema->listTableColumns('pim_attribute_value')['active']);
-            $rows = $this->connection->fetchAllAssociative(sprintf(
-                "SELECT a.code attribute_code, v.id, v.code, v.label, %s active FROM pim_attribute_value v INNER JOIN pim_attribute_definition a ON a.id = v.attribute_id WHERE a.code <> 'PRESTATAIRE' ORDER BY a.code, v.position, v.id",
-                $hasActive ? 'v.active' : '1',
-            ));
+            $rows = $this->valuesRepository->findRuntimeRows();
         } catch (Exception) {
             // Keep the static catalogs usable during installation and in tests without a database.
             return;

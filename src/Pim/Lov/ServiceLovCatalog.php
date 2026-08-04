@@ -48,7 +48,7 @@ final class ServiceLovCatalog
         $runtimeCode = LovRuntimeCatalog::valueCode($id);
         if (null !== $runtimeCode) { return $runtimeCode; }
         foreach (array_keys(self::PRESTATIONS) as $code) {
-            if (self::valueId($code) === $id) {
+            if (self::stableId('value:TYPE_PRESTATAIRE:'.$code) === $id) {
                 return $code;
             }
         }
