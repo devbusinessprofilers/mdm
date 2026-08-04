@@ -1,24 +1,21 @@
-# DAM
+# Module DAM
 
-Contexte responsable du cycle de vie des médias, de leur validation, de leurs
-rendus, de leur dédoublonnage et de leur publication.
+Le module `Dam` gère le cycle de vie technique des images et documents :
+originaux privés, rendus publics, publication documentaire, suppression et
+reprise sur erreur. Les métadonnées métier des ressources restent rattachées aux
+fiches PIM.
 
-## Stockage des originaux
+## Stockage
 
-Les images des lieux sont validées par le formulaire PIM puis envoyées en flux
-dans le bucket OVH S3 privé configuré par `S3_PRIVATE_BUCKET`. La clé suit le
-format `{S3_PREFIX}/lieux/{lieuId}/{mediaId}/original.{extension}` et les
-métadonnées persistantes sont enregistrées dans `dam_media_asset`.
+Les originaux sont envoyés en flux dans le bucket S3 privé configuré. Les
+métadonnées persistantes sont conservées dans `dam_media_asset` et les rendus
+dans `dam_media_rendition`. Les identifiants S3 sont fournis par l'environnement
+ou le gestionnaire de secrets et ne doivent jamais être ajoutés au dépôt.
 
-Les identifiants `S3_ACCESS_KEY` et `S3_SECRET_KEY` doivent être fournis dans
-`.env.local` en développement et par le gestionnaire de secrets de la plateforme
-en production. Ils ne doivent jamais être ajoutés au dépôt.
+Les images traitées sont publiées en WebP avec recadrage et rotation éventuels.
+Les variantes sont définies uniquement dans `ImageVariantRegistry` :
 
-## Variantes publiques
-
-Après l'événement `MediaUploaded`, le worker `dam` lit l'original privé et
-publie des WebP recadrés aux dimensions exactes dans `S3_PUBLIC_BUCKET` :
-
+- `hd` : 1920 × 1080 ;
 - `large` : 960 × 480 ;
 - `medium_2` : 320 × 190 ;
 - `medium` : 300 × 150 ;
@@ -26,7 +23,30 @@ publie des WebP recadrés aux dimensions exactes dans `S3_PUBLIC_BUCKET` :
 - `map` : 194 × 150 ;
 - `cart` : 80 × 70.
 
-Les clés suivent le format
-`{S3_PREFIX}/lieux/{lieuId}/{mediaId}/renditions/{variante}.webp` et les URL
-sont construites depuis `S3_PUBLIC_BASE_URL`. Les remplacements, suppressions
-et changements de recadrage ou rotation sont propagés de manière asynchrone.
+Les documents restent privés par défaut. Leur publication copie explicitement
+l'original vers le stockage public ; leur révocation supprime cette copie. Un
+téléchargement privé passe par une URL temporaire autorisée.
+
+## Flux asynchrones
+
+1. Le PIM valide le fichier, persiste `MediaAsset` et place `MediaUploaded` dans
+   l'outbox.
+2. Le worker `dam` lit l'original privé et produit les rendus attendus.
+3. `MediaProcessed` est publié vers le PIM pour confirmer le changement
+   technique sur la fiche rattachée.
+4. `RegenerateMedia`, `DeleteMedia`, `PublishDocument` et `UnpublishDocument`
+   couvrent les autres transitions.
+
+Les handlers sont rejouables : un rendu déjà complet n'est pas régénéré sans
+raison, et les suppressions/publications vérifient l'état courant. Après le
+dernier échec Messenger, `MediaFailureSubscriber` place le média en erreur avec
+un message exploitable.
+
+## Composants principaux
+
+- `Entity/MediaAsset.php` et `Entity/MediaRendition.php` : état persistant ;
+- `Service/MediaProcessingService.php` : orchestration des rendus ;
+- `Service/ImageRenditionGenerator.php` : génération ImageMagick ;
+- `Service/*Uploader.php` : validation et envoi des originaux ;
+- `MessageHandler/` : traitements asynchrones ;
+- `Shared/Service/OvhS3ObjectStorage.php` : adaptateur de stockage objet.
