@@ -25,6 +25,12 @@ final readonly class FicheAffiliationManager
     ) {
     }
 
+    public function toggleCollaborateur(FicheCollaborateur $collaborateur): void
+    {
+        $collaborateur->isActive() ? $collaborateur->deactivate() : $collaborateur->activate();
+        $this->entityManager->flush();
+    }
+
     public function invite(
         User $actor,
         Fiche $fiche,
@@ -127,20 +133,6 @@ final readonly class FicheAffiliationManager
      */
     private function transactional(callable $operation): mixed
     {
-        $connection = $this->entityManager->getConnection();
-        $connection->beginTransaction();
-        try {
-            $result = $operation();
-            $this->entityManager->flush();
-            $connection->commit();
-
-            return $result;
-        } catch (\Throwable $exception) {
-            if ($connection->isTransactionActive()) {
-                $connection->rollBack();
-            }
-
-            throw $exception;
-        }
+        return $this->entityManager->wrapInTransaction($operation);
     }
 }

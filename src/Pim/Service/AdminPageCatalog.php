@@ -12,6 +12,7 @@ final readonly class AdminPageCatalog
     private const LABELS = [
         'app_pim_admin' => 'Sommaire d’administration',
         'app_pim_home' => 'Accueil du PIM',
+        'app_pim_global_search' => 'Recherche globale du PIM',
         'app_pim_lieu_index' => 'Liste des lieux',
         'app_pim_lieu_new' => 'Créer un lieu',
         'app_pim_lieu_show' => 'Fiche d’un lieu',

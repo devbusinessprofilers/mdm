@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Pim\Service;
 
 use App\Shared\Outbox\OutboxRepository;
-use Doctrine\DBAL\Connection;
+use App\Pim\Repository\EventMonitoringRepository;
 use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\Cache\ItemInterface;
 
@@ -16,7 +16,7 @@ final readonly class AdminEventMonitor
     private const CACHE_TTL = 10;
 
     public function __construct(
-        private Connection $connection,
+        private EventMonitoringRepository $events,
         private OutboxRepository $outbox,
         private AdminEventCatalog $catalog,
         private CacheInterface $cache,
@@ -58,20 +58,12 @@ final readonly class AdminEventMonitor
     {
         try {
             $queues = array_fill_keys(self::QUEUES, 0);
-            foreach ($this->connection->fetchAllAssociative('SELECT queue_name, COUNT(*) AS total FROM messenger_messages GROUP BY queue_name') as $row) {
-                $queues[(string) $row['queue_name']] = (int) $row['total'];
+            foreach ($this->events->queueCounts() as $queue => $total) {
+                $queues[$queue] = $total;
             }
 
             $recent = [];
-            foreach ($this->connection->fetchAllAssociative(
-                <<<'SQL'
-                    SELECT o.id, o.message_type, o.status, o.attempts, o.occurred_at, o.last_error, p.processed_at
-                    FROM outbox_message o
-                    LEFT JOIN processed_message p ON p.event_id = o.id
-                    ORDER BY o.occurred_at DESC
-                    LIMIT 20
-                    SQL,
-            ) as $row) {
+            foreach ($this->events->recentEvents() as $row) {
                 $type = (string) $row['message_type'];
                 $recent[] = [
                     'id' => (string) $row['id'],

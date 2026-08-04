@@ -1,0 +1,89 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Pim\Service;
+
+use App\Dam\Enum\DocumentUsage;
+use App\Dam\Message\DeleteMedia;
+use App\Dam\Message\PublishDocument;
+use App\Dam\Message\UnpublishDocument;
+use App\Dam\Service\FicheDocumentUploader;
+use App\Pim\Entity\Fiche;
+use App\Pim\Entity\Lieu\RessourceLieu;
+use App\Pim\Message\IndexFiche;
+use App\Shared\Outbox\OutboxPublisherInterface;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
+
+final readonly class FicheDocumentManager
+{
+    public function __construct(
+        private EntityManagerInterface $entityManager,
+        private OutboxPublisherInterface $outbox,
+        private FicheDocumentUploader $uploader,
+    ) {}
+
+    /** @param array<string, mixed> $data */
+    public function updateMetadata(RessourceLieu $document, Fiche $fiche, array $data, string $actor): void
+    {
+        $document->changeLegende(is_string($data['title'] ?? null) ? $data['title'] : null);
+        $document->changeSource(is_string($data['source'] ?? null) ? $data['source'] : null);
+        if (true === ($data['rightsGranted'] ?? false)) {
+            $document->grantRights($actor);
+        } else {
+            $document->revokeRights();
+            $this->unpublish($document);
+        }
+        $this->changed($fiche);
+    }
+
+    public function replace(RessourceLieu $document, Fiche $fiche, UploadedFile $file, DocumentUsage $usage): void
+    {
+        $asset = $this->uploader->upload($file, $fiche, $usage);
+        $old = $document->damAssetId();
+        try {
+            $this->unpublish($document);
+            $this->entityManager->persist($asset);
+            $document->changeDamAssetId($asset->id());
+            $this->outbox->enqueue(new DeleteMedia($old));
+            $this->changed($fiche);
+        } catch (\Throwable $exception) {
+            try { $this->uploader->delete($asset); } catch (\Throwable) {}
+            throw $exception;
+        }
+    }
+
+    public function togglePublication(RessourceLieu $document, Fiche $fiche): void
+    {
+        if ('published' === $document->publicationStatus()?->value) {
+            $this->unpublish($document);
+        } else {
+            $document->requestPublication();
+            $this->outbox->enqueue(new PublishDocument($document->id()));
+        }
+        $this->changed($fiche);
+    }
+
+    public function delete(RessourceLieu $document, Fiche $fiche): void
+    {
+        $this->unpublish($document);
+        $this->outbox->enqueue(new DeleteMedia($document->damAssetId()));
+        $fiche->removeResource($document);
+        $this->entityManager->remove($document);
+        $this->changed($fiche);
+    }
+
+    private function unpublish(RessourceLieu $document): void
+    {
+        $key = $document->requestUnpublication();
+        if (null !== $key) { $this->outbox->enqueue(new UnpublishDocument($document->id(), $key)); }
+    }
+
+    private function changed(Fiche $fiche): void
+    {
+        $fiche->markChanged();
+        $this->outbox->enqueue(new IndexFiche($fiche->idString()));
+        $this->entityManager->flush();
+    }
+}

@@ -5,18 +5,14 @@ declare(strict_types=1);
 namespace App\Pim\Controller;
 
 use App\Pim\Completeness\CompletenessFieldCatalog;
-use App\Pim\Completeness\CompletenessRecalculationScheduler;
-use App\Pim\Entity\CompletenessConfigurationRevision;
-use App\Pim\Entity\CompletenessConfigurationAudit;
 use App\Pim\Entity\CompletenessFieldConfiguration;
-use App\Pim\Enum\CompletenessFormula;
 use App\Pim\Enum\TypeFiche;
 use App\Pim\Form\CompletenessConfigurationType;
 use App\Pim\Form\CompletenessSearchType;
 use App\Pim\Repository\CompletenessFieldConfigurationRepository;
 use App\Pim\Repository\CompletenessConfigurationAuditRepository;
-use Doctrine\DBAL\Connection;
-use Doctrine\ORM\EntityManagerInterface;
+use App\Pim\Service\CompletenessAdminProvider;
+use App\Pim\Service\CompletenessConfigurationManager;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -31,9 +27,7 @@ final class CompletenessConfigurationController extends AbstractController
     public function index(
         Request $request,
         CompletenessFieldCatalog $catalog,
-        CompletenessFieldConfigurationRepository $repository,
-        EntityManagerInterface $entityManager,
-        Connection $connection,
+        CompletenessAdminProvider $provider,
     ): Response {
         $searchForm = $this->createForm(CompletenessSearchType::class, [
             'type' => TypeFiche::tryFrom($request->query->getString('type')),
@@ -43,32 +37,9 @@ final class CompletenessConfigurationController extends AbstractController
         /** @var array{type?: TypeFiche|null, q?: string|null} $search */
         $search = $searchForm->getData();
         $selectedType = $search['type'] ?? null;
-        $query = mb_strtolower(trim((string) ($search['q'] ?? '')));
-        $configurations = null === $selectedType
-            ? $repository->findBy([], ['ficheType' => 'ASC', 'fieldCode' => 'ASC'])
-            : $repository->findBy(['ficheType' => $selectedType], ['fieldCode' => 'ASC']);
-        $rows = [];
-        foreach ($configurations as $configuration) {
-            $definition = $catalog->find($configuration->ficheType(), $configuration->fieldCode());
-            if (null === $definition) { continue; }
-            if ('' !== $query && !str_contains(mb_strtolower($configuration->fieldCode().' '.$configuration->label()), $query)) { continue; }
-            $rows[] = ['configuration' => $configuration, 'definition' => $definition, 'effective_target' => $configuration->targetLengthOverride() ?? $definition->defaultTargetLength];
-        }
+        $query = trim((string) ($search['q'] ?? ''));
 
-        $status = [];
-        $tables = [TypeFiche::Lieu->value => 'pim_lieu', TypeFiche::Activite->value => 'pim_activite', TypeFiche::Restaurant->value => 'pim_restaurant', TypeFiche::ServiceEvenementiel->value => 'pim_service_evenementiel'];
-        foreach ($catalog->supportedTypes() as $type) {
-            $table = $tables[$type->value] ?? null;
-            if (null === $table) { continue; }
-            $revision = $entityManager->find(CompletenessConfigurationRevision::class, $type);
-            $current = $revision?->revision() ?? 1;
-            $status[$type->value] = [
-                'revision' => $current,
-                'pending' => (int) $connection->fetchOne(sprintf('SELECT COUNT(*) FROM %s WHERE completeness_revision < ?', $table), [$current]),
-            ];
-        }
-
-        return $this->render('pim/completeness/index.html.twig', ['rows' => $rows, 'types' => $catalog->supportedTypes(), 'selected_type' => $selectedType, 'query' => $request->query->getString('q'), 'status' => $status, 'search_form' => $searchForm->createView()]);
+        return $this->render('pim/completeness/index.html.twig', ['rows' => $provider->rows($selectedType, $query), 'types' => $catalog->supportedTypes(), 'selected_type' => $selectedType, 'query' => $request->query->getString('q'), 'status' => $provider->status(), 'search_form' => $searchForm->createView()]);
     }
 
     #[Route('/{id}/modifier', name: 'edit', requirements: ['id' => '\\d+'], methods: ['GET', 'POST'])]
@@ -77,9 +48,8 @@ final class CompletenessConfigurationController extends AbstractController
         Request $request,
         CompletenessFieldConfigurationRepository $repository,
         CompletenessFieldCatalog $catalog,
-        CompletenessRecalculationScheduler $scheduler,
         CompletenessConfigurationAuditRepository $auditRepository,
-        EntityManagerInterface $entityManager,
+        CompletenessConfigurationManager $manager,
     ): Response {
         $configuration = $repository->find($id);
         if (!$configuration instanceof CompletenessFieldConfiguration) { throw $this->createNotFoundException(); }
@@ -95,29 +65,11 @@ final class CompletenessConfigurationController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             /** @var array<string, mixed> $submitted */
             $submitted = $form->getData();
-            $before = $configuration->snapshot();
-            $configuration->configure(
-                $submitted['formula'] instanceof CompletenessFormula ? $submitted['formula'] : CompletenessFormula::Presence,
-                (float) $submitted['weight'], null === $submitted['targetLengthOverride'] ? null : (int) $submitted['targetLengthOverride'],
-                (bool) $submitted['active'], (bool) $submitted['marketplace'], (bool) $submitted['thematicSites'], (bool) $submitted['salesforce'], (bool) $submitted['providerPortal'],
-            );
-            if ($before === $configuration->snapshot()) {
+            if (!$manager->update($configuration, $submitted, $this->getUser()?->getUserIdentifier() ?? 'system')) {
                 $this->addFlash('info', 'Aucune modification détectée. Aucun recalcul planifié.');
 
                 return $this->redirectToRoute('app_pim_completeness_index', ['type' => $configuration->ficheType()->value]);
             }
-            $revision = $scheduler->schedule($configuration->ficheType());
-            $actor = $this->getUser()?->getUserIdentifier() ?? 'system';
-            $entityManager->persist(new CompletenessConfigurationAudit(
-                $configuration->ficheType(),
-                $configuration->fieldCode(),
-                $revision,
-                $actor,
-                'admin',
-                $before,
-                $configuration->snapshot(),
-            ));
-            $entityManager->flush();
             $this->addFlash('success', 'Configuration enregistrée et recalcul planifié.');
 
             return $this->redirectToRoute('app_pim_completeness_index', ['type' => $configuration->ficheType()->value]);

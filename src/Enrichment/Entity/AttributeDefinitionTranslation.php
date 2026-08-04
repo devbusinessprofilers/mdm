@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace App\Enrichment\Entity;
 
 use App\Enrichment\Enum\SupportedLocale;
+use App\Enrichment\Repository\AttributeDefinitionTranslationRepository;
 use App\Pim\Entity\AttributDefinition;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: AttributeDefinitionTranslationRepository::class)]
 #[ORM\Table(name: 'pim_attribute_definition_translation')]
 #[ORM\UniqueConstraint(name: 'UNIQ_PIM_ATTRIBUTE_DEFINITION_LOCALE', columns: ['attribute_id', 'locale'])]
 class AttributeDefinitionTranslation extends AbstractLovTranslation

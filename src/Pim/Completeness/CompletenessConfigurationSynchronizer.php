@@ -10,8 +10,8 @@ use App\Pim\Entity\CompletenessFieldConfiguration;
 use App\Pim\Enum\TypeFiche;
 use App\Pim\Message\RecalculateCompletenessBatch;
 use App\Pim\Repository\CompletenessFieldConfigurationRepository;
+use App\Pim\Repository\CompletenessConfigurationRevisionRepository;
 use App\Shared\Outbox\OutboxPublisherInterface;
-use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
 
 final readonly class CompletenessConfigurationSynchronizer
@@ -19,6 +19,7 @@ final readonly class CompletenessConfigurationSynchronizer
     public function __construct(
         private CompletenessFieldCatalog $catalog,
         private CompletenessFieldConfigurationRepository $repository,
+        private CompletenessConfigurationRevisionRepository $revisions,
         private EntityManagerInterface $entityManager,
         private OutboxPublisherInterface $outbox,
     ) {
@@ -27,7 +28,7 @@ final readonly class CompletenessConfigurationSynchronizer
     public function synchronize(TypeFiche $type, string $actor = 'system'): CompletenessSynchronizationResult
     {
         return $this->entityManager->wrapInTransaction(function () use ($type, $actor): CompletenessSynchronizationResult {
-            $revision = $this->entityManager->find(CompletenessConfigurationRevision::class, $type, LockMode::PESSIMISTIC_WRITE);
+            $revision = $this->revisions->findForUpdate($type);
             if (!$revision instanceof CompletenessConfigurationRevision) {
                 $revision = new CompletenessConfigurationRevision($type);
                 $this->entityManager->persist($revision);

@@ -7,18 +7,23 @@ namespace App\Pim\Completeness;
 use App\Pim\Entity\CompletenessConfigurationRevision;
 use App\Pim\Enum\TypeFiche;
 use App\Pim\Message\RecalculateCompletenessBatch;
+use App\Pim\Repository\CompletenessConfigurationRevisionRepository;
 use App\Shared\Outbox\OutboxPublisherInterface;
 use Doctrine\ORM\EntityManagerInterface;
 
 final readonly class CompletenessRecalculationScheduler
 {
-    public function __construct(private EntityManagerInterface $entityManager, private OutboxPublisherInterface $outbox)
+    public function __construct(
+        private EntityManagerInterface $entityManager,
+        private CompletenessConfigurationRevisionRepository $revisions,
+        private OutboxPublisherInterface $outbox,
+    )
     {
     }
 
     public function schedule(TypeFiche $type, bool $incrementRevision = true, int $batchSize = 250): int
     {
-        $revision = $this->entityManager->find(CompletenessConfigurationRevision::class, $type);
+        $revision = $this->revisions->findForType($type);
         if (!$revision instanceof CompletenessConfigurationRevision) {
             $revision = new CompletenessConfigurationRevision($type);
             $this->entityManager->persist($revision);

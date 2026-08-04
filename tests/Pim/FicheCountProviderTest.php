@@ -9,6 +9,7 @@ use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Enum\StatutFiche;
 use App\Pim\Enum\TypeFiche;
 use App\Pim\Service\FicheCountProvider;
+use App\Pim\Repository\FicheRepository;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\Group;
@@ -20,6 +21,7 @@ final class FicheCountProviderTest extends KernelTestCase
 {
     private Connection $connection;
     private EntityManagerInterface $entityManager;
+    private FicheRepository $fiches;
 
     protected function setUp(): void
     {
@@ -30,6 +32,7 @@ final class FicheCountProviderTest extends KernelTestCase
         self::bootKernel();
         $this->connection = self::getContainer()->get(Connection::class);
         $this->entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $this->fiches = self::getContainer()->get(FicheRepository::class);
         $this->clearTables();
     }
 
@@ -51,7 +54,7 @@ final class FicheCountProviderTest extends KernelTestCase
         $this->entityManager->persist($activite);
         $this->entityManager->flush();
 
-        $provider = new FicheCountProvider($this->connection, new ArrayAdapter());
+        $provider = new FicheCountProvider($this->fiches, new ArrayAdapter());
 
         self::assertSame(2, $provider->totalByType(TypeFiche::Lieu));
         self::assertSame(1, $provider->totalByType(TypeFiche::Activite));
@@ -65,7 +68,7 @@ final class FicheCountProviderTest extends KernelTestCase
         $this->persistLieu(1);
         $this->entityManager->flush();
 
-        $provider = new FicheCountProvider($this->connection, new ArrayAdapter());
+        $provider = new FicheCountProvider($this->fiches, new ArrayAdapter());
         self::assertSame(1, $provider->totalByType(TypeFiche::Lieu));
 
         $this->persistLieu(2);
@@ -73,7 +76,7 @@ final class FicheCountProviderTest extends KernelTestCase
 
         self::assertSame(1, $provider->totalByType(TypeFiche::Lieu), 'La valeur en cache doit être servie sans recompter.');
 
-        $freshProvider = new FicheCountProvider($this->connection, new ArrayAdapter());
+        $freshProvider = new FicheCountProvider($this->fiches, new ArrayAdapter());
         self::assertSame(2, $freshProvider->totalByType(TypeFiche::Lieu));
     }
 

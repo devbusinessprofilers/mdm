@@ -4,61 +4,32 @@ declare(strict_types=1);
 
 namespace App\Pim\Controller;
 
-use App\Account\Entity\User;
 use App\Account\Security\FicheVoter;
-use App\Dam\Entity\MediaAsset;
-use App\Dam\Enum\DocumentUsage;
-use App\Dam\Message\DeleteMedia;
-use App\Dam\Service\FicheDocumentUploader;
-use App\Dam\Service\FicheImageUploader;
-use App\Dam\Service\ImageVariantRegistry;
-use App\Enrichment\Service\FicheTranslationScheduler;
-use App\Pim\Entity\Lieu\RessourceLieu;
+use App\Account\Service\CurrentActorProvider;
 use App\Pim\Entity\Restaurant\Restaurant;
-use App\Pim\Enum\NatureRessource;
 use App\Pim\Enum\StatutFiche;
 use App\Pim\Enum\TypeFiche;
 use App\Pim\Form\RestaurantSearchType;
 use App\Pim\Form\RestaurantType;
-use App\Pim\Form\ActiviteDocumentMetadataType;
-use App\Pim\Form\LieuDocumentReplaceType;
-use App\Pim\Message\IndexFiche;
+use App\Pim\Form\FicheActionFormFactory;
 use App\Pim\ReadModel\FicheCursor;
 use App\Pim\Repository\RestaurantRepository;
-use App\Pim\Repository\LocalisationRepository;
 use App\Pim\Service\FicheCountProvider;
-use App\Pim\Validation\ValidationGroups;
-use App\Shared\Form\ActionType;
-use App\Shared\Message\MediaUploaded;
-use App\Shared\Outbox\OutboxPublisherInterface;
+use App\Pim\Service\RestaurantAdminManager;
+use App\Pim\Service\RestaurantAdminViewBuilder;
+use App\Pim\Service\FicheWorkflowManager;
 use App\Shared\Search\SearchQuery;
 use App\Shared\Service\SearchEngineInterface;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\Form\Extension\Core\Type\SubmitType;
-use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\FormError;
-use Symfony\Component\Form\FormFactoryInterface;
-use Symfony\Component\Form\FormInterface;
-use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 #[Route('/admin/restaurants', name: 'app_pim_restaurant_')]
 final class RestaurantController extends AbstractController
 {
-    public function __construct(
-        private readonly FormFactoryInterface $forms,
-        private readonly FicheImageUploader $imageUploader,
-        private readonly FicheDocumentUploader $documentUploader,
-        private readonly LocalisationRepository $locations,
-        private readonly FicheTranslationScheduler $translationScheduler,
-    ) {
-    }
-
     #[Route('', name: 'index', methods: ['GET'])]
     public function index(
         Request $request,
@@ -139,31 +110,41 @@ final class RestaurantController extends AbstractController
     #[Route('/nouveau', name: 'new', methods: ['GET', 'POST'])]
     public function new(
         Request $request,
-        EntityManagerInterface $entityManager,
-        OutboxPublisherInterface $outbox,
+        RestaurantAdminManager $manager,
+        RestaurantAdminViewBuilder $view,
+        CurrentActorProvider $actor,
     ): Response {
-        return $this->save(
-            $request,
-            new Restaurant(),
-            $entityManager,
-            $outbox,
-            true,
-        );
+        $restaurant = new Restaurant();
+        $form = $this->createForm(RestaurantType::class, $restaurant);
+        $form->handleRequest($request);
+        if ($form->isSubmitted() && $form->isValid()) {
+            try {
+                $manager->save($restaurant, $form, [], $actor->id());
+                $this->addFlash('success', 'Restaurant créé.');
+
+                return $this->redirectToRoute('app_pim_restaurant_show', ['id' => $restaurant->id()]);
+            } catch (\DomainException $exception) {
+                $form->addError(new FormError($exception->getMessage()));
+            }
+        }
+
+        return $this->render('pim/restaurant/form.html.twig', $view->form($form, $restaurant, true));
     }
 
     #[Route('/{id}', name: 'show', requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'], methods: ['GET'])]
-    public function show(string $id, RestaurantRepository $repository): Response
+    public function show(string $id, RestaurantRepository $repository, FicheActionFormFactory $forms): Response
     {
-        $restaurant = $this->requireRestaurant($id, $repository);
+        $restaurant = $repository->find($id);
+        if (!$restaurant instanceof Restaurant) { throw $this->createNotFoundException('Restaurant introuvable.'); }
         $this->denyAccessUnlessGranted(FicheVoter::VIEW, $restaurant->fiche());
 
         return $this->render('pim/restaurant/show.html.twig', [
             'restaurant' => $restaurant,
-            'delete_form' => $this->action($restaurant, 'delete', 'Supprimer')->createView(),
-            'submit_form' => $this->action($restaurant, 'submit', 'Soumettre à validation')->createView(),
-            'validate_form' => $this->action($restaurant, 'validate', 'Valider et publier')->createView(),
-            'archive_form' => $this->action($restaurant, 'archive', 'Archiver')->createView(),
-            'reject_form' => $this->rejectForm($restaurant)->createView(),
+            'delete_form' => $forms->action('restaurant', $restaurant->id(), 'delete', 'Supprimer')->createView(),
+            'submit_form' => $forms->action('restaurant', $restaurant->id(), 'submit', 'Soumettre à validation')->createView(),
+            'validate_form' => $forms->action('restaurant', $restaurant->id(), 'validate', 'Valider et publier')->createView(),
+            'archive_form' => $forms->action('restaurant', $restaurant->id(), 'archive', 'Archiver')->createView(),
+            'reject_form' => $forms->reject('restaurant', $restaurant->id())->createView(),
         ]);
     }
 
@@ -172,19 +153,28 @@ final class RestaurantController extends AbstractController
         Request $request,
         string $id,
         RestaurantRepository $repository,
-        EntityManagerInterface $entityManager,
-        OutboxPublisherInterface $outbox,
+        RestaurantAdminManager $manager,
+        RestaurantAdminViewBuilder $view,
+        CurrentActorProvider $actor,
     ): Response {
-        $restaurant = $this->requireRestaurant($id, $repository);
+        $restaurant = $repository->find($id);
+        if (!$restaurant instanceof Restaurant) { throw $this->createNotFoundException('Restaurant introuvable.'); }
         $this->denyAccessUnlessGranted(FicheVoter::EDIT, $restaurant->fiche());
+        $existing = $manager->photoAssetIds($restaurant);
+        $form = $this->createForm(RestaurantType::class, $restaurant);
+        $form->handleRequest($request);
+        if ($form->isSubmitted() && $form->isValid()) {
+            try {
+                $manager->save($restaurant, $form, $existing, $actor->id());
+                $this->addFlash('success', 'Restaurant modifié.');
 
-        return $this->save(
-            $request,
-            $restaurant,
-            $entityManager,
-            $outbox,
-            false,
-        );
+                return $this->redirectToRoute('app_pim_restaurant_show', ['id' => $restaurant->id()]);
+            } catch (\DomainException $exception) {
+                $form->addError(new FormError($exception->getMessage()));
+            }
+        }
+
+        return $this->render('pim/restaurant/form.html.twig', $view->form($form, $restaurant, false));
     }
 
     #[Route('/{id}/supprimer', name: 'delete', requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'], methods: ['POST'])]
@@ -192,16 +182,17 @@ final class RestaurantController extends AbstractController
         Request $request,
         string $id,
         RestaurantRepository $repository,
-        EntityManagerInterface $entityManager,
+        FicheActionFormFactory $forms,
+        FicheWorkflowManager $workflow,
     ): Response {
-        $restaurant = $this->requireRestaurant($id, $repository);
+        $restaurant = $repository->find($id);
+        if (!$restaurant instanceof Restaurant) { throw $this->createNotFoundException('Restaurant introuvable.'); }
         $this->denyAccessUnlessGranted(FicheVoter::DELETE, $restaurant->fiche());
-        $form = $this->action($restaurant, 'delete', 'Supprimer');
+        $form = $forms->action('restaurant', $restaurant->id(), 'delete', 'Supprimer');
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $entityManager->remove($restaurant);
-            $entityManager->flush();
+            $workflow->delete($restaurant);
             $this->addFlash('success', 'Restaurant supprimé.');
         }
 
@@ -213,20 +204,18 @@ final class RestaurantController extends AbstractController
         Request $request,
         string $id,
         RestaurantRepository $repository,
-        EntityManagerInterface $entityManager,
-        OutboxPublisherInterface $outbox,
-        ValidatorInterface $validator,
+        FicheActionFormFactory $forms,
+        FicheWorkflowManager $workflow,
+        CurrentActorProvider $actor,
     ): Response {
-        $restaurant = $this->requireRestaurant($id, $repository);
+        $restaurant = $repository->find($id);
+        if (!$restaurant instanceof Restaurant) { throw $this->createNotFoundException('Restaurant introuvable.'); }
         $this->denyAccessUnlessGranted(FicheVoter::SUBMIT, $restaurant->fiche());
-        $form = $this->action($restaurant, 'submit', 'Soumettre');
+        $form = $forms->action('restaurant', $restaurant->id(), 'submit', 'Soumettre');
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $errors = $validator->validate($restaurant, null, [
-                ValidationGroups::DRAFT,
-                ValidationGroups::SUBMISSION,
-            ]);
+            $errors = $workflow->submit($restaurant, $restaurant->fiche(), $actor->id());
             if (count($errors) > 0) {
                 foreach ($errors as $error) {
                     $this->addFlash(
@@ -240,9 +229,6 @@ final class RestaurantController extends AbstractController
                 ]);
             }
 
-            $restaurant->fiche()->submitForValidation($this->actor());
-            $outbox->enqueue(new IndexFiche($restaurant->fiche()->idString()));
-            $entityManager->flush();
         }
 
         return $this->redirectToRoute('app_pim_restaurant_show', [
@@ -255,19 +241,18 @@ final class RestaurantController extends AbstractController
         Request $request,
         string $id,
         RestaurantRepository $repository,
-        EntityManagerInterface $entityManager,
-        OutboxPublisherInterface $outbox,
+        FicheActionFormFactory $forms,
+        FicheWorkflowManager $workflow,
+        CurrentActorProvider $actor,
     ): Response {
-        return $this->transition(
-            $request,
-            $this->requireRestaurant($id, $repository),
-            'validate',
-            $entityManager,
-            $outbox,
-            static fn (Restaurant $restaurant, string $actor) =>
-                $restaurant->fiche()->validateAndPublish($actor),
-            FicheVoter::VALIDATE,
-        );
+        $restaurant = $repository->find($id);
+        if (!$restaurant instanceof Restaurant) { throw $this->createNotFoundException('Restaurant introuvable.'); }
+        $this->denyAccessUnlessGranted(FicheVoter::VALIDATE, $restaurant->fiche());
+        $form = $forms->action('restaurant', $restaurant->id(), 'validate', 'Validate');
+        $form->handleRequest($request);
+        if ($form->isSubmitted() && $form->isValid()) { $workflow->validate($restaurant->fiche(), $actor->id()); }
+
+        return $this->redirectToRoute('app_pim_restaurant_show', ['id' => $restaurant->id()]);
     }
 
     #[Route('/{id}/archiver', name: 'archive', requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'], methods: ['POST'])]
@@ -275,19 +260,18 @@ final class RestaurantController extends AbstractController
         Request $request,
         string $id,
         RestaurantRepository $repository,
-        EntityManagerInterface $entityManager,
-        OutboxPublisherInterface $outbox,
+        FicheActionFormFactory $forms,
+        FicheWorkflowManager $workflow,
+        CurrentActorProvider $actor,
     ): Response {
-        return $this->transition(
-            $request,
-            $this->requireRestaurant($id, $repository),
-            'archive',
-            $entityManager,
-            $outbox,
-            static fn (Restaurant $restaurant, string $actor) =>
-                $restaurant->fiche()->archive($actor),
-            FicheVoter::ARCHIVE,
-        );
+        $restaurant = $repository->find($id);
+        if (!$restaurant instanceof Restaurant) { throw $this->createNotFoundException('Restaurant introuvable.'); }
+        $this->denyAccessUnlessGranted(FicheVoter::ARCHIVE, $restaurant->fiche());
+        $form = $forms->action('restaurant', $restaurant->id(), 'archive', 'Archive');
+        $form->handleRequest($request);
+        if ($form->isSubmitted() && $form->isValid()) { $workflow->archive($restaurant->fiche(), $actor->id()); }
+
+        return $this->redirectToRoute('app_pim_restaurant_show', ['id' => $restaurant->id()]);
     }
 
     #[Route('/{id}/refuser', name: 'reject', requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'], methods: ['POST'])]
@@ -295,386 +279,23 @@ final class RestaurantController extends AbstractController
         Request $request,
         string $id,
         RestaurantRepository $repository,
-        EntityManagerInterface $entityManager,
-        OutboxPublisherInterface $outbox,
+        FicheActionFormFactory $forms,
+        FicheWorkflowManager $workflow,
+        CurrentActorProvider $actor,
     ): Response {
-        $restaurant = $this->requireRestaurant($id, $repository);
-        $this->denyAccessUnlessGranted(FicheVoter::VALIDATE, $restaurant->fiche());
-        $form = $this->rejectForm($restaurant);
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
-            $restaurant->fiche()->rejectValidation(
-                $this->actor(),
-                (string) $form->get('reason')->getData(),
-            );
-            $outbox->enqueue(new IndexFiche($restaurant->fiche()->idString()));
-            $entityManager->flush();
-        }
-
-        return $this->redirectToRoute('app_pim_restaurant_show', [
-            'id' => $restaurant->id(),
-        ]);
-    }
-
-    private function save(
-        Request $request,
-        Restaurant $restaurant,
-        EntityManagerInterface $entityManager,
-        OutboxPublisherInterface $outbox,
-        bool $creation,
-    ): Response {
-        $existingMediaIds = $this->photoIds($restaurant);
-        $form = $this->createForm(RestaurantType::class, $restaurant);
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
-            $uploadedImages = [];
-            $uploadedDocuments = [];
-            try {
-                foreach ($form->get('ressources') as $resourceForm) {
-                    $file = $resourceForm->get('image')->getData();
-                    $resource = $resourceForm->getData();
-                    if (!$file instanceof UploadedFile || !$resource instanceof RessourceLieu) {
-                        continue;
-                    }
-
-                    $media = $this->imageUploader->upload($file, $restaurant->fiche());
-                    $uploadedImages[] = $media;
-                    $entityManager->persist($media);
-                    $resource->changeDamAssetId($media->id());
-                    $resource->changeNature(NatureRessource::Photo);
-                    $outbox->enqueue(
-                        new MediaUploaded(
-                            $media->id(),
-                            $media->originalStorageKey(),
-                            $media->checksum(),
-                            ImageVariantRegistry::names(),
-                        ),
-                    );
-                }
-
-                $this->uploadDocuments(
-                    $form,
-                    'menus',
-                    DocumentUsage::RestaurantMenu,
-                    $restaurant,
-                    $entityManager,
-                    $uploadedDocuments,
-                );
-                $this->uploadDocuments(
-                    $form,
-                    'supportsCommerciaux',
-                    DocumentUsage::CommercialSupport,
-                    $restaurant,
-                    $entityManager,
-                    $uploadedDocuments,
-                );
-
-                foreach (array_diff($existingMediaIds, $this->photoIds($restaurant)) as $removed) {
-                    if ('' !== $removed) {
-                        $outbox->enqueue(new DeleteMedia($removed));
-                    }
-                }
-
-                $entityManager->persist($restaurant);
-                $outbox->enqueue(new IndexFiche($restaurant->fiche()->idString()));
-                $entityManager->flush();
-            } catch (\DomainException $exception) {
-                $this->cleanupUploads($uploadedImages, $uploadedDocuments);
-                $form->addError(new FormError($exception->getMessage()));
-
-                return $this->formResponse($form, $restaurant, $creation);
-            } catch (\Throwable $exception) {
-                $this->cleanupUploads($uploadedImages, $uploadedDocuments);
-                throw $exception;
-            }
-
-            $this->addFlash(
-                'success',
-                $creation ? 'Restaurant créé.' : 'Restaurant modifié.',
-            );
-
-            return $this->redirectToRoute('app_pim_restaurant_show', [
-                'id' => $restaurant->id(),
-            ]);
-        }
-
-        return $this->formResponse($form, $restaurant, $creation);
-    }
-
-    /**
-     * @param FormInterface<Restaurant> $form
-     * @param list<MediaAsset>           $uploadedDocuments
-     */
-    private function uploadDocuments(
-        FormInterface $form,
-        string $field,
-        DocumentUsage $usage,
-        Restaurant $restaurant,
-        EntityManagerInterface $entityManager,
-        array &$uploadedDocuments,
-    ): void {
-        $files = $form->get($field)->getData();
-        foreach (is_array($files) ? $files : [] as $file) {
-            if (!$file instanceof UploadedFile) {
-                continue;
-            }
-
-            $asset = $this->documentUploader->upload(
-                $file,
-                $restaurant->fiche(),
-                $usage,
-            );
-            $uploadedDocuments[] = $asset;
-            $entityManager->persist($asset);
-
-            $resource = new RessourceLieu();
-            $resource->configureDocument($usage);
-            $resource->changeDamAssetId($asset->id());
-            $title = $form->get('documentTitle')->getData();
-            $resource->changeLegende(
-                is_string($title) && '' !== trim($title)
-                    ? $title
-                    : pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME),
-            );
-            $source = $form->get('documentSource')->getData();
-            $resource->changeSource(is_string($source) ? $source : null);
-            if (true === $form->get('documentRightsGranted')->getData()) {
-                $resource->grantRights($this->actor());
-            }
-            $restaurant->addRessource($resource);
-        }
-    }
-
-    /** @return list<string> */
-    private function photoIds(Restaurant $restaurant): array
-    {
-        return array_map(
-            static fn (RessourceLieu $resource): string => $resource->damAssetId(),
-            array_values(
-                array_filter(
-                    $restaurant->ressources()->toArray(),
-                    static fn (RessourceLieu $resource): bool =>
-                        NatureRessource::Photo === $resource->nature(),
-                ),
-            ),
-        );
-    }
-
-    /** @param list<MediaAsset> $images
-     *  @param list<MediaAsset> $documents
-     */
-    private function cleanupUploads(array $images, array $documents): void
-    {
-        foreach ($images as $asset) {
-            try {
-                $this->imageUploader->delete($asset);
-            } catch (\Throwable) {
-            }
-        }
-        foreach ($documents as $asset) {
-            try {
-                $this->documentUploader->delete($asset);
-            } catch (\Throwable) {
-            }
-        }
-    }
-
-    /** @param FormInterface<Restaurant> $form */
-    private function formResponse(
-        FormInterface $form,
-        Restaurant $restaurant,
-        bool $creation,
-    ): Response {
-        $documents = [];
-        if (!$creation) {
-            foreach ($restaurant->ressources() as $resource) {
-                if (NatureRessource::Document !== $resource->nature()) {
-                    continue;
-                }
-
-                $documents[] = [
-                    'resource' => $resource,
-                    'metadata_form' => $this->forms
-                        ->createNamed(
-                            'restaurant_document_metadata_'.$resource->id(),
-                            ActiviteDocumentMetadataType::class,
-                            [
-                                'title' => $resource->legende(),
-                                'source' => $resource->source(),
-                                'rightsGranted' => $resource->rightsGranted(),
-                            ],
-                            [
-                                'action' => $this->generateUrl(
-                                    'app_pim_restaurant_document_update',
-                                    [
-                                        'id' => $restaurant->id(),
-                                        'resourceId' => $resource->id(),
-                                    ],
-                                ),
-                                'method' => 'POST',
-                            ],
-                        )
-                        ->createView(),
-                    'replace_form' => $this->forms
-                        ->createNamed(
-                            'restaurant_document_replace_'.$resource->id(),
-                            LieuDocumentReplaceType::class,
-                            null,
-                            [
-                                'action' => $this->generateUrl(
-                                    'app_pim_restaurant_document_replace',
-                                    [
-                                        'id' => $restaurant->id(),
-                                        'resourceId' => $resource->id(),
-                                    ],
-                                ),
-                                'method' => 'POST',
-                            ],
-                        )
-                        ->createView(),
-                    'publication_form' => $this->forms
-                        ->createNamed(
-                            'restaurant_document_publication_'.$resource->id(),
-                            ActionType::class,
-                            null,
-                            [
-                                'action' => $this->generateUrl(
-                                    'app_pim_restaurant_document_publication',
-                                    [
-                                        'id' => $restaurant->id(),
-                                        'resourceId' => $resource->id(),
-                                    ],
-                                ),
-                                'button_label' =>
-                                    'published' === $resource->publicationStatus()?->value
-                                        ? 'Dépublier'
-                                        : 'Publier',
-                                'csrf_token_id' =>
-                                    'restaurant-document-publication-'.$resource->id(),
-                            ],
-                        )
-                        ->createView(),
-                    'delete_form' => $this->forms
-                        ->createNamed(
-                            'restaurant_document_delete_'.$resource->id(),
-                            ActionType::class,
-                            null,
-                            [
-                                'action' => $this->generateUrl(
-                                    'app_pim_restaurant_document_delete',
-                                    [
-                                        'id' => $restaurant->id(),
-                                        'resourceId' => $resource->id(),
-                                    ],
-                                ),
-                                'button_label' => 'Supprimer',
-                                'csrf_token_id' =>
-                                    'restaurant-document-delete-'.$resource->id(),
-                            ],
-                        )
-                        ->createView(),
-                ];
-            }
-        }
-
-        return $this->render('pim/restaurant/form.html.twig', [
-            'form' => $form->createView(),
-            'restaurant' => $restaurant,
-            'creation' => $creation,
-            'documents' => $documents,
-            'duplicate_address_count' => null === $restaurant->localisation()
-                ? 0
-                : $this->locations->countOtherLocationsWithSameAddress(
-                    $restaurant->localisation(),
-                ),
-        ]);
-    }
-
-    private function transition(
-        Request $request,
-        Restaurant $restaurant,
-        string $name,
-        EntityManagerInterface $entityManager,
-        OutboxPublisherInterface $outbox,
-        callable $change,
-        string $permission,
-    ): Response {
-        $this->denyAccessUnlessGranted($permission, $restaurant->fiche());
-        $form = $this->action($restaurant, $name, ucfirst($name));
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
-            $change($restaurant, $this->actor());
-            $this->translationScheduler->schedule($restaurant->fiche());
-            $outbox->enqueue(new IndexFiche($restaurant->fiche()->idString()));
-            $entityManager->flush();
-        }
-
-        return $this->redirectToRoute('app_pim_restaurant_show', [
-            'id' => $restaurant->id(),
-        ]);
-    }
-
-    private function requireRestaurant(
-        string $id,
-        RestaurantRepository $repository,
-    ): Restaurant {
         $restaurant = $repository->find($id);
-        if (!$restaurant instanceof Restaurant) {
-            throw $this->createNotFoundException('Restaurant introuvable.');
+        if (!$restaurant instanceof Restaurant) { throw $this->createNotFoundException('Restaurant introuvable.'); }
+        $this->denyAccessUnlessGranted(FicheVoter::VALIDATE, $restaurant->fiche());
+        $form = $forms->reject('restaurant', $restaurant->id());
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $workflow->reject($restaurant->fiche(), $actor->id(), (string) $form->get('reason')->getData());
         }
 
-        return $restaurant;
+        return $this->redirectToRoute('app_pim_restaurant_show', [
+            'id' => $restaurant->id(),
+        ]);
     }
 
-    /** @return FormInterface<mixed> */
-    private function action(
-        Restaurant $restaurant,
-        string $name,
-        string $label,
-    ): FormInterface {
-        return $this->forms->createNamed(
-            $name.'_restaurant',
-            ActionType::class,
-            null,
-            [
-                'action' => $this->generateUrl('app_pim_restaurant_'.$name, [
-                    'id' => $restaurant->id(),
-                ]),
-                'button_label' => $label,
-                'csrf_token_id' => $name.'-restaurant-'.$restaurant->id(),
-            ],
-        );
-    }
-
-    /** @return FormInterface<mixed> */
-    private function rejectForm(Restaurant $restaurant): FormInterface
-    {
-        return $this->forms
-            ->createNamedBuilder('reject_restaurant')
-            ->setAction(
-                $this->generateUrl('app_pim_restaurant_reject', [
-                    'id' => $restaurant->id(),
-                ]),
-            )
-            ->setMethod('POST')
-            ->add('reason', TextareaType::class, [
-                'label' => 'Motif du refus',
-                'required' => true,
-            ])
-            ->add('submit', SubmitType::class, ['label' => 'Refuser'])
-            ->getForm();
-    }
-
-    private function actor(): string
-    {
-        $user = $this->getUser();
-        if (!$user instanceof User) {
-            throw $this->createAccessDeniedException();
-        }
-
-        return $user->id();
-    }
 }

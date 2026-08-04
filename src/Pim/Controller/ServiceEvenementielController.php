@@ -4,57 +4,32 @@ declare(strict_types=1);
 
 namespace App\Pim\Controller;
 
-use App\Account\Entity\User;
 use App\Account\Security\FicheVoter;
-use App\Dam\Entity\MediaAsset;
-use App\Dam\Enum\DocumentUsage;
-use App\Dam\Message\DeleteMedia;
-use App\Dam\Service\FicheDocumentUploader;
-use App\Dam\Service\FicheImageUploader;
-use App\Dam\Service\ImageVariantRegistry;
-use App\Enrichment\Service\FicheTranslationScheduler;
+use App\Account\Service\CurrentActorProvider;
 use App\Pim\Entity\Service\ServiceEvenementiel;
-use App\Pim\Entity\Lieu\RessourceLieu;
-use App\Pim\Enum\NatureRessource;
 use App\Pim\Enum\StatutFiche;
 use App\Pim\Enum\TypeFiche;
-use App\Pim\Form\ActiviteDocumentMetadataType;
+use App\Pim\Form\FicheActionFormFactory;
 use App\Pim\Form\ServiceSearchType;
 use App\Pim\Form\ServiceEvenementielType;
-use App\Pim\Form\LieuDocumentReplaceType;
-use App\Pim\Message\IndexFiche;
 use App\Pim\ReadModel\FicheCursor;
 use App\Pim\Repository\ServiceEvenementielRepository;
 use App\Pim\Service\FicheCountProvider;
-use App\Pim\Validation\ValidationGroups;
-use App\Shared\Form\ActionType;
-use App\Shared\Message\MediaUploaded;
-use App\Shared\Outbox\OutboxPublisherInterface;
+use App\Pim\Service\ServiceEvenementielAdminManager;
+use App\Pim\Service\ServiceEvenementielAdminViewBuilder;
+use App\Pim\Service\FicheWorkflowManager;
 use App\Shared\Search\SearchQuery;
 use App\Shared\Service\SearchEngineInterface;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\Form\Extension\Core\Type\SubmitType;
-use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\FormError;
-use Symfony\Component\Form\FormFactoryInterface;
-use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 #[Route("/admin/services", name: "app_pim_service_")]
 final class ServiceEvenementielController extends AbstractController
 {
-    public function __construct(
-        private readonly FormFactoryInterface $forms,
-        private readonly FicheImageUploader $imageUploader,
-        private readonly FicheDocumentUploader $documentUploader,
-        private readonly FicheTranslationScheduler $translationScheduler,
-    ) {}
-
     #[Route("", name: "index", methods: ["GET"])]
     public function index(
         Request $request,
@@ -130,11 +105,26 @@ final class ServiceEvenementielController extends AbstractController
 
     #[Route("/nouveau", name: "new", methods: ["GET", "POST"])]
     public function new(
-        Request $r,
-        EntityManagerInterface $em,
-        OutboxPublisherInterface $o,
+        Request $request,
+        ServiceEvenementielAdminManager $manager,
+        ServiceEvenementielAdminViewBuilder $view,
+        CurrentActorProvider $actor,
     ): Response {
-        return $this->save($r, new ServiceEvenementiel(), $em, $o, true);
+        $service = new ServiceEvenementiel();
+        $form = $this->createForm(ServiceEvenementielType::class, $service);
+        $form->handleRequest($request);
+        if ($form->isSubmitted() && $form->isValid()) {
+            try {
+                $manager->save($service, $form, [], $actor->id());
+                $this->addFlash('success', 'Service créé.');
+
+                return $this->redirectToRoute('app_pim_service_show', ['id' => $service->id()]);
+            } catch (\DomainException $exception) {
+                $form->get('ressources')->addError(new FormError($exception->getMessage()));
+            }
+        }
+
+        return $this->render('pim/service/form.html.twig', $view->form($form, $service, true));
     }
 
     #[
@@ -148,33 +138,19 @@ final class ServiceEvenementielController extends AbstractController
     public function show(
         string $id,
         ServiceEvenementielRepository $repo,
+        FicheActionFormFactory $forms,
     ): Response {
-        $service = $this->require($id, $repo);
+        $service = $repo->find($id);
+        if (!$service instanceof ServiceEvenementiel) { throw $this->createNotFoundException('Service introuvable.'); }
         $this->denyAccessUnlessGranted(FicheVoter::VIEW, $service->fiche());
 
         return $this->render("pim/service/show.html.twig", [
             "service" => $service,
-            "delete_form" => $this->action(
-                $service,
-                "delete",
-                "Supprimer",
-            )->createView(),
-            "submit_form" => $this->action(
-                $service,
-                "submit",
-                "Soumettre à validation",
-            )->createView(),
-            "validate_form" => $this->action(
-                $service,
-                "validate",
-                "Valider et publier",
-            )->createView(),
-            "archive_form" => $this->action(
-                $service,
-                "archive",
-                "Archiver",
-            )->createView(),
-            "reject_form" => $this->rejectForm($service)->createView(),
+            "delete_form" => $forms->action('service', $service->id(), 'delete', 'Supprimer')->createView(),
+            "submit_form" => $forms->action('service', $service->id(), 'submit', 'Soumettre à validation')->createView(),
+            "validate_form" => $forms->action('service', $service->id(), 'validate', 'Valider et publier')->createView(),
+            "archive_form" => $forms->action('service', $service->id(), 'archive', 'Archiver')->createView(),
+            "reject_form" => $forms->reject('service', $service->id())->createView(),
         ]);
     }
 
@@ -187,16 +163,31 @@ final class ServiceEvenementielController extends AbstractController
         ),
     ]
     public function edit(
-        Request $r,
+        Request $request,
         string $id,
         ServiceEvenementielRepository $repo,
-        EntityManagerInterface $em,
-        OutboxPublisherInterface $o,
+        ServiceEvenementielAdminManager $manager,
+        ServiceEvenementielAdminViewBuilder $view,
+        CurrentActorProvider $actor,
     ): Response {
-        $service = $this->require($id, $repo);
+        $service = $repo->find($id);
+        if (!$service instanceof ServiceEvenementiel) { throw $this->createNotFoundException('Service introuvable.'); }
         $this->denyAccessUnlessGranted(FicheVoter::EDIT, $service->fiche());
+        $existing = $manager->photoAssetIds($service);
+        $form = $this->createForm(ServiceEvenementielType::class, $service);
+        $form->handleRequest($request);
+        if ($form->isSubmitted() && $form->isValid()) {
+            try {
+                $manager->save($service, $form, $existing, $actor->id());
+                $this->addFlash('success', 'Service modifié.');
 
-        return $this->save($r, $service, $em, $o, false);
+                return $this->redirectToRoute('app_pim_service_show', ['id' => $service->id()]);
+            } catch (\DomainException $exception) {
+                $form->get('ressources')->addError(new FormError($exception->getMessage()));
+            }
+        }
+
+        return $this->render('pim/service/form.html.twig', $view->form($form, $service, false));
     }
 
     #[
@@ -208,18 +199,19 @@ final class ServiceEvenementielController extends AbstractController
         ),
     ]
     public function delete(
-        Request $r,
+        Request $request,
         string $id,
         ServiceEvenementielRepository $repo,
-        EntityManagerInterface $em,
+        FicheActionFormFactory $forms,
+        FicheWorkflowManager $workflow,
     ): Response {
-        $service = $this->require($id, $repo);
+        $service = $repo->find($id);
+        if (!$service instanceof ServiceEvenementiel) { throw $this->createNotFoundException('Service introuvable.'); }
         $this->denyAccessUnlessGranted(FicheVoter::DELETE, $service->fiche());
-        $f = $this->action($service, "delete", "Supprimer");
-        $f->handleRequest($r);
+        $f = $forms->action('service', $service->id(), 'delete', 'Supprimer');
+        $f->handleRequest($request);
         if ($f->isSubmitted() && $f->isValid()) {
-            $em->remove($service);
-            $em->flush();
+            $workflow->delete($service);
             $this->addFlash("success", "Service supprimé.");
         }
 
@@ -235,22 +227,20 @@ final class ServiceEvenementielController extends AbstractController
         ),
     ]
     public function submit(
-        Request $r,
+        Request $request,
         string $id,
         ServiceEvenementielRepository $repo,
-        EntityManagerInterface $em,
-        OutboxPublisherInterface $o,
-        ValidatorInterface $v,
+        FicheActionFormFactory $forms,
+        FicheWorkflowManager $workflow,
+        CurrentActorProvider $actor,
     ): Response {
-        $service = $this->require($id, $repo);
+        $service = $repo->find($id);
+        if (!$service instanceof ServiceEvenementiel) { throw $this->createNotFoundException('Service introuvable.'); }
         $this->denyAccessUnlessGranted(FicheVoter::SUBMIT, $service->fiche());
-        $f = $this->action($service, "submit", "Soumettre");
-        $f->handleRequest($r);
+        $f = $forms->action('service', $service->id(), 'submit', 'Soumettre');
+        $f->handleRequest($request);
         if ($f->isSubmitted() && $f->isValid()) {
-            $errors = $v->validate($service, null, [
-                ValidationGroups::DRAFT,
-                ValidationGroups::SUBMISSION,
-            ]);
+            $errors = $workflow->submit($service, $service->fiche(), $actor->id());
             if (count($errors)) {
                 foreach ($errors as $error) {
                     $this->addFlash(
@@ -265,9 +255,6 @@ final class ServiceEvenementielController extends AbstractController
                     "id" => $service->id(),
                 ]);
             }
-            $service->fiche()->submitForValidation($this->actor());
-            $o->enqueue(new IndexFiche($service->fiche()->idString()));
-            $em->flush();
         }
 
         return $this->redirectToRoute("app_pim_service_show", [
@@ -284,23 +271,21 @@ final class ServiceEvenementielController extends AbstractController
         ),
     ]
     public function validateService(
-        Request $r,
+        Request $request,
         string $id,
         ServiceEvenementielRepository $repo,
-        EntityManagerInterface $em,
-        OutboxPublisherInterface $o,
+        FicheActionFormFactory $forms,
+        FicheWorkflowManager $workflow,
+        CurrentActorProvider $actor,
     ): Response {
-        return $this->transition(
-            $r,
-            $this->require($id, $repo),
-            "validate",
-            $em,
-            $o,
-            static fn(ServiceEvenementiel $service, string $actor) => $service
-                ->fiche()
-                ->validateAndPublish($actor),
-            FicheVoter::VALIDATE,
-        );
+        $service = $repo->find($id);
+        if (!$service instanceof ServiceEvenementiel) { throw $this->createNotFoundException('Service introuvable.'); }
+        $this->denyAccessUnlessGranted(FicheVoter::VALIDATE, $service->fiche());
+        $form = $forms->action('service', $service->id(), 'validate', 'Validate');
+        $form->handleRequest($request);
+        if ($form->isSubmitted() && $form->isValid()) { $workflow->validate($service->fiche(), $actor->id()); }
+
+        return $this->redirectToRoute('app_pim_service_show', ['id' => $service->id()]);
     }
 
     #[
@@ -312,23 +297,21 @@ final class ServiceEvenementielController extends AbstractController
         ),
     ]
     public function archive(
-        Request $r,
+        Request $request,
         string $id,
         ServiceEvenementielRepository $repo,
-        EntityManagerInterface $em,
-        OutboxPublisherInterface $o,
+        FicheActionFormFactory $forms,
+        FicheWorkflowManager $workflow,
+        CurrentActorProvider $actor,
     ): Response {
-        return $this->transition(
-            $r,
-            $this->require($id, $repo),
-            "archive",
-            $em,
-            $o,
-            static fn(ServiceEvenementiel $service, string $actor) => $service
-                ->fiche()
-                ->archive($actor),
-            FicheVoter::ARCHIVE,
-        );
+        $service = $repo->find($id);
+        if (!$service instanceof ServiceEvenementiel) { throw $this->createNotFoundException('Service introuvable.'); }
+        $this->denyAccessUnlessGranted(FicheVoter::ARCHIVE, $service->fiche());
+        $form = $forms->action('service', $service->id(), 'archive', 'Archive');
+        $form->handleRequest($request);
+        if ($form->isSubmitted() && $form->isValid()) { $workflow->archive($service->fiche(), $actor->id()); }
+
+        return $this->redirectToRoute('app_pim_service_show', ['id' => $service->id()]);
     }
 
     #[
@@ -340,25 +323,20 @@ final class ServiceEvenementielController extends AbstractController
         ),
     ]
     public function reject(
-        Request $r,
+        Request $request,
         string $id,
         ServiceEvenementielRepository $repo,
-        EntityManagerInterface $em,
-        OutboxPublisherInterface $o,
+        FicheActionFormFactory $forms,
+        FicheWorkflowManager $workflow,
+        CurrentActorProvider $actor,
     ): Response {
-        $service = $this->require($id, $repo);
+        $service = $repo->find($id);
+        if (!$service instanceof ServiceEvenementiel) { throw $this->createNotFoundException('Service introuvable.'); }
         $this->denyAccessUnlessGranted(FicheVoter::VALIDATE, $service->fiche());
-        $f = $this->rejectForm($service);
-        $f->handleRequest($r);
+        $f = $forms->reject('service', $service->id());
+        $f->handleRequest($request);
         if ($f->isSubmitted() && $f->isValid()) {
-            $service
-                ->fiche()
-                ->rejectValidation(
-                    $this->actor(),
-                    (string) $f->get("reason")->getData(),
-                );
-            $o->enqueue(new IndexFiche($service->fiche()->idString()));
-            $em->flush();
+            $workflow->reject($service->fiche(), $actor->id(), (string) $f->get('reason')->getData());
         }
 
         return $this->redirectToRoute("app_pim_service_show", [
@@ -366,357 +344,4 @@ final class ServiceEvenementielController extends AbstractController
         ]);
     }
 
-    private function save(
-        Request $r,
-        ServiceEvenementiel $service,
-        EntityManagerInterface $em,
-        OutboxPublisherInterface $o,
-        bool $creation,
-    ): Response {
-        $existingMediaIds = array_map(
-            static fn(
-                RessourceLieu $resource,
-            ): string => $resource->damAssetId(),
-            array_filter(
-                $service->ressources()->toArray(),
-                static fn(
-                    RessourceLieu $resource,
-                ): bool => NatureRessource::Photo === $resource->nature(),
-            ),
-        );
-        $f = $this->createForm(ServiceEvenementielType::class, $service);
-        $f->handleRequest($r);
-        if ($f->isSubmitted() && $f->isValid()) {
-            $uploaded = [];
-            $uploadedDocuments = [];
-            try {
-                foreach ($f->get("ressources") as $resourceForm) {
-                    $file = $resourceForm->get("image")->getData();
-                    $resource = $resourceForm->getData();
-                    if (
-                        !($file instanceof UploadedFile) ||
-                        !($resource instanceof RessourceLieu)
-                    ) {
-                        continue;
-                    }
-                    $media = $this->imageUploader->upload(
-                        $file,
-                        $service->fiche(),
-                    );
-                    $uploaded[] = $media;
-                    $em->persist($media);
-                    $resource->changeDamAssetId($media->id());
-                    $resource->changeNature(NatureRessource::Photo);
-                    $o->enqueue(
-                        new MediaUploaded(
-                            $media->id(),
-                            $media->originalStorageKey(),
-                            $media->checksum(),
-                            ImageVariantRegistry::names(),
-                        ),
-                    );
-                }
-                $documents = $f->get("supportsCommerciaux")->getData();
-                foreach (is_array($documents) ? $documents : [] as $file) {
-                    if (!($file instanceof UploadedFile)) {
-                        continue;
-                    }
-                    $asset = $this->documentUploader->upload(
-                        $file,
-                        $service->fiche(),
-                        DocumentUsage::CommercialSupport,
-                    );
-                    $uploadedDocuments[] = $asset;
-                    $em->persist($asset);
-                    $resource = new RessourceLieu();
-                    $resource->configureDocument(
-                        DocumentUsage::CommercialSupport,
-                    );
-                    $resource->changeDamAssetId($asset->id());
-                    $title = $f->get("supportTitle")->getData();
-                    $resource->changeLegende(
-                        is_string($title) && "" !== trim($title)
-                            ? $title
-                            : pathinfo(
-                                $file->getClientOriginalName(),
-                                PATHINFO_FILENAME,
-                            ),
-                    );
-                    $source = $f->get("supportSource")->getData();
-                    $resource->changeSource(
-                        is_string($source) ? $source : null,
-                    );
-                    if (true === $f->get("supportRightsGranted")->getData()) {
-                        $resource->grantRights($this->actor());
-                    }
-                    $service->addRessource($resource);
-                }
-                $currentMediaIds = array_map(
-                    static fn(
-                        RessourceLieu $resource,
-                    ): string => $resource->damAssetId(),
-                    array_filter(
-                        $service->ressources()->toArray(),
-                        static fn(
-                            RessourceLieu $resource,
-                        ): bool => NatureRessource::Photo ===
-                            $resource->nature(),
-                    ),
-                );
-                foreach (
-                    array_diff($existingMediaIds, $currentMediaIds)
-                    as $removed
-                ) {
-                    if ("" !== $removed) {
-                        $o->enqueue(new DeleteMedia($removed));
-                    }
-                }
-                $em->persist($service);
-                $o->enqueue(new IndexFiche($service->fiche()->idString()));
-                $em->flush();
-            } catch (\DomainException $exception) {
-                $this->cleanupUploads($uploaded);
-                $this->cleanupDocuments($uploadedDocuments);
-                $f->get("ressources")->addError(
-                    new FormError($exception->getMessage()),
-                );
-
-                return $this->formResponse($f, $service, $creation);
-            } catch (\Throwable $exception) {
-                $this->cleanupUploads($uploaded);
-                $this->cleanupDocuments($uploadedDocuments);
-                throw $exception;
-            }
-            $this->addFlash(
-                "success",
-                $creation ? "Service créé." : "Service modifié.",
-            );
-
-            return $this->redirectToRoute("app_pim_service_show", [
-                "id" => $service->id(),
-            ]);
-        }
-
-        return $this->formResponse($f, $service, $creation);
-    }
-
-    /** @param list<MediaAsset> $assets */
-    private function cleanupUploads(array $assets): void
-    {
-        foreach ($assets as $asset) {
-            try {
-                $this->imageUploader->delete($asset);
-            } catch (\Throwable) {
-            }
-        }
-    }
-
-    /** @param list<MediaAsset> $assets */
-    private function cleanupDocuments(array $assets): void
-    {
-        foreach ($assets as $asset) {
-            try {
-                $this->documentUploader->delete($asset);
-            } catch (\Throwable) {
-            }
-        }
-    }
-
-    /** @param \Symfony\Component\Form\FormInterface<mixed> $form */
-    private function formResponse(
-        \Symfony\Component\Form\FormInterface $form,
-        ServiceEvenementiel $service,
-        bool $creation,
-    ): Response {
-        $documents = [];
-        if (!$creation) {
-            foreach ($service->ressources() as $resource) {
-                if (
-                    NatureRessource::Document !== $resource->nature() ||
-                    DocumentUsage::CommercialSupport !==
-                        $resource->documentUsage()
-                ) {
-                    continue;
-                }
-                $documents[] = [
-                    "resource" => $resource,
-                    "metadata_form" => $this->forms
-                        ->createNamed(
-                            "service_document_metadata_" . $resource->id(),
-                            ActiviteDocumentMetadataType::class,
-                            [
-                                "title" => $resource->legende(),
-                                "source" => $resource->source(),
-                                "rightsGranted" => $resource->rightsGranted(),
-                            ],
-                            [
-                                "action" => $this->generateUrl(
-                                    "app_pim_service_document_update",
-                                    [
-                                        "id" => $service->id(),
-                                        "resourceId" => $resource->id(),
-                                    ],
-                                ),
-                                "method" => "POST",
-                            ],
-                        )
-                        ->createView(),
-                    "replace_form" => $this->forms
-                        ->createNamed(
-                            "service_document_replace_" . $resource->id(),
-                            LieuDocumentReplaceType::class,
-                            null,
-                            [
-                                "action" => $this->generateUrl(
-                                    "app_pim_service_document_replace",
-                                    [
-                                        "id" => $service->id(),
-                                        "resourceId" => $resource->id(),
-                                    ],
-                                ),
-                                "method" => "POST",
-                            ],
-                        )
-                        ->createView(),
-                    "publication_form" => $this->forms
-                        ->createNamed(
-                            "service_document_publication_" . $resource->id(),
-                            ActionType::class,
-                            null,
-                            [
-                                "action" => $this->generateUrl(
-                                    "app_pim_service_document_publication",
-                                    [
-                                        "id" => $service->id(),
-                                        "resourceId" => $resource->id(),
-                                    ],
-                                ),
-                                "button_label" =>
-                                    "published" ===
-                                    $resource->publicationStatus()?->value
-                                        ? "Dépublier"
-                                        : "Publier",
-                                "csrf_token_id" =>
-                                    "service-document-publication-" .
-                                    $resource->id(),
-                            ],
-                        )
-                        ->createView(),
-                    "delete_form" => $this->forms
-                        ->createNamed(
-                            "service_document_delete_" . $resource->id(),
-                            ActionType::class,
-                            null,
-                            [
-                                "action" => $this->generateUrl(
-                                    "app_pim_service_document_delete",
-                                    [
-                                        "id" => $service->id(),
-                                        "resourceId" => $resource->id(),
-                                    ],
-                                ),
-                                "button_label" => "Supprimer",
-                                "csrf_token_id" =>
-                                    "service-document-delete-" .
-                                    $resource->id(),
-                            ],
-                        )
-                        ->createView(),
-                ];
-            }
-        }
-
-        return $this->render("pim/service/form.html.twig", [
-            "form" => $form,
-            "service" => $service,
-            "creation" => $creation,
-            "documents" => $documents,
-        ]);
-    }
-
-    private function transition(
-        Request $r,
-        ServiceEvenementiel $service,
-        string $name,
-        EntityManagerInterface $em,
-        OutboxPublisherInterface $o,
-        callable $change,
-        string $permission,
-    ): Response {
-        $this->denyAccessUnlessGranted($permission, $service->fiche());
-        $f = $this->action($service, $name, ucfirst($name));
-        $f->handleRequest($r);
-        if ($f->isSubmitted() && $f->isValid()) {
-            $change($service, $this->actor());
-            $this->translationScheduler->schedule($service->fiche());
-            $o->enqueue(new IndexFiche($service->fiche()->idString()));
-            $em->flush();
-        }
-
-        return $this->redirectToRoute("app_pim_service_show", [
-            "id" => $service->id(),
-        ]);
-    }
-
-    private function require(
-        string $id,
-        ServiceEvenementielRepository $r,
-    ): ServiceEvenementiel {
-        $service = $r->find($id);
-        if (!($service instanceof ServiceEvenementiel)) {
-            throw $this->createNotFoundException("Service introuvable.");
-        }
-
-        return $service;
-    }
-
-    /** @return \Symfony\Component\Form\FormInterface<mixed> */
-    private function action(
-        ServiceEvenementiel $service,
-        string $name,
-        string $label,
-    ): \Symfony\Component\Form\FormInterface {
-        return $this->forms->createNamed(
-            $name . "_service",
-            ActionType::class,
-            null,
-            [
-                "action" => $this->generateUrl("app_pim_service_" . $name, [
-                    "id" => $service->id(),
-                ]),
-                "button_label" => $label,
-                "csrf_token_id" => $name . "-service-" . $service->id(),
-            ],
-        );
-    }
-
-    /** @return \Symfony\Component\Form\FormInterface<mixed> */
-    private function rejectForm(
-        ServiceEvenementiel $service,
-    ): \Symfony\Component\Form\FormInterface {
-        return $this->forms
-            ->createNamedBuilder("reject_service")
-            ->setAction(
-                $this->generateUrl("app_pim_service_reject", [
-                    "id" => $service->id(),
-                ]),
-            )
-            ->setMethod("POST")
-            ->add("reason", TextareaType::class, [
-                "label" => "Motif du refus",
-                "required" => true,
-            ])
-            ->add("submit", SubmitType::class, ["label" => "Refuser"])
-            ->getForm();
-    }
-
-    private function actor(): string
-    {
-        $u = $this->getUser();
-        if (!($u instanceof User)) {
-            throw $this->createAccessDeniedException();
-        }
-
-        return $u->id();
-    }
 }

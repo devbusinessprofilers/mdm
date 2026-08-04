@@ -6,8 +6,8 @@ namespace App\Account\MessageHandler;
 
 use App\Account\Entity\AccountInvitation;
 use App\Account\Message\InternalUserInvited;
+use App\Account\Repository\AccountInvitationRepository;
 use App\Account\Service\InvitationTokenSigner;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Mime\Email;
@@ -17,7 +17,7 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 final readonly class InternalUserInvitedHandler
 {
     public function __construct(
-        private EntityManagerInterface $entityManager,
+        private AccountInvitationRepository $invitations,
         private InvitationTokenSigner $signer,
         private UrlGeneratorInterface $urls,
         private MailerInterface $mailer,
@@ -26,7 +26,7 @@ final readonly class InternalUserInvitedHandler
 
     public function __invoke(InternalUserInvited $message): void
     {
-        $invitation = $this->entityManager->find(AccountInvitation::class, $message->invitationId);
+        $invitation = $this->invitations->find($message->invitationId);
         if (!$invitation instanceof AccountInvitation || !$invitation->isUsable()) { return; }
         $url = $this->urls->generate('app_account_invitation_accept', [
             'id' => $invitation->id(),

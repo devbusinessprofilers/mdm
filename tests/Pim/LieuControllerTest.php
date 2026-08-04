@@ -115,10 +115,12 @@ final class LieuControllerTest extends WebTestCase
         self::assertSelectorTextContains('table', $paris->label() ?? '');
         self::assertSelectorTextNotContains('table', 'Palais Lumière Lyon');
 
-        $client->request('GET', '/admin/lieux?q=palais&limit=1');
+        $crawler = $client->request('GET', '/admin/lieux?q=palais&limit=1');
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('main', '2 résultats');
         self::assertSelectorExists('nav a[href*="q=palais"]');
+        $client->click($crawler->filter('nav a[href*="cursor="]')->link());
+        self::assertResponseIsSuccessful();
 
         $client->request('GET', '/admin/lieux?q=introuvable');
         self::assertResponseIsSuccessful();

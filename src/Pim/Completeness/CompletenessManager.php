@@ -7,6 +7,7 @@ namespace App\Pim\Completeness;
 use App\Pim\Entity\CompletenessConfigurationRevision;
 use App\Pim\Entity\Fiche;
 use App\Pim\Repository\CompletenessFieldConfigurationRepository;
+use App\Pim\Repository\CompletenessConfigurationRevisionRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
 final readonly class CompletenessManager
@@ -17,6 +18,7 @@ final readonly class CompletenessManager
         private CompletenessCalculator $calculator,
         private CompletenessPhotoEligibilityResolver $photoEligibility,
         private CompletenessScoreWriter $writer,
+        private CompletenessConfigurationRevisionRepository $revisions,
         private EntityManagerInterface $entityManager,
     ) {
     }
@@ -35,7 +37,7 @@ final readonly class CompletenessManager
         if ([] === $configurations) {
             throw new \DomainException(sprintf('La configuration de complétude %s doit être synchronisée avant le calcul.', $type->value));
         }
-        $revision = $this->entityManager->find(CompletenessConfigurationRevision::class, $type);
+        $revision = $this->revisions->findForType($type);
         if (!$revision instanceof CompletenessConfigurationRevision) {
             $revision = new CompletenessConfigurationRevision($type);
             $this->entityManager->persist($revision);

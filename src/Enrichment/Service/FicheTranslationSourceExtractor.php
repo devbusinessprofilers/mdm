@@ -11,11 +11,19 @@ use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Entity\Service\ServiceEvenementiel;
 use App\Pim\Enum\NatureRessource;
-use Doctrine\ORM\EntityManagerInterface;
+use App\Pim\Repository\ActiviteRepository;
+use App\Pim\Repository\LieuRepository;
+use App\Pim\Repository\RestaurantRepository;
+use App\Pim\Repository\ServiceEvenementielRepository;
 
 final readonly class FicheTranslationSourceExtractor
 {
-    public function __construct(private EntityManagerInterface $entityManager) {}
+    public function __construct(
+        private LieuRepository $lieux,
+        private ActiviteRepository $activites,
+        private RestaurantRepository $restaurants,
+        private ServiceEvenementielRepository $services,
+    ) {}
 
     /** @return list<TranslationSource> */
     public function extract(Fiche $fiche): array
@@ -35,10 +43,10 @@ final readonly class FicheTranslationSourceExtractor
         $sources = [];
         $this->add($sources, 'nom', 'Nom', $fiche->label(), $includeEmpty);
         $detail = match ($fiche->type()->value) {
-            'lieu' => $this->entityManager->getRepository(Lieu::class)->find($fiche->id()),
-            'activite' => $this->entityManager->getRepository(Activite::class)->find($fiche->id()),
-            'restaurant' => $this->entityManager->getRepository(Restaurant::class)->find($fiche->id()),
-            'service_evenementiel' => $this->entityManager->getRepository(ServiceEvenementiel::class)->find($fiche->id()),
+            'lieu' => $this->lieux->find($fiche->id()),
+            'activite' => $this->activites->find($fiche->id()),
+            'restaurant' => $this->restaurants->find($fiche->id()),
+            'service_evenementiel' => $this->services->find($fiche->id()),
             default => null,
         };
         if ($detail instanceof Lieu) { $this->lieu($sources, $detail, $includeEmpty); }

@@ -6,7 +6,7 @@ namespace App\Pim\Service;
 
 use App\Pim\Enum\StatutFiche;
 use App\Pim\Enum\TypeFiche;
-use Doctrine\DBAL\Connection;
+use App\Pim\Repository\FicheRepository;
 use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\Cache\ItemInterface;
 
@@ -15,7 +15,7 @@ final readonly class FicheCountProvider
     private const TTL_SECONDS = 60;
 
     public function __construct(
-        private Connection $connection,
+        private FicheRepository $fiches,
         private CacheInterface $cache,
     ) {
     }
@@ -27,10 +27,7 @@ final readonly class FicheCountProvider
             function (ItemInterface $item) use ($type): int {
                 $item->expiresAfter(self::TTL_SECONDS);
 
-                return (int) $this->connection->fetchOne(
-                    'SELECT COUNT(*) FROM pim_fiche WHERE type = ?',
-                    [$type->value],
-                );
+                return $this->fiches->countByType($type);
             },
         );
     }
@@ -46,10 +43,7 @@ final readonly class FicheCountProvider
             function (ItemInterface $item) use ($type, $status): int {
                 $item->expiresAfter(self::TTL_SECONDS);
 
-                return (int) $this->connection->fetchOne(
-                    'SELECT COUNT(*) FROM pim_fiche WHERE type = ? AND status = ?',
-                    [$type->value, $status->value],
-                );
+                return $this->fiches->countByTypeAndStatus($type, $status);
             },
         );
     }

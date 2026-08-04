@@ -20,6 +20,7 @@ final class AdminPageCatalogTest extends KernelTestCase
         self::assertArrayHasKey('API Platform', $groups);
         $names = array_merge(...array_values(array_map(static fn (array $pages): array => array_column($pages, 'name'), $groups)));
         self::assertContains('app_pim_admin', $names);
+        self::assertContains('app_pim_global_search', $names);
         self::assertContains('app_pim_lieu_index', $names);
         self::assertContains('app_pim_restaurant_index', $names);
         self::assertContains('app_pim_restaurant_history', $names);

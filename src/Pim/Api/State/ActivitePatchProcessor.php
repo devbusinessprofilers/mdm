@@ -10,9 +10,8 @@ use App\Pim\Api\ActiviteApiMapper;
 use App\Pim\Api\Dto\ActivitePatchInput;
 use App\Pim\Api\Dto\ActiviteResource;
 use App\Pim\Api\Exception\ApiProblemException;
-use App\Pim\Entity\ValeurAttribut;
 use App\Pim\Form\ActiviteType;
-use Doctrine\ORM\EntityManagerInterface;
+use App\Pim\Repository\ValeurAttributRepository;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\Form\FormInterface;
 
@@ -23,7 +22,7 @@ final readonly class ActivitePatchProcessor implements ProcessorInterface
         private ActiviteApiState $state,
         private ActiviteApiMapper $mapper,
         private FormFactoryInterface $forms,
-        private EntityManagerInterface $em,
+        private ValeurAttributRepository $values,
     ) {
     }
 
@@ -58,18 +57,8 @@ final readonly class ActivitePatchProcessor implements ProcessorInterface
                             null !== $providerCode
                             && '' !== trim((string) $providerCode)
                         ) {
-                            $provider = $this->em
-                                ->createQueryBuilder()
-                                ->select('v')
-                                ->from(ValeurAttribut::class, 'v')
-                                ->join('v.attribute', 'd')
-                                ->where('d.code=:attribute')
-                                ->andWhere('v.code=:code')
-                                ->setParameter('attribute', 'PRESTATAIRE')
-                                ->setParameter('code', $providerCode)
-                                ->getQuery()
-                                ->getOneOrNullResult();
-                            if (!($provider instanceof ValeurAttribut)) {
+                            $provider = $this->values->findPrestataireByCode((string) $providerCode);
+                            if (null === $provider) {
                                 throw new ApiProblemException(422, 'validation_failed', 'Le prestataire est inconnu.');
                             }
                         }

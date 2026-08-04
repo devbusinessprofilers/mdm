@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace App\Account\Entity;
 
+use App\Account\Repository\AccountInvitationRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Uid\Ulid;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: AccountInvitationRepository::class)]
 #[ORM\Table(name: 'account_invitation')]
 #[ORM\Index(name: 'IDX_ACCOUNT_INVITATION_USER', columns: ['user_id'])]
 class AccountInvitation

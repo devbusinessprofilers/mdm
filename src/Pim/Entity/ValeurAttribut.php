@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace App\Pim\Entity;
 
+use App\Pim\Repository\ValeurAttributRepository;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: ValeurAttributRepository::class)]
 #[ORM\Table(name: 'pim_attribute_value')]
 #[ORM\UniqueConstraint(name: 'UNIQ_PIM_ATTRIBUTE_VALUE_CODE', columns: ['attribute_id', 'code'])]
 #[ORM\Index(name: 'IDX_PIM_ATTRIBUTE_VALUES', columns: ['attribute_id', 'position', 'id'])]

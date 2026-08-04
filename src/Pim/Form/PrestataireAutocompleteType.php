@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Pim\Form;
 
 use App\Pim\Entity\ValeurAttribut;
-use Doctrine\ORM\EntityRepository;
+use App\Pim\Repository\ValeurAttributRepository;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\UX\Autocomplete\Form\AsEntityAutocompleteField;
@@ -27,12 +27,7 @@ final class PrestataireAutocompleteType extends AbstractType
             'searchable_fields' => ['label', 'code'],
             'max_results' => 20,
             'security' => 'ROLE_BP_EDITOR',
-            'query_builder' => static fn (EntityRepository $r) => $r
-                ->createQueryBuilder('v')
-                ->innerJoin('v.attribute', 'a')
-                ->andWhere('a.code = :code')
-                ->setParameter('code', 'PRESTATAIRE')
-                ->orderBy('v.label', 'ASC'),
+            'query_builder' => static fn (ValeurAttributRepository $repository) => $repository->createPrestataireQueryBuilder(),
         ]);
     }
 
