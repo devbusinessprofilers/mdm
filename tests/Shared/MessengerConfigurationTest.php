@@ -26,6 +26,33 @@ use Symfony\Component\Messenger\Worker;
 
 final class MessengerConfigurationTest extends KernelTestCase
 {
+    private const IN_MEMORY_DSN = 'in-memory://?serialize=true';
+
+    private ?string $previousPimDsn = null;
+
+    protected function setUp(): void
+    {
+        // Ces tests vérifient la sémantique du routage avec des transports
+        // in-memory ; le DSN Doctrine servant aux tests d'intégration base de
+        // données (groupe "database") est restauré dans tearDown().
+        $this->previousPimDsn = getenv('TEST_MESSENGER_PIM_DSN') ?: null;
+        putenv('TEST_MESSENGER_PIM_DSN='.self::IN_MEMORY_DSN);
+        $_ENV['TEST_MESSENGER_PIM_DSN'] = $_SERVER['TEST_MESSENGER_PIM_DSN'] = self::IN_MEMORY_DSN;
+    }
+
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+
+        if (null === $this->previousPimDsn) {
+            putenv('TEST_MESSENGER_PIM_DSN');
+            unset($_ENV['TEST_MESSENGER_PIM_DSN'], $_SERVER['TEST_MESSENGER_PIM_DSN']);
+        } else {
+            putenv('TEST_MESSENGER_PIM_DSN='.$this->previousPimDsn);
+            $_ENV['TEST_MESSENGER_PIM_DSN'] = $_SERVER['TEST_MESSENGER_PIM_DSN'] = $this->previousPimDsn;
+        }
+    }
+
     public function testMediaUploadedIsSerializedAndRoutedToDam(): void
     {
         $bus = $this->messageBus();

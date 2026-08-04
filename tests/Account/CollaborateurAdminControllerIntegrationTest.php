@@ -80,7 +80,7 @@ final class CollaborateurAdminControllerIntegrationTest extends WebTestCase
         self::assertResponseIsSuccessful();
         /** @var array{results: list<array{value: string, text: string}>} $autocompletePayload */
         $autocompletePayload = json_decode((string) $client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR);
-        self::assertSame([['value' => $fiche->idString(), 'text' => 'Lieu administré']], $autocompletePayload['results']);
+        self::assertSame([['value' => $fiche->idString(), 'text' => sprintf('%d — Lieu administré', $fiche->code())]], $autocompletePayload['results']);
 
         $crawler = $client->request('GET', '/admin/collaborateurs/'.$provider->id());
         $affiliationForm = $crawler->selectButton('Ajouter')->form();

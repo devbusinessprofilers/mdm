@@ -108,9 +108,9 @@ final class LieuControllerTest extends WebTestCase
         $entityManager->flush();
         $client->loginUser($user);
 
-        $client->request('GET', '/admin/lieux?q=pal+pari&status=publiee');
+        $crawler = $client->request('GET', '/admin/lieux?q=pal+pari&status=publiee');
         self::assertResponseIsSuccessful();
-        self::assertInputValueSame('q', 'pal pari');
+        self::assertSame('pal pari', $crawler->filter('main input[name="q"]')->attr('value'));
         self::assertSelectorTextContains('main', '1 résultat');
         self::assertSelectorTextContains('table', $paris->label() ?? '');
         self::assertSelectorTextNotContains('table', 'Palais Lumière Lyon');

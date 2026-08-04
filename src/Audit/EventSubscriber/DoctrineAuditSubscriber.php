@@ -336,7 +336,6 @@ final readonly class DoctrineAuditSubscriber
                 ) {
                     continue;
                 }
-                $property->setAccessible(true);
                 $value = $property->isInitialized($entity)
                     ? $property->getValue($entity)
                     : null;
