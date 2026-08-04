@@ -65,12 +65,16 @@ class FicheImportJob
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $failureMessage = null;
 
-    public function __construct(TypeFiche $type, string $originalFilename, string $createdBy)
+    public function __construct(TypeFiche $type, string $originalFilename, string $createdBy, string $extension = 'csv')
     {
+        if (!in_array($extension, ['csv', 'xlsx'], true)) {
+            throw new \DomainException('Extension de fichier d’import non prise en charge.');
+        }
+
         $this->id = new Ulid();
         $this->type = $type;
         $this->originalFilename = mb_substr($originalFilename, 0, 255);
-        $this->storagePath = $this->id.'.csv';
+        $this->storagePath = $this->id.'.'.$extension;
         $this->createdBy = $createdBy;
         $this->initializeTimestamps();
     }

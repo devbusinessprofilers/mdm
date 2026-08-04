@@ -18,8 +18,8 @@
     </header>
 
     <section class="card">
-        <h2>1. Télécharger un modèle CSV</h2>
-        <p>Le modèle contient toutes les colonnes du type choisi, une ligne d'aide et la liste des valeurs autorisées (LOV). Les lignes commençant par <code>#</code> sont ignorées à l'import.</p>
+        <h2>1. Télécharger un modèle XLSX</h2>
+        <p>Le modèle contient deux feuilles : <strong>Données</strong> (uniquement les colonnes de l'entité, à remplir) et <strong>Notice &amp; LOV</strong> (aide par colonne et liste des valeurs autorisées).</p>
         <nav class="table-actions">
             {% for type in types %}
                 <a class="btn btn-secondary" href="{{ path('app_etl_import_template', {type: type.value}) }}">Modèle {{ type_labels[type.value] }}</a>
@@ -29,7 +29,7 @@
 
     <section class="card">
         <h2>2. Importer un fichier rempli</h2>
-        <p>Le fichier est traité en arrière-plan par lots : suivez la progression et le rapport d'erreurs depuis le tableau ci-dessous. Une ligne avec un <code>code</code> existant met à jour la fiche ; les cellules vides ne modifient rien, la valeur <code>NULL</code> vide le champ.</p>
+        <p>Le fichier XLSX (feuille Données) ou CSV est traité en arrière-plan par lots : suivez la progression et le rapport d'erreurs depuis le tableau ci-dessous. Une ligne avec un <code>code</code> existant met à jour la fiche ; les cellules vides ne modifient rien, la valeur <code>NULL</code> vide le champ.</p>
         {{ form(form) }}
     </section>
 

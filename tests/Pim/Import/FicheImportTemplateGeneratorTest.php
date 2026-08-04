@@ -6,36 +6,51 @@ namespace App\Tests\Pim\Import;
 
 use App\Pim\Enum\TypeFiche;
 use App\Pim\Import\FicheImportTemplateGenerator;
+use OpenSpout\Reader\XLSX\Reader;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 final class FicheImportTemplateGeneratorTest extends KernelTestCase
 {
-    public function testLieuTemplateContainsHeadersHelpCollectionsAndLovBlock(): void
+    private ?string $path = null;
+
+    protected function tearDown(): void
+    {
+        if (null !== $this->path && is_file($this->path)) {
+            unlink($this->path);
+        }
+
+        parent::tearDown();
+    }
+
+    public function testLieuTemplateHasADataSheetWithOnlyHeadersAndANoticeSheet(): void
     {
         self::bootKernel();
         $generator = self::getContainer()->get(FicheImportTemplateGenerator::class);
 
-        $stream = fopen('php://temp', 'w+b');
-        self::assertIsResource($stream);
-        $generator->write(TypeFiche::Lieu, $stream);
-        rewind($stream);
-        $content = (string) stream_get_contents($stream);
-        fclose($stream);
+        $path = tempnam(sys_get_temp_dir(), 'mdm-template-test');
+        self::assertIsString($path);
+        $this->path = $path;
+        $generator->write(TypeFiche::Lieu, $path);
 
-        self::assertStringStartsWith("\u{FEFF}", $content);
+        $sheets = $this->readSheets($path);
+        self::assertSame([FicheImportTemplateGenerator::DATA_SHEET, FicheImportTemplateGenerator::NOTICE_SHEET], array_keys($sheets));
 
-        $lines = explode("\n", $content);
-        self::assertStringStartsWith("\u{FEFF}code;label;localisation_pays", $lines[0]);
-        self::assertStringContainsString('salle_1_nom', $lines[0]);
-        self::assertStringContainsString('salle_20_climatisee', $lines[0]);
-        self::assertStringContainsString('periode_fermeture_10_date_fin', $lines[0]);
-        self::assertStringContainsString('acces_10_mode_transport', $lines[0]);
-        self::assertStringNotContainsString('salle_21_', $lines[0]);
-        self::assertStringStartsWith('#', $lines[1]);
-        self::assertStringContainsString('### LISTES DE VALEURS', $content);
-        self::assertStringContainsString('# GENERALE_TYPOLOGIE;GENERALE_TYPOLOGIE_1;', $content);
+        $dataRows = $sheets[FicheImportTemplateGenerator::DATA_SHEET];
+        self::assertCount(1, $dataRows, 'La feuille Données ne doit contenir que la ligne d’en-têtes.');
+        self::assertSame($generator->headers(TypeFiche::Lieu), $dataRows[0]);
+        self::assertContains('salle_1_nom', $dataRows[0]);
+        self::assertContains('salle_20_climatisee', $dataRows[0]);
+        self::assertContains('periode_fermeture_10_date_fin', $dataRows[0]);
+        self::assertNotContains('salle_21_nom', $dataRows[0]);
 
-        self::assertSame('modele-import-lieu.csv', $generator->filename(TypeFiche::Lieu));
+        $notice = $sheets[FicheImportTemplateGenerator::NOTICE_SHEET];
+        self::assertSame(['Colonne', 'Type attendu', 'Obligation', 'Aide'], $notice[0]);
+        $flat = array_map(static fn (array $row): string => implode(';', $row), $notice);
+        self::assertNotEmpty(preg_grep('/^label;texte;obligatoire;/', $flat));
+        self::assertNotEmpty(preg_grep('/^salle_N_nom \(N = 1 à 20\);/', $flat));
+        self::assertNotEmpty(preg_grep('/^GENERALE_TYPOLOGIE;GENERALE_TYPOLOGIE_1;/', $flat));
+
+        self::assertSame('modele-import-lieu.xlsx', $generator->filename(TypeFiche::Lieu));
     }
 
     public function testHeadersAreUniqueForEveryType(): void
@@ -49,5 +64,29 @@ final class FicheImportTemplateGeneratorTest extends KernelTestCase
             self::assertContains('code', $headers);
             self::assertContains('label', $headers);
         }
+    }
+
+    /** @return array<string, list<list<string>>> lignes non vides par nom de feuille */
+    private function readSheets(string $path): array
+    {
+        $reader = new Reader();
+        $reader->open($path);
+        $sheets = [];
+        foreach ($reader->getSheetIterator() as $sheet) {
+            $rows = [];
+            foreach ($sheet->getRowIterator() as $row) {
+                $cells = array_values(array_map(
+                    static fn (mixed $cell): string => is_scalar($cell) ? trim((string) $cell) : '',
+                    $row->toArray(),
+                ));
+                if ([] !== array_filter($cells, static fn (string $cell): bool => '' !== $cell)) {
+                    $rows[] = $cells;
+                }
+            }
+            $sheets[$sheet->getName()] = $rows;
+        }
+        $reader->close();
+
+        return $sheets;
     }
 }

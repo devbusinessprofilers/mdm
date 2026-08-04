@@ -6,12 +6,27 @@ namespace App\Etl\Service;
 
 use App\Pim\Import\Dto\RawCsvRow;
 use App\Pim\Import\FicheImportTemplateGenerator;
+use OpenSpout\Reader\XLSX\Options;
+use OpenSpout\Reader\XLSX\Reader;
 
+/**
+ * Lit les fichiers d'import de fiches : XLSX (première feuille uniquement) ou CSV.
+ * Les numéros de lignes sont physiques (1 = en-têtes) ; en CSV, les lignes vides
+ * et celles commençant par # sont ignorées.
+ */
 final class ImportCsvReader
 {
-    /** @return list<string> en-têtes de la ligne 1, BOM UTF-8 retiré */
+    /** @return list<string> en-têtes de la ligne 1 */
     public function headers(string $path): array
     {
+        if (self::isXlsx($path)) {
+            foreach ($this->xlsxCells($path) as $cells) {
+                return array_map(static fn (string $cell): string => trim($cell), $cells);
+            }
+
+            throw new \RuntimeException('Impossible de lire la ligne d’en-têtes.');
+        }
+
         $handle = $this->open($path);
 
         try {
@@ -30,37 +45,13 @@ final class ImportCsvReader
     }
 
     /**
-     * Lignes de données à partir de $fromLine (numéro physique, 1 = en-têtes) ;
-     * les lignes vides et celles commençant par # sont ignorées.
-     *
      * @param list<string> $headers
      *
      * @return \Generator<RawCsvRow>
      */
     public function rows(string $path, array $headers, int $fromLine): \Generator
     {
-        $handle = $this->open($path);
-
-        try {
-            $lineNumber = 0;
-            while (false !== ($cells = fgetcsv($handle, null, FicheImportTemplateGenerator::SEPARATOR, '"', ''))) {
-                ++$lineNumber;
-                if ($lineNumber < max(2, $fromLine)) {
-                    continue;
-                }
-                if (!self::isDataLine($cells)) {
-                    continue;
-                }
-
-                $values = array_map(static fn (mixed $cell): string => (string) $cell, $cells);
-                $count = count($headers);
-                $values = array_slice(array_pad($values, $count, ''), 0, $count);
-
-                yield new RawCsvRow($lineNumber, array_combine($headers, $values));
-            }
-        } finally {
-            fclose($handle);
-        }
+        return self::isXlsx($path) ? $this->xlsxRows($path, $headers, $fromLine) : $this->csvRows($path, $headers, $fromLine);
     }
 
     /** @param list<string> $headers */
@@ -74,21 +65,148 @@ final class ImportCsvReader
         return $count;
     }
 
-    /** @param array<int, mixed> $cells */
-    private static function isDataLine(array $cells): bool
+    /**
+     * @param list<string> $headers
+     *
+     * @return \Generator<RawCsvRow>
+     */
+    private function xlsxRows(string $path, array $headers, int $fromLine): \Generator
     {
-        $first = ltrim(trim((string) ($cells[0] ?? '')), "\u{FEFF}");
+        foreach ($this->xlsxCells($path) as $lineNumber => $cells) {
+            if ($lineNumber < max(2, $fromLine) || !self::isDataCells($cells)) {
+                continue;
+            }
+
+            yield new RawCsvRow($lineNumber, self::combine($headers, $cells));
+        }
+    }
+
+    /**
+     * Cellules normalisées en chaînes de la première feuille, indexées par numéro de ligne physique.
+     *
+     * @return \Generator<int, list<string>>
+     */
+    private function xlsxCells(string $path): \Generator
+    {
+        if (!is_readable($path)) {
+            throw new \RuntimeException('Fichier d’import illisible.');
+        }
+
+        $reader = new Reader(new Options(SHOULD_PRESERVE_EMPTY_ROWS: true));
+
+        try {
+            $reader->open($path);
+        } catch (\Throwable) {
+            throw new \RuntimeException('Fichier d’import illisible.');
+        }
+
+        try {
+            foreach ($reader->getSheetIterator() as $sheet) {
+                foreach ($sheet->getRowIterator() as $lineNumber => $row) {
+                    yield $lineNumber => array_values(array_map(self::stringify(...), $row->toArray()));
+                }
+
+                // Seule la première feuille (« Données ») est importée.
+                break;
+            }
+        } finally {
+            $reader->close();
+        }
+    }
+
+    /**
+     * @param list<string> $headers
+     *
+     * @return \Generator<RawCsvRow>
+     */
+    private function csvRows(string $path, array $headers, int $fromLine): \Generator
+    {
+        $handle = $this->open($path);
+
+        try {
+            $lineNumber = 0;
+            while (false !== ($cells = fgetcsv($handle, null, FicheImportTemplateGenerator::SEPARATOR, '"', ''))) {
+                ++$lineNumber;
+                if ($lineNumber < max(2, $fromLine)) {
+                    continue;
+                }
+
+                $values = array_map(static fn (?string $cell): string => (string) $cell, $cells);
+                if (!self::isDataCells($values)) {
+                    continue;
+                }
+
+                yield new RawCsvRow($lineNumber, self::combine($headers, $values));
+            }
+        } finally {
+            fclose($handle);
+        }
+    }
+
+    /**
+     * @param list<string> $headers
+     * @param list<string> $values
+     *
+     * @return array<string, string>
+     */
+    private static function combine(array $headers, array $values): array
+    {
+        $count = count($headers);
+
+        return array_combine($headers, array_slice(array_pad($values, $count, ''), 0, $count));
+    }
+
+    /** @param list<string> $cells */
+    private static function isDataCells(array $cells): bool
+    {
+        $first = ltrim(trim($cells[0] ?? ''), "\u{FEFF}");
         if (str_starts_with($first, FicheImportTemplateGenerator::HELP_PREFIX)) {
             return false;
         }
 
         foreach ($cells as $cell) {
-            if ('' !== trim((string) $cell)) {
+            if ('' !== trim($cell)) {
                 return true;
             }
         }
 
         return false;
+    }
+
+    private static function stringify(mixed $value): string
+    {
+        if (null === $value) {
+            return '';
+        }
+        if ($value instanceof \DateTimeInterface) {
+            return $value->format('Y-m-d');
+        }
+        if ($value instanceof \DateInterval) {
+            return $value->format('%H:%I');
+        }
+        if (is_bool($value)) {
+            return $value ? '1' : '0';
+        }
+        if (is_float($value)) {
+            if (floor($value) === $value && abs($value) < PHP_INT_MAX) {
+                return (string) (int) $value;
+            }
+
+            return rtrim(rtrim(number_format($value, 10, '.', ''), '0'), '.');
+        }
+        if (is_int($value)) {
+            return (string) $value;
+        }
+        if (is_string($value)) {
+            return $value;
+        }
+
+        throw new \RuntimeException('Cellule de type non pris en charge dans la feuille de données.');
+    }
+
+    private static function isXlsx(string $path): bool
+    {
+        return str_ends_with(strtolower($path), '.xlsx');
     }
 
     /** @return resource */

@@ -35,13 +35,20 @@ final class FicheImportUploadType extends AbstractType
                 'constraints' => [new NotNull()],
             ])
             ->add('file', FileType::class, [
-                'label' => 'Fichier CSV rempli à partir du modèle',
+                'label' => 'Fichier XLSX (feuille Données) ou CSV rempli à partir du modèle',
                 'constraints' => [
-                    new NotBlank(message: 'Sélectionnez un fichier CSV.'),
+                    new NotBlank(message: 'Sélectionnez un fichier XLSX ou CSV.'),
                     new File(
                         maxSize: '10M',
-                        mimeTypes: ['text/csv', 'text/plain', 'application/csv', 'application/vnd.ms-excel'],
-                        mimeTypesMessage: 'Le fichier doit être un CSV.',
+                        mimeTypes: [
+                            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                            'application/zip',
+                            'text/csv',
+                            'text/plain',
+                            'application/csv',
+                            'application/vnd.ms-excel',
+                        ],
+                        mimeTypesMessage: 'Le fichier doit être un XLSX ou un CSV.',
                     ),
                 ],
             ])

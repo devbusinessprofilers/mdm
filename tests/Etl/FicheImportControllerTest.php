@@ -57,11 +57,9 @@ final class FicheImportControllerTest extends WebTestCase
         $client->request('GET', '/admin/import-fiches/modele/lieu');
         self::assertResponseIsSuccessful();
         $response = $client->getResponse();
-        self::assertSame('text/csv; charset=UTF-8', $response->headers->get('Content-Type'));
-        self::assertStringContainsString('modele-import-lieu.csv', (string) $response->headers->get('Content-Disposition'));
-        $content = $client->getInternalResponse()->getContent();
-        self::assertStringStartsWith("\u{FEFF}code;label", $content);
-        self::assertStringContainsString('### LISTES DE VALEURS', $content);
+        self::assertSame('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', $response->headers->get('Content-Type'));
+        self::assertStringContainsString('modele-import-lieu.xlsx', (string) $response->headers->get('Content-Disposition'));
+        self::assertStringStartsWith('PK', $client->getInternalResponse()->getContent());
     }
 
     public function testValidatorCanUploadACsvAndSeeThePendingJob(): void

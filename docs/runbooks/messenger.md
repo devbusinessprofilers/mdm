@@ -120,7 +120,7 @@ table Doctrine ; il n'existe donc pas de purge des messages terminés.
 
 ### Jobs d'import de fiches bloqués
 
-Un import CSV (`/admin/import-fiches`) est découpé en messages
+Un import de fiches (`/admin/import-fiches`, XLSX ou CSV) est découpé en messages
 `ProcessFicheImportBatch` chaînés sur la file `etl`, chaque lot étant commité
 avec sa progression (`last_processed_line` sur `etl_import_job`). Si un lot
 épuise ses 5 tentatives, le job reste `en_cours` et le message part dans la

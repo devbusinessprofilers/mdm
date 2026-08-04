@@ -16,9 +16,10 @@ use App\Pim\Import\Schema\FicheImportSchemaRegistry;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Form\FormError;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Uid\Ulid;
@@ -66,16 +67,16 @@ final class FicheImportController extends AbstractController
     {
         $ficheType = TypeFiche::from($type);
 
-        $response = new StreamedResponse(static function () use ($generator, $ficheType): void {
-            $stream = fopen('php://output', 'wb');
-            if (false === $stream) {
-                throw new \RuntimeException('Flux de sortie indisponible.');
-            }
-            $generator->write($ficheType, $stream);
-            fclose($stream);
-        });
-        $response->headers->set('Content-Type', 'text/csv; charset=UTF-8');
-        $response->headers->set('Content-Disposition', sprintf('attachment; filename="%s"', $generator->filename($ficheType)));
+        $path = tempnam(sys_get_temp_dir(), 'mdm-import-template');
+        if (false === $path) {
+            throw new \RuntimeException('Impossible de créer le fichier temporaire du modèle.');
+        }
+        $generator->write($ficheType, $path);
+
+        $response = new BinaryFileResponse($path);
+        $response->deleteFileAfterSend();
+        $response->headers->set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        $response->setContentDisposition(ResponseHeaderBag::DISPOSITION_ATTACHMENT, $generator->filename($ficheType));
 
         return $response;
     }

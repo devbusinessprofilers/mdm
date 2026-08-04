@@ -27,7 +27,12 @@ final readonly class FicheImportJobManager
             throw new \DomainException('Le fichier téléversé est invalide.');
         }
 
-        $job = new FicheImportJob($type, $file->getClientOriginalName(), $actor);
+        $extension = strtolower($file->getClientOriginalExtension());
+        if (!in_array($extension, ['csv', 'xlsx'], true)) {
+            $extension = str_contains((string) $file->getMimeType(), 'spreadsheetml') ? 'xlsx' : 'csv';
+        }
+
+        $job = new FicheImportJob($type, $file->getClientOriginalName(), $actor, $extension);
 
         if (!is_dir($this->importDir) && !@mkdir($this->importDir, 0775, true) && !is_dir($this->importDir)) {
             throw new \DomainException('Impossible de préparer le répertoire d’import.');
