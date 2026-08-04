@@ -22,6 +22,11 @@ final class FicheRepository extends ServiceEntityRepository
         parent::__construct($registry, Fiche::class);
     }
 
+    public function findOneByTypeAndCode(TypeFiche $type, int $code): ?Fiche
+    {
+        return $this->findOneBy(['type' => $type, 'code' => $code]);
+    }
+
     public function countByType(TypeFiche $type): int
     {
         return (int) $this->getEntityManager()->getConnection()->fetchOne(
