@@ -19,11 +19,24 @@ final class UserRepository extends ServiceEntityRepository implements UserLoader
 
     public function loadUserByIdentifier(string $identifier): ?User
     {
-        return $this->findOneBy(['email' => User::normalizeEmail($identifier)]);
+        return $this->findOneBy([
+            'email' => User::normalizeEmail($identifier),
+            'deletedAt' => null,
+        ]);
     }
 
     public function findOneByEmail(string $email): ?User
     {
         return $this->loadUserByIdentifier($email);
+    }
+
+    /** @return list<User> */
+    public function findForAdministration(): array
+    {
+        return $this->createQueryBuilder('user')
+            ->andWhere('user.deletedAt IS NULL')
+            ->orderBy('user.email', 'ASC')
+            ->getQuery()
+            ->getResult();
     }
 }

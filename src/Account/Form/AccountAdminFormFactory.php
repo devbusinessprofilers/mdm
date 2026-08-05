@@ -88,4 +88,31 @@ final readonly class AccountAdminFormFactory
             'csrf_token_id' => 'user-toggle-'.$user->id(),
         ]);
     }
+
+    /** @return FormInterface<mixed> */
+    public function internalResendCredentials(User $user): FormInterface
+    {
+        $label = null === $user->getPassword() ? 'Renvoyer l’invitation' : 'Envoyer un lien de reset';
+
+        return $this->forms->createNamed('renvoi_identifiants_'.$user->id(), ActionType::class, null, [
+            'action' => $this->urls->generate('app_account_user_admin_resend_credentials', ['id' => $user->id()]),
+            'button_label' => $label,
+            'csrf_token_id' => 'user-resend-credentials-'.$user->id(),
+        ]);
+    }
+
+    /** @return FormInterface<mixed> */
+    public function internalDelete(User $user): FormInterface
+    {
+        return $this->forms->createNamed('suppression_utilisateur_'.$user->id(), ActionType::class, null, [
+            'action' => $this->urls->generate('app_account_user_admin_delete', ['id' => $user->id()]),
+            'button_label' => 'Supprimer',
+            'csrf_token_id' => 'user-delete-'.$user->id(),
+            'attr' => [
+                'data-controller' => 'confirm',
+                'data-confirm-message-value' => 'Supprimer et anonymiser définitivement cet utilisateur ?',
+                'data-action' => 'submit->confirm#submit',
+            ],
+        ]);
+    }
 }

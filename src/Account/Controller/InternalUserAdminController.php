@@ -21,9 +21,11 @@ final class InternalUserAdminController extends AbstractController
     #[Route('', name: 'index', methods: ['GET'])]
     public function index(UserRepository $users, AccountAdminFormFactory $forms): Response
     {
-        $userEntities = $users->findBy([], ['email' => 'ASC']);
+        $userEntities = $users->findForAdministration();
         $roleForms = [];
         $toggleForms = [];
+        $resendForms = [];
+        $deleteForms = [];
 
         foreach ($userEntities as $user) {
             if (in_array('ROLE_SUPER_ADMIN', $user->getRoles(), true)) {
@@ -31,6 +33,8 @@ final class InternalUserAdminController extends AbstractController
             }
             $roleForms[$user->id()] = $forms->internalRole($user)->createView();
             $toggleForms[$user->id()] = $forms->internalToggle($user, $user->isActive() ? 'Désactiver' : 'Activer')->createView();
+            $resendForms[$user->id()] = $forms->internalResendCredentials($user)->createView();
+            $deleteForms[$user->id()] = $forms->internalDelete($user)->createView();
         }
 
         return $this->render('account/user_admin/index.html.twig', [
@@ -38,6 +42,8 @@ final class InternalUserAdminController extends AbstractController
             'invite_form' => $forms->internalInvite()->createView(),
             'role_forms' => $roleForms,
             'toggle_forms' => $toggleForms,
+            'resend_forms' => $resendForms,
+            'delete_forms' => $deleteForms,
         ]);
     }
 
@@ -68,7 +74,7 @@ final class InternalUserAdminController extends AbstractController
     public function role(string $id, Request $request, UserRepository $users, AccountAdminFormFactory $forms, InternalUserManager $manager): Response
     {
         $user = $users->find($id);
-        if (!$user instanceof User || in_array('ROLE_SUPER_ADMIN', $user->getRoles(), true)) {
+        if (!$user instanceof User || $user->isDeleted() || in_array('ROLE_SUPER_ADMIN', $user->getRoles(), true)) {
             throw $this->createNotFoundException();
         }
         $form = $forms->internalRole($user);
@@ -88,7 +94,7 @@ final class InternalUserAdminController extends AbstractController
     public function toggle(string $id, Request $request, UserRepository $users, AccountAdminFormFactory $forms, InternalUserManager $manager): Response
     {
         $user = $users->find($id);
-        if (!$user instanceof User || in_array('ROLE_SUPER_ADMIN', $user->getRoles(), true)) {
+        if (!$user instanceof User || $user->isDeleted() || in_array('ROLE_SUPER_ADMIN', $user->getRoles(), true)) {
             throw $this->createAccessDeniedException();
         }
         $form = $forms->internalToggle($user, 'Changer');
@@ -97,6 +103,45 @@ final class InternalUserAdminController extends AbstractController
             throw $this->createAccessDeniedException();
         }
         $manager->toggle($user);
+
+        return $this->redirectToRoute('app_account_user_admin_index');
+    }
+
+    #[Route('/{id}/renvoyer-identifiants', name: 'resend_credentials', methods: ['POST'])]
+    public function resendCredentials(string $id, Request $request, UserRepository $users, AccountAdminFormFactory $forms, InternalUserManager $manager): Response
+    {
+        $user = $users->find($id);
+        if (!$user instanceof User || $user->isDeleted() || in_array('ROLE_SUPER_ADMIN', $user->getRoles(), true)) {
+            throw $this->createNotFoundException();
+        }
+        $form = $forms->internalResendCredentials($user);
+        $form->handleRequest($request);
+        if (!$form->isSubmitted() || !$form->isValid()) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $manager->resendCredentials($user);
+        $this->addFlash('success', null === $user->getPassword() ? 'Invitation renvoyée.' : 'Lien de réinitialisation envoyé.');
+
+        return $this->redirectToRoute('app_account_user_admin_index');
+    }
+
+    #[Route('/{id}/supprimer', name: 'delete', methods: ['POST'])]
+    public function delete(string $id, Request $request, UserRepository $users, AccountAdminFormFactory $forms, InternalUserManager $manager): Response
+    {
+        $user = $users->find($id);
+        $actor = $this->getUser();
+        if (!$user instanceof User || !$actor instanceof User || $user->isDeleted() || in_array('ROLE_SUPER_ADMIN', $user->getRoles(), true)) {
+            throw $this->createNotFoundException();
+        }
+        $form = $forms->internalDelete($user);
+        $form->handleRequest($request);
+        if (!$form->isSubmitted() || !$form->isValid()) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $manager->delete($user, $actor);
+        $this->addFlash('success', 'Utilisateur supprimé et anonymisé.');
 
         return $this->redirectToRoute('app_account_user_admin_index');
     }

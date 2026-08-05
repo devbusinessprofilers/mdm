@@ -17,7 +17,8 @@ final class SecurityControllerTest extends WebTestCase
         self::assertSelectorTextContains('h1', 'Connexion au MDM');
         self::assertCount(1, $crawler->filter('form[action="/login"][method="post"]'));
         self::assertNotSame('', $crawler->filter('input[name="_csrf_token"]')->attr('value'));
-        self::assertCount(0, $crawler->filter('a[href*="register"], a[href*="reset"]'));
+        self::assertCount(1, $crawler->filter('a[href="/mot-de-passe-oublie"]'));
+        self::assertCount(0, $crawler->filter('a[href*="register"]'));
     }
 
     public function testApiIsProtectedByTheSessionFirewall(): void

@@ -13,7 +13,7 @@ final class ActiveUserChecker implements UserCheckerInterface
 {
     public function checkPreAuth(UserInterface $user): void
     {
-        if ($user instanceof User && !$user->isActive()) {
+        if ($user instanceof User && (!$user->isActive() || $user->isDeleted())) {
             throw new DisabledException();
         }
     }

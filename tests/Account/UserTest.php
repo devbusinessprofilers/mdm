@@ -33,4 +33,24 @@ final class UserTest extends TestCase
         $user->activate();
         self::assertTrue($user->isActive());
     }
+
+    public function testAccountCanBeAnonymizedWithoutLosingItsTechnicalIdentity(): void
+    {
+        $user = new User('person@example.com', ['ROLE_BP_EDITOR']);
+        $user->setPassword('hashed-password');
+        $id = $user->id();
+
+        $user->anonymize();
+
+        self::assertSame($id, $user->id());
+        self::assertSame('deleted+'.strtolower($id).'@invalid.local', $user->email());
+        self::assertNull($user->getPassword());
+        self::assertSame(['ROLE_USER'], $user->getRoles());
+        self::assertFalse($user->isActive());
+        self::assertTrue($user->isDeleted());
+        self::assertNotNull($user->deletedAt());
+
+        $this->expectException(\DomainException::class);
+        $user->activate();
+    }
 }

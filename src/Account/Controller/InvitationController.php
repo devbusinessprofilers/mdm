@@ -5,17 +5,14 @@ declare(strict_types=1);
 namespace App\Account\Controller;
 
 use App\Account\Entity\AccountInvitation;
+use App\Account\Form\NewPasswordType;
 use App\Account\Repository\AccountInvitationRepository;
 use App\Account\Service\AccountInvitationManager;
 use App\Account\Service\InvitationTokenSigner;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\Form\Extension\Core\Type\PasswordType;
-use Symfony\Component\Form\Extension\Core\Type\RepeatedType;
-use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Validator\Constraints\Length;
 
 final class InvitationController extends AbstractController
 {
@@ -33,14 +30,10 @@ final class InvitationController extends AbstractController
             throw $this->createNotFoundException('Invitation expirée ou invalide.');
         }
 
-        $form = $this->createFormBuilder()->setAction($request->getUri())
-            ->add('password', RepeatedType::class, [
-                'type' => PasswordType::class,
-                'first_options' => ['label' => 'Mot de passe'],
-                'second_options' => ['label' => 'Confirmer'],
-                'constraints' => [new Length(min: 12)],
-            ])
-            ->add('submit', SubmitType::class, ['label' => 'Activer mon compte'])->getForm();
+        $form = $this->createForm(NewPasswordType::class, null, [
+            'action' => $request->getUri(),
+            'button_label' => 'Activer mon compte',
+        ]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {

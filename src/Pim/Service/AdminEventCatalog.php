@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Pim\Service;
 
 use App\Account\Message\InternalUserInvited;
+use App\Account\Message\InternalUserPasswordResetRequested;
 use App\Account\MessageHandler\InternalUserInvitedHandler;
+use App\Account\MessageHandler\InternalUserPasswordResetRequestedHandler;
 use App\Dam\Message\DeleteMedia;
 use App\Dam\Message\PublishDocument;
 use App\Dam\Message\RegenerateMedia;
@@ -125,6 +127,17 @@ final class AdminEventCatalog
                 'worker' => 'worker-mail',
                 'handler' => InternalUserInvitedHandler::class,
                 'result' => 'Envoie un lien signé, valable 24 heures et utilisable une seule fois, pour créer le mot de passe.',
+                'next' => null,
+            ],
+            [
+                'type' => InternalUserPasswordResetRequested::class,
+                'label' => 'Reset de mot de passe interne',
+                'domain' => 'Compte',
+                'trigger' => 'Un utilisateur demande un reset ou un Super Admin renvoie ses identifiants.',
+                'transport' => 'mail',
+                'worker' => 'worker-mail',
+                'handler' => InternalUserPasswordResetRequestedHandler::class,
+                'result' => 'Envoie un lien signé, valable une heure et utilisable une seule fois, sans transmettre de mot de passe.',
                 'next' => null,
             ],
         ];

@@ -10,6 +10,8 @@
         {% if 'ROLE_SUPER_ADMIN' not in user.roles %}
             {{ form(role_forms[user.id]) }}
             {{ form(toggle_forms[user.id]) }}
+            {{ form(resend_forms[user.id]) }}
+            <div class="danger-form">{{ form(delete_forms[user.id]) }}</div>
         {% else %}<span>Géré en console</span>{% endif %}
         </td></tr>
     {% else %}<tr><td colspan="4">Aucun utilisateur.</td></tr>{% endfor %}

@@ -1,0 +1,68 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Account\Service;
+
+use App\Account\Entity\PasswordResetRequest;
+use App\Account\Entity\User;
+use App\Account\Message\InternalUserPasswordResetRequested;
+use App\Account\Repository\AccountInvitationRepository;
+use App\Account\Repository\PasswordResetRequestRepository;
+use App\Shared\Outbox\OutboxPublisherInterface;
+use Doctrine\DBAL\LockMode;
+use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+
+final readonly class PasswordResetManager
+{
+    public function __construct(
+        private PasswordResetRequestRepository $requests,
+        private AccountInvitationRepository $invitations,
+        private EntityManagerInterface $entityManager,
+        private OutboxPublisherInterface $outbox,
+        private UserPasswordHasherInterface $hasher,
+        private LoggerInterface $logger,
+    ) {}
+
+    public function request(User $user): PasswordResetRequest
+    {
+        if ($user->isDeleted()) {
+            throw new \DomainException('Ce compte a été supprimé.');
+        }
+        if (null === $user->getPassword()) {
+            throw new \DomainException('Ce compte doit d’abord être activé.');
+        }
+
+        $request = $this->entityManager->wrapInTransaction(function () use ($user): PasswordResetRequest {
+            $this->entityManager->lock($user, LockMode::PESSIMISTIC_WRITE);
+            $this->requests->invalidateUsableFor($user);
+            $request = new PasswordResetRequest($user);
+            $this->entityManager->persist($request);
+            $this->outbox->enqueue(new InternalUserPasswordResetRequested($request->id()));
+
+            return $request;
+        });
+        $this->logger->info('account.password_reset.requested', ['user_id' => $user->id()]);
+
+        return $request;
+    }
+
+    public function reset(PasswordResetRequest $request, string $plainPassword): void
+    {
+        if (!$request->isUsable()) {
+            throw new \DomainException('Cette demande de réinitialisation n’est plus utilisable.');
+        }
+
+        $user = $request->user();
+        $this->entityManager->wrapInTransaction(function () use ($request, $user, $plainPassword): void {
+            $this->entityManager->lock($user, LockMode::PESSIMISTIC_WRITE);
+            $request->use();
+            $user->setPassword($this->hasher->hashPassword($user, $plainPassword));
+            $this->requests->invalidateUsableFor($user, $request->id());
+            $this->invitations->invalidateUsableFor($user);
+        });
+        $this->logger->info('account.password_reset.completed', ['user_id' => $user->id()]);
+    }
+}

@@ -74,7 +74,15 @@ services:
         arguments:
             $key: '%env(INVITATION_SIGNING_KEY)%'
 
+    App\Account\Service\PasswordResetTokenSigner:
+        arguments:
+            $key: '%env(INVITATION_SIGNING_KEY)%'
+
     App\Account\MessageHandler\InternalUserInvitedHandler:
+        arguments:
+            $sender: '%env(MAILER_FROM)%'
+
+    App\Account\MessageHandler\InternalUserPasswordResetRequestedHandler:
         arguments:
             $sender: '%env(MAILER_FROM)%'
 

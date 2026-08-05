@@ -14,6 +14,7 @@ use Symfony\Component\Uid\Ulid;
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: 'account_user')]
 #[ORM\UniqueConstraint(name: 'UNIQ_ACCOUNT_USER_EMAIL', columns: ['email'])]
+#[ORM\Index(name: 'IDX_ACCOUNT_USER_DELETED', columns: ['deleted_at'])]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
@@ -39,6 +40,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $updatedAt;
+
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $deletedAt = null;
 
     /** @param list<string> $roles */
     public function __construct(string $email, array $roles = [])
@@ -125,7 +129,34 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function activate(): void
     {
+        if ($this->isDeleted()) {
+            throw new \DomainException('Un compte supprimé ne peut pas être réactivé.');
+        }
         $this->isActive = true;
+        $this->touch();
+    }
+
+    public function isDeleted(): bool
+    {
+        return null !== $this->deletedAt;
+    }
+
+    public function deletedAt(): ?\DateTimeImmutable
+    {
+        return $this->deletedAt;
+    }
+
+    public function anonymize(): void
+    {
+        if ($this->isDeleted()) {
+            throw new \DomainException('Ce compte est déjà supprimé.');
+        }
+
+        $this->deletedAt = new \DateTimeImmutable();
+        $this->email = sprintf('deleted+%s@invalid.local', strtolower($this->id));
+        $this->password = null;
+        $this->roles = [];
+        $this->isActive = false;
         $this->touch();
     }
 

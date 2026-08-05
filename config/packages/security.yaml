@@ -52,6 +52,8 @@ security:
         - { path: ^/login$, roles: PUBLIC_ACCESS }
         - { path: ^/logout$, roles: PUBLIC_ACCESS }
         - { path: ^/invitation/, roles: PUBLIC_ACCESS }
+        - { path: ^/mot-de-passe-oublie$, roles: PUBLIC_ACCESS }
+        - { path: ^/reinitialiser-mot-de-passe/, roles: PUBLIC_ACCESS }
         - { path: ^/api/v1/(?:lieux|activites|services), roles: ROLE_EXTERNAL_SITE }
         - { path: ^/admin, roles: ROLE_BP_EDITOR }
         - { path: ^/, roles: ROLE_USER }

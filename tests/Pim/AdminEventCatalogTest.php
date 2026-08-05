@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Pim;
 
 use App\Account\Message\InternalUserInvited;
+use App\Account\Message\InternalUserPasswordResetRequested;
 use App\Dam\Message\DeleteMedia;
 use App\Dam\Message\PublishDocument;
 use App\Dam\Message\RegenerateMedia;
@@ -23,6 +24,7 @@ final class AdminEventCatalogTest extends TestCase
         self::assertEqualsCanonicalizing(
             [
                 InternalUserInvited::class,
+                InternalUserPasswordResetRequested::class,
                 DeleteMedia::class,
                 PublishDocument::class,
                 RegenerateMedia::class,

@@ -8,6 +8,16 @@ framework:
         cookie_httponly: true
         cookie_samesite: lax
 
+    rate_limiter:
+        password_reset_email:
+            policy: fixed_window
+            limit: 3
+            interval: '1 hour'
+        password_reset_ip:
+            policy: fixed_window
+            limit: 10
+            interval: '1 hour'
+
     #esi: true
     #fragments: true
 
