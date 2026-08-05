@@ -23,12 +23,24 @@ final readonly class LieuDocumentManager
         private LieuDocumentUploader $uploader,
         private EntityManagerInterface $entityManager,
         private OutboxPublisherInterface $outbox,
+        private InternalFicheMutationPolicy $mutationPolicy,
     ) {}
 
     /** @param list<UploadedFile> $files
      *  @param array{usage: DocumentUsage, salle: Salle|null, title: string|null, source: string|null, rightsGranted: bool} $data
      */
     public function upload(Lieu $lieu, array $files, array $data, string $actor): int
+    {
+        return $this->mutationPolicy->execute(
+            $lieu->fiche(),
+            fn (): int => $this->uploadWithinMutation($lieu, $files, $data, $actor),
+        );
+    }
+
+    /** @param list<UploadedFile> $files
+     *  @param array{usage: DocumentUsage, salle: Salle|null, title: string|null, source: string|null, rightsGranted: bool} $data
+     */
+    private function uploadWithinMutation(Lieu $lieu, array $files, array $data, string $actor): int
     {
         $usage = $data['usage'];
         $salle = $data['salle'];
@@ -61,6 +73,14 @@ final readonly class LieuDocumentManager
     /** @param array{usage: DocumentUsage, salle: Salle|null, title: string|null, source: string|null, rightsGranted: bool} $data */
     public function update(RessourceLieu $document, Lieu $lieu, array $data, string $actor): void
     {
+        $this->mutationPolicy->execute($lieu->fiche(), function () use ($document, $lieu, $data, $actor): void {
+            $this->updateWithinMutation($document, $lieu, $data, $actor);
+        });
+    }
+
+    /** @param array{usage: DocumentUsage, salle: Salle|null, title: string|null, source: string|null, rightsGranted: bool} $data */
+    private function updateWithinMutation(RessourceLieu $document, Lieu $lieu, array $data, string $actor): void
+    {
         $usage = $data['usage'];
         $salle = $data['salle'];
         if ($usage->requiresRoom() && null === $salle) { throw new \DomainException('Un plan de salle doit être rattaché à une salle.'); }
@@ -76,6 +96,13 @@ final readonly class LieuDocumentManager
     }
 
     public function replace(RessourceLieu $document, Lieu $lieu, UploadedFile $file): void
+    {
+        $this->mutationPolicy->execute($lieu->fiche(), function () use ($document, $lieu, $file): void {
+            $this->replaceWithinMutation($document, $lieu, $file);
+        });
+    }
+
+    private function replaceWithinMutation(RessourceLieu $document, Lieu $lieu, UploadedFile $file): void
     {
         $usage = $document->documentUsage() ?? throw new \DomainException('Usage invalide.');
         $asset = $this->uploader->upload($file, $lieu, $usage);
@@ -94,12 +121,26 @@ final readonly class LieuDocumentManager
 
     public function togglePublication(RessourceLieu $document, Lieu $lieu): void
     {
+        $this->mutationPolicy->execute($lieu->fiche(), function () use ($document, $lieu): void {
+            $this->togglePublicationWithinMutation($document, $lieu);
+        });
+    }
+
+    private function togglePublicationWithinMutation(RessourceLieu $document, Lieu $lieu): void
+    {
         if ('published' !== $document->publicationStatus()?->value) { $document->requestPublication(); $this->outbox->enqueue(new PublishDocument($document->id())); }
         else { $this->unpublish($document); }
         $this->changed($lieu);
     }
 
     public function delete(RessourceLieu $document, Lieu $lieu): void
+    {
+        $this->mutationPolicy->execute($lieu->fiche(), function () use ($document, $lieu): void {
+            $this->deleteWithinMutation($document, $lieu);
+        });
+    }
+
+    private function deleteWithinMutation(RessourceLieu $document, Lieu $lieu): void
     {
         $this->unpublish($document);
         $this->outbox->enqueue(new DeleteMedia($document->damAssetId()));

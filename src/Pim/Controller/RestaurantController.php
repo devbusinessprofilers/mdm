@@ -15,6 +15,7 @@ use App\Pim\Form\FicheActionFormFactory;
 use App\Pim\ReadModel\FicheCursor;
 use App\Pim\Repository\RestaurantRepository;
 use App\Pim\Service\FicheCountProvider;
+use App\Pim\Service\InternalFicheMutationPolicy;
 use App\Pim\Service\RestaurantAdminManager;
 use App\Pim\Service\RestaurantAdminViewBuilder;
 use App\Pim\Service\FicheWorkflowManager;
@@ -156,22 +157,33 @@ final class RestaurantController extends AbstractController
         RestaurantAdminManager $manager,
         RestaurantAdminViewBuilder $view,
         CurrentActorProvider $actor,
+        InternalFicheMutationPolicy $mutationPolicy,
     ): Response {
         $restaurant = $repository->find($id);
         if (!$restaurant instanceof Restaurant) { throw $this->createNotFoundException('Restaurant introuvable.'); }
         $this->denyAccessUnlessGranted(FicheVoter::EDIT, $restaurant->fiche());
         $existing = $manager->photoAssetIds($restaurant);
         $form = $this->createForm(RestaurantType::class, $restaurant);
-        $form->handleRequest($request);
-        if ($form->isSubmitted() && $form->isValid()) {
-            try {
-                $manager->save($restaurant, $form, $existing, $actor->id());
-                $this->addFlash('success', 'Restaurant modifié.');
+        $response = $mutationPolicy->execute(
+            $restaurant->fiche(),
+            function () use ($request, $form, $manager, $restaurant, $existing, $actor): ?Response {
+                $form->handleRequest($request);
+                if ($form->isSubmitted() && $form->isValid()) {
+                    try {
+                        $manager->save($restaurant, $form, $existing, $actor->id());
+                        $this->addFlash('success', 'Restaurant modifié.');
 
-                return $this->redirectToRoute('app_pim_restaurant_show', ['id' => $restaurant->id()]);
-            } catch (\DomainException $exception) {
-                $form->addError(new FormError($exception->getMessage()));
+                        return $this->redirectToRoute('app_pim_restaurant_show', ['id' => $restaurant->id()]);
+                    } catch (\DomainException $exception) {
+                        $form->addError(new FormError($exception->getMessage()));
+                    }
+                }
+
+                return null;
             }
+        );
+        if ($response instanceof Response) {
+            return $response;
         }
 
         return $this->render('pim/restaurant/form.html.twig', $view->form($form, $restaurant, false));

@@ -25,6 +25,10 @@ final class AdminWorkflowCatalogTest extends TestCase
             implode(' ', $workflows[0]['steps']),
         );
         self::assertStringContainsString(
+            'modification par un validateur conserve le statut',
+            implode(' ', $workflows[0]['rules']),
+        );
+        self::assertStringContainsString(
             'documents:private',
             implode(' ', $workflows[2]['rules']),
         );

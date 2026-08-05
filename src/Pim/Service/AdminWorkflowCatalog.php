@@ -29,6 +29,7 @@ final class AdminWorkflowCatalog
                 ],
                 'rules' => [
                     'Une sauvegarde applique les contraintes Draft ; la soumission ajoute les contraintes Submission.',
+                    'Une modification par un validateur conserve le statut et toutes les métadonnées du workflow ; une modification par un éditeur renvoie la fiche en cours.',
                     'L’historique de la fiche est réservé aux validateurs et administrateurs et ne permet aucune restauration.',
                 ],
             ],

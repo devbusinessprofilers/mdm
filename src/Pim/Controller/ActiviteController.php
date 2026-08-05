@@ -17,6 +17,7 @@ use App\Pim\Repository\ActiviteRepository;
 use App\Pim\Service\FicheCountProvider;
 use App\Pim\Service\ActiviteAdminManager;
 use App\Pim\Service\ActiviteAdminViewBuilder;
+use App\Pim\Service\InternalFicheMutationPolicy;
 use App\Pim\Service\FicheWorkflowManager;
 use App\Shared\Search\SearchQuery;
 use App\Shared\Service\SearchEngineInterface;
@@ -165,22 +166,33 @@ final class ActiviteController extends AbstractController
         ActiviteAdminManager $manager,
         ActiviteAdminViewBuilder $view,
         CurrentActorProvider $actor,
+        InternalFicheMutationPolicy $mutationPolicy,
     ): Response {
         $a = $repo->find($id);
         if (!$a instanceof Activite) { throw $this->createNotFoundException('Activité introuvable.'); }
         $this->denyAccessUnlessGranted(FicheVoter::EDIT, $a->fiche());
         $existing = $manager->photoAssetIds($a);
         $form = $this->createForm(ActiviteType::class, $a);
-        $form->handleRequest($request);
-        if ($form->isSubmitted() && $form->isValid()) {
-            try {
-                $manager->save($a, $form, $existing, $actor->id());
-                $this->addFlash('success', 'Activité modifiée.');
+        $response = $mutationPolicy->execute(
+            $a->fiche(),
+            function () use ($request, $form, $manager, $a, $existing, $actor): ?Response {
+                $form->handleRequest($request);
+                if ($form->isSubmitted() && $form->isValid()) {
+                    try {
+                        $manager->save($a, $form, $existing, $actor->id());
+                        $this->addFlash('success', 'Activité modifiée.');
 
-                return $this->redirectToRoute('app_pim_activite_show', ['id' => $a->id()]);
-            } catch (\DomainException $exception) {
-                $form->get('ressources')->addError(new FormError($exception->getMessage()));
+                        return $this->redirectToRoute('app_pim_activite_show', ['id' => $a->id()]);
+                    } catch (\DomainException $exception) {
+                        $form->get('ressources')->addError(new FormError($exception->getMessage()));
+                    }
+                }
+
+                return null;
             }
+        );
+        if ($response instanceof Response) {
+            return $response;
         }
 
         return $this->render('pim/activite/form.html.twig', $view->form($form, $a, false));

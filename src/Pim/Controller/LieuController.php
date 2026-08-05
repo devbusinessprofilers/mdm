@@ -16,6 +16,7 @@ use App\Pim\Form\LieuType;
 use App\Pim\ReadModel\FicheCursor;
 use App\Pim\Repository\LieuRepository;
 use App\Pim\Service\FicheCountProvider;
+use App\Pim\Service\InternalFicheMutationPolicy;
 use App\Pim\Service\LieuAdminManager;
 use App\Pim\Service\LieuAdminViewBuilder;
 use App\Pim\Service\FicheWorkflowManager;
@@ -176,24 +177,35 @@ final class LieuController extends AbstractController
         LieuRepository $repository,
         LieuAdminManager $manager,
         LieuAdminViewBuilder $view,
+        InternalFicheMutationPolicy $mutationPolicy,
     ): Response {
         $lieu = $repository->find($id);
         if (!$lieu instanceof Lieu) { $this->addFlash('warning', 'Ce lieu n’existe plus ou vient d’être supprimé.'); return $this->redirectToRoute('app_pim_lieu_index'); }
         $this->denyAccessUnlessGranted(FicheVoter::EDIT, $lieu->fiche());
         $existing = $manager->photoAssetIds($lieu);
         $form = $this->createForm(LieuType::class, $lieu);
-        $form->handleRequest($request);
-        if ($form->isSubmitted() && $form->isValid()) {
-            try {
-                $manager->save($lieu, $form, $existing);
-                $this->addFlash('success', 'Lieu modifié.');
+        $response = $mutationPolicy->execute(
+            $lieu->fiche(),
+            function () use ($request, $form, $manager, $lieu, $existing): ?Response {
+                $form->handleRequest($request);
+                if ($form->isSubmitted() && $form->isValid()) {
+                    try {
+                        $manager->save($lieu, $form, $existing);
+                        $this->addFlash('success', 'Lieu modifié.');
 
-                return $this->redirectToRoute('app_pim_lieu_show', ['id' => $lieu->id()]);
-            } catch (\DomainException $exception) {
-                $form->get('ressources')->addError(new FormError($exception->getMessage()));
-            } catch (FilesystemException) {
-                $form->get('ressources')->addError(new FormError('Le stockage des médias est temporairement indisponible. Aucun fichier n’a été enregistré.'));
+                        return $this->redirectToRoute('app_pim_lieu_show', ['id' => $lieu->id()]);
+                    } catch (\DomainException $exception) {
+                        $form->get('ressources')->addError(new FormError($exception->getMessage()));
+                    } catch (FilesystemException) {
+                        $form->get('ressources')->addError(new FormError('Le stockage des médias est temporairement indisponible. Aucun fichier n’a été enregistré.'));
+                    }
+                }
+
+                return null;
             }
+        );
+        if ($response instanceof Response) {
+            return $response;
         }
 
         return $this->render('pim/lieu/form.html.twig', $view->form($form, $lieu, false));

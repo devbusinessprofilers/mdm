@@ -15,6 +15,7 @@ use App\Pim\Form\ServiceEvenementielType;
 use App\Pim\ReadModel\FicheCursor;
 use App\Pim\Repository\ServiceEvenementielRepository;
 use App\Pim\Service\FicheCountProvider;
+use App\Pim\Service\InternalFicheMutationPolicy;
 use App\Pim\Service\ServiceEvenementielAdminManager;
 use App\Pim\Service\ServiceEvenementielAdminViewBuilder;
 use App\Pim\Service\FicheWorkflowManager;
@@ -169,22 +170,33 @@ final class ServiceEvenementielController extends AbstractController
         ServiceEvenementielAdminManager $manager,
         ServiceEvenementielAdminViewBuilder $view,
         CurrentActorProvider $actor,
+        InternalFicheMutationPolicy $mutationPolicy,
     ): Response {
         $service = $repo->find($id);
         if (!$service instanceof ServiceEvenementiel) { throw $this->createNotFoundException('Service introuvable.'); }
         $this->denyAccessUnlessGranted(FicheVoter::EDIT, $service->fiche());
         $existing = $manager->photoAssetIds($service);
         $form = $this->createForm(ServiceEvenementielType::class, $service);
-        $form->handleRequest($request);
-        if ($form->isSubmitted() && $form->isValid()) {
-            try {
-                $manager->save($service, $form, $existing, $actor->id());
-                $this->addFlash('success', 'Service modifié.');
+        $response = $mutationPolicy->execute(
+            $service->fiche(),
+            function () use ($request, $form, $manager, $service, $existing, $actor): ?Response {
+                $form->handleRequest($request);
+                if ($form->isSubmitted() && $form->isValid()) {
+                    try {
+                        $manager->save($service, $form, $existing, $actor->id());
+                        $this->addFlash('success', 'Service modifié.');
 
-                return $this->redirectToRoute('app_pim_service_show', ['id' => $service->id()]);
-            } catch (\DomainException $exception) {
-                $form->get('ressources')->addError(new FormError($exception->getMessage()));
+                        return $this->redirectToRoute('app_pim_service_show', ['id' => $service->id()]);
+                    } catch (\DomainException $exception) {
+                        $form->get('ressources')->addError(new FormError($exception->getMessage()));
+                    }
+                }
+
+                return null;
             }
+        );
+        if ($response instanceof Response) {
+            return $response;
         }
 
         return $this->render('pim/service/form.html.twig', $view->form($form, $service, false));

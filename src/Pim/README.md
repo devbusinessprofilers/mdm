@@ -33,8 +33,10 @@ en_cours -> en_attente_validation -> publiee -> archivee
 
 La soumission exécute les groupes de validation Draft et Submission. La
 publication, le rejet et l'archivage passent par `FicheWorkflowManager` et sont
-contrôlés par le module `Account`. Une publication planifie les traductions ; la
-modification d'une fiche publiée les actualise uniquement si une source
+contrôlés par le module `Account`. Une mutation PIM effectuée par un validateur
+conserve le statut et toutes les métadonnées du workflow ; la même mutation par
+un éditeur renvoie la fiche en cours. Une publication, ou la modification par
+un validateur d'une fiche publiée, planifie les traductions lorsqu'une source
 traduisible a changé.
 
 ## Administration et API

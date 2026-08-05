@@ -22,10 +22,19 @@ final readonly class FicheDocumentManager
         private EntityManagerInterface $entityManager,
         private OutboxPublisherInterface $outbox,
         private FicheDocumentUploader $uploader,
+        private InternalFicheMutationPolicy $mutationPolicy,
     ) {}
 
     /** @param array<string, mixed> $data */
     public function updateMetadata(RessourceLieu $document, Fiche $fiche, array $data, string $actor): void
+    {
+        $this->mutationPolicy->execute($fiche, function () use ($document, $fiche, $data, $actor): void {
+            $this->updateMetadataWithinMutation($document, $fiche, $data, $actor);
+        });
+    }
+
+    /** @param array<string, mixed> $data */
+    private function updateMetadataWithinMutation(RessourceLieu $document, Fiche $fiche, array $data, string $actor): void
     {
         $document->changeLegende(is_string($data['title'] ?? null) ? $data['title'] : null);
         $document->changeSource(is_string($data['source'] ?? null) ? $data['source'] : null);
@@ -39,6 +48,13 @@ final readonly class FicheDocumentManager
     }
 
     public function replace(RessourceLieu $document, Fiche $fiche, UploadedFile $file, DocumentUsage $usage): void
+    {
+        $this->mutationPolicy->execute($fiche, function () use ($document, $fiche, $file, $usage): void {
+            $this->replaceWithinMutation($document, $fiche, $file, $usage);
+        });
+    }
+
+    private function replaceWithinMutation(RessourceLieu $document, Fiche $fiche, UploadedFile $file, DocumentUsage $usage): void
     {
         $asset = $this->uploader->upload($file, $fiche, $usage);
         $old = $document->damAssetId();
@@ -56,6 +72,13 @@ final readonly class FicheDocumentManager
 
     public function togglePublication(RessourceLieu $document, Fiche $fiche): void
     {
+        $this->mutationPolicy->execute($fiche, function () use ($document, $fiche): void {
+            $this->togglePublicationWithinMutation($document, $fiche);
+        });
+    }
+
+    private function togglePublicationWithinMutation(RessourceLieu $document, Fiche $fiche): void
+    {
         if ('published' === $document->publicationStatus()?->value) {
             $this->unpublish($document);
         } else {
@@ -66,6 +89,13 @@ final readonly class FicheDocumentManager
     }
 
     public function delete(RessourceLieu $document, Fiche $fiche): void
+    {
+        $this->mutationPolicy->execute($fiche, function () use ($document, $fiche): void {
+            $this->deleteWithinMutation($document, $fiche);
+        });
+    }
+
+    private function deleteWithinMutation(RessourceLieu $document, Fiche $fiche): void
     {
         $this->unpublish($document);
         $this->outbox->enqueue(new DeleteMedia($document->damAssetId()));
