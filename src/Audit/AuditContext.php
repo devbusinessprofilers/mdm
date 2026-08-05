@@ -28,12 +28,12 @@ final readonly class AuditContext
                 array_unique([...$rolesScopes, ...$user->scopes()]),
             );
         }
-        $source =
-            null === $request
+        $explicitSource = $request?->attributes->get('_audit_source');
+        $source = is_string($explicitSource) && '' !== $explicitSource
+            ? $explicitSource
+            : (null === $request
                 ? 'worker'
-                : (str_starts_with($request->getPathInfo(), '/api/')
-                    ? 'external_api'
-                    : 'pim');
+                : (str_starts_with($request->getPathInfo(), '/api/') ? 'external_api' : 'pim'));
 
         return [
             'source' => $source,

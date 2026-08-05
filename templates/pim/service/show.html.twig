@@ -11,6 +11,7 @@
             <h1>{{ service.label ?? 'Sans libellé' }}</h1>
         </div>
         <div class="table-actions">
+            {% if box_ocr_enabled %}<a class="btn btn-secondary" href="{{ path('app_ocr_index', {id: service.fiche.idString}) }}">OCR / Extraction documentaire</a>{% endif %}
             <a class="btn btn-secondary" href="{{ path('app_enrichment_fiche_translation_show', {id: service.id}) }}">Traductions</a>
             <a class="btn" href="{{ path('app_pim_service_edit', {id: service.id}) }}">Modifier</a>
             {% if is_granted('ROLE_BP_VALIDATOR') %}

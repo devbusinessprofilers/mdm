@@ -19,6 +19,15 @@ parameters:
     env(INVITATION_SIGNING_KEY): ''
     env(GOOGLE_TRANSLATE_API_KEY): ''
     env(GOOGLE_TRANSLATE_ENDPOINT): 'https://translation.googleapis.com/language/translate/v2'
+    env(BOX_OCR_ENABLED): '0'
+    env(BOX_CLIENT_ID): ''
+    env(BOX_CLIENT_SECRET): ''
+    env(BOX_SUBJECT_TYPE): 'enterprise'
+    env(BOX_SUBJECT_ID): ''
+    env(BOX_FOLDER_ID): '0'
+    env(BOX_API_URL): 'https://api.box.com'
+    env(BOX_UPLOAD_URL): 'https://upload.box.com/api'
+    env(BOX_ENHANCED_EXTRACT_AGENT): 'enhanced_extract_agent'
 
 services:
     # default configuration for services in *this* file
@@ -118,6 +127,19 @@ services:
             $endpoint: '%env(GOOGLE_TRANSLATE_ENDPOINT)%'
 
     App\Enrichment\Service\TranslationProviderInterface: '@App\Enrichment\Service\GoogleTranslationProvider'
+
+    App\Ocr\Service\BoxExtractProvider:
+        arguments:
+            $clientId: '%env(BOX_CLIENT_ID)%'
+            $clientSecret: '%env(BOX_CLIENT_SECRET)%'
+            $subjectType: '%env(BOX_SUBJECT_TYPE)%'
+            $subjectId: '%env(BOX_SUBJECT_ID)%'
+            $folderId: '%env(BOX_FOLDER_ID)%'
+            $apiUrl: '%env(BOX_API_URL)%'
+            $uploadUrl: '%env(BOX_UPLOAD_URL)%'
+            $agent: '%env(BOX_ENHANCED_EXTRACT_AGENT)%'
+
+    App\Ocr\Service\DocumentExtractionProviderInterface: '@App\Ocr\Service\BoxExtractProvider'
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones

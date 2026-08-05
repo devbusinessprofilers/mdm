@@ -91,6 +91,7 @@ framework:
             'App\Dam\Message\*': dam
             'App\Etl\Message\*': etl
             'App\Enrichment\Message\*': enrichment
+            'App\Ocr\Message\*': enrichment
             Symfony\Component\Notifier\Message\ChatMessage: mail
             Symfony\Component\Notifier\Message\SmsMessage: mail
 

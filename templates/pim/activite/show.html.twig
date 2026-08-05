@@ -13,6 +13,7 @@
         </div>
 
         <div class="table-actions">
+            {% if box_ocr_enabled %}<a class="btn btn-secondary" href="{{ path('app_ocr_index', {id: activite.fiche.idString}) }}">OCR / Extraction documentaire</a>{% endif %}
             <a class="btn btn-secondary" href="{{ path('app_enrichment_fiche_translation_show', {id: activite.id}) }}">Traductions</a>
             <a class="btn" href="{{ path('app_pim_activite_edit', {id: activite.id}) }}">Modifier</a>
 

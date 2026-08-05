@@ -1,0 +1,66 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Ocr\Service;
+
+use App\Dam\Enum\DocumentUsage;
+use App\Dam\Service\FicheDocumentUploader;
+use App\Ocr\Catalog\OcrFieldCatalog;
+use App\Ocr\Entity\DocumentExtraction;
+use App\Ocr\Message\ExtractDocument;
+use App\Pim\Entity\Fiche;
+use App\Pim\Entity\Lieu\RessourceLieu;
+use App\Shared\Outbox\OutboxPublisherInterface;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
+
+final readonly class OcrExtractionManager
+{
+    public function __construct(
+        private EntityManagerInterface $entityManager,
+        private FicheDocumentUploader $uploader,
+        private PdfDocumentProcessor $pdf,
+        private OcrCategoryPolicy $categories,
+        private OcrFieldCatalog $catalog,
+        private OutboxPublisherInterface $outbox,
+    ) {}
+
+    public function upload(Fiche $fiche, UploadedFile $file, DocumentUsage $category, string $actor): DocumentExtraction
+    {
+        if (!$this->categories->allows($fiche->type(), $category)) { throw new \DomainException('Cette catégorie documentaire n’est pas autorisée pour ce type de fiche.'); }
+        $path = $file->getRealPath();
+        if (false === $path) { throw new \DomainException('Le PDF téléversé est introuvable.'); }
+        $this->pdf->inspect($path);
+        $asset = $this->uploader->upload($file, $fiche, $category, PdfDocumentProcessor::MAX_BYTES);
+        try {
+            $extraction = new DocumentExtraction($fiche, $asset, $category->value, $this->catalog->snapshot($fiche->type()), $actor);
+            $resource = new RessourceLieu();
+            $resource->changeDamAssetId($asset->id());
+            $resource->configureDocument($category);
+            $resource->changeLegende($asset->originalFilename());
+            $resource->changeSource('box_ocr');
+            $resource->changePosition($fiche->resources()->count());
+            $fiche->addResource($resource);
+            $this->entityManager->persist($asset);
+            $this->entityManager->persist($resource);
+            $this->entityManager->persist($extraction);
+            $this->outbox->enqueue(new ExtractDocument($extraction->id()));
+            $this->entityManager->flush();
+            return $extraction;
+        } catch (\Throwable $error) {
+            try { $this->uploader->delete($asset); } catch (\Throwable) {}
+            throw $error;
+        }
+    }
+
+    public function retry(DocumentExtraction $failed, string $actor): DocumentExtraction
+    {
+        if (\App\Ocr\Enum\ExtractionStatus::Failed !== $failed->status()) { throw new \DomainException('Seule une extraction en échec peut être relancée.'); }
+        $next = new DocumentExtraction($failed->fiche(), $failed->document(), $failed->documentCategory(), $this->catalog->snapshot($failed->fiche()->type()), $actor, $failed);
+        $this->entityManager->persist($next);
+        $this->outbox->enqueue(new ExtractDocument($next->id()));
+        $this->entityManager->flush();
+        return $next;
+    }
+}

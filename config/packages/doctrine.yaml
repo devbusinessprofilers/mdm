@@ -41,6 +41,12 @@ doctrine:
                 dir: '%kernel.project_dir%/src/Enrichment/Entity'
                 prefix: 'App\Enrichment\Entity'
                 alias: Enrichment
+            Ocr:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Ocr/Entity'
+                prefix: 'App\Ocr\Entity'
+                alias: Ocr
             Account:
                 type: attribute
                 is_bundle: false

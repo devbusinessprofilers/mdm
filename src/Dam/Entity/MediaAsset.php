@@ -24,7 +24,7 @@ use Symfony\Component\Uid\Ulid;
     ),
 ]
 #[ORM\HasLifecycleCallbacks]
-final class MediaAsset
+class MediaAsset
 {
     use TimestampableTrait;
     #[ORM\Id]

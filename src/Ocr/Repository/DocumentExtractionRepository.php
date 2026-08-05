@@ -1,0 +1,27 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Ocr\Repository;
+
+use App\Ocr\Entity\DocumentExtraction;
+use App\Pim\Entity\Fiche;
+use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\Persistence\ManagerRegistry;
+
+/** @extends ServiceEntityRepository<DocumentExtraction> */
+final class DocumentExtractionRepository extends ServiceEntityRepository
+{
+    public function __construct(ManagerRegistry $registry) { parent::__construct($registry, DocumentExtraction::class); }
+
+    /** @return list<DocumentExtraction> */
+    public function history(Fiche $fiche): array
+    {
+        return $this->findBy(['fiche' => $fiche], ['createdAt' => 'DESC']);
+    }
+
+    public function findForFiche(string $id, Fiche $fiche): ?DocumentExtraction
+    {
+        return $this->findOneBy(['id' => $id, 'fiche' => $fiche]);
+    }
+}

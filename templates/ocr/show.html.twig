@@ -1,0 +1,25 @@
+{% extends 'base.html.twig' %}
+{% block title %}Détail extraction OCR{% endblock %}
+{% block body %}
+<main class="page-shell">
+    <header class="page-header"><div><p class="page-kicker">OCR / {{ extraction.status.value }}</p><h1>{{ extraction.document.originalFilename }}</h1><p>{{ category_label }} · {{ fiche.label }} · {{ extraction.pageCount ?? '—' }} page(s) · {{ extraction.createdBy }}</p></div><a class="button secondary" href="{{ path('app_ocr_index', {id: fiche.idString}) }}">Retour à l’historique</a></header>
+    {% if extraction.errorMessage %}<section class="card"><p class="flash flash-error">{{ extraction.errorMessage }}</p>{% if is_granted('ROLE_BP_VALIDATOR') and extraction.status.value == 'failed' %}{{ form(retry_form) }}{% endif %}</section>{% endif %}
+    {{ form_start(review_form) }}
+        {{ form_widget(review_form.fiche_version) }}
+        {{ form_widget(review_form._token) }}
+        <section class="card"><h2>Suggestions à examiner</h2><p>Les lignes signalées comme écrasement diffèrent de la valeur actuellement enregistrée. Les décisions déjà sauvegardées sont immuables.</p>
+            <div class="table-wrap"><table><thead><tr><th>Champ</th><th>Valeur actuelle</th><th>Valeur Box corrigible</th><th>Confiance</th><th>Pages</th><th>Décision</th></tr></thead><tbody>
+            {% for suggestion in extraction.suggestions %}{% set overwrite = suggestion.observedValue is not null and suggestion.observedValue != suggestion.correctedValue %}
+                <tr data-ocr-suggestion class="{{ overwrite ? 'ocr-overwrite' : '' }}">
+                    <td><strong>{{ suggestion.label }}</strong><br><small>{{ suggestion.fieldPath }}</small>{% if overwrite %}<br><span class="badge">Écrasement</span>{% endif %}</td>
+                    <td><pre>{{ suggestion.observedValue is iterable ? suggestion.observedValue|json_encode(constant('JSON_PRETTY_PRINT')) : (suggestion.observedValue ?? '—') }}</pre></td>
+                    <td>{% if suggestion.status.value == 'pending' and is_granted('ROLE_BP_VALIDATOR') %}{% set row_form = attribute(review_form, suggestion.id) %}{{ form_widget(row_form.value) }}{% else %}<pre>{{ suggestion.correctedValue is iterable ? suggestion.correctedValue|json_encode(constant('JSON_PRETTY_PRINT')) : suggestion.correctedValue }}</pre>{% endif %}</td>
+                    <td>{{ suggestion.confidence is null ? '—' : (suggestion.confidence * 100)|number_format(1, ',', ' ') ~ ' %' }}</td><td>{{ suggestion.pageReferences|join(', ') ?: '—' }}</td>
+                    <td>{% if suggestion.status.value == 'pending' and is_granted('ROLE_BP_VALIDATOR') %}{{ form_row(row_form.accept) }}{{ form_row(row_form.reject) }}{% else %}<span class="badge">{{ suggestion.status.value }}</span>{% endif %}</td>
+                </tr>
+            {% else %}<tr><td colspan="6" class="empty-state">Aucune suggestion disponible.</td></tr>{% endfor %}
+            </tbody></table></div>{% if is_granted('ROLE_BP_VALIDATOR') and extraction.status.value in ['ready', 'partially_reviewed'] %}{{ form_widget(review_form.save) }}{% endif %}
+        </section>
+    {{ form_end(review_form, {render_rest: false}) }}
+</main>
+{% endblock %}

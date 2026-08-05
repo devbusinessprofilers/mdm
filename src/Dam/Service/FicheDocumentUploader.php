@@ -31,14 +31,16 @@ final readonly class FicheDocumentUploader
         UploadedFile $file,
         Fiche $fiche,
         DocumentUsage $usage,
+        ?int $maximumBytes = null,
     ): MediaAsset {
         $path = $file->getRealPath();
         if (false === $path || !is_file($path)) {
             throw new \DomainException('Le fichier téléversé n’est plus disponible.');
         }
         $size = filesize($path);
-        if (false === $size || $size > $usage->maximumBytes()) {
-            throw new DocumentUploadException(413, sprintf('Ce document ne peut pas dépasser %d Mo.', intdiv($usage->maximumBytes(), 1024 * 1024)));
+        $maximumBytes ??= $usage->maximumBytes();
+        if (false === $size || $size > $maximumBytes) {
+            throw new DocumentUploadException(413, sprintf('Ce document ne peut pas dépasser %d Mo.', intdiv($maximumBytes, 1024 * 1024)));
         }
         $mime = (new \finfo(FILEINFO_MIME_TYPE))->file($path);
         $ext = strtolower(

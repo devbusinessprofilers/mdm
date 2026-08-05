@@ -1,0 +1,16 @@
+{% extends 'base.html.twig' %}
+{% block title %}OCR / Extraction documentaire{% endblock %}
+{% block body %}
+<main class="page-shell">
+    <header class="page-header"><div><p class="page-kicker">PIM / {{ fiche.type.value }}</p><h1>OCR / Extraction documentaire</h1><p>{{ fiche.label ?: 'Fiche sans libellé' }}</p></div></header>
+    <section class="card"><h2>Nouveau PDF</h2><p>Le document est conservé dans le DAM privé. Sa copie Box temporaire est supprimée après extraction. Aucune valeur n’est appliquée automatiquement.</p>{{ form(upload_form, {attr: {class: 'crud-form'}}) }}</section>
+    <section class="card">
+        <div class="section-heading"><div><p class="page-kicker">Historique</p><h2>Analyses</h2></div><span class="badge">{{ extractions|length }}</span></div>
+        <div class="table-wrap"><table><thead><tr><th>Document</th><th>Catégorie</th><th>Auteur</th><th>Date</th><th>Pages</th><th>Statut</th><th>Suggestions</th><th>Erreur</th></tr></thead><tbody>
+        {% for extraction in extractions %}<tr>
+            <td><a href="{{ path('app_ocr_show', {id: fiche.idString, extractionId: extraction.id}) }}">{{ extraction.document.originalFilename }}</a></td><td>{{ category_policy.label(extraction.documentCategory) }}</td><td>{{ extraction.createdBy }}</td><td>{{ extraction.createdAt|date('d/m/Y H:i') }}</td><td>{{ extraction.pageCount ?? '—' }}</td><td><span class="badge">{{ extraction.status.value }}</span></td><td>{{ extraction.suggestionCount }}</td><td>{{ extraction.errorMessage ?: '—' }}</td>
+        </tr>{% else %}<tr><td colspan="8" class="empty-state">Aucune extraction documentaire.</td></tr>{% endfor %}
+        </tbody></table></div>
+    </section>
+</main>
+{% endblock %}

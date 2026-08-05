@@ -503,3 +503,9 @@
     .admin-page-item code { @apply overflow-x-auto text-xs text-slate-500; }
     .admin-page-meta { @apply flex flex-wrap items-center gap-2 text-xs text-slate-500 md:justify-end; }
 }
+.ocr-overwrite {
+    border-inline-start: .3rem solid #c96b16;
+    background: color-mix(in srgb, #f5a623 9%, transparent);
+}
+
+.ocr-overwrite pre { white-space: pre-wrap; max-width: 28rem; }

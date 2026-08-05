@@ -27,6 +27,10 @@ enrichment_controllers:
     resource: '../src/Enrichment/Controller/'
     type: attribute
 
+ocr_controllers:
+    resource: '../src/Ocr/Controller/'
+    type: attribute
+
 account_controllers:
     resource: '../src/Account/Controller/'
     type: attribute
