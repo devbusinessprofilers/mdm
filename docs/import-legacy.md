@@ -9,6 +9,7 @@ Reprise des données de production (`lists_infos_produits_v2_*.csv`, 91 colonnes
 | `app:legacy:import-services` | Fiches Service | Gamme = Prestataires de service (~1 534) |
 | `app:legacy:import-restaurants` | Fiches Restaurant | Gamme = Restaurant (~2 918) |
 | `app:legacy:import-photos` | Photos + variantes WebP | Toutes les fiches importées |
+| `app:legacy:import-translations` | Traductions (6 locales) | Lues dans le **dump SQL** de production (rejouable en prod au déploiement) |
 
 **Pivot** : `pim_fiche.code` = « Id syspad » du CSV (fourni à l'insert, le trigger n'attribue le compteur qu'aux fiches créées sans code). La table `etl_legacy_fiche` (syspad ↔ fiche ULID, gamme, photos_json) porte l'idempotence ; `etl_legacy_photo` suit chaque photo (statuts `pending/done/error/missing_file/invalid/skipped_limit`).
 
@@ -136,3 +137,18 @@ Sources : chemins relatifs du JSON « Photos », fichiers dans `/var/legacy-imag
 | salles_reunion / divers | PHOTO_DIVERSE | PHOTO_DIVERSE |
 
 Plafonds : **25 photos par lieu**, **10 par activité** (invariants admin/validation) — le surplus est tracé `skipped_limit`. Fichiers absents de la copie locale → `missing_file` (relançables après synchronisation du dossier images). Suivi : `SELECT status, COUNT(*) FROM etl_legacy_photo GROUP BY status;`
+
+## Traductions (`app:legacy:import-translations`)
+
+Source : le **dump SQL** de production (`--file`, défaut `/var/import/dump-production.sql`) — parsé en streaming (`LegacySqlDumpReader`), aucune base annexe requise : la commande est rejouable telle quelle en production le jour du déploiement, il suffit de rendre le fichier dump accessible. Options : `--dry-run`, `--limit`, `--locale=xx`, `--batch-size`.
+
+**Clé de jointure** : `bp_produit.syspad_id` = code fiche (⚠ pas `bp_produit.id`). Mapping :
+
+| Source legacy | Cible (`enrichment_fiche_translation.field_path`) |
+|---|---|
+| `i18n_translation_produit.descriptionFr` | `lieu.descGenerale` / `activite.descriptionGenerale` / `restaurant.descriptionGenerale` / `service.descriptionGenerale` selon le type de fiche |
+| `i18n_translation_lieu.chambresFr` | `lieu.chambreDescGenerale` |
+| `i18n_translation_lieu.sallesFr` | `lieu.salleReunionDescSalleSeminaire` |
+| `restaurationFr`, `offreSpecialeFr` | non mappés (pas de champ cible — comptés dans le rapport) |
+
+**Règle de cohérence** (`LegacyTranslationRule`) : la traduction est importée **disponible** (origin `manual`) si le français actuel du PIM est identique au français legacy (ou à sa troncature d'import à 1 000 caractères) ; si le français a divergé, elle est importée **obsolète** — traduction conservée, re-validation humaine dans l'admin. Source PIM vide → ignorée. Idempotent : les couples (fiche, champ, locale) existants sont ignorés. Aucun appel Google.
