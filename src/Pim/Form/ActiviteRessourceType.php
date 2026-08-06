@@ -11,6 +11,8 @@ use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
+use Symfony\Component\Form\Extension\Core\Type\TextareaType;
+use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\FormError;
 use Symfony\Component\Form\FormEvent;
@@ -70,6 +72,21 @@ final class ActiviteRessourceType extends AbstractType
                 ): void {
                     $resource->changeLegende($value);
                 },
+            ])
+            ->add('source', TextType::class, [
+                'label' => 'Source / crédit', 'required' => false,
+                'getter' => static fn (RessourceLieu $resource): ?string => $resource->source(),
+                'setter' => static function (RessourceLieu &$resource, ?string $value): void { $resource->changeSource($value); },
+            ])
+            ->add('keywords', TextareaType::class, [
+                'label' => 'Mots-clés', 'required' => false,
+                'getter' => static fn (RessourceLieu $resource): ?string => $resource->keywords(),
+                'setter' => static function (RessourceLieu &$resource, ?string $value): void { $resource->changeKeywords($value); },
+            ])
+            ->add('rightsExpiresAt', DateType::class, [
+                'label' => 'Échéance des droits', 'required' => false, 'widget' => 'single_text', 'input' => 'datetime_immutable',
+                'getter' => static fn (RessourceLieu $resource): ?\DateTimeImmutable => $resource->rightsExpiresAt(),
+                'setter' => static function (RessourceLieu &$resource, ?\DateTimeImmutable $value): void { $resource->changeRightsExpiresAt($value); },
             ])
             ->add('position', IntegerType::class, [
                 'label' => 'Position',

@@ -133,6 +133,9 @@ final readonly class ActiviteApiMapper
             null,
             null,
             [],
+            $resource->keywords(),
+            $resource->rightsExpiresAt()?->format('Y-m-d'),
+            $resource->rightsValidity()->value,
         );
     }
 
@@ -155,6 +158,9 @@ final readonly class ActiviteApiMapper
             $photo['asset']?->status()->value,
             $photo['url'],
             $photo['variants'],
+            $r->keywords(),
+            $r->rightsExpiresAt()?->format('Y-m-d'),
+            $r->rightsValidity()->value,
         );
     }
 

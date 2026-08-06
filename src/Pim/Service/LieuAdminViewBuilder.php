@@ -42,7 +42,7 @@ final readonly class LieuAdminViewBuilder
             $params = ['id' => $lieu->id(), 'resourceId' => $resource->id()];
             $photo['metadata_form'] = $this->forms->createNamed('photo_metadata_'.$resource->id(), LieuPhotoMetadataType::class, [
                 'usage' => $resource->usage(), 'legende' => $resource->legende(), 'source' => $resource->source(),
-                'salle_id' => $resource->salle(), 'rights_granted' => $resource->rightsGranted(),
+                'keywords' => $resource->keywords(), 'rights_expires_at' => $resource->rightsExpiresAt(), 'salle_id' => $resource->salle(),
                 'crop_x' => $crop['x'] ?? null, 'crop_y' => $crop['y'] ?? null, 'crop_width' => $crop['width'] ?? null,
                 'crop_height' => $crop['height'] ?? null, 'rotation' => $resource->rotation(),
             ], [
@@ -63,7 +63,7 @@ final readonly class LieuAdminViewBuilder
                     'view' => $this->documents->resource($resource),
                     'metadata_form' => $this->forms->createNamed('document_metadata_'.$resource->id(), LieuDocumentMetadataType::class, [
                         'usage' => $resource->documentUsage(), 'salle' => $resource->salle(), 'title' => $resource->legende(),
-                        'source' => $resource->source(), 'rightsGranted' => $resource->rightsGranted(),
+                        'source' => $resource->source(), 'keywords' => $resource->keywords(), 'rightsExpiresAt' => $resource->rightsExpiresAt(),
                     ], ['action' => $this->urls->generate('app_pim_lieu_document_update', $params), 'method' => 'POST', 'salles' => $lieu->salles()->toArray()])->createView(),
                     'replace_form' => $this->forms->createNamed('document_replace_'.$resource->id(), LieuDocumentReplaceType::class, null, [
                         'action' => $this->urls->generate('app_pim_lieu_document_replace', $params), 'method' => 'POST',

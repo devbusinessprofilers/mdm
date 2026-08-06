@@ -7,6 +7,7 @@ namespace App\Pim\Entity\Lieu;
 use App\Dam\Enum\DocumentAccess;
 use App\Dam\Enum\DocumentPublicationStatus;
 use App\Dam\Enum\DocumentUsage;
+use App\Dam\Enum\RightsValidityStatus;
 use App\Pim\Entity\Fiche;
 use App\Pim\Entity\Restaurant\RestaurantSalle;
 use App\Pim\Enum\NatureRessource;
@@ -31,6 +32,7 @@ use Symfony\Component\Uid\Ulid;
 ]
 #[ORM\Index(name: 'IDX_PIM_RESOURCE_USAGE', columns: ['usage_code', 'lieu_id'])]
 #[ORM\Index(name: 'IDX_PIM_RESSOURCE_DAM_ASSET', columns: ['dam_asset_id'])]
+#[ORM\Index(name: 'IDX_PIM_RESOURCE_RIGHTS_EXPIRY', columns: ['rights_granted', 'rights_expires_at'])]
 #[ORM\Index(name: 'IDX_RESOURCE_RESTAURANT_ROOM', columns: ['restaurant_salle_id', 'position', 'id'])]
 #[
     ORM\Index(
@@ -75,6 +77,10 @@ class RessourceLieu
     private ?string $rightsGrantedBy = null;
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $source = null;
+    #[ORM\Column(type: 'text', nullable: true)]
+    private ?string $keywords = null;
+    #[ORM\Column(type: 'date_immutable', nullable: true)]
+    private ?\DateTimeImmutable $rightsExpiresAt = null;
     #[ORM\Column(nullable: true)]
     private ?int $cropX = null;
     #[ORM\Column(nullable: true)]
@@ -172,6 +178,16 @@ class RessourceLieu
     public function source(): ?string
     {
         return $this->source;
+    }
+
+    public function keywords(): ?string
+    {
+        return $this->keywords;
+    }
+
+    public function rightsExpiresAt(): ?\DateTimeImmutable
+    {
+        return $this->rightsExpiresAt;
     }
 
     public function rotation(): int
@@ -292,13 +308,36 @@ class RessourceLieu
 
     public function changeSource(?string $value): void
     {
-        $this->source =
-            null === $value || '' === trim($value) ? null : trim($value);
+        $normalized = null === $value || '' === trim($value) ? null : trim($value);
+        if ($this->source !== $normalized && $this->rightsGranted) {
+            $this->revokeRights();
+        }
+        $this->source = $normalized;
+        $this->touch();
+    }
+
+    public function changeKeywords(?string $value): void
+    {
+        $this->keywords = null === $value || '' === trim($value) ? null : trim($value);
+        $this->touch();
+    }
+
+    public function changeRightsExpiresAt(?\DateTimeImmutable $value): void
+    {
+        $normalized = $value?->setTime(0, 0);
+        if ($this->rightsExpiresAt != $normalized && $this->rightsGranted) {
+            $this->revokeRights();
+        }
+        $this->rightsExpiresAt = $normalized;
         $this->touch();
     }
 
     public function grantRights(string $userId): void
     {
+        $today = new \DateTimeImmutable('today');
+        if (null !== $this->rightsExpiresAt && $this->rightsExpiresAt < $today) {
+            throw new \DomainException("Une date d'expiration passée ne peut pas être validée.");
+        }
         $this->rightsGranted = true;
         $this->rightsGrantedAt = new \DateTimeImmutable();
         $this->rightsGrantedBy = $userId;
@@ -311,6 +350,26 @@ class RessourceLieu
         $this->rightsGrantedAt = null;
         $this->rightsGrantedBy = null;
         $this->touch();
+    }
+
+    public function rightsValidity(?\DateTimeImmutable $today = null): RightsValidityStatus
+    {
+        if (!$this->rightsGranted) {
+            return RightsValidityStatus::NotGranted;
+        }
+        if (null === $this->rightsExpiresAt) {
+            return RightsValidityStatus::Unlimited;
+        }
+
+        $today = ($today ?? new \DateTimeImmutable('today'))->setTime(0, 0);
+        if ($this->rightsExpiresAt < $today) {
+            return RightsValidityStatus::Expired;
+        }
+        if ($this->rightsExpiresAt <= $today->modify('+30 days')) {
+            return RightsValidityStatus::Expiring;
+        }
+
+        return RightsValidityStatus::Valid;
     }
 
     public function changeCrop(
@@ -381,7 +440,7 @@ class RessourceLieu
     {
         if (
             DocumentAccess::Publishable !== $this->documentAccess
-            || !$this->rightsGranted
+            || !in_array($this->rightsValidity(), [RightsValidityStatus::Unlimited, RightsValidityStatus::Valid, RightsValidityStatus::Expiring], true)
         ) {
             throw new \DomainException('La publication exige un document publiable et des droits d’utilisation validés.');
         }

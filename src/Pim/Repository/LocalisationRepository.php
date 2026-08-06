@@ -32,4 +32,15 @@ final class LocalisationRepository extends ServiceEntityRepository
             ->getQuery()
             ->getSingleScalarResult();
     }
+
+    /** @return list<string> */
+    public function findDistinctCountryCodes(): array
+    {
+        /** @var list<string> $codes */
+        $codes = $this->getEntityManager()->getConnection()->fetchFirstColumn(
+            'SELECT DISTINCT country_code FROM pim_localisation WHERE country_code IS NOT NULL ORDER BY country_code',
+        );
+
+        return $codes;
+    }
 }

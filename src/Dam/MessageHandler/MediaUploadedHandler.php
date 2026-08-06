@@ -6,10 +6,12 @@ namespace App\Dam\MessageHandler;
 
 use App\Dam\Repository\MediaAssetRepository;
 use App\Dam\Service\MediaProcessingService;
+use App\Dam\Service\MediaAnalysisService;
 use App\Shared\Message\MediaProcessed;
 use App\Shared\Message\MediaUploaded;
 use App\Shared\Outbox\OutboxPublisherInterface;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler]
@@ -18,8 +20,10 @@ final readonly class MediaUploadedHandler
     public function __construct(
         private MediaAssetRepository $mediaRepository,
         private MediaProcessingService $processor,
+        private MediaAnalysisService $analysis,
         private OutboxPublisherInterface $outbox,
         private EntityManagerInterface $entityManager,
+        private LoggerInterface $logger,
     ) {
     }
 
@@ -36,12 +40,22 @@ final readonly class MediaUploadedHandler
             throw new \DomainException('Le contrat MediaUploaded ne correspond pas au média enregistré.');
         }
         $urls = $this->processor->process($media);
+        $duplicate = null;
+        try {
+            $duplicate = $this->analysis->analyze($media);
+        } catch (\Throwable $error) {
+            $this->logger->warning('L’analyse pHash non bloquante du média a échoué.', [
+                'media_id' => $media->id(),
+                'exception' => $error,
+            ]);
+        }
         $this->outbox->enqueue(
             new MediaProcessed(
                 $media->id(),
                 $urls,
                 [],
                 $media->status()->value,
+                $duplicate?->id(),
             ),
         );
         $this->entityManager->flush();

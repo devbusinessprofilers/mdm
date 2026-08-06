@@ -33,7 +33,7 @@ final readonly class ServiceEvenementielAdminViewBuilder
                 $documents[] = [
                     'resource' => $resource,
                     'metadata_form' => $this->forms->createNamed('service_document_metadata_'.$resource->id(), ActiviteDocumentMetadataType::class, [
-                        'title' => $resource->legende(), 'source' => $resource->source(), 'rightsGranted' => $resource->rightsGranted(),
+                        'title' => $resource->legende(), 'source' => $resource->source(), 'keywords' => $resource->keywords(), 'rightsExpiresAt' => $resource->rightsExpiresAt(),
                     ], ['action' => $this->urls->generate('app_pim_service_document_update', $routeParameters), 'method' => 'POST'])->createView(),
                     'replace_form' => $this->forms->createNamed('service_document_replace_'.$resource->id(), LieuDocumentReplaceType::class, null, [
                         'action' => $this->urls->generate('app_pim_service_document_replace', $routeParameters), 'method' => 'POST',

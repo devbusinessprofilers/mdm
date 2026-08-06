@@ -338,13 +338,6 @@ final class RestaurantType extends AbstractType
                 'mapped' => false,
                 'required' => false,
             ])
-            ->add('documentRightsGranted', ChoiceType::class, [
-                'label' => 'Droits validés pour les nouveaux documents',
-                'mapped' => false,
-                'required' => false,
-                'choices' => ['Oui' => true, 'Non' => false],
-                'placeholder' => 'Non renseigné',
-            ])
             ->add('submit', SubmitType::class, ['label' => 'Enregistrer']);
     }
 

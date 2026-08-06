@@ -29,7 +29,6 @@ use App\Pim\Enum\NatureRessource;
 use App\Pim\Repository\RessourceLieuRepository;
 use App\Shared\Outbox\OutboxPublisherInterface;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\RequestStack;
 
@@ -47,7 +46,6 @@ final readonly class ServiceEvenementielDocumentProcessor implements
         private EntityManagerInterface $em,
         private OutboxPublisherInterface $outbox,
         private RequestStack $requests,
-        private Security $security,
     ) {}
 
     public function process(
@@ -153,10 +151,7 @@ final readonly class ServiceEvenementielDocumentProcessor implements
             $d->changeLegende($request->request->getString("title"));
             $d->changeSource($request->request->getString("source"));
             if ($request->request->getBoolean("rightsGranted")) {
-                $d->grantRights(
-                    $this->security->getUser()?->getUserIdentifier() ??
-                        "external-site",
-                );
+                throw new ApiProblemException(403, "rights_validation_forbidden", "La validation des droits est réservée aux validateurs internes du PIM.");
             }
             $a->addRessource($d);
             $this->em->persist($asset);
@@ -178,6 +173,7 @@ final readonly class ServiceEvenementielDocumentProcessor implements
         DocumentPatchInput $input,
     ): LieuDocumentResource {
         $this->access->requireWrite($d);
+        $rightsWereGranted = $d->rightsGranted();
         $payload = json_decode((string) $this->request()->getContent(), true);
         $payload = is_array($payload) ? $payload : [];
         if (
@@ -207,16 +203,17 @@ final readonly class ServiceEvenementielDocumentProcessor implements
         if (array_key_exists("source", $payload)) {
             $d->changeSource($input->source);
         }
+        if (array_key_exists("keywords", $payload)) {
+            $d->changeKeywords($input->keywords);
+        }
+        if (array_key_exists("rightsExpiresAt", $payload)) {
+            $d->changeRightsExpiresAt($input->rightsExpiresAt);
+        }
         if (array_key_exists("rightsGranted", $payload)) {
-            if (true === $input->rightsGranted) {
-                $d->grantRights(
-                    $this->security->getUser()?->getUserIdentifier() ??
-                        "external-site",
-                );
-            } else {
-                $d->revokeRights();
-                $this->unpublish($d);
-            }
+            throw new ApiProblemException(403, "rights_validation_forbidden", "La validation des droits est réservée aux validateurs internes du PIM.");
+        }
+        if ($rightsWereGranted && !$d->rightsGranted()) {
+            $this->unpublish($d);
         }
         $this->changed($a);
 

@@ -226,13 +226,6 @@ final class ServiceEvenementielType extends AbstractType
                 "mapped" => false,
                 "required" => false,
             ])
-            ->add("supportRightsGranted", ChoiceType::class, [
-                "label" => "Droits validés pour les nouveaux supports",
-                "mapped" => false,
-                "required" => false,
-                "choices" => ["Oui" => true, "Non" => false],
-                "placeholder" => "Non renseigné",
-            ])
             ->add("submit", SubmitType::class, ["label" => "Enregistrer"]);
     }
 

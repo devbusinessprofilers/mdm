@@ -8,10 +8,11 @@ use App\Dam\Enum\DocumentUsage;
 use App\Pim\Entity\Lieu\Salle;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
-use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
+use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
+use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
@@ -43,10 +44,8 @@ final class LieuDocumentMetadataType extends AbstractType
                 'required' => false,
             ])
             ->add('source', TextType::class, ['required' => false])
-            ->add('rightsGranted', CheckboxType::class, [
-                'label' => 'Droits validés',
-                'required' => false,
-            ])
+            ->add('keywords', TextareaType::class, ['label' => 'Mots-clés', 'required' => false])
+            ->add('rightsExpiresAt', DateType::class, ['label' => 'Échéance des droits', 'required' => false, 'widget' => 'single_text', 'input' => 'datetime_immutable'])
             ->add('submit', SubmitType::class, [
                 'label' => 'Enregistrer les métadonnées',
             ]);

@@ -88,6 +88,7 @@ framework:
             App\Pim\Message\CalculateFicheCompleteness: completeness
             App\Pim\Message\RecalculateCompletenessBatch: completeness
             'App\Pim\Message\*': pim
+            'App\Dashboard\Message\*': pim
             'App\Dam\Message\*': dam
             'App\Etl\Message\*': etl
             'App\Enrichment\Message\*': enrichment

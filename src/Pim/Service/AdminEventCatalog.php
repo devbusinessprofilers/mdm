@@ -9,10 +9,12 @@ use App\Account\Message\InternalUserPasswordResetRequested;
 use App\Account\MessageHandler\InternalUserInvitedHandler;
 use App\Account\MessageHandler\InternalUserPasswordResetRequestedHandler;
 use App\Dam\Message\DeleteMedia;
+use App\Dam\Message\AnalyzeMedia;
 use App\Dam\Message\PublishDocument;
 use App\Dam\Message\RegenerateMedia;
 use App\Dam\Message\UnpublishDocument;
 use App\Dam\MessageHandler\DeleteMediaHandler;
+use App\Dam\MessageHandler\AnalyzeMediaHandler;
 use App\Dam\MessageHandler\MediaUploadedHandler;
 use App\Dam\MessageHandler\PublishDocumentHandler;
 use App\Dam\MessageHandler\RegenerateMediaHandler;
@@ -61,6 +63,17 @@ final class AdminEventCatalog
                 'worker' => 'worker-pim',
                 'handler' => MediaProcessedHandler::class,
                 'result' => 'Signale la modification de la fiche afin que le PIM expose le nouvel état du média et sa version.',
+                'next' => null,
+            ],
+            [
+                'type' => AnalyzeMedia::class,
+                'label' => 'Analyse pHash demandée',
+                'domain' => 'DAM',
+                'trigger' => 'Rattrapage des images historiques sans empreinte perceptuelle via la commande DAM dédiée.',
+                'transport' => 'dam',
+                'worker' => 'worker-dam',
+                'handler' => AnalyzeMediaHandler::class,
+                'result' => 'Calcule le pHash, recherche les doublons exacts ou visuellement proches et crée une alerte non bloquante.',
                 'next' => null,
             ],
             [

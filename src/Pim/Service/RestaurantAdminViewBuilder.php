@@ -35,7 +35,7 @@ final readonly class RestaurantAdminViewBuilder
                 $documents[] = [
                     'resource' => $resource,
                     'metadata_form' => $this->forms->createNamed('restaurant_document_metadata_'.$resource->id(), ActiviteDocumentMetadataType::class, [
-                        'title' => $resource->legende(), 'source' => $resource->source(), 'rightsGranted' => $resource->rightsGranted(),
+                        'title' => $resource->legende(), 'source' => $resource->source(), 'keywords' => $resource->keywords(), 'rightsExpiresAt' => $resource->rightsExpiresAt(),
                     ], ['action' => $this->urls->generate('app_pim_restaurant_document_update', $params), 'method' => 'POST'])->createView(),
                     'replace_form' => $this->forms->createNamed('restaurant_document_replace_'.$resource->id(), LieuDocumentReplaceType::class, null, [
                         'action' => $this->urls->generate('app_pim_restaurant_document_replace', $params), 'method' => 'POST',

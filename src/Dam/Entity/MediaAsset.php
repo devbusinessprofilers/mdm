@@ -17,6 +17,7 @@ use Symfony\Component\Uid\Ulid;
 #[ORM\Entity(repositoryClass: MediaAssetRepository::class)]
 #[ORM\Table(name: 'dam_media_asset')]
 #[ORM\Index(name: 'IDX_DAM_MEDIA_CHECKSUM', columns: ['checksum'])]
+#[ORM\Index(name: 'IDX_DAM_MEDIA_PHASH', columns: ['perceptual_hash'])]
 #[
     ORM\Index(
         name: 'IDX_DAM_MEDIA_STATUS_CREATED',
@@ -40,6 +41,8 @@ class MediaAsset
     private int $sizeBytes;
     #[ORM\Column(length: 64)]
     private string $checksum;
+    #[ORM\Column(length: 16, nullable: true)]
+    private ?string $perceptualHash = null;
     #[
         ORM\Column(
             length: 16,
@@ -115,6 +118,22 @@ class MediaAsset
     public function checksum(): string
     {
         return $this->checksum;
+    }
+
+    public function perceptualHash(): ?string
+    {
+        return $this->perceptualHash;
+    }
+
+    public function recordPerceptualHash(string $hash): void
+    {
+        $hash = strtolower(trim($hash));
+        if (1 !== preg_match('/^[0-9a-f]{16}$/', $hash)) {
+            throw new \InvalidArgumentException('Le pHash doit contenir exactement 16 caractères hexadécimaux.');
+        }
+
+        $this->perceptualHash = $hash;
+        $this->touch();
     }
 
     public function kind(): MediaKind

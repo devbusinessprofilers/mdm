@@ -7,6 +7,8 @@ namespace App\Pim\Repository;
 use App\Pim\Entity\Fiche;
 use App\Pim\Enum\StatutFiche;
 use App\Pim\Enum\TypeFiche;
+use App\Pim\ReadModel\FicheCursor;
+use App\Pim\ReadModel\FicheListPage;
 use App\Pim\ReadModel\GlobalSearchItem;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\DBAL\ArrayParameterType;
@@ -134,16 +136,7 @@ final class FicheRepository extends ServiceEntityRepository
 
         $itemsById = [];
         foreach ($rows as $row) {
-            $item = new GlobalSearchItem(
-                id: (string) Ulid::fromBinary($row['id']),
-                type: TypeFiche::from($row['type']),
-                code: (int) $row['code'],
-                label: $row['label'],
-                ville: $row['ville'],
-                status: StatutFiche::from($row['status']),
-                completeness: (int) $row['completeness'],
-                updatedAt: new \DateTimeImmutable($row['updated_at']),
-            );
+            $item = self::toSearchItem($row);
             $itemsById[$item->id] = $item;
         }
 
@@ -151,5 +144,128 @@ final class FicheRepository extends ServiceEntityRepository
             static fn (string $id): ?GlobalSearchItem => $itemsById[$id] ?? null,
             $ids,
         )));
+    }
+
+    public function findAllListPage(
+        ?FicheCursor $cursor = null,
+        int $limit = 50,
+        ?TypeFiche $type = null,
+        ?StatutFiche $status = null,
+        ?string $countryCode = null,
+        ?int $completenessMin = null,
+        ?int $completenessMax = null,
+    ): FicheListPage {
+        $limit = max(1, min(100, $limit));
+        $conditions = ['1 = 1'];
+        $parameters = [];
+        $types = [];
+
+        if (null !== $type) {
+            $conditions[] = 'f.type = :type';
+            $parameters['type'] = $type->value;
+            $types['type'] = ParameterType::STRING;
+        }
+        if (null !== $status) {
+            $conditions[] = 'f.status = :status';
+            $parameters['status'] = $status->value;
+            $types['status'] = ParameterType::STRING;
+        }
+        $localisationJoin = 'LEFT JOIN pim_localisation loc ON loc.id = f.localisation_id';
+        if (null !== $countryCode) {
+            $localisationJoin = 'INNER JOIN pim_localisation loc ON loc.id = f.localisation_id';
+            $conditions[] = 'loc.country_code = :country';
+            $parameters['country'] = $countryCode;
+            $types['country'] = ParameterType::STRING;
+        }
+        $completenessSql = <<<'SQL'
+            CASE f.type
+                WHEN 'lieu' THEN l.completeness_global
+                WHEN 'activite' THEN a.completeness_global
+                WHEN 'restaurant' THEN r.completeness_global
+                WHEN 'service_evenementiel' THEN s.completeness_global
+                ELSE 0
+            END
+            SQL;
+        if (null !== $completenessMin) {
+            $conditions[] = 'COALESCE('.$completenessSql.', 0) >= :completeness_min';
+            $parameters['completeness_min'] = $completenessMin;
+            $types['completeness_min'] = ParameterType::INTEGER;
+        }
+        if (null !== $completenessMax) {
+            $conditions[] = 'COALESCE('.$completenessSql.', 0) <= :completeness_max';
+            $parameters['completeness_max'] = $completenessMax;
+            $types['completeness_max'] = ParameterType::INTEGER;
+        }
+        if (null !== $cursor) {
+            $conditions[] = '(f.updated_at, f.id) < (:cursor_updated_at, :cursor_id)';
+            $parameters['cursor_updated_at'] = $cursor->updatedAt->format('Y-m-d H:i:s');
+            $parameters['cursor_id'] = $cursor->id->toBinary();
+            $types['cursor_updated_at'] = ParameterType::STRING;
+            $types['cursor_id'] = ParameterType::BINARY;
+        }
+
+        // MariaDB otherwise tends to start with the type tables and filesort the
+        // result; keeping pim_fiche first lets the keyset indexes satisfy the ordering.
+        $sql = sprintf(<<<'SQL'
+            SELECT STRAIGHT_JOIN
+                f.id,
+                f.type,
+                f.code,
+                f.label,
+                CASE f.type
+                    WHEN 'activite' THEN CASE WHEN a.mode_intervention = 'fixe' THEN loc.ville ELSE NULL END
+                    WHEN 'service_evenementiel' THEN CASE WHEN s.mode_intervention = 'fixe' THEN loc.ville ELSE NULL END
+                    ELSE loc.ville
+                END AS ville,
+                f.status,
+                %s AS completeness,
+                f.updated_at
+            FROM pim_fiche f
+            LEFT JOIN pim_lieu l ON l.fiche_id = f.id AND f.type = 'lieu'
+            LEFT JOIN pim_activite a ON a.fiche_id = f.id AND f.type = 'activite'
+            LEFT JOIN pim_restaurant r ON r.fiche_id = f.id AND f.type = 'restaurant'
+            LEFT JOIN pim_service_evenementiel s ON s.fiche_id = f.id AND f.type = 'service_evenementiel'
+            %s
+            WHERE %s
+            ORDER BY f.updated_at DESC, f.id DESC
+            LIMIT %d
+            SQL,
+            $completenessSql,
+            $localisationJoin,
+            implode("\n  AND ", $conditions),
+            $limit + 1,
+        );
+
+        /** @var list<array{id: string, type: string, code: int|string, label: string|null, ville: string|null, status: string, completeness: int|string|null, updated_at: string}> $rows */
+        $rows = $this->getEntityManager()->getConnection()->executeQuery($sql, $parameters, $types)->fetchAllAssociative();
+        $hasNext = count($rows) > $limit;
+        $rows = array_slice($rows, 0, $limit);
+        $items = array_map(self::toSearchItem(...), $rows);
+        $last = [] === $items ? null : $items[array_key_last($items)];
+
+        return new FicheListPage(
+            $items,
+            $hasNext && null !== $last ? (new FicheCursor($last->updatedAt, Ulid::fromString($last->id)))->encode() : null,
+        );
+    }
+
+    public function countAll(): int
+    {
+        return (int) $this->getEntityManager()->getConnection()->fetchOne('SELECT COUNT(*) FROM pim_fiche');
+    }
+
+    /** @param array{id: string, type: string, code: int|string, label: string|null, ville: string|null, status: string, completeness: int|string|null, updated_at: string} $row */
+    private static function toSearchItem(array $row): GlobalSearchItem
+    {
+        return new GlobalSearchItem(
+            id: (string) Ulid::fromBinary($row['id']),
+            type: TypeFiche::from($row['type']),
+            code: (int) $row['code'],
+            label: $row['label'],
+            ville: $row['ville'],
+            status: StatutFiche::from($row['status']),
+            completeness: (int) $row['completeness'],
+            updatedAt: new \DateTimeImmutable($row['updated_at']),
+        );
     }
 }

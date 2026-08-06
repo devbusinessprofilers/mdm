@@ -33,6 +33,14 @@ final class AdminWorkflowCatalogTest extends TestCase
             implode(' ', $workflows[2]['rules']),
         );
         self::assertStringContainsString(
+            'seul un validateur interne',
+            implode(' ', $workflows[1]['rules']),
+        );
+        self::assertStringContainsString(
+            'pHash',
+            implode(' ', $workflows[2]['steps']),
+        );
+        self::assertStringContainsString(
             'append-only',
             $workflows[3]['summary'],
         );

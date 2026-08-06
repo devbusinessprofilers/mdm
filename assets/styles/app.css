@@ -509,3 +509,24 @@
 }
 
 .ocr-overwrite pre { white-space: pre-wrap; max-width: 28rem; }
+
+.dam-stats { @apply mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4; }
+.dam-stat { @apply grid gap-1 no-underline; }
+.dam-stat span { @apply text-xs font-semibold uppercase tracking-wide text-slate-500; }
+.dam-stat strong { @apply text-3xl text-slate-950; }
+.dam-stat-active { @apply border-brand-500 ring-2 ring-brand-100; }
+.dam-toolbar { @apply mb-6 flex flex-wrap items-end justify-between gap-4; }
+.dam-type-filters { @apply flex flex-wrap items-center gap-2; }
+.dam-anomaly-list { @apply grid gap-4; }
+.dam-anomaly { @apply grid gap-4 md:grid-cols-[12rem_minmax(0,1fr)]; }
+.dam-media-preview { @apply grid min-h-40 place-items-center overflow-hidden rounded-lg bg-slate-100 text-sm text-slate-500; }
+.dam-media-preview img { @apply h-full w-full object-cover; }
+.dam-anomaly-content { @apply min-w-0; }
+.dam-anomaly-content h2 { @apply mt-1 text-lg; }
+.dam-duplicate-reference { @apply flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm; }
+.dam-duplicate-reference img { @apply h-16 w-20 rounded object-cover; }
+.dam-duplicate-reference-copy { @apply flex min-w-0 flex-col gap-2; }
+.dam-duplicate-fiche { @apply flex flex-wrap items-center gap-2; }
+.dam-actions { @apply mt-4 flex flex-wrap gap-2; }
+.pagination { @apply mt-6 flex items-center justify-center gap-4; }
+.dam-inline-alerts { @apply my-4 flex flex-wrap items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm; }

@@ -493,6 +493,9 @@ final readonly class LieuDocumentResource
         public ?int $sizeBytes,
         public ?string $publicUrl,
         public ?string $downloadUrl = null,
+        public ?string $keywords = null,
+        public ?string $rightsExpiresAt = null,
+        public string $rightsValidity = 'not_granted',
     ) {
     }
 }

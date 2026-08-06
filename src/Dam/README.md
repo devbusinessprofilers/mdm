@@ -34,7 +34,10 @@ téléchargement privé passe par une URL temporaire autorisée.
 2. Le worker `dam` lit l'original privé et produit les rendus attendus.
 3. `MediaProcessed` est publié vers le PIM pour confirmer le changement
    technique sur la fiche rattachée.
-4. `RegenerateMedia`, `DeleteMedia`, `PublishDocument` et `UnpublishDocument`
+4. Le worker calcule aussi une empreinte perceptuelle de 64 bits. Les doublons
+   SHA-256 exacts et les images proches sous le seuil configuré produisent une
+   alerte non bloquante ; ils n'empêchent ni l'enregistrement ni le traitement.
+5. `RegenerateMedia`, `DeleteMedia`, `PublishDocument` et `UnpublishDocument`
    couvrent les autres transitions.
 
 Les handlers sont rejouables : un rendu déjà complet n'est pas régénéré sans
@@ -42,10 +45,38 @@ raison, et les suppressions/publications vérifient l'état courant. Après le
 dernier échec Messenger, `MediaFailureSubscriber` place le média en erreur avec
 un message exploitable.
 
+## Métadonnées et supervision
+
+Chaque photo ou document peut recevoir des mots-clés libres, une source et une
+date facultative de fin de droits. Les droits restent valides sans limite quand
+aucune date n'est renseignée. Le PIM signale les échéances à J-30 et les droits
+expirés sans dépublier automatiquement la fiche. Une source ou une échéance
+modifiée révoque cependant la validation existante ; une éventuelle copie
+publique du document est alors retirée.
+
+Le prestataire externe peut renseigner la source, les mots-clés et l'échéance,
+mais le champ `rightsGranted` lui est refusé. Seul un validateur interne peut
+valider ou révoquer les droits depuis `/admin/dam`.
+
+L'écran de supervision regroupe les doublons à revoir, les droits non validés,
+à échéance ou expirés, ainsi que les traitements en échec. Les mêmes compteurs
+sont affichés dans les fiches. Pour les images historiques, lancer :
+
+```bash
+php bin/console app:dam:analyze-media --batch-size=250
+```
+
+La commande alimente l'outbox ; `worker-dam`, `worker-pim` et `worker-outbox`
+doivent être actifs. Un validateur peut accepter un doublon légitime ou retirer
+l'image signalée.
+
 ## Composants principaux
 
-- `Entity/MediaAsset.php` et `Entity/MediaRendition.php` : état persistant ;
+- `Entity/MediaAsset.php`, `Entity/MediaRendition.php` et
+  `Entity/MediaDuplicateAlert.php` : état persistant ;
 - `Service/MediaProcessingService.php` : orchestration des rendus ;
+- `Service/MediaAnalysisService.php` : pHash et détection des doublons ;
+- `Service/DamDashboardProvider.php` : supervision des anomalies ;
 - `Service/ImageRenditionGenerator.php` : génération ImageMagick ;
 - `Service/*Uploader.php` : validation et envoi des originaux ;
 - `MessageHandler/` : traitements asynchrones ;

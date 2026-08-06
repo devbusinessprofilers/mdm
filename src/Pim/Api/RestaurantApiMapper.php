@@ -143,6 +143,9 @@ final readonly class RestaurantApiMapper
             null,
             null,
             [],
+            $resource->keywords(),
+            $resource->rightsExpiresAt()?->format('Y-m-d'),
+            $resource->rightsValidity()->value,
         );
     }
 
@@ -165,6 +168,9 @@ final readonly class RestaurantApiMapper
             $photo['asset']?->status()->value,
             $photo['url'],
             $photo['variants'],
+            $resource->keywords(),
+            $resource->rightsExpiresAt()?->format('Y-m-d'),
+            $resource->rightsValidity()->value,
         );
     }
 

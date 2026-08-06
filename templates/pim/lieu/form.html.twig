@@ -31,6 +31,7 @@
             <p class="page-description">Les sections peuvent être ouvertes au fur et à mesure de la saisie.</p>
         </div>
     </header>
+    {% if not creation %}{% include 'dam/_fiche_alerts.html.twig' with {fiche: lieu.fiche} only %}{% endif %}
 
     {% if not creation %}
         <section
@@ -66,8 +67,9 @@
                                 {{ form_row(photo.metadata_form.usage) }}
                                 {{ form_row(photo.metadata_form.legende) }}
                                 {{ form_row(photo.metadata_form.source) }}
+                                {{ form_row(photo.metadata_form.keywords) }}
+                                {{ form_row(photo.metadata_form.rights_expires_at) }}
                                 {{ form_row(photo.metadata_form.salle_id) }}
-                                {{ form_row(photo.metadata_form.rights_granted) }}
                                 <details><summary>Recadrage et rotation</summary>
                                     <div class="lieu-crop-fields">
                                         {{ form_row(photo.metadata_form.crop_x) }}

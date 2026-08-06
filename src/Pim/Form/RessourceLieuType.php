@@ -13,6 +13,8 @@ use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
+use Symfony\Component\Form\Extension\Core\Type\TextareaType;
+use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\FormError;
 use Symfony\Component\Form\FormEvent;
 use Symfony\Component\Form\FormEvents;
@@ -81,6 +83,9 @@ final class RessourceLieuType extends AbstractType
             'required' => false,
         ]);
         $this->field($builder, 'legende', TextType::class, 'Légende', ['required' => false]);
+        $this->field($builder, 'source', TextType::class, 'Source / crédit', ['required' => false]);
+        $this->field($builder, 'keywords', TextareaType::class, 'Mots-clés', ['required' => false]);
+        $this->field($builder, 'rightsExpiresAt', DateType::class, 'Échéance des droits', ['required' => false, 'widget' => 'single_text', 'input' => 'datetime_immutable']);
         $this->field($builder, 'position', IntegerType::class, 'Position', ['required' => false]);
 
         $builder->addEventListener(FormEvents::POST_SUBMIT, static function (FormEvent $event): void {

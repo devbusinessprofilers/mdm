@@ -26,10 +26,10 @@ use App\Pim\Repository\RessourceLieuRepository;
 use App\Shared\Message\MediaUploaded;
 use App\Shared\Outbox\OutboxPublisherInterface;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\HttpFoundation\Response;
 
 /** @implements ProcessorInterface<mixed, LieuMediaResource|RestaurantResource|void> */
 final readonly class RestaurantMediaProcessor implements ProcessorInterface
@@ -42,7 +42,6 @@ final readonly class RestaurantMediaProcessor implements ProcessorInterface
         private EntityManagerInterface $entityManager,
         private OutboxPublisherInterface $outbox,
         private RequestStack $requests,
-        private Security $security,
     ) {
     }
 
@@ -266,13 +265,14 @@ final readonly class RestaurantMediaProcessor implements ProcessorInterface
         if (array_key_exists('source', $payload)) {
             $resource->changeSource($input->source);
         }
+        if (array_key_exists('keywords', $payload)) {
+            $resource->changeKeywords($input->keywords);
+        }
+        if (array_key_exists('rightsExpiresAt', $payload)) {
+            $resource->changeRightsExpiresAt($input->rightsExpiresAt);
+        }
         if (array_key_exists('rightsGranted', $payload)) {
-            true === $input->rightsGranted
-                ? $resource->grantRights(
-                    $this->security->getUser()?->getUserIdentifier()
-                        ?? 'external-site',
-                )
-                : $resource->revokeRights();
+            throw new ApiProblemException(Response::HTTP_FORBIDDEN, 'rights_validation_forbidden', 'La validation des droits est réservée aux validateurs internes du PIM.');
         }
 
         $transform = false;

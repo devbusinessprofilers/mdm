@@ -76,9 +76,6 @@ final readonly class ServiceEvenementielAdminManager
                 $resource->changeLegende(is_string($title) && '' !== trim($title) ? $title : pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME));
                 $source = $form->get('supportSource')->getData();
                 $resource->changeSource(is_string($source) ? $source : null);
-                if (true === $form->get('supportRightsGranted')->getData()) {
-                    $resource->grantRights($actor);
-                }
                 $service->addRessource($resource);
             }
             foreach (array_diff($existingMediaIds, $this->photoAssetIds($service)) as $removed) {

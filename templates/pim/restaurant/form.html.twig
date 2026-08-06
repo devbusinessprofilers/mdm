@@ -30,6 +30,7 @@
             <h1>{{ creation ? 'Nouveau restaurant' : 'Modifier le restaurant' }}</h1>
         </div>
     </header>
+    {% if not creation %}{% include 'dam/_fiche_alerts.html.twig' with {fiche: restaurant.fiche} only %}{% endif %}
 
     {{ form_start(form) }}
         {{ form_errors(form) }}

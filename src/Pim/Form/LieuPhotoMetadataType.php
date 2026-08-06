@@ -7,11 +7,12 @@ namespace App\Pim\Form;
 use App\Pim\Entity\Lieu\Salle;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
-use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
+use Symfony\Component\Form\Extension\Core\Type\TextareaType;
+use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
@@ -29,8 +30,9 @@ final class LieuPhotoMetadataType extends AbstractType
             ]])
             ->add('legende', TextType::class, ['label' => 'Légende', 'required' => false])
             ->add('source', TextType::class, ['label' => 'Source / crédit', 'required' => false])
+            ->add('keywords', TextareaType::class, ['label' => 'Mots-clés', 'required' => false])
+            ->add('rights_expires_at', DateType::class, ['label' => 'Échéance des droits', 'required' => false, 'widget' => 'single_text', 'input' => 'datetime_immutable'])
             ->add('salle_id', EntityType::class, ['label' => 'Salle', 'class' => Salle::class, 'choices' => $options['salles'], 'choice_value' => 'id', 'choice_label' => static fn (Salle $salle): string => $salle->nom() ?: 'Salle sans nom', 'placeholder' => 'Aucune', 'required' => false])
-            ->add('rights_granted', CheckboxType::class, ['label' => 'Droits d’utilisation validés', 'required' => false])
             ->add('crop_x', IntegerType::class, ['label' => 'X', 'required' => false, 'attr' => ['min' => 0]])
             ->add('crop_y', IntegerType::class, ['label' => 'Y', 'required' => false, 'attr' => ['min' => 0]])
             ->add('crop_width', IntegerType::class, ['label' => 'Largeur', 'required' => false, 'attr' => ['min' => 1]])

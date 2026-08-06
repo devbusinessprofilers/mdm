@@ -27,7 +27,7 @@ final readonly class LieuDocumentManager
     ) {}
 
     /** @param list<UploadedFile> $files
-     *  @param array{usage: DocumentUsage, salle: Salle|null, title: string|null, source: string|null, rightsGranted: bool} $data
+     *  @param array{usage: DocumentUsage, salle: Salle|null, title: string|null, source: string|null} $data
      */
     public function upload(Lieu $lieu, array $files, array $data, string $actor): int
     {
@@ -38,7 +38,7 @@ final readonly class LieuDocumentManager
     }
 
     /** @param list<UploadedFile> $files
-     *  @param array{usage: DocumentUsage, salle: Salle|null, title: string|null, source: string|null, rightsGranted: bool} $data
+     *  @param array{usage: DocumentUsage, salle: Salle|null, title: string|null, source: string|null} $data
      */
     private function uploadWithinMutation(Lieu $lieu, array $files, array $data, string $actor): int
     {
@@ -57,7 +57,6 @@ final readonly class LieuDocumentManager
                 $document->changeSalle($salle);
                 $document->changeLegende($data['title']);
                 $document->changeSource($data['source']);
-                if ($data['rightsGranted']) { $document->grantRights($actor); }
                 $lieu->addRessource($document);
                 $this->entityManager->persist($asset);
             }
@@ -70,7 +69,7 @@ final readonly class LieuDocumentManager
         return count($uploaded);
     }
 
-    /** @param array{usage: DocumentUsage, salle: Salle|null, title: string|null, source: string|null, rightsGranted: bool} $data */
+    /** @param array{usage: DocumentUsage, salle: Salle|null, title: string|null, source: string|null, keywords?: string|null, rightsExpiresAt?: \DateTimeImmutable|null} $data */
     public function update(RessourceLieu $document, Lieu $lieu, array $data, string $actor): void
     {
         $this->mutationPolicy->execute($lieu->fiche(), function () use ($document, $lieu, $data, $actor): void {
@@ -78,7 +77,7 @@ final readonly class LieuDocumentManager
         });
     }
 
-    /** @param array{usage: DocumentUsage, salle: Salle|null, title: string|null, source: string|null, rightsGranted: bool} $data */
+    /** @param array{usage: DocumentUsage, salle: Salle|null, title: string|null, source: string|null, keywords?: string|null, rightsExpiresAt?: \DateTimeImmutable|null} $data */
     private function updateWithinMutation(RessourceLieu $document, Lieu $lieu, array $data, string $actor): void
     {
         $usage = $data['usage'];
@@ -89,9 +88,11 @@ final readonly class LieuDocumentManager
         $document->configureDocument($usage);
         $document->changeSalle($salle);
         $document->changeLegende($data['title']);
+        $wasPublished = 'published' === $document->publicationStatus()?->value;
         $document->changeSource($data['source']);
-        if ($data['rightsGranted']) { $document->grantRights($actor); }
-        else { $document->revokeRights(); $this->unpublish($document); }
+        $document->changeKeywords(is_string($data['keywords'] ?? null) ? $data['keywords'] : null);
+        $document->changeRightsExpiresAt(($data['rightsExpiresAt'] ?? null) instanceof \DateTimeImmutable ? $data['rightsExpiresAt'] : null);
+        if ($wasPublished && !$document->rightsGranted()) { $this->unpublish($document); }
         $this->changed($lieu);
     }
 

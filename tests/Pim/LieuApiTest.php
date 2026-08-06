@@ -49,7 +49,7 @@ final class LieuApiTest extends WebTestCase
     protected function tearDown(): void
     {
         if (isset($this->connection)) {
-            foreach (['pim_ressource_lieu', 'dam_media_rendition', 'dam_media_asset', 'pim_fiche_search', 'pim_fiche_attribute_value', 'pim_salle', 'pim_periode_fermeture', 'pim_acces_lieu', 'pim_lieu_administratif', 'pim_lieu_tarification', 'pim_lieu', 'pim_fiche', 'pim_localisation', 'outbox_message'] as $table) {
+            foreach (['pim_ressource_lieu', 'dam_media_duplicate_alert', 'dam_media_rendition', 'dam_media_phash_band', 'dam_media_asset', 'pim_fiche_search', 'pim_fiche_attribute_value', 'pim_salle', 'pim_periode_fermeture', 'pim_acces_lieu', 'pim_lieu_administratif', 'pim_lieu_tarification', 'pim_lieu', 'pim_fiche', 'pim_localisation', 'outbox_message'] as $table) {
                 $this->connection->executeStatement('DELETE FROM '.$table);
             }
         }
@@ -152,14 +152,21 @@ final class LieuApiTest extends WebTestCase
         $this->entityManager->flush();
         $version = $lieu->fiche()->version();
 
-        $client->request('PATCH', '/api/v1/lieux/'.$lieu->id().'/medias/'.$resource->id(), server: $this->headers(['CONTENT_TYPE' => 'application/merge-patch+json', 'HTTP_IF_MATCH' => '"'.$version.'"']), content: '{"legende":"Vue principale","rotation":90,"rightsGranted":true}');
+        $client->request('PATCH', '/api/v1/lieux/'.$lieu->id().'/medias/'.$resource->id(), server: $this->headers(['CONTENT_TYPE' => 'application/merge-patch+json', 'HTTP_IF_MATCH' => '"'.$version.'"']), content: '{"legende":"Vue principale","rotation":90,"keywords":"terrasse, été","rightsExpiresAt":"2100-09-01"}');
         self::assertResponseIsSuccessful();
         $media = json_decode((string) $client->getResponse()->getContent(), true, 512, JSON_THROW_ON_ERROR);
         self::assertSame('Vue principale', $media['legende']);
         self::assertSame(90, $media['rotation']);
-        self::assertTrue($media['rightsGranted']);
+        self::assertFalse($media['rightsGranted']);
+        self::assertSame('terrasse, été', $media['keywords']);
+        self::assertSame('2100-09-01', $media['rightsExpiresAt']);
+        self::assertSame('not_granted', $media['rightsValidity']);
 
         $version = (int) trim((string) $client->getResponse()->headers->get('etag'), '"');
+        $client->request('PATCH', '/api/v1/lieux/'.$lieu->id().'/medias/'.$resource->id(), server: $this->headers(['CONTENT_TYPE' => 'application/merge-patch+json', 'HTTP_IF_MATCH' => '"'.$version.'"']), content: '{"rightsGranted":true}');
+        self::assertResponseStatusCodeSame(403);
+        self::assertSame('rights_validation_forbidden', $this->json($client)['type']);
+
         $client->request('PUT', '/api/v1/lieux/'.$lieu->id().'/medias/ordre', server: $this->headers(['CONTENT_TYPE' => 'application/json', 'HTTP_IF_MATCH' => '"'.$version.'"']), content: json_encode(['ids' => [$resource->id()]], JSON_THROW_ON_ERROR));
         self::assertResponseIsSuccessful();
         self::assertSame('publiee', $this->json($client)['status']);
@@ -204,7 +211,7 @@ final class LieuApiTest extends WebTestCase
         $this->connection = self::getContainer()->get(Connection::class);
         $this->entityManager = self::getContainer()->get(EntityManagerInterface::class);
         self::getContainer()->set(PrivateObjectStorageInterface::class, new ApiTestObjectStorage());
-        foreach (['pim_ressource_lieu', 'dam_media_rendition', 'dam_media_asset', 'pim_fiche_search', 'pim_fiche_attribute_value', 'pim_salle', 'pim_periode_fermeture', 'pim_acces_lieu', 'pim_lieu_administratif', 'pim_lieu_tarification', 'pim_lieu', 'pim_fiche', 'pim_localisation', 'outbox_message'] as $table) {
+        foreach (['pim_ressource_lieu', 'dam_media_duplicate_alert', 'dam_media_rendition', 'dam_media_phash_band', 'dam_media_asset', 'pim_fiche_search', 'pim_fiche_attribute_value', 'pim_salle', 'pim_periode_fermeture', 'pim_acces_lieu', 'pim_lieu_administratif', 'pim_lieu_tarification', 'pim_lieu', 'pim_fiche', 'pim_localisation', 'outbox_message'] as $table) {
             $this->connection->executeStatement('DELETE FROM '.$table);
         }
 

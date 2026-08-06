@@ -134,7 +134,9 @@ final class MediaAssetRepositoryTest extends KernelTestCase
 
     private function clearTables(): void
     {
+        $this->connection->executeStatement('DELETE FROM dam_media_duplicate_alert');
         $this->connection->executeStatement('DELETE FROM dam_media_rendition');
+        $this->connection->executeStatement('DELETE FROM dam_media_phash_band');
         $this->connection->executeStatement('DELETE FROM dam_media_asset');
     }
 }

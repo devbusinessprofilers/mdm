@@ -9,6 +9,8 @@ final class DocumentPatchInput
     public ?string $usage = null;
     public ?string $title = null;
     public ?string $source = null;
+    public ?string $keywords = null;
+    public ?\DateTimeImmutable $rightsExpiresAt = null;
     public ?bool $rightsGranted = null;
     public ?string $salleId = null;
 }

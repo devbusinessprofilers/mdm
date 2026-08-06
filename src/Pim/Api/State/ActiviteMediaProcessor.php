@@ -25,7 +25,6 @@ use App\Pim\Repository\RessourceLieuRepository;
 use App\Shared\Message\MediaUploaded;
 use App\Shared\Outbox\OutboxPublisherInterface;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\RequestStack;
 
@@ -40,7 +39,6 @@ final readonly class ActiviteMediaProcessor implements ProcessorInterface
         private EntityManagerInterface $em,
         private OutboxPublisherInterface $outbox,
         private RequestStack $requests,
-        private Security $security,
     ) {
     }
 
@@ -204,13 +202,14 @@ final readonly class ActiviteMediaProcessor implements ProcessorInterface
         if (array_key_exists('source', $raw)) {
             $r->changeSource($input->source);
         }
+        if (array_key_exists('keywords', $raw)) {
+            $r->changeKeywords($input->keywords);
+        }
+        if (array_key_exists('rightsExpiresAt', $raw)) {
+            $r->changeRightsExpiresAt($input->rightsExpiresAt);
+        }
         if (array_key_exists('rightsGranted', $raw)) {
-            true === $input->rightsGranted
-                ? $r->grantRights(
-                    $this->security->getUser()?->getUserIdentifier() ??
-                        'external-site',
-                )
-                : $r->revokeRights();
+            throw new ApiProblemException(403, 'rights_validation_forbidden', 'La validation des droits est réservée aux validateurs internes du PIM.');
         }
         $transform = false;
         try {

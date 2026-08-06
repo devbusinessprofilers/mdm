@@ -45,7 +45,7 @@ final class LieuDocumentController extends AbstractController
             return $this->redirectToRoute('app_pim_lieu_edit', ['id' => $lieu->id()]);
         }
         try {
-            /** @var array{usage: \App\Dam\Enum\DocumentUsage, salle: \App\Pim\Entity\Lieu\Salle|null, title: string|null, source: string|null, rightsGranted: bool} $data */
+            /** @var array{usage: \App\Dam\Enum\DocumentUsage, salle: \App\Pim\Entity\Lieu\Salle|null, title: string|null, source: string|null} $data */
             $data = $form->getData();
             $count = $manager->upload($lieu, $files, $data, $actor->id());
             $this->addFlash('success', $count.' document(s) ajouté(s).');
@@ -64,14 +64,14 @@ final class LieuDocumentController extends AbstractController
         if (null === $document || $document->lieu() !== $lieu) { throw $this->createNotFoundException('Document introuvable.'); }
         $form = $forms->createNamed('document_metadata_'.$document->id(), LieuDocumentMetadataType::class, [
             'usage' => $document->documentUsage(), 'salle' => $document->salle(), 'title' => $document->legende(),
-            'source' => $document->source(), 'rightsGranted' => $document->rightsGranted(),
+            'source' => $document->source(), 'keywords' => $document->keywords(), 'rightsExpiresAt' => $document->rightsExpiresAt(),
         ], ['salles' => $lieu->salles()->toArray()]);
         $form->handleRequest($request);
         if (!$form->isSubmitted() || !$form->isValid()) {
             $this->addFlash('error', 'Le formulaire documentaire est invalide.');
         } else {
             try {
-                /** @var array{usage: \App\Dam\Enum\DocumentUsage, salle: \App\Pim\Entity\Lieu\Salle|null, title: string|null, source: string|null, rightsGranted: bool} $data */
+                /** @var array{usage: \App\Dam\Enum\DocumentUsage, salle: \App\Pim\Entity\Lieu\Salle|null, title: string|null, source: string|null, keywords: string|null, rightsExpiresAt: \DateTimeImmutable|null} $data */
                 $data = $form->getData();
                 $manager->update($document, $lieu, $data, $actor->id());
                 $this->addFlash('success', 'Document modifié.');

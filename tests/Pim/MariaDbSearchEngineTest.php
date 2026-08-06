@@ -73,6 +73,62 @@ final class MariaDbSearchEngineTest extends KernelTestCase
         self::assertSame($paris->id(), $codePage->results[0]->id ?? null);
     }
 
+    public function testSearchFiltersByCountryAndCompleteness(): void
+    {
+        $paris = $this->createLieu(501, 'Palais Riviera', 'Paris', StatutFiche::Publiee);
+        $rome = $this->createLieu(502, 'Palazzo Riviera', 'Rome', StatutFiche::Publiee);
+        $paris->fiche()->localisation()?->changeCountryCode('FR');
+        $rome->fiche()->localisation()?->changeCountryCode('IT');
+        $this->entityManager->flush();
+        $this->setCompleteness($paris->id(), 80);
+        $this->setCompleteness($rome->id(), 30);
+
+        $frPage = $this->search('riviera', ['country' => 'FR']);
+        self::assertSame([$paris->id()], $this->ids($frPage->results));
+        self::assertSame(1, $frPage->totalCount);
+
+        $completePage = $this->search('riviera', ['completeness_min' => 50]);
+        self::assertSame([$paris->id()], $this->ids($completePage->results));
+        self::assertSame(1, $completePage->totalCount);
+
+        $incompletePage = $this->search('riviera', ['completeness_max' => 40]);
+        self::assertSame([$rome->id()], $this->ids($incompletePage->results));
+
+        $allPage = $this->search('riviera', ['completeness_min' => 0, 'completeness_max' => 100]);
+        self::assertSame(2, $allPage->totalCount);
+
+        $combinedPage = $this->search('riviera', [
+            'country' => 'IT',
+            'completeness_min' => 10,
+            'completeness_max' => 40,
+            'status' => StatutFiche::Publiee->value,
+        ]);
+        self::assertSame([$rome->id()], $this->ids($combinedPage->results));
+
+        $emptyPage = $this->search('riviera', ['country' => 'FR', 'completeness_max' => 40]);
+        self::assertSame([], $emptyPage->results);
+        self::assertSame(0, $emptyPage->totalCount);
+    }
+
+    public function testProviderRejectsInvalidCountryAndCompleteness(): void
+    {
+        $provider = self::getContainer()->get(GlobalSearchProvider::class);
+
+        foreach ([
+            static fn () => $provider->search('palais', country: 'France'),
+            static fn () => $provider->search('palais', completenessMin: -1),
+            static fn () => $provider->search('palais', completenessMax: 101),
+            static fn () => $provider->search('palais', completenessMin: 60, completenessMax: 40),
+        ] as $call) {
+            try {
+                $call();
+                self::fail('Expected an InvalidArgumentException.');
+            } catch (\InvalidArgumentException) {
+                $this->addToAssertionCount(1);
+            }
+        }
+    }
+
     public function testScoreCursorDoesNotDuplicateOrOmitResults(): void
     {
         $expectedIds = [];
@@ -256,6 +312,15 @@ final class MariaDbSearchEngineTest extends KernelTestCase
         $this->indexer->index($lieu->fiche());
 
         return $lieu;
+    }
+
+    private function setCompleteness(string $lieuId, int $completeness): void
+    {
+        $this->connection->executeStatement(
+            'UPDATE pim_lieu SET completeness_global = :completeness WHERE fiche_id = :id',
+            ['completeness' => $completeness, 'id' => \Symfony\Component\Uid\Ulid::fromString($lieuId)->toBinary()],
+            ['completeness' => \Doctrine\DBAL\ParameterType::INTEGER, 'id' => \Doctrine\DBAL\ParameterType::BINARY],
+        );
     }
 
     private function localisation(string $ville): Localisation

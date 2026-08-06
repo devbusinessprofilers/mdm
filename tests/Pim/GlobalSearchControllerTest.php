@@ -71,10 +71,32 @@ final class GlobalSearchControllerTest extends WebTestCase
         $client = self::createClient();
         $client->loginUser($this->persistUser('invalid-search@example.test', ['ROLE_BP_EDITOR']));
 
-        foreach (['type=traiteur', 'status=inconnu', 'limit=0', 'limit=101', 'cursor=invalide'] as $query) {
+        foreach ([
+            'type=traiteur',
+            'status=inconnu',
+            'limit=0',
+            'limit=101',
+            'cursor=invalide',
+            'country=ZZ',
+            'completeness_min=-1',
+            'completeness_max=101',
+            'q=test&completeness_min=60&completeness_max=40',
+        ] as $query) {
             $client->request('GET', '/admin/recherche?'.$query);
             self::assertResponseStatusCodeSame(400, $query);
         }
+    }
+
+    public function testCountryAndCompletenessFiltersAreExposed(): void
+    {
+        $client = self::createClient();
+        $client->loginUser($this->persistUser('filters-search@example.test', ['ROLE_BP_EDITOR']));
+        $client->request('GET', '/admin/recherche?q=test&completeness_min=10&completeness_max=90');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorExists('main select[name="country"]');
+        self::assertSelectorExists('main input[name="completeness_min"]');
+        self::assertSelectorExists('main input[name="completeness_max"]');
     }
 
     /** @param list<string> $roles */

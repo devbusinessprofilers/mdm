@@ -91,7 +91,6 @@ final readonly class RestaurantAdminManager
             $resource->changeLegende(is_string($title) && '' !== trim($title) ? $title : pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME));
             $source = $form->get('documentSource')->getData();
             $resource->changeSource(is_string($source) ? $source : null);
-            if (true === $form->get('documentRightsGranted')->getData()) { $resource->grantRights($actor); }
             $restaurant->addRessource($resource);
         }
     }

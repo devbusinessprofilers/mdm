@@ -11,14 +11,13 @@ use App\Pim\ReadModel\GlobalSearchResult;
 use App\Pim\Repository\FicheRepository;
 use App\Shared\Search\SearchQuery;
 use App\Shared\Service\SearchEngineInterface;
-use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
 final readonly class GlobalSearchProvider
 {
     public function __construct(
         private SearchEngineInterface $searchEngine,
         private FicheRepository $fiches,
-        private UrlGeneratorInterface $urlGenerator,
+        private FicheRouteResolver $routes,
     ) {
     }
 
@@ -28,6 +27,9 @@ final readonly class GlobalSearchProvider
         ?StatutFiche $status = null,
         int $limit = 50,
         ?string $cursor = null,
+        ?string $country = null,
+        ?int $completenessMin = null,
+        ?int $completenessMax = null,
     ): GlobalSearchPage {
         $text = trim($text);
         if ('' === $text) {
@@ -40,6 +42,17 @@ final readonly class GlobalSearchProvider
         if (TypeFiche::Traiteur === $type) {
             throw new \InvalidArgumentException('Type de fiche invalide.');
         }
+        if (null !== $country && 1 !== preg_match('/^[A-Z]{2}$/', $country)) {
+            throw new \InvalidArgumentException('Pays invalide.');
+        }
+        foreach ([$completenessMin, $completenessMax] as $bound) {
+            if (null !== $bound && ($bound < 0 || $bound > 100)) {
+                throw new \InvalidArgumentException('Complétude invalide.');
+            }
+        }
+        if (null !== $completenessMin && null !== $completenessMax && $completenessMin > $completenessMax) {
+            throw new \InvalidArgumentException('Complétude invalide.');
+        }
 
         $filters = [
             'type' => null === $type
@@ -49,21 +62,26 @@ final readonly class GlobalSearchProvider
         if (null !== $status) {
             $filters['status'] = $status->value;
         }
+        if (null !== $country) {
+            $filters['country'] = $country;
+        }
+        if (null !== $completenessMin) {
+            $filters['completeness_min'] = $completenessMin;
+        }
+        if (null !== $completenessMax) {
+            $filters['completeness_max'] = $completenessMax;
+        }
 
         $page = $this->searchEngine->search(new SearchQuery($text, $filters, $limit, $cursor));
         $items = $this->fiches->findGlobalSearchItemsByIds(array_map(
             static fn ($result): string => $result->id,
             $page->results,
         ));
-        $results = array_map(function ($item): GlobalSearchResult {
-            [$showRoute, $editRoute] = self::routesFor($item->type);
-
-            return new GlobalSearchResult(
-                $item,
-                $this->urlGenerator->generate($showRoute, ['id' => $item->id]),
-                $this->urlGenerator->generate($editRoute, ['id' => $item->id]),
-            );
-        }, $items);
+        $results = array_map(fn ($item): GlobalSearchResult => new GlobalSearchResult(
+            $item,
+            $this->routes->showUrl($item->type, $item->id),
+            $this->routes->editUrl($item->type, $item->id),
+        ), $items);
 
         return new GlobalSearchPage($results, $page->nextCursor, $page->totalCount);
     }
@@ -72,17 +90,5 @@ final readonly class GlobalSearchProvider
     private static function supportedTypes(): array
     {
         return [TypeFiche::Lieu, TypeFiche::Activite, TypeFiche::Restaurant, TypeFiche::ServiceEvenementiel];
-    }
-
-    /** @return array{string, string} */
-    private static function routesFor(TypeFiche $type): array
-    {
-        return match ($type) {
-            TypeFiche::Lieu => ['app_pim_lieu_show', 'app_pim_lieu_edit'],
-            TypeFiche::Activite => ['app_pim_activite_show', 'app_pim_activite_edit'],
-            TypeFiche::Restaurant => ['app_pim_restaurant_show', 'app_pim_restaurant_edit'],
-            TypeFiche::ServiceEvenementiel => ['app_pim_service_show', 'app_pim_service_edit'],
-            TypeFiche::Traiteur => throw new \InvalidArgumentException('Type de fiche invalide.'),
-        };
     }
 }

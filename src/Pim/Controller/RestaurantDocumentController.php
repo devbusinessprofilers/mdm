@@ -40,7 +40,7 @@ final class RestaurantDocumentController extends AbstractController
         $document = $resources->findDocumentForFiche($restaurant->fiche(), $resourceId);
         if (null === $document) { throw $this->createNotFoundException('Document introuvable.'); }
         $form = $forms->createNamed('restaurant_document_metadata_'.$document->id(), ActiviteDocumentMetadataType::class, [
-            'title' => $document->legende(), 'source' => $document->source(), 'rightsGranted' => $document->rightsGranted(),
+            'title' => $document->legende(), 'source' => $document->source(), 'keywords' => $document->keywords(), 'rightsExpiresAt' => $document->rightsExpiresAt(),
         ]);
         $form->handleRequest($request);
         if (!$form->isSubmitted() || !$form->isValid()) {

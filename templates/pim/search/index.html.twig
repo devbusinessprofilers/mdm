@@ -55,7 +55,7 @@
         {% if page.nextCursor %}
             <nav class="pagination" aria-label="Pagination des résultats">
                 <span>Les résultats sont classés par pertinence.</span>
-                <a class="btn btn-secondary" href="{{ path('app_pim_global_search', {q: query, type: type ? type.value : null, status: status ? status.value : null, limit: limit, cursor: page.nextCursor}) }}">Résultats suivants</a>
+                <a class="btn btn-secondary" href="{{ path('app_pim_global_search', {q: query, type: type ? type.value : null, status: status ? status.value : null, country: country, completeness_min: completeness_min, completeness_max: completeness_max, limit: limit, cursor: page.nextCursor}) }}">Résultats suivants</a>
             </nav>
         {% endif %}
     {% endif %}

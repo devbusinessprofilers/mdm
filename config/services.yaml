@@ -28,6 +28,7 @@ parameters:
     env(BOX_API_URL): 'https://api.box.com'
     env(BOX_UPLOAD_URL): 'https://upload.box.com/api'
     env(BOX_ENHANCED_EXTRACT_AGENT): 'enhanced_extract_agent'
+    env(DAM_PHASH_DISTANCE_THRESHOLD): '8'
 
 services:
     # default configuration for services in *this* file
@@ -148,6 +149,10 @@ services:
             $agent: '%env(BOX_ENHANCED_EXTRACT_AGENT)%'
 
     App\Ocr\Service\DocumentExtractionProviderInterface: '@App\Ocr\Service\BoxExtractProvider'
+
+    App\Dam\Service\MediaAnalysisService:
+        arguments:
+            $distanceThreshold: '%env(int:DAM_PHASH_DISTANCE_THRESHOLD)%'
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones

@@ -8,7 +8,6 @@ use App\Dam\Enum\DocumentUsage;
 use App\Pim\Entity\Lieu\Salle;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
-use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
@@ -62,10 +61,6 @@ final class LieuDocumentUploadType extends AbstractType
                 'required' => false,
             ])
             ->add('source', TextType::class, ['required' => false])
-            ->add('rightsGranted', CheckboxType::class, [
-                'label' => 'Droits d’utilisation validés',
-                'required' => false,
-            ])
             ->add('submit', SubmitType::class, [
                 'label' => 'Ajouter les documents',
             ]);

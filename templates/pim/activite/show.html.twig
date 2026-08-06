@@ -27,6 +27,7 @@
             {% endif %}
         </div>
     </header>
+    {% include 'dam/_fiche_alerts.html.twig' with {fiche: activite.fiche} only %}
     {% include 'pim/_completeness.html.twig' with {entity: activite} only %}
 
     <section class="card">

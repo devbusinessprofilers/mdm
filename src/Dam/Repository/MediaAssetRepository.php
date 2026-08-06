@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Dam\Repository;
 
 use App\Dam\Entity\MediaAsset;
+use App\Dam\Enum\MediaKind;
+use App\Dam\Enum\MediaStatus;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\Persistence\ManagerRegistry;
@@ -47,6 +49,151 @@ final class MediaAssetRepository extends ServiceEntityRepository
                 ),
                 ArrayParameterType::BINARY,
             )
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function findOldestActiveImageByChecksum(string $checksum, string $excludedId): ?MediaAsset
+    {
+        return $this->createQueryBuilder('media')
+            ->where('media.checksum = :checksum')
+            ->andWhere('media.id <> :excluded')
+            ->andWhere('media.kind = :kind')
+            ->andWhere('media.status NOT IN (:deleted)')
+            ->setParameter('checksum', $checksum)
+            ->setParameter('excluded', Ulid::fromString($excludedId))
+            ->setParameter('kind', MediaKind::Image)
+            ->setParameter('deleted', [MediaStatus::Deleting, MediaStatus::Deleted])
+            ->orderBy('media.createdAt', 'ASC')
+            ->addOrderBy('media.id', 'ASC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
+    /**
+     * @param list<string> $ids
+     *
+     * @return list<MediaAsset>
+     */
+    public function findActiveImagesByStringIds(array $ids): array
+    {
+        if ([] === $ids) {
+            return [];
+        }
+
+        return $this->createQueryBuilder('media')
+            ->where('media.id IN (:ids)')
+            ->andWhere('media.kind = :kind')
+            ->andWhere('media.status NOT IN (:deleted)')
+            ->setParameter('ids', array_map(Ulid::fromString(...), $ids))
+            ->setParameter('kind', MediaKind::Image)
+            ->setParameter('deleted', [MediaStatus::Deleting, MediaStatus::Deleted])
+            ->getQuery()
+            ->getResult();
+    }
+
+    /** @return list<string> */
+    public function findImageIdsMissingPerceptualHash(?string $afterId, int $limit): array
+    {
+        $builder = $this->createQueryBuilder('media')
+            ->select('media.id')
+            ->where('media.kind = :kind')
+            ->andWhere('media.perceptualHash IS NULL')
+            ->andWhere('media.status NOT IN (:deleted)')
+            ->setParameter('kind', MediaKind::Image)
+            ->setParameter('deleted', [MediaStatus::Deleting, MediaStatus::Deleted])
+            ->orderBy('media.id', 'ASC')
+            ->setMaxResults(max(1, min(1000, $limit)));
+        if (null !== $afterId) {
+            $builder->andWhere('media.id > :after')->setParameter('after', Ulid::fromString($afterId));
+        }
+
+        return array_values(array_map(
+            static fn (array $row): string => $row['id'] instanceof Ulid ? (string) $row['id'] : (string) Ulid::fromBinary((string) $row['id']),
+            $builder->getQuery()->getArrayResult(),
+        ));
+    }
+
+    public function countFailed(): int
+    {
+        return (int) $this->createQueryBuilder('media')
+            ->select('COUNT(media.id)')
+            ->where('media.status = :status')
+            ->setParameter('status', MediaStatus::Failed)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /** @param list<string> $ids */
+    public function countFailedByStringIds(array $ids): int
+    {
+        if ([] === $ids) {
+            return 0;
+        }
+
+        return (int) $this->createQueryBuilder('media')
+            ->select('COUNT(media.id)')
+            ->where('media.id IN (:ids)')
+            ->andWhere('media.status = :status')
+            ->setParameter('ids', array_map(Ulid::fromString(...), $ids))
+            ->setParameter('status', MediaStatus::Failed)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    public function countActiveByKind(MediaKind $kind): int
+    {
+        return (int) $this->createQueryBuilder('media')
+            ->select('COUNT(media.id)')
+            ->where('media.kind = :kind')
+            ->andWhere('media.status NOT IN (:deleted)')
+            ->setParameter('kind', $kind)
+            ->setParameter('deleted', [MediaStatus::Deleting, MediaStatus::Deleted])
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /** @return list<MediaAsset> */
+    public function findActiveByKindPage(MediaKind $kind, int $page, int $limit): array
+    {
+        // Page over ids first: fetch-joining renditions would multiply the rows
+        // and break offset pagination.
+        $ids = array_map(
+            static fn (array $row): string => $row['id'] instanceof Ulid ? (string) $row['id'] : (string) Ulid::fromBinary((string) $row['id']),
+            $this->createQueryBuilder('media')
+                ->select('media.id')
+                ->where('media.kind = :kind')
+                ->andWhere('media.status NOT IN (:deleted)')
+                ->setParameter('kind', $kind)
+                ->setParameter('deleted', [MediaStatus::Deleting, MediaStatus::Deleted])
+                ->orderBy('media.createdAt', 'DESC')
+                ->addOrderBy('media.id', 'DESC')
+                ->setFirstResult((max(1, $page) - 1) * $limit)
+                ->setMaxResults($limit)
+                ->getQuery()
+                ->getArrayResult(),
+        );
+        $byId = [];
+        foreach ($this->findByStringIds($ids) as $asset) {
+            $byId[$asset->id()] = $asset;
+        }
+
+        return array_values(array_filter(array_map(
+            static fn (string $id): ?MediaAsset => $byId[$id] ?? null,
+            $ids,
+        )));
+    }
+
+    /** @return list<MediaAsset> */
+    public function findFailedPage(int $page, int $limit): array
+    {
+        return $this->createQueryBuilder('media')
+            ->where('media.status = :status')
+            ->setParameter('status', MediaStatus::Failed)
+            ->orderBy('media.updatedAt', 'DESC')
+            ->setFirstResult((max(1, $page) - 1) * $limit)
+            ->setMaxResults($limit)
             ->getQuery()
             ->getResult();
     }

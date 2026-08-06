@@ -97,8 +97,10 @@ final readonly class LieuPhotoManager
         $resource->changeUsage($usage);
         $resource->changeLegende((string) ($data['legende'] ?? ''));
         $resource->changeSource((string) ($data['source'] ?? ''));
+        $resource->changeKeywords((string) ($data['keywords'] ?? ''));
+        $expiration = $data['rights_expires_at'] ?? null;
+        $resource->changeRightsExpiresAt($expiration instanceof \DateTimeImmutable ? $expiration : (is_string($expiration) && '' !== $expiration ? new \DateTimeImmutable($expiration) : null));
         $resource->changeSalle($salle);
-        filter_var($data['rights_granted'] ?? false, FILTER_VALIDATE_BOOL) ? $resource->grantRights($actor) : $resource->revokeRights();
         $keys = ['crop_x', 'crop_y', 'crop_width', 'crop_height'];
         $crop = array_map(static fn (string $key): ?int => '' === (string) ($data[$key] ?? '') ? null : (int) $data[$key], $keys);
         $rotation = (int) ($data['rotation'] ?? 0);

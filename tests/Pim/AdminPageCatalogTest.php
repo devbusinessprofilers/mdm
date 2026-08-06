@@ -26,6 +26,7 @@ final class AdminPageCatalogTest extends KernelTestCase
         self::assertContains('app_pim_restaurant_history', $names);
         self::assertContains('app_pim_service_index', $names);
         self::assertContains('app_pim_service_history', $names);
+        self::assertContains('app_dam_dashboard', $names);
         self::assertContains('_api_/v1/services_get_collection', $names);
         self::assertContains('_api_/v1/restaurants_get_collection', $names);
         self::assertContains('api_doc', $names);

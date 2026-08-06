@@ -37,11 +37,11 @@ final readonly class FicheDocumentManager
     private function updateMetadataWithinMutation(RessourceLieu $document, Fiche $fiche, array $data, string $actor): void
     {
         $document->changeLegende(is_string($data['title'] ?? null) ? $data['title'] : null);
+        $wasPublished = 'published' === $document->publicationStatus()?->value;
         $document->changeSource(is_string($data['source'] ?? null) ? $data['source'] : null);
-        if (true === ($data['rightsGranted'] ?? false)) {
-            $document->grantRights($actor);
-        } else {
-            $document->revokeRights();
+        $document->changeKeywords(is_string($data['keywords'] ?? null) ? $data['keywords'] : null);
+        $document->changeRightsExpiresAt(($data['rightsExpiresAt'] ?? null) instanceof \DateTimeImmutable ? $data['rightsExpiresAt'] : null);
+        if ($wasPublished && !$document->rightsGranted()) {
             $this->unpublish($document);
         }
         $this->changed($fiche);

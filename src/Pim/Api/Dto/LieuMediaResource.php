@@ -24,6 +24,9 @@ final readonly class LieuMediaResource
         public ?string $status,
         public ?string $url,
         public array $variants,
+        public ?string $keywords = null,
+        public ?string $rightsExpiresAt = null,
+        public string $rightsValidity = 'not_granted',
     ) {
     }
 }

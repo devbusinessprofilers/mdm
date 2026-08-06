@@ -1,0 +1,59 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Toutes les fiches{% endblock %}
+
+{% block body %}
+<main class="page">
+    <header class="page-header">
+        <div class="page-header-copy">
+            <p class="page-kicker">Catalogue</p>
+            <h1>Toutes les fiches</h1>
+            <p class="page-description">Parcourez l'ensemble des fiches du PIM, tous types confondus — {{ total_count }} fiche{{ total_count == 1 ? '' : 's' }} au total.</p>
+        </div>
+    </header>
+
+    <div class="toolbar">
+        {{ form(search_form) }}
+        {% if type or status or country or completeness_min is not null or completeness_max is not null %}<a class="text-link" href="{{ path('app_pim_fiche_index') }}">Effacer les critères</a>{% endif %}
+    </div>
+
+    {% set filter_params = {
+        type: type ? type.value : null,
+        status: status ? status.value : null,
+        country: country,
+        completeness_min: completeness_min,
+        completeness_max: completeness_max,
+        limit: limit,
+    } %}
+
+    <div class="table-shell"><div class="table-scroll"><table class="data-table">
+        <thead><tr><th>Type</th><th>Code</th><th>Libellé</th><th>Ville</th><th>Statut</th><th>Complétude</th><th>Modification</th><th>Actions</th></tr></thead>
+        <tbody>
+        {% for result in results %}
+            {% set item = result.item %}
+            {% set type_label = item.type.value == 'lieu' ? 'Lieu' : (item.type.value == 'activite' ? 'Activité' : (item.type.value == 'restaurant' ? 'Restaurant' : (item.type.value == 'service_evenementiel' ? 'Service' : 'Traiteur'))) %}
+            {% set status_label = item.status.value == 'en_cours' ? 'En cours' : (item.status.value == 'en_attente_validation' ? 'En attente' : (item.status.value == 'publiee' ? 'Publiée' : 'Archivée')) %}
+            <tr>
+                <td><span class="badge badge-neutral">{{ type_label }}</span></td>
+                <td>{{ item.code }}</td>
+                <td>{{ item.label|default('—') }}</td>
+                <td>{{ item.ville|default('—') }}</td>
+                <td><span class="badge {{ item.status.value == 'publiee' ? 'badge-success' : (item.status.value == 'archivee' ? 'badge-neutral' : 'badge-info') }}">{{ status_label }}</span></td>
+                <td>{{ item.completeness }} %</td>
+                <td><time datetime="{{ item.updatedAt|date('c') }}">{{ item.updatedAt|date('d/m/Y H:i') }}</time></td>
+                <td><div class="table-actions">
+                    {% if result.showUrl %}<a class="text-link" href="{{ result.showUrl }}">Voir</a>{% endif %}
+                    {% if result.editUrl and is_granted('ROLE_BP_EDITOR') %}<a class="text-link" href="{{ result.editUrl }}">Modifier</a>{% endif %}
+                </div></td>
+            </tr>
+        {% else %}
+            <tr><td class="empty-state" colspan="8">Aucune fiche ne correspond à ces critères.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table></div></div>
+    <nav class="pagination" aria-label="Pagination">
+        {% if app.request.query.has('cursor') %}<a class="btn btn-secondary btn-small" href="{{ path('app_pim_fiche_index', filter_params) }}">Retour au début</a>{% endif %}
+        {% if next_cursor %}<a class="btn btn-secondary btn-small" href="{{ path('app_pim_fiche_index', filter_params|merge({cursor: next_cursor})) }}">Page suivante</a>{% endif %}
+    </nav>
+</main>
+{% endblock %}

@@ -25,7 +25,6 @@ export default class extends Controller {
             const match = key.match(/\[([^\]]+)]$/)
             data[match ? match[1] : key] = value
         }
-        data.rights_granted = Object.keys(data).includes('rights_granted')
         this.fetch(event.currentTarget.dataset.url, { method: 'PATCH', body: JSON.stringify(data), headers: { 'Content-Type': 'application/json' } })
     }
 

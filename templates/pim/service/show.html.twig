@@ -19,6 +19,7 @@
             {% endif %}
         </div>
     </header>
+    {% include 'dam/_fiche_alerts.html.twig' with {fiche: service.fiche} only %}
     {% include 'pim/_completeness.html.twig' with {entity: service} only %}
     <section class="card">
         <dl class="definition-list">

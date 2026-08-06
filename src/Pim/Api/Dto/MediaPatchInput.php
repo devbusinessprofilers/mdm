@@ -11,6 +11,8 @@ final class MediaPatchInput
     public ?string $usage = null;
     public ?string $legende = null;
     public ?string $source = null;
+    public ?string $keywords = null;
+    public ?\DateTimeImmutable $rightsExpiresAt = null;
     public ?bool $rightsGranted = null;
     public ?string $salleId = null;
     /** @var array{x: int, y: int, width: int, height: int}|null */

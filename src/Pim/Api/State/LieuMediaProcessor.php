@@ -25,7 +25,6 @@ use App\Pim\Repository\RessourceLieuRepository;
 use App\Shared\Message\MediaUploaded;
 use App\Shared\Outbox\OutboxPublisherInterface;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
@@ -54,7 +53,6 @@ final readonly class LieuMediaProcessor implements ProcessorInterface
         private EntityManagerInterface $entityManager,
         private OutboxPublisherInterface $outbox,
         private RequestStack $requests,
-        private Security $security,
     ) {
     }
 
@@ -219,13 +217,14 @@ final readonly class LieuMediaProcessor implements ProcessorInterface
         if (array_key_exists('source', $requestData)) {
             $resource->changeSource($input->source);
         }
+        if (array_key_exists('keywords', $requestData)) {
+            $resource->changeKeywords($input->keywords);
+        }
+        if (array_key_exists('rightsExpiresAt', $requestData)) {
+            $resource->changeRightsExpiresAt($input->rightsExpiresAt);
+        }
         if (array_key_exists('rightsGranted', $requestData)) {
-            true === $input->rightsGranted
-                ? $resource->grantRights(
-                    $this->security->getUser()?->getUserIdentifier() ??
-                        'external-site',
-                )
-                : $resource->revokeRights();
+            throw new ApiProblemException(Response::HTTP_FORBIDDEN, 'rights_validation_forbidden', 'La validation des droits est réservée aux validateurs internes du PIM.');
         }
         try {
             $transformationChanged = false;

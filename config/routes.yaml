@@ -38,3 +38,7 @@ account_controllers:
 audit_controllers:
     resource: '../src/Audit/Controller/'
     type: attribute
+
+dashboard_controllers:
+    resource: '../src/Dashboard/Controller/'
+    type: attribute

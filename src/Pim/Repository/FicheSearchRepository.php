@@ -41,10 +41,49 @@ final readonly class FicheSearchRepository
             $parameters['exactCode'] = $exactCode;
             $types['exactCode'] = ParameterType::INTEGER;
         }
+        $joins = ['INNER JOIN pim_fiche f ON f.id = s.fiche_id'];
+        $filterConditions = [];
+        if (isset($filters['country'])) {
+            if (!is_string($filters['country'])) {
+                throw new \InvalidArgumentException('Invalid country search filter.');
+            }
+            $joins[] = 'INNER JOIN pim_localisation loc ON loc.id = f.localisation_id';
+            $filterConditions[] = 'loc.country_code = :country';
+            $parameters['country'] = $filters['country'];
+            $types['country'] = ParameterType::STRING;
+        }
+        $completenessBounds = [];
+        foreach (['completeness_min' => '>=', 'completeness_max' => '<='] as $bound => $operator) {
+            if (isset($filters[$bound])) {
+                if (!is_int($filters[$bound])) {
+                    throw new \InvalidArgumentException(sprintf('Invalid %s search filter.', $bound));
+                }
+                $completenessBounds[$bound] = $operator;
+                $parameters[$bound] = $filters[$bound];
+                $types[$bound] = ParameterType::INTEGER;
+            }
+        }
+        if ([] !== $completenessBounds) {
+            $joins[] = "LEFT JOIN pim_lieu cl ON cl.fiche_id = f.id AND f.type = 'lieu'";
+            $joins[] = "LEFT JOIN pim_activite ca ON ca.fiche_id = f.id AND f.type = 'activite'";
+            $joins[] = "LEFT JOIN pim_restaurant cr ON cr.fiche_id = f.id AND f.type = 'restaurant'";
+            $joins[] = "LEFT JOIN pim_service_evenementiel cs ON cs.fiche_id = f.id AND f.type = 'service_evenementiel'";
+            foreach ($completenessBounds as $bound => $operator) {
+                $filterConditions[] = sprintf(
+                    'COALESCE(cl.completeness_global, ca.completeness_global, cr.completeness_global, cs.completeness_global, 0) %s :%s',
+                    $operator,
+                    $bound,
+                );
+            }
+        }
         $fromWhereSql = sprintf(
-            'FROM pim_fiche_search s INNER JOIN pim_fiche f ON f.id = s.fiche_id WHERE (%s)',
+            'FROM pim_fiche_search s %s WHERE (%s)',
+            implode(' ', $joins),
             implode(' OR ', $conditions),
         );
+        foreach ($filterConditions as $condition) {
+            $fromWhereSql .= ' AND '.$condition;
+        }
         foreach (['type', 'status'] as $filter) {
             if (isset($filters[$filter]) && is_string($filters[$filter])) {
                 $fromWhereSql .= sprintf(' AND f.%s = :%s', $filter, $filter);

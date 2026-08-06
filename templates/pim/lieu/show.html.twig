@@ -12,6 +12,7 @@
         </div>
         <div>{% if box_ocr_enabled %}<a class="btn btn-secondary" href="{{ path('app_ocr_index', {id: lieu.fiche.idString}) }}">OCR / Extraction documentaire</a> {% endif %}<a class="btn btn-secondary" href="{{ path('app_enrichment_fiche_translation_show', {id: lieu.id}) }}">Traductions</a> {% if is_granted('ROLE_BP_VALIDATOR') %}<a class="btn" href="{{ path('app_pim_lieu_history', {id: lieu.id}) }}">Historique</a>{% endif %} {% if is_granted('FICHE_EDIT', lieu.fiche) %}<a class="btn" href="{{ path('app_pim_lieu_edit', {id: lieu.id}) }}">Modifier</a>{% endif %}</div>
     </header>
+    {% include 'dam/_fiche_alerts.html.twig' with {fiche: lieu.fiche} only %}
     {% include 'pim/_completeness.html.twig' with {entity: lieu} only %}
     <section class="card">
     <dl class="definition-list">

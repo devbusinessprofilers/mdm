@@ -175,6 +175,9 @@ final readonly class LieuApiMapper
             null,
             null,
             [],
+            $resource->keywords(),
+            $resource->rightsExpiresAt()?->format('Y-m-d'),
+            $resource->rightsValidity()->value,
         );
     }
 
@@ -231,6 +234,9 @@ final readonly class LieuApiMapper
             $photo['asset']?->status()->value,
             $photo['url'],
             $photo['variants'],
+            $resource->keywords(),
+            $resource->rightsExpiresAt()?->format('Y-m-d'),
+            $resource->rightsValidity()->value,
         );
     }
 }

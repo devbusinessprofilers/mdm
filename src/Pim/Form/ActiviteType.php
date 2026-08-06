@@ -320,11 +320,6 @@ final class ActiviteType extends AbstractType
                 'mapped' => false,
                 'required' => false,
             ])
-            ->add('supportRightsGranted', CheckboxType::class, [
-                'label' => 'Droits d’utilisation validés pour les nouveaux supports',
-                'mapped' => false,
-                'required' => false,
-            ])
             ->add('offres', CollectionType::class, [
                 'entry_type' => OffreActiviteType::class,
                 'allow_add' => true,

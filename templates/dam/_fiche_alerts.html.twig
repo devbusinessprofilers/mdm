@@ -1,0 +1,11 @@
+{% set dam_alerts = dam_anomaly_counts(fiche) %}
+{% if dam_alerts.total > 0 %}
+    <aside class="dam-inline-alerts" aria-label="Alertes DAM">
+        <strong>{{ dam_alerts.total }} anomalie{{ dam_alerts.total > 1 ? 's' : '' }} DAM</strong>
+        {% if dam_alerts.duplicates > 0 %}<a class="badge badge-warning" href="{{ path('app_dam_dashboard', {filter: 'duplicates', type: fiche.type.value}) }}">{{ dam_alerts.duplicates }} doublon{{ dam_alerts.duplicates > 1 ? 's' : '' }}</a>{% endif %}
+        {% if dam_alerts.rights_missing > 0 %}<a class="badge badge-neutral" href="{{ path('app_dam_dashboard', {filter: 'rights_missing', type: fiche.type.value}) }}">{{ dam_alerts.rights_missing }} droit{{ dam_alerts.rights_missing > 1 ? 's' : '' }} non validé{{ dam_alerts.rights_missing > 1 ? 's' : '' }}</a>{% endif %}
+        {% if dam_alerts.rights_expiring > 0 %}<a class="badge badge-warning" href="{{ path('app_dam_dashboard', {filter: 'rights_expiring', type: fiche.type.value}) }}">{{ dam_alerts.rights_expiring }} droit{{ dam_alerts.rights_expiring > 1 ? 's' : '' }} à J-30</a>{% endif %}
+        {% if dam_alerts.rights_expired > 0 %}<a class="badge badge-danger" href="{{ path('app_dam_dashboard', {filter: 'rights_expired', type: fiche.type.value}) }}">{{ dam_alerts.rights_expired }} expiré{{ dam_alerts.rights_expired > 1 ? 's' : '' }}</a>{% endif %}
+        {% if dam_alerts.failed > 0 %}<a class="badge badge-danger" href="{{ path('app_dam_dashboard', {filter: 'failed'}) }}">{{ dam_alerts.failed }} échec{{ dam_alerts.failed > 1 ? 's' : '' }}</a>{% endif %}
+    </aside>
+{% endif %}

@@ -42,6 +42,7 @@ use Symfony\Component\Uid\Ulid;
         columns: ['status', 'updated_at', 'id'],
     ),
 ]
+#[ORM\Index(name: 'IDX_PIM_FICHE_UPDATED', columns: ['updated_at', 'id'])]
 #[ORM\HasLifecycleCallbacks]
 class Fiche
 {

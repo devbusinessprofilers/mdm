@@ -45,6 +45,7 @@ final class AdminWorkflowCatalog
                 'rules' => [
                     'L’API externe ne crée, ne soumet, ne valide, ne publie et n’archive aucune fiche.',
                     'Toute mutation conserve le statut et les métadonnées du workflow courant.',
+                    'Le prestataire peut renseigner source, mots-clés et échéance des droits ; seul un validateur interne peut valider ou révoquer ces droits.',
                     'Le contrat interactif complet est disponible dans la Documentation API Platform.',
                 ],
             ],
@@ -54,11 +55,13 @@ final class AdminWorkflowCatalog
                 'summary' => 'L’original reste privé ; seule une copie confirmée par le worker devient publiquement accessible.',
                 'steps' => [
                     'Dépôt privé et contrôle du fichier, puis validation des métadonnées et des droits.',
+                    'Calcul pHash et signalement non bloquant des doublons exacts ou visuellement proches dans la supervision DAM.',
                     'Demande de publication → outbox → file dam → copie vers le stockage public.',
                     'Confirmation du worker → URL CDN exposée ; révocation, remplacement, archivage ou suppression retirent la copie.',
                 ],
                 'rules' => [
                     'La fiche doit être publiée et les droits d’utilisation validés.',
+                    'Les échéances sont signalées à J-30 puis comme expirées, sans dépublication automatique de la fiche.',
                     'Les documents confidentiels restent toujours privés et ne disposent jamais d’URL publique.',
                     'Scopes JWT : documents:read, documents:write, documents:private et documents:publish.',
                 ],
@@ -84,6 +87,7 @@ final class AdminWorkflowCatalog
                 'steps' => [
                     'Exécuter app:lieux:validate, app:activites:validate, app:restaurants:validate et app:services:validate avant la migration et corriger explicitement toute donnée incompatible.',
                     'Appliquer doctrine:migrations:migrate, puis redémarrer worker-dam, worker-pim et worker-outbox.',
+                    'Planifier les pHash historiques avec app:dam:analyze-media, puis traiter les alertes dans /admin/dam.',
                     'Contrôler doctrine:schema:validate et la supervision de l’outbox et des files ci-dessus.',
                     'En dev uniquement, app:dev:database:clean vide la base et les deux stockages DAM ; doctrine:fixtures:load --group=pim-demo --append recharge Lieux, Activités, Restaurants et Services.',
                 ],

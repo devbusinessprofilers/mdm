@@ -13,6 +13,7 @@ final readonly class AdminPageCatalog
         'app_pim_admin' => 'Sommaire d’administration',
         'app_pim_home' => 'Accueil du PIM',
         'app_pim_global_search' => 'Recherche globale du PIM',
+        'app_pim_fiche_index' => 'Liste de toutes les fiches',
         'app_pim_lieu_index' => 'Liste des lieux',
         'app_pim_lieu_new' => 'Créer un lieu',
         'app_pim_lieu_show' => 'Fiche d’un lieu',
@@ -35,6 +36,7 @@ final readonly class AdminPageCatalog
         'app_account_admin_index' => 'Collaborateurs',
         'app_account_admin_show' => 'Fiche d’un collaborateur',
         'app_account_user_admin_index' => 'Utilisateurs internes',
+        'app_dam_dashboard' => 'Supervision DAM',
         'api_doc' => 'Documentation API Platform',
         'api_entrypoint' => 'Point d’entrée REST',
         'app_health' => 'Santé de l’application',
@@ -93,7 +95,7 @@ final readonly class AdminPageCatalog
         if ('app_health' === $name || 'app_pim_home' === $name) {
             return true;
         }
-        if (str_starts_with($name, 'app_pim_') || str_starts_with($name, 'app_account_admin_')) {
+        if (str_starts_with($name, 'app_pim_') || str_starts_with($name, 'app_account_admin_') || 'app_dam_dashboard' === $name) {
             return true;
         }
         if (str_starts_with($path, '/api')) {

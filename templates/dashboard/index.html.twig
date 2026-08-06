@@ -1,0 +1,114 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Tableau de bord{% endblock %}
+
+{% block body %}
+<main class="page">
+    <header class="page-header">
+        <div class="page-header-copy">
+            <p class="page-kicker">PIM</p>
+            <h1>Tableau de bord</h1>
+            {% if snapshot %}
+                <p class="page-description">
+                    Dernière mise à jour :
+                    <time datetime="{{ computedAt|date('c') }}">{{ computedAt|date('d/m/Y H:i') }}</time>
+                    · calcul automatique toutes les 15 minutes.
+                </p>
+            {% else %}
+                <p class="page-description">Aucune statistique n'a encore été calculée.</p>
+            {% endif %}
+        </div>
+        {{ form(recalculate_form) }}
+    </header>
+
+    {% if not snapshot %}
+        <div class="card empty-state">
+            Les statistiques apparaîtront ici après le premier calcul.
+            Cliquez sur « Recalculer maintenant » ou attendez le prochain passage planifié.
+        </div>
+    {% else %}
+        <section class="dam-stats" aria-label="Indicateurs principaux">
+            <div class="card dam-stat"><span>Total de fiches</span><strong>{{ fiches.total }}</strong></div>
+            <div class="card dam-stat"><span>Fiches publiées</span><strong>{{ fiches.published }} ({{ fiches.publishedPct }} %)</strong></div>
+            <div class="card dam-stat"><span>Complétude moyenne</span><strong>{{ completeness.avgGlobal is null ? '—' : completeness.avgGlobal ~ ' %' }}</strong></div>
+            <div class="card dam-stat">
+                <span>Temps moyen de validation</span>
+                <strong>{{ validation.label ?? '—' }}</strong>
+                {% if validation.sample > 0 %}<small>sur le dernier cycle de {{ validation.sample }} fiche{{ validation.sample > 1 ? 's' : '' }}</small>{% endif %}
+            </div>
+            <div class="card dam-stat"><span>Mises à jour cette semaine</span><strong>{{ thisWeek.updates }}</strong></div>
+            <div class="card dam-stat"><span>Nouvelles fiches cette semaine</span><strong>{{ thisWeek.created }}</strong></div>
+        </section>
+
+        <section class="card" aria-label="Répartition pays et typologie">
+            <div class="section-heading"><h2>Fiches par pays et typologie</h2></div>
+            {% if countryRows is empty %}
+                <p class="empty-state">Aucune fiche.</p>
+            {% else %}
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Pays</th>
+                            {% for label in typeLabels %}<th scope="col">{{ label }}</th>{% endfor %}
+                            <th scope="col">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in countryRows %}
+                            <tr>
+                                <th scope="row">{{ row.pays }}{% if row.countryCode != '??' %} ({{ row.countryCode }}){% endif %}</th>
+                                {% for type in typeLabels|keys %}<td>{{ row.counts[type] ?? 0 }}</td>{% endfor %}
+                                <td><strong>{{ row.total }}</strong></td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% endif %}
+        </section>
+
+        <section class="dam-stats" aria-label="Activité par utilisateur">
+            {% set userTables = {
+                'Fiches créées par utilisateur': perUser.created,
+                'Champs modifiés par utilisateur': perUser.fieldsUpdated,
+                'Fiches validées par utilisateur': perUser.validated
+            } %}
+            {% for heading, rows in userTables %}
+                <div class="card">
+                    <div class="section-heading"><h2>{{ heading }}</h2></div>
+                    {% if rows is empty %}
+                        <p class="empty-state">Aucune activité enregistrée.</p>
+                    {% else %}
+                        <table class="data-table">
+                            <tbody>
+                                {% for row in rows %}
+                                    <tr>
+                                        <th scope="row">{{ row.actor }}</th>
+                                        <td>
+                                            {{ row.count }}
+                                            <div aria-hidden="true" style="background: currentColor; opacity: .25; height: 4px; border-radius: 2px; width: {{ row.ratio }}%;"></div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </section>
+
+        {% if sparklines is not empty %}
+            <section class="dam-stats" aria-label="Historique sur 30 jours">
+                {% for spark in sparklines %}
+                    <div class="card dam-stat">
+                        <span>{{ spark.label }} — 30 jours</span>
+                        <svg viewBox="0 0 100 30" preserveAspectRatio="none" role="img" aria-label="{{ spark.label }} : de {{ spark.first }} à {{ spark.last }}" style="width: 100%; height: 48px;">
+                            <polyline points="{{ spark.points }}" fill="none" stroke="currentColor" stroke-width="1.5" vector-effect="non-scaling-stroke"/>
+                        </svg>
+                        <small>{{ spark.first }} → {{ spark.last }}</small>
+                    </div>
+                {% endfor %}
+            </section>
+        {% endif %}
+    {% endif %}
+</main>
+{% endblock %}

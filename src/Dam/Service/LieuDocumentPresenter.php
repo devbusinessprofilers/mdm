@@ -52,6 +52,9 @@ final readonly class LieuDocumentPresenter
                 ? null
                 : $this->publicUrl->url($document->publicStorageKey()),
             downloadUrl: $download,
+            keywords: $document->keywords(),
+            rightsExpiresAt: $document->rightsExpiresAt()?->format('Y-m-d'),
+            rightsValidity: $document->rightsValidity()->value,
         );
     }
 }

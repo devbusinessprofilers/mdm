@@ -30,6 +30,7 @@
             <h1>{{ creation ? 'Nouveau service' : 'Modifier le service' }}</h1>
         </div>
     </header>
+    {% if not creation %}{% include 'dam/_fiche_alerts.html.twig' with {fiche: service.fiche} only %}{% endif %}
 
     {{ form_start(form) }}
         {{ form_errors(form) }}
@@ -90,7 +91,6 @@
             {{ form_row(form.supportsCommerciaux) }}
             {{ form_row(form.supportTitle) }}
             {{ form_row(form.supportSource) }}
-            {{ form_row(form.supportRightsGranted) }}
         </section>
         {{ form_row(form.submit) }}
     {{ form_end(form) }}
