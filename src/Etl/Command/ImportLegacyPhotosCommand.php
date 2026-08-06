@@ -1,0 +1,297 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Etl\Command;
+
+use App\Etl\Entity\LegacyPhotoImport;
+use App\Etl\Enum\LegacyPhotoStatus;
+use App\Etl\Repository\LegacyFicheMappingRepository;
+use App\Etl\Repository\LegacyPhotoImportRepository;
+use App\Dam\Service\FicheImageUploader;
+use App\Dam\Service\LieuImageUploader;
+use App\Dam\Service\MediaProcessingService;
+use App\Pim\Entity\Activite\Activite;
+use App\Pim\Entity\Lieu\Lieu;
+use App\Pim\Entity\Restaurant\Restaurant;
+use App\Pim\Entity\Service\ServiceEvenementiel;
+use App\Pim\Entity\Lieu\RessourceLieu;
+use App\Pim\Enum\NatureRessource;
+use App\Pim\Import\Legacy\LegacyPhotoCatalog;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\Console\Attribute\AsCommand;
+use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Style\SymfonyStyle;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
+
+/**
+ * Import manuel des photos legacy vers le DAM : upload S3 de l'original puis
+ * génération des variantes INLINE (pas d'outbox — les workers consomment la
+ * base de .env.local, pas forcément la base cible de l'import). Relançable :
+ * chaque photo est suivie dans etl_legacy_photo, la reprise se fait par statut.
+ */
+#[AsCommand(name: 'app:legacy:import-photos', description: 'Importe les photos legacy des fiches importées (S3 + variantes).')]
+final class ImportLegacyPhotosCommand extends Command
+{
+    private const DEFAULT_IMAGES_DIR = '/var/legacy-images';
+
+    public function __construct(
+        private readonly EntityManagerInterface $entityManager,
+        private readonly LegacyFicheMappingRepository $mappings,
+        private readonly LegacyPhotoImportRepository $photos,
+        private readonly LegacyPhotoCatalog $catalog,
+        private readonly LieuImageUploader $lieuUploader,
+        private readonly FicheImageUploader $ficheUploader,
+        private readonly MediaProcessingService $processing,
+    ) {
+        parent::__construct();
+    }
+
+    protected function configure(): void
+    {
+        $this
+            ->addOption('images-dir', null, InputOption::VALUE_REQUIRED, 'Répertoire des images legacy.', self::DEFAULT_IMAGES_DIR)
+            ->addOption('limit', null, InputOption::VALUE_REQUIRED, 'Nombre maximum de photos à traiter.')
+            ->addOption('batch-size', null, InputOption::VALUE_REQUIRED, 'Taille des lots.', '25')
+            ->addOption('retry-errors', null, InputOption::VALUE_NONE, 'Repasse les photos en erreur en attente avant de traiter.')
+            ->addOption('syspad', null, InputOption::VALUE_REQUIRED, 'Ne traite que ce syspad_id (debug).')
+            ->addOption('shard', null, InputOption::VALUE_REQUIRED, 'Partition i/n (ex. 0/4) pour paralléliser plusieurs exécutions.')
+            ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Contrôle la présence et la validité des fichiers sans rien écrire.');
+    }
+
+    protected function execute(InputInterface $input, OutputInterface $output): int
+    {
+        $io = new SymfonyStyle($input, $output);
+        $imagesDir = rtrim((string) $input->getOption('images-dir'), '/');
+        $limit = null === $input->getOption('limit') ? null : max(1, (int) $input->getOption('limit'));
+        $batchSize = max(1, (int) $input->getOption('batch-size'));
+        $syspad = null === $input->getOption('syspad') ? null : (int) $input->getOption('syspad');
+        $dryRun = (bool) $input->getOption('dry-run');
+        [$shardIndex, $shardCount] = $this->parseShard($input->getOption('shard'));
+
+        if (!is_dir($imagesDir)) {
+            $io->error(sprintf('Répertoire des images legacy introuvable : %s', $imagesDir));
+
+            return Command::INVALID;
+        }
+
+        if ($dryRun) {
+            return $this->dryRun($io, $imagesDir, $limit, $syspad);
+        }
+
+        $seeded = $this->seed($io);
+        if ($seeded > 0) {
+            $io->text(sprintf('%d photos ajoutées au suivi.', $seeded));
+        }
+        if ($input->getOption('retry-errors')) {
+            $retried = $this->photos->resetErrorsToPending();
+            $io->text(sprintf('%d photos en erreur repassées en attente.', $retried));
+        }
+
+        $counters = ['traitées' => 0, 'importées' => 0, 'fichier absent' => 0, 'invalides' => 0, 'erreurs' => 0];
+        $processedTotal = 0;
+        while (null === $limit || $processedTotal < $limit) {
+            $batchLimit = null === $limit ? $batchSize : min($batchSize, $limit - $processedTotal);
+            $batch = $this->photos->findPending($batchLimit, $syspad, $shardIndex, $shardCount);
+            if ([] === $batch) {
+                break;
+            }
+            foreach ($batch as $photo) {
+                ++$processedTotal;
+                ++$counters['traitées'];
+                $this->processOne($photo, $imagesDir, $counters);
+            }
+            $this->entityManager->flush();
+            $this->entityManager->clear();
+            $io->write(sprintf("\r%d photos traitées (%d importées)…", $counters['traitées'], $counters['importées']));
+        }
+        $io->newLine();
+
+        $io->table(['Compteur', 'Valeur'], array_map(null, array_keys($counters), array_values($counters)));
+        $io->section('Répartition du suivi');
+        $statuses = $this->photos->countByStatus();
+        $io->table(['Statut', 'Total'], array_map(null, array_keys($statuses), array_values($statuses)));
+
+        return 0 === $counters['erreurs'] ? Command::SUCCESS : Command::FAILURE;
+    }
+
+    /** Décline les photos_json non encore traités en lignes de suivi. */
+    private function seed(SymfonyStyle $io): int
+    {
+        $seeded = 0;
+        while ([] !== ($mappings = $this->mappings->findPhotosNotSeeded(200))) {
+            foreach ($mappings as $mapping) {
+                $result = $this->catalog->entries((string) $mapping->photosJson(), $mapping->gamme());
+                foreach ($result['entries'] as $entry) {
+                    $this->entityManager->persist(new LegacyPhotoImport($mapping->syspadId(), $entry['path'], $entry['category'], $entry['usage'], $entry['position']));
+                    ++$seeded;
+                }
+                foreach ($result['skipped'] as $entry) {
+                    $this->entityManager->persist(new LegacyPhotoImport($mapping->syspadId(), $entry['path'], $entry['category'], $entry['usage'], $entry['position'], LegacyPhotoStatus::SkippedLimit));
+                    ++$seeded;
+                }
+                $mapping->markPhotosSeeded();
+            }
+            $this->entityManager->flush();
+            $this->entityManager->clear();
+            $io->write(sprintf("\rDéclinaison du suivi photos : %d…", $seeded));
+        }
+        if ($seeded > 0) {
+            $io->newLine();
+        }
+
+        return $seeded;
+    }
+
+    /** Contrôle la présence et la validité des fichiers depuis photos_json, sans écrire. */
+    private function dryRun(SymfonyStyle $io, string $imagesDir, ?int $limit, ?int $syspad): int
+    {
+        $counters = ['contrôlées' => 0, 'valides' => 0, 'fichier absent' => 0, 'invalides' => 0, 'hors plafond (25)' => 0];
+        $lastSyspad = -1;
+        while (true) {
+            $mappings = $this->mappings->createQueryBuilder('m')
+                ->where('m.photosJson IS NOT NULL')
+                ->andWhere('m.syspadId > :last')->setParameter('last', $lastSyspad)
+                ->orderBy('m.syspadId', 'ASC')
+                ->setMaxResults(200)
+                ->getQuery()->getResult();
+            if ([] === $mappings) {
+                break;
+            }
+            foreach ($mappings as $mapping) {
+                $lastSyspad = $mapping->syspadId();
+                if (null !== $syspad && $mapping->syspadId() !== $syspad) {
+                    continue;
+                }
+                $result = $this->catalog->entries((string) $mapping->photosJson(), $mapping->gamme());
+                $counters['hors plafond (25)'] += count($result['skipped']);
+                foreach ($result['entries'] as $entry) {
+                    if (null !== $limit && $counters['contrôlées'] >= $limit) {
+                        break 3;
+                    }
+                    ++$counters['contrôlées'];
+                    $path = $imagesDir.'/'.$entry['path'];
+                    if (!is_file($path)) {
+                        ++$counters['fichier absent'];
+                        continue;
+                    }
+                    $image = @getimagesize($path);
+                    if (!is_array($image) || $image[0] < 960 || $image[1] < 480) {
+                        ++$counters['invalides'];
+                    } else {
+                        ++$counters['valides'];
+                    }
+                }
+            }
+            $this->entityManager->clear();
+            $io->write(sprintf("\r%d photos contrôlées…", $counters['contrôlées']));
+        }
+        $io->newLine();
+        $io->table(['Compteur', 'Valeur'], array_map(null, array_keys($counters), array_values($counters)));
+        $io->note('Dry-run : aucune écriture effectuée.');
+
+        return Command::SUCCESS;
+    }
+
+    /** @param array<string, int> $counters */
+    private function processOne(LegacyPhotoImport $photo, string $imagesDir, array &$counters): void
+    {
+        $path = $imagesDir.'/'.$photo->legacyPath();
+        if (!is_file($path)) {
+            ++$counters['fichier absent'];
+            $photo->markFailed(LegacyPhotoStatus::MissingFile, sprintf('Fichier absent : %s', $photo->legacyPath()));
+
+            return;
+        }
+
+        $mapping = $this->mappings->find($photo->syspadId());
+        if (null === $mapping) {
+            ++$counters['erreurs'];
+            $photo->markFailed(LegacyPhotoStatus::Error, 'Fiche introuvable pour ce syspad.');
+
+            return;
+        }
+        $ficheEntityClass = match ($mapping->gamme()) {
+            LegacyPhotoCatalog::GAMME_ACTIVITE => Activite::class,
+            LegacyPhotoCatalog::GAMME_SERVICE => ServiceEvenementiel::class,
+            LegacyPhotoCatalog::GAMME_RESTAURANT => Restaurant::class,
+            default => null,
+        };
+        $uploader = null !== $ficheEntityClass ? $this->ficheUploader : $this->lieuUploader;
+
+        $asset = null;
+        try {
+            $file = new UploadedFile($path, basename($path), null, null, true);
+            if (null !== $ficheEntityClass) {
+                $entity = $this->entityManager->find($ficheEntityClass, (string) $mapping->ficheId());
+                if (!$entity instanceof Activite && !$entity instanceof ServiceEvenementiel && !$entity instanceof Restaurant) {
+                    throw new \RuntimeException('Fiche introuvable pour ce syspad.');
+                }
+                $asset = $this->ficheUploader->upload($file, $entity->fiche());
+                $fiche = $entity->fiche();
+                $attach = fn () => $entity->addRessource($this->resource($asset->id(), $photo));
+            } else {
+                $lieu = $this->entityManager->find(Lieu::class, (string) $mapping->ficheId());
+                if (!$lieu instanceof Lieu) {
+                    throw new \RuntimeException('Lieu introuvable pour ce syspad.');
+                }
+                $asset = $this->lieuUploader->upload($file, $lieu);
+                $fiche = $lieu->fiche();
+                $attach = fn () => $lieu->addRessource($this->resource($asset->id(), $photo));
+            }
+            // preserveWorkflowDuring englobe le flush : le @PreUpdate du détail
+            // (Lieu::touch → fiche->markChanged) se déclenche PENDANT le flush,
+            // il doit donc être neutralisé jusqu'à la fin de l'écriture pour
+            // ne pas repasser une fiche publiée en brouillon.
+            $fiche->preserveWorkflowDuring(function () use ($attach, $asset): void {
+                $attach();
+                $this->entityManager->persist($asset);
+                // La ressource doit être en base avant la génération des
+                // variantes (crop/rotation relus depuis la ressource).
+                $this->entityManager->flush();
+            });
+            $this->processing->process($asset);
+            $photo->markDone($asset->id());
+            ++$counters['importées'];
+        } catch (\DomainException $exception) {
+            ++$counters['invalides'];
+            $photo->markFailed(LegacyPhotoStatus::Invalid, $exception->getMessage());
+            if (null !== $asset) {
+                $uploader->delete($asset);
+            }
+        } catch (\Throwable $exception) {
+            ++$counters['erreurs'];
+            $photo->markFailed(LegacyPhotoStatus::Error, $exception->getMessage());
+            if (null !== $asset) {
+                $uploader->delete($asset);
+            }
+        }
+    }
+
+    private function resource(string $assetId, LegacyPhotoImport $photo): RessourceLieu
+    {
+        $resource = new RessourceLieu();
+        $resource->changeDamAssetId($assetId);
+        $resource->changeNature(NatureRessource::Photo);
+        $resource->changeUsage($photo->usageCode());
+        $resource->changePosition($photo->position());
+
+        return $resource;
+    }
+
+    /** @return array{0: ?int, 1: ?int} */
+    private function parseShard(mixed $shard): array
+    {
+        if (null === $shard) {
+            return [null, null];
+        }
+        if (1 !== preg_match('#^(\d+)/(\d+)$#', (string) $shard, $matches) || (int) $matches[2] < 1 || (int) $matches[1] >= (int) $matches[2]) {
+            throw new \InvalidArgumentException('Format de --shard invalide, attendu i/n avec i < n.');
+        }
+
+        return [(int) $matches[1], (int) $matches[2]];
+    }
+}

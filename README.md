@@ -692,3 +692,5 @@ charges. Légende : **Oui** = à faire ou à conserver, **Non** = écarté,
 - [Module ETL](src/Etl/README.md)
 - [Module Enrichment](src/Enrichment/README.md)
 - [Module Account](src/Account/README.md)
+- [Import legacy — mappings CSV production](docs/import-legacy.md)
+- [Gestion et rotation des secrets](docs/SECRETS.md)

@@ -1,0 +1,138 @@
+# Import legacy — CSV production → PIM
+
+Reprise des données de production (`lists_infos_produits_v2_*.csv`, 91 colonnes, ~26 600 lignes) dans une base PIM dédiée (`mdm_reel`). Trois commandes manuelles, idempotentes, relançables :
+
+| Commande | Rôle | Périmètre |
+|---|---|---|
+| `app:legacy:import-lieux` | Fiches Lieu | Gamme ∈ {Hôtel, Lieu, Centre de congrès} (~19 835) |
+| `app:legacy:import-activites` | Fiches Activité | Gamme = Idée (~2 304) |
+| `app:legacy:import-services` | Fiches Service | Gamme = Prestataires de service (~1 534) |
+| `app:legacy:import-restaurants` | Fiches Restaurant | Gamme = Restaurant (~2 918) |
+| `app:legacy:import-photos` | Photos + variantes WebP | Toutes les fiches importées |
+
+**Pivot** : `pim_fiche.code` = « Id syspad » du CSV (fourni à l'insert, le trigger n'attribue le compteur qu'aux fiches créées sans code). La table `etl_legacy_fiche` (syspad ↔ fiche ULID, gamme, photos_json) porte l'idempotence ; `etl_legacy_photo` suit chaque photo (statuts `pending/done/error/missing_file/invalid/skipped_limit`).
+
+## Exécution
+
+Les montages sont définis dans le docker-compose parent : CSV dans `/var/import`, images sources (copie locale du projet DAM) dans `/var/legacy-images`. **Ne jamais basculer `.env.local`** : cibler la base par variable d'environnement.
+
+```bash
+DBURL='mysql://mdm:<mdp>@sql:3306/mdm_reel?serverVersion=11.4.0-MariaDB&charset=utf8mb4'
+run() { docker compose exec -e DATABASE_URL="$DBURL" -e S3_PREFIX=reel -e APP_DEBUG=0 php php bin/console "$@"; }
+
+run doctrine:migrations:migrate -n                    # schéma + LOV + triggers
+run app:legacy:import-lieux --dry-run --limit=200     # répétition
+run app:legacy:import-lieux
+run app:legacy:import-activites --dry-run --limit=200
+run app:legacy:import-activites
+run app:legacy:import-photos --dry-run                # contrôle des fichiers sur disque
+run app:legacy:import-photos --shard=0/4              # ×4 terminaux (0/4 … 3/4)
+run app:legacy:import-photos --retry-errors           # reprise
+```
+
+Options communes des imports de fiches : `--file`, `--dry-run`, `--limit`, `--from`, `--batch-size`, `--only-syspad`. Statut : publié CSV `true` → fiche publiée (`publishForImport`), sinon brouillon. Les valeurs non mappables produisent des **warnings agrégés** (jamais d'échec de ligne) ; seuls un Id syspad ou un nom invalides rejettent une ligne.
+
+## Mapping Lieu (`LegacyLieuRowMapper`)
+
+| Colonne CSV | Cible PIM | Transformation / remarques |
+|---|---|---|
+| Id syspad | `Fiche.code` + `etl_legacy_fiche.syspad_id` | obligatoire, numérique |
+| Publié / non publié | statut fiche | `true` → publiée, sinon brouillon |
+| Nom Français | `Fiche.label` | obligatoire, tronqué 255 |
+| Gamme | `Lieu.generaleGammeLibelle` | + filtre de périmètre |
+| Classification (★…/Palace) | `generaleTypologie` | ★★→`GENERALE_TYPOLOGIE_1` … ★★★★★→`_4`, Palace→`_5` |
+| Type de lieux (JSON) | `generaleTypologie` | libellés du catalogue + alias : Kartings→`_21`, Résidence/Appart'hotel→`_13`, Salle / Bureau→`_38`, Lieu avec incentive intégré→`_40` ; « Avec Hébergements » → `chambreHebergement(true)` ; inconnu → `_40` + warning |
+| Thématique (JSON) | `taCadreEnv` / `taThematique` | Mer/Au vert/Campagne/Montagne/Lac/Centre Ville → cadre env ; Bien-être/Golf/Eco-responsable/RSE/Gastronomique/Oenotourisme/Châteaux → thématique ; « Pas de Thème », « Ile », « Esat » ignorés |
+| Nombre de chambres / twin / single / capacité | `chambreNbTotal/NbTotalTwin/NbTotalSingle/CapaciteTotale` | `0`/vide → null ; total > 0 → `chambreHebergement(true)` |
+| Nombre / capacités / surface salles agrégées | `salleReunion{NbTotal, CapaciteMaxCocktail, CapaciteMaxTheatre, SurfaceMaxReunion, Exist}` | `Exist` = nb > 0 |
+| Pays…Ville, Latitude/Longitude | `Localisation` | code pays ISO-2 déduit (table statique, inconnu → warning) ; GPS invalide → warning, formaté 7 décimales |
+| Ligne/Arret RER et Metro | `AccesLieu` type `Metro` | nom « [RER ]Ligne – Arrêt », `modeTransport` RER/Métro |
+| Aéroports 1-2, Gare 1, Ville + distances | `AccesLieu` types `Aeroport`/`Gare`/`GrandeVille` | distance si numérique > 0 |
+| Salle (JSON) | entités `Salle` | nom, superficie, capacités (réunion/U/Grande Ecole→classe/théâtre/cabaret/banquet/cocktail/auditorium), lumière du jour, PMR, dansant ; capacité `0`/vide → null |
+| Description générale | `descGenerale` | **tronqué 1 000** + warning (limite « Bible » ; texte intégral récupérable via bp-dump) |
+| Hébergement | `chambreDescGenerale` | tronqué 1 000 + warning |
+| Salles de séminaires | `salleReunionDescSalleSeminaire` | non tronqué (TEXT) |
+| Loisirs 1-8 (+ Court de tennis, Parcours de golf) | `loisirInterne` | liste dédupliquée |
+| Les plus 1-5 | `atout1..5` | **tronqué 35** + warning |
+| Journée d'étude / Séminaire résidentiel | `tarification().seminaireJourneeJourneeEtude` / `seminaireNuiteeResidentiel` | `0`/vide → non renseigné |
+| Wifi, Fibre, Clim salles | `techniqueReunion` | `TECHNIQUE_REUNION_1/_2/_10` |
+| Piscines, Spa, Sauna, Hammam, Jacuzzi, Remise en forme, Fitness | `bienEtre` | `BIEN_ETRE_2..9` |
+| Climatisation en chambre | `equipements` | `EQUIPEMENTS_5` |
+| Accès PMR | `pmrAcces` | booléen |
+| Photos (JSON) | `etl_legacy_fiche.photos_json` | traité par `app:legacy:import-photos` |
+
+**Colonnes ignorées (Lieu)** : Restauration / Gastronomie (aucun champ description restauration sur `pim_lieu` — même lacune que les traductions `restaurationFr`), Offre spéciale + dates promotion (pas de champ cible), Téléphone (seul un téléphone de facturation existe côté administratif), Lien youtube (champ vidéo inexistant sur Lieu), Plan des salles, Le mot de l'expert, colonnes activité/prestataire (80-86, 88-91).
+
+## Mapping Activité (`LegacyActiviteRowMapper`)
+
+| Colonne CSV | Cible PIM | Transformation / remarques |
+|---|---|---|
+| Id syspad | `Fiche.code` + pivot | idem Lieu |
+| Publié / non publié | statut fiche | idem Lieu |
+| Nom Français | `Fiche.label` | tronqué 255 |
+| Type d'activités (JSON, multi) | `thematiques` (**multi**) | tous les types mappables sont conservés : Sportives→`TA_SPORTIVE_LUDIQUE`, Sensations Fortes & Sports Mécaniques / Aériennes→`TA_SENSATION_SPORT_MECA`, Nautiques→`TA_NAUTIQUE_AQUATIQUE`, Culinaires & Oenologiques→`TA_CULINAIRE_OENOLOGIQUE`, Créatives…→`TA_CREATIVE_ARTISTIQUE_MUSICALE`, Culturelles & Découvertes→`TA_CULTURELLE_REFLEXION_DECOUVERTE`, Nature / RSE→`TA_NATURE_RSE`, Détentes→`TA_BIEN_ETRE_DETENTE`, Digitales High Tech→`TA_DIGITAL_HIGH_TECH` ; **« Insolites » sans équivalent** → warning |
+| — | `sousThematiques` (multi, LOV `SOUS_THEMATIQUE_ACTIVITE`, 64 valeurs Bible) | **aucune donnée legacy** : à renseigner à la main dans l'admin (cases affichées selon les thématiques cochées) |
+| Objectifs de l'activité (texte multiligne) | `objectifs` | Cohésion d'équipe/Fédérer/Intégration→`OBJECTIF_SEMINAIRE_1`, Communiquer→`_2`, Motiver→`_3`, Sensibiliser→`_5`, Récompenser/Fidéliser→`_6`, Animer/Challenger/Stimuler→`_8` ; libellé inconnu → warning |
+| Description générale | `descriptionGenerale` | non tronqué |
+| Lien youtube | `youtubeUrl` | tronqué 255 |
+| Participants min/max | `participantsMin/Max` | `0`/vide → null |
+| Temps minimum/maximum (`H:MM`) | `dureeMinMinutes/dureeMaxMinutes` | converti en minutes, `0:00` → null |
+| Tarifs activité à partir de | `tarifParPersonne` | `0`/vide → null |
+| Les plus 1-5 | `plus` | **max 4** (limite entité) + warning si 5ᵉ |
+| Rayon d'action (Région) / (département) | mode `Mobile` + `touteFrance`/`regionsMobiles`/`departementsMobiles` | listes multilignes ; « Toute la France » → `touteFrance(true)` |
+| (sinon) Ville renseignée | mode `Fixe` | — |
+| (sinon) | mode null | warning `mode_intervention_indetermine` |
+| Pays…Ville, GPS | `Localisation` | idem Lieu |
+| Photos (JSON) | `etl_legacy_fiche.photos_json` | plafond 10 (cf. ci-dessous) |
+
+**Colonnes ignorées (Activité)** : prestataire (obligatoire seulement à la soumission, non présent dans le CSV), langues, engagements RSE, offres (pas de données CSV), colonnes hôtelières.
+
+## Mapping Service (`LegacyServiceRowMapper`)
+
+| Colonne CSV | Cible PIM | Transformation / remarques |
+|---|---|---|
+| Id syspad / Publié / Nom Français | `Fiche.code` + pivot / statut / `Fiche.label` | idem Lieu |
+| Type de prestataire | `prestations` (LOV `TYPE_PRESTATAIRE`) | alias : Traiteurs→`TS_TRAITEUR`, Transporteurs→`TS_TRANSPORT_LOGISTIQUE`, Animations Evènementielles / Photographes→`TS_ANIMATION_ARTISTE`, Goodies→`TS_CADEAU_CLIENT_GOODIE`, Réalisations audiovisuelles / Techniques-Sonorisations→`TS_SON_VIDEO`, Location mobiliers / Fleuristes-Décorations / Constructions éphémères→`TS_TECHNIQUE_AUDIOVISUEL`, Traductions-Interprètes→`TS_TRADUCTION_INTERPRETARIAT`, Accueil et sécurité→`TS_ACCUEIL_SECURITE`, Imprimeurs / Communications-Pub / Signalétiques→`TS_COMMUNICATION_PUBLICITÉ`, Apps et sites web→`TS_DIGITAL_HYBRIDE` ; vide (404 lignes) → aucune prestation + warning |
+| Categorie | `demarcheRse(true)` si « RSE », `prestataireEsat(true)` si « ESAT / STPA » | sinon null |
+| Description générale | `descriptionGenerale` | non tronqué |
+| Lien youtube | `youtubeUrl` | tronqué 255 |
+| Tarifs activité à partir de | `tarifParPrestation` | `0`/vide → null ; les 4 autres tarifs restent null |
+| Rayons d'action | mode `Mobile` + `regionsMobiles`/`departementsMobiles` | pas de flag « toute la France » sur les services : la valeur est conservée telle quelle dans les régions ; sinon Ville → `Fixe` |
+| Pays…Ville, GPS | `Localisation` | idem Lieu |
+| Photos (JSON) | `photos_json` du pivot | plafond 10, usages PRINCIPALE/DIVERSE |
+
+**Colonnes ignorées (Service)** : Les plus 1-5 (pas d'atouts sur les services — warning), Téléphone, Objectifs, Tag. Booléens d'adaptabilité, matériel, sur devis et les 4 autres tarifs : aucune donnée CSV → null, à compléter dans l'admin.
+
+## Mapping Restaurant (`LegacyRestaurantRowMapper`)
+
+| Colonne CSV | Cible PIM | Transformation / remarques |
+|---|---|---|
+| Id syspad / Publié / Nom Français | `Fiche.code` + pivot / statut / `Fiche.label` | idem Lieu |
+| Thématique (JSON) | `typesRestaurant` / `engagementsRse` | Gastronomique→`GASTRONOMIQUE`, Mer→`BORD_DE_MER`, Au vert→`AU_VERT`, Lac→`BORD_EAU`, Montagne→`RESTAURANT_ALTITUDE` ; Esat→RSE `ESAT` ; autres (Oenotourisme, RSE, Eco-responsable…) → warning |
+| Description générale + Restauration / Gastronomie | `descriptionGenerale` | concaténées (double saut de ligne) — un seul champ cible |
+| Les plus 1-5 | `atouts` | max 5 (255 car. chacun, tronqué + warning) |
+| Capacité cocktail plus grande salle | `capaciteCocktail` | `0`/vide → null |
+| Wifi / Clim salles | `equipements` (`WIFI`, `CLIMATISATION`) | booléens |
+| Accès PMR | `accesPmr` | booléen |
+| Salle (JSON) | entités `RestaurantSalle` | mêmes clés que Lieu |
+| Accès (aéroports/gare/ville/RER-métro) | `RestaurantAcces` | type + nom (pas de champ distance sur l'entité) |
+| Pays…Ville, GPS | `Localisation` | idem Lieu |
+| Lien youtube | `youtubeUrl` | tronqué 255 |
+| Photos (JSON) | `photos_json` du pivot | plafond 10, usages PRINCIPALE/DIVERSE |
+
+**Colonnes ignorées (Restaurant)** : Classification ★ (8 lignes, étoiles hôtelières), Salles de séminaires (texte — pas de champ cible + warning), Hébergement (532 restaurants d'hôtels — l'hébergement est porté par la fiche Lieu), colonnes chambres/tarifs séminaire, Téléphone. Types de cuisine, jours d'ouverture, horaires, privatisation, services : aucune donnée CSV → à compléter dans l'admin.
+
+## Photos (`app:legacy:import-photos`)
+
+Sources : chemins relatifs du JSON « Photos », fichiers dans `/var/legacy-images`. Original → S3 privé, 7 variantes WebP générées **inline** (`MediaProcessingService`, pas d'outbox) → S3 public. Validations : ≥ 960×480, ≤ 25 Mo, JPEG/PNG/WebP.
+
+| Catégorie legacy | Usage (fiches Lieu) | Usage (fiches Activité) |
+|---|---|---|
+| master (1ʳᵉ) | PHOTO_PRINCIPALE | PHOTO_PRINCIPALE |
+| master (suivantes) | PHOTO_DIVERSE | PHOTO_DIVERSE |
+| facade | PHOTO_FACADE | PHOTO_DIVERSE |
+| chambre | PHOTO_CHAMBRE | PHOTO_DIVERSE |
+| restaurant | PHOTO_RESTAURATION | PHOTO_DIVERSE |
+| salles_reunion / divers | PHOTO_DIVERSE | PHOTO_DIVERSE |
+
+Plafonds : **25 photos par lieu**, **10 par activité** (invariants admin/validation) — le surplus est tracé `skipped_limit`. Fichiers absents de la copie locale → `missing_file` (relançables après synchronisation du dossier images). Suivi : `SELECT status, COUNT(*) FROM etl_legacy_photo GROUP BY status;`
