@@ -68,7 +68,9 @@ final class LieuMappingTest extends KernelTestCase
         }
         self::assertFalse($ficheMetadata->hasField('completeness'));
         $codeMapping = $ficheMetadata->getFieldMapping('code');
-        self::assertTrue($codeMapping->notInsertable ?? false);
+        // Insérable depuis la reprise legacy (code = Id syspad fourni à l'import),
+        // le trigger SQL n'attribue le compteur que si aucun code n'est fourni.
+        self::assertFalse($codeMapping->notInsertable ?? false);
         self::assertTrue($codeMapping->notUpdatable ?? false);
         self::assertSame(ClassMetadata::GENERATED_INSERT, $codeMapping->generated);
         self::assertSame(

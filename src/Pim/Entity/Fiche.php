@@ -54,10 +54,11 @@ class Fiche
     private Ulid $id;
     #[ORM\Column(length: 32, enumType: TypeFiche::class)]
     private TypeFiche $type;
+    // Null à la création : le trigger SQL l'attribue depuis le compteur,
+    // sauf si un code a été fourni explicitement (import legacy).
     #[
         ORM\Column(
             options: ['unsigned' => true],
-            insertable: false,
             updatable: false,
             generated: 'INSERT',
         ),
@@ -156,6 +157,23 @@ class Fiche
         }
 
         return $this->code;
+    }
+
+    /**
+     * Fixe le code avant le premier enregistrement (reprise de données :
+     * le code legacy est conservé). Sans appel, le trigger SQL attribue le
+     * prochain code du compteur.
+     */
+    public function assignImportedCode(int $code): void
+    {
+        if (null !== $this->code) {
+            throw new \LogicException('Le code d\'une fiche est immuable.');
+        }
+        if ($code < 1) {
+            throw new \InvalidArgumentException('Le code d\'une fiche doit être strictement positif.');
+        }
+
+        $this->code = $code;
     }
 
     public function label(): ?string
