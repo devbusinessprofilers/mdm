@@ -152,3 +152,7 @@ Source : le **dump SQL** de production (`--file`, défaut `/var/import/dump-prod
 | `restaurationFr`, `offreSpecialeFr` | non mappés (pas de champ cible — comptés dans le rapport) |
 
 **Règle de cohérence** (`LegacyTranslationRule`) : la traduction est importée **disponible** (origin `manual`) si le français actuel du PIM est identique au français legacy (ou à sa troncature d'import à 1 000 caractères) ; si le français a divergé, elle est importée **obsolète** — traduction conservée, re-validation humaine dans l'admin. Source PIM vide → ignorée. Idempotent : les couples (fiche, champ, locale) existants sont ignorés. Aucun appel Google.
+
+**Atouts et loisirs** : `bp_atout` / `bp_loisir` sont des référentiels partagés (pas de rattachement direct au produit dans les i18n) — la commande construit un dictionnaire *texte français → traductions* et l'applique aux champs libres du PIM : `lieu.atout1..5`, `lieu.loisirInterne[i]`, `activite.plus[i]`, `restaurant.atouts[i]`. Les variantes de troncature de l'import des fiches sont prises en compte (35 caractères + ellipse pour les atouts lieux, 255 pour restaurants/activités). ~497 000 traductions appariées.
+
+**Libellés de LOV** : les référentiels `bp_theme`, `bp_type_lieu`, `bp_type_prestataire`, `bp_type_activite`, `bp_objectif`, `bp_equipement` alimentent `pim_attribute_value_translation` par correspondance exacte de libellé français (~240 libellés traduits ; les libellés PIM renommés par la Bible ne matchent pas et restent à traduire).
