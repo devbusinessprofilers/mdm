@@ -35,7 +35,7 @@ Symfony 7.4 + API Platform (Upsun, projet dédié)
 
 - Le MDM dispose de ressources distinctes de la Marketplace BP.
 - MariaDB stocke les données et les messages asynchrones en V1.
-- Les workers PIM, DAM, ETL, Enrichment et Mail sont séparés.
+- Les files PIM, DAM, ETL, Enrichment, Completeness et Mail restent séparées ; elles sont consommées par cinq workers (outbox, mail, pim, dam et batch pour etl/enrichment/completeness).
 - RabbitMQ, Redis et OpenSearch sont reportés en V2 jusqu'à ce que des mesures prouvent leur utilité.
 
 ## 2. État actuel — 31 juillet 2026
@@ -289,7 +289,8 @@ La complétude est calculée pour les Lieux, Activités, Restaurants et Services
 événementiels. Le Super Admin configure les poids, la formule et les canaux sur
 `/admin/completude`. Les scores global, Marketplace, sites thématiques,
 Salesforce et Portail Prestataire sont stockés dans chaque entité métier et
-recalculés par le worker `completeness` après la réindexation.
+recalculés via la file `completeness`, consommée par `worker-batch`, après la
+réindexation.
 
 La formule `presence` attribue tout le poids à une valeur renseignée. La formule
 `length_ratio` attribue une fraction du poids selon la longueur cible. Cette

@@ -1,0 +1,77 @@
+# Configuration Upsun Fixed (plan Large) — application MDM
+name: app
+type: 'php:8.4' # passer à php:8.5 dès que disponible sur Upsun Fixed (image locale : php:8.5-apache)
+
+dependencies:
+    php:
+        composer/composer: '^2'
+
+runtime:
+    extensions:
+        - apcu
+        - imagick
+        - bcmath
+        - exif
+        - intl
+        - pdo_mysql
+        - xsl
+        - pcntl
+
+relationships:
+    database: 'db:mysql'
+
+disk: 2048
+
+# Seuls répertoires inscriptibles à l'exécution (le reste du FS est read-only).
+# Les médias DAM sont sur OVH Object Storage, les fichiers temporaires dans /tmp.
+mounts:
+    'var/log': { source: local, source_path: log }
+    'var/sessions': { source: local, source_path: sessions }
+
+hooks:
+    build: |
+        set -e
+        composer install --no-dev --optimize-autoloader --no-interaction
+    deploy: |
+        set -e
+        php bin/console doctrine:migrations:migrate --no-interaction
+
+web:
+    locations:
+        '/':
+            root: 'public'
+            passthru: '/index.php'
+
+# Topologie workers : outbox et mail sont critiques (latence utilisateur),
+# etl/enrichment/completeness sont regroupés dans un seul consommateur batch.
+# Les retry strategies restent par file (config/packages/messenger.yaml).
+workers:
+    outbox:
+        size: S
+        commands:
+            start: php bin/console app:outbox:consume --time-limit=3600 --memory-limit=128M --sleep=1 --batch-size=100 --lease=300 --no-interaction
+    mail:
+        size: S
+        commands:
+            start: php bin/console messenger:consume mail --time-limit=3600 --memory-limit=256M --sleep=1 --failure-limit=10 --keepalive=30 --no-interaction
+    pim:
+        size: S
+        commands:
+            start: php bin/console messenger:consume pim --time-limit=3600 --memory-limit=256M --sleep=1 --failure-limit=10 --keepalive=30 --no-interaction
+    dam:
+        size: M
+        commands:
+            start: php bin/console messenger:consume dam --time-limit=3600 --memory-limit=512M --sleep=1 --failure-limit=10 --keepalive=30 --no-interaction
+    batch:
+        size: M
+        commands:
+            start: php bin/console messenger:consume etl enrichment completeness --time-limit=3600 --memory-limit=512M --sleep=1 --failure-limit=10 --keepalive=30 --no-interaction
+
+# Les schedules Symfony (ComputeDashboardStats + CheckFailedQueue, toutes les 15 min,
+# stateful + processOnlyLastMissedRun) sont consommées en one-shot par un cron
+# plutôt que par un worker dédié.
+crons:
+    scheduler:
+        spec: '*/15 * * * *'
+        commands:
+            start: php bin/console messenger:consume scheduler_dashboard scheduler_default --limit=20 --time-limit=300 --no-interaction

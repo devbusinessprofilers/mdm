@@ -1,9 +1,20 @@
 # Exploitation de Symfony Messenger
 
-La V1 utilise MariaDB et le transport Doctrine. Les files `pim`, `dam`,
-`etl`, `enrichment`, `completeness` et `mail` sont consommées par des processus séparés afin
-qu'un traitement lent ne bloque pas les autres domaines. Le processus
-`worker-outbox` relaie les événements enregistrés avec les transactions métier.
+La V1 utilise MariaDB et le transport Doctrine. Les files restent séparées
+(retry par file), mais leur consommation est regroupée en cinq workers :
+
+| Worker | Files consommées | Taille Upsun |
+|---|---|---|
+| `worker-outbox` | relay outbox (`app:outbox:consume`) | S |
+| `worker-mail` | `mail` | S |
+| `worker-pim` | `pim` | S |
+| `worker-dam` | `dam` | M |
+| `worker-batch` | `etl`, `enrichment`, `completeness` | M |
+
+Les schedules Symfony (`scheduler_dashboard`, `scheduler_default`) ne sont plus
+consommées par un worker permanent : en production Upsun, un cron
+(`crons.scheduler` dans `.platform.app.yaml`) les consomme en one-shot toutes
+les 15 minutes ; en local le service `cron-scheduler` simule ce cron.
 
 ## Prérequis
 
@@ -15,7 +26,7 @@ docker compose exec php php bin/console doctrine:migrations:migrate --no-interac
 
 ## Workers locaux
 
-Démarrer l'application, les six consumers Messenger et le relay outbox :
+Démarrer l'application, les workers et le cron scheduler local :
 
 ```bash
 docker compose --profile workers up -d
@@ -25,7 +36,7 @@ Afficher leur état et suivre leurs logs :
 
 ```bash
 docker compose --profile workers ps
-docker compose logs --follow worker-outbox worker-pim worker-dam worker-etl worker-enrichment worker-completeness worker-mail
+docker compose logs --follow worker-outbox worker-mail worker-pim worker-dam worker-batch cron-scheduler
 ```
 
 Demander un arrêt propre, puis recréer les processus :
@@ -39,7 +50,7 @@ Après une modification de l’image PHP ou de l’entrypoint worker, reconstrui
 toutes les images de workers avant de les recréer :
 
 ```bash
-docker compose build worker-pim worker-dam worker-etl worker-enrichment worker-completeness worker-mail worker-outbox
+docker compose build worker-outbox worker-mail worker-pim worker-dam worker-batch cron-scheduler
 docker compose --profile workers up -d --force-recreate
 ```
 
@@ -56,7 +67,8 @@ invalider les classes d'un worker déjà en cours d'exécution.
 Le worker `dam` requiert aussi la commande ImageMagick `convert`, installée
 dans l'image PHP, pour produire les variantes WebP.
 
-Le worker `completeness` calcule les cinq scores après chaque réindexation. Un
+La file `completeness` (consommée par `worker-batch`) calcule les cinq scores
+après chaque réindexation. Un
 recalcul massif est découpé en lots chaînés de 250 fiches par défaut :
 
 ```bash
@@ -70,7 +82,7 @@ pages d'administration et les workers ne créent jamais de configuration. Un
 changement de catalogue planifie automatiquement le recalcul des types touchés.
 Pour le premier rattrapage volumineux, quatre consumers peuvent être lancés
 temporairement avec `docker compose --profile workers up -d --scale
-worker-completeness=4`, puis ramenés à une instance.
+worker-batch=4`, puis ramenés à une instance.
 
 Le site ne doit être ouvert qu'une fois `app:completeness:status` terminé avec
 succès, `messenger:failed:show --stats` vide et l'outbox sans événement bloqué.

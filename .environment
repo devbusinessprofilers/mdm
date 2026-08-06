@@ -1,0 +1,8 @@
+# Sourcé par Upsun/Platform.sh dans chaque container (web, workers, crons).
+# Dérive les variables applicatives des relationships de la plateforme.
+
+export DATABASE_URL="$(echo "$PLATFORM_RELATIONSHIPS" | base64 --decode | jq -r '.database[0] | "mysql://\(.username):\(.password)@\(.host):\(.port)/\(.path)?serverVersion=11.4.0-MariaDB&charset=utf8mb4"')"
+
+export APP_ENV=prod
+export APP_DEBUG=0
+export MESSENGER_TRANSPORT_DSN="doctrine://default?auto_setup=0"

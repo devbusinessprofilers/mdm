@@ -33,8 +33,8 @@ dépôt ni aux journaux.
 1. Construire l'image PHP, qui installe `poppler-utils` (`pdfinfo`,
    `pdfseparate`, `pdfunite`).
 2. Exécuter les migrations Doctrine.
-3. Redémarrer le worker `enrichment` avec la nouvelle image et vérifier les
-   transports Messenger, l'outbox et le transport d'échec.
+3. Redémarrer `worker-batch` (file `enrichment`) avec la nouvelle image et
+   vérifier les transports Messenger, l'outbox et le transport d'échec.
 4. Configurer Box, conserver le feature flag à `0`, puis effectuer une recette
    avec des PDF français anonymisés de 1, 5, 6 et 100 pages.
 5. Activer le flag après validation des champs, LOV, tableaux, références de pages,
