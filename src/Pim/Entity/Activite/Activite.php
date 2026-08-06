@@ -381,17 +381,28 @@ class Activite
         $this->replaceLov('TYPE_EXT_INT', $value);
     }
 
-    public function thematique(): ?string
+    /** @return list<string> */
+    public function thematiques(): array
     {
-        return $this->lovValues('THEMATIQUE_ACTIVITE')[0] ?? null;
+        return $this->lovValues('THEMATIQUE_ACTIVITE');
     }
 
-    public function changeThematique(?string $value): void
+    /** @param list<string> $value */
+    public function changeThematiques(array $value): void
     {
-        $this->replaceLov(
-            'THEMATIQUE_ACTIVITE',
-            null === $value || '' === $value ? [] : [$value],
-        );
+        $this->replaceLov('THEMATIQUE_ACTIVITE', $value);
+    }
+
+    /** @return list<string> */
+    public function sousThematiques(): array
+    {
+        return $this->lovValues('SOUS_THEMATIQUE_ACTIVITE');
+    }
+
+    /** @param list<string> $value */
+    public function changeSousThematiques(array $value): void
+    {
+        $this->replaceLov('SOUS_THEMATIQUE_ACTIVITE', $value);
     }
 
     /** @return list<string> */

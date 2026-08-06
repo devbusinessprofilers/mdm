@@ -41,8 +41,11 @@
             <dt>Type</dt>
             <dd>{{ activite.types|join(', ') ?: '—' }}</dd>
 
-            <dt>Thématique</dt>
-            <dd>{{ activite.thematique ?? '—' }}</dd>
+            <dt>Thématiques</dt>
+            <dd>{{ activite.thematiques|join(', ') ?: '—' }}</dd>
+
+            <dt>Sous-thématiques</dt>
+            <dd>{{ activite.sousThematiques|join(', ') ?: '—' }}</dd>
 
             <dt>Rayon</dt>
             <dd>{{ activite.modeIntervention ? activite.modeIntervention.value : '—' }}</dd>

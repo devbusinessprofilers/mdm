@@ -11,6 +11,7 @@ use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Enum\ModeInterventionActivite;
 use App\Pim\Enum\NatureRessource;
 use App\Pim\Enum\TypeOffreActivite;
+use App\Pim\Lov\ActiviteLovCatalog;
 use Symfony\Component\Validator\Constraint;
 use Symfony\Component\Validator\ConstraintValidator;
 
@@ -168,6 +169,21 @@ final class ValidActiviteValidator extends ConstraintValidator
                 'ressources',
             );
         }
+        foreach ($value->sousThematiques() as $sousThematique) {
+            try {
+                $parent = ActiviteLovCatalog::parentOf($sousThematique);
+            } catch (\InvalidArgumentException) {
+                $this->violation('Sous-thématique d’activité inconnue.', 'sousThematiques');
+                break;
+            }
+            if (!in_array($parent, $value->thematiques(), true)) {
+                $this->violation(
+                    'Une sous-thématique nécessite que sa thématique parente soit sélectionnée.',
+                    'sousThematiques',
+                );
+                break;
+            }
+        }
         if (ValidationGroups::SUBMISSION === $this->context->getGroup()) {
             $this->submission($value);
         }
@@ -188,11 +204,6 @@ final class ValidActiviteValidator extends ConstraintValidator
                     'Un prestataire issu de la LOV est obligatoire.',
                 ],
                 [
-                    'thematique',
-                    $value->thematique(),
-                    'La thématique est obligatoire.',
-                ],
-                [
                     'descriptionGenerale',
                     $value->descriptionGenerale(),
                     'La description générale est obligatoire.',
@@ -202,6 +213,12 @@ final class ValidActiviteValidator extends ConstraintValidator
             if (null === $field || '' === $field) {
                 $this->violation($message, $path);
             }
+        }
+        if ([] === $value->thematiques()) {
+            $this->violation(
+                'Au moins une thématique est obligatoire.',
+                'thematiques',
+            );
         }
         if ([] === $value->types()) {
             $this->violation(

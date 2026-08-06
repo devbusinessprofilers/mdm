@@ -42,7 +42,7 @@ final readonly class FicheSearchIndexer
             $fiche->label(),
             $activeFixedLocation ? $location?->ruePostale() : null, $activeFixedLocation ? $location?->codePostal() : null, $activeFixedLocation ? $location?->ville() : null, $activeFixedLocation ? $location?->pays() : null,
             $lieu?->descGenerale(),
-            $activite?->descriptionGenerale(), $activite?->comprendPrestation(), $activite?->thematique(),
+            $activite?->descriptionGenerale(), $activite?->comprendPrestation(), null === $activite ? null : implode(' ', $activite->thematiques()),
             null !== $activite && !$activeFixedLocation ? implode(' ', [...$activite->paysMobiles(), ...$activite->regionsMobiles(), ...$activite->departementsMobiles()]) : null,
             $service?->descriptionGenerale(),
             null === $service ? null : implode(' ', $service->prestations()),

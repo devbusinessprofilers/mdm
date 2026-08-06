@@ -64,7 +64,8 @@ final class ActiviteFixtures extends Fixture implements FixtureGroupInterface
             $activity->changeTypes([
                 0 === $offset % 3 ? 'TYPE_EXT_INT_1' : 'TYPE_EXT_INT_2',
             ]);
-            $activity->changeThematique('TA_SPORTIVE_LUDIQUE');
+            $activity->changeThematiques(['TA_SPORTIVE_LUDIQUE']);
+            $activity->changeSousThematiques(['TA_SPORTIVE_LUDIQUE_SS_1']);
             $activity->changeLangues(['LANGUE_PARLEE_1', 'LANGUE_PARLEE_2']);
             $activity->changeObjectifs(['OBJECTIF_SEMINAIRE_1']);
             $activity->changeDescriptionGenerale(

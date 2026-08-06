@@ -58,13 +58,46 @@ final class ActiviteType extends AbstractType
                 ],
             )
             ->add(
-                'thematique',
+                'thematiques',
                 ChoiceType::class,
-                $this->field('Thématique', 'thematique', 'changeThematique') + [
+                $this->field(
+                    'Thématiques',
+                    'thematiques',
+                    'changeThematiques',
+                ) + [
                     'choices' => array_flip(
                         ActiviteLovCatalog::choicesFor('THEMATIQUE_ACTIVITE'),
                     ),
-                    'placeholder' => 'Choisir…',
+                    'multiple' => true,
+                    'expanded' => true,
+                    'choice_attr' => static fn (): array => [
+                        'data-sous-thematiques-target' => 'thematique',
+                        'data-action' => 'sous-thematiques#refresh',
+                    ],
+                ],
+            )
+            ->add(
+                'sousThematiques',
+                ChoiceType::class,
+                $this->field(
+                    'Sous-thématiques',
+                    'sousThematiques',
+                    'changeSousThematiques',
+                ) + [
+                    // Chaque case porte sa thématique parente : le contrôleur
+                    // Stimulus sous-thematiques masque celles dont la
+                    // thématique n'est pas cochée.
+                    'choices' => array_flip(
+                        ActiviteLovCatalog::choicesFor(
+                            'SOUS_THEMATIQUE_ACTIVITE',
+                        ),
+                    ),
+                    'multiple' => true,
+                    'expanded' => true,
+                    'choice_attr' => static fn (string $code): array => [
+                        'data-sous-thematiques-target' => 'sousThematique',
+                        'data-parent' => ActiviteLovCatalog::parentOf($code),
+                    ],
                 ],
             )
             ->add(

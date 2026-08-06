@@ -96,7 +96,7 @@ final class CompletenessFieldCatalog
         $fields = $this->common($type);
         $map = [
             'PRESTATAIRE' => ['Prestataire', 'prestataire'], 'TYPE_EXT_INT' => ['Type intérieur/extérieur', 'types'],
-            'THEMATIQUE_ACTIVITE' => ['Thématique', 'thematique'], 'LANGUE_PARLEE' => ['Langues parlées', 'langues'],
+            'THEMATIQUE_ACTIVITE' => ['Thématiques', 'thematiques'], 'SOUS_THEMATIQUE_ACTIVITE' => ['Sous-thématiques', 'sousThematiques'], 'LANGUE_PARLEE' => ['Langues parlées', 'langues'],
             'ENGAGEMENT_RSE' => ['Engagements RSE', 'engagementsRse'], 'RAYON_ACTION' => ["Rayon d'action", 'modeIntervention'],
             'INFO_GENERALE_DESC' => ['Description générale', 'descriptionGenerale'], 'INFO_GENERALE_WYSIWYG' => ['Contenu de la prestation', 'comprendPrestation'],
             'OBJECTIF_SEMINAIRE' => ['Objectifs', 'objectifs'], 'CAP_GLOBALE_NB_MIN_PAX' => ['Participants minimum', 'participantsMin'],

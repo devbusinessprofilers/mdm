@@ -45,7 +45,10 @@
             {{ form_row(form.label) }}
             {{ form_row(form.prestataire) }}
             {{ form_row(form.types) }}
-            {{ form_row(form.thematique) }}
+            <div data-controller="sous-thematiques">
+                {{ form_row(form.thematiques) }}
+                {{ form_row(form.sousThematiques) }}
+            </div>
             {{ form_row(form.langues) }}
             {{ form_row(form.engagementsRse) }}
         </section>

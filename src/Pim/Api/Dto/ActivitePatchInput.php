@@ -25,9 +25,16 @@ final class ActivitePatchInput
         $this->payload['types'] = $v;
     }
 
-    public function setThematique(?string $v): void
+    /** @param list<string> $v */
+    public function setThematiques(array $v): void
     {
-        $this->payload['thematique'] = $v;
+        $this->payload['thematiques'] = $v;
+    }
+
+    /** @param list<string> $v */
+    public function setSousThematiques(array $v): void
+    {
+        $this->payload['sousThematiques'] = $v;
     }
 
     /** @param list<string> $v */

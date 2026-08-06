@@ -25,7 +25,8 @@ final class ActiviteTypeTest extends KernelTestCase
             [
                 'prestataire',
                 'types',
-                'thematique',
+                'thematiques',
+                'sousThematiques',
                 'langues',
                 'engagementsRse',
                 'modeIntervention',
@@ -44,7 +45,8 @@ final class ActiviteTypeTest extends KernelTestCase
         $form->submit([
             'label' => 'Escape game',
             'types' => ['TYPE_EXT_INT_1'],
-            'thematique' => 'TA_SPORTIVE_LUDIQUE',
+            'thematiques' => ['TA_SPORTIVE_LUDIQUE', 'TA_NATURE_RSE'],
+            'sousThematiques' => ['TA_SPORTIVE_LUDIQUE_SS_1'],
             'modeIntervention' => 'mobile',
             'touteFrance' => '1',
             'paysMobiles' => "France\nBelgique",
@@ -72,5 +74,7 @@ final class ActiviteTypeTest extends KernelTestCase
         self::assertSame(['France', 'Belgique'], $a->paysMobiles());
         self::assertSame(['Bretagne', 'Normandie'], $a->regionsMobiles());
         self::assertSame(['TYPE_EXT_INT_1'], $a->types());
+        self::assertSame(['TA_SPORTIVE_LUDIQUE', 'TA_NATURE_RSE'], $a->thematiques());
+        self::assertSame(['TA_SPORTIVE_LUDIQUE_SS_1'], $a->sousThematiques());
     }
 }
