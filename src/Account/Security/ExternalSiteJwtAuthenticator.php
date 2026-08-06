@@ -18,7 +18,7 @@ final class ExternalSiteJwtAuthenticator extends AbstractAuthenticator
 {
     public function __construct(private readonly ExternalSiteJwtVerifier $verifier) {}
 
-    public function supports(Request $request): bool { return str_starts_with($request->getPathInfo(), '/api/v1/lieux'); }
+    public function supports(Request $request): bool { return str_starts_with($request->getPathInfo(), '/api/v1/'); }
 
     public function authenticate(Request $request): SelfValidatingPassport
     {

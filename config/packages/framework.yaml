@@ -7,16 +7,41 @@ framework:
         cookie_secure: auto
         cookie_httponly: true
         cookie_samesite: lax
+        # session.use_strict_mode (anti-fixation) est activé via Docker/php/php.ini.
 
+    # lock_factory: null sur chaque limiter : symfony/lock n'est pas installé,
+    # et un seul conteneur php sert le HTTP (compteurs sur le cache filesystem).
     rate_limiter:
         password_reset_email:
             policy: fixed_window
             limit: 3
             interval: '1 hour'
+            lock_factory: null
+            cache_pool: rate_limiter.storage
         password_reset_ip:
             policy: fixed_window
             limit: 10
             interval: '1 hour'
+            lock_factory: null
+            cache_pool: rate_limiter.storage
+        api_client:
+            policy: sliding_window
+            limit: '%env(int:RATE_LIMIT_API_CLIENT)%'
+            interval: '1 minute'
+            lock_factory: null
+            cache_pool: rate_limiter.storage
+        api_ip:
+            policy: sliding_window
+            limit: '%env(int:RATE_LIMIT_API_IP)%'
+            interval: '1 minute'
+            lock_factory: null
+            cache_pool: rate_limiter.storage
+        public_endpoint_ip:
+            policy: fixed_window
+            limit: '%env(int:RATE_LIMIT_PUBLIC_IP)%'
+            interval: '1 hour'
+            lock_factory: null
+            cache_pool: rate_limiter.storage
 
     #esi: true
     #fragments: true

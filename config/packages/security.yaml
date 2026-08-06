@@ -21,7 +21,7 @@ security:
             pattern: ^/(_profiler|_wdt|assets|build)/
             security: false
         external_api:
-            pattern: ^/api/v1/(?:lieux|activites|services)
+            pattern: ^/api/v1/(?:lieux|activites|services|restaurants)
             stateless: true
             custom_authenticators:
                 - App\Account\Security\ExternalSiteJwtAuthenticator
@@ -49,12 +49,14 @@ security:
     # Note: Only the *first* matching rule is applied
     access_control:
         - { path: ^/health$, roles: PUBLIC_ACCESS }
+        # Protégé par jeton Bearer dans MetricsController (404 sans jeton valide).
+        - { path: ^/metrics$, roles: PUBLIC_ACCESS }
         - { path: ^/login$, roles: PUBLIC_ACCESS }
         - { path: ^/logout$, roles: PUBLIC_ACCESS }
         - { path: ^/invitation/, roles: PUBLIC_ACCESS }
         - { path: ^/mot-de-passe-oublie$, roles: PUBLIC_ACCESS }
         - { path: ^/reinitialiser-mot-de-passe/, roles: PUBLIC_ACCESS }
-        - { path: ^/api/v1/(?:lieux|activites|services), roles: ROLE_EXTERNAL_SITE }
+        - { path: ^/api/v1/(?:lieux|activites|services|restaurants), roles: ROLE_EXTERNAL_SITE }
         - { path: ^/admin, roles: ROLE_BP_EDITOR }
         - { path: ^/, roles: ROLE_USER }
 

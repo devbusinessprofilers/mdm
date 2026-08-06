@@ -7,13 +7,29 @@ framework:
         # The data in this cache should persist between deploys.
         # Other options include:
 
-        # Redis
+        # Redis — à activer sur Upsun si l'app scale horizontalement :
+        # les compteurs de rate limiting et les métriques doivent alors être partagés.
         #app: cache.adapter.redis
         #default_redis_provider: redis://localhost
 
         # APCu (not recommended with heavy random-write workloads as memory fragmentation can cause perf issues)
         #app: cache.adapter.apcu
 
-        # Namespaced pools use the above "app" backend by default
-        #pools:
-            #my.dedicated.cache: null
+        pools:
+            # Compteurs de rate limiting (cf. framework.yaml rate_limiter).
+            rate_limiter.storage:
+                adapter: cache.app
+            # Compteurs de métriques applicatives exposés par /metrics.
+            cache.metrics:
+                adapter: cache.app
+
+when@test:
+    framework:
+        cache:
+            pools:
+                # Compteurs volatils en test : remis à zéro à chaque kernel,
+                # sinon les limites (30/h sur les pages publiques) rendent la suite flaky.
+                rate_limiter.storage:
+                    adapter: cache.adapter.array
+                cache.metrics:
+                    adapter: cache.adapter.array

@@ -23,7 +23,7 @@ final class ApiResponseSubscriber
         if (
             !str_starts_with(
                 $event->getRequest()->getPathInfo(),
-                '/api/v1/lieux',
+                '/api/v1/',
             )
         ) {
             return;
@@ -94,7 +94,7 @@ final class ApiResponseSubscriber
     public function response(ResponseEvent $event): void
     {
         $request = $event->getRequest();
-        if (!str_starts_with($request->getPathInfo(), '/api/v1/lieux')) {
+        if (!str_starts_with($request->getPathInfo(), '/api/v1/')) {
             return;
         }
         $response = $event->getResponse();
