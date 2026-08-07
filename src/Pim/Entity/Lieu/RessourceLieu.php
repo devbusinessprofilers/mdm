@@ -33,6 +33,7 @@ use Symfony\Component\Uid\Ulid;
 #[ORM\Index(name: 'IDX_PIM_RESOURCE_USAGE', columns: ['usage_code', 'lieu_id'])]
 #[ORM\Index(name: 'IDX_PIM_RESSOURCE_DAM_ASSET', columns: ['dam_asset_id'])]
 #[ORM\Index(name: 'IDX_PIM_RESOURCE_RIGHTS_EXPIRY', columns: ['rights_granted', 'rights_expires_at'])]
+#[ORM\Index(name: 'IDX_PIM_RESOURCE_FICHE_NATURE', columns: ['fiche_id', 'nature'])]
 #[ORM\Index(name: 'IDX_RESOURCE_RESTAURANT_ROOM', columns: ['restaurant_salle_id', 'position', 'id'])]
 #[
     ORM\Index(

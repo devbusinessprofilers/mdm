@@ -32,6 +32,7 @@ final readonly class DashboardStatsCalculator
         return [
             'fiches' => $this->ficheTotals(),
             'completeness' => $this->completeness(),
+            'storage' => $this->storage(),
             'countryByType' => $this->countryByType(),
             'validation' => $this->validationDelay(),
             'thisWeek' => $this->thisWeek($weekStartUtc, $weekStart),
@@ -78,6 +79,40 @@ final readonly class DashboardStatsCalculator
         );
 
         return ['avgGlobal' => null === $avg ? null : round((float) $avg, 1)];
+    }
+
+    /**
+     * @return array{
+     *     byKind: array<string, array{count: int, bytes: int}>,
+     *     renditions: array{count: int, bytes: int},
+     *     totalBytes: int,
+     * }
+     */
+    private function storage(): array
+    {
+        $connection = $this->entityManager->getConnection();
+        /** @var list<array{kind: string, nb: string|int, bytes: string|int|null}> $rows */
+        $rows = $connection->fetchAllAssociative(
+            'SELECT kind, COUNT(*) AS nb, COALESCE(SUM(size_bytes), 0) AS bytes'
+            ." FROM dam_media_asset WHERE status NOT IN ('deleting', 'deleted')"
+            .' GROUP BY kind',
+        );
+        $byKind = [];
+        $totalBytes = 0;
+        foreach ($rows as $row) {
+            $byKind[$row['kind']] = ['count' => (int) $row['nb'], 'bytes' => (int) $row['bytes']];
+            $totalBytes += (int) $row['bytes'];
+        }
+        /** @var array{nb: string|int, bytes: string|int|null} $renditions */
+        $renditions = $connection->fetchAssociative(
+            'SELECT COUNT(*) AS nb, COALESCE(SUM(size_bytes), 0) AS bytes FROM dam_media_rendition',
+        ) ?: ['nb' => 0, 'bytes' => 0];
+
+        return [
+            'byKind' => $byKind,
+            'renditions' => ['count' => (int) $renditions['nb'], 'bytes' => (int) $renditions['bytes']],
+            'totalBytes' => $totalBytes + (int) $renditions['bytes'],
+        ];
     }
 
     /**

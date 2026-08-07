@@ -89,6 +89,46 @@ final class RessourceLieuRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    public function countPublishedRightsIssues(?TypeFiche $type = null, ?\DateTimeImmutable $today = null): int
+    {
+        return (int) $this->publishedRightsIssuesQuery($type, $today)
+            ->select('COUNT(resource.id)')
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /** @return list<RessourceLieu> */
+    public function findPublishedRightsIssuesPage(?TypeFiche $type, int $page, int $limit, ?\DateTimeImmutable $today = null): array
+    {
+        return $this->publishedRightsIssuesQuery($type, $today)
+            ->addSelect('fiche')
+            ->orderBy('resource.rightsExpiresAt', 'ASC')
+            ->addOrderBy('resource.id', 'ASC')
+            ->setFirstResult((max(1, $page) - 1) * $limit)
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /** Photos de fiches publiées dont les droits sont absents ou expirés. */
+    private function publishedRightsIssuesQuery(?TypeFiche $type, ?\DateTimeImmutable $today): \Doctrine\ORM\QueryBuilder
+    {
+        $today = ($today ?? new \DateTimeImmutable('today'))->setTime(0, 0);
+        $builder = $this->createQueryBuilder('resource')
+            ->join('resource.fiche', 'fiche')
+            ->where('fiche.status = :published')
+            ->andWhere('resource.nature = :photo')
+            ->andWhere('(resource.rightsGranted = false OR resource.rightsExpiresAt < :today)')
+            ->setParameter('published', \App\Pim\Enum\StatutFiche::Publiee)
+            ->setParameter('photo', NatureRessource::Photo)
+            ->setParameter('today', $today);
+        if (null !== $type) {
+            $builder->andWhere('fiche.type = :type')->setParameter('type', $type);
+        }
+
+        return $builder;
+    }
+
     private function rightsQuery(RightsValidityStatus $status, ?TypeFiche $type, ?\DateTimeImmutable $today): \Doctrine\ORM\QueryBuilder
     {
         $today = ($today ?? new \DateTimeImmutable('today'))->setTime(0, 0);

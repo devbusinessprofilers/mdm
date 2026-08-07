@@ -30,6 +30,14 @@ final readonly class MetricsCollector
         $this->add('request_seconds_count', 1);
     }
 
+    public function recordMessage(string $messageClass, string $outcome, float $seconds): void
+    {
+        $short = false !== ($pos = strrpos($messageClass, '\\')) ? substr($messageClass, $pos + 1) : $messageClass;
+        $this->add('messages_total.'.$short.'.'.$outcome, 1);
+        $this->add('message_seconds_sum.'.$short, $seconds);
+        $this->add('message_seconds_count.'.$short, 1);
+    }
+
     /** @return array<string, int|float> compteurs indexés par clé logique */
     public function all(): array
     {

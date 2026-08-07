@@ -50,7 +50,7 @@ final class DamDashboardProviderTest extends KernelTestCase
         $provider = self::getContainer()->get(DamDashboardProvider::class);
         self::assertInstanceOf(DamDashboardProvider::class, $provider);
 
-        foreach (['duplicates', 'rights_missing', 'rights_expiring', 'rights_expired', 'failed', 'images', 'documents'] as $filter) {
+        foreach (['duplicates', 'rights_missing', 'rights_expiring', 'rights_expired', 'failed', 'published_no_photo', 'published_rights', 'orphans', 'missing_renditions', 'images', 'documents'] as $filter) {
             $page = $provider->page($filter, null, 1);
             self::assertSame($filter, $page['filter']);
             self::assertSame(1, $page['page']);

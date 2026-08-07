@@ -42,8 +42,58 @@ final readonly class DashboardPageProvider
                 'fieldsUpdated' => $this->withRatios($payload['perUser']['fieldsUpdated'] ?? []),
                 'validated' => $this->withRatios($payload['perUser']['validated'] ?? []),
             ],
+            'storage' => $this->storage($payload['storage'] ?? null),
+            'fieldFill' => $this->fieldFill(),
             'sparklines' => $this->sparklines(),
         ];
+    }
+
+    /**
+     * @param array<string, mixed>|null $storage
+     *
+     * @return array{total: string, images: string, documents: string, renditions: string}|null
+     */
+    private function storage(?array $storage): ?array
+    {
+        if (null === $storage) {
+            return null;
+        }
+        /** @var array<string, array{count: int, bytes: int}> $byKind */
+        $byKind = $storage['byKind'] ?? [];
+        /** @var array{count: int, bytes: int} $renditions */
+        $renditions = $storage['renditions'] ?? ['count' => 0, 'bytes' => 0];
+
+        return [
+            'total' => $this->formatBytes((int) ($storage['totalBytes'] ?? 0)),
+            'images' => sprintf('%s (%d)', $this->formatBytes($byKind['image']['bytes'] ?? 0), $byKind['image']['count'] ?? 0),
+            'documents' => sprintf('%s (%d)', $this->formatBytes($byKind['document']['bytes'] ?? 0), $byKind['document']['count'] ?? 0),
+            'renditions' => sprintf('%s (%d)', $this->formatBytes($renditions['bytes']), $renditions['count']),
+        ];
+    }
+
+    /** @return array{computedAt: \DateTimeImmutable, perType: array<string, array{fiches: int, worstFields: list<array{code: string, label: string, applicable: int, filled: int, rate: float}>}>}|null */
+    private function fieldFill(): ?array
+    {
+        $snapshot = $this->snapshots->latest(DashboardSnapshot::KIND_FIELD_FILL);
+        if (null === $snapshot) {
+            return null;
+        }
+        /** @var array<string, array{fiches: int, worstFields: list<array{code: string, label: string, applicable: int, filled: int, rate: float}>}> $perType */
+        $perType = $snapshot->payload()['perType'] ?? [];
+
+        return ['computedAt' => $snapshot->computedAt(), 'perType' => $perType];
+    }
+
+    private function formatBytes(int $bytes): string
+    {
+        if ($bytes >= 1024 ** 3) {
+            return number_format($bytes / 1024 ** 3, 1, ',', ' ').' Go';
+        }
+        if ($bytes >= 1024 ** 2) {
+            return number_format($bytes / 1024 ** 2, 1, ',', ' ').' Mo';
+        }
+
+        return number_format((int) ceil($bytes / 1024), 0, ',', ' ').' Ko';
     }
 
     /** @return array<string, string> */

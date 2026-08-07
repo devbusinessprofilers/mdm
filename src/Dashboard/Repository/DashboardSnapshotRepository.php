@@ -16,9 +16,11 @@ final class DashboardSnapshotRepository extends ServiceEntityRepository
         parent::__construct($registry, DashboardSnapshot::class);
     }
 
-    public function latest(): ?DashboardSnapshot
+    public function latest(string $kind = DashboardSnapshot::KIND_STATS): ?DashboardSnapshot
     {
         return $this->createQueryBuilder('s')
+            ->where('s.kind = :kind')
+            ->setParameter('kind', $kind)
             ->orderBy('s.computedAt', 'DESC')
             ->addOrderBy('s.id', 'DESC')
             ->setMaxResults(1)
@@ -37,7 +39,9 @@ final class DashboardSnapshotRepository extends ServiceEntityRepository
         /** @var list<DashboardSnapshot> $snapshots */
         $snapshots = $this->createQueryBuilder('s')
             ->where('s.computedAt >= :since')
+            ->andWhere('s.kind = :kind')
             ->setParameter('since', $since)
+            ->setParameter('kind', DashboardSnapshot::KIND_STATS)
             ->orderBy('s.computedAt', 'ASC')
             ->addOrderBy('s.id', 'ASC')
             ->getQuery()
@@ -64,13 +68,15 @@ final class DashboardSnapshotRepository extends ServiceEntityRepository
             ->addOrderBy('s.id', 'ASC')
             ->getQuery()
             ->getResult();
+        // Partitionné par kind : un snapshot stats et un field_fill peuvent
+        // coexister sur la même journée sans s'entre-supprimer.
         $keptByDay = [];
         foreach ($snapshots as $snapshot) {
-            $keptByDay[$snapshot->computedAt()->format('Y-m-d')] = $snapshot;
+            $keptByDay[$snapshot->kind().'|'.$snapshot->computedAt()->format('Y-m-d')] = $snapshot;
         }
         $removed = 0;
         foreach ($snapshots as $snapshot) {
-            if ($keptByDay[$snapshot->computedAt()->format('Y-m-d')] !== $snapshot) {
+            if ($keptByDay[$snapshot->kind().'|'.$snapshot->computedAt()->format('Y-m-d')] !== $snapshot) {
                 $this->getEntityManager()->remove($snapshot);
                 ++$removed;
             }

@@ -254,6 +254,43 @@ final class FicheRepository extends ServiceEntityRepository
         return (int) $this->getEntityManager()->getConnection()->fetchOne('SELECT COUNT(*) FROM pim_fiche');
     }
 
+    public function countPublishedWithoutPhoto(?TypeFiche $type = null): int
+    {
+        return (int) $this->publishedWithoutPhotoQuery($type)
+            ->select('COUNT(fiche.id)')
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /** @return list<Fiche> */
+    public function findPublishedWithoutPhotoPage(?TypeFiche $type, int $page, int $limit): array
+    {
+        return $this->publishedWithoutPhotoQuery($type)
+            ->orderBy('fiche.updatedAt', 'DESC')
+            ->addOrderBy('fiche.id', 'DESC')
+            ->setFirstResult((max(1, $page) - 1) * $limit)
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
+    private function publishedWithoutPhotoQuery(?TypeFiche $type): \Doctrine\ORM\QueryBuilder
+    {
+        $builder = $this->createQueryBuilder('fiche')
+            ->where('fiche.status = :published')
+            ->andWhere(sprintf(
+                'NOT EXISTS (SELECT resource.id FROM %s resource WHERE resource.fiche = fiche AND resource.nature = :photo)',
+                \App\Pim\Entity\Lieu\RessourceLieu::class,
+            ))
+            ->setParameter('published', StatutFiche::Publiee)
+            ->setParameter('photo', \App\Pim\Enum\NatureRessource::Photo);
+        if (null !== $type) {
+            $builder->andWhere('fiche.type = :type')->setParameter('type', $type);
+        }
+
+        return $builder;
+    }
+
     /** @param array{id: string, type: string, code: int|string, label: string|null, ville: string|null, status: string, completeness: int|string|null, updated_at: string} $row */
     private static function toSearchItem(array $row): GlobalSearchItem
     {

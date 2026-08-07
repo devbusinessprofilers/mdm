@@ -40,6 +40,15 @@
             <div class="card dam-stat"><span>Nouvelles fiches cette semaine</span><strong>{{ thisWeek.created }}</strong></div>
         </section>
 
+        {% if storage %}
+            <section class="dam-stats" aria-label="Stockage des médias">
+                <div class="card dam-stat"><span>Stockage total</span><strong>{{ storage.total }}</strong></div>
+                <div class="card dam-stat"><span>Images (originaux)</span><strong>{{ storage.images }}</strong></div>
+                <div class="card dam-stat"><span>Documents</span><strong>{{ storage.documents }}</strong></div>
+                <div class="card dam-stat"><span>Variantes générées</span><strong>{{ storage.renditions }}</strong></div>
+            </section>
+        {% endif %}
+
         <section class="card" aria-label="Répartition pays et typologie">
             <div class="section-heading"><h2>Fiches par pays et typologie</h2></div>
             {% if countryRows is empty %}
@@ -95,6 +104,40 @@
                 </div>
             {% endfor %}
         </section>
+
+        {% if fieldFill %}
+            <section class="card" aria-label="Champs les moins renseignés">
+                <div class="section-heading">
+                    <h2>Champs les moins renseignés</h2>
+                    <small>Calculé le <time datetime="{{ fieldFill.computedAt|date('c') }}">{{ fieldFill.computedAt|date('d/m/Y H:i') }}</time> (une fois par jour).</small>
+                </div>
+                <div class="dam-stats">
+                    {% for typeValue, data in fieldFill.perType %}
+                        <div class="card">
+                            <div class="section-heading"><h3>{{ typeLabels[typeValue] ?? typeValue }} ({{ data.fiches }} fiche{{ data.fiches > 1 ? 's' : '' }})</h3></div>
+                            {% if data.worstFields is empty %}
+                                <p class="empty-state">Aucun champ applicable.</p>
+                            {% else %}
+                                <table class="data-table">
+                                    <thead><tr><th scope="col">Champ</th><th scope="col">Renseigné</th></tr></thead>
+                                    <tbody>
+                                        {% for field in data.worstFields %}
+                                            <tr>
+                                                <th scope="row">{{ field.label }}</th>
+                                                <td>
+                                                    {{ field.rate }} % ({{ field.filled }}/{{ field.applicable }})
+                                                    <div aria-hidden="true" style="background: currentColor; opacity: .25; height: 4px; border-radius: 2px; width: {{ field.rate }}%;"></div>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            </section>
+        {% endif %}
 
         {% if sparklines is not empty %}
             <section class="dam-stats" aria-label="Historique sur 30 jours">

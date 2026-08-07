@@ -87,6 +87,8 @@ framework:
             App\Shared\Message\MediaProcessed: pim
             App\Pim\Message\CalculateFicheCompleteness: completeness
             App\Pim\Message\RecalculateCompletenessBatch: completeness
+            # Avant le joker Pim : les relances partent par le worker mail.
+            App\Pim\Message\SendFicheCompletenessReminder: mail
             'App\Pim\Message\*': pim
             'App\Dashboard\Message\*': pim
             'App\Dam\Message\*': dam

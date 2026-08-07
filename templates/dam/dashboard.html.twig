@@ -26,7 +26,11 @@
             rights_missing: ['Droits non validés', stats.rights_missing],
             rights_expiring: ['Droits à J-30', stats.rights_expiring],
             rights_expired: ['Droits expirés', stats.rights_expired],
-            failed: ['Traitements en échec', stats.failed]
+            failed: ['Traitements en échec', stats.failed],
+            published_no_photo: ['Publiées sans photo', stats.published_no_photo],
+            published_rights: ['Droits invalides (publiées)', stats.published_rights],
+            orphans: ['Ressources orphelines', stats.orphans],
+            missing_renditions: ['Variantes manquantes', stats.missing_renditions]
         } %}
         {% for key, card in cards %}
             <a class="card dam-stat {{ filter == key ? 'dam-stat-active' : '' }}" href="{{ path('app_dam_dashboard', {filter: key, type: type}) }}">
@@ -37,7 +41,7 @@
     {% endif %}
 
     <section class="card dam-toolbar">
-        {% if filter != 'failed' and not media_tab %}
+        {% if filter not in ['failed', 'orphans', 'missing_renditions'] and not media_tab %}
             <nav class="dam-type-filters" aria-label="Filtrer par type de fiche">
                 <a class="btn {{ type is null ? '' : 'btn-secondary' }}" href="{{ path('app_dam_dashboard', {filter: filter}) }}">Tous</a>
                 {% for candidate in types %}
@@ -90,7 +94,7 @@
                     <div class="section-heading">
                         <div>
                             <span class="badge badge-neutral">{{ item.fiche_type|replace({'_': ' '}) }}</span>
-                            <h2>{{ item.resource.legende ?: (item.asset ? item.asset.originalFilename : item.resource.usage) }}</h2>
+                            <h2>{{ item.resource ? (item.resource.legende ?: (item.asset ? item.asset.originalFilename : item.resource.usage)) : item.fiche_label }}</h2>
                         </div>
                         {% if item.fiche_url %}<a class="btn btn-secondary" href="{{ item.fiche_url }}">Ouvrir {{ item.fiche_label }}</a>{% endif %}
                     </div>
@@ -133,6 +137,20 @@
                     {% elseif filter == 'failed' %}
                         <p class="text-danger">{{ item.asset.errorMessage ?: 'Le traitement DAM a échoué.' }}</p>
                         {{ form_start(item.retry_form) }}{{ form_widget(item.retry_form) }}{{ form_end(item.retry_form) }}
+                    {% elseif filter == 'published_no_photo' %}
+                        <p class="text-danger">Cette fiche publiée n’a aucune photo rattachée.</p>
+                    {% elseif filter == 'published_rights' %}
+                        <p class="text-danger">
+                            {% if not item.resource.rightsGranted %}Les droits d’utilisation de cette photo n’ont pas été validés.{% else %}Les droits d’utilisation de cette photo ont expiré le {{ item.resource.rightsExpiresAt|date('d/m/Y') }}.{% endif %}
+                            La fiche est publiée.
+                        </p>
+                        <p>Source : {{ item.resource.source ?: 'Non renseignée' }} · Échéance : <strong>{{ item.resource.rightsExpiresAt ? item.resource.rightsExpiresAt|date('d/m/Y') : 'sans limite' }}</strong></p>
+                    {% elseif filter == 'orphans' %}
+                        <p class="text-danger">Le média associé (référence <code>{{ item.resource.damAssetId }}</code>) est introuvable ou supprimé dans le DAM.</p>
+                        <p>Détectée le <time datetime="{{ item.anomaly.detectedAt|date('c') }}">{{ item.anomaly.detectedAt|date('d/m/Y H:i') }}</time>.</p>
+                    {% elseif filter == 'missing_renditions' %}
+                        <p class="text-danger">Le média est marqué « traité » mais certaines variantes d’image manquent.</p>
+                        <p>Détectée le <time datetime="{{ item.anomaly.detectedAt|date('c') }}">{{ item.anomaly.detectedAt|date('d/m/Y H:i') }}</time>.</p>
                     {% endif %}
                 </div>
             </article>

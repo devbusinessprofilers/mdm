@@ -29,6 +29,8 @@ parameters:
     env(BOX_UPLOAD_URL): 'https://upload.box.com/api'
     env(BOX_ENHANCED_EXTRACT_AGENT): 'enhanced_extract_agent'
     env(DAM_PHASH_DISTANCE_THRESHOLD): '8'
+    env(COMPLETENESS_REMINDER_THRESHOLD): '60'
+    env(COMPLETENESS_REMINDER_COOLDOWN_DAYS): '30'
 
 services:
     # default configuration for services in *this* file

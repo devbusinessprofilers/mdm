@@ -59,6 +59,30 @@ final class DashboardStatsCalculatorTest extends KernelTestCase
         self::assertSame([], $payload['perUser']['validated']);
     }
 
+    public function testStorageAggregatesActiveMediaAndRenditions(): void
+    {
+        $image = $this->createAsset(1000);
+        $image->addRendition(new \App\Dam\Entity\MediaRendition($image, 'large', 'k/'.$image->id().'/large.webp', 960, 480, 300));
+        $deleted = $this->createAsset(999);
+        $deleted->markDeleted();
+        $this->entityManager->persist($image);
+        $this->entityManager->persist($deleted);
+        $this->entityManager->flush();
+
+        $storage = $this->calculator->compute()['storage'];
+
+        self::assertSame(['count' => 1, 'bytes' => 1000], $storage['byKind']['image']);
+        self::assertSame(['count' => 1, 'bytes' => 300], $storage['renditions']);
+        self::assertSame(1300, $storage['totalBytes']);
+    }
+
+    private function createAsset(int $sizeBytes): \App\Dam\Entity\MediaAsset
+    {
+        $id = new \Symfony\Component\Uid\Ulid();
+
+        return new \App\Dam\Entity\MediaAsset($id, 'originals/'.$id, 'photo.jpg', 'image/jpeg', $sizeBytes, sha1((string) $id));
+    }
+
     public function testComputeAggregatesFichesAuditAndValidation(): void
     {
         $lieuPublie = $this->createLieu('Palais Alpha', 'FR', 'France');
@@ -159,6 +183,10 @@ final class DashboardStatsCalculatorTest extends KernelTestCase
 
     private function clearTables(): void
     {
+        $this->connection->executeStatement('DELETE FROM dam_media_duplicate_alert');
+        $this->connection->executeStatement('DELETE FROM dam_media_phash_band');
+        $this->connection->executeStatement('DELETE FROM dam_media_rendition');
+        $this->connection->executeStatement('DELETE FROM dam_media_asset');
         $this->connection->executeStatement('DELETE FROM audit_change');
         $this->connection->executeStatement('DELETE FROM audit_revision');
         $this->connection->executeStatement('DELETE FROM dashboard_snapshot');
