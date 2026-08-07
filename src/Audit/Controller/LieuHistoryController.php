@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Audit\Controller;
 
 use App\Audit\Form\AuditHistoryFilterType;
+use App\Audit\Form\RestoreFormFactory;
 use App\Audit\Repository\AuditRevisionRepository;
 use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Repository\LieuRepository;
@@ -28,6 +29,7 @@ final class LieuHistoryController extends AbstractController
         Request $request,
         LieuRepository $lieux,
         AuditRevisionRepository $revisions,
+        RestoreFormFactory $restoreForms,
     ): Response {
         $this->denyAccessUnlessGranted('ROLE_BP_VALIDATOR');
         $lieu = $lieux->find($id);
@@ -52,6 +54,10 @@ final class LieuHistoryController extends AbstractController
         return $this->render('audit/lieu_history.html.twig', [
             'lieu' => $lieu,
             'revisions' => $page,
+            'restore_forms' => $restoreForms->changeFormViews(
+                $page,
+                $lieu->fiche()->version(),
+            ),
             'next_cursor' => $next,
             'filter_form' => $form->createView(),
         ]);

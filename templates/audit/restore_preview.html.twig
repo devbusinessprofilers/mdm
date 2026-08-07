@@ -1,0 +1,65 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Restaurer la révision du {{ revision.createdAt|date('d/m/Y H:i:s') }}{% endblock %}
+
+{% block body %}
+<main class="page">
+    <a class="back-link" href="{{ history_url }}">← Retour à l’historique</a>
+
+    <header class="page-header">
+        <div>
+            <p class="page-kicker">Restauration</p>
+            <h1>Révision du {{ revision.createdAt|date('d/m/Y H:i:s') }} — {{ fiche.label }}</h1>
+        </div>
+    </header>
+
+    <section class="card">
+        <p>
+            {{ revision.action }} · {{ revision.actor }} · {{ revision.source }}
+            · corrélation {{ revision.correlationId }}
+        </p>
+        <p>
+            La restauration réapplique les anciennes valeurs des champs
+            restaurables ci-dessous. Les champs exclus (collections, médias,
+            listes de valeurs, statut workflow, champs disparus) ne seront
+            pas modifiés.
+        </p>
+    </section>
+
+    <section class="card">
+        <table>
+            <thead>
+                <tr>
+                    <th>Champ</th>
+                    <th>Valeur d’époque (sera réappliquée)</th>
+                    <th>Valeur actuelle</th>
+                    <th>Statut</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                    <tr>
+                        <td><code>{{ row.path }}</code></td>
+                        <td><pre>{{ row.old_value|json_encode(constant('JSON_PRETTY_PRINT')) }}</pre></td>
+                        <td>
+                            {% if row.status != 'exclu' %}
+                                <pre>{{ row.current_value|json_encode(constant('JSON_PRETTY_PRINT')) }}</pre>
+                            {% endif %}
+                        </td>
+                        <td>{{ row.status }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+    <section class="card">
+        {% if restore_form %}
+            <p>{{ restorable_count }} champ(s) seront restaurés.</p>
+            {{ form(restore_form) }}
+        {% else %}
+            <p class="empty-state">Aucun champ de cette révision n’est restaurable.</p>
+        {% endif %}
+    </section>
+</main>
+{% endblock %}

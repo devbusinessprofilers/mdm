@@ -7,6 +7,7 @@ namespace App\Audit\EventSubscriber;
 use App\Audit\AuditContext;
 use App\Audit\Entity\AuditChange;
 use App\Audit\Entity\AuditRevision;
+use App\Audit\ValueNormalizer;
 use App\Pim\Entity\Activite\Activite;
 use App\Pim\Entity\Activite\OffreActivite;
 use App\Pim\Entity\Fiche;
@@ -50,6 +51,7 @@ final readonly class DoctrineAuditSubscriber
 
     public function __construct(
         private AuditContext $context,
+        private ValueNormalizer $normalizer,
         #[Autowire(env: 'bool:AUDIT_ENABLED')]
         private bool $enabled = true,
     ) {
@@ -154,20 +156,21 @@ final readonly class DoctrineAuditSubscriber
                     [$old, $new] = $pair;
                     if (
                         in_array($field, self::IGNORED_FIELDS, true)
-                        || $this->same($old, $new)
+                        || $this->normalizer->same($old, $new)
                     ) {
                         continue;
                     }
                     $changes[] = [
                         $this->path($entity, $field),
-                        $this->normalize($old),
-                        $this->normalize($new),
+                        $this->normalizer->normalize($old),
+                        $this->normalizer->normalize($new),
                     ];
                 }
                 if ([] === $changes) {
                     continue;
                 }
-                $action = $this->action($entity, $operation, $changeset);
+                $action = $auditContext['action']
+                    ?? $this->action($entity, $operation, $changeset);
                 $source = in_array(
                     $action,
                     ['submission', 'publication', 'archive', 'rejection'],
@@ -455,41 +458,6 @@ final readonly class DoctrineAuditSubscriber
         }
 
         return $operation;
-    }
-
-    private function normalize(mixed $value): mixed
-    {
-        if ($value instanceof \BackedEnum) {
-            return $value->value;
-        }
-        if ($value instanceof \DateTimeInterface) {
-            return $value->format(DATE_ATOM);
-        }
-        if ($value instanceof \Stringable) {
-            return (string) $value;
-        }
-        if (is_object($value)) {
-            foreach (['id', 'idString'] as $method) {
-                if (method_exists($value, $method)) {
-                    return (string) $value->{$method}();
-                }
-            }
-
-            return $value::class;
-        }
-        if (is_array($value)) {
-            return array_map(
-                fn (mixed $item): mixed => $this->normalize($item),
-                $value,
-            );
-        }
-
-        return $value;
-    }
-
-    private function same(mixed $old, mixed $new): bool
-    {
-        return $this->normalize($old) === $this->normalize($new);
     }
 
     private function actionPriority(string $action): int

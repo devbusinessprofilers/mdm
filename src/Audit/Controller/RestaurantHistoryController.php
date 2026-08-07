@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Audit\Controller;
 
 use App\Audit\Form\AuditHistoryFilterType;
+use App\Audit\Form\RestoreFormFactory;
 use App\Audit\Repository\AuditRevisionRepository;
 use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Repository\RestaurantRepository;
@@ -26,6 +27,7 @@ final class RestaurantHistoryController extends AbstractController
         Request $request,
         RestaurantRepository $restaurants,
         AuditRevisionRepository $revisions,
+        RestoreFormFactory $restoreForms,
     ): Response {
         $this->denyAccessUnlessGranted('ROLE_BP_VALIDATOR');
         $restaurant = $restaurants->find($id);
@@ -47,10 +49,15 @@ final class RestaurantHistoryController extends AbstractController
             is_array($filters) ? $filters : [],
         );
         $next = count($page) > 30 ? $page[29]->id() : null;
+        $page = array_slice($page, 0, 30);
 
         return $this->render('audit/restaurant_history.html.twig', [
             'restaurant' => $restaurant,
-            'revisions' => array_slice($page, 0, 30),
+            'revisions' => $page,
+            'restore_forms' => $restoreForms->changeFormViews(
+                $page,
+                $restaurant->fiche()->version(),
+            ),
             'next_cursor' => $next,
             'filter_form' => $form->createView(),
         ]);

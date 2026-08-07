@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Audit\Controller;
 
 use App\Audit\Form\AuditHistoryFilterType;
+use App\Audit\Form\RestoreFormFactory;
 use App\Audit\Repository\AuditRevisionRepository;
 use App\Pim\Entity\Activite\Activite;
 use App\Pim\Repository\ActiviteRepository;
@@ -28,6 +29,7 @@ final class ActiviteHistoryController extends AbstractController
         Request $request,
         ActiviteRepository $activities,
         AuditRevisionRepository $revisions,
+        RestoreFormFactory $restoreForms,
     ): Response {
         $this->denyAccessUnlessGranted('ROLE_BP_VALIDATOR');
         $activity = $activities->find($id);
@@ -47,10 +49,15 @@ final class ActiviteHistoryController extends AbstractController
             is_array($filters) ? $filters : [],
         );
         $next = count($page) > 30 ? $page[29]->id() : null;
+        $page = array_slice($page, 0, 30);
 
         return $this->render('audit/activite_history.html.twig', [
             'activite' => $activity,
-            'revisions' => array_slice($page, 0, 30),
+            'revisions' => $page,
+            'restore_forms' => $restoreForms->changeFormViews(
+                $page,
+                $activity->fiche()->version(),
+            ),
             'next_cursor' => $next,
             'filter_form' => $form->createView(),
         ]);

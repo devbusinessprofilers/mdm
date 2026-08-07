@@ -17,43 +17,7 @@
 
     <section class="card">{{ form(filter_form) }}</section>
 
-    {% for revision in revisions %}
-        <article class="card" id="revision-{{ revision.id }}">
-            <div class="section-heading">
-                <h2>{{ revision.action }}</h2>
-                <time datetime="{{ revision.createdAt|date('c') }}">
-                    {{ revision.createdAt|date('d/m/Y H:i:s') }}
-                </time>
-            </div>
-
-            <p>{{ revision.actor }} · {{ revision.source }} · corrélation {{ revision.correlationId }}</p>
-
-            {% if revision.rolesScopes %}
-                <p>{{ revision.rolesScopes|join(', ') }}</p>
-            {% endif %}
-
-            <table>
-                <thead>
-                    <tr>
-                        <th>Champ</th>
-                        <th>Ancienne valeur</th>
-                        <th>Nouvelle valeur</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for change in revision.changes %}
-                        <tr>
-                            <td><code>{{ change.path }}</code></td>
-                            <td><pre>{{ change.oldValue|json_encode(constant('JSON_PRETTY_PRINT')) }}</pre></td>
-                            <td><pre>{{ change.newValue|json_encode(constant('JSON_PRETTY_PRINT')) }}</pre></td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </article>
-    {% else %}
-        <p class="empty-state">Aucune modification auditée depuis l’activation de l’historique.</p>
-    {% endfor %}
+    {% include 'audit/_revision_table.html.twig' %}
 
     {% if next_cursor %}
         <nav>

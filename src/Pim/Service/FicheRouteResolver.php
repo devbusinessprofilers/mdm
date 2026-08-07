@@ -23,14 +23,19 @@ final readonly class FicheRouteResolver
         return $this->urlGenerator->generate(self::routesFor($type)[1], ['id' => $id]);
     }
 
-    /** @return array{string, string} */
+    public function historyUrl(TypeFiche $type, string $id): string
+    {
+        return $this->urlGenerator->generate(self::routesFor($type)[2], ['id' => $id]);
+    }
+
+    /** @return array{string, string, string} */
     private static function routesFor(TypeFiche $type): array
     {
         return match ($type) {
-            TypeFiche::Lieu => ['app_pim_lieu_show', 'app_pim_lieu_edit'],
-            TypeFiche::Activite => ['app_pim_activite_show', 'app_pim_activite_edit'],
-            TypeFiche::Restaurant => ['app_pim_restaurant_show', 'app_pim_restaurant_edit'],
-            TypeFiche::ServiceEvenementiel => ['app_pim_service_show', 'app_pim_service_edit'],
+            TypeFiche::Lieu => ['app_pim_lieu_show', 'app_pim_lieu_edit', 'app_pim_lieu_history'],
+            TypeFiche::Activite => ['app_pim_activite_show', 'app_pim_activite_edit', 'app_pim_activite_history'],
+            TypeFiche::Restaurant => ['app_pim_restaurant_show', 'app_pim_restaurant_edit', 'app_pim_restaurant_history'],
+            TypeFiche::ServiceEvenementiel => ['app_pim_service_show', 'app_pim_service_edit', 'app_pim_service_history'],
             TypeFiche::Traiteur => throw new \InvalidArgumentException('Type de fiche invalide.'),
         };
     }

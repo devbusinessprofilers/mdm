@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace App\Audit\Entity;
 
+use App\Audit\Repository\AuditChangeRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Uid\Ulid;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: AuditChangeRepository::class)]
 #[ORM\Table(name: 'audit_change')]
 #[
     ORM\Index(
@@ -23,7 +24,9 @@ final class AuditChange
     private Ulid $id;
 
     public function __construct(
-        #[ORM\ManyToOne(inversedBy: 'changes')] #[
+        // EAGER : AuditRevision est final, Doctrine ne peut pas en générer
+        // de proxy lazy quand un change est chargé isolément.
+        #[ORM\ManyToOne(inversedBy: 'changes', fetch: 'EAGER')] #[
             ORM\JoinColumn(nullable: false, onDelete: 'CASCADE'),
         ]
         private AuditRevision $revision,
@@ -44,6 +47,11 @@ final class AuditChange
     public function id(): string
     {
         return (string) $this->id;
+    }
+
+    public function revision(): AuditRevision
+    {
+        return $this->revision;
     }
 
     public function path(): string

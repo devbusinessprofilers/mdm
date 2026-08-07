@@ -17,7 +17,7 @@ final readonly class AuditContext
     ) {
     }
 
-    /** @return array{source: string, actor: string, rolesScopes: list<string>, correlationId: string} */
+    /** @return array{source: string, actor: string, rolesScopes: list<string>, correlationId: string, action: ?string} */
     public function current(): array
     {
         $request = $this->requests->getCurrentRequest();
@@ -28,6 +28,7 @@ final readonly class AuditContext
                 array_unique([...$rolesScopes, ...$user->scopes()]),
             );
         }
+        $explicitAction = $request?->attributes->get('_audit_action');
         $explicitSource = $request?->attributes->get('_audit_source');
         $source = is_string($explicitSource) && '' !== $explicitSource
             ? $explicitSource
@@ -42,6 +43,9 @@ final readonly class AuditContext
             'correlationId' => $request?->headers->get('X-Correlation-ID') ??
                 $request?->attributes->getString('_audit_correlation_id') ?:
                 (string) new Ulid(),
+            'action' => is_string($explicitAction) && '' !== $explicitAction
+                ? $explicitAction
+                : null,
         ];
     }
 }
