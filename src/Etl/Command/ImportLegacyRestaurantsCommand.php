@@ -17,6 +17,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
 /**
  * Import manuel des restaurants (Gamme « Restaurant ») depuis le CSV d'export
@@ -26,13 +27,14 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 #[AsCommand(name: 'app:legacy:import-restaurants', description: 'Importe les fiches Restaurant depuis le CSV d\'export production.')]
 final class ImportLegacyRestaurantsCommand extends Command
 {
-    private const DEFAULT_FILE = '/var/import/lists_infos_produits_v2_06-08-2026_02H24.csv';
+    private const DEFAULT_FILE = 'var/tmp/import/lists_infos_produits_v2_06-08-2026_02H24.csv';
 
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly LegacyFicheMappingRepository $mappings,
         private readonly LegacyCsvReader $reader,
         private readonly LegacyRestaurantRowMapper $mapper,
+        #[Autowire('%kernel.project_dir%')] private readonly string $projectDir,
     ) {
         parent::__construct();
     }
@@ -40,7 +42,7 @@ final class ImportLegacyRestaurantsCommand extends Command
     protected function configure(): void
     {
         $this
-            ->addOption('file', null, InputOption::VALUE_REQUIRED, 'Chemin du CSV production.', self::DEFAULT_FILE)
+            ->addOption('file', null, InputOption::VALUE_REQUIRED, 'Chemin du CSV production.', $this->projectDir.'/'.self::DEFAULT_FILE)
             ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Mappe sans rien écrire en base.')
             ->addOption('limit', null, InputOption::VALUE_REQUIRED, 'Nombre maximum de lignes du périmètre à traiter.')
             ->addOption('from', null, InputOption::VALUE_REQUIRED, 'Numéro d\'enregistrement de données à partir duquel traiter.', '1')

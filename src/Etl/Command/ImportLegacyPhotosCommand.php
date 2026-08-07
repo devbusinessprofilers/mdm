@@ -8,16 +8,19 @@ use App\Etl\Entity\LegacyPhotoImport;
 use App\Etl\Enum\LegacyPhotoStatus;
 use App\Etl\Repository\LegacyFicheMappingRepository;
 use App\Etl\Repository\LegacyPhotoImportRepository;
+use App\Dam\Entity\MediaAsset;
 use App\Dam\Service\FicheImageUploader;
 use App\Dam\Service\LieuImageUploader;
 use App\Dam\Service\MediaProcessingService;
 use App\Pim\Entity\Activite\Activite;
+use App\Pim\Entity\Fiche;
 use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Entity\Service\ServiceEvenementiel;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Enum\NatureRessource;
 use App\Pim\Import\Legacy\LegacyPhotoCatalog;
+use App\Shared\Service\PrivateObjectStorageInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -32,11 +35,15 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
  * génération des variantes INLINE (pas d'outbox — les workers consomment la
  * base de .env.local, pas forcément la base cible de l'import). Relançable :
  * chaque photo est suivie dans etl_legacy_photo, la reprise se fait par statut.
+ *
+ * Source des originaux : par défaut le dossier tmp/ à la racine du bucket S3
+ * privé (déposé pour le déploiement, hors préfixe S3_PREFIX, supprimable après
+ * import) ; --images-dir bascule sur une copie locale (dev).
  */
 #[AsCommand(name: 'app:legacy:import-photos', description: 'Importe les photos legacy des fiches importées (S3 + variantes).')]
 final class ImportLegacyPhotosCommand extends Command
 {
-    private const DEFAULT_IMAGES_DIR = '/var/legacy-images';
+    private const DEFAULT_S3_PREFIX = 'tmp';
 
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
@@ -46,6 +53,7 @@ final class ImportLegacyPhotosCommand extends Command
         private readonly LieuImageUploader $lieuUploader,
         private readonly FicheImageUploader $ficheUploader,
         private readonly MediaProcessingService $processing,
+        private readonly PrivateObjectStorageInterface $privateStorage,
     ) {
         parent::__construct();
     }
@@ -53,7 +61,8 @@ final class ImportLegacyPhotosCommand extends Command
     protected function configure(): void
     {
         $this
-            ->addOption('images-dir', null, InputOption::VALUE_REQUIRED, 'Répertoire des images legacy.', self::DEFAULT_IMAGES_DIR)
+            ->addOption('images-dir', null, InputOption::VALUE_REQUIRED, 'Répertoire local des images legacy (sinon lecture depuis le bucket S3 privé).')
+            ->addOption('images-s3-prefix', null, InputOption::VALUE_REQUIRED, 'Préfixe du bucket S3 privé où sont déposés les originaux.', self::DEFAULT_S3_PREFIX)
             ->addOption('limit', null, InputOption::VALUE_REQUIRED, 'Nombre maximum de photos à traiter.')
             ->addOption('batch-size', null, InputOption::VALUE_REQUIRED, 'Taille des lots.', '25')
             ->addOption('retry-errors', null, InputOption::VALUE_NONE, 'Repasse les photos en erreur en attente avant de traiter.')
@@ -65,21 +74,30 @@ final class ImportLegacyPhotosCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
-        $imagesDir = rtrim((string) $input->getOption('images-dir'), '/');
+        $imagesDir = null === $input->getOption('images-dir') ? null : rtrim((string) $input->getOption('images-dir'), '/');
+        $s3Prefix = trim((string) $input->getOption('images-s3-prefix'), '/');
         $limit = null === $input->getOption('limit') ? null : max(1, (int) $input->getOption('limit'));
         $batchSize = max(1, (int) $input->getOption('batch-size'));
         $syspad = null === $input->getOption('syspad') ? null : (int) $input->getOption('syspad');
         $dryRun = (bool) $input->getOption('dry-run');
         [$shardIndex, $shardCount] = $this->parseShard($input->getOption('shard'));
 
-        if (!is_dir($imagesDir)) {
+        if (null !== $imagesDir && !is_dir($imagesDir)) {
             $io->error(sprintf('Répertoire des images legacy introuvable : %s', $imagesDir));
 
             return Command::INVALID;
         }
+        if (null === $imagesDir && '' === $s3Prefix) {
+            $io->error('Préfixe S3 vide : préciser --images-s3-prefix ou --images-dir.');
+
+            return Command::INVALID;
+        }
+        $io->text(null === $imagesDir
+            ? sprintf('Source des originaux : bucket S3 privé, préfixe « %s/ ».', $s3Prefix)
+            : sprintf('Source des originaux : répertoire local %s.', $imagesDir));
 
         if ($dryRun) {
-            return $this->dryRun($io, $imagesDir, $limit, $syspad);
+            return $this->dryRun($io, $imagesDir, $s3Prefix, $limit, $syspad);
         }
 
         $seeded = $this->seed($io);
@@ -102,9 +120,19 @@ final class ImportLegacyPhotosCommand extends Command
             foreach ($batch as $photo) {
                 ++$processedTotal;
                 ++$counters['traitées'];
-                $this->processOne($photo, $imagesDir, $counters);
+                $this->processOne($photo, $imagesDir, $s3Prefix, $counters);
+                if (!$this->entityManager->isOpen()) {
+                    $io->newLine();
+                    $io->error('EntityManager fermé après une erreur SQL : arrêt. Relancer la commande (au besoin avec --retry-errors).');
+
+                    return Command::FAILURE;
+                }
+                // Statut commité photo par photo : l'asset l'est déjà (flush
+                // interne de processOne), un crash entre les deux laisserait
+                // des photos "pending" déjà importées → doublons S3+DB à la
+                // reprise.
+                $this->entityManager->flush();
             }
-            $this->entityManager->flush();
             $this->entityManager->clear();
             $io->write(sprintf("\r%d photos traitées (%d importées)…", $counters['traitées'], $counters['importées']));
         }
@@ -146,8 +174,12 @@ final class ImportLegacyPhotosCommand extends Command
         return $seeded;
     }
 
-    /** Contrôle la présence et la validité des fichiers depuis photos_json, sans écrire. */
-    private function dryRun(SymfonyStyle $io, string $imagesDir, ?int $limit, ?int $syspad): int
+    /**
+     * Contrôle la présence (et en mode local la validité) des fichiers depuis
+     * photos_json, sans écrire. En mode S3, seul exists() est vérifié : lire
+     * chaque objet pour un getimagesize serait aussi coûteux que l'import.
+     */
+    private function dryRun(SymfonyStyle $io, ?string $imagesDir, string $s3Prefix, ?int $limit, ?int $syspad): int
     {
         $counters = ['contrôlées' => 0, 'valides' => 0, 'fichier absent' => 0, 'invalides' => 0, 'hors plafond (25)' => 0];
         $lastSyspad = -1;
@@ -173,6 +205,14 @@ final class ImportLegacyPhotosCommand extends Command
                         break 3;
                     }
                     ++$counters['contrôlées'];
+                    if (null === $imagesDir) {
+                        if ($this->privateStorage->exists($s3Prefix.'/'.$entry['path'])) {
+                            ++$counters['valides'];
+                        } else {
+                            ++$counters['fichier absent'];
+                        }
+                        continue;
+                    }
                     $path = $imagesDir.'/'.$entry['path'];
                     if (!is_file($path)) {
                         ++$counters['fichier absent'];
@@ -197,16 +237,47 @@ final class ImportLegacyPhotosCommand extends Command
     }
 
     /** @param array<string, int> $counters */
-    private function processOne(LegacyPhotoImport $photo, string $imagesDir, array &$counters): void
+    private function processOne(LegacyPhotoImport $photo, ?string $imagesDir, string $s3Prefix, array &$counters): void
     {
-        $path = $imagesDir.'/'.$photo->legacyPath();
-        if (!is_file($path)) {
-            ++$counters['fichier absent'];
-            $photo->markFailed(LegacyPhotoStatus::MissingFile, sprintf('Fichier absent : %s', $photo->legacyPath()));
+        $temporaryFile = null;
+        if (null !== $imagesDir) {
+            $path = $imagesDir.'/'.$photo->legacyPath();
+            if (!is_file($path)) {
+                ++$counters['fichier absent'];
+                $photo->markFailed(LegacyPhotoStatus::MissingFile, sprintf('Fichier absent : %s', $photo->legacyPath()));
 
-            return;
+                return;
+            }
+        } else {
+            $key = $s3Prefix.'/'.$photo->legacyPath();
+            if (!$this->privateStorage->exists($key)) {
+                ++$counters['fichier absent'];
+                $photo->markFailed(LegacyPhotoStatus::MissingFile, sprintf('Objet S3 absent : %s', $key));
+
+                return;
+            }
+            try {
+                $path = $temporaryFile = $this->downloadToTemporaryFile($key, $photo->legacyPath());
+            } catch (\Throwable $exception) {
+                ++$counters['erreurs'];
+                $photo->markFailed(LegacyPhotoStatus::Error, sprintf('Lecture S3 impossible (%s) : %s', $key, $exception->getMessage()));
+
+                return;
+            }
         }
 
+        try {
+            $this->importOne($photo, $path, $counters);
+        } finally {
+            if (null !== $temporaryFile) {
+                @unlink($temporaryFile);
+            }
+        }
+    }
+
+    /** @param array<string, int> $counters */
+    private function importOne(LegacyPhotoImport $photo, string $path, array &$counters): void
+    {
         $mapping = $this->mappings->find($photo->syspadId());
         if (null === $mapping) {
             ++$counters['erreurs'];
@@ -223,8 +294,12 @@ final class ImportLegacyPhotosCommand extends Command
         $uploader = null !== $ficheEntityClass ? $this->ficheUploader : $this->lieuUploader;
 
         $asset = null;
+        $resource = null;
+        $owner = null;
+        $fiche = null;
+        $flushed = false;
         try {
-            $file = new UploadedFile($path, basename($path), null, null, true);
+            $file = new UploadedFile($path, basename($photo->legacyPath()), null, null, true);
             if (null !== $ficheEntityClass) {
                 $entity = $this->entityManager->find($ficheEntityClass, (string) $mapping->ficheId());
                 if (!$entity instanceof Activite && !$entity instanceof ServiceEvenementiel && !$entity instanceof Restaurant) {
@@ -232,7 +307,7 @@ final class ImportLegacyPhotosCommand extends Command
                 }
                 $asset = $this->ficheUploader->upload($file, $entity->fiche());
                 $fiche = $entity->fiche();
-                $attach = fn () => $entity->addRessource($this->resource($asset->id(), $photo));
+                $owner = $entity;
             } else {
                 $lieu = $this->entityManager->find(Lieu::class, (string) $mapping->ficheId());
                 if (!$lieu instanceof Lieu) {
@@ -240,35 +315,97 @@ final class ImportLegacyPhotosCommand extends Command
                 }
                 $asset = $this->lieuUploader->upload($file, $lieu);
                 $fiche = $lieu->fiche();
-                $attach = fn () => $lieu->addRessource($this->resource($asset->id(), $photo));
+                $owner = $lieu;
             }
+            $resource = $this->resource($asset->id(), $photo);
             // preserveWorkflowDuring englobe le flush : le @PreUpdate du détail
             // (Lieu::touch → fiche->markChanged) se déclenche PENDANT le flush,
             // il doit donc être neutralisé jusqu'à la fin de l'écriture pour
             // ne pas repasser une fiche publiée en brouillon.
-            $fiche->preserveWorkflowDuring(function () use ($attach, $asset): void {
-                $attach();
+            $fiche->preserveWorkflowDuring(function () use ($owner, $resource, $asset): void {
+                $owner->addRessource($resource);
                 $this->entityManager->persist($asset);
                 // La ressource doit être en base avant la génération des
                 // variantes (crop/rotation relus depuis la ressource).
                 $this->entityManager->flush();
             });
+            $flushed = true;
             $this->processing->process($asset);
             $photo->markDone($asset->id());
             ++$counters['importées'];
         } catch (\DomainException $exception) {
             ++$counters['invalides'];
             $photo->markFailed(LegacyPhotoStatus::Invalid, $exception->getMessage());
-            if (null !== $asset) {
-                $uploader->delete($asset);
-            }
+            $this->rollbackAsset($uploader, $asset, $resource, $owner, $fiche, $flushed);
         } catch (\Throwable $exception) {
             ++$counters['erreurs'];
             $photo->markFailed(LegacyPhotoStatus::Error, $exception->getMessage());
-            if (null !== $asset) {
-                $uploader->delete($asset);
+            $this->rollbackAsset($uploader, $asset, $resource, $owner, $fiche, $flushed);
+        }
+    }
+
+    /**
+     * Défait un import partiel : si l'asset et la ressource ont été commités
+     * avant l'échec (génération des variantes), leurs lignes doivent aussi
+     * être supprimées — sinon la fiche garde un média cassé et --retry-errors
+     * crée un doublon au rejeu.
+     */
+    private function rollbackAsset(
+        LieuImageUploader|FicheImageUploader $uploader,
+        ?MediaAsset $asset,
+        ?RessourceLieu $resource,
+        Activite|ServiceEvenementiel|Restaurant|Lieu|null $owner,
+        ?Fiche $fiche,
+        bool $flushed,
+    ): void {
+        if (null === $asset) {
+            return;
+        }
+        if ($flushed && $this->entityManager->isOpen() && null !== $resource && null !== $owner && null !== $fiche) {
+            // orphanRemoval sur la collection : retirer la ressource suffit à
+            // supprimer sa ligne. Même neutralisation du workflow que l'écriture.
+            $fiche->preserveWorkflowDuring(function () use ($owner, $resource, $asset): void {
+                $owner->removeRessource($resource);
+                $this->entityManager->remove($asset);
+                $this->entityManager->flush();
+            });
+        }
+        $uploader->delete($asset);
+    }
+
+    /**
+     * Copie un original du bucket S3 privé vers un fichier temporaire local,
+     * en conservant l'extension d'origine (getimagesize et validations MIME
+     * de l'uploader s'appuient sur le contenu, mais le nom sert de repère).
+     */
+    private function downloadToTemporaryFile(string $key, string $legacyPath): string
+    {
+        $base = tempnam(sys_get_temp_dir(), 'legacy-photo-');
+        if (false === $base) {
+            throw new \RuntimeException('Impossible de créer un fichier temporaire.');
+        }
+        $extension = strtolower(pathinfo($legacyPath, \PATHINFO_EXTENSION));
+        $path = '' === $extension ? $base : $base.'.'.$extension;
+
+        $source = $this->privateStorage->readStream($key);
+        $destination = fopen($path, 'wb');
+        if (false === $destination) {
+            @unlink($base);
+            throw new \RuntimeException(sprintf('Impossible d\'écrire le fichier temporaire %s.', $path));
+        }
+        try {
+            stream_copy_to_stream($source, $destination);
+        } finally {
+            fclose($destination);
+            if (is_resource($source)) {
+                fclose($source);
+            }
+            if ($path !== $base) {
+                @unlink($base);
             }
         }
+
+        return $path;
     }
 
     private function resource(string $assetId, LegacyPhotoImport $photo): RessourceLieu

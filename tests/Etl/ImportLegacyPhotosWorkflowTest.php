@@ -7,6 +7,7 @@ namespace App\Tests\Etl;
 use App\Etl\Entity\LegacyFicheMapping;
 use App\Pim\Entity\Lieu\Lieu;
 use App\Shared\Service\PrivateObjectStorageInterface;
+use App\Shared\Service\PublicObjectStorageInterface;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\Group;
@@ -17,6 +18,8 @@ use Symfony\Component\Console\Tester\CommandTester;
 /**
  * L'import des photos ne doit pas dépublier les fiches : l'attache d'une
  * ressource passe par markChanged, neutralisé via preserveWorkflowDuring.
+ * Couvre les deux sources d'originaux : répertoire local (--images-dir) et
+ * dossier tmp/ du bucket S3 privé (mode par défaut).
  */
 #[Group('database')]
 final class ImportLegacyPhotosWorkflowTest extends KernelTestCase
@@ -56,9 +59,55 @@ final class ImportLegacyPhotosWorkflowTest extends KernelTestCase
 
     public function testPhotoImportKeepsPublishedStatus(): void
     {
-        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
-        self::getContainer()->set(PrivateObjectStorageInterface::class, new PhotosWorkflowTestStorage());
+        $this->givenStorages(new PhotosWorkflowTestStorage());
+        $this->givenPublishedLieuWithPhoto();
 
+        $tester = $this->tester();
+        $tester->execute(['--images-dir' => $this->imagesDir, '--syspad' => '9100']);
+
+        $status = $this->connection->fetchOne('SELECT status FROM pim_fiche WHERE code = 9100');
+        self::assertSame('publiee', $status, $tester->getDisplay());
+    }
+
+    public function testS3SourceImportsUnderEnvPrefix(): void
+    {
+        $storage = new PhotosWorkflowTestStorage(['tmp/x/master/1.jpg' => $this->png(960, 480)]);
+        $this->givenStorages($storage);
+        $this->givenPublishedLieuWithPhoto();
+
+        $tester = $this->tester();
+        $tester->execute(['--syspad' => '9100']);
+
+        self::assertSame('done', $this->connection->fetchOne('SELECT status FROM etl_legacy_photo LIMIT 1'), $tester->getDisplay());
+        self::assertSame('publiee', $this->connection->fetchOne('SELECT status FROM pim_fiche WHERE code = 9100'));
+        // L'original est déposé sous le préfixe d'environnement, jamais sous tmp/.
+        $originals = array_filter($storage->writtenKeys(), static fn (string $key): bool => str_contains($key, '/lieux/'));
+        self::assertNotEmpty($originals, implode("\n", $storage->writtenKeys()));
+        foreach ($originals as $key) {
+            self::assertStringStartsNotWith('tmp/', $key);
+        }
+    }
+
+    public function testS3SourceMarksMissingObject(): void
+    {
+        $this->givenStorages(new PhotosWorkflowTestStorage());
+        $this->givenPublishedLieuWithPhoto();
+
+        $tester = $this->tester();
+        $tester->execute(['--syspad' => '9100']);
+
+        self::assertSame('missing_file', $this->connection->fetchOne('SELECT status FROM etl_legacy_photo LIMIT 1'), $tester->getDisplay());
+    }
+
+    private function givenStorages(PhotosWorkflowTestStorage $privateStorage): void
+    {
+        self::getContainer()->set(PrivateObjectStorageInterface::class, $privateStorage);
+        self::getContainer()->set(PublicObjectStorageInterface::class, new PhotosWorkflowTestStorage());
+    }
+
+    private function givenPublishedLieuWithPhoto(): void
+    {
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $lieu = new Lieu();
         $lieu->changeLabel('Lieu publié avec photo');
         $lieu->fiche()->assignImportedCode(9100);
@@ -67,13 +116,13 @@ final class ImportLegacyPhotosWorkflowTest extends KernelTestCase
         $entityManager->persist(new LegacyFicheMapping(9100, $lieu->fiche()->id(), 'Lieu publié avec photo', 'Hôtel', '{"master":["x/master/1.jpg"]}'));
         $entityManager->flush();
         $entityManager->clear();
+    }
 
+    private function tester(): CommandTester
+    {
         $application = new Application(self::$kernel);
-        $tester = new CommandTester($application->find('app:legacy:import-photos'));
-        $tester->execute(['--images-dir' => $this->imagesDir, '--syspad' => '9100']);
 
-        $status = $this->connection->fetchOne('SELECT status FROM pim_fiche WHERE code = 9100');
-        self::assertSame('publiee', $status, $tester->getDisplay());
+        return new CommandTester($application->find('app:legacy:import-photos'));
     }
 
     private function png(int $width, int $height): string
@@ -96,14 +145,79 @@ final class ImportLegacyPhotosWorkflowTest extends KernelTestCase
     }
 }
 
-final class PhotosWorkflowTestStorage implements PrivateObjectStorageInterface
+/**
+ * Stockage privé en mémoire : chaque readStream recrée un flux (l'import lit
+ * l'objet tmp/ puis MediaProcessingService relit l'original déposé).
+ */
+final class PhotosWorkflowTestStorage implements PrivateObjectStorageInterface, PublicObjectStorageInterface
 {
-    public function write(string $key, string $contents, array $options = []): void {}
-    public function writeStream(string $key, mixed $stream, array $options = []): void {}
-    public function read(string $key): string { return ''; }
-    public function readStream(string $key): mixed { $stream = fopen('php://temp', 'r+b'); if (false === $stream) { throw new \RuntimeException('Flux temporaire indisponible.'); } return $stream; }
-    public function exists(string $key): bool { return false; }
-    public function temporaryUrl(string $key, \DateTimeInterface $expiresAt): string { return 'https://private.example.test/'.$key; }
-    public function delete(string $key): void {}
-    public function deleteDirectory(string $prefix): void {}
+    /** @var array<string, string> */
+    private array $objects;
+    /** @var list<string> */
+    private array $written = [];
+
+    /** @param array<string, string> $seed */
+    public function __construct(array $seed = [])
+    {
+        $this->objects = $seed;
+    }
+
+    /** @return list<string> */
+    public function writtenKeys(): array
+    {
+        return $this->written;
+    }
+
+    public function write(string $key, string $contents, array $options = []): void
+    {
+        $this->objects[$key] = $contents;
+        $this->written[] = $key;
+    }
+
+    public function writeStream(string $key, mixed $stream, array $options = []): void
+    {
+        $this->objects[$key] = (string) stream_get_contents($stream);
+        $this->written[] = $key;
+    }
+
+    public function read(string $key): string
+    {
+        return $this->objects[$key] ?? throw new \RuntimeException(sprintf('Objet inconnu : %s', $key));
+    }
+
+    public function readStream(string $key): mixed
+    {
+        $stream = fopen('php://temp', 'r+b');
+        if (false === $stream) {
+            throw new \RuntimeException('Flux temporaire indisponible.');
+        }
+        fwrite($stream, $this->read($key));
+        rewind($stream);
+
+        return $stream;
+    }
+
+    public function exists(string $key): bool
+    {
+        return \array_key_exists($key, $this->objects);
+    }
+
+    public function temporaryUrl(string $key, \DateTimeInterface $expiresAt): string
+    {
+        return 'https://private.example.test/'.$key;
+    }
+
+    public function delete(string $key): void
+    {
+        unset($this->objects[$key]);
+    }
+
+    public function deleteDirectory(string $prefix): void
+    {
+        foreach (array_keys($this->objects) as $key) {
+            if (str_starts_with($key, rtrim($prefix, '/').'/')) {
+                unset($this->objects[$key]);
+            }
+        }
+    }
 }

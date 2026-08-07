@@ -13,22 +13,36 @@ Reprise des données de production (`lists_infos_produits_v2_*.csv`, 91 colonnes
 
 **Pivot** : `pim_fiche.code` = « Id syspad » du CSV (fourni à l'insert, le trigger n'attribue le compteur qu'aux fiches créées sans code). La table `etl_legacy_fiche` (syspad ↔ fiche ULID, gamme, photos_json) porte l'idempotence ; `etl_legacy_photo` suit chaque photo (statuts `pending/done/error/missing_file/invalid/skipped_limit`).
 
-## Exécution
+## Sources et préfixe S3
 
-Les montages sont définis dans le docker-compose parent : CSV dans `/var/import`, images sources (copie locale du projet DAM) dans `/var/legacy-images`. **Ne jamais basculer `.env.local`** : cibler la base par variable d'environnement.
+- **CSV + dump SQL** : `var/tmp/import/` du projet (chemins par défaut des `--file`). En dev, le docker-compose parent y monte le dossier hôte en lecture seule ; en prod, y déposer les fichiers le jour du déploiement.
+- **Images originales** : dossier `tmp/` **à la racine du bucket S3 privé** (source par défaut de `app:legacy:import-photos`, option `--images-s3-prefix`). L'option `--images-dir` bascule sur une copie locale (montée sur `/var/legacy-images` en dev).
+- **Préfixe des médias** : tous les chemins S3 (imports, uploads via les fiches, documents) suivent `{S3_PREFIX}/{type d'entité}/…`. `S3_PREFIX` vaut `dev` par défaut ; en préprod/prod, définir la valeur de l'environnement (variable Upsun). Ne jamais surcharger le préfixe à la main dans les commandes.
+
+## Procédure de déploiement
+
+```bash
+# 1. Déposer le CSV et le dump SQL dans var/tmp/import/
+#    (lists_infos_produits_v2_06-08-2026_02H24.csv, dump-production.sql)
+# 2. Téléverser les images originales sous tmp/ à la racine du bucket privé
+#    (mêmes chemins relatifs que photos_json, ex. tmp/<slug>/facade/x.jpg)
+php bin/console doctrine:migrations:migrate -n        # 3. schéma + LOV + triggers
+php bin/console app:legacy:import-lieux               # 4. fiches, par entité
+php bin/console app:legacy:import-activites
+php bin/console app:legacy:import-services
+php bin/console app:legacy:import-restaurants
+php bin/console app:legacy:import-photos --shard=0/4  # 5. ×4 terminaux (0/4 … 3/4)
+php bin/console app:legacy:import-photos --retry-errors   # reprise si besoin
+php bin/console app:legacy:import-translations        # 6. traductions (dump SQL)
+# 7. Nettoyage : supprimer var/tmp/import/ et le dossier tmp/ du bucket privé
+```
+
+Chaque import accepte `--dry-run` (répétition sans écriture ; pour les photos en mode S3, seule la présence des objets est contrôlée). En local, cibler la base réelle sans toucher `.env.local` :
 
 ```bash
 DBURL='mysql://mdm:<mdp>@sql:3306/mdm_reel?serverVersion=11.4.0-MariaDB&charset=utf8mb4'
-run() { docker compose exec -e DATABASE_URL="$DBURL" -e S3_PREFIX=reel -e APP_DEBUG=0 php php bin/console "$@"; }
-
-run doctrine:migrations:migrate -n                    # schéma + LOV + triggers
-run app:legacy:import-lieux --dry-run --limit=200     # répétition
-run app:legacy:import-lieux
-run app:legacy:import-activites --dry-run --limit=200
-run app:legacy:import-activites
-run app:legacy:import-photos --dry-run                # contrôle des fichiers sur disque
-run app:legacy:import-photos --shard=0/4              # ×4 terminaux (0/4 … 3/4)
-run app:legacy:import-photos --retry-errors           # reprise
+run() { docker compose exec -e DATABASE_URL="$DBURL" -e APP_DEBUG=0 php php bin/console "$@"; }
+run app:legacy:import-photos --images-dir=/var/legacy-images --dry-run   # contrôle complet sur la copie locale
 ```
 
 Options communes des imports de fiches : `--file`, `--dry-run`, `--limit`, `--from`, `--batch-size`, `--only-syspad`. Statut : publié CSV `true` → fiche publiée (`publishForImport`), sinon brouillon. Les valeurs non mappables produisent des **warnings agrégés** (jamais d'échec de ligne) ; seuls un Id syspad ou un nom invalides rejettent une ligne.
@@ -140,7 +154,7 @@ Plafonds : **25 photos par lieu**, **10 par activité** (invariants admin/valida
 
 ## Traductions (`app:legacy:import-translations`)
 
-Source : le **dump SQL** de production (`--file`, défaut `/var/import/dump-production.sql`) — parsé en streaming (`LegacySqlDumpReader`), aucune base annexe requise : la commande est rejouable telle quelle en production le jour du déploiement, il suffit de rendre le fichier dump accessible. Options : `--dry-run`, `--limit`, `--locale=xx`, `--batch-size`.
+Source : le **dump SQL** de production (`--file`, défaut `var/tmp/import/dump-production.sql`) — parsé en streaming (`LegacySqlDumpReader`), aucune base annexe requise : la commande est rejouable telle quelle en production le jour du déploiement, il suffit de rendre le fichier dump accessible. Options : `--dry-run`, `--limit`, `--locale=xx`, `--batch-size`.
 
 **Clé de jointure** : `bp_produit.syspad_id` = code fiche (⚠ pas `bp_produit.id`). Mapping :
 

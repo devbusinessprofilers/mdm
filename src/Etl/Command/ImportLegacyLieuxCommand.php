@@ -17,6 +17,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Uid\Ulid;
 
 /**
@@ -27,13 +28,14 @@ use Symfony\Component\Uid\Ulid;
 #[AsCommand(name: 'app:legacy:import-lieux', description: 'Importe les fiches Lieu depuis le CSV d\'export production.')]
 final class ImportLegacyLieuxCommand extends Command
 {
-    private const DEFAULT_FILE = '/var/import/lists_infos_produits_v2_06-08-2026_02H24.csv';
+    private const DEFAULT_FILE = 'var/tmp/import/lists_infos_produits_v2_06-08-2026_02H24.csv';
 
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly LegacyFicheMappingRepository $mappings,
         private readonly LegacyCsvReader $reader,
         private readonly LegacyLieuRowMapper $mapper,
+        #[Autowire('%kernel.project_dir%')] private readonly string $projectDir,
     ) {
         parent::__construct();
     }
@@ -41,7 +43,7 @@ final class ImportLegacyLieuxCommand extends Command
     protected function configure(): void
     {
         $this
-            ->addOption('file', null, InputOption::VALUE_REQUIRED, 'Chemin du CSV production.', self::DEFAULT_FILE)
+            ->addOption('file', null, InputOption::VALUE_REQUIRED, 'Chemin du CSV production.', $this->projectDir.'/'.self::DEFAULT_FILE)
             ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Mappe sans rien écrire en base.')
             ->addOption('limit', null, InputOption::VALUE_REQUIRED, 'Nombre maximum de lignes du périmètre à traiter.')
             ->addOption('from', null, InputOption::VALUE_REQUIRED, 'Numéro d\'enregistrement de données à partir duquel traiter.', '1')

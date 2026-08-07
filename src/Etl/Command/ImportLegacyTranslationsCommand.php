@@ -18,6 +18,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Uid\Ulid;
 
 /**
@@ -41,7 +42,7 @@ use Symfony\Component\Uid\Ulid;
 #[AsCommand(name: 'app:legacy:import-translations', description: 'Importe les traductions legacy depuis le dump SQL de production.')]
 final class ImportLegacyTranslationsCommand extends Command
 {
-    private const DEFAULT_FILE = '/var/import/dump-production.sql';
+    private const DEFAULT_FILE = 'var/tmp/import/dump-production.sql';
     private const ACTOR = 'import-legacy';
 
     /** field CSV legacy (i18n_translation_lieu) → [field_path, label, colonne source bp_lieu]. */
@@ -92,6 +93,7 @@ final class ImportLegacyTranslationsCommand extends Command
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly LegacySqlDumpReader $reader,
+        #[Autowire('%kernel.project_dir%')] private readonly string $projectDir,
     ) {
         parent::__construct();
     }
@@ -99,7 +101,7 @@ final class ImportLegacyTranslationsCommand extends Command
     protected function configure(): void
     {
         $this
-            ->addOption('file', null, InputOption::VALUE_REQUIRED, 'Chemin du dump SQL de production.', self::DEFAULT_FILE)
+            ->addOption('file', null, InputOption::VALUE_REQUIRED, 'Chemin du dump SQL de production.', $this->projectDir.'/'.self::DEFAULT_FILE)
             ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Analyse sans rien écrire en base.')
             ->addOption('locale', null, InputOption::VALUE_REQUIRED, 'Ne traite que cette locale (ex. en).')
             ->addOption('batch-size', null, InputOption::VALUE_REQUIRED, 'Taille des lots de flush.', '100');
