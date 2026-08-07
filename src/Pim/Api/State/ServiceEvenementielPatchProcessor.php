@@ -9,6 +9,7 @@ use ApiPlatform\State\ProcessorInterface;
 use App\Pim\Api\Dto\ServiceEvenementielPatchInput;
 use App\Pim\Api\Dto\ServiceEvenementielResource;
 use App\Pim\Api\Exception\ApiProblemException;
+use App\Pim\Api\ExternalScopeGuard;
 use App\Pim\Api\ServiceEvenementielApiMapper;
 use App\Pim\Form\ServiceEvenementielType;
 use Symfony\Component\Form\FormFactoryInterface;
@@ -22,6 +23,7 @@ final readonly class ServiceEvenementielPatchProcessor implements
         private ServiceEvenementielApiState $state,
         private ServiceEvenementielApiMapper $mapper,
         private FormFactoryInterface $forms,
+        private ExternalScopeGuard $scopes,
     ) {}
 
     public function process(
@@ -30,6 +32,7 @@ final readonly class ServiceEvenementielPatchProcessor implements
         array $uriVariables = [],
         array $context = [],
     ): ServiceEvenementielResource {
+        $this->scopes->requireScope(ExternalScopeGuard::FICHES_WRITE);
         $service = $this->state->service((string) ($uriVariables["id"] ?? ""));
         $this->state->assertVersion($service);
 

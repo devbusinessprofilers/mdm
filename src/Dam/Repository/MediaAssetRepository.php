@@ -61,7 +61,8 @@ final class MediaAssetRepository extends ServiceEntityRepository
             ->andWhere('media.kind = :kind')
             ->andWhere('media.status NOT IN (:deleted)')
             ->setParameter('checksum', $checksum)
-            ->setParameter('excluded', Ulid::fromString($excludedId))
+            // DQL does not run the 'ulid' column type on inferred parameters; bind it explicitly.
+            ->setParameter('excluded', Ulid::fromString($excludedId), 'ulid')
             ->setParameter('kind', MediaKind::Image)
             ->setParameter('deleted', [MediaStatus::Deleting, MediaStatus::Deleted])
             ->orderBy('media.createdAt', 'ASC')
@@ -86,7 +87,11 @@ final class MediaAssetRepository extends ServiceEntityRepository
             ->where('media.id IN (:ids)')
             ->andWhere('media.kind = :kind')
             ->andWhere('media.status NOT IN (:deleted)')
-            ->setParameter('ids', array_map(Ulid::fromString(...), $ids))
+            ->setParameter(
+                'ids',
+                array_map(static fn (string $id): string => Ulid::fromString($id)->toBinary(), $ids),
+                ArrayParameterType::BINARY,
+            )
             ->setParameter('kind', MediaKind::Image)
             ->setParameter('deleted', [MediaStatus::Deleting, MediaStatus::Deleted])
             ->getQuery()
@@ -106,7 +111,7 @@ final class MediaAssetRepository extends ServiceEntityRepository
             ->orderBy('media.id', 'ASC')
             ->setMaxResults(max(1, min(1000, $limit)));
         if (null !== $afterId) {
-            $builder->andWhere('media.id > :after')->setParameter('after', Ulid::fromString($afterId));
+            $builder->andWhere('media.id > :after')->setParameter('after', Ulid::fromString($afterId), 'ulid');
         }
 
         return array_values(array_map(
@@ -136,7 +141,11 @@ final class MediaAssetRepository extends ServiceEntityRepository
             ->select('COUNT(media.id)')
             ->where('media.id IN (:ids)')
             ->andWhere('media.status = :status')
-            ->setParameter('ids', array_map(Ulid::fromString(...), $ids))
+            ->setParameter(
+                'ids',
+                array_map(static fn (string $id): string => Ulid::fromString($id)->toBinary(), $ids),
+                ArrayParameterType::BINARY,
+            )
             ->setParameter('status', MediaStatus::Failed)
             ->getQuery()
             ->getSingleScalarResult();
@@ -159,7 +168,7 @@ final class MediaAssetRepository extends ServiceEntityRepository
     {
         // Page over ids first: fetch-joining renditions would multiply the rows
         // and break offset pagination.
-        $ids = array_map(
+        $ids = array_values(array_map(
             static fn (array $row): string => $row['id'] instanceof Ulid ? (string) $row['id'] : (string) Ulid::fromBinary((string) $row['id']),
             $this->createQueryBuilder('media')
                 ->select('media.id')
@@ -173,7 +182,7 @@ final class MediaAssetRepository extends ServiceEntityRepository
                 ->setMaxResults($limit)
                 ->getQuery()
                 ->getArrayResult(),
-        );
+        ));
         $byId = [];
         foreach ($this->findByStringIds($ids) as $asset) {
             $byId[$asset->id()] = $asset;

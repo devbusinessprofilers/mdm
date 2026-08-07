@@ -17,6 +17,7 @@ use App\Pim\Api\Dto\LieuResource;
 use App\Pim\Api\Dto\MediaOrderInput;
 use App\Pim\Api\Dto\MediaPatchInput;
 use App\Pim\Api\Exception\ApiProblemException;
+use App\Pim\Api\ExternalScopeGuard;
 use App\Pim\Api\LieuApiMapper;
 use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Entity\Lieu\RessourceLieu;
@@ -53,6 +54,7 @@ final readonly class LieuMediaProcessor implements ProcessorInterface
         private EntityManagerInterface $entityManager,
         private OutboxPublisherInterface $outbox,
         private RequestStack $requests,
+        private ExternalScopeGuard $scopes,
     ) {
     }
 
@@ -62,6 +64,7 @@ final readonly class LieuMediaProcessor implements ProcessorInterface
         array $uriVariables = [],
         array $context = [],
     ): LieuMediaResource|LieuResource|null {
+        $this->scopes->requireScope(ExternalScopeGuard::MEDIAS_WRITE);
         $lieu = $this->state->lieu((string) ($uriVariables['lieuId'] ?? ''));
         $this->state->assertVersion($lieu);
         if (!($operation instanceof HttpOperation)) {

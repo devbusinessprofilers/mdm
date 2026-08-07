@@ -106,7 +106,7 @@ final class RestaurantApiTest extends WebTestCase
         $encode = static fn (array $value): string => rtrim(strtr(base64_encode(json_encode($value, JSON_THROW_ON_ERROR)), '+/', '-_'), '=');
         $header = $encode(['alg' => 'RS256', 'typ' => 'JWT']);
         $now = time();
-        $payload = $encode(['iss' => 'external-site', 'aud' => 'mdm', 'sub' => 'external-site', 'iat' => $now, 'exp' => $now + 300, 'jti' => bin2hex(random_bytes(8))]);
+        $payload = $encode(['iss' => 'external-site', 'aud' => 'mdm', 'sub' => 'external-site', 'iat' => $now, 'exp' => $now + 300, 'jti' => bin2hex(random_bytes(8)), 'scope' => 'fiches:write medias:write documents:read documents:write documents:private documents:publish']);
         self::assertTrue(openssl_sign($header.'.'.$payload, $signature, $this->privateKey, OPENSSL_ALGO_SHA256));
 
         return $header.'.'.$payload.'.'.rtrim(strtr(base64_encode($signature), '+/', '-_'), '=');

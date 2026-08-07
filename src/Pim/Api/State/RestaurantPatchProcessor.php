@@ -9,6 +9,7 @@ use ApiPlatform\State\ProcessorInterface;
 use App\Pim\Api\Dto\RestaurantPatchInput;
 use App\Pim\Api\Dto\RestaurantResource;
 use App\Pim\Api\Exception\ApiProblemException;
+use App\Pim\Api\ExternalScopeGuard;
 use App\Pim\Api\RestaurantApiMapper;
 use App\Pim\Form\RestaurantType;
 use Symfony\Component\Form\FormFactoryInterface;
@@ -21,6 +22,7 @@ final readonly class RestaurantPatchProcessor implements ProcessorInterface
         private RestaurantApiState $state,
         private RestaurantApiMapper $mapper,
         private FormFactoryInterface $forms,
+        private ExternalScopeGuard $scopes,
     ) {
     }
 
@@ -30,6 +32,7 @@ final readonly class RestaurantPatchProcessor implements ProcessorInterface
         array $uriVariables = [],
         array $context = [],
     ): RestaurantResource {
+        $this->scopes->requireScope(ExternalScopeGuard::FICHES_WRITE);
         $restaurant = $this->state->restaurant(
             (string) ($uriVariables['id'] ?? ''),
         );

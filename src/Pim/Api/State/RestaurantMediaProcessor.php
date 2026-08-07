@@ -17,6 +17,7 @@ use App\Pim\Api\Dto\MediaOrderInput;
 use App\Pim\Api\Dto\MediaPatchInput;
 use App\Pim\Api\Dto\RestaurantResource;
 use App\Pim\Api\Exception\ApiProblemException;
+use App\Pim\Api\ExternalScopeGuard;
 use App\Pim\Api\RestaurantApiMapper;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Entity\Restaurant\Restaurant;
@@ -42,6 +43,7 @@ final readonly class RestaurantMediaProcessor implements ProcessorInterface
         private EntityManagerInterface $entityManager,
         private OutboxPublisherInterface $outbox,
         private RequestStack $requests,
+        private ExternalScopeGuard $scopes,
     ) {
     }
 
@@ -51,6 +53,7 @@ final readonly class RestaurantMediaProcessor implements ProcessorInterface
         array $uriVariables = [],
         array $context = [],
     ): LieuMediaResource|RestaurantResource|null {
+        $this->scopes->requireScope(ExternalScopeGuard::MEDIAS_WRITE);
         $restaurant = $this->state->restaurant(
             (string) ($uriVariables['restaurantId'] ?? ''),
         );

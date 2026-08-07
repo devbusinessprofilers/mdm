@@ -10,6 +10,7 @@ use App\Pim\Api\ActiviteApiMapper;
 use App\Pim\Api\Dto\ActivitePatchInput;
 use App\Pim\Api\Dto\ActiviteResource;
 use App\Pim\Api\Exception\ApiProblemException;
+use App\Pim\Api\ExternalScopeGuard;
 use App\Pim\Form\ActiviteType;
 use App\Pim\Repository\ValeurAttributRepository;
 use Symfony\Component\Form\FormFactoryInterface;
@@ -23,6 +24,7 @@ final readonly class ActivitePatchProcessor implements ProcessorInterface
         private ActiviteApiMapper $mapper,
         private FormFactoryInterface $forms,
         private ValeurAttributRepository $values,
+        private ExternalScopeGuard $scopes,
     ) {
     }
 
@@ -32,6 +34,7 @@ final readonly class ActivitePatchProcessor implements ProcessorInterface
         array $uriVariables = [],
         array $context = [],
     ): ActiviteResource {
+        $this->scopes->requireScope(ExternalScopeGuard::FICHES_WRITE);
         $a = $this->state->activite((string) ($uriVariables['id'] ?? ''));
         $this->state->assertVersion($a);
         $payload = $data->payload();

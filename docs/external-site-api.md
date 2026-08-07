@@ -180,6 +180,11 @@ catégories publiables, `documents:private` pour les pièces confidentielles et
 `documents:publish` pour publier ou révoquer. Un ancien jeton sans ces scopes garde
 la lecture des documents déjà publiés et ne voit aucune pièce privée.
 
+Les mutations de fiches (`PATCH /api/v1/lieux|activites|services|restaurants/{ULID}`)
+requièrent le scope `fiches:write`. Les mutations de médias images (ajout,
+métadonnées, remplacement, réordonnancement, suppression) requièrent le scope
+`medias:write`. La lecture reste couverte par le seul JWT valide, sans scope.
+
 ## Erreurs métier
 
 Les erreurs gérées par le contrat utilisent une structure stable :

@@ -37,7 +37,16 @@ final readonly class MediaUploadedHandler
             $media->originalStorageKey() !== $message->storageKey
             || $media->checksum() !== $message->checksum
         ) {
-            throw new \DomainException('Le contrat MediaUploaded ne correspond pas au média enregistré.');
+            // Message périmé (média ré-uploadé entre l'émission et la
+            // consommation) : l'ignorer — un retry ne le fera jamais
+            // correspondre et polluerait la queue failed.
+            $this->logger->info('Message MediaUploaded périmé (média modifié depuis l’émission), ignoré.', [
+                'media_id' => $message->mediaId,
+                'expected_storage_key' => $message->storageKey,
+                'actual_storage_key' => $media->originalStorageKey(),
+            ]);
+
+            return;
         }
         $urls = $this->processor->process($media);
         $duplicate = null;

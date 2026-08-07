@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Dam\MessageHandler;
 
+use App\Dam\Enum\MediaStatus;
 use App\Dam\Message\RegenerateMedia;
 use App\Dam\Repository\MediaAssetRepository;
 use App\Dam\Service\MediaProcessingService;
@@ -26,6 +27,14 @@ final readonly class RegenerateMediaHandler
     {
         $media = $this->mediaRepository->find($message->mediaId);
         if (null !== $media) {
+            // Message en retard sur une suppression : ne pas repasser un média
+            // supprimé en Processing (markProcessing n'a pas de garde et
+            // contournerait le contrôle Deleted/Deleting de process()).
+            if (MediaStatus::Deleting === $media->status() || MediaStatus::Deleted === $media->status()) {
+                return;
+            }
+            // Forcé AVANT process() : sortir du statut Processed pour court-
+            // circuiter son early-return "déjà traité" et régénérer vraiment.
             $media->markProcessing();
             $this->processor->process($media);
             try {

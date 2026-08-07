@@ -18,6 +18,7 @@ use App\Pim\Api\Dto\LieuMediaResource;
 use App\Pim\Api\Dto\MediaOrderInput;
 use App\Pim\Api\Dto\MediaPatchInput;
 use App\Pim\Api\Exception\ApiProblemException;
+use App\Pim\Api\ExternalScopeGuard;
 use App\Pim\Entity\Service\ServiceEvenementiel;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Enum\NatureRessource;
@@ -40,6 +41,7 @@ final readonly class ServiceEvenementielMediaProcessor implements
         private EntityManagerInterface $em,
         private OutboxPublisherInterface $outbox,
         private RequestStack $requests,
+        private ExternalScopeGuard $scopes,
     ) {}
 
     public function process(
@@ -48,6 +50,7 @@ final readonly class ServiceEvenementielMediaProcessor implements
         array $uriVariables = [],
         array $context = [],
     ): LieuMediaResource|ServiceEvenementielResource|null {
+        $this->scopes->requireScope(ExternalScopeGuard::MEDIAS_WRITE);
         $a = $this->state->service((string) ($uriVariables["serviceId"] ?? ""));
         $this->state->assertVersion($a);
         if (!($operation instanceof HttpOperation)) {

@@ -9,6 +9,7 @@ use ApiPlatform\State\ProcessorInterface;
 use App\Pim\Api\Dto\LieuPatchInput;
 use App\Pim\Api\Dto\LieuResource;
 use App\Pim\Api\Exception\ApiProblemException;
+use App\Pim\Api\ExternalScopeGuard;
 use App\Pim\Api\LieuApiMapper;
 use App\Pim\Form\LieuType;
 use Symfony\Component\Form\FormFactoryInterface;
@@ -22,6 +23,7 @@ final readonly class LieuPatchProcessor implements ProcessorInterface
         private LieuApiState $state,
         private LieuApiMapper $mapper,
         private FormFactoryInterface $forms,
+        private ExternalScopeGuard $scopes,
     ) {
     }
 
@@ -31,6 +33,7 @@ final readonly class LieuPatchProcessor implements ProcessorInterface
         array $uriVariables = [],
         array $context = [],
     ): LieuResource {
+        $this->scopes->requireScope(ExternalScopeGuard::FICHES_WRITE);
         $lieu = $this->state->lieu((string) ($uriVariables['id'] ?? ''));
         $this->state->assertVersion($lieu);
         $form = $this->forms->create(LieuType::class, $lieu, [
