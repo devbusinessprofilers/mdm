@@ -13,8 +13,20 @@
 {% set ecran = 'accueil' %}
 
 {% set carte = 'flex flex-col box-border gap-4 px-6 py-[22px] rounded-[20px] bg-neutral-100 shadow-(--shadow)' %}
-{% set pilule = 'shrink-0 whitespace-nowrap px-[9px] py-[3px] rounded-lg' %}
-{% set entete_table = 'flex items-center h-9 px-4 bg-primary-5 border-b border-neutral-200' %}
+{% set entete_table = 'items-center h-9 px-4 bg-primary-5 border-b border-neutral-200' %}
+
+{#
+    Les deux tableaux sont des grilles, pas des rangees a largeurs fixes : la
+    maquette dessine un cadre de 1920 avec un rail de 284, ici le rail fait 328
+    et la zone de contenu respire davantage. Des colonnes en pixels y laissaient
+    un vide a droite -- et, sur le tableau d'activite, faisaient se toucher
+    « Validees » et « Part de l'activite ».
+
+    Les minima gardent les colonnes lisibles ; les fractions leur font occuper
+    toute la carte.
+#}
+{% set grille_croisement = 'grid grid-cols-[minmax(132px,1.5fr)_repeat(7,minmax(70px,1fr))] gap-1.5' %}
+{% set grille_activite = 'grid grid-cols-[minmax(150px,1.6fr)_minmax(70px,0.7fr)_minmax(80px,0.8fr)_minmax(80px,0.8fr)_minmax(150px,1.7fr)] gap-3' %}
 
 {#
     Les jetons pâles sont des surfaces, jamais du texte. Le signal du palier
@@ -35,34 +47,46 @@
 {% block main_attributs %}data-controller="tableau-de-bord"{% endblock %}
 
 {% block rail %}
-    <nav class="flex flex-col shrink-0 box-border w-[284px] bg-neutral-100 border-r border-neutral-200"
+    {#
+        Même dessin que le rail des autres écrans : largeur 328, retraits
+        identiques, intitulé de groupe en noir gras, entrées à glyphe turquoise
+        et pastille de compteur. Seul le comportement diffère — ce sont des
+        boutons, pas des liens, parce qu'ils font défiler le contenu.
+    #}
+    <nav class="flex flex-col shrink-0 box-border w-[328px] pl-5 pr-3 overflow-hidden
+                {{ rail_pad_y }} {{ rail_group_gap }}"
          aria-label="Zones du tableau de bord">
-        <div class="flex flex-col shrink-0 gap-[3px] px-4 pt-5 pb-3">
-            <twig:Typography variant="body-xs" bold textColor="neutral-500"
-                             class="px-1 pb-1.5 tracking-[0.8px] uppercase">Zones du tableau de bord</twig:Typography>
 
-            {% for zone in vue.zones %}
-                <button type="button" aria-current="{{ zone.actif ? 'true' : 'false' }}"
-                        class="group/zone flex items-center gap-2 w-full px-3.5 py-2.5 rounded-xs
-                               text-left cursor-pointer aria-[current=true]:bg-linear-(--primary-gradient)"
-                        data-tableau-de-bord-target="entree"
-                        data-action="tableau-de-bord#aller"
-                        data-tableau-de-bord-zone-param="{{ loop.index0 }}">
-                    <twig:Icon name="{{ zone.icone }}" aria-hidden="true"
-                               class="shrink-0 w-4 h-4 mx-0.5 text-primary group-aria-[current=true]/zone:text-neutral-100" />
-                    <twig:Typography variant="body-sm" bold ellipsis
-                                     class="flex-1 min-w-0 group-aria-[current=true]/zone:text-neutral-100!">{{ zone.titre }}</twig:Typography>
-                    <twig:Typography variant="body-xs" bold textColor="neutral-500"
-                                     class="shrink-0 px-[7px] py-px rounded-lg bg-neutral-200
-                                            group-aria-[current=true]/zone:bg-neutral-100
-                                            group-aria-[current=true]/zone:text-primary-3!">{{ zone.badge }}</twig:Typography>
-                </button>
-            {% endfor %}
+        <div class="flex flex-col {{ rail_title_gap }}">
+            <twig:Typography variant="body" bold
+                             class="pl-2 pr-4 [@media(max-height:700px)]:leading-[1.125rem]!">Zones du tableau de bord</twig:Typography>
+            <div class="flex flex-col">
+                {% for zone in vue.zones %}
+                    <button type="button" aria-current="{{ zone.actif ? 'true' : 'false' }}"
+                            class="group/zone flex items-center gap-2 box-border px-4 {{ rail_item_pad_y }}
+                                   rounded-xs overflow-hidden cursor-pointer text-left
+                                   hover:bg-primary-4 aria-[current=true]:bg-linear-(--primary-gradient)"
+                            data-tableau-de-bord-target="entree"
+                            data-action="tableau-de-bord#aller"
+                            data-tableau-de-bord-zone-param="{{ loop.index0 }}">
+                        <twig:Icon name="{{ zone.icone }}" aria-hidden="true"
+                                   class="shrink-0 self-center w-4 h-4 mx-1 text-primary
+                                          group-aria-[current=true]/zone:text-neutral-100" />
+                        <twig:Typography variant="body" bold ellipsis textColor="primary-3"
+                                         class="flex-1 min-w-0
+                                                group-aria-[current=true]/zone:text-neutral-100!">{{ zone.titre }}</twig:Typography>
+                        <twig:Typography variant="body-xs" bold textColor="neutral-500"
+                                         class="shrink-0 px-[7px] py-0.5 rounded-lg bg-neutral-200
+                                                group-aria-[current=true]/zone:bg-neutral-100
+                                                group-aria-[current=true]/zone:text-primary-3!">{{ zone.badge }}</twig:Typography>
+                    </button>
+                {% endfor %}
+            </div>
         </div>
 
         <span class="flex-1"></span>
 
-        <div class="shrink-0 flex flex-col gap-2 mx-4 mb-5 p-3.5 rounded-[12px] bg-primary-4">
+        <div class="shrink-0 flex flex-col gap-2 mr-1 p-3.5 rounded-[12px] bg-primary-4">
             <twig:Typography variant="body-sm" bold textColor="primary-3">Disposition</twig:Typography>
             <twig:Typography variant="body-xs" textColor="neutral-500" class="text-pretty">
                 {{- vue.parametrage
@@ -154,8 +178,8 @@
                 </div>
 
                 {% if 'files' == zone.cle %}{{ _self.zoneFiles(vue) }}
-                {% elseif 'sante' == zone.cle %}{{ _self.zoneSante(vue, carte, paliers, entete_table) }}
-                {% elseif 'activite' == zone.cle %}{{ _self.zoneActivite(vue, carte, entete_table) }}
+                {% elseif 'sante' == zone.cle %}{{ _self.zoneSante(vue, carte, paliers, entete_table, grille_croisement) }}
+                {% elseif 'activite' == zone.cle %}{{ _self.zoneActivite(vue, carte, entete_table, grille_activite) }}
                 {% else %}{{ _self.zoneMedias(vue, carte) }}
                 {% endif %}
             </div>
@@ -199,9 +223,7 @@
             </div>
             <div class="flex flex-row shrink-0 gap-2">
                 {% for tag in ['Référencement', 'Validation', 'Publication', 'Accès', 'Anomalies', 'Traitements'] %}
-                    <span class="shrink-0 whitespace-nowrap px-[9px] py-[3px] rounded-lg bg-success-pastel">
-                        <twig:Typography variant="body-xs" bold textColor="primary-3">{{ tag }}</twig:Typography>
-                    </span>
+                    <twig:Tag label="{{ tag }}" variant="success-pastel" size="sm" class="shrink-0 whitespace-nowrap" />
                 {% endfor %}
             </div>
         </div>
@@ -223,9 +245,13 @@
                                           {{ chaude ? 'text-error' : (tiede ? 'text-peach' : 'text-primary-3') }}
                                           {{ 'spinner' == file.icone and file.brut > 0 ? 'animate-spin' : '' }}" />
                         {% if chaude or tiede %}
-                            <span class="shrink-0 whitespace-nowrap px-[9px] py-[3px] rounded-lg bg-neutral-100">
-                                <twig:Typography variant="body-xs" bold textColor="error">{{ file.etiquette }}</twig:Typography>
-                            </span>
+                            {#
+                                Fond blanc plutot que le `error-pastel` du composant :
+                                la carte est deja teintee, un jeton pastel s'y noierait.
+                                Le texte et le liseré restent ceux de la variante.
+                            #}
+                            <twig:Tag label="{{ file.etiquette }}" variant="error" size="sm"
+                                      class="shrink-0 whitespace-nowrap bg-neutral-100!" />
                         {% endif %}
                     </div>
                     <twig:Typography variant="heading-2"
@@ -245,7 +271,7 @@
 
 {# ==================================================================== Zone 2 #}
 
-{% macro zoneSante(vue, carte, paliers, entete_table) %}
+{% macro zoneSante(vue, carte, paliers, entete_table, grille_croisement) %}
     {% if vue.chargement %}
         <div class="flex flex-row gap-[18px]">
             <div class="h-[268px] w-[470px] shrink-0 rounded-[20px] bg-neutral-200 animate-pulse"></div>
@@ -308,20 +334,20 @@
                 </div>
 
                 <div class="rounded-sm overflow-hidden inset-ring-1 inset-ring-neutral-200">
-                    <div class="{{ entete_table }}" role="row">
-                        {{ _self.colonne('Typologie', 'w-[148px] text-left') }}
+                    <div class="{{ grille_croisement }} {{ entete_table }}" role="row">
+                        {{ _self.colonne('Typologie', 'text-left') }}
                         {% for pays in vue.croisementPays %}
-                            {{ _self.colonne(pays, 'w-24 text-center') }}
+                            {{ _self.colonne(pays, 'text-center') }}
                         {% endfor %}
-                        {{ _self.colonne('Total', 'w-24 text-center') }}
+                        {{ _self.colonne('Total', 'text-center') }}
                     </div>
 
                     {% for ligne in vue.croisementLignes %}
-                        <div class="flex items-center h-11 px-4 {{ loop.first ? '' : 'border-t border-neutral-200' }}
+                        <div class="{{ grille_croisement }} h-11 px-4 {{ loop.first ? '' : 'border-t border-neutral-200' }}
                                     {{ ligne.totaux ? 'bg-primary-5' : '' }}" role="row">
                             <twig:Typography variant="body-sm" bold ellipsis
                                              textColor="{{ ligne.totaux ? 'primary-3' : 'neutral-900' }}"
-                                             class="w-[148px] shrink-0">{{ ligne.nom }}</twig:Typography>
+                                             class="min-w-0">{{ ligne.nom }}</twig:Typography>
                             {% for cellule in ligne.cellules %}
                                 {{ _self.cellule(cellule, paliers, vue.croisementMode) }}
                             {% endfor %}
@@ -343,7 +369,7 @@
 
 {# ==================================================================== Zone 3 #}
 
-{% macro zoneActivite(vue, carte, entete_table) %}
+{% macro zoneActivite(vue, carte, entete_table, grille_activite) %}
     {% if vue.chargement %}
         <div class="flex flex-row gap-[18px]">
             <div class="h-[232px] flex-1 min-w-0 rounded-[20px] bg-neutral-200 animate-pulse"></div>
@@ -358,23 +384,23 @@
                 </div>
 
                 <div class="rounded-sm overflow-hidden inset-ring-1 inset-ring-neutral-200">
-                    <div class="{{ entete_table }}" role="row">
-                        {{ _self.colonne('Utilisateur', 'w-[190px] text-left') }}
-                        {{ _self.colonne('Créées', 'w-[90px] text-right') }}
-                        {{ _self.colonne('Enrichies', 'w-[110px] text-right') }}
-                        {{ _self.colonne('Validées', 'w-[100px] text-right') }}
-                        {{ _self.colonne("Part de l'activité", 'w-[170px] text-left') }}
+                    <div class="{{ grille_activite }} {{ entete_table }}" role="row">
+                        {{ _self.colonne('Utilisateur', 'text-left') }}
+                        {{ _self.colonne('Créées', 'text-right') }}
+                        {{ _self.colonne('Enrichies', 'text-right') }}
+                        {{ _self.colonne('Validées', 'text-right') }}
+                        {{ _self.colonne("Part de l'activité", 'text-left') }}
                     </div>
 
                     {% for ligne in vue.utilisateurs %}
                         <button type="button" role="row"
-                                class="flex items-center w-full h-11 px-4 box-border text-left cursor-pointer
+                                class="{{ grille_activite }} w-full h-11 px-4 box-border text-left cursor-pointer
                                        {{ loop.first ? '' : 'border-t border-neutral-200' }}">
-                            <twig:Typography variant="body-sm" bold ellipsis class="w-[190px] shrink-0">{{ ligne.nom }}</twig:Typography>
-                            <twig:Typography variant="body-sm" textColor="neutral-500" class="w-[90px] shrink-0 text-right">{{ ligne.creees }}</twig:Typography>
-                            <twig:Typography variant="body-sm" bold class="w-[110px] shrink-0 text-right">{{ ligne.enrichies }}</twig:Typography>
-                            <twig:Typography variant="body-sm" textColor="neutral-500" class="w-[100px] shrink-0 text-right">{{ ligne.validees }}</twig:Typography>
-                            <span class="flex items-center shrink-0 w-[170px] gap-[9px] pl-4 box-border">
+                            <twig:Typography variant="body-sm" bold ellipsis class="min-w-0">{{ ligne.nom }}</twig:Typography>
+                            <twig:Typography variant="body-sm" textColor="neutral-500" class="text-right">{{ ligne.creees }}</twig:Typography>
+                            <twig:Typography variant="body-sm" bold class="text-right">{{ ligne.enrichies }}</twig:Typography>
+                            <twig:Typography variant="body-sm" textColor="neutral-500" class="text-right">{{ ligne.validees }}</twig:Typography>
+                            <span class="flex items-center min-w-0 gap-[9px]">
                                 <span class="flex-1 min-w-0 h-1.5 rounded-lg bg-neutral-200 overflow-hidden">
                                     <span class="block h-full rounded-lg bg-linear-(--primary-gradient)"
                                           style="width: {{ ligne.partBrute }}%"></span>
@@ -400,9 +426,8 @@
                                     <twig:Typography variant="body-sm" textColor="neutral-500">{{ indicateur.libelle }}</twig:Typography>
                                     <twig:Typography variant="subtitle" class="font-[700]!">{{ indicateur.valeur }}</twig:Typography>
                                 </div>
-                                <span class="shrink-0 whitespace-nowrap px-[9px] py-[3px] rounded-lg bg-success-pastel">
-                                    <twig:Typography variant="body-xs" bold textColor="primary-3">{{ indicateur.delta }}</twig:Typography>
-                                </span>
+                                <twig:Tag label="{{ indicateur.delta }}" variant="success-pastel" size="sm"
+                                          class="shrink-0 whitespace-nowrap" />
                             </button>
                         {% endfor %}
                     </div>
@@ -511,7 +536,7 @@
 {% endmacro %}
 
 {% macro colonne(libelle, classe) %}
-    <span class="shrink-0 box-border whitespace-nowrap {{ classe }}" role="columnheader">
+    <span class="min-w-0 box-border truncate {{ classe }}" role="columnheader">
         <twig:Typography variant="body-xs" bold textColor="neutral-500"
                          class="tracking-[0.3px] uppercase">{{ libelle }}</twig:Typography>
     </span>
@@ -522,7 +547,7 @@
     {% set fond = enPourcentage or cellule.palier in ['total', 'grand']
                   ? paliers[cellule.palier] : '' %}
     <button type="button"
-            class="flex items-center justify-center shrink-0 w-24 h-[30px] box-border
+            class="flex items-center justify-center min-w-0 h-[30px] box-border
                    rounded-xs cursor-pointer {{ fond }}">
         <twig:Typography variant="body-sm" bold
                          textColor="{{ 'grand' == cellule.palier ? 'neutral-100' : 'primary-3' }}">{{ cellule.libelle }}</twig:Typography>

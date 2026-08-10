@@ -27,7 +27,7 @@ export default class extends Controller {
         event.preventDefault();
 
         if (event.type === 'click') {
-            const items = this.element.querySelector('[data-provider-portal--dropdown-target="items"]');
+            const items = this.element.querySelector('[data-dropdown-target="items"]');
             if (!items || !items.classList.contains('hidden')) {
                 event.stopPropagation();
             }
@@ -44,7 +44,7 @@ export default class extends Controller {
             const inputSelection = inputValue.split(', ').map((label) => label.trim());
 
             [...this.choicesValue, ...this.dynamicChoices].forEach(({ label, value }) => {
-                const choice = this.element.querySelector(`[data-provider-portal--select-value-param="${value}"]`);
+                const choice = this.element.querySelector(`[data-select-value-param="${value}"]`);
                 choice.classList.remove('hidden');
 
                 if (inputSelection.includes(label) && !newSelection.includes(label)) {
@@ -78,9 +78,9 @@ export default class extends Controller {
         const filterdedChoices = [];
         [...this.choicesValue, ...this.dynamicChoices].forEach(({ label, value }) => {
             if (!regex.test(label)) {
-                this.element.querySelector(`[data-provider-portal--select-value-param="${value}"]`).classList.add('hidden');
+                this.element.querySelector(`[data-select-value-param="${value}"]`).classList.add('hidden');
             } else {
-                this.element.querySelector(`[data-provider-portal--select-value-param="${value}"]`).classList.remove('hidden');
+                this.element.querySelector(`[data-select-value-param="${value}"]`).classList.remove('hidden');
                 filterdedChoices.push({ label, value });
             }
         });
@@ -111,7 +111,7 @@ export default class extends Controller {
     handleMultipleChange({ value, label }, input) {
         if (this.selection.includes(label)) {
             this.selection = this.selection.filter((item) => item !== label);
-            this.element.querySelector(`[data-provider-portal--select-value-param="${value}"]`).classList.remove('bg-primary-4');
+            this.element.querySelector(`[data-select-value-param="${value}"]`).classList.remove('bg-primary-4');
 
             // try to find list element not checked and not hidden
             if (!this.listTarget.querySelector('li:has(input[type="checkbox"]:checked):not(.hidden)')) {
@@ -125,7 +125,7 @@ export default class extends Controller {
             }
 
             this.selection.push(label);
-            this.element.querySelector(`[data-provider-portal--select-value-param="${value}"]`).classList.add('bg-primary-4');
+            this.element.querySelector(`[data-select-value-param="${value}"]`).classList.add('bg-primary-4');
         }
 
         return value;
@@ -136,17 +136,17 @@ export default class extends Controller {
 
         if (this.selection.includes(label)) {
             this.selection = [];
-            this.element.querySelector(`[data-provider-portal--select-value-param="${value}"]`).classList.remove('bg-primary-4');
+            this.element.querySelector(`[data-select-value-param="${value}"]`).classList.remove('bg-primary-4');
 
             return value;
         }
 
         this.selection = [label];
         [...this.choicesValue, ...this.dynamicChoices].forEach(({ value: choiceValue }) => {
-            this.element.querySelector(`[data-provider-portal--select-value-param="${choiceValue}"]`)?.classList.remove('bg-primary-4');
+            this.element.querySelector(`[data-select-value-param="${choiceValue}"]`)?.classList.remove('bg-primary-4');
         });
 
-        this.element.querySelector(`[data-provider-portal--select-value-param="${value}"]`).classList.add('bg-primary-4');
+        this.element.querySelector(`[data-select-value-param="${value}"]`).classList.add('bg-primary-4');
 
         const dropdown = this.getDropdownController();
         if (dropdown && !dropdown.contentTarget.classList.contains('hidden')) {
@@ -178,7 +178,7 @@ export default class extends Controller {
             const optionPrototype = this.optionPrototypeTarget.cloneNode(true);
             optionPrototype.innerText = choice.label;
             optionPrototype.value = choice.json;
-            optionPrototype.removeAttribute('data-provider-portal--select-target');
+            optionPrototype.removeAttribute('data-select-target');
             selectFragment.appendChild(optionPrototype);
 
             const elementPrototype = this.elementPrototypeTarget.cloneNode(true);
@@ -204,9 +204,9 @@ export default class extends Controller {
             }
 
             elementPrototype.classList.remove('hidden');
-            elementPrototype.setAttribute('data-provider-portal--select-value-param', choice.value);
-            elementPrototype.setAttribute('data-provider-portal--select-label-param', choice.label);
-            elementPrototype.removeAttribute('data-provider-portal--select-target');
+            elementPrototype.setAttribute('data-select-value-param', choice.value);
+            elementPrototype.setAttribute('data-select-label-param', choice.label);
+            elementPrototype.removeAttribute('data-select-target');
             if (isActive) {
                 elementPrototype.classList.add('bg-primary-4');
             }
@@ -256,8 +256,8 @@ export default class extends Controller {
 
     getDropdownController() {
         return this.application.getControllerForElementAndIdentifier(
-            this.element.querySelector('[data-controller=provider-portal--dropdown]'),
-            'provider-portal--dropdown'
+            this.element.querySelector('[data-controller=dropdown]'),
+            'dropdown'
         );
     }
 

@@ -22,9 +22,8 @@ menu:
         referentiel.activites: Activités
         referentiel.services: Services événementiels
         referentiel.plateaux: Plateaux repas
-        fiche: Éditeur de fiche
         qualite: Qualité
         medias: Médias
+        outils: Outils
         imports: Imports & exports
         synchronisation: Synchronisation
-        administration: Administration

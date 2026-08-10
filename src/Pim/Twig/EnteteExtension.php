@@ -25,6 +25,7 @@ final class EnteteExtension extends AbstractExtension
         return [
             new TwigFunction('entete_menu', $this->menu(...)),
             new TwigFunction('entete_utilisateur', $this->utilisateur(...)),
+            new TwigFunction('entete_administration', $this->administration(...)),
         ];
     }
 
@@ -39,5 +40,13 @@ final class EnteteExtension extends AbstractExtension
     public function utilisateur(): UserDTO
     {
         return EnteteMaquette::utilisateur();
+    }
+
+    /**
+     * @return list<array{string, string, string}>
+     */
+    public function administration(): array
+    {
+        return EnteteMaquette::ENTREES_ADMINISTRATION;
     }
 }

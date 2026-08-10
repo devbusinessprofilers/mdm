@@ -1,16 +1,16 @@
 <div
-    {{ stimulus_controller('provider-portal--tooltip', {'placement': placement}) }}
-    {{ stimulus_action('provider-portal--tooltip', 'open', 'mouseenter')|stimulus_action('provider-portal--tooltip', 'close', 'mouseleave') }}
+    {{ stimulus_controller('tooltip', {'placement': placement}) }}
+    {{ stimulus_action('tooltip', 'open', 'mouseenter')|stimulus_action('tooltip', 'close', 'mouseleave') }}
     {{ attributes.without('class') }}
     class="relative cursor-pointer ml-1 w-[22px] h-[22px] {{ attributes.render('class') }}"
 >
     <twig:Icon
         name="{{ icon }}"
-        data-provider-portal--tooltip-target="trigger"
+        data-tooltip-target="trigger"
     />
     <div
         class="hidden z-256 w-max max-w-77"
-        data-provider-portal--tooltip-target="tooltip"
+        data-tooltip-target="tooltip"
     >
         <div
             data-popper-content
@@ -21,7 +21,7 @@
         {# IMPORTANT: position and transform for narrow is configured in portal.css to keep lisibility of CSS (due to tailwind) #}
         <div
             data-popper-arrow
-            data-provider-portal--tooltip-target="arrow"
+            data-tooltip-target="arrow"
             class="absolute w-4 h-4 before:absolute before:w-4 before:h-4 before:bg-neutral-100 before:border-t before:border-r before:border-neutral-900"
         ></div>
     </div>

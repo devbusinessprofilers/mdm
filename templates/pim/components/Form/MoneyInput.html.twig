@@ -24,7 +24,7 @@
 
 <div
     class="{{ wrapperCva.apply({ disabled }) }}"
-    {{ stimulus_controller('provider-portal--number-input', {
+    {{ stimulus_controller('number-input', {
         'step': step,
         'scale': scale,
         'radix': radix,
@@ -35,8 +35,8 @@
     }) }}
 >
     {% set stimulusDataActions = stimulusDataActions|merge([
-        'keydown.up->provider-portal--number-input#increase',
-        'keydown.down->provider-portal--number-input#decrease',
+        'keydown.up->number-input#increase',
+        'keydown.down->number-input#decrease',
     ]) %}
 
     {# IMPORTANT: use input type text (not number) to avoid conflict with IMask #}
@@ -48,7 +48,7 @@
         {% if readonly %}readonly{% endif %}
         {% if placeholder is not empty %}placeholder="{{ placeholder }}"{% endif %}
         class="{{ cva.apply({ disabled, readonly }, attributes.render('class')) }}"
-        {{ stimulus_target('provider-portal--number-input', 'input') }}
+        {{ stimulus_target('number-input', 'input') }}
         data-action="{{ stimulusDataActions|join(' ') }}"
         {% for key, value in inputAttributes %}
             {{ key }}="{{ value }}"

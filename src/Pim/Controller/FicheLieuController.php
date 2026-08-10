@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Pim\Controller;
 
+use App\Pim\Maquette\ExtractionMaquette;
 use App\Pim\Maquette\FicheLieuMaquette;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -39,6 +40,18 @@ final class FicheLieuController extends AbstractController
         }
 
         return $this->render('mdm/fiche_lieu.html.twig', [
+            // Modale « Extraire d'un document » : ses trois temps sont rendus
+            // d'un coup, le contrôleur Stimulus bascule de l'un à l'autre.
+            'extraction_etapes' => ExtractionMaquette::etapes(),
+            'extraction_passes' => ExtractionMaquette::passes(),
+            'extraction_valeurs' => ExtractionMaquette::valeurs(),
+            'extraction_decompte' => ExtractionMaquette::decompte(),
+            'extraction_en_lot' => ExtractionMaquette::acceptablesEnLot(),
+            'extraction_libelles' => [
+                'depot' => ExtractionMaquette::libelleSuivant('depot'),
+                'lecture' => ExtractionMaquette::libelleSuivant('lecture'),
+                'valid' => ExtractionMaquette::libelleSuivant('valid'),
+            ],
             'index' => $index,
             'listes' => $listes,
             'onglets' => FicheLieuMaquette::onglets($index),

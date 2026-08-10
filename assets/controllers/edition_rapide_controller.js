@@ -24,7 +24,7 @@ export default class extends Controller {
     ];
 
     /* Attribut de valeur du composant ProgressBar du portail. */
-    static JAUGE = 'data-provider-portal--progress-bar-current-value';
+    static JAUGE = 'data-progress-bar-current-value';
 
     connect() {
         this.rang = 0;

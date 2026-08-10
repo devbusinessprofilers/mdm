@@ -28,11 +28,15 @@ final class EcranAVenirController extends AbstractController
         'activites' => 'Activités',
         'services' => 'Services événementiels',
         'plateaux' => 'Plateaux repas',
-        'qualite' => 'Qualité',
-        'medias' => 'Médias',
+        'masse' => 'Mise à jour massive',
+        'campagnes' => 'Campagnes IA',
         'imports' => 'Imports & exports',
         'synchronisation' => 'Synchronisation',
         'administration' => 'Administration',
+        'champs' => 'Champs & taxonomies',
+        'roles' => 'Rôles & droits',
+        'utilisateurs' => 'Utilisateurs',
+        'journal' => "Journal d'activité",
     ];
 
     #[Route('/a-venir/{ecran}', name: 'app_mdm_a_venir', methods: ['GET'])]

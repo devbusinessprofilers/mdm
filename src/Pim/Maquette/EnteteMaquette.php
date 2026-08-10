@@ -24,12 +24,11 @@ final class EnteteMaquette
 {
     public const ACCUEIL = 'accueil';
     public const REFERENTIEL = 'referentiel';
-    public const FICHE = 'fiche';
     public const QUALITE = 'qualite';
     public const MEDIAS = 'medias';
+    public const OUTILS = 'outils';
     public const IMPORTS = 'imports';
     public const SYNCHRONISATION = 'synchronisation';
-    public const ADMINISTRATION = 'administration';
 
     /**
      * Les six familles du référentiel, en menu déroulant.
@@ -59,12 +58,32 @@ final class EnteteMaquette
      * @var list<array{string, string, string, array<string, string>}>
      */
     private const ENTREES = [
-        [self::FICHE, 'menu.header.fiche', 'app_mdm_fiche_lieu', []],
-        [self::QUALITE, 'menu.header.qualite', 'app_mdm_a_venir', ['ecran' => 'qualite']],
-        [self::MEDIAS, 'menu.header.medias', 'app_mdm_a_venir', ['ecran' => 'medias']],
+        // « Éditeur de fiche » ne figure plus ici : on y entre par une ligne de
+        // liste du référentiel, pas par une entrée de menu à soi.
+        [self::QUALITE, 'menu.header.qualite', 'app_mdm_qualite', []],
+        [self::MEDIAS, 'menu.header.medias', 'app_mdm_medias', []],
+        [self::OUTILS, 'menu.header.outils', 'app_mdm_outils', []],
         [self::IMPORTS, 'menu.header.imports', 'app_mdm_a_venir', ['ecran' => 'imports']],
         [self::SYNCHRONISATION, 'menu.header.synchronisation', 'app_mdm_a_venir', ['ecran' => 'synchronisation']],
-        [self::ADMINISTRATION, 'menu.header.administration', 'app_mdm_a_venir', ['ecran' => 'administration']],
+        // « Administration » n'est plus une entrée de barre : elle est passée
+        // dans le menu du profil, au survol — voir self::ENTREES_ADMINISTRATION.
+    ];
+
+    /**
+     * Le menu d'administration, ouvert au survol du profil.
+     *
+     * Ces écrans ne sont pas dans la barre de navigation : ils relèvent du
+     * paramétrage de l'outil, pas du travail quotidien sur les fiches.
+     *
+     * Libellé, glyphe, écran d'attente.
+     *
+     * @var list<array{string, string, string}>
+     */
+    public const ENTREES_ADMINISTRATION = [
+        ['Champs & taxonomies', 'pencil', 'champs'],
+        ['Rôles & droits', 'lock', 'roles'],
+        ['Utilisateurs', 'users', 'utilisateurs'],
+        ["Journal d'activité", 'list', 'journal'],
     ];
 
     /**

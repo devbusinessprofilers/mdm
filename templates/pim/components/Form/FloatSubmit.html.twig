@@ -1,7 +1,7 @@
 {% set isDynamicTarget = (form is not defined or form is null) and dynamicFormId is defined and dynamicFormId is not null %}
 <div
     {% if isDynamicTarget %}
-        {{ stimulus_controller('provider-portal--float-submit', { formDatasetId: dynamicFormId }) }}
+        {{ stimulus_controller('float-submit', { formDatasetId: dynamicFormId }) }}
     {% endif %}
     class="sticky bottom-0 left-0 right-0 bg-primary-4 flex justify-center items-center px-4 py-2 lg:py:4 z-10"
 >
@@ -10,7 +10,7 @@
             type="submit"
             disabled="{{ disabled }}"
             class="{{ attributes.render('class') }}"
-            data-provider-portal--float-submit-target="button"
+            data-float-submit-target="button"
         >
             {{ label }}
         </twig:Button>
@@ -20,7 +20,7 @@
             disabled="{{ disabled }}"
             form="{{ formId }}"
             class="{{ attributes.render('class') }}"
-            data-provider-portal--float-submit-target="button"
+            data-float-submit-target="button"
         >
             {{ label }}
         </twig:Button>

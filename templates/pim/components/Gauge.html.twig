@@ -1,5 +1,5 @@
 <div
-    {{ stimulus_controller('provider-portal--gauge', {
+    {{ stimulus_controller('gauge', {
         'min': min,
         'max': max,
         'ranges': ranges,
@@ -20,7 +20,7 @@
     {% endif %}
     <div class="relative w-full flex justify-center">
         <canvas
-            {{ stimulus_target('provider-portal--gauge', 'canvas') }}
+            {{ stimulus_target('gauge', 'canvas') }}
             class="{{ attributes.render('gaugeClass') }}"
             width="320"
             height="320"

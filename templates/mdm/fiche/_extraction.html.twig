@@ -1,0 +1,186 @@
+{#
+    Modale « Extraire d'un document ».
+
+    Maquette : `MDM prototype.dc.html`, état `extract` de la page `fiche`.
+
+    Trois temps : on dépose, l'IA lit, l'humain valide champ par champ. Les trois
+    sont rendus ici et c'est le contrôleur `extraction` qui bascule — la
+    maquette change d'état sans recharger, on fait pareil.
+
+    La provenance affichée est la page du document, pas « l'IA » : une valeur
+    qu'on peut retrouver dans la source se conteste, une valeur attribuée à un
+    modèle ne se conteste pas.
+#}
+{% set etapes = constant('App\\Pim\\Maquette\\ExtractionMaquette::ETAPES') %}
+{% set types = constant('App\\Pim\\Maquette\\ExtractionMaquette::TYPES_ACCEPTES') %}
+
+<div class="fixed inset-0 z-30 flex items-center justify-center p-6 bg-[rgba(3,74,94,0.34)]"
+     role="dialog" aria-modal="true" aria-label="Extraire d'un document"
+     data-extraction-target="modale" hidden>
+
+    <div class="flex flex-col w-full max-w-[1080px] max-h-full overflow-hidden rounded-md
+                bg-neutral-100 shadow-[0_24px_60px_rgba(3,74,94,0.30)]">
+
+        {# ---------------------------------------------------------- En-tête #}
+        <div class="shrink-0 flex items-start justify-between gap-5 px-[26px] pt-[22px] pb-4
+                    border-b border-neutral-200">
+            <div class="flex flex-col gap-2 min-w-0">
+                <twig:Typography variant="subtitle" element="h2" class="font-[700]!">Extraire d'un document</twig:Typography>
+
+                {# Le fil : l'étape courante en dégradé, les précédentes en turquoise plein. #}
+                <div class="flex items-center gap-3.5 flex-wrap">
+                    {% for etape in extraction_etapes %}
+                        <div class="flex items-center gap-2 shrink-0"
+                             data-extraction-target="etape" data-etape="{{ etape.cle }}">
+                            <span class="flex items-center justify-center shrink-0 w-[22px] h-[22px]
+                                         rounded-lg bg-neutral-200"
+                                  data-extraction-target="puce">
+                                <twig:Typography variant="body-xs" bold textColor="neutral-500"
+                                                 data-extraction-target="puceTexte">{{ etape.numero }}</twig:Typography>
+                            </span>
+                            <twig:Typography variant="body-sm" bold textColor="neutral-500"
+                                             class="whitespace-nowrap"
+                                             data-extraction-target="etapeLibelle">{{ etape.libelle }}</twig:Typography>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <button type="button" aria-label="Fermer"
+                    class="flex items-center justify-center shrink-0 w-8 h-8 rounded-lg
+                           bg-neutral-200 cursor-pointer"
+                    data-action="extraction#fermer">
+                <twig:Icon name="cross" aria-hidden="true" class="w-3.5 h-3.5 text-neutral-500" />
+            </button>
+        </div>
+
+        {# ------------------------------------------------------------ Corps #}
+        <div class="flex-1 min-h-0 overflow-y-auto flex flex-col gap-4 px-[26px] py-5 scrollbar">
+
+            {# ------------------------------------------------ 1 · Déposer #}
+            <div class="flex flex-col gap-4" data-extraction-target="volet" data-etape="depot">
+                <twig:Typography variant="body" textColor="neutral-500" class="text-pretty">Déposez une plaquette,
+                    un devis ou un plan de salle. L'IA en lit les valeurs et vous les propose — rien n'est écrit
+                    dans la fiche sans votre accord, champ par champ.</twig:Typography>
+
+                <div class="flex flex-col items-center gap-3 px-8 py-11 rounded-sm text-center
+                            bg-primary-5 inset-ring-2 inset-ring-primary">
+                    <twig:Icon name="upload-simple" aria-hidden="true" class="w-[34px] h-[34px] text-primary-3" />
+                    <twig:Typography variant="subtitle" class="text-[1.0625rem]! leading-[1.5rem]! font-[700]!">Glissez votre document ici</twig:Typography>
+                    <twig:Typography variant="body-sm" textColor="neutral-500">ou parcourez vos fichiers · 20 Mo maximum</twig:Typography>
+                    <div class="flex flex-row gap-2 flex-wrap justify-center">
+                        {% for type in types %}
+                            <span class="shrink-0 px-[9px] py-[3px] rounded-lg bg-primary-4">
+                                <twig:Typography variant="body-xs" bold textColor="primary-3">{{ type }}</twig:Typography>
+                            </span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            {# ------------------------------------------------ 2 · Lecture #}
+            <div class="flex flex-col gap-4" data-extraction-target="volet" data-etape="lecture" hidden>
+                <div class="flex items-center gap-3 px-4 py-3.5 rounded-[12px] bg-primary-4">
+                    <twig:Icon name="note" aria-hidden="true" class="shrink-0 w-5 h-5 text-primary-3" />
+                    <div class="flex flex-col flex-1 min-w-0">
+                        <twig:Typography variant="body-sm" bold ellipsis>{{ constant('App\\Pim\\Maquette\\ExtractionMaquette::FICHIER') }}</twig:Typography>
+                        <twig:Typography variant="body-sm" textColor="neutral-500">{{ constant('App\\Pim\\Maquette\\ExtractionMaquette::FICHIER_META') }}</twig:Typography>
+                    </div>
+                    <twig:Icon name="spinner" aria-hidden="true" class="shrink-0 w-[18px] h-[18px] text-primary-3 animate-spin" />
+                </div>
+
+                <div class="flex flex-col gap-2">
+                    {% for passe in extraction_passes %}
+                        <div class="flex items-center gap-[11px] px-3.5 py-[11px] rounded-[12px] bg-primary-5">
+                            <twig:Icon name="{{ passe.icone }}" aria-hidden="true"
+                                       class="shrink-0 w-[17px] h-[17px]
+                                              {{ 'en file' == passe.etat ? 'text-neutral-500' : 'text-primary-3' }}
+                                              {{ 'en cours' == passe.etat ? 'animate-spin' : '' }}" />
+                            <div class="flex flex-col flex-1 min-w-0">
+                                <twig:Typography variant="body-sm" bold>{{ passe.libelle }}</twig:Typography>
+                                <twig:Typography variant="body-sm" textColor="neutral-500">{{ passe.detail }}</twig:Typography>
+                            </div>
+                            <span class="shrink-0 whitespace-nowrap px-[9px] py-[3px] rounded-lg {{ passe.fond }}">
+                                <twig:Typography variant="body-xs" bold
+                                                 textColor="{{ 'en file' == passe.etat ? 'neutral-500' : 'primary-3' }}">{{ passe.jeton }}</twig:Typography>
+                            </span>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            {# ------------------------------------------------ 3 · Valider #}
+            <div class="flex flex-col gap-4" data-extraction-target="volet" data-etape="valid" hidden>
+                <div class="flex items-center justify-between gap-4 flex-wrap">
+                    <twig:Typography variant="body-sm" textColor="neutral-500">{{ extraction_decompte }}</twig:Typography>
+                    <twig:Button variant="outline" size="sm"
+                                 data-action="extraction#accepterEnLot">Accepter les {{ extraction_en_lot }} de confiance élevée</twig:Button>
+                </div>
+
+                <div class="flex flex-col gap-2">
+                    {% for valeur in extraction_valeurs %}
+                        <div class="flex items-center gap-3 px-4 py-[13px] rounded-[12px]
+                                    {{ valeur.deja ? 'bg-neutral-200' : 'bg-primary-5' }}"
+                             data-extraction-target="valeur"
+                             data-confiance="{{ valeur.confiance }}"
+                             data-deja="{{ valeur.deja ? '1' : '0' }}">
+
+                            <twig:Typography variant="body-sm" bold ellipsis
+                                             class="w-[230px] shrink-0">{{ valeur.champ }}</twig:Typography>
+
+                            <div class="flex flex-col flex-1 min-w-0">
+                                <twig:Typography variant="body-sm" ellipsis class="font-sans!">{{ valeur.lu }}</twig:Typography>
+                                <twig:Typography variant="body-xs" textColor="neutral-500" ellipsis>{{ valeur.actuel }}</twig:Typography>
+                            </div>
+
+                            <div class="flex items-center gap-2 shrink-0 flex-wrap">
+                                {# La page source : c'est elle qui rend la valeur contestable. #}
+                                <span class="flex items-center justify-center w-[54px] shrink-0
+                                             px-[9px] py-[3px] rounded-lg bg-neutral-100">
+                                    <twig:Typography variant="body-xs" bold textColor="primary-3">{{ valeur.page }}</twig:Typography>
+                                </span>
+
+                                <span class="flex gap-[3px] shrink-0" aria-hidden="true">
+                                    {% for rang in 1..4 %}
+                                        <span class="block w-[5px] h-3 rounded-[2px]
+                                                     {{ rang <= valeur.confiance ? valeur.teinteBarre : 'bg-neutral-300' }}"></span>
+                                    {% endfor %}
+                                </span>
+                                <span class="sr-only">Confiance {{ valeur.confiance }} sur 4</span>
+
+                                <span class="flex items-center justify-center w-[132px] shrink-0
+                                             px-[9px] py-[3px] rounded-lg {{ valeur.fondVerdict }}">
+                                    <twig:Typography variant="body-xs" bold
+                                                     textColor="{{ valeur.teinteVerdict }}">{{ valeur.libelleVerdict }}</twig:Typography>
+                                </span>
+                            </div>
+
+                            <div class="flex gap-1.5 shrink-0">
+                                <twig:Button variant="text" size="sm" textColor="neutral-500"
+                                             data-action="extraction#rejeter">Rejeter</twig:Button>
+                                <twig:Button variant="primary" size="sm"
+                                             disabled="{{ valeur.deja }}"
+                                             data-action="extraction#accepter">Accepter</twig:Button>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        {# ------------------------------------------------------------- Pied #}
+        <div class="shrink-0 flex items-center justify-between gap-4 px-[26px] py-4
+                    border-t border-neutral-200">
+            <twig:Typography variant="body-sm" textColor="neutral-500" class="text-pretty">Le document reste attaché
+                à la fiche comme pièce justificative, avec la page d'origine de chaque valeur acceptée.</twig:Typography>
+            <div class="flex items-center gap-2.5 shrink-0">
+                <twig:Button variant="text" size="md" textColor="neutral-500"
+                             data-action="extraction#reculer"
+                             data-extraction-target="reculer">Annuler</twig:Button>
+                <twig:Button variant="primary" size="md"
+                             data-action="extraction#avancer"
+                             data-extraction-target="avancer">{{ extraction_libelles.depot }}</twig:Button>
+            </div>
+        </div>
+    </div>
+</div>

@@ -5,24 +5,24 @@
 <div
     id="{{ identifier }}"
     class="fixed top-0 left-0 w-screen h-screen bg-background-transparency flex justify-center items-center z-256 hidden"
-    {{ stimulus_controller('provider-portal--crop-modal', {
+    {{ stimulus_controller('crop-modal', {
         'scaleStep': scaleStep,
         'minScale': minScale,
         'maxScale': maxScale,
     }) }}
-    {{ stimulus_target('provider-portal--crop-modal', 'modal') }}
+    {{ stimulus_target('crop-modal', 'modal') }}
 >
     <div class="max-w-80/100 max-h-80/100 overflow-auto bg-neutral-900 p-14 rounded-md">
         <div class="w-full flex flex-col gap-6 items-center">
             <div class="flex gap-2">
                 <twig:Icon
-                    data-action="click->provider-portal--crop-modal#downScale"
+                    data-action="click->crop-modal#downScale"
                     name="magnifying-glass-minus"
                     class="w-8 h-8 text-neutral-100 cursor-pointer"
                 />
                 <input
-                    {{ stimulus_target('provider-portal--crop-modal', 'scale') }}
-                    data-action="input->provider-portal--crop-modal#updateScale"
+                    {{ stimulus_target('crop-modal', 'scale') }}
+                    data-action="input->crop-modal#updateScale"
                     type="range"
                     value="0"
                     min="{{ minScale }}"
@@ -30,43 +30,43 @@
                     step="{{ scaleStep }}"
                 >
                 <twig:Icon
-                    data-action="click->provider-portal--crop-modal#upScale"
+                    data-action="click->crop-modal#upScale"
                     name="magnifying-glass-plus"
                     class="w-8 h-8 text-neutral-100 cursor-pointer"
                 />
             </div>
             <cropper-canvas
-                {{ stimulus_target('provider-portal--crop-modal', 'canvas') }}
+                {{ stimulus_target('crop-modal', 'canvas') }}
                 class="w-50 h-25 sm:w-100 sm:h-50 lg:w-200 lg:h-100 rounded-sm bg-neutral-500"
                 scaleStep="{{ scaleStep }}"
             >
                 <cropper-image
-                    {{ stimulus_target('provider-portal--crop-modal', 'picture') }}
+                    {{ stimulus_target('crop-modal', 'picture') }}
                     src="{{ path('provider_portal_download_media', {'uniqueId': '123'}) }}"
                     alt=""
                     initial-center-size="cover"
                     rotatable scalable translatable
                 ></cropper-image>
                 <cropper-selection
-                    {{ stimulus_target('provider-portal--crop-modal', 'selection') }}
+                    {{ stimulus_target('crop-modal', 'selection') }}
                     initial-coverage="1"
                 >
                     <cropper-handle action="move" theme-color="rgba(255, 255, 255, 0)"></cropper-handle>
                 </cropper-selection>
             </cropper-canvas>
             <div class="flex justify-center items-center gap-4">
-                <button type="button" class="{{ buttonCva.apply({}) }}" data-action="click->provider-portal--crop-modal#rotateLeft">
+                <button type="button" class="{{ buttonCva.apply({}) }}" data-action="click->crop-modal#rotateLeft">
                     <twig:Icon name="arrow-counter-clockwise" class="w-8 h-8"/>
                     <twig:Typography bold>{{ 'form.crop.rotate.left'|trans }}</twig:Typography>
                 </button>
-                <button type="button" class="{{ buttonCva.apply({}) }}" data-action="click->provider-portal--crop-modal#rotateRight">
+                <button type="button" class="{{ buttonCva.apply({}) }}" data-action="click->crop-modal#rotateRight">
                     <twig:Icon name="arrow-clockwise" class="w-8 h-8"/>
                     <twig:Typography bold>{{ 'form.crop.rotate.right'|trans }}</twig:Typography>
                 </button>
             </div>
             <div class="flex justify-center gap-4 mt-8">
-                <twig:Button type="button" variant="outline" data-action="click->provider-portal--crop-modal#cancel">{{ 'global.cancel'|trans }}</twig:Button>
-                <twig:Button type="button" data-action="click->provider-portal--crop-modal#save">{{ 'global.validate_save'|trans }}</twig:Button>
+                <twig:Button type="button" variant="outline" data-action="click->crop-modal#cancel">{{ 'global.cancel'|trans }}</twig:Button>
+                <twig:Button type="button" data-action="click->crop-modal#save">{{ 'global.validate_save'|trans }}</twig:Button>
             </div>
         </div>
     </div>

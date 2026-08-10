@@ -1,11 +1,11 @@
 <div
     class="{{ attributes.render('class') }}"
-    {{ stimulus_controller('provider-portal--tag-select') }}
+    {{ stimulus_controller('tag-select') }}
 >
     <select
         id="{{ id }}"
         name="{{ name }}"
-        {{ stimulus_target('provider-portal--tag-select', 'select') }}
+        {{ stimulus_target('tag-select', 'select') }}
         {{ attributes.without('class') }}
         multiple
         hidden
@@ -20,7 +20,7 @@
         {% endfor %}
     </select>
     <div
-        {{ stimulus_target('provider-portal--tag-select', 'choices') }}
+        {{ stimulus_target('tag-select', 'choices') }}
         class="flex flex-wrap gap-2"
     >
         {% for choice in choices %}

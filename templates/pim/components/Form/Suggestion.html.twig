@@ -33,7 +33,7 @@
 }) %}
 
 <div
-    {{ stimulus_controller('provider-portal--suggestion', {
+    {{ stimulus_controller('suggestion', {
         'multiple': multiple,
         'defaultValue': value,
     }) }}
@@ -52,8 +52,8 @@
                 id="{{ id }}"
                 name="{{ name }}"
                 value="{{ value }}"
-                {{ stimulus_target('provider-portal--suggestion', 'input') }}
-                data-action="input->provider-portal--suggestion#onSearch keyup->provider-portal--suggestion#prevent click->provider-portal--suggestion#prevent {{ stimulusDataActions ?? '' }}"
+                {{ stimulus_target('suggestion', 'input') }}
+                data-action="input->suggestion#onSearch keyup->suggestion#prevent click->suggestion#prevent {{ stimulusDataActions ?? '' }}"
                 autocomplete="off"
                 {% if placeholder is not empty %}placeholder="{{ placeholder }}"{% endif %}
                 {% if disabled %}disabled{% endif %}
@@ -77,8 +77,8 @@
 
         {% if not multiple %}
             <li
-                {{ stimulus_target('provider-portal--suggestion', 'prototype') }}
-                {{ stimulus_action('provider-portal--suggestion', 'acceptSuggestion', 'click', {
+                {{ stimulus_target('suggestion', 'prototype') }}
+                {{ stimulus_action('suggestion', 'acceptSuggestion', 'click', {
                     value: '',
                     label: '',
                 }) }}
@@ -89,13 +89,13 @@
         {% endif %}
 
         <ul
-            {{ stimulus_target('provider-portal--suggestion', 'list') }}
+            {{ stimulus_target('suggestion', 'list') }}
             class="w-full flex flex-col gap-2 max-h-[214px] overflow-x-visible overflow-y-auto scrollbar"
         >
         </ul>
 
         <twig:Typography
-            data-provider-portal--suggestion-target="noOptions"
+            data-suggestion-target="noOptions"
             class="block w-full {{ noOptionsCva.apply({ hidden: value is not null and value is not empty }) }}"
         >
             {{- 'suggestion.no_options'|trans -}}

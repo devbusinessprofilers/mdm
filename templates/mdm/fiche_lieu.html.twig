@@ -13,7 +13,9 @@
 
 {% block title %}{{ section.nom }} · Éditeur de fiche{% endblock %}
 
-{% block main_attributs %}{% if a_des_collaborateurs %}data-controller="collaborateurs"{% endif %}{% endblock %}
+{% block main_attributs %}data-controller="extraction{% if a_des_collaborateurs %} collaborateurs{% endif %}"
+    data-extraction-etapes-value="{{ constant('App\\Pim\\Maquette\\ExtractionMaquette::ETAPES')|json_encode|e('html_attr') }}"
+    data-extraction-libelles-value="{{ extraction_libelles|json_encode|e('html_attr') }}"{% endblock %}
 
 {#
     Sur cet écran le rail ne montre plus les sections du référentiel mais les
@@ -97,7 +99,9 @@
                         #}
                         <twig:Button variant="primary" size="md" icon="ai"
                                      class="[&>:first-child]:size-5">Enrichir ce qui manque</twig:Button>
-                        <twig:Button variant="outline" size="md">Extraire d'un document</twig:Button>
+                        <twig:Button variant="outline" size="md" icon="upload-simple"
+                                     class="[&>:first-child]:size-5"
+                                     data-action="extraction#ouvrir">Extraire d'un document</twig:Button>
                     </div>
             </div>
 
@@ -295,6 +299,8 @@
       {% endif %}
 
     </div>
+
+    {% include 'mdm/fiche/_extraction.html.twig' %}
 {% endblock %}
 
 {# ------------------------------------------------------------- Macros #}

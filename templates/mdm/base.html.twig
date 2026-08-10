@@ -103,9 +103,71 @@
             </div>
 
             <div class="hidden 2xl:flex items-center gap-8 shrink-0">
-                <twig:Header:Profil user="{{ entete_utilisateur }}"
-                                    currentRoute="{{ app.request.attributes.get('_route') }}"
-                                    route="app_mdm_espace_travail" />
+                {#
+                    Menu d'administration, ouvert au survol du profil.
+
+                    `Header:Profil` du portail reste le déclencheur, intact : on
+                    l'enveloppe, on ne le remplace pas. L'ouverture est en CSS
+                    plutôt que par le contrôleur `dropdown` du portail, qui
+                    n'ouvre qu'au clic — `group-focus-within` garde le menu
+                    atteignable au clavier.
+
+                    Le panneau porte `pt-3` et non une marge : l'espace doit
+                    rester survolable, sinon le menu se referme en le traversant.
+                #}
+                <div class="group/profil relative">
+                    {#
+                        Le soulignement du composant ne tient que sur `hover:` du
+                        lien lui-même : il tombait dès que la souris entrait dans
+                        le panneau. On le rattache au survol de l'enveloppe, donc
+                        au bloc entier, menu compris.
+                    #}
+                    <twig:Header:Profil user="{{ entete_utilisateur }}"
+                                        currentRoute="{{ app.request.attributes.get('_route') }}"
+                                        route="app_mdm_espace_travail"
+                                        class="group-hover/profil:after:w-full
+                                               group-focus-within/profil:after:w-full" />
+
+                    <div class="absolute right-0 top-full z-10 hidden pt-3
+                                group-hover/profil:block group-focus-within/profil:block">
+                        <div class="w-[264px] flex flex-col rounded-sm bg-neutral-100 shadow-(--shadow)
+                                    inset-ring-1 inset-ring-neutral-200 overflow-hidden">
+
+                            <div class="flex flex-col gap-0.5 px-4 py-3 bg-primary-5 border-b border-neutral-200">
+                                <twig:Typography variant="body-sm" bold ellipsis>{{ entete_utilisateur.fullName }}</twig:Typography>
+                                <twig:Typography variant="body-xs" textColor="neutral-500" ellipsis>{{ entete_utilisateur.job }}</twig:Typography>
+                            </div>
+
+                            <div class="flex flex-col gap-1 p-2">
+                                <twig:Typography variant="body-xs" bold textColor="neutral-500"
+                                                 class="px-2 pt-1 pb-0.5 tracking-[0.8px] uppercase">Administration</twig:Typography>
+
+                                {% for entree in entete_administration() %}
+                                    <a href="{{ path('app_mdm_a_venir', { ecran: entree.2 }) }}"
+                                       class="flex items-center gap-2 px-2 py-1.5 rounded-xs hover:bg-primary-4">
+                                        <twig:Icon name="{{ entree.1 }}" aria-hidden="true"
+                                                   class="shrink-0 w-4 h-4 text-primary" />
+                                        <twig:Typography variant="body-sm" bold textColor="primary-3"
+                                                         ellipsis class="min-w-0">{{ entree.0 }}</twig:Typography>
+                                    </a>
+                                {% endfor %}
+                            </div>
+
+                            <div class="flex flex-col p-2 border-t border-neutral-200">
+                                <a href="{{ path('app_mdm_espace_travail') }}"
+                                   class="flex items-center gap-2 px-2 py-1.5 rounded-xs hover:bg-primary-4">
+                                    <twig:Icon name="user" aria-hidden="true" class="shrink-0 w-4 h-4 text-primary" />
+                                    <twig:Typography variant="body-sm" bold textColor="primary-3">Mon espace de travail</twig:Typography>
+                                </a>
+                                <a href="{{ path('app_auth_connexion') }}"
+                                   class="flex items-center gap-2 px-2 py-1.5 rounded-xs hover:bg-error-pastel">
+                                    <twig:Icon name="lock" aria-hidden="true" class="shrink-0 w-4 h-4 text-error" />
+                                    <twig:Typography variant="body-sm" bold textColor="error">Se déconnecter</twig:Typography>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <twig:Header:LanguageSwitcher />
             </div>
 
@@ -130,36 +192,33 @@
             <nav class="flex flex-col shrink-0 box-border w-[328px] pl-5 pr-3 overflow-hidden
                         {{ rail_pad_y }} {{ rail_group_gap }}"
                  aria-label="Sections du référentiel">
-                {{ _self.groupe('Référentiel', [
-                    { libelle: 'Toutes les fiches', icone: 'eye', compteur: '18 953',
-                      actif: ecran == 'general', href: path('app_mdm_referentiel_general') },
-                    { libelle: 'Lieux', icone: 'bed', compteur: '12 480',
-                      actif: ecran in ['liste', 'salles'], href: path('app_mdm_lieux') },
-                    { libelle: 'Restaurants', icone: 'utensils', compteur: '3 210' },
-                    { libelle: 'Activités', icone: 'check', compteur: '1 884' },
-                    { libelle: 'Services événementiels', icone: 'info-circle', compteur: '962' },
-                    { libelle: 'Plateaux repas', icone: 'utensils', compteur: '417' },
-                ], rail_title_gap, rail_item_pad_y) }}
+                {#
+                    Le groupe « Référentiel » a été retiré : ses six familles sont
+                    déjà dans le menu déroulant de la barre supérieure. Les répéter
+                    ici donnait deux chemins pour la même destination, et le rail
+                    n'a pas à porter la navigation principale.
+                #}
+                {#
+                    Le rail ne porte plus que ce qui n'a pas d'autre chemin.
 
+                    Retirés parce qu'ils existent ailleurs :
+                      · « Tableau de bord »          → « Accueil », barre du haut
+                      · « Synchronisations »          → barre du haut
+                      · « Tableau de bord qualité »   → « Qualité », barre du haut
+                      · « Mon espace de travail »     → menu du profil
+                      · groupe « Paramétrage » entier → menu du profil
+
+                    Restent les files de travail personnelles et les anomalies :
+                    aucune n'est atteignable autrement.
+                #}
                 {{ _self.groupe('Travail en cours', [
-                    { libelle: 'Tableau de bord', icone: 'squares-four',
-                      actif: ecran == 'accueil', href: path('app_mdm_tableau_de_bord') },
-                    { libelle: 'Mon espace de travail', icone: 'check',
-                      actif: ecran == 'travail', href: path('app_mdm_espace_travail') },
                     { libelle: 'Mes fiches assignées', icone: 'user', compteur: '38' },
                     { libelle: 'En attente de validation', icone: 'check', compteur: '14' },
                     { libelle: 'Contributions prestataires', icone: 'user', compteur: '62' },
                 ], rail_title_gap, rail_item_pad_y) }}
 
                 {{ _self.groupe('Contrôle', [
-                    { libelle: 'Tableau de bord qualité', icone: 'eye', actif: ecran == 'qualite' },
                     { libelle: 'Anomalies', icone: 'info-circle', compteur: '318' },
-                    { libelle: 'Synchronisations', icone: 'check', actif: ecran == 'sync' },
-                ], rail_title_gap, rail_item_pad_y) }}
-
-                {{ _self.groupe('Paramétrage', [
-                    { libelle: 'Champs & taxonomies', icone: 'pencil', actif: ecran in ['admin', 'composants'] },
-                    { libelle: 'Rôles & droits', icone: 'lock' },
                 ], rail_title_gap, rail_item_pad_y) }}
             </nav>
             {% endblock %}

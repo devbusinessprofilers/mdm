@@ -5,14 +5,14 @@ export default class extends Controller {
 
     open() {
         const modalElement = document.querySelector(`[data-modal="${this.modalIdentifierValue}"]`)
-        const modalController = this.application.getControllerForElementAndIdentifier(modalElement, 'provider-portal--modal');
+        const modalController = this.application.getControllerForElementAndIdentifier(modalElement, 'modal');
 
         modalController.open();
     }
 
     close() {
         const modalElement = document.querySelector(`[data-modal="${this.modalIdentifierValue}"]`)
-        const modalController = this.application.getControllerForElementAndIdentifier(modalElement, 'provider-portal--modal');
+        const modalController = this.application.getControllerForElementAndIdentifier(modalElement, 'modal');
 
         modalController.close();
     }

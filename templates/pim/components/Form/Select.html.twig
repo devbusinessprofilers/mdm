@@ -32,7 +32,7 @@
 {% set selectedValues = this.getSelectedValues() %}
 
 <div
-    {{ stimulus_controller('provider-portal--select', {
+    {{ stimulus_controller('select', {
         'choices': choices,
         'defaultSelection': selectedValues,
         'multiple': multiple,
@@ -43,7 +43,7 @@
 >
     {% if prototype %}
         <option
-            {{ stimulus_target('provider-portal--select', 'optionPrototype') }}
+            {{ stimulus_target('select', 'optionPrototype') }}
             value=""
             class="hidden"
         >
@@ -51,8 +51,8 @@
         </option>
 
         <li
-            {{ stimulus_target('provider-portal--select', 'elementPrototype') }}
-            {{ stimulus_action('provider-portal--select', 'toggleChoice', 'click', {
+            {{ stimulus_target('select', 'elementPrototype') }}
+            {{ stimulus_action('select', 'toggleChoice', 'click', {
                 value: '',
                 label: '',
             }) }}
@@ -71,7 +71,7 @@
     <select
         id="{{ id }}"
         name="{{ name }}"
-        {{ stimulus_target('provider-portal--select', 'select') }}
+        {{ stimulus_target('select', 'select') }}
         {% if disabled %}disabled{% endif %}
         {% if multiple %}multiple{% endif %}
         hidden
@@ -97,8 +97,8 @@
     >
         <twig:block name="trigger">
             <input
-                {{ stimulus_target('provider-portal--select', 'input') }}
-                {{ stimulus_action('provider-portal--select', 'onSearch', 'input')|stimulus_action('provider-portal--select', 'prevent', 'keyup') }}
+                {{ stimulus_target('select', 'input') }}
+                {{ stimulus_action('select', 'onSearch', 'input')|stimulus_action('select', 'prevent', 'keyup') }}
                 id="trigger-{{ id }}"
                 autocomplete="off"
                 {% if placeholder is not empty %}placeholder="{{ placeholder }}"{% endif %}
@@ -119,12 +119,12 @@
         {% endif %}
 
         <ul
-            {{ stimulus_target('provider-portal--select', 'list') }}
+            {{ stimulus_target('select', 'list') }}
             class="w-full flex flex-col gap-2 max-h-[214px] overflow-x-visible overflow-y-auto scrollbar"
         >
             {% for choice in choices %}
                 <li
-                    {{ stimulus_action('provider-portal--select', 'toggleChoice', 'click', {
+                    {{ stimulus_action('select', 'toggleChoice', 'click', {
                         value: choice.value,
                         label: choice.label,
                     }) }}
@@ -150,7 +150,7 @@
         </ul>
 
         <twig:Typography
-            data-provider-portal--select-target="noOptions"
+            data-select-target="noOptions"
             class="block w-full {{ noOptionsCva.apply({ hidden: choices|length > 0 }) }}"
         >
             {{- 'select.no_options'|trans -}}

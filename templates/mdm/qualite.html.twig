@@ -1,0 +1,271 @@
+{#
+    Maquette : « MDM prototype.dc.html », page `qualite` — Data Governance
+    Workspace.
+
+    Cinq onglets, une question chacun : d'où vient l'écart, lequel arbitrer,
+    lequel normaliser, qui a été prévenu, qui a tranché. Ils passent par la query
+    string, comme le rail du prototype.
+
+    Le rail porte les onglets ; le contenu est le même châssis pour les cinq —
+    en-tête, cartes, tableau, pied — seule la matière change.
+#}
+{% extends 'mdm/base.html.twig' %}
+
+{% set ecran = 'qualite' %}
+
+{% set carte = 'flex flex-col box-border gap-3 px-[26px] py-6 rounded-md bg-neutral-100 shadow-(--shadow)' %}
+{% set grille = 'grid gap-4 items-center px-4 grid-cols-[repeat(auto-fit,minmax(0,1fr))]' %}
+
+{% block title %}{{ vue.titre }} · Qualité{% endblock %}
+
+{% block rail %}
+    <nav class="flex flex-col shrink-0 box-border w-[328px] pl-5 pr-3 overflow-hidden
+                {{ rail_pad_y }} {{ rail_group_gap }}"
+         aria-label="Onglets de la gouvernance des données">
+
+        <div class="flex flex-col {{ rail_title_gap }}">
+            <twig:Typography variant="body" bold
+                             class="pl-2 pr-4 [@media(max-height:700px)]:leading-[1.125rem]!">Data Governance Workspace</twig:Typography>
+            <div class="flex flex-col">
+                {% for onglet in vue.onglets %}
+                    <a href="{{ path('app_mdm_qualite', { onglet: onglet.cle }) }}"
+                       class="group/onglet flex items-center gap-2 box-border px-4 {{ rail_item_pad_y }}
+                              rounded-xs overflow-hidden cursor-pointer
+                              hover:bg-primary-4 aria-[current=page]:bg-linear-(--primary-gradient)"
+                       {{ onglet.actif ? 'aria-current="page"' : '' }}>
+                        <twig:Icon name="{{ onglet.icone }}" aria-hidden="true"
+                                   class="shrink-0 self-center w-4 h-4 mx-1 text-primary
+                                          group-aria-[current=page]/onglet:text-neutral-100" />
+                        <twig:Typography variant="body" bold ellipsis textColor="primary-3"
+                                         class="flex-1 min-w-0
+                                                group-aria-[current=page]/onglet:text-neutral-100!">{{ onglet.libelle }}</twig:Typography>
+                        <twig:Typography variant="body-xs" bold textColor="neutral-500"
+                                         class="shrink-0 px-[7px] py-0.5 rounded-lg bg-neutral-200
+                                                group-aria-[current=page]/onglet:bg-neutral-100
+                                                group-aria-[current=page]/onglet:text-primary-3!">{{ onglet.badge }}</twig:Typography>
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+
+        <span class="flex-1"></span>
+
+        {#
+            « Qui fait foi » n'est pas une note d'aide : c'est la règle qui rend
+            les cinq onglets lisibles. Elle reste sous les yeux.
+        #}
+        <div class="shrink-0 flex flex-col gap-1.5 mr-1 p-3.5 rounded-[12px] bg-primary-4">
+            <twig:Typography variant="body-sm" bold textColor="primary-3">Qui fait foi</twig:Typography>
+            <twig:Typography variant="body-sm" textColor="neutral-500" class="text-pretty">Salesforce sur la raison
+                sociale, le SIRET et la facturation · le MDM sur les descriptions, capacités et taxonomies · le
+                portail BP sur les horaires, contacts et médias.</twig:Typography>
+        </div>
+    </nav>
+{% endblock %}
+
+{% block contenu %}
+    <div class="shrink-0 flex items-end justify-between gap-6 px-10 pt-[22px] pb-4">
+        <div class="flex flex-col gap-1 min-w-0">
+            <twig:Typography variant="heading-2" element="h1"
+                             class="sm:text-[1.625rem]! sm:leading-[2.125rem]! font-[700]!">{{ vue.titre }}</twig:Typography>
+            <twig:Typography variant="body" element="p" textColor="neutral-500"
+                             class="text-pretty">{{ vue.sousTitre }}</twig:Typography>
+        </div>
+
+        <div class="flex items-center gap-2.5 shrink-0">
+            {% for action in vue.actions %}
+                <twig:Button variant="{{ action.2 ? 'primary' : 'outline' }}" size="md"
+                             icon="{{ action.1 }}"
+                             class="[&>:first-child]:size-5">{{ action.0 }}</twig:Button>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="flex-1 min-h-0 flex flex-col gap-4 px-10 pb-8 overflow-y-auto scrollbar">
+
+        {% if vue.sante %}{{ _self.sante(vue.sante, carte) }}{% endif %}
+
+        {% if vue.cartes %}
+            <div class="shrink-0 flex flex-row gap-4 flex-wrap">
+                {% for c in vue.cartes %}
+                    <button type="button"
+                            class="{{ carte }} flex-1 basis-72 min-w-0 text-left cursor-pointer">
+                        <div class="flex items-center gap-3">
+                            <twig:Icon name="{{ c.icone }}" aria-hidden="true"
+                                       class="shrink-0 w-6 h-6 {{ c.alerte ? 'text-error' : 'text-primary' }}" />
+                            <twig:Typography variant="subtitle" ellipsis
+                                             class="flex-1 min-w-0 text-[1.125rem]! leading-[1.625rem]! font-[700]!">{{ c.titre }}</twig:Typography>
+                            <twig:Tag label="{{ c.valeur }}" size="sm"
+                                      variant="{{ c.alerte ? 'error' : 'success-pastel' }}"
+                                      class="shrink-0 whitespace-nowrap" />
+                        </div>
+                        <twig:Typography variant="body" textColor="neutral-500"
+                                         class="text-pretty">{{ c.texte }}</twig:Typography>
+                        <div class="flex items-center gap-2">
+                            <twig:Typography variant="body-sm" bold textColor="primary-3">{{ c.lien }}</twig:Typography>
+                            <twig:Icon name="arrow-right" aria-hidden="true" class="shrink-0 w-3 h-3 text-primary" />
+                        </div>
+                    </button>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {% if vue.filtres %}
+            <div class="shrink-0 flex items-center gap-3.5 flex-wrap px-5 py-3 rounded-sm
+                        bg-neutral-100 shadow-(--shadow)">
+                <twig:Typography variant="subtitle" class="shrink-0 text-[0.9375rem]! leading-[1.375rem]! font-[700]!">{{ vue.resultat }}</twig:Typography>
+                <span class="w-px h-4 shrink-0 bg-neutral-200"></span>
+                <div class="flex items-center gap-2 flex-wrap flex-1 min-w-0">
+                    {% for filtre in vue.filtres %}
+                        <span class="flex items-center gap-1.5 shrink-0 px-3 py-1 rounded-lg bg-primary-5">
+                            <twig:Typography variant="body-sm" textColor="neutral-500">{{ filtre.0 }}</twig:Typography>
+                            <twig:Typography variant="body-sm" bold textColor="primary-3">{{ filtre.1 }}</twig:Typography>
+                        </span>
+                    {% endfor %}
+                </div>
+                <twig:Typography variant="body-sm" bold textColor="primary-3" class="shrink-0">{{ vue.tri }}</twig:Typography>
+            </div>
+        {% endif %}
+
+        {{ _self.tableau(vue, grille) }}
+    </div>
+{% endblock %}
+
+
+{# ================================================================== Le miroir #}
+
+{% macro sante(sante, carte) %}
+    <div class="shrink-0 flex flex-row gap-4 items-stretch">
+
+        <div class="{{ carte }} w-[400px] shrink-0 gap-4!">
+            <twig:Typography variant="body" bold>{{ sante.titre }}</twig:Typography>
+
+            <div class="flex items-end gap-3.5">
+                {#
+                    Sans `whitespace-nowrap`, flex réduit le score à son
+                    min-content — « 89 » — et le « % » passe à la ligne.
+                #}
+                <twig:Typography variant="heading-1" element="p"
+                                 class="shrink-0 whitespace-nowrap sm:text-[3.25rem]! sm:leading-[3.625rem]! font-[700]!">{{ sante.score }} %</twig:Typography>
+                <div class="flex flex-col gap-[3px] pb-1.5">
+                    <span class="w-fit px-[9px] py-[3px] rounded-lg {{ sante.etiquettePalier }}">
+                        <twig:Typography variant="body-xs" bold textColor="primary-3">{{ sante.etiquette }}</twig:Typography>
+                    </span>
+                    <twig:Typography variant="body-sm" textColor="neutral-500">{{ sante.ligne }}</twig:Typography>
+                </div>
+            </div>
+
+            <div class="w-full h-2 rounded-lg bg-neutral-200 overflow-hidden">
+                <div class="h-full rounded-lg {{ sante.score >= 60 ? 'bg-linear-(--primary-gradient)' : 'bg-peach' }}"
+                     style="width: {{ sante.score }}%"></div>
+            </div>
+
+            <div class="flex flex-col gap-2.5">
+                {% for axe in sante.axes %}
+                    <div class="flex flex-col gap-1">
+                        <div class="flex items-baseline justify-between gap-3">
+                            <twig:Typography variant="body-sm" bold class="min-w-0">{{ axe.libelle }}</twig:Typography>
+                            <div class="flex items-baseline gap-2 shrink-0">
+                                <twig:Typography variant="body" bold
+                                                 textColor="{{ _self.teinte(axe.palier) }}">{{ axe.part }} %</twig:Typography>
+                                <twig:Typography variant="body-sm" textColor="neutral-500">{{ axe.poids }}</twig:Typography>
+                            </div>
+                        </div>
+                        <div class="w-full h-1 rounded-lg bg-neutral-200 overflow-hidden">
+                            <div class="h-full rounded-lg {{ _self.fond(axe.palier) }}"
+                                 style="width: {{ axe.part }}%"></div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="{{ carte }} flex-1 min-w-0 gap-4!">
+            <twig:Typography variant="body" bold>{{ sante.titreFaibles }}</twig:Typography>
+            <div class="flex flex-col gap-0.5">
+                {% for faible in sante.faibles %}
+                    <button type="button"
+                            class="flex items-center gap-2.5 px-2.5 py-2 rounded-xs text-left cursor-pointer
+                                   hover:bg-primary-5">
+                        <span class="shrink-0 w-1.5 h-1.5 rounded-lg bg-peach" aria-hidden="true"></span>
+                        <twig:Typography variant="body-sm" ellipsis class="flex-1 min-w-0">{{ faible.libelle }}</twig:Typography>
+                        <twig:Typography variant="body-sm" bold textColor="error"
+                                         class="w-[46px] shrink-0 text-right">{{ faible.part }} %</twig:Typography>
+                        <twig:Typography variant="body-xs" textColor="neutral-400"
+                                         class="w-24 shrink-0 text-right">{{ faible.poids }}</twig:Typography>
+                    </button>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+{% endmacro %}
+
+
+{# ================================================================= Le tableau #}
+
+{#
+    Un seul châssis pour les cinq onglets : les colonnes viennent de la vue, la
+    grille se répartit en fractions égales — la maquette fixe des pixels pour un
+    cadre de 1920, cette application n'a pas la même largeur utile.
+#}
+{% macro tableau(vue, grille) %}
+    <div class="shrink-0 flex flex-col rounded-sm overflow-hidden bg-neutral-100 shadow-(--shadow)">
+
+        <div class="{{ grille }} h-9 shrink-0 bg-primary-5 border-b border-neutral-200" role="row">
+            {% for colonne in vue.colonnes %}
+                <span class="min-w-0 truncate {{ colonne.aligne }}" role="columnheader">
+                    <twig:Typography variant="body-xs" bold textColor="neutral-500"
+                                     class="tracking-[0.3px] uppercase">{{ colonne.libelle }}</twig:Typography>
+                </span>
+            {% endfor %}
+        </div>
+
+        <div class="flex flex-col">
+            {% for ligne in vue.lignes %}
+                <button type="button" role="row"
+                        class="{{ grille }} w-full min-h-[52px] py-2 box-border text-left cursor-pointer
+                               hover:bg-primary-5 {{ loop.first ? '' : 'border-t border-neutral-200' }}">
+                    {% for cellule in ligne.cellules %}
+                        {{ _self.cellule(cellule) }}
+                    {% endfor %}
+                </button>
+            {% endfor %}
+        </div>
+
+        <div class="shrink-0 flex items-center h-[50px] px-4 border-t border-neutral-200">
+            <twig:Typography variant="body-sm" textColor="neutral-500">{{ vue.pied }}</twig:Typography>
+        </div>
+    </div>
+{% endmacro %}
+
+{% macro cellule(cellule) %}
+    {% if 'jeton' == cellule.type %}
+        <span class="min-w-0">
+            <span class="inline-flex w-fit max-w-full px-[9px] py-[3px] rounded-lg {{ cellule.fond }}">
+                <twig:Typography variant="body-xs" bold ellipsis
+                                 textColor="{{ cellule.teinte }}">{{ cellule.texte }}</twig:Typography>
+            </span>
+        </span>
+    {% elseif 'point' == cellule.type %}
+        {#
+            La pastille dit de quelle entité vient la valeur : Salesforce en
+            orange, le MDM en turquoise, le portail en vert. Sans elle, trois
+            colonnes de texte se ressemblent.
+        #}
+        <span class="flex items-center gap-2 min-w-0">
+            <span class="shrink-0 w-1.5 h-1.5 rounded-lg {{ cellule.pastille }}" aria-hidden="true"></span>
+            <twig:Typography variant="body-sm" bold="{{ cellule.gras }}" ellipsis
+                             textColor="{{ cellule.discret ? 'neutral-500' : 'neutral-900' }}"
+                             class="min-w-0">{{ cellule.texte }}</twig:Typography>
+        </span>
+    {% else %}
+        <span class="min-w-0 {{ cellule.aligne }}">
+            <twig:Typography variant="body-sm" bold="{{ cellule.gras }}"
+                             textColor="{{ cellule.discret ? 'neutral-500' : 'neutral-900' }}"
+                             class="text-pretty">{{ cellule.texte }}</twig:Typography>
+        </span>
+    {% endif %}
+{% endmacro %}
+
+{% macro teinte(palier) %}{{ 'complet' == palier ? 'success' : ('publiable' == palier ? 'primary-3' : 'error') }}{% endmacro %}
+{% macro fond(palier) %}{{ 'complet' == palier ? 'bg-success' : ('publiable' == palier ? 'bg-peach' : 'bg-error') }}{% endmacro %}

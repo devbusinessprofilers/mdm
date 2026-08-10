@@ -21,11 +21,11 @@
 <div
     {{ attributes.without('class') }}
     class="{{ barCva.apply({ size: large ? 'large' : 'small' }, attributes.render('class')) }}"
-    {{ stimulus_controller('provider-portal--progress-bar', { 'max': max, 'current': value }) }}
+    {{ stimulus_controller('progress-bar', { 'max': max, 'current': value }) }}
 >
     <div
         class="{{ progressCva.apply({ gradient: noGradient ? 'false' : 'true' }) }}"
-        {{ stimulus_target('provider-portal--progress-bar', 'bar') }}
+        {{ stimulus_target('progress-bar', 'bar') }}
     >
     </div>
 </div>

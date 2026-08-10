@@ -212,6 +212,9 @@ Handoff `MDM Business Profilers.dc.html`.
 | Liste des fiches · Lieux | `liste` | `/referentiel/lieux` |
 | Éditeur de fiche Lieu | `fiche` | `/referentiel/lieux/fiche?section=0..15` |
 | Création d'une fiche | `creation` | `/referentiel/fiche/nouvelle?etat=vierge` |
+| **Qualité** — Data Governance Workspace | `qualite` | `/qualite?onglet=miroir` |
+| **Médias** — le DAM, 8 onglets | `medias` | `/medias?onglet=biblio` |
+| **Outils** — journal des traitements | `outils` | `/outils` |
 
 ---
 
@@ -290,6 +293,161 @@ nettement plus haute que le tableau d'activité, et la rangée est en
 vide sous son tableau. C'est le comportement exact de la maquette — reproduit
 tel quel — mais ça se voit.
 
+## « Qualité » — Data Governance Workspace
+
+`/qualite` · gabarit `mdm/qualite.html.twig` · `src/Pim/Maquette/QualiteMaquette.php`.
+
+Maquette : `MDM prototype.dc.html`, page `qualite`.
+
+Le MDM ne note pas la donnée, il mesure le **miroir** entre Salesforce, le MDM
+et le portail BP. Une donnée est saine quand les trois portent la même valeur ;
+le reste est une anomalie à trancher.
+
+### Cinq onglets, une question chacun
+
+| Onglet | URL | Question |
+|---|---|---|
+| Comparatif des 3 entités | `/qualite` | d'où vient l'écart |
+| Conflits à arbitrer | `?onglet=conflits` | lequel arbitrer |
+| Écarts de forme | `?onglet=formes` | lequel normaliser |
+| Notifications | `?onglet=notifs` | qui a été prévenu |
+| Décisions d'arbitrage | `?onglet=decisions` | qui a tranché |
+
+Le rail porte les onglets et la règle « Qui fait foi », qui reste sous les yeux :
+sans elle, les cinq onglets ne se lisent pas.
+
+### Ce qui est dérivé
+
+Score du miroir, parts des axes, totaux de pied, étiquette de conformité — tous
+recalculés. Confrontés au handoff rejoué en Node : **89 %** (seuil 90, donc
+« Sous le seuil »), 18 953 champs comparés, 16 842 concordants, axes à
+89 / 6 / 3 / 1 %, pieds à 243 fiches et 2 583 champs normalisables.
+
+### Un défaut du handoff, corrigé
+
+« Anomalies par champ » rapporte chaque conflit au **total des champs comparés**
+(84 / 18 953), ce qui affiche **« 0 % » sur les cinq lignes**. La part est
+calculée ici sur le volume de conflits — 84 / 657 → 13 % — qui est le sujet de
+la liste. Sans quoi la colonne ne dit rien. **À remonter au design.**
+
+### Écarts assumés
+
+- **Colonnes en fractions, pas en pixels.** Le handoff fixe des largeurs pour un
+  cadre de 1920 avec un rail de 284 ; le rail fait 328 ici. Les cinq tableaux
+  passent en grille à fractions égales.
+- **Un seul châssis** sert les cinq onglets — en-tête, cartes, tableau, pied.
+  Seule la matière change, ce qui évite cinq gabarits quasi identiques.
+- Les déclinaisons **mobile et tablette** du prototype ne sont pas intégrées :
+  le back-office est un poste de travail. Le handoff prévoit trois jeux de
+  colonnes, seul celui du bureau est repris.
+
+## « Extraire d'un document » — la modale de l'éditeur de fiche
+
+`templates/mdm/fiche/_extraction.html.twig` ·
+`src/Pim/Maquette/ExtractionMaquette.php` ·
+`assets/controllers/extraction_controller.js`.
+
+Maquette : `MDM prototype.dc.html`, état `extract` de la page `fiche`.
+
+Trois temps, enchaînés sans rechargement — les trois volets sont dans le DOM,
+le contrôleur Stimulus bascule :
+
+| Temps | Contenu | Bouton |
+|---|---|---|
+| **Déposer** | zone de dépôt, 5 types acceptés | Lancer l'extraction |
+| **Lecture** | le fichier, puis 4 passes (OCR, détection, rapprochement, confiance) | Voir les 9 valeurs lues |
+| **Valider** | 9 valeurs, décision par ligne | Appliquer les valeurs acceptées |
+
+Le bouton de gauche dit « Annuler » au premier temps et « Retour » ensuite ; au
+dernier, « Appliquer » referme.
+
+### Ce qui fait la valeur de cet écran
+
+**La provenance affichée est la page du document, pas « l'IA ».** Une valeur
+qu'on peut retrouver en page 4 se conteste ; une valeur attribuée à un modèle ne
+se conteste pas. Chaque ligne porte donc sa page, sa confiance sur 4 barres, et
+son verdict — complète la fiche, contredit la fiche, à relire, déjà identique.
+
+L'acceptation en lot ne prend que les valeurs de **confiance maximale et pas
+déjà identiques** : 4 lignes sur 9. Une valeur déjà portée par la fiche a son
+bouton « Accepter » désactivé — il n'y a rien à accepter.
+
+### Un défaut du handoff, corrigé
+
+Le bandeau annonce « 9 valeurs lues · **4** champs vides, 1 contradiction, **3**
+à relire, 1 déjà identique ». Ses propres données donnent **3** et **4**. Le
+décompte est recalculé depuis les verdicts — sinon la ligne contredit le tableau
+qu'elle résume. **À remonter au design.**
+
+## « Médias » — le DAM
+
+`/medias` · gabarit `mdm/medias.html.twig` · `src/Pim/Maquette/MediasMaquette.php`.
+
+Maquette : `MDM prototype.dc.html`, page `dam`.
+
+Un média n'est pas un fichier : c'est un **actif porteur d'un droit d'usage**,
+décliné par canal et synchronisé avec le PIM.
+
+### Huit onglets
+
+| Onglet | URL | Ce qu'il traite |
+|---|---|---|
+| Bibliothèque | `/medias` | le stock, ses filtres, son téléchargement |
+| Import & retouche | `?onglet=import` | dépôt et retouche non destructive |
+| Reconnaissance IA | `?onglet=ia` | ce que l'IA déduit à l'import |
+| Métadonnées & types | `?onglet=meta` | ce que le DAM sait faire de chaque type |
+| Formats & CDN | `?onglet=formats` | les 5 déclinaisons et leur diffusion |
+| Droits & consentement | `?onglet=droits` | qui autorise quoi, avec quelle preuve |
+| Doublons | `?onglet=doublons` | groupes détectés par comparaison d'image |
+| Synchronisation PIM | `?onglet=sync` | le miroir DAM ↔ PIM, dans les deux sens |
+
+Le rail garde la **règle de diffusion** sous les yeux — un média sans droits
+déclarés ne part sur aucun canal tiers, même si la fiche est publiée.
+
+### Ce qui est dérivé
+
+Stock total (142 806, somme des quatre régimes de droits), retouches du mois
+(21 570), médias en double (9 sur 5 groupes — chaque groupe garde un
+exemplaire), part diffusable (96 %), et les huit pieds de tableau. Confrontés au
+handoff rejoué en Node, tout concorde.
+
+La colonne « Télécharger » ne propose pas une action impossible : « Usage
+interne » et « Sans droits déclarés » ne sortent pas du DAM, la cellule dit
+pourquoi.
+
+### Le DAM a quitté le rail des outils
+
+Le prototype a été mis à jour entre-temps : **`dam` est devenu un onglet de la
+barre de navigation**, avec ses huit onglets, là où il n'était qu'une entrée du
+rail « Outils ». La barre porte donc de nouveau « Médias », et `/outils` ne sert
+plus que le journal des traitements.
+
+## « Outils » — journal des traitements
+
+`/outils` et `/outils/medias` · gabarit `mdm/outils.html.twig` ·
+`src/Pim/Maquette/OutilsMaquette.php`.
+
+Maquette : `MDM prototype.dc.html`, pages `journal` / `outils` et `dam`.
+
+Quatre outils partagent un rail, **un seul est intégré** :
+
+| Outil | État |
+|---|---|
+| Mise à jour massive | écran d'attente |
+| **Journal des traitements** | intégré · `/outils` |
+| Campagnes IA | écran d'attente |
+| Imports & exports | écran d'attente |
+
+Le **journal** rassemble imports, exports, synchronisations, mises à jour
+massives et campagnes IA — un seul endroit quand quelque chose s'est mal passé.
+La colonne d'action change avec l'état : « Rejouer » sur un traitement échoué ou
+terminé avec erreurs, « Détail » sinon.
+
+### Ce qui est dérivé
+
+Le pied de tableau : 3 traitements rejouables sur 8, volume cumulé 30 158. Le handoff ne les fournit pas — ils se déduisent des
+lignes, donc ils ne peuvent pas les contredire.
+
 ## « Mon espace de travail »
 
 | Rôle | URL |
@@ -307,7 +465,8 @@ assets/
   styles/app.css                 thème du portail + Tailwind (feuille unique)
   images/brand/bp-logo-couleur.png
   controllers/                   liste, creation, edition_rapide, collaborateurs
-  controllers/provider-portal/   13 contrôleurs du portail (progress-bar, modal…)
+                                 + les 14 contrôleurs du portail, à plat
+                                 (progress-bar, modal, select…)
 
 templates/mdm/
   base.html.twig            coquille : header + rail + zone de contenu
@@ -803,7 +962,7 @@ options, sans quoi l'éditeur affiche un bandeau d'avertissement.
 
 ### Le contrôleur est celui du portail, à l'octet près
 
-`assets/controllers/provider-portal/wysiwyg_controller.js` est une copie
+`assets/controllers/wysiwyg_controller.js` est une copie
 conforme de `nodevo/assets/controllers/wysiwyg_controller.js` — `diff` ne
 renvoie rien. Il tire `getDefaultLocale()` de `@symfony/ux-translator`, d'où
 `composer require symfony/ux-translator:^2.36`, la même contrainte que chez eux.
@@ -863,11 +1022,15 @@ déploiement. Le contrôleur, lui, ne bouge pas.
 
 À remonter à l'équipe du portail, ils ne concernent pas ce projet :
 
-1. Les gabarits de composants appellent des identifiants Stimulus
-   `provider-portal--*` alors que les contrôleurs du portail sont à plat.
-   Ici, ils ont été rangés dans `assets/controllers/provider-portal/`, ce qui
-   rétablit la correspondance — sans quoi barres de progression, modales et
-   menus ne se lient à rien.
+1. Les gabarits de composants appelaient des identifiants Stimulus
+   `provider-portal--*` alors que les contrôleurs du portail sont à plat —
+   sans correspondance, barres de progression, modales et menus ne se lient
+   à rien. Corrigé ici du côté des gabarits : le préfixe a été retiré des 146
+   appels `stimulus_controller` / `stimulus_target` / `stimulus_action` et des
+   attributs `data-*-target` de `templates/pim/`, et les contrôleurs sont
+   posés à plat dans `assets/controllers/`. **C'est la seule entorse à la
+   règle « ne pas modifier `templates/pim/` » : un réimport depuis le portail
+   doit rejouer ce retrait de préfixe.**
 2. `Badge` n'affiche jamais `pictureText` : il ne s'en sert que comme texte
    alternatif de l'image. Un badge sans image ni icône rend un rond vide.
 3. Le contrôleur `wysiwyg` demande `language: 'fr-FR'` là où TinyMCE nomme ses

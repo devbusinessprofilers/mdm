@@ -12,20 +12,20 @@
     class="flex flex-col gap-1 items-center {{ class }}"
     {{ attributes }}
     {% if not disabled %}
-        {{ stimulus_controller('provider-portal--avatar', {'initials': initials}) }}
+        {{ stimulus_controller('avatar', {'initials': initials}) }}
     {% endif %}
 >
     <div class="hidden">
         <img
             class="w-full h-full rounded-full text-center text-primary-3 text-[2rem] object-cover leading-18 lg:leading-20"
-            data-provider-portal--avatar-target="pictureTemplate"
+            data-avatar-target="pictureTemplate"
             src=""
             alt=""
         />
     </div>
     <div
         class="{{ wrapperCva.apply({'inverted': inverted}) }}"
-        data-provider-portal--avatar-target="avatarWrapper"
+        data-avatar-target="avatarWrapper"
     >
         {% if pictureUrl is empty %}
             <twig:Icon name="user" class="w-70/100 h-70/100 text-primary-3"/>
@@ -46,13 +46,13 @@
         {% if disabled %}
             disabled
         {% else %}
-            data-provider-portal--avatar-target="inputFile"
-            data-action="change->provider-portal--avatar#onFileChange"
+            data-avatar-target="inputFile"
+            data-action="change->avatar#onFileChange"
         {% endif %}
         class="hidden"
     >
     <twig:Button
-        data-action="click->provider-portal--avatar#onClick"
+        data-action="click->avatar#onClick"
         variant="outline"
         icon="pencil"
         size="sm"

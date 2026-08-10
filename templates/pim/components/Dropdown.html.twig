@@ -16,7 +16,7 @@
 <div
     class="relative{{ wrapperClass is not null ? ' ' ~ wrapperClass : '' }}"
     {% if not isFixed %}
-        {{ stimulus_controller('provider-portal--dropdown', {
+        {{ stimulus_controller('dropdown', {
             aboveClass: displayCva.apply({above: true}),
             belowClass: displayCva.apply({below: true}),
         }) }}
@@ -28,14 +28,14 @@
         data-live-ignore
         {{ attributes }}
         {% if not isFixed %}
-            {{ stimulus_action('provider-portal--dropdown', 'toggle', 'click') }}
-            {{ stimulus_target('provider-portal--dropdown', 'trigger') }}
+            {{ stimulus_action('dropdown', 'toggle', 'click') }}
+            {{ stimulus_target('dropdown', 'trigger') }}
         {% endif %}
     >
         {%- block trigger -%}{% endblock -%}
         {% if not isFixed and withIndicator %}
             <twig:Icon
-                data-provider-portal--dropdown-target="indicator"
+                data-dropdown-target="indicator"
                 name="caret-down"
                 class="w-6 h-6 transition-[rotate] duration-100 cursor-pointer"
             />
@@ -43,7 +43,7 @@
     </button>
     <div
         {% if not isFixed %}
-            {{ stimulus_target('provider-portal--dropdown', 'content') }}
+            {{ stimulus_target('dropdown', 'content') }}
         {% endif %}
         class="{{ dropdownCva.apply({ isFloating, isFixed }, containerClass) }}"
     >

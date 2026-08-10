@@ -3,7 +3,7 @@
 
 <div
     {{ attributes.without('class') }}
-    {{ stimulus_controller('provider-portal--burger-menu') }}
+    {{ stimulus_controller('burger-menu') }}
     class="flex {{ attributes.render('class') }}"
 >
     <twig:Button
@@ -11,8 +11,8 @@
         icon="list"
         iconSize="lg"
         textColor="primary-3"
-        data-action="click->provider-portal--burger-menu#toggle"
-        data-provider-portal--burger-menu-target="outsideTrigger"
+        data-action="click->burger-menu#toggle"
+        data-burger-menu-target="outsideTrigger"
     />
     <twig:Button
         variant="text"
@@ -20,11 +20,11 @@
         iconSize="lg"
         textColor="primary-3"
         class="hidden"
-        data-action="click->provider-portal--burger-menu#toggle"
-        data-provider-portal--burger-menu-target="insideTrigger"
+        data-action="click->burger-menu#toggle"
+        data-burger-menu-target="insideTrigger"
     />
     <aside
-        {{ stimulus_target('provider-portal--burger-menu', 'menu') }}
+        {{ stimulus_target('burger-menu', 'menu') }}
         class="
             opacity-0 translate-x-full
             w-full transition-[opacity_translate] bg-neutral-100 fixed right-0 top-(--navbar-height) bottom-0 flex flex-col justify-between pt-8 shadow-(--shadow) clip-inset-[0_0_-10px_-10px]

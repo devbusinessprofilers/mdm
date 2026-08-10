@@ -2,11 +2,11 @@
     class="relative w-20 h-14 {{ class }}"
     {{ attributes }}
     {# @todo: remove asset to resolve URL #}
-    {{ stimulus_controller('provider-portal--picture-file', { 'pictureUrl': pictureUrl ? asset(pictureUrl) : null }) }}
+    {{ stimulus_controller('picture-file', { 'pictureUrl': pictureUrl ? asset(pictureUrl) : null }) }}
 >
     {# Contain prototype for picture preview #}
     <div class="hidden">
-        <div data-provider-portal--picture-file-target="prototype">
+        <div data-picture-file-target="prototype">
             <img
                 data-prototype-image=""
                 src=""
@@ -26,7 +26,7 @@
     </div>
     <div
         class="absolute top-0 left-0 w-full h-full flex items-center justify-center group"
-        data-provider-portal--picture-file-target="preview"
+        data-picture-file-target="preview"
     >
     </div>
     <input
@@ -37,8 +37,8 @@
         {% if disabled %}
             disabled
         {% else %}
-            data-provider-portal--picture-file-target="inputFile"
-            data-action="change->provider-portal--picture-file#onFileChange"
+            data-picture-file-target="inputFile"
+            data-action="change->picture-file#onFileChange"
         {% endif %}
         class="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer"
     >

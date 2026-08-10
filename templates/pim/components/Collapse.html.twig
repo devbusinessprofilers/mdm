@@ -18,7 +18,7 @@
 
 <div
     class="{{ wrapperCva.apply({}, wrapperClass) }}"
-    {{ stimulus_controller('provider-portal--collapse', {
+    {{ stimulus_controller('collapse', {
         defaultValue: isExpanded,
     }) }}
     data-bindable
@@ -27,19 +27,19 @@
         type="button"
         class="{{ buttonCva.apply({}, attributes.render('class')) }}"
         {{ attributes.without('class') }}
-        {{ stimulus_action('provider-portal--collapse', 'toggle', 'click') }}
+        {{ stimulus_action('collapse', 'toggle', 'click') }}
     >
         {%- block trigger -%}{% endblock -%}
 
         <twig:Icon
-            data-provider-portal--collapse-target="indicator"
+            data-collapse-target="indicator"
             name="caret-down"
             class="w-6 h-6 transition-[rotate] duration-100 cursor-pointer"
         />
     </button>
 
     <div
-        {{ stimulus_target('provider-portal--collapse', 'content') }}
+        {{ stimulus_target('collapse', 'content') }}
         class="{{ cva.apply({ isExpanded }, containerClass) }}"
     >
         <div class="overflow-hidden w-full">

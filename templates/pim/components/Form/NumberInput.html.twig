@@ -24,7 +24,7 @@
 
 <div
     class="{{ wrapperCva.apply({ disabled }) }}"
-    {{ stimulus_controller('provider-portal--number-input', {
+    {{ stimulus_controller('number-input', {
         'step': step,
         'scale': scale,
         'radix': radix,
@@ -43,21 +43,21 @@
         {% if readonly %}readonly{% endif %}
         {% if placeholder is defined and placeholder is not empty %}placeholder="{{ placeholder }}"{% endif %}
         class="{{ cva.apply({ disabled, readonly }, attributes.render('class')) }}"
-        {{ stimulus_target('provider-portal--number-input', 'input') }}
+        {{ stimulus_target('number-input', 'input') }}
         data-action="
-            keydown.up->provider-portal--number-input#increase
-            keydown.down->provider-portal--number-input#decrease
+            keydown.up->number-input#increase
+            keydown.down->number-input#decrease
         "
         {{ attributes.without('class') }}
     >
     <twig:Icon
         name="caret-up"
         class="absolute top-[5px] right-2 w-4 h-4 text-neutral-900 cursor-pointer"
-        data-action="click->provider-portal--number-input#increase"
+        data-action="click->number-input#increase"
     />
     <twig:Icon
         name="caret-down"
         class="absolute bottom-[5px] right-2 w-4 h-4 text-neutral-900 cursor-pointer"
-        data-action="click->provider-portal--number-input#decrease"
+        data-action="click->number-input#decrease"
     />
 </div>
