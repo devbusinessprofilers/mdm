@@ -14,6 +14,7 @@ final readonly class AdminPageCatalog
         'app_pim_home' => 'Accueil du PIM',
         'app_pim_global_search' => 'Recherche globale du PIM',
         'app_pim_fiche_index' => 'Liste de toutes les fiches',
+        'app_pim_fiche_new' => 'Créer une fiche',
         'app_pim_lieu_index' => 'Liste des lieux',
         'app_pim_lieu_new' => 'Créer un lieu',
         'app_pim_lieu_show' => 'Fiche d’un lieu',

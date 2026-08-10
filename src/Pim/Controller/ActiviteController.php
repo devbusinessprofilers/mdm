@@ -103,28 +103,11 @@ final class ActiviteController extends AbstractController
         ]);
     }
 
-    #[Route('/nouveau', name: 'new', methods: ['GET', 'POST'])]
-    public function new(
-        Request $request,
-        ActiviteAdminManager $manager,
-        ActiviteAdminViewBuilder $view,
-        CurrentActorProvider $actor,
-    ): Response {
-        $activite = new Activite();
-        $form = $this->createForm(ActiviteType::class, $activite);
-        $form->handleRequest($request);
-        if ($form->isSubmitted() && $form->isValid()) {
-            try {
-                $manager->save($activite, $form, [], $actor->id());
-                $this->addFlash('success', 'Activité créée.');
-
-                return $this->redirectToRoute('app_pim_activite_show', ['id' => $activite->id()]);
-            } catch (\DomainException $exception) {
-                $form->get('ressources')->addError(new FormError($exception->getMessage()));
-            }
-        }
-
-        return $this->render('pim/activite/form.html.twig', $view->form($form, $activite, true));
+    #[Route('/nouveau', name: 'new', methods: ['GET'])]
+    public function new(): Response
+    {
+        // La création passe désormais par le formulaire unique de création de fiche.
+        return $this->redirectToRoute('app_pim_fiche_new');
     }
 
     #[

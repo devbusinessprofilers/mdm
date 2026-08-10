@@ -108,28 +108,11 @@ final class RestaurantController extends AbstractController
         ]);
     }
 
-    #[Route('/nouveau', name: 'new', methods: ['GET', 'POST'])]
-    public function new(
-        Request $request,
-        RestaurantAdminManager $manager,
-        RestaurantAdminViewBuilder $view,
-        CurrentActorProvider $actor,
-    ): Response {
-        $restaurant = new Restaurant();
-        $form = $this->createForm(RestaurantType::class, $restaurant);
-        $form->handleRequest($request);
-        if ($form->isSubmitted() && $form->isValid()) {
-            try {
-                $manager->save($restaurant, $form, [], $actor->id());
-                $this->addFlash('success', 'Restaurant créé.');
-
-                return $this->redirectToRoute('app_pim_restaurant_show', ['id' => $restaurant->id()]);
-            } catch (\DomainException $exception) {
-                $form->addError(new FormError($exception->getMessage()));
-            }
-        }
-
-        return $this->render('pim/restaurant/form.html.twig', $view->form($form, $restaurant, true));
+    #[Route('/nouveau', name: 'new', methods: ['GET'])]
+    public function new(): Response
+    {
+        // La création passe désormais par le formulaire unique de création de fiche.
+        return $this->redirectToRoute('app_pim_fiche_new');
     }
 
     #[Route('/{id}', name: 'show', requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'], methods: ['GET'])]

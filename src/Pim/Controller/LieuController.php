@@ -108,29 +108,11 @@ final class LieuController extends AbstractController
         ]);
     }
 
-    #[Route('/nouveau', name: 'new', methods: ['GET', 'POST'])]
-    public function new(
-        Request $request,
-        LieuAdminManager $manager,
-        LieuAdminViewBuilder $view,
-    ): Response {
-        $lieu = new Lieu();
-        $form = $this->createForm(LieuType::class, $lieu);
-        $form->handleRequest($request);
-        if ($form->isSubmitted() && $form->isValid()) {
-            try {
-                $manager->save($lieu, $form, []);
-                $this->addFlash('success', 'Lieu créé.');
-
-                return $this->redirectToRoute('app_pim_lieu_show', ['id' => $lieu->id()]);
-            } catch (\DomainException $exception) {
-                $form->get('ressources')->addError(new FormError($exception->getMessage()));
-            } catch (FilesystemException) {
-                $form->get('ressources')->addError(new FormError('Le stockage des médias est temporairement indisponible. Aucun fichier n’a été enregistré.'));
-            }
-        }
-
-        return $this->render('pim/lieu/form.html.twig', $view->form($form, $lieu, true));
+    #[Route('/nouveau', name: 'new', methods: ['GET'])]
+    public function new(): Response
+    {
+        // La création passe désormais par le formulaire unique de création de fiche.
+        return $this->redirectToRoute('app_pim_fiche_new');
     }
 
     #[

@@ -10,6 +10,7 @@
             <h1>Toutes les fiches</h1>
             <p class="page-description">Parcourez l'ensemble des fiches du PIM, tous types confondus — {{ total_count }} fiche{{ total_count == 1 ? '' : 's' }} au total.</p>
         </div>
+        <a class="btn" href="{{ path('app_pim_fiche_new') }}">Créer une fiche</a>
     </header>
 
     <div class="toolbar">

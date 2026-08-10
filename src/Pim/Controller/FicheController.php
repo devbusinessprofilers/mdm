@@ -4,16 +4,21 @@ declare(strict_types=1);
 
 namespace App\Pim\Controller;
 
+use App\Account\Entity\User;
 use App\Pim\Enum\StatutFiche;
 use App\Pim\Enum\TypeFiche;
 use App\Pim\Form\FicheBrowseType;
+use App\Pim\Form\FicheCreation;
+use App\Pim\Form\FicheCreationType;
 use App\Pim\ReadModel\FicheCursor;
 use App\Pim\ReadModel\FicheListResult;
 use App\Pim\ReadModel\GlobalSearchItem;
 use App\Pim\Repository\FicheRepository;
 use App\Pim\Repository\LocalisationRepository;
+use App\Pim\Service\FicheCreationManager;
 use App\Pim\Service\FicheRouteResolver;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Form\FormError;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
@@ -22,6 +27,42 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/admin/fiches', name: 'app_pim_fiche_')]
 final class FicheController extends AbstractController
 {
+    #[Route('/nouvelle', name: 'new', methods: ['GET', 'POST'])]
+    public function new(
+        Request $request,
+        FicheCreationManager $manager,
+        FicheRouteResolver $routes,
+    ): Response {
+        $creation = new FicheCreation();
+        $form = $this->createForm(FicheCreationType::class, $creation);
+        $form->handleRequest($request);
+        if ($form->isSubmitted() && $form->isValid()) {
+            $user = $this->getUser();
+            if (!$user instanceof User) {
+                throw $this->createAccessDeniedException();
+            }
+            try {
+                $result = $manager->create($creation, $user);
+                $this->addFlash('success', 'Fiche créée. Complétez maintenant les informations détaillées.');
+                if (null !== $result->entreprise) {
+                    $this->addFlash('success', sprintf(
+                        'Fiche pré-remplie depuis l’annuaire des entreprises (%s%s).',
+                        $result->entreprise->denomination ?? 'entreprise trouvée',
+                        null !== $result->entreprise->siret ? ', SIRET '.$result->entreprise->siret : '',
+                    ));
+                } else {
+                    $this->addFlash('warning', 'Aucune entreprise correspondante dans l’annuaire : la fiche a été créée sans pré-remplissage.');
+                }
+
+                return $this->redirect($routes->editUrl($result->fiche->type(), $result->fiche->idString()));
+            } catch (\DomainException $exception) {
+                $form->addError(new FormError($exception->getMessage()));
+            }
+        }
+
+        return $this->render('pim/fiche/new.html.twig', ['form' => $form->createView()]);
+    }
+
     #[Route('', name: 'index', methods: ['GET'])]
     public function index(
         Request $request,

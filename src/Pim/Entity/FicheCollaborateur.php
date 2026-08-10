@@ -37,6 +37,9 @@ class FicheCollaborateur
     #[ORM\Column(options: ['default' => true])]
     private bool $isActive = true;
 
+    #[ORM\Column(length: 32, nullable: true)]
+    private ?string $phone = null;
+
     public function __construct(string $email, string $firstName = '', string $lastName = '', string $language = 'fr')
     {
         $this->id = new Ulid();
@@ -67,6 +70,14 @@ class FicheCollaborateur
         $this->firstName = trim($firstName);
         $this->lastName = trim($lastName);
         $this->language = $language;
+        $this->touch();
+    }
+
+    public function phone(): ?string { return $this->phone; }
+    public function changePhone(?string $phone): void
+    {
+        $phone = trim((string) $phone);
+        $this->phone = '' === $phone ? null : $phone;
         $this->touch();
     }
 

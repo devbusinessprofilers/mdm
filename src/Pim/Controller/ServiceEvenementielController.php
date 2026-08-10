@@ -104,28 +104,11 @@ final class ServiceEvenementielController extends AbstractController
         ]);
     }
 
-    #[Route("/nouveau", name: "new", methods: ["GET", "POST"])]
-    public function new(
-        Request $request,
-        ServiceEvenementielAdminManager $manager,
-        ServiceEvenementielAdminViewBuilder $view,
-        CurrentActorProvider $actor,
-    ): Response {
-        $service = new ServiceEvenementiel();
-        $form = $this->createForm(ServiceEvenementielType::class, $service);
-        $form->handleRequest($request);
-        if ($form->isSubmitted() && $form->isValid()) {
-            try {
-                $manager->save($service, $form, [], $actor->id());
-                $this->addFlash('success', 'Service créé.');
-
-                return $this->redirectToRoute('app_pim_service_show', ['id' => $service->id()]);
-            } catch (\DomainException $exception) {
-                $form->get('ressources')->addError(new FormError($exception->getMessage()));
-            }
-        }
-
-        return $this->render('pim/service/form.html.twig', $view->form($form, $service, true));
+    #[Route("/nouveau", name: "new", methods: ["GET"])]
+    public function new(): Response
+    {
+        // La création passe désormais par le formulaire unique de création de fiche.
+        return $this->redirectToRoute("app_pim_fiche_new");
     }
 
     #[

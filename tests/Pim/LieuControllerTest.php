@@ -65,16 +65,18 @@ final class LieuControllerTest extends WebTestCase
         $client->loginUser($user);
 
         $client->request('GET', '/admin/lieux/nouveau');
+        self::assertResponseRedirects('/admin/fiches/nouvelle');
+        $client->followRedirect();
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('h1', 'Nouveau lieu');
+        self::assertSelectorTextContains('h1', 'Nouvelle fiche');
 
-        $client->submitForm('Enregistrer', [
-            'lieu[label]' => 'Lieu CRUD temporaire',
-            'lieu[generaleTypologie]' => ['GENERALE_TYPOLOGIE_20'],
-            'lieu[generaleWebsiteUrl]' => 'https://example.test',
-            'lieu[localisation][pays]' => 'France',
-            'lieu[localisation][codePostal]' => '75001',
-            'lieu[localisation][ville]' => 'Paris',
+        $client->submitForm('Créer la fiche', [
+            'fiche_creation[type]' => 'lieu',
+            'fiche_creation[label]' => 'Lieu CRUD temporaire',
+            'fiche_creation[lieuTypologie]' => ['GENERALE_TYPOLOGIE_20'],
+            'fiche_creation[localisation][pays]' => 'France',
+            'fiche_creation[localisation][codePostal]' => '75001',
+            'fiche_creation[localisation][ville]' => 'Paris',
         ]);
 
         self::assertResponseRedirects();

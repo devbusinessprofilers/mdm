@@ -31,6 +31,7 @@ parameters:
     env(DAM_PHASH_DISTANCE_THRESHOLD): '8'
     env(COMPLETENESS_REMINDER_THRESHOLD): '60'
     env(COMPLETENESS_REMINDER_COOLDOWN_DAYS): '30'
+    env(RECHERCHE_ENTREPRISES_ENDPOINT): 'https://recherche-entreprises.api.gouv.fr'
 
 services:
     # default configuration for services in *this* file
@@ -88,6 +89,14 @@ services:
     App\Account\MessageHandler\InternalUserPasswordResetRequestedHandler:
         arguments:
             $sender: '%env(MAILER_FROM)%'
+
+    App\Account\MessageHandler\CollaborateurAccessRequestedHandler:
+        arguments:
+            $sender: '%env(MAILER_FROM)%'
+
+    App\Pim\Service\RechercheEntrepriseClient:
+        arguments:
+            $endpoint: '%env(RECHERCHE_ENTREPRISES_ENDPOINT)%'
 
     App\Shared\Service\OvhS3ObjectStorage:
         factory: ['App\Shared\Service\OvhS3ObjectStorage', 'create']
@@ -170,3 +179,20 @@ services:
     App\Etl\MessageHandler\ProcessFicheImportBatchHandler:
         arguments:
             $importDir: '%kernel.project_dir%/var/import'
+
+when@test:
+    services:
+        _defaults:
+            autowire: true
+            autoconfigure: true
+
+        # Aucun appel réseau en test : le mock renvoie une réponse vide que le
+        # client absorbe (pas d'enrichissement).
+        test.recherche_entreprises.mock_http_client:
+            class: Symfony\Component\HttpClient\MockHttpClient
+            public: true
+
+        App\Pim\Service\RechercheEntrepriseClient:
+            arguments:
+                $httpClient: '@test.recherche_entreprises.mock_http_client'
+                $endpoint: 'https://recherche-entreprises.invalid'

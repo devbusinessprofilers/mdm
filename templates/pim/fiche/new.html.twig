@@ -1,0 +1,89 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Nouvelle fiche{% endblock %}
+
+{% block body %}
+<main class="page">
+    <a class="back-link" href="{{ path('app_pim_fiche_index') }}">← Retour aux fiches</a>
+    <header class="page-header">
+        <div class="page-header-copy">
+            <p class="page-kicker">Catalogue</p>
+            <h1>Nouvelle fiche</h1>
+            <p class="page-description">Renseignez les informations principales : la fiche sera pré-remplie depuis l’annuaire des entreprises, puis vous pourrez compléter le formulaire détaillé.</p>
+        </div>
+    </header>
+
+    <div data-controller="fiche-creation">
+        {{ form_start(form, {attr: {class: 'crud-form'}}) }}
+            <section class="card">
+                <h2 class="card-title">Gamme</h2>
+                {{ form_row(form.type) }}
+            </section>
+
+            <section class="card">
+                <h2 class="card-title">Identité et localisation</h2>
+                {{ form_row(form.label) }}
+                {% set prefill_help = 'Optionnel : pré-rempli automatiquement depuis l’annuaire des entreprises si laissé vide.' %}
+                {% for field in ['ruePostale', 'codePostal', 'ville', 'pays', 'countryCode', 'latitude', 'longitude'] %}
+                    {{ form_row(attribute(form.localisation, field), {help: prefill_help}) }}
+                {% endfor %}
+                {{ form_row(form.localisation.region) }}
+                {{ form_row(form.localisation.departement) }}
+                {{ form_row(form.localisation.arrondissement) }}
+                <div hidden data-fiche-creation-target="section" data-types="activite service_evenementiel">
+                    {{ form_row(form.modeIntervention) }}
+                </div>
+            </section>
+
+            <section class="card">
+                <h2 class="card-title">Classification</h2>
+                <p class="page-description" data-fiche-creation-target="section" data-types="" hidden>Choisissez d’abord une gamme.</p>
+                <div hidden data-fiche-creation-target="section" data-types="lieu">
+                    {{ form_row(form.lieuTypologie) }}
+                    {{ form_row(form.lieuThematique) }}
+                    {{ form_row(form.lieuAmbiance) }}
+                </div>
+                <div hidden data-fiche-creation-target="section" data-types="restaurant">
+                    {{ form_row(form.typeRestaurant) }}
+                </div>
+                <div hidden data-fiche-creation-target="section" data-types="activite">
+                    {{ form_row(form.thematiqueActivite) }}
+                </div>
+                <div hidden data-fiche-creation-target="section" data-types="service_evenementiel">
+                    {{ form_row(form.typePrestataire) }}
+                </div>
+            </section>
+
+            <section class="card">
+                <h2 class="card-title">Statut et référencement</h2>
+                {{ form_row(form.miceStatut) }}
+            </section>
+
+            <section class="card">
+                <h2 class="card-title">Visibilité</h2>
+                {{ form_row(form.sitePremium) }}
+            </section>
+
+            <section class="card">
+                <h2 class="card-title">Collaborateur</h2>
+                {{ form_row(form.collaborateurExistant) }}
+                <fieldset>
+                    <legend>… ou créer un nouveau collaborateur</legend>
+                    {{ form_row(form.collabPrenom) }}
+                    {{ form_row(form.collabNom) }}
+                    {{ form_row(form.collabEmail) }}
+                    {{ form_row(form.collabTelephone) }}
+                </fieldset>
+            </section>
+
+            <section class="card">
+                <h2 class="card-title">Accès extranet</h2>
+                {{ form_row(form.envoyerAcces) }}
+                {{ form_row(form.trameEmail) }}
+            </section>
+
+            {{ form_row(form.submit) }}
+        {{ form_end(form) }}
+    </div>
+</main>
+{% endblock %}
