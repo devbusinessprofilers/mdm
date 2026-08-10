@@ -148,6 +148,24 @@ final class LieuRepository extends ServiceEntityRepository
         )));
     }
 
+    /** @return list<string> identifiants ULID des fiches Lieu dont le SIRET correspond */
+    public function findFicheIdsBySiret(string $siret): array
+    {
+        $siret = preg_replace('/\s+/', '', trim($siret)) ?? '';
+        if ('' === $siret) {
+            return [];
+        }
+        $rows = $this->getEntityManager()->getConnection()->fetchFirstColumn(
+            "SELECT l.fiche_id FROM pim_lieu l
+             INNER JOIN pim_lieu_administratif a ON a.lieu_id = l.id
+             WHERE REPLACE(a.info_legale_siret, ' ', '') = :siret",
+            ['siret' => $siret],
+            ['siret' => ParameterType::STRING],
+        );
+
+        return array_map(static fn (string $id): string => (string) Ulid::fromBinary($id), $rows);
+    }
+
     /** @param array{id: string, code: int|string, label: string|null, status: string, completeness: int|string, updated_at: string, ville: string|null} $row */
     private static function toListItem(array $row): LieuListItem
     {

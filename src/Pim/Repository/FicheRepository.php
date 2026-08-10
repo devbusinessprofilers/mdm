@@ -146,6 +146,38 @@ final class FicheRepository extends ServiceEntityRepository
         )));
     }
 
+    /** @return list<string> identifiants ULID des fiches portant exactement ce libellé */
+    public function findIdsByLabelInsensitive(string $label): array
+    {
+        $rows = $this->getEntityManager()->getConnection()->fetchFirstColumn(
+            'SELECT id FROM pim_fiche WHERE LOWER(label) = LOWER(:label)',
+            ['label' => trim($label)],
+            ['label' => ParameterType::STRING],
+        );
+
+        return array_map(static fn (string $id): string => (string) Ulid::fromBinary($id), $rows);
+    }
+
+    /**
+     * @param list<string> $fingerprints empreintes binaires (Localisation::addressFingerprint)
+     * @return list<string> identifiants ULID des fiches dont la localisation partage une empreinte
+     */
+    public function findIdsByAddressFingerprints(array $fingerprints): array
+    {
+        if ([] === $fingerprints) {
+            return [];
+        }
+        $rows = $this->getEntityManager()->getConnection()->fetchFirstColumn(
+            'SELECT f.id FROM pim_fiche f
+             INNER JOIN pim_localisation loc ON loc.id = f.localisation_id
+             WHERE loc.address_fingerprint IN (:fingerprints)',
+            ['fingerprints' => $fingerprints],
+            ['fingerprints' => ArrayParameterType::BINARY],
+        );
+
+        return array_map(static fn (string $id): string => (string) Ulid::fromBinary($id), $rows);
+    }
+
     public function findAllListPage(
         ?FicheCursor $cursor = null,
         int $limit = 50,

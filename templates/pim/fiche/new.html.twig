@@ -15,6 +15,38 @@
 
     <div data-controller="fiche-creation">
         {{ form_start(form, {attr: {class: 'crud-form'}}) }}
+            {% if duplicates is not empty %}
+                <section class="card">
+                    <h2 class="card-title">⚠ Doublons potentiels</h2>
+                    <p class="page-description">Des fiches similaires existent déjà. Vérifiez qu'il ne s'agit pas de la même avant de créer.</p>
+                    <div class="table-shell"><div class="table-scroll"><table class="data-table">
+                        <thead><tr><th>Code</th><th>Libellé</th><th>Gamme</th><th>Ville</th><th>Statut</th><th>Correspondances</th></tr></thead>
+                        <tbody>
+                        {% for candidate in duplicates %}
+                            <tr>
+                                <td>{{ candidate.code }}</td>
+                                <td>
+                                    {% if candidate.url %}<a href="{{ candidate.url }}">{{ candidate.label ?? 'Sans libellé' }}</a>
+                                    {% else %}{{ candidate.label ?? 'Sans libellé' }}{% endif %}
+                                </td>
+                                <td>{{ candidate.type.value }}</td>
+                                <td>{{ candidate.ville ?? '—' }}</td>
+                                <td>{{ candidate.status.value }}</td>
+                                <td>
+                                    {% for reason in candidate.reasons %}
+                                        <span class="badge badge-info">{{ {'nom': 'nom similaire', 'adresse': 'même adresse', 'siret': 'même SIRET'}[reason] ?? reason }}</span>
+                                    {% endfor %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table></div></div>
+                    {{ form_row(form.creerQuandMeme) }}
+                </section>
+            {% else %}
+                {% do form.creerQuandMeme.setRendered %}
+            {% endif %}
+
             <section class="card">
                 <h2 class="card-title">Gamme</h2>
                 {{ form_row(form.type) }}

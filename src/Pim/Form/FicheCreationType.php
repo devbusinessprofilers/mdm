@@ -141,6 +141,10 @@ final class FicheCreationType extends AbstractType
                 'required' => false,
                 'help' => 'Texte de l’email d’accès envoyé au collaborateur.',
             ])
+            ->add('creerQuandMeme', SubmitType::class, [
+                'label' => 'Créer quand même',
+                'attr' => ['class' => 'btn btn-secondary'],
+            ])
             ->add('submit', SubmitType::class, ['label' => 'Créer la fiche']);
     }
 

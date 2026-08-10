@@ -35,12 +35,20 @@ final readonly class FicheCreationManager
     ) {
     }
 
-    public function create(FicheCreation $data, User $actor): FicheCreationResult
+    /** Interroge l'annuaire des entreprises une seule fois par requête (détection de doublons + enrichissement). */
+    public function lookupEntreprise(FicheCreation $data): ?EntrepriseInfo
+    {
+        $localisation = self::isEmptyLocalisation($data->localisation) ? null : $data->localisation;
+
+        return $this->entreprises->findBest((string) $data->label, $localisation?->codePostal());
+    }
+
+    public function create(FicheCreation $data, User $actor, ?EntrepriseInfo $entreprise): FicheCreationResult
     {
         self::neutralizeHiddenFields($data);
         $type = $data->type ?? throw new \DomainException('Choisissez une gamme.');
 
-        return $this->entityManager->wrapInTransaction(function () use ($data, $type, $actor): FicheCreationResult {
+        return $this->entityManager->wrapInTransaction(function () use ($data, $type, $actor, $entreprise): FicheCreationResult {
             $entity = match ($type) {
                 TypeFiche::Lieu => new Lieu(),
                 TypeFiche::Restaurant => new Restaurant(),
@@ -52,7 +60,6 @@ final readonly class FicheCreationManager
             $fiche = $entity->fiche();
 
             $localisation = self::isEmptyLocalisation($data->localisation) ? null : $data->localisation;
-            $entreprise = $this->entreprises->findBest((string) $data->label, $localisation?->codePostal());
             $localisation = self::enrichLocalisation($localisation, $entreprise);
             if (null !== $localisation) {
                 $fiche->changeLocalisation($localisation);

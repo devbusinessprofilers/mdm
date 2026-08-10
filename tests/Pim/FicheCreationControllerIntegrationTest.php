@@ -194,6 +194,37 @@ final class FicheCreationControllerIntegrationTest extends WebTestCase
         self::assertSame(1, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM pim_fiche_collaborateur'));
     }
 
+    public function testWarnsOnDuplicateThenCreatesAfterConfirmation(): void
+    {
+        $client = $this->createClientWithUser();
+        $client->request('GET', '/admin/fiches/nouvelle');
+        $client->submitForm('Créer la fiche', [
+            'fiche_creation[type]' => 'lieu',
+            'fiche_creation[label]' => 'Château unique',
+        ]);
+        self::assertResponseRedirects();
+        self::assertSame(1, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM pim_fiche'));
+
+        // Même nom (casse différente) : avertissement, pas de création.
+        $client->request('GET', '/admin/fiches/nouvelle');
+        $client->submitForm('Créer la fiche', [
+            'fiche_creation[type]' => 'restaurant',
+            'fiche_creation[label]' => 'château UNIQUE',
+        ]);
+        self::assertResponseStatusCodeSame(422);
+        self::assertSelectorTextContains('main', 'Doublons potentiels');
+        self::assertSelectorTextContains('main', 'Château unique');
+        self::assertSame(1, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM pim_fiche'));
+
+        // Confirmation explicite via le bouton « Créer quand même » : la création passe.
+        $client->submitForm('Créer quand même', [
+            'fiche_creation[type]' => 'restaurant',
+            'fiche_creation[label]' => 'château UNIQUE',
+        ]);
+        self::assertResponseRedirects();
+        self::assertSame(2, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM pim_fiche'));
+    }
+
     public function testCreatesANewCollaborateurWithPhoneAndQueuesAccessEmail(): void
     {
         $client = $this->createClientWithUser();

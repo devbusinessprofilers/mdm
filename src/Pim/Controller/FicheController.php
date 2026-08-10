@@ -16,9 +16,11 @@ use App\Pim\ReadModel\GlobalSearchItem;
 use App\Pim\Repository\FicheRepository;
 use App\Pim\Repository\LocalisationRepository;
 use App\Pim\Service\FicheCreationManager;
+use App\Pim\Service\FicheDuplicateDetector;
 use App\Pim\Service\FicheRouteResolver;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Form\FormError;
+use Symfony\Component\Form\SubmitButton;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
@@ -31,6 +33,7 @@ final class FicheController extends AbstractController
     public function new(
         Request $request,
         FicheCreationManager $manager,
+        FicheDuplicateDetector $duplicateDetector,
         FicheRouteResolver $routes,
     ): Response {
         $creation = new FicheCreation();
@@ -41,8 +44,19 @@ final class FicheController extends AbstractController
             if (!$user instanceof User) {
                 throw $this->createAccessDeniedException();
             }
+            $entreprise = $manager->lookupEntreprise($creation);
+            $duplicates = $duplicateDetector->detect($creation, $entreprise);
+            $confirmButton = $form->get('creerQuandMeme');
+            $confirmed = $confirmButton instanceof SubmitButton && $confirmButton->isClicked();
+            if ([] !== $duplicates && !$confirmed) {
+                // 422 : Turbo Drive ignore une réponse 200 à un POST de formulaire.
+                return $this->render('pim/fiche/new.html.twig', [
+                    'form' => $form->createView(),
+                    'duplicates' => $duplicates,
+                ], new Response(null, Response::HTTP_UNPROCESSABLE_ENTITY));
+            }
             try {
-                $result = $manager->create($creation, $user);
+                $result = $manager->create($creation, $user, $entreprise);
                 $this->addFlash('success', 'Fiche créée. Complétez maintenant les informations détaillées.');
                 if (null !== $result->entreprise) {
                     $this->addFlash('success', sprintf(
@@ -60,7 +74,11 @@ final class FicheController extends AbstractController
             }
         }
 
-        return $this->render('pim/fiche/new.html.twig', ['form' => $form->createView()]);
+        return $this->render(
+            'pim/fiche/new.html.twig',
+            ['form' => $form->createView(), 'duplicates' => []],
+            new Response(null, $form->isSubmitted() ? Response::HTTP_UNPROCESSABLE_ENTITY : Response::HTTP_OK),
+        );
     }
 
     #[Route('', name: 'index', methods: ['GET'])]
