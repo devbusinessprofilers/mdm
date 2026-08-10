@@ -11,6 +11,7 @@ use App\Pim\Entity\Localisation;
 use App\Pim\Lov\LieuLovCatalog;
 use Doctrine\Common\Collections\Collection;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\CollectionType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
@@ -29,6 +30,12 @@ final class LieuType extends AbstractType
     {
         $builder
             ->add('label', TextType::class, $this->field('Libellé', 'label', 'changeLabel'))
+            ->add('businessPremium', CheckboxType::class, [
+                'label' => 'Adhérent Business Premium',
+                'required' => false,
+                'getter' => static fn (Lieu $lieu): bool => $lieu->fiche()->businessPremium(),
+                'setter' => static function (Lieu &$lieu, mixed $value): void { $lieu->fiche()->changeBusinessPremium((bool) $value); },
+            ])
             ->add('generaleTypologie', ChoiceType::class, $this->field('Typologie', 'generaleTypologie', 'changeGeneraleTypologie', false) + [
                 'choices' => array_flip(LieuLovCatalog::choicesFor('GENERALE_TYPOLOGIE')),
                 'multiple' => true,

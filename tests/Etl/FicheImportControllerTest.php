@@ -42,7 +42,7 @@ final class FicheImportControllerTest extends WebTestCase
     {
         $client = self::createClient();
         $client->request('GET', '/admin/import-fiches');
-        self::assertResponseRedirects('http://localhost/login');
+        self::assertResponseRedirects('http://localhost/connexion');
 
         $client->loginUser($this->persistUser('editor-import@example.test', ['ROLE_BP_EDITOR']));
         $client->request('GET', '/admin/import-fiches');

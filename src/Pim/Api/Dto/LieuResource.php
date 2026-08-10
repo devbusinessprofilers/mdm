@@ -45,6 +45,7 @@ use App\Pim\Api\State\LieuPatchProcessor;
                                 'enum' => [
                                     'en_cours',
                                     'en_attente_validation',
+                                    'validee',
                                     'publiee',
                                     'archivee',
                                 ],

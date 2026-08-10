@@ -46,7 +46,7 @@ final class AuthenticationIntegrationTest extends WebTestCase
         $repository = $this->entityManager->getRepository(User::class);
         self::assertSame($user->id(), $repository->loadUserByIdentifier(' ADMIN@EXAMPLE.COM ')?->id());
 
-        $crawler = $client->request('GET', '/login');
+        $crawler = $client->request('GET', '/connexion');
         $client->submit($crawler->selectButton('Se connecter')->form([
             'email' => ' ADMIN@EXAMPLE.COM ',
             'password' => 'A-secure-password-2026!',
@@ -59,10 +59,10 @@ final class AuthenticationIntegrationTest extends WebTestCase
 
         $crawler = $client->getCrawler();
         $client->submit($crawler->selectButton('Se déconnecter')->form());
-        self::assertResponseRedirects('/login');
+        self::assertResponseRedirects('/connexion');
 
         $client->request('GET', '/');
-        self::assertResponseRedirects('/login');
+        self::assertResponseRedirects('/connexion');
     }
 
     public function testDisabledAccountAndWrongPasswordExposeTheSameGenericError(): void
@@ -113,7 +113,7 @@ final class AuthenticationIntegrationTest extends WebTestCase
 
     private function failedLoginMessage(\Symfony\Bundle\FrameworkBundle\KernelBrowser $client, string $email, string $password): string
     {
-        $crawler = $client->request('GET', '/login');
+        $crawler = $client->request('GET', '/connexion');
         $client->submit($crawler->selectButton('Se connecter')->form([
             'email' => $email,
             'password' => $password,

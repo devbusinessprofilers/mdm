@@ -37,6 +37,12 @@ final class ActiviteType extends AbstractType
                 TextType::class,
                 $this->field('Nom de l’activité', 'label', 'changeLabel'),
             )
+            ->add('businessPremium', CheckboxType::class, [
+                'label' => 'Adhérent Business Premium',
+                'required' => false,
+                'getter' => static fn (Activite $activite): bool => $activite->fiche()->businessPremium(),
+                'setter' => static function (Activite &$activite, mixed $value): void { $activite->fiche()->changeBusinessPremium((bool) $value); },
+            ])
             ->add(
                 'prestataire',
                 PrestataireAutocompleteType::class,

@@ -62,8 +62,8 @@ final class LieuMappingTest extends KernelTestCase
         self::assertSame(Lieu::class, $entityManager->getClassMetadata(AccesLieu::class)->getAssociationTargetClass('lieu'));
         self::assertSame(Lieu::class, $entityManager->getClassMetadata(RessourceLieu::class)->getAssociationTargetClass('lieu'));
 
-        self::assertCount(15, $ficheMetadata->getFieldNames());
-        foreach (['type', 'code', 'label', 'status', 'version', 'publishedAt', 'archivedAt', 'validationRequestedAt', 'validationRequestedBy', 'validationReviewedAt', 'validationReviewedBy', 'validationFeedback'] as $field) {
+        self::assertCount(16, $ficheMetadata->getFieldNames());
+        foreach (['type', 'code', 'label', 'status', 'version', 'publishedAt', 'archivedAt', 'validationRequestedAt', 'validationRequestedBy', 'validationReviewedAt', 'validationReviewedBy', 'validationFeedback', 'businessPremium'] as $field) {
             self::assertTrue($ficheMetadata->hasField($field));
         }
         self::assertFalse($ficheMetadata->hasField('completeness'));

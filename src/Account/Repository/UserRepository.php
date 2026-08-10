@@ -30,6 +30,17 @@ final class UserRepository extends ServiceEntityRepository implements UserLoader
         return $this->loadUserByIdentifier($email);
     }
 
+    /** @return list<User> Comptes internes actifs, candidats à l'assignation de fiches. */
+    public function findActifs(): array
+    {
+        return $this->createQueryBuilder('user')
+            ->andWhere('user.deletedAt IS NULL')
+            ->andWhere('user.isActive = true')
+            ->orderBy('user.email', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
     /** @return list<User> */
     public function findForAdministration(): array
     {

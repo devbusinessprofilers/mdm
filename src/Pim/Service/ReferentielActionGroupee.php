@@ -1,0 +1,157 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Pim\Service;
+
+use App\Account\Entity\User;
+use App\Account\Message\CollaborateurAccessRequested;
+use App\Account\Security\FicheVoter;
+use App\Enrichment\Service\FicheTranslationScheduler;
+use App\Pim\Entity\Fiche;
+use App\Pim\Message\IndexFiche;
+use App\Pim\Repository\FicheAffiliationRepository;
+use App\Pim\Repository\FicheRepository;
+use App\Shared\Outbox\OutboxPublisherInterface;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bundle\SecurityBundle\Security;
+use Symfony\Component\Uid\Ulid;
+
+/**
+ * Applique une action à une sélection de fiches. Chaque fiche est traitée par
+ * les mécanismes unitaires existants : une fiche qui n'est pas dans l'état
+ * requis, ou que l'utilisateur n'a pas le droit de toucher, est ignorée et
+ * comptée — jamais forcée.
+ */
+final readonly class ReferentielActionGroupee
+{
+    /** Plafonds par action, ceux de la maquette. */
+    public const PLAFONDS = [
+        'valider' => 5000,
+        'publier' => 5000,
+        'archiver' => 5000,
+        'exporter' => 5000,
+        'acces' => 500,
+        'contributeur' => 5000,
+    ];
+
+    private const LOT = 100;
+
+    public function __construct(
+        private FicheRepository $fiches,
+        private FicheAffiliationRepository $affiliations,
+        private EntityManagerInterface $entityManager,
+        private FicheTranslationScheduler $translations,
+        private OutboxPublisherInterface $outbox,
+        private Security $security,
+    ) {
+    }
+
+    public static function plafond(string $action): int
+    {
+        return self::PLAFONDS[$action] ?? 5000;
+    }
+
+    /**
+     * @param list<string> $ids ULID texte
+     *
+     * @return array{appliquees: int, ignorees: int}
+     */
+    public function appliquer(string $action, array $ids, string $actorId, ?User $contributeur = null): array
+    {
+        if (!in_array($action, ['valider', 'publier', 'archiver', 'acces', 'contributeur'], true)) {
+            throw new \InvalidArgumentException(sprintf('Action groupée inconnue : "%s".', $action));
+        }
+        if (count($ids) > self::plafond($action)) {
+            throw new \DomainException(sprintf('L\'action dépasse son plafond de %d fiches.', self::plafond($action)));
+        }
+        if ('contributeur' === $action && null === $contributeur) {
+            throw new \DomainException('Choisissez le contributeur à assigner.');
+        }
+        $attribut = match ($action) {
+            'valider' => FicheVoter::VALIDATE,
+            'publier' => FicheVoter::PUBLISH,
+            'archiver' => FicheVoter::ARCHIVE,
+            // Accès extranet et assignation relèvent de la gestion des contacts.
+            'acces', 'contributeur' => FicheVoter::MANAGE_AFFILIATIONS,
+        };
+        $appliquees = 0;
+        $ignorees = 0;
+        $emailsServis = [];
+        foreach (array_chunk($ids, self::LOT) as $lot) {
+            $fiches = $this->fiches->findBy(['id' => array_map(
+                static fn (string $id): Ulid => Ulid::fromString($id),
+                $lot,
+            )]);
+            $ignorees += count($lot) - count($fiches);
+            foreach ($fiches as $fiche) {
+                if (!$this->security->isGranted($attribut, $fiche)) {
+                    ++$ignorees;
+                    continue;
+                }
+                if ('acces' === $action) {
+                    [$envoyes, $sautes] = $this->envoyerAcces($fiche, $emailsServis);
+                    $appliquees += $envoyes;
+                    $ignorees += $sautes;
+                    continue;
+                }
+                if ('contributeur' === $action) {
+                    $fiche->changeAssignee($contributeur);
+                    ++$appliquees;
+                    continue;
+                }
+                try {
+                    $this->transition($action, $fiche, $actorId);
+                } catch (\DomainException) {
+                    ++$ignorees;
+                    continue;
+                }
+                if ('publier' === $action) {
+                    $this->translations->schedule($fiche);
+                }
+                $this->outbox->enqueue(new IndexFiche($fiche->idString()));
+                ++$appliquees;
+            }
+            $this->entityManager->flush();
+        }
+
+        return ['appliquees' => $appliquees, 'ignorees' => $ignorees];
+    }
+
+    /**
+     * Un message marketplace par collaborateur actif, hors contact de repli,
+     * chaque email n'étant servi qu'une fois sur l'ensemble de la sélection.
+     * C'est la marketplace qui crée le compte et envoie le mail.
+     *
+     * @param array<string, true> $emailsServis
+     *
+     * @return array{int, int} [envoyés, ignorés]
+     */
+    private function envoyerAcces(Fiche $fiche, array &$emailsServis): array
+    {
+        $envoyes = 0;
+        $ignores = 0;
+        foreach ($this->affiliations->findBy(['fiche' => $fiche->id()]) as $affiliation) {
+            $collaborateur = $affiliation->collaborateur();
+            if ($affiliation->repli() || !$collaborateur->isActive() || isset($emailsServis[$collaborateur->email()])) {
+                ++$ignores;
+                continue;
+            }
+            $emailsServis[$collaborateur->email()] = true;
+            $this->outbox->enqueue(new CollaborateurAccessRequested($collaborateur->id(), $fiche->idString()));
+            ++$envoyes;
+        }
+
+        return [$envoyes, $ignores];
+    }
+
+    private function transition(string $action, Fiche $fiche, string $actorId): void
+    {
+        match ($action) {
+            'valider' => $fiche->validate($actorId),
+            'publier' => $fiche->publish(),
+            'archiver' => $fiche->archive($actorId),
+            default => throw new \InvalidArgumentException(sprintf('Action groupée inconnue : "%s".', $action)),
+        };
+    }
+}

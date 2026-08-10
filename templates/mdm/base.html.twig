@@ -1,0 +1,58 @@
+{% extends 'base.html.twig' %}
+
+{# Coquille des écrans MDM : la navigation reprend la structure de la maquette
+   front (Accueil, Référentiel déroulant, Qualité, Médias, Imports & exports,
+   Administration), mappée sur les routes réelles du back. Règle de la
+   maquette conservée : un lien n'existe que s'il a une destination — les
+   écrans sans équivalent (Synchronisation, Plateaux repas) ne sont pas
+   affichés. Les menus déroulants sont des <details> natifs, sans JavaScript ;
+   le style viendra du front. #}
+
+{% block navigation %}
+    <a href="{{ path('app_mdm_tableau_de_bord') }}" class="brand">MDM Business Profilers</a>
+    <a class="nav-link" href="{{ path('app_mdm_tableau_de_bord') }}">Accueil</a>
+    <a class="nav-link" href="{{ path('app_mdm_espace_travail') }}">Mon espace de travail</a>
+    <details class="nav-link">
+        <summary>Référentiel</summary>
+        <div>
+            <a class="nav-link" href="{{ path('app_mdm_referentiel_general') }}">Toutes les fiches</a>
+            <a class="nav-link" href="{{ path('app_mdm_lieux') }}">Lieux</a>
+            <a class="nav-link" href="{{ path('app_mdm_referentiel_gamme', {gamme: 'restaurants'}) }}">Restaurants</a>
+            <a class="nav-link" href="{{ path('app_mdm_referentiel_gamme', {gamme: 'activites'}) }}">Activités</a>
+            <a class="nav-link" href="{{ path('app_mdm_referentiel_gamme', {gamme: 'services'}) }}">Services événementiels</a>
+            {% if is_granted('ROLE_BP_EDITOR') %}
+                <a class="nav-link" href="{{ path('app_mdm_creation_fiche') }}">Nouvelle fiche</a>
+            {% endif %}
+        </div>
+    </details>
+    {% if is_granted('ROLE_BP_EDITOR') %}
+        {% set anomalies_ouvertes = qualite_badge() %}
+        <a class="nav-link" href="{{ path('app_mdm_qualite') }}">
+            Qualité{% if anomalies_ouvertes > 0 %} <span class="badge badge-warning" title="Anomalies médias ouvertes (doublons et incohérences DAM)">{{ anomalies_ouvertes }}</span>{% endif %}
+        </a>
+        <a class="nav-link" href="{{ path('app_mdm_medias') }}">Médias</a>
+        {% if is_granted('ROLE_BP_VALIDATOR') %}
+            <a class="nav-link" href="{{ path('app_mdm_outils') }}">Outils</a>
+        {% endif %}
+        <details class="nav-link">
+            <summary>Administration</summary>
+            <div>
+                <a class="nav-link" href="{{ path('app_pim_admin') }}">Sommaire</a>
+                <a class="nav-link" href="{{ path('app_dashboard_index') }}">Statistiques détaillées</a>
+                {% if is_granted('ROLE_BP_VALIDATOR') %}
+                    <a class="nav-link" href="{{ path('app_pim_lov_index') }}">Listes de valeurs</a>
+                    <a class="nav-link" href="{{ path('app_pim_site_diffusion_index') }}">Sites de diffusion</a>
+                {% endif %}
+                {% if is_granted('ROLE_SUPER_ADMIN') %}
+                    <a class="nav-link" href="{{ path('app_pim_completeness_index') }}">Complétude</a>
+                    <a class="nav-link" href="{{ path('app_account_admin_index') }}">Collaborateurs</a>
+                    <a class="nav-link" href="{{ path('app_account_user_admin_index') }}">Utilisateurs</a>
+                {% endif %}
+            </div>
+        </details>
+        {% set header_search_form_view = global_search_form() %}
+        {{ form(header_search_form_view) }}
+    {% endif %}
+    {% set logout_form_view = logout_form() %}
+    {{ form(logout_form_view) }}
+{% endblock %}

@@ -436,6 +436,7 @@ final readonly class DoctrineAuditSubscriber
 
             return match ($new) {
                 'en_attente_validation' => 'submission',
+                'validee' => 'validation',
                 'publiee' => 'publication',
                 'archivee' => 'archive',
                 'en_cours' => 'rejection',

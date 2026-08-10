@@ -16,6 +16,8 @@ use App\Pim\Repository\RessourceLieuRepository;
 use App\Pim\Service\FicheDocumentManager;
 use App\Shared\Form\ActionType;
 use App\Shared\Service\PrivateObjectStorageInterface;
+use App\Pim\Service\FicheSectionsCatalogue;
+use App\Pim\Enum\TypeFiche;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -52,7 +54,7 @@ final class RestaurantDocumentController extends AbstractController
             $this->addFlash('success', 'Document modifié.');
         }
 
-        return $this->redirectToRoute('app_pim_restaurant_edit', ['id' => $restaurant->id()]);
+        return $this->redirectToRoute('app_mdm_fiche_gamme', ['gamme' => 'restaurants', 'id' => $restaurant->id(), 'section' => FicheSectionsCatalogue::indexBloc(TypeFiche::Restaurant, 'medias')]);
     }
 
     #[Route('/{resourceId}/fichier', name: 'replace', methods: ['POST'])]
@@ -72,7 +74,7 @@ final class RestaurantDocumentController extends AbstractController
             $this->addFlash('success', 'Fichier remplacé.');
         }
 
-        return $this->redirectToRoute('app_pim_restaurant_edit', ['id' => $restaurant->id()]);
+        return $this->redirectToRoute('app_mdm_fiche_gamme', ['gamme' => 'restaurants', 'id' => $restaurant->id(), 'section' => FicheSectionsCatalogue::indexBloc(TypeFiche::Restaurant, 'medias')]);
     }
 
     #[Route('/{resourceId}/publication', name: 'publication', methods: ['POST'])]
@@ -94,7 +96,7 @@ final class RestaurantDocumentController extends AbstractController
             }
         }
 
-        return $this->redirectToRoute('app_pim_restaurant_edit', ['id' => $restaurant->id()]);
+        return $this->redirectToRoute('app_mdm_fiche_gamme', ['gamme' => 'restaurants', 'id' => $restaurant->id(), 'section' => FicheSectionsCatalogue::indexBloc(TypeFiche::Restaurant, 'medias')]);
     }
 
     #[Route('/{resourceId}/supprimer', name: 'delete', methods: ['POST'])]
@@ -112,7 +114,7 @@ final class RestaurantDocumentController extends AbstractController
             $this->addFlash('success', 'Document supprimé.');
         }
 
-        return $this->redirectToRoute('app_pim_restaurant_edit', ['id' => $restaurant->id()]);
+        return $this->redirectToRoute('app_mdm_fiche_gamme', ['gamme' => 'restaurants', 'id' => $restaurant->id(), 'section' => FicheSectionsCatalogue::indexBloc(TypeFiche::Restaurant, 'medias')]);
     }
 
     #[Route('/{resourceId}/download', name: 'download', methods: ['GET'])]

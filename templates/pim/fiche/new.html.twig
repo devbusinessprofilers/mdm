@@ -4,7 +4,7 @@
 
 {% block body %}
 <main class="page">
-    <a class="back-link" href="{{ path('app_pim_fiche_index') }}">← Retour aux fiches</a>
+    <a class="back-link" href="{{ path('app_mdm_referentiel_general') }}">← Retour aux fiches</a>
     <header class="page-header">
         <div class="page-header-copy">
             <p class="page-kicker">Catalogue</p>
@@ -88,16 +88,18 @@
 
             <section class="card">
                 <h2 class="card-title">Statut et référencement</h2>
-                {{ form_row(form.miceStatut) }}
+                {{ form_row(form.businessPremium) }}
             </section>
 
             <section class="card">
                 <h2 class="card-title">Visibilité</h2>
                 {{ form_row(form.sitePremium) }}
+                {{ form_row(form.sitesDiffusion) }}
             </section>
 
             <section class="card">
                 <h2 class="card-title">Collaborateur</h2>
+                {{ form_row(form.contactRepli) }}
                 {{ form_row(form.collaborateurExistant) }}
                 <fieldset>
                     <legend>… ou créer un nouveau collaborateur</legend>

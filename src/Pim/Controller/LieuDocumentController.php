@@ -16,6 +16,8 @@ use App\Pim\Repository\RessourceLieuRepository;
 use App\Pim\Service\LieuDocumentManager;
 use App\Shared\Form\ActionType;
 use App\Shared\Service\PrivateObjectStorageInterface;
+use App\Pim\Service\FicheSectionsCatalogue;
+use App\Pim\Enum\TypeFiche;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -35,14 +37,14 @@ final class LieuDocumentController extends AbstractController
         if (!$form->isSubmitted() || !$form->isValid()) {
             $this->addFlash('error', 'Le formulaire documentaire est invalide.');
 
-            return $this->redirectToRoute('app_pim_lieu_edit', ['id' => $lieu->id()]);
+            return $this->redirectToRoute('app_mdm_fiche_lieu', ['id' => $lieu->id(), 'section' => FicheSectionsCatalogue::indexBloc(TypeFiche::Lieu, 'medias')]);
         }
         $files = $form->get('documents')->getData();
         $files = is_array($files) ? array_values(array_filter($files, static fn (mixed $file): bool => $file instanceof UploadedFile)) : [];
         if ([] === $files) {
             $this->addFlash('error', 'Sélectionnez au moins un document.');
 
-            return $this->redirectToRoute('app_pim_lieu_edit', ['id' => $lieu->id()]);
+            return $this->redirectToRoute('app_mdm_fiche_lieu', ['id' => $lieu->id(), 'section' => FicheSectionsCatalogue::indexBloc(TypeFiche::Lieu, 'medias')]);
         }
         try {
             /** @var array{usage: \App\Dam\Enum\DocumentUsage, salle: \App\Pim\Entity\Lieu\Salle|null, title: string|null, source: string|null} $data */
@@ -53,7 +55,7 @@ final class LieuDocumentController extends AbstractController
             $this->addFlash('error', $exception->getMessage());
         }
 
-        return $this->redirectToRoute('app_pim_lieu_edit', ['id' => $lieu->id()]);
+        return $this->redirectToRoute('app_mdm_fiche_lieu', ['id' => $lieu->id(), 'section' => FicheSectionsCatalogue::indexBloc(TypeFiche::Lieu, 'medias')]);
     }
 
     #[Route('/{resourceId}/modifier', name: 'update', methods: ['POST'])]
@@ -78,7 +80,7 @@ final class LieuDocumentController extends AbstractController
             } catch (\DomainException $exception) { $this->addFlash('error', $exception->getMessage()); }
         }
 
-        return $this->redirectToRoute('app_pim_lieu_edit', ['id' => $lieu->id()]);
+        return $this->redirectToRoute('app_mdm_fiche_lieu', ['id' => $lieu->id(), 'section' => FicheSectionsCatalogue::indexBloc(TypeFiche::Lieu, 'medias')]);
     }
 
     #[Route('/{resourceId}/fichier', name: 'replace', methods: ['POST'])]
@@ -96,13 +98,13 @@ final class LieuDocumentController extends AbstractController
             if (!$file instanceof UploadedFile) {
                 $this->addFlash('error', 'Sélectionnez un document.');
 
-                return $this->redirectToRoute('app_pim_lieu_edit', ['id' => $lieu->id()]);
+                return $this->redirectToRoute('app_mdm_fiche_lieu', ['id' => $lieu->id(), 'section' => FicheSectionsCatalogue::indexBloc(TypeFiche::Lieu, 'medias')]);
             }
             try { $manager->replace($document, $lieu, $file); $this->addFlash('success', 'Fichier remplacé.'); }
             catch (\DomainException $exception) { $this->addFlash('error', $exception->getMessage()); }
         }
 
-        return $this->redirectToRoute('app_pim_lieu_edit', ['id' => $lieu->id()]);
+        return $this->redirectToRoute('app_mdm_fiche_lieu', ['id' => $lieu->id(), 'section' => FicheSectionsCatalogue::indexBloc(TypeFiche::Lieu, 'medias')]);
     }
 
     #[Route('/{resourceId}/publication', name: 'publication', methods: ['POST'])]
@@ -119,7 +121,7 @@ final class LieuDocumentController extends AbstractController
             catch (\DomainException $exception) { $this->addFlash('error', $exception->getMessage()); }
         }
 
-        return $this->redirectToRoute('app_pim_lieu_edit', ['id' => $lieu->id()]);
+        return $this->redirectToRoute('app_mdm_fiche_lieu', ['id' => $lieu->id(), 'section' => FicheSectionsCatalogue::indexBloc(TypeFiche::Lieu, 'medias')]);
     }
 
     #[Route('/{resourceId}/supprimer', name: 'delete', methods: ['POST'])]
@@ -133,7 +135,7 @@ final class LieuDocumentController extends AbstractController
         if (!$form->isSubmitted() || !$form->isValid()) { $this->addFlash('error', 'Le formulaire de suppression est invalide.'); }
         else { $manager->delete($document, $lieu); $this->addFlash('success', 'Document supprimé.'); }
 
-        return $this->redirectToRoute('app_pim_lieu_edit', ['id' => $lieu->id()]);
+        return $this->redirectToRoute('app_mdm_fiche_lieu', ['id' => $lieu->id(), 'section' => FicheSectionsCatalogue::indexBloc(TypeFiche::Lieu, 'medias')]);
     }
 
     #[Route('/{resourceId}/download', name: 'download', methods: ['GET'])]

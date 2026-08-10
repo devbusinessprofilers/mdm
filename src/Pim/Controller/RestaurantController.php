@@ -9,7 +9,6 @@ use App\Account\Service\CurrentActorProvider;
 use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Enum\StatutFiche;
 use App\Pim\Enum\TypeFiche;
-use App\Pim\Form\RestaurantSearchType;
 use App\Pim\Form\RestaurantType;
 use App\Pim\Form\FicheActionFormFactory;
 use App\Pim\ReadModel\FicheCursor;
@@ -31,147 +30,6 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/admin/restaurants', name: 'app_pim_restaurant_')]
 final class RestaurantController extends AbstractController
 {
-    #[Route('', name: 'index', methods: ['GET'])]
-    public function index(
-        Request $request,
-        RestaurantRepository $repository,
-        SearchEngineInterface $search,
-        FicheCountProvider $counts,
-    ): Response {
-        $form = $this->createForm(
-            RestaurantSearchType::class,
-            [
-                'q' => $request->query->getString('q'),
-                'status' => StatutFiche::tryFrom(
-                    $request->query->getString('status'),
-                ),
-                'limit' => max(
-                    1,
-                    min(100, $request->query->getInt('limit', 50)),
-                ),
-            ],
-            ['action' => $this->generateUrl('app_pim_restaurant_index')],
-        );
-        $form->handleRequest($request);
-        if ($form->isSubmitted() && !$form->isValid()) {
-            throw new BadRequestHttpException('Critères invalides.');
-        }
-
-        $data = $form->getData();
-        $status = $data['status'] ?? null;
-        $text = trim((string) ($data['q'] ?? ''));
-        $limit = max(1, min(100, (int) ($data['limit'] ?? 50)));
-        $cursor = $request->query->getString('cursor') ?: null;
-
-        try {
-            if ('' !== $text) {
-                $filters = ['type' => TypeFiche::Restaurant->value];
-                if ($status instanceof StatutFiche) {
-                    $filters['status'] = $status->value;
-                }
-
-                $page = $search->search(
-                    new SearchQuery($text, $filters, $limit, $cursor),
-                );
-                $items = $repository->findListItemsByIds(
-                    array_map(static fn ($result): string => $result->id, $page->results),
-                );
-                $count = $page->totalCount;
-            } else {
-                $page = $repository->findListPage(
-                    FicheCursor::decode($cursor),
-                    $limit,
-                    $status instanceof StatutFiche ? $status : null,
-                );
-                $items = $page->items;
-                $count = null;
-            }
-        } catch (\InvalidArgumentException $exception) {
-            throw new BadRequestHttpException(
-                $exception->getMessage(),
-                $exception,
-            );
-        }
-
-        return $this->render('pim/restaurant/index.html.twig', [
-            'restaurants' => $items,
-            'next_cursor' => $page->nextCursor,
-            'status' => $status,
-            'query' => $text,
-            'result_count' => $count,
-            'search_form' => $form->createView(),
-            'total_count' => $counts->totalByType(TypeFiche::Restaurant),
-            'pending_count' => $counts->countByStatus(
-                TypeFiche::Restaurant,
-                StatutFiche::EnAttenteValidation,
-            ),
-        ]);
-    }
-
-    #[Route('/nouveau', name: 'new', methods: ['GET'])]
-    public function new(): Response
-    {
-        // La création passe désormais par le formulaire unique de création de fiche.
-        return $this->redirectToRoute('app_pim_fiche_new');
-    }
-
-    #[Route('/{id}', name: 'show', requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'], methods: ['GET'])]
-    public function show(string $id, RestaurantRepository $repository, FicheActionFormFactory $forms): Response
-    {
-        $restaurant = $repository->find($id);
-        if (!$restaurant instanceof Restaurant) { throw $this->createNotFoundException('Restaurant introuvable.'); }
-        $this->denyAccessUnlessGranted(FicheVoter::VIEW, $restaurant->fiche());
-
-        return $this->render('pim/restaurant/show.html.twig', [
-            'restaurant' => $restaurant,
-            'delete_form' => $forms->action('restaurant', $restaurant->id(), 'delete', 'Supprimer')->createView(),
-            'submit_form' => $forms->action('restaurant', $restaurant->id(), 'submit', 'Soumettre à validation')->createView(),
-            'validate_form' => $forms->action('restaurant', $restaurant->id(), 'validate', 'Valider et publier')->createView(),
-            'archive_form' => $forms->action('restaurant', $restaurant->id(), 'archive', 'Archiver')->createView(),
-            'reject_form' => $forms->reject('restaurant', $restaurant->id())->createView(),
-        ]);
-    }
-
-    #[Route('/{id}/modifier', name: 'edit', requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'], methods: ['GET', 'POST'])]
-    public function edit(
-        Request $request,
-        string $id,
-        RestaurantRepository $repository,
-        RestaurantAdminManager $manager,
-        RestaurantAdminViewBuilder $view,
-        CurrentActorProvider $actor,
-        InternalFicheMutationPolicy $mutationPolicy,
-    ): Response {
-        $restaurant = $repository->find($id);
-        if (!$restaurant instanceof Restaurant) { throw $this->createNotFoundException('Restaurant introuvable.'); }
-        $this->denyAccessUnlessGranted(FicheVoter::EDIT, $restaurant->fiche());
-        $existing = $manager->photoAssetIds($restaurant);
-        $form = $this->createForm(RestaurantType::class, $restaurant);
-        $response = $mutationPolicy->execute(
-            $restaurant->fiche(),
-            function () use ($request, $form, $manager, $restaurant, $existing, $actor): ?Response {
-                $form->handleRequest($request);
-                if ($form->isSubmitted() && $form->isValid()) {
-                    try {
-                        $manager->save($restaurant, $form, $existing, $actor->id());
-                        $this->addFlash('success', 'Restaurant modifié.');
-
-                        return $this->redirectToRoute('app_pim_restaurant_show', ['id' => $restaurant->id()]);
-                    } catch (\DomainException $exception) {
-                        $form->addError(new FormError($exception->getMessage()));
-                    }
-                }
-
-                return null;
-            }
-        );
-        if ($response instanceof Response) {
-            return $response;
-        }
-
-        return $this->render('pim/restaurant/form.html.twig', $view->form($form, $restaurant, false));
-    }
-
     #[Route('/{id}/supprimer', name: 'delete', requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'], methods: ['POST'])]
     public function delete(
         Request $request,
@@ -191,7 +49,7 @@ final class RestaurantController extends AbstractController
             $this->addFlash('success', 'Restaurant supprimé.');
         }
 
-        return $this->redirectToRoute('app_pim_restaurant_index');
+        return $this->redirectToRoute('app_mdm_referentiel_gamme', ['gamme' => 'restaurants']);
     }
 
     #[Route('/{id}/soumettre', name: 'submit', requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'], methods: ['POST'])]
@@ -219,16 +77,12 @@ final class RestaurantController extends AbstractController
                     );
                 }
 
-                return $this->redirectToRoute('app_pim_restaurant_edit', [
-                    'id' => $restaurant->id(),
-                ]);
+                return $this->redirectToRoute('app_mdm_fiche_gamme', ['gamme' => 'restaurants', 'id' => $restaurant->id()]);
             }
 
         }
 
-        return $this->redirectToRoute('app_pim_restaurant_show', [
-            'id' => $restaurant->id(),
-        ]);
+        return $this->redirectToRoute('app_mdm_fiche_gamme', ['gamme' => 'restaurants', 'id' => $restaurant->id()]);
     }
 
     #[Route('/{id}/valider', name: 'validate', requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'], methods: ['POST'])]
@@ -247,7 +101,25 @@ final class RestaurantController extends AbstractController
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) { $workflow->validate($restaurant->fiche(), $actor->id()); }
 
-        return $this->redirectToRoute('app_pim_restaurant_show', ['id' => $restaurant->id()]);
+        return $this->redirectToRoute('app_mdm_fiche_gamme', ['gamme' => 'restaurants', 'id' => $restaurant->id()]);
+    }
+
+    #[Route('/{id}/publier', name: 'publish', requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'], methods: ['POST'])]
+    public function publishRestaurant(
+        Request $request,
+        string $id,
+        RestaurantRepository $repository,
+        FicheActionFormFactory $forms,
+        FicheWorkflowManager $workflow,
+    ): Response {
+        $restaurant = $repository->find($id);
+        if (!$restaurant instanceof Restaurant) { throw $this->createNotFoundException('Restaurant introuvable.'); }
+        $this->denyAccessUnlessGranted(FicheVoter::PUBLISH, $restaurant->fiche());
+        $form = $forms->action('restaurant', $restaurant->id(), 'publish', 'Publier');
+        $form->handleRequest($request);
+        if ($form->isSubmitted() && $form->isValid()) { $workflow->publish($restaurant->fiche()); }
+
+        return $this->redirectToRoute('app_mdm_fiche_gamme', ['gamme' => 'restaurants', 'id' => $restaurant->id()]);
     }
 
     #[Route('/{id}/archiver', name: 'archive', requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'], methods: ['POST'])]
@@ -266,7 +138,7 @@ final class RestaurantController extends AbstractController
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) { $workflow->archive($restaurant->fiche(), $actor->id()); }
 
-        return $this->redirectToRoute('app_pim_restaurant_show', ['id' => $restaurant->id()]);
+        return $this->redirectToRoute('app_mdm_fiche_gamme', ['gamme' => 'restaurants', 'id' => $restaurant->id()]);
     }
 
     #[Route('/{id}/refuser', name: 'reject', requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'], methods: ['POST'])]
@@ -288,9 +160,7 @@ final class RestaurantController extends AbstractController
             $workflow->reject($restaurant->fiche(), $actor->id(), (string) $form->get('reason')->getData());
         }
 
-        return $this->redirectToRoute('app_pim_restaurant_show', [
-            'id' => $restaurant->id(),
-        ]);
+        return $this->redirectToRoute('app_mdm_fiche_gamme', ['gamme' => 'restaurants', 'id' => $restaurant->id()]);
     }
 
 }

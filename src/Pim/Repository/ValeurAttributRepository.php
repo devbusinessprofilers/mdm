@@ -25,6 +25,41 @@ final class ValeurAttributRepository extends ServiceEntityRepository
         return $this->findBy(['attribute' => $attribute], ['position' => 'ASC', 'id' => 'ASC']);
     }
 
+    /**
+     * Valeurs actives des attributs demandés, prêtes pour un champ de choix,
+     * dans l'ordre de la liste de codes.
+     *
+     * @param list<string> $attributeCodes
+     *
+     * @return list<array{code: string, label: string, choices: array<string, int>}>
+     */
+    public function classificationChoices(array $attributeCodes): array
+    {
+        if ([] === $attributeCodes) {
+            return [];
+        }
+        $rows = $this->getEntityManager()->getConnection()->fetchAllAssociative(
+            'SELECT ad.code AS attribut, ad.label AS attribut_label, av.id, av.label
+             FROM pim_attribute_value av
+             INNER JOIN pim_attribute_definition ad ON ad.id = av.attribute_id
+             WHERE ad.code IN (:codes) AND av.active = 1
+             ORDER BY av.position ASC, av.label ASC',
+            ['codes' => $attributeCodes],
+            ['codes' => \Doctrine\DBAL\ArrayParameterType::STRING],
+        );
+        $attributs = [];
+        foreach ($rows as $row) {
+            $code = (string) $row['attribut'];
+            $attributs[$code] ??= ['code' => $code, 'label' => (string) $row['attribut_label'], 'choices' => []];
+            $attributs[$code]['choices'][(string) $row['label']] = (int) $row['id'];
+        }
+
+        return array_values(array_filter(array_map(
+            static fn (string $code): ?array => $attributs[$code] ?? null,
+            $attributeCodes,
+        )));
+    }
+
     public function findOneForAttribute(AttributDefinition $attribute, int $id): ?ValeurAttribut
     {
         return $this->findOneBy(['attribute' => $attribute, 'id' => $id]);

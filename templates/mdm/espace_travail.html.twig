@@ -1,0 +1,115 @@
+{% extends 'mdm/base.html.twig' %}
+
+{# Gabarit sobre : la structure suit la vue Supply de la maquette,
+   le style viendra du front (branche test-integration). #}
+
+{% block title %}Mon espace de travail{% endblock %}
+
+{% set statut_libelles = {
+    'en_cours': 'En cours',
+    'en_attente_validation': 'En attente',
+    'validee': 'Validée',
+    'publiee': 'Publiée',
+    'archivee': 'Archivée',
+} %}
+{% set gamme_libelles = {
+    'lieu': 'Lieu',
+    'restaurant': 'Restaurant',
+    'activite': 'Activité',
+    'service_evenementiel': 'Service',
+} %}
+
+{% block body %}
+<main class="page">
+    <header class="page-header">
+        <div class="page-header-copy">
+            <p class="page-kicker">Espace de travail</p>
+            <h1>Mon espace de travail</h1>
+            <p class="page-description">Vos fiches assignées, vos priorités et votre activité.</p>
+        </div>
+        <a class="btn" href="{{ path('app_mdm_creation_fiche') }}">Nouvelle fiche</a>
+    </header>
+
+    <section class="card-grid">
+        <article class="card">
+            <h2>Mes fiches assignées</h2>
+            <p class="stat-value">{{ compteurs.assignees }}</p>
+            <p class="page-description">dont {{ compteurs.assignees_faibles }} sous 50 % de complétude</p>
+            <a class="text-link" href="{{ url_mes_fiches }}">Voir mes fiches</a>
+        </article>
+        <article class="card">
+            <h2>En attente de validation</h2>
+            <p class="stat-value">{{ compteurs.en_attente }}</p>
+            <p class="page-description">parmi mes fiches assignées</p>
+        </article>
+        <article class="card">
+            <h2>Suggestions IA à arbitrer</h2>
+            <p class="stat-value">{{ compteurs.ia }}</p>
+            <p class="page-description">fiches assignées portant des valeurs en attente</p>
+        </article>
+    </section>
+
+    <div class="admin-grid">
+        <section class="card">
+            <h2>Mes priorités</h2>
+            <p class="page-description">Les fiches assignées les moins complètes en premier.</p>
+            {% if priorites is not empty %}
+                <div class="table-shell"><div class="table-scroll"><table class="data-table">
+                    <thead><tr><th>Code</th><th>Nom</th><th>Gamme</th><th>Statut</th><th>Complétude</th><th></th></tr></thead>
+                    <tbody>
+                    {% for priorite in priorites %}
+                        <tr>
+                            <td>{{ priorite.code }}</td>
+                            <td>{{ priorite.label ?? 'Sans libellé' }}</td>
+                            <td><span class="badge badge-neutral">{{ gamme_libelles[priorite.type] ?? priorite.type }}</span></td>
+                            <td><span class="badge badge-info">{{ statut_libelles[priorite.status] ?? priorite.status }}</span></td>
+                            <td>{{ priorite.completeness is null ? '—' : priorite.completeness ~ ' %' }}</td>
+                            <td>{% if priorite.url %}<a class="text-link" href="{{ priorite.url }}">Ouvrir</a>{% endif %}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table></div></div>
+            {% else %}
+                <p class="empty-state">Aucune fiche ne vous est assignée pour l'instant.</p>
+            {% endif %}
+        </section>
+
+        <aside>
+            <section class="card">
+                <h2>Raccourcis</h2>
+                <ul>
+                    <li><a class="text-link" href="{{ path('app_mdm_creation_fiche') }}">Créer une fiche</a></li>
+                    <li><a class="text-link" href="{{ url_mes_fiches }}">Mes fiches dans le référentiel</a></li>
+                    <li><a class="text-link" href="{{ path('app_etl_import_index') }}">Importer des fiches</a></li>
+                </ul>
+            </section>
+
+            <section class="card">
+                <h2>Mes vues enregistrées</h2>
+                {% if vues_enregistrees is not empty %}
+                    <ul>
+                        {% for entree in vues_enregistrees %}
+                            <li>
+                                <a class="text-link" href="{{ entree.url }}">{{ entree.vue.name }}</a>
+                                <small>{{ entree.vue.shared ? 'Partagée · ' ~ entree.vue.ownerLabel : 'Personnelle' }}</small>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="page-description">Aucune vue enregistrée.</p>
+                {% endif %}
+            </section>
+
+            <section class="card">
+                <h2>Mon activité (7 jours)</h2>
+                <ul>
+                    <li>{{ activite.creees }} fiche{{ activite.creees == 1 ? '' : 's' }} créée{{ activite.creees == 1 ? '' : 's' }}</li>
+                    <li>{{ activite.modifiees }} modification{{ activite.modifiees == 1 ? '' : 's' }}</li>
+                    <li>{{ activite.validees }} validation{{ activite.validees == 1 ? '' : 's' }}</li>
+                    <li>{{ activite.publiees }} publication{{ activite.publiees == 1 ? '' : 's' }}</li>
+                </ul>
+            </section>
+        </aside>
+    </div>
+</main>
+{% endblock %}

@@ -10,6 +10,7 @@ use App\Pim\Lov\ActiviteLovCatalog;
 use App\Pim\Lov\LieuLovCatalog;
 use App\Pim\Lov\RestaurantLovCatalog;
 use App\Pim\Lov\ServiceLovCatalog;
+use App\Pim\Repository\SiteDiffusionRepository;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
@@ -35,6 +36,10 @@ final class FicheCreationType extends AbstractType
         'Activité' => TypeFiche::Activite,
         'Service événementiel' => TypeFiche::ServiceEvenementiel,
     ];
+
+    public function __construct(private readonly SiteDiffusionRepository $sitesDiffusion)
+    {
+    }
 
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
@@ -100,10 +105,10 @@ final class FicheCreationType extends AbstractType
                 'multiple' => true,
                 'required' => false,
             ])
-            ->add('miceStatut', ChoiceType::class, [
+            // Le niveau de statut (MICE_STATUT) ne se choisit que dans le
+            // formulaire complet ; à la création, seul l'interrupteur existe.
+            ->add('businessPremium', CheckboxType::class, [
                 'label' => 'Adhérent Business Premium',
-                'choices' => array_flip(LieuLovCatalog::choicesFor('MICE_STATUT')),
-                'placeholder' => 'Non précisé',
                 'required' => false,
             ])
             ->add('sitePremium', ChoiceType::class, [
@@ -111,6 +116,19 @@ final class FicheCreationType extends AbstractType
                 'choices' => array_flip(LieuLovCatalog::choicesFor('SITE_PREMIUM')),
                 'multiple' => true,
                 'required' => false,
+            ])
+            ->add('sitesDiffusion', ChoiceType::class, [
+                'label' => 'Sites de diffusion',
+                'choices' => $this->sitesDiffusion->choicesGroupees(),
+                'multiple' => true,
+                'expanded' => true,
+                'required' => false,
+                'help' => 'Les sites obligatoires sont réappliqués automatiquement.',
+            ])
+            ->add('contactRepli', CheckboxType::class, [
+                'label' => 'Contact de repli',
+                'required' => false,
+                'help' => 'Le service référencement remplace le contact prestataire ; aucun accès n\'est envoyé.',
             ])
             ->add('collaborateurExistant', CollaborateurAutocompleteType::class, [
                 'required' => false,
@@ -159,7 +177,12 @@ final class FicheCreationType extends AbstractType
     public static function validate(mixed $data, ExecutionContextInterface $context): void
     {
         if (!$data instanceof FicheCreation) { return; }
-        if ($data->envoyerAcces && !$data->veutCollaborateur()) {
+        if ($data->envoyerAcces && $data->contactRepli) {
+            $context->buildViolation('Un contact de repli ne reçoit pas d\'accès : décochez l\'envoi.')
+                ->atPath('envoyerAcces')
+                ->addViolation();
+        }
+        if ($data->envoyerAcces && !$data->contactRepli && !$data->veutCollaborateur()) {
             $context->buildViolation('Sélectionnez ou créez un collaborateur pour lui envoyer les accès.')
                 ->atPath('collaborateurExistant')
                 ->addViolation();

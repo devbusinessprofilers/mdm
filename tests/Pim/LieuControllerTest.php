@@ -64,9 +64,7 @@ final class LieuControllerTest extends WebTestCase
         $entityManager->flush();
         $client->loginUser($user);
 
-        $client->request('GET', '/admin/lieux/nouveau');
-        self::assertResponseRedirects('/admin/fiches/nouvelle');
-        $client->followRedirect();
+        $client->request('GET', '/referentiel/fiche/nouvelle');
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'Nouvelle fiche');
 
@@ -82,7 +80,8 @@ final class LieuControllerTest extends WebTestCase
         self::assertResponseRedirects();
         self::assertSame(1, $entityManager->getRepository(Lieu::class)->count([]));
 
-        $client->request('GET', '/admin/lieux');
+        // La liste vit désormais sur le référentiel MDM.
+        $client->request('GET', '/referentiel/lieux');
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('table', 'Lieu CRUD temporaire');
     }
@@ -110,27 +109,23 @@ final class LieuControllerTest extends WebTestCase
         $entityManager->flush();
         $client->loginUser($user);
 
-        $crawler = $client->request('GET', '/admin/lieux?q=pal+pari&status=publiee');
+        // La recherche vit désormais sur la liste MDM : plein-texte + facettes.
+        $client->request('GET', '/referentiel/lieux', ['f' => ['q' => 'pal pari', 'statuts' => ['publiee']]]);
         self::assertResponseIsSuccessful();
-        self::assertSame('pal pari', $crawler->filter('main input[name="q"]')->attr('value'));
-        self::assertSelectorTextContains('main', '1 résultat');
+        self::assertSelectorTextContains('body', '1 fiche dans le filtre courant');
         self::assertSelectorTextContains('table', $paris->label() ?? '');
         self::assertSelectorTextNotContains('table', 'Palais Lumière Lyon');
 
-        $crawler = $client->request('GET', '/admin/lieux?q=palais&limit=1');
+        $client->request('GET', '/referentiel/lieux', ['f' => ['q' => 'palais']]);
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('main', '2 résultats');
-        self::assertSelectorExists('nav a[href*="q=palais"]');
-        $client->click($crawler->filter('nav a[href*="cursor="]')->link());
-        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('body', '2 fiches dans le filtre courant');
 
-        $client->request('GET', '/admin/lieux?q=introuvable');
+        $client->request('GET', '/referentiel/lieux', ['f' => ['q' => 'introuvable']]);
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('main', '0 résultats');
-        self::assertSelectorTextContains('table', 'Aucun lieu trouvé.');
+        self::assertSelectorTextContains('table', 'Aucune fiche ne correspond à ces filtres');
 
-        $client->request('GET', '/admin/lieux?q=palais&cursor=invalid');
-        self::assertResponseStatusCodeSame(400);
+        $client->request('GET', '/referentiel/lieux?cursor=invalid');
+        self::assertResponseStatusCodeSame(404);
     }
 
     private function createSearchableLieu(

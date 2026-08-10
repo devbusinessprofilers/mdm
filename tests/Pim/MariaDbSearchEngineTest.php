@@ -255,7 +255,8 @@ final class MariaDbSearchEngineTest extends KernelTestCase
         );
         foreach ($globalPage->results as $result) {
             self::assertStringContainsString($result->item->id, $result->showUrl);
-            self::assertStringContainsString($result->item->id.'/modifier', $result->editUrl);
+            // « voir » et « modifier » mènent tous deux à l'éditeur MDM.
+            self::assertSame($result->showUrl, $result->editUrl);
         }
 
         $codePage = $provider->search((string) $lieu->code());

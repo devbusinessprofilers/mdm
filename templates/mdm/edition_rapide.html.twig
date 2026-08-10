@@ -1,0 +1,64 @@
+{% extends 'mdm/base.html.twig' %}
+
+{# Page d'édition rapide : le front en fera une modale au-dessus de la liste,
+   le fonctionnement (formulaire, navigation, avertissements) est déjà là. #}
+
+{% block title %}Édition rapide · {{ fiche.label ?? fiche.code }}{% endblock %}
+
+{% set statut_libelles = {
+    'en_cours': 'En cours',
+    'en_attente_validation': 'En attente',
+    'validee': 'Validée',
+    'publiee': 'Publiée',
+    'archivee': 'Archivée',
+} %}
+
+{% block body %}
+<main class="page">
+    <header class="page-header">
+        <div class="page-header-copy">
+            <p class="page-kicker">Édition rapide</p>
+            <h1>{{ fiche.label ?? 'Sans libellé' }}</h1>
+            <p class="page-description">
+                {{ fiche.type.value|upper|slice(0, 3) }}-{{ '%06d'|format(fiche.code) }} · v{{ fiche.version }}
+                · <span class="badge badge-info">{{ statut_libelles[fiche.status.value] ?? fiche.status.value }}</span>
+            </p>
+        </div>
+        <a class="btn btn-secondary" href="{{ path('app_mdm_referentiel_general', parametres_filtre) }}">Retour à la liste</a>
+    </header>
+
+    {% if adresses_partagees > 0 %}
+        <div class="alert alert-warning" role="status">
+            Cette adresse est déjà utilisée par {{ adresses_partagees }} autre{{ adresses_partagees == 1 ? '' : 's' }} fiche{{ adresses_partagees == 1 ? '' : 's' }}. La sauvegarde reste autorisée.
+        </div>
+    {% endif %}
+
+    <section class="card">
+        {{ form_start(form) }}
+            <h2>Adresse</h2>
+            {{ form_row(form.localisation) }}
+            <h2>Statut et référencement</h2>
+            {{ form_row(form.businessPremium) }}
+            {% for champ in form %}
+                {% if champ.vars.name starts with 'classification_' %}
+                    <h2>{{ champ.vars.label }}</h2>
+                    {{ form_row(champ) }}
+                {% endif %}
+            {% endfor %}
+            <h2>Sites de diffusion</h2>
+            <p class="page-description">Les sites obligatoires restent cochés ; les sites payants sont signalés.</p>
+            {{ form_row(form.sites) }}
+            {{ form_row(form.enregistrer) }}
+        {{ form_end(form) }}
+    </section>
+
+    <nav class="pagination" aria-label="Navigation entre fiches">
+        {% if voisines.precedente %}
+            <a class="btn btn-secondary btn-small" href="{{ path('app_mdm_edition_rapide', {id: voisines.precedente} + parametres_filtre) }}">← Fiche précédente</a>
+        {% endif %}
+        {% if voisines.suivante %}
+            <a class="btn btn-secondary btn-small" href="{{ path('app_mdm_edition_rapide', {id: voisines.suivante} + parametres_filtre) }}">Fiche suivante →</a>
+        {% endif %}
+    </nav>
+</main>
+{% endblock %}

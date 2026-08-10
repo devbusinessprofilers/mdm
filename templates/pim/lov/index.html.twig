@@ -2,7 +2,11 @@
 {% block title %}Listes de valeurs{% endblock %}
 {% block body %}
 <main class="page">
-    <header class="page-header"><div><p class="page-kicker">Administration</p><h1>Listes de valeurs</h1></div></header>
+    <header class="page-header">
+        <div><p class="page-kicker">Administration</p><h1>Listes de valeurs</h1></div>
+        {# Les sites de diffusion ne sont pas une LOV (groupe, mentions, présélection par gamme) mais s'administrent au même endroit. #}
+        <a class="btn btn-secondary" href="{{ path('app_pim_site_diffusion_index') }}">Sites de diffusion</a>
+    </header>
     {{ form_start(search_form, {attr: {class: 'card'}}) }}{{ form_row(search_form.q) }}{{ form_row(search_form.search) }}{{ form_end(search_form) }}
     <section class="card table-wrapper"><table><thead><tr><th>Code</th><th>FR</th><th>EN</th><th>ES</th><th>IT</th><th>NL</th><th>PT</th><th>DE</th><th>Valeurs</th><th></th></tr></thead><tbody>
     {% for definition in definitions %}<tr><td><code>{{ definition.code }}</code></td><td>{{ definition.label }}</td><td>{{ definition.translation_en ?? '—' }}</td><td>{{ definition.translation_es ?? '—' }}</td><td>{{ definition.translation_it ?? '—' }}</td><td>{{ definition.translation_nl ?? '—' }}</td><td>{{ definition.translation_pt ?? '—' }}</td><td>{{ definition.translation_de ?? '—' }}</td><td>{{ definition.value_count }}</td><td><a class="btn btn-secondary" href="{{ path('app_pim_lov_show', {code: definition.code}) }}">Voir</a></td></tr>{% else %}<tr><td colspan="10">Aucune LOV.</td></tr>{% endfor %}

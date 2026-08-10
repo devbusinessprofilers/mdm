@@ -22,14 +22,14 @@ final class RateLimitFunctionalTest extends WebTestCase
     public function testIncomingRequestIdIsEchoedBack(): void
     {
         $client = self::createClient();
-        $client->request('GET', '/login', server: ['HTTP_X_REQUEST_ID' => 'proxy-abc-123']);
+        $client->request('GET', '/connexion', server: ['HTTP_X_REQUEST_ID' => 'proxy-abc-123']);
         self::assertResponseHeaderSame('X-Request-Id', 'proxy-abc-123');
     }
 
     public function testUnrelatedPagesAreNotRateLimited(): void
     {
         $client = self::createClient();
-        $client->request('GET', '/login');
+        $client->request('GET', '/connexion');
         self::assertResponseIsSuccessful();
         self::assertFalse($client->getResponse()->headers->has('RateLimit-Limit'));
     }

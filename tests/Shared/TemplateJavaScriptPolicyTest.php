@@ -49,11 +49,10 @@ final class TemplateJavaScriptPolicyTest extends TestCase
         self::assertStringContainsString("dataset.action = 'form-collection#remove'", $content);
         self::assertStringNotContainsString('addEventListener', $content);
 
-        $template = file_get_contents(dirname(__DIR__, 2).'/templates/pim/lieu/form.html.twig');
+        // L'éditeur MDM porte désormais les collections (macro `collection`).
+        $template = file_get_contents(dirname(__DIR__, 2).'/templates/mdm/fiche_editeur.html.twig');
         self::assertIsString($template);
-        foreach (['form.salles', 'form.periodesFermeture', 'form.acces', 'form.ressources'] as $collection) {
-            self::assertStringContainsString($collection, $template);
-        }
+        self::assertStringContainsString('data-controller="form-collection"', $template);
         self::assertStringContainsString('data-action="form-collection#add"', $template);
         self::assertStringContainsString('data-action="form-collection#remove"', $template);
     }

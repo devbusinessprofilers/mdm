@@ -13,30 +13,40 @@ final readonly class FicheRouteResolver
     {
     }
 
+    /**
+     * L'éditeur MDM est la vue unique d'une fiche : « voir » et « modifier »
+     * mènent au même endroit, comme dans la maquette front.
+     */
     public function showUrl(TypeFiche $type, string $id): string
     {
-        return $this->urlGenerator->generate(self::routesFor($type)[0], ['id' => $id]);
+        return $this->editUrl($type, $id);
     }
 
     public function editUrl(TypeFiche $type, string $id): string
     {
-        return $this->urlGenerator->generate(self::routesFor($type)[1], ['id' => $id]);
+        return TypeFiche::Lieu === $type
+            ? $this->urlGenerator->generate('app_mdm_fiche_lieu', ['id' => $id])
+            : $this->urlGenerator->generate('app_mdm_fiche_gamme', ['gamme' => self::gamme($type), 'id' => $id]);
     }
 
     public function historyUrl(TypeFiche $type, string $id): string
     {
-        return $this->urlGenerator->generate(self::routesFor($type)[2], ['id' => $id]);
+        return $this->urlGenerator->generate(match ($type) {
+            TypeFiche::Lieu => 'app_pim_lieu_history',
+            TypeFiche::Activite => 'app_pim_activite_history',
+            TypeFiche::Restaurant => 'app_pim_restaurant_history',
+            TypeFiche::ServiceEvenementiel => 'app_pim_service_history',
+            TypeFiche::Traiteur => throw new \InvalidArgumentException('Type de fiche invalide.'),
+        }, ['id' => $id]);
     }
 
-    /** @return array{string, string, string} */
-    private static function routesFor(TypeFiche $type): array
+    private static function gamme(TypeFiche $type): string
     {
         return match ($type) {
-            TypeFiche::Lieu => ['app_pim_lieu_show', 'app_pim_lieu_edit', 'app_pim_lieu_history'],
-            TypeFiche::Activite => ['app_pim_activite_show', 'app_pim_activite_edit', 'app_pim_activite_history'],
-            TypeFiche::Restaurant => ['app_pim_restaurant_show', 'app_pim_restaurant_edit', 'app_pim_restaurant_history'],
-            TypeFiche::ServiceEvenementiel => ['app_pim_service_show', 'app_pim_service_edit', 'app_pim_service_history'],
-            TypeFiche::Traiteur => throw new \InvalidArgumentException('Type de fiche invalide.'),
+            TypeFiche::Restaurant => 'restaurants',
+            TypeFiche::Activite => 'activites',
+            TypeFiche::ServiceEvenementiel => 'services',
+            default => throw new \InvalidArgumentException('Type de fiche invalide.'),
         };
     }
 }

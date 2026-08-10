@@ -120,6 +120,24 @@ final class MediaAssetRepository extends ServiceEntityRepository
         ));
     }
 
+    /** @return list<array{name: string, nb: int, octets: int}> Volumes par variante générée. */
+    public function renditionStats(): array
+    {
+        /** @var list<array{name: string, nb: string|int, octets: string|int|null}> $rows */
+        $rows = $this->getEntityManager()->getConnection()->fetchAllAssociative(
+            'SELECT name, COUNT(*) AS nb, COALESCE(SUM(size_bytes), 0) AS octets
+             FROM dam_media_rendition
+             GROUP BY name
+             ORDER BY name ASC',
+        );
+
+        return array_map(static fn (array $row): array => [
+            'name' => (string) $row['name'],
+            'nb' => (int) $row['nb'],
+            'octets' => (int) $row['octets'],
+        ], $rows);
+    }
+
     public function countFailed(): int
     {
         return (int) $this->createQueryBuilder('media')

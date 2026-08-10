@@ -93,7 +93,8 @@ final class DashboardStatsCalculatorTest extends KernelTestCase
         $this->entityManager->flush();
 
         $lieuPublie->fiche()->submitForValidation('alice');
-        $lieuPublie->fiche()->validateAndPublish('bob');
+        $lieuPublie->fiche()->validate('bob');
+        $lieuPublie->fiche()->publish();
         $this->entityManager->flush();
 
         // Cycle de validation déterministe : 2 h entre demande et validation.
@@ -140,6 +141,11 @@ final class DashboardStatsCalculatorTest extends KernelTestCase
         self::assertSame(2, $france['total']);
         self::assertSame('??', $sansPays['countryCode']);
         self::assertSame(1, $sansPays['counts']['restaurant']);
+        // Croisement : publiées et complétude moyenne par cellule.
+        self::assertSame(1, $france['published']['lieu']);
+        self::assertSame(0, $sansPays['published']['restaurant']);
+        self::assertSame(60, $france['completeness']['lieu']);
+        self::assertNull($france['completeness']['traiteur']);
 
         self::assertSame(['avgSeconds' => 7200, 'sample' => 1], $payload['validation']);
 

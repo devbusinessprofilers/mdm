@@ -1,0 +1,220 @@
+{% extends 'mdm/base.html.twig' %}
+
+{# Gabarit sobre : la structure et le fonctionnement suivent la maquette MDM,
+   le style viendra du front (branche test-integration). #}
+
+{% set gamme_titres = {
+    'lieu': 'Lieux',
+    'restaurant': 'Restaurants',
+    'activite': 'Activités',
+    'service_evenementiel': 'Services événementiels',
+} %}
+{% block title %}{{ gamme_imposee ? 'Référentiel · ' ~ (gamme_titres[gamme_imposee.value] ?? gamme_imposee.value) : 'Référentiel' }}{% endblock %}
+
+{% set statut_libelles = {
+    'en_cours': 'En cours',
+    'en_attente_validation': 'En attente',
+    'validee': 'Validée',
+    'publiee': 'Publiée',
+    'archivee': 'Archivée',
+} %}
+{% set gamme_libelles = {
+    'lieu': 'Lieu',
+    'restaurant': 'Restaurant',
+    'activite': 'Activité',
+    'service_evenementiel': 'Service',
+    'traiteur': 'Plateau repas',
+} %}
+
+{% block body %}
+<main class="page">
+    <header class="page-header">
+        <div class="page-header-copy">
+            <p class="page-kicker">Référentiel</p>
+            <h1>{{ gamme_imposee ? (gamme_titres[gamme_imposee.value] ?? gamme_imposee.value) : 'Toutes les fiches' }}</h1>
+            <p class="page-description">
+                {{ vue.total }} fiche{{ vue.total == 1 ? '' : 's' }} dans le filtre courant ·
+                {{ vue.totalReferentiel }} au total dans le référentiel.
+            </p>
+        </div>
+        <a class="btn" href="{{ path('app_mdm_creation_fiche') }}">Nouvelle fiche</a>
+    </header>
+
+    <div class="admin-grid">
+        <aside>
+            <section class="card">
+                <h2>Filtres {% if filtres.actifs > 0 %}<span class="badge badge-info">{{ filtres.actifs }} actif{{ filtres.actifs == 1 ? '' : 's' }}</span>{% endif %}</h2>
+                {{ form_start(form_filtres) }}
+                    {{ form_row(form_filtres.q) }}
+                    {% for groupe in ['gammes', 'statuts', 'completudes', 'canaux', 'pays', 'dates'] %}
+                        {% set champ = attribute(form_filtres, groupe) %}
+                        <fieldset>
+                            <legend>{{ champ.vars.label }}</legend>
+                            {% for case in champ %}
+                                <div>
+                                    {{ form_widget(case) }}
+                                    <label for="{{ case.vars.id }}">
+                                        {{ case.vars.label }}
+                                        <small>({{ vue.comptes[groupe][case.vars.value] ?? 0 }})</small>
+                                    </label>
+                                </div>
+                            {% endfor %}
+                        </fieldset>
+                    {% endfor %}
+                    {% if form_filtres.contributeurs.children is not empty %}
+                        <fieldset>
+                            <legend>Contributeur <a class="text-link" href="{{ url_mes_fiches }}">Mes fiches</a></legend>
+                            {% for case in form_filtres.contributeurs %}
+                                <div>
+                                    {{ form_widget(case) }}
+                                    <label for="{{ case.vars.id }}">
+                                        {{ case.vars.label }}
+                                        <small>({{ vue.comptes.contributeurs[case.vars.value] ?? 0 }})</small>
+                                    </label>
+                                </div>
+                            {% endfor %}
+                        </fieldset>
+                    {% else %}
+                        {% do form_filtres.contributeurs.setRendered %}
+                    {% endif %}
+                    <fieldset>
+                        <legend>Files de travail</legend>
+                        <div>
+                            {{ form_widget(form_filtres.ia) }}
+                            <label for="{{ form_filtres.ia.vars.id }}">
+                                Valeurs IA à arbitrer <small>({{ vue.comptes.ia['1'] ?? 0 }})</small>
+                            </label>
+                        </div>
+                        <div>
+                            {{ form_widget(form_filtres.repli) }}
+                            <label for="{{ form_filtres.repli.vars.id }}">
+                                Contact de repli <small>({{ vue.comptes.repli['1'] ?? 0 }})</small>
+                            </label>
+                        </div>
+                    </fieldset>
+                    <fieldset>
+                        <legend>Attributs</legend>
+                        <div>
+                            {{ form_widget(form_filtres.premium) }}
+                            <label for="{{ form_filtres.premium.vars.id }}">
+                                Adhérent Business Premium <small>({{ vue.comptes.premium['1'] ?? 0 }})</small>
+                            </label>
+                        </div>
+                    </fieldset>
+                    {% if form_filtres.valeurs.children is not empty %}
+                        <fieldset>
+                            <legend>Catégorie et thématiques</legend>
+                            {% for case in form_filtres.valeurs %}
+                                <div>
+                                    {{ form_widget(case) }}
+                                    <label for="{{ case.vars.id }}">
+                                        {{ case.vars.label }}
+                                        <small>({{ vue.comptes.valeurs[case.vars.value] ?? 0 }})</small>
+                                    </label>
+                                </div>
+                            {% endfor %}
+                        </fieldset>
+                    {% else %}
+                        {% do form_filtres.valeurs.setRendered %}
+                    {% endif %}
+                    {{ form_row(form_filtres.filtrer) }}
+                {{ form_end(form_filtres) }}
+                {% if filtres.actifs > 0 %}
+                    <a class="text-link" href="{{ path('app_mdm_referentiel_general') }}">Effacer les filtres</a>
+                {% endif %}
+            </section>
+
+            <section class="card">
+                <h2>Vues enregistrées</h2>
+                {% if vues_enregistrees is not empty %}
+                    <ul>
+                        {% for entree in vues_enregistrees %}
+                            <li>
+                                <a class="text-link" href="{{ entree.url }}">{{ entree.vue.name }}</a>
+                                <small>{{ entree.vue.shared ? 'Partagée · ' ~ entree.vue.ownerLabel : 'Personnelle' }}</small>
+                                {% if entree.suppression %}{{ form(entree.suppression) }}{% endif %}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="page-description">Aucune vue enregistrée.</p>
+                {% endif %}
+                {{ form(form_vue) }}
+            </section>
+        </aside>
+
+        <section>
+            {{ form_start(form_selection) }}
+                <div class="toolbar">
+                    {{ form_widget(form_selection.action) }}
+                    {{ form_widget(form_selection.contributeur) }}
+                    {{ form_widget(form_selection.appliquer, {attr: {class: 'btn btn-small'}}) }}
+                    <span>
+                        {{ form_widget(form_selection.tout) }}
+                        <label for="{{ form_selection.tout.vars.id }}">Appliquer à tout le résultat filtré ({{ vue.total }})</label>
+                    </span>
+                </div>
+                {% set cases = form_selection.ids.children %}
+                <div class="table-shell"><div class="table-scroll"><table class="data-table">
+                    <thead><tr>
+                        <th></th><th></th><th>Code</th><th>Nom</th><th>Ville</th><th>Gamme</th>
+                        <th>Statut</th><th>Complétude</th><th>Canaux</th><th>Contributeur</th><th>Modification</th><th>Actions</th>
+                    </tr></thead>
+                    <tbody>
+                    {% for ligne in vue.lignes %}
+                        <tr>
+                            <td>{% if cases[loop.index0] is defined %}{{ form_widget(cases[loop.index0], {label: false}) }}{% endif %}</td>
+                            <td>
+                                {% if ligne.vignette %}
+                                    <img src="{{ ligne.vignette }}" alt="" width="48" height="32" loading="lazy">
+                                {% else %}
+                                    <span class="badge badge-neutral">—</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ ligne.code }}</td>
+                            <td>
+                                {{ ligne.label ?? 'Sans libellé' }}
+                                {% if ligne.marqueIa %}<span class="badge badge-info" title="Valeurs suggérées par l'IA en attente d'arbitrage">IA</span>{% endif %}
+                            </td>
+                            <td>{{ ligne.ville ?? '—' }}</td>
+                            <td><span class="badge badge-neutral">{{ gamme_libelles[ligne.type.value] ?? ligne.type.value }}</span></td>
+                            <td><span class="badge {{ ligne.status.value == 'publiee' ? 'badge-success' : (ligne.status.value == 'archivee' ? 'badge-neutral' : 'badge-info') }}">{{ statut_libelles[ligne.status.value] ?? ligne.status.value }}</span></td>
+                            <td>{{ ligne.completeness is null ? '—' : ligne.completeness ~ ' %' }}</td>
+                            <td>{{ ligne.canaux }}</td>
+                            <td>{{ ligne.contributeur ?? '—' }}</td>
+                            <td>
+                                <time datetime="{{ ligne.updatedAt|date('c') }}">{{ ligne.updatedAt|date('d/m/Y H:i') }}</time>
+                                {% if ligne.auteur %}<br><small>{{ ligne.auteur }}</small>{% endif %}
+                            </td>
+                            <td><div class="table-actions">
+                                {% if urls[ligne.id].voir %}<a class="text-link" href="{{ urls[ligne.id].voir }}">Voir</a>{% endif %}
+                                {% if urls[ligne.id].editeur %}<a class="text-link" href="{{ urls[ligne.id].editeur }}">Fiche</a>{% endif %}
+                                <a class="text-link" href="{{ urls[ligne.id].edition_rapide }}">Édition rapide</a>
+                                {% if urls[ligne.id].modifier and is_granted('ROLE_BP_EDITOR') %}<a class="text-link" href="{{ urls[ligne.id].modifier }}">Modifier</a>{% endif %}
+                            </div></td>
+                        </tr>
+                    {% else %}
+                        <tr><td class="empty-state" colspan="12">
+                            {% if filtres.actifs > 0 %}
+                                Aucune fiche ne correspond à ces filtres — le référentiel en compte {{ vue.totalReferentiel }}. Retirez un filtre.
+                            {% else %}
+                                Le référentiel est vide.
+                            {% endif %}
+                        </td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table></div></div>
+            {{ form_end(form_selection) }}
+
+            <nav class="pagination" aria-label="Pagination">
+                {% if app.request.query.has('cursor') %}
+                    <a class="btn btn-secondary btn-small" href="{{ path(app.request.attributes.get('_route'), app.request.attributes.get('_route_params')|merge(parametres_filtre)) }}">Retour au début</a>
+                {% endif %}
+                {% if vue.nextCursor %}
+                    <a class="btn btn-secondary btn-small" href="{{ path(app.request.attributes.get('_route'), app.request.attributes.get('_route_params')|merge(parametres_filtre)|merge({cursor: vue.nextCursor})) }}">Page suivante</a>
+                {% endif %}
+            </nav>
+        </section>
+    </div>
+</main>
+{% endblock %}

@@ -73,6 +73,7 @@ final class InternalFicheMutationPolicyTest extends TestCase
     {
         yield 'en cours' => ['draft'];
         yield 'en attente de validation' => ['pending'];
+        yield 'validée' => ['validated'];
         yield 'publiée' => ['published'];
         yield 'archivée' => ['archived'];
     }
@@ -101,7 +102,12 @@ final class InternalFicheMutationPolicyTest extends TestCase
             return $fiche;
         }
 
-        $fiche->validateAndPublish('validator');
+        $fiche->validate('validator');
+        if ('validated' === $state) {
+            return $fiche;
+        }
+
+        $fiche->publish();
         if ('published' === $state) {
             return $fiche;
         }

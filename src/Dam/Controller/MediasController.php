@@ -1,0 +1,114 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Dam\Controller;
+
+use App\Dam\Message\ScanDamAnomalies;
+use App\Dam\Repository\MediaAssetRepository;
+use App\Dam\Service\DamDashboardProvider;
+use App\Dam\Service\ImageVariantRegistry;
+use App\Shared\Form\ActionType;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\RedirectResponse;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Messenger\MessageBusInterface;
+use Symfony\Component\Routing\Attribute\Route;
+
+/**
+ * Écran « Médias » de la maquette : le DAM en onglets. Les onglets adossés à
+ * des données réutilisent le contenu de la supervision DAM existante (même
+ * provider, mêmes actions) ; les onglets sans mécanisme back (reconnaissance
+ * IA, retouche) disent honnêtement ce qui existe.
+ */
+final class MediasController extends AbstractController
+{
+    public const ONGLETS = [
+        'biblio' => 'Bibliothèque',
+        'import' => 'Import & retouche',
+        'ia' => 'Reconnaissance IA',
+        'meta' => 'Métadonnées & types',
+        'formats' => 'Formats & CDN',
+        'droits' => 'Droits & consentement',
+        'doublons' => 'Doublons',
+        'sync' => 'Synchronisation PIM',
+    ];
+
+    /** Filtre du provider affiché par défaut quand on ouvre l'onglet. */
+    private const FILTRE_PAR_DEFAUT = [
+        'biblio' => DamDashboardProvider::FILTER_IMAGES,
+        'droits' => DamDashboardProvider::FILTER_RIGHTS_MISSING,
+        'doublons' => DamDashboardProvider::FILTER_DUPLICATES,
+        'sync' => DamDashboardProvider::FILTER_ORPHANS,
+    ];
+
+    /** Onglet auquel appartient chaque filtre du provider (navigation interne). */
+    private const ONGLET_PAR_FILTRE = [
+        DamDashboardProvider::FILTER_IMAGES => 'biblio',
+        DamDashboardProvider::FILTER_DOCUMENTS => 'biblio',
+        DamDashboardProvider::FILTER_RIGHTS_MISSING => 'droits',
+        DamDashboardProvider::FILTER_RIGHTS_EXPIRING => 'droits',
+        DamDashboardProvider::FILTER_RIGHTS_EXPIRED => 'droits',
+        DamDashboardProvider::FILTER_PUBLISHED_RIGHTS => 'droits',
+        DamDashboardProvider::FILTER_PUBLISHED_NO_PHOTO => 'droits',
+        DamDashboardProvider::FILTER_DUPLICATES => 'doublons',
+        DamDashboardProvider::FILTER_ORPHANS => 'sync',
+        DamDashboardProvider::FILTER_MISSING_RENDITIONS => 'sync',
+        DamDashboardProvider::FILTER_FAILED => 'sync',
+    ];
+
+    #[Route('/medias', name: 'app_mdm_medias', methods: ['GET'])]
+    public function __invoke(
+        Request $request,
+        DamDashboardProvider $provider,
+        MediaAssetRepository $assets,
+    ): Response {
+        $filtre = $request->query->getString('filter');
+        $onglet = $request->query->getString('onglet');
+        if ('' !== $filtre && isset(self::ONGLET_PAR_FILTRE[$filtre])) {
+            // Un clic sur une carte ou une pagination du contenu réutilisé
+            // porte le filtre : l'onglet actif s'en déduit.
+            $onglet = self::ONGLET_PAR_FILTRE[$filtre];
+        }
+        if (!array_key_exists($onglet, self::ONGLETS)) {
+            $onglet = 'biblio';
+        }
+        $vue = null;
+        if (isset(self::FILTRE_PAR_DEFAUT[$onglet])) {
+            $vue = $provider->page(
+                '' !== $filtre ? $filtre : self::FILTRE_PAR_DEFAUT[$onglet],
+                $request->query->getString('type') ?: null,
+                $request->query->getInt('page', 1),
+            );
+        }
+
+        return $this->render('dam/medias.html.twig', [
+            'onglets' => self::ONGLETS,
+            'onglet_actif' => $onglet,
+            'vue' => $vue,
+            'formats' => 'formats' === $onglet ? $assets->renditionStats() : [],
+            'variantes' => ImageVariantRegistry::all(),
+            'scan_form' => 'sync' === $onglet
+                ? $this->createForm(ActionType::class, null, [
+                    'action' => $this->generateUrl('app_mdm_medias_scanner'),
+                    'button_label' => 'Relancer le scan des anomalies',
+                    'csrf_token_id' => 'medias-scan',
+                ])->createView()
+                : null,
+        ] + ($vue ?? []));
+    }
+
+    #[Route('/medias/scanner', name: 'app_mdm_medias_scanner', methods: ['POST'])]
+    public function scanner(Request $request, MessageBusInterface $bus): RedirectResponse
+    {
+        $form = $this->createForm(ActionType::class, null, ['csrf_token_id' => 'medias-scan']);
+        $form->handleRequest($request);
+        if ($form->isSubmitted() && $form->isValid()) {
+            $bus->dispatch(new ScanDamAnomalies());
+            $this->addFlash('success', 'Scan des anomalies planifié.');
+        }
+
+        return $this->redirectToRoute('app_mdm_medias', ['onglet' => 'sync']);
+    }
+}

@@ -52,14 +52,14 @@ final class InternalUserSecurityIntegrationTest extends WebTestCase
         $client->submit($crawler->selectButton('Recevoir un lien')->form([
             'forgot_password[email]' => $email,
         ]));
-        self::assertResponseRedirects('/login');
+        self::assertResponseRedirects('/connexion');
         self::assertSame(1, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM account_password_reset_request'));
 
         $crawler = $client->request('GET', '/mot-de-passe-oublie');
         $client->submit($crawler->selectButton('Recevoir un lien')->form([
             'forgot_password[email]' => 'unknown-'.$testId.'@example.com',
         ]));
-        self::assertResponseRedirects('/login');
+        self::assertResponseRedirects('/connexion');
         self::assertSame(1, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM account_password_reset_request'));
 
         $this->entityManager->clear();
@@ -74,7 +74,7 @@ final class InternalUserSecurityIntegrationTest extends WebTestCase
             'new_password[password][first]' => $plainPassword,
             'new_password[password][second]' => $plainPassword,
         ]));
-        self::assertResponseRedirects('/login');
+        self::assertResponseRedirects('/connexion');
 
         $this->entityManager->clear();
         $reset = self::getContainer()->get(PasswordResetRequestRepository::class)->find($reset->id());
@@ -115,7 +115,7 @@ final class InternalUserSecurityIntegrationTest extends WebTestCase
         $manager->reset($manager->request($user), 'New-secure-password-2026!');
 
         $client->request('GET', '/');
-        self::assertResponseRedirects('/login');
+        self::assertResponseRedirects('/connexion');
     }
 
     public function testSuperAdminCanResendInvitationAndAnonymizeInternalUser(): void

@@ -1,0 +1,240 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Pim\Controller;
+
+use App\Account\Service\CurrentActorProvider;
+use App\Pim\Entity\SavedView;
+use App\Pim\Enum\TypeFiche;
+use App\Pim\Form\ReferentielFiltres;
+use App\Pim\Form\SavedViewType;
+use App\Pim\ReadModel\FicheCursor;
+use App\Pim\ReadModel\ReferentielLigne;
+use App\Pim\Repository\SavedViewRepository;
+use App\Pim\Service\ReferentielActionGroupee;
+use App\Pim\Service\ReferentielEcran;
+use App\Pim\Service\ReferentielListeProvider;
+use App\Pim\Service\SavedViewManager;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\Routing\Attribute\Route;
+
+/**
+ * Liste du référentiel aux emplacements de la maquette front : facettes,
+ * vues enregistrées et actions groupées sur données réelles. Le gabarit est
+ * volontairement sobre — le style viendra du front.
+ */
+#[Route('/referentiel', name: 'app_mdm_')]
+final class ReferentielController extends AbstractController
+{
+    private const PAR_PAGE = 14;
+
+    #[Route('', name: 'referentiel_general', methods: ['GET'])]
+    public function general(Request $request, CurrentActorProvider $actor, ReferentielEcran $ecran): Response
+    {
+        $filtres = ReferentielFiltres::fromArray($request->query->all('f'));
+        try {
+            $cursor = FicheCursor::decode($request->query->getString('cursor') ?: null);
+        } catch (\InvalidArgumentException) {
+            throw $this->createNotFoundException('Curseur de pagination invalide.');
+        }
+
+        return $this->render(
+            'mdm/referentiel.html.twig',
+            $ecran->variables($filtres, $cursor, null, $actor->id(), self::PAR_PAGE),
+        );
+    }
+
+    #[Route('/lieux', name: 'lieux', methods: ['GET'])]
+    public function lieux(Request $request, CurrentActorProvider $actor, ReferentielEcran $ecran): Response
+    {
+        $filtres = ReferentielFiltres::fromArray($request->query->all('f'));
+        $filtres->gammes = [TypeFiche::Lieu];
+        try {
+            $cursor = FicheCursor::decode($request->query->getString('cursor') ?: null);
+        } catch (\InvalidArgumentException) {
+            throw $this->createNotFoundException('Curseur de pagination invalide.');
+        }
+
+        return $this->render(
+            'mdm/referentiel.html.twig',
+            $ecran->variables($filtres, $cursor, TypeFiche::Lieu, $actor->id(), self::PAR_PAGE),
+        );
+    }
+
+    /** Les autres gammes de cette version : mêmes listes filtrées que les lieux. */
+    #[Route('/{gamme}', name: 'referentiel_gamme', requirements: ['gamme' => 'restaurants|activites|services'], methods: ['GET'])]
+    public function gamme(Request $request, string $gamme, CurrentActorProvider $actor, ReferentielEcran $ecran): Response
+    {
+        $type = match ($gamme) {
+            'restaurants' => TypeFiche::Restaurant,
+            'activites' => TypeFiche::Activite,
+            default => TypeFiche::ServiceEvenementiel,
+        };
+        $filtres = ReferentielFiltres::fromArray($request->query->all('f'));
+        $filtres->gammes = [$type];
+        try {
+            $cursor = FicheCursor::decode($request->query->getString('cursor') ?: null);
+        } catch (\InvalidArgumentException) {
+            throw $this->createNotFoundException('Curseur de pagination invalide.');
+        }
+
+        return $this->render(
+            'mdm/referentiel.html.twig',
+            $ecran->variables($filtres, $cursor, $type, $actor->id(), self::PAR_PAGE),
+        );
+    }
+
+    #[Route('/actions', name: 'referentiel_actions', methods: ['POST'])]
+    public function actions(
+        Request $request,
+        CurrentActorProvider $actor,
+        ReferentielEcran $ecran,
+        ReferentielListeProvider $provider,
+        ReferentielActionGroupee $actionneur,
+    ): Response {
+        $filtres = ReferentielFiltres::fromArray($request->query->all('f'));
+        $retour = $this->redirectToRoute('app_mdm_referentiel_general', ['f' => $request->query->all('f')]);
+        $form = $ecran->formSelectionSoumise($request->request->all('selection'));
+        $form->handleRequest($request);
+        if (!$form->isSubmitted() || !$form->isValid()) {
+            $this->addFlash('warning', 'Sélection invalide, aucune action appliquée.');
+
+            return $retour;
+        }
+        /** @var array{ids: list<string>, tout: bool, action: ?string, contributeur: ?\App\Account\Entity\User} $data */
+        $data = $form->getData();
+        $action = (string) $data['action'];
+        $plafond = ReferentielActionGroupee::plafond($action);
+        $ids = $data['tout']
+            ? $provider->idsPourFiltre($filtres, $plafond + 1)
+            : $data['ids'];
+        if ([] === $ids) {
+            $this->addFlash('warning', 'Aucune fiche sélectionnée.');
+
+            return $retour;
+        }
+        if ('exporter' === $action) {
+            $lignes = $provider->exportLignes($filtres, $plafond);
+            if (!$data['tout']) {
+                $retenus = array_fill_keys($ids, true);
+                $lignes = array_values(array_filter(
+                    $lignes,
+                    static fn (ReferentielLigne $ligne): bool => isset($retenus[$ligne->id]),
+                ));
+            }
+
+            return self::reponseCsv($lignes);
+        }
+        if (count($ids) > $plafond) {
+            $this->addFlash('warning', sprintf(
+                'L\'action « %s » est plafonnée à %d fiches ; la sélection en compte davantage. Réduisez le filtre.',
+                $action,
+                $plafond,
+            ));
+
+            return $retour;
+        }
+        try {
+            $resultat = $actionneur->appliquer($action, $ids, $actor->id(), $data['contributeur'] ?? null);
+        } catch (\DomainException $exception) {
+            $this->addFlash('warning', $exception->getMessage());
+
+            return $retour;
+        }
+        $this->addFlash('success', sprintf(
+            'Action « %s » : %d élément(s) traité(s), %d ignoré(s) (état, droits ou doublon).',
+            $action,
+            $resultat['appliquees'],
+            $resultat['ignorees'],
+        ));
+
+        return $retour;
+    }
+
+    #[Route('/vues', name: 'referentiel_vue_enregistrer', methods: ['POST'])]
+    public function enregistrerVue(
+        Request $request,
+        CurrentActorProvider $actor,
+        SavedViewManager $manager,
+    ): Response {
+        $filtres = ReferentielFiltres::fromArray($request->query->all('f'));
+        $form = $this->createForm(SavedViewType::class);
+        $form->handleRequest($request);
+        if ($form->isSubmitted() && $form->isValid()) {
+            /** @var array{name: string, shared: bool} $data */
+            $data = $form->getData();
+            $manager->enregistrer(
+                $data['name'],
+                $actor->id(),
+                $this->getUser()?->getUserIdentifier() ?? $actor->id(),
+                $filtres->toArray(),
+                $data['shared'],
+            );
+            $this->addFlash('success', sprintf('Vue « %s » enregistrée.', $data['name']));
+        } else {
+            $this->addFlash('warning', 'La vue n\'a pas pu être enregistrée : nom manquant.');
+        }
+
+        return $this->redirectToRoute('app_mdm_referentiel_general', ['f' => $request->query->all('f')]);
+    }
+
+    #[Route('/vues/{id}/supprimer', name: 'referentiel_vue_supprimer', requirements: ['id' => '\d+'], methods: ['POST'])]
+    public function supprimerVue(
+        Request $request,
+        int $id,
+        CurrentActorProvider $actor,
+        SavedViewRepository $vues,
+        SavedViewManager $manager,
+        ReferentielEcran $ecran,
+    ): Response {
+        $vue = $vues->find($id);
+        if (!$vue instanceof SavedView) {
+            throw $this->createNotFoundException('Vue introuvable.');
+        }
+        if (!$vue->belongsTo($actor->id())) {
+            throw $this->createAccessDeniedException('Seul l\'auteur d\'une vue peut la supprimer.');
+        }
+        $form = $ecran->formSuppressionVue($vue);
+        $form->handleRequest($request);
+        if ($form->isSubmitted() && $form->isValid()) {
+            $manager->supprimer($vue);
+            $this->addFlash('success', sprintf('Vue « %s » supprimée.', $vue->name()));
+        }
+
+        return $this->redirectToRoute('app_mdm_referentiel_general');
+    }
+
+    /** @param list<ReferentielLigne> $lignes */
+    private static function reponseCsv(array $lignes): StreamedResponse
+    {
+        $response = new StreamedResponse(static function () use ($lignes): void {
+            $sortie = fopen('php://output', 'w');
+            if (false === $sortie) {
+                return;
+            }
+            fputcsv($sortie, ['code', 'gamme', 'nom', 'ville', 'statut', 'completude', 'canaux', 'modifiee_le', 'auteur'], ';');
+            foreach ($lignes as $ligne) {
+                fputcsv($sortie, [
+                    $ligne->code,
+                    $ligne->type->value,
+                    $ligne->label ?? '',
+                    $ligne->ville ?? '',
+                    $ligne->status->value,
+                    $ligne->completeness ?? '',
+                    $ligne->canaux,
+                    $ligne->updatedAt->format('Y-m-d H:i:s'),
+                    $ligne->auteur ?? '',
+                ], ';');
+            }
+            fclose($sortie);
+        });
+        $response->headers->set('Content-Type', 'text/csv; charset=utf-8');
+        $response->headers->set('Content-Disposition', 'attachment; filename="referentiel.csv"');
+
+        return $response;
+    }
+}

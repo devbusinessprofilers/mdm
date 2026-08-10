@@ -14,6 +14,7 @@ use App\Pim\Validation\ValidationGroups;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\CollectionType;
 use Symfony\Component\Form\Extension\Core\Type\FileType;
@@ -40,6 +41,12 @@ final class ServiceEvenementielType extends AbstractType
                 TextType::class,
                 $this->field("Nom du prestataire", "label", "changeLabel"),
             )
+            ->add("businessPremium", CheckboxType::class, [
+                "label" => "Adhérent Business Premium",
+                "required" => false,
+                "getter" => static fn (ServiceEvenementiel $service): bool => $service->fiche()->businessPremium(),
+                "setter" => static function (ServiceEvenementiel &$service, mixed $value): void { $service->fiche()->changeBusinessPremium((bool) $value); },
+            ])
             ->add(
                 "prestations",
                 ChoiceType::class,

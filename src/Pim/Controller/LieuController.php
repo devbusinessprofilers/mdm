@@ -11,7 +11,6 @@ use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Enum\StatutFiche;
 use App\Pim\Enum\TypeFiche;
 use App\Pim\Form\FicheActionFormFactory;
-use App\Pim\Form\LieuSearchType;
 use App\Pim\Form\LieuType;
 use App\Pim\ReadModel\FicheCursor;
 use App\Pim\Repository\LieuRepository;
@@ -33,166 +32,6 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/admin/lieux', name: 'app_pim_lieu_')]
 final class LieuController extends AbstractController
 {
-    #[Route('', name: 'index', methods: ['GET'])]
-    public function index(
-        Request $request,
-        LieuRepository $repository,
-        SearchEngineInterface $searchEngine,
-        FicheCountProvider $counts,
-    ): Response {
-        $searchForm = $this->createForm(
-            LieuSearchType::class,
-            [
-                'q' => $request->query->getString('q'),
-                'status' => StatutFiche::tryFrom(
-                    $request->query->getString('status'),
-                ),
-                'limit' => max(
-                    1,
-                    min(100, $request->query->getInt('limit', 50)),
-                ),
-            ],
-            ['action' => $this->generateUrl('app_pim_lieu_index')],
-        );
-        $searchForm->handleRequest($request);
-        if ($searchForm->isSubmitted() && !$searchForm->isValid()) {
-            throw new BadRequestHttpException('Critères de recherche invalides.');
-        }
-        /** @var array{q?: string|null, status?: StatutFiche|null, limit?: int|null} $criteria */
-        $criteria = $searchForm->getData();
-        $status = $criteria['status'] ?? null;
-        $text = trim((string) ($criteria['q'] ?? ''));
-        $cursorValue = $request->query->getString('cursor') ?: null;
-        $limit = max(1, min(100, (int) ($criteria['limit'] ?? 50)));
-        try {
-            if ('' !== $text) {
-                $filters = ['type' => TypeFiche::Lieu->value];
-                if (null !== $status) {
-                    $filters['status'] = $status->value;
-                }
-                $page = $searchEngine->search(
-                    new SearchQuery($text, $filters, $limit, $cursorValue),
-                );
-                $lieux = $repository->findListItemsByIds(
-                    array_map(
-                        static fn ($result): string => $result->id,
-                        $page->results,
-                    ),
-                );
-                $resultCount = $page->totalCount;
-            } else {
-                $page = $repository->findListPage(
-                    FicheCursor::decode($cursorValue),
-                    $limit,
-                    $status,
-                );
-                $lieux = $page->items;
-                $resultCount = null;
-            }
-        } catch (\InvalidArgumentException $exception) {
-            throw new BadRequestHttpException($exception->getMessage(), $exception);
-        }
-
-        return $this->render('pim/lieu/index.html.twig', [
-            'lieux' => $lieux,
-            'next_cursor' => $page->nextCursor,
-            'status' => $status,
-            'query' => $text,
-            'result_count' => $resultCount,
-            'search_form' => $searchForm->createView(),
-            'total_count' => $counts->totalByType(TypeFiche::Lieu),
-            'pending_count' => $counts->countByStatus(
-                TypeFiche::Lieu,
-                StatutFiche::EnAttenteValidation,
-            ),
-        ]);
-    }
-
-    #[Route('/nouveau', name: 'new', methods: ['GET'])]
-    public function new(): Response
-    {
-        // La création passe désormais par le formulaire unique de création de fiche.
-        return $this->redirectToRoute('app_pim_fiche_new');
-    }
-
-    #[
-        Route(
-            '/{id}',
-            name: 'show',
-            requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
-            methods: ['GET'],
-        ),
-    ]
-    public function show(
-        string $id,
-        LieuRepository $repository,
-        LieuPhotoPresenter $photos,
-        FicheActionFormFactory $forms,
-    ): Response
-    {
-        $lieu = $repository->find($id);
-        if (!$lieu instanceof Lieu) { $this->addFlash('warning', 'Ce lieu n’existe plus ou vient d’être supprimé.'); return $this->redirectToRoute('app_pim_lieu_index'); }
-        $this->denyAccessUnlessGranted(FicheVoter::VIEW, $lieu->fiche());
-
-        return $this->render('pim/lieu/show.html.twig', [
-            'lieu' => $lieu,
-            'photos' => $photos->photos($lieu),
-            'delete_form' => $forms->action('lieu', $lieu->id(), 'delete', 'Supprimer', true)->createView(),
-            'submit_form' => $forms->action('lieu', $lieu->id(), 'submit', 'Soumettre à validation')->createView(),
-            'validate_form' => $forms->action('lieu', $lieu->id(), 'validate', 'Valider et publier')->createView(),
-            'archive_form' => $forms->action('lieu', $lieu->id(), 'archive', 'Archiver')->createView(),
-            'reject_form' => $forms->reject('lieu', $lieu->id())->createView(),
-        ]);
-    }
-
-    #[
-        Route(
-            '/{id}/modifier',
-            name: 'edit',
-            requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
-            methods: ['GET', 'POST'],
-        ),
-    ]
-    public function edit(
-        Request $request,
-        string $id,
-        LieuRepository $repository,
-        LieuAdminManager $manager,
-        LieuAdminViewBuilder $view,
-        InternalFicheMutationPolicy $mutationPolicy,
-    ): Response {
-        $lieu = $repository->find($id);
-        if (!$lieu instanceof Lieu) { $this->addFlash('warning', 'Ce lieu n’existe plus ou vient d’être supprimé.'); return $this->redirectToRoute('app_pim_lieu_index'); }
-        $this->denyAccessUnlessGranted(FicheVoter::EDIT, $lieu->fiche());
-        $existing = $manager->photoAssetIds($lieu);
-        $form = $this->createForm(LieuType::class, $lieu);
-        $response = $mutationPolicy->execute(
-            $lieu->fiche(),
-            function () use ($request, $form, $manager, $lieu, $existing): ?Response {
-                $form->handleRequest($request);
-                if ($form->isSubmitted() && $form->isValid()) {
-                    try {
-                        $manager->save($lieu, $form, $existing);
-                        $this->addFlash('success', 'Lieu modifié.');
-
-                        return $this->redirectToRoute('app_pim_lieu_show', ['id' => $lieu->id()]);
-                    } catch (\DomainException $exception) {
-                        $form->get('ressources')->addError(new FormError($exception->getMessage()));
-                    } catch (FilesystemException) {
-                        $form->get('ressources')->addError(new FormError('Le stockage des médias est temporairement indisponible. Aucun fichier n’a été enregistré.'));
-                    }
-                }
-
-                return null;
-            }
-        );
-        if ($response instanceof Response) {
-            return $response;
-        }
-
-        return $this->render('pim/lieu/form.html.twig', $view->form($form, $lieu, false));
-    }
-
     #[
         Route(
             '/{id}/supprimer',
@@ -209,7 +48,7 @@ final class LieuController extends AbstractController
         LieuAdminManager $manager,
     ): Response {
         $lieu = $repository->find($id);
-        if (!$lieu instanceof Lieu) { $this->addFlash('warning', 'Ce lieu n’existe plus ou vient d’être supprimé.'); return $this->redirectToRoute('app_pim_lieu_index'); }
+        if (!$lieu instanceof Lieu) { $this->addFlash('warning', 'Ce lieu n’existe plus ou vient d’être supprimé.'); return $this->redirectToRoute('app_mdm_lieux'); }
         $this->denyAccessUnlessGranted(FicheVoter::DELETE, $lieu->fiche());
 
         $form = $forms->action('lieu', $lieu->id(), 'delete', 'Supprimer', true);
@@ -219,7 +58,7 @@ final class LieuController extends AbstractController
             $this->addFlash('success', 'Lieu supprimé.');
         }
 
-        return $this->redirectToRoute('app_pim_lieu_index');
+        return $this->redirectToRoute('app_mdm_lieux');
     }
 
     #[
@@ -255,16 +94,12 @@ final class LieuController extends AbstractController
                     );
                 }
 
-                return $this->redirectToRoute('app_pim_lieu_edit', [
-                    'id' => $lieu->id(),
-                ]);
+                return $this->redirectToRoute('app_mdm_fiche_lieu', ['id' => $lieu->id()]);
             }
             $this->addFlash('success', 'Fiche soumise à validation.');
         }
 
-        return $this->redirectToRoute('app_pim_lieu_show', [
-            'id' => $lieu->id(),
-        ]);
+        return $this->redirectToRoute('app_mdm_fiche_lieu', ['id' => $lieu->id()]);
     }
 
 
@@ -287,16 +122,42 @@ final class LieuController extends AbstractController
         $lieu = $repository->find($id);
         if (!$lieu instanceof Lieu) { throw $this->createNotFoundException('Lieu introuvable.'); }
         $this->denyAccessUnlessGranted(FicheVoter::VALIDATE, $lieu->fiche());
-        $form = $forms->action('lieu', $lieu->id(), 'validate', 'Valider et publier');
+        $form = $forms->action('lieu', $lieu->id(), 'validate', 'Valider');
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
             $workflow->validate($lieu->fiche(), $actor->id());
-            $this->addFlash('success', 'Fiche validée et publiée.');
+            $this->addFlash('success', 'Fiche validée.');
         }
 
-        return $this->redirectToRoute('app_pim_lieu_show', [
-            'id' => $lieu->id(),
-        ]);
+        return $this->redirectToRoute('app_mdm_fiche_lieu', ['id' => $lieu->id()]);
+    }
+
+    #[
+        Route(
+            '/{id}/publier',
+            name: 'publish',
+            requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
+            methods: ['POST'],
+        ),
+    ]
+    public function publishLieu(
+        Request $request,
+        string $id,
+        LieuRepository $repository,
+        FicheActionFormFactory $forms,
+        FicheWorkflowManager $workflow,
+    ): Response {
+        $lieu = $repository->find($id);
+        if (!$lieu instanceof Lieu) { throw $this->createNotFoundException('Lieu introuvable.'); }
+        $this->denyAccessUnlessGranted(FicheVoter::PUBLISH, $lieu->fiche());
+        $form = $forms->action('lieu', $lieu->id(), 'publish', 'Publier');
+        $form->handleRequest($request);
+        if ($form->isSubmitted() && $form->isValid()) {
+            $workflow->publish($lieu->fiche());
+            $this->addFlash('success', 'Fiche publiée.');
+        }
+
+        return $this->redirectToRoute('app_mdm_fiche_lieu', ['id' => $lieu->id()]);
     }
 
     #[
@@ -327,9 +188,7 @@ final class LieuController extends AbstractController
             $this->addFlash('success', 'Fiche refusée et renvoyée en cours.');
         }
 
-        return $this->redirectToRoute('app_pim_lieu_show', [
-            'id' => $lieu->id(),
-        ]);
+        return $this->redirectToRoute('app_mdm_fiche_lieu', ['id' => $lieu->id()]);
     }
 
     #[
@@ -358,8 +217,6 @@ final class LieuController extends AbstractController
             $this->addFlash('success', 'Fiche archivée.');
         }
 
-        return $this->redirectToRoute('app_pim_lieu_show', [
-            'id' => $lieu->id(),
-        ]);
+        return $this->redirectToRoute('app_mdm_fiche_lieu', ['id' => $lieu->id()]);
     }
 }

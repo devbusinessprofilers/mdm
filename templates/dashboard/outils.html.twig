@@ -1,0 +1,59 @@
+{% extends 'mdm/base.html.twig' %}
+
+{# Écran « Outils » : journal unifié des traitements. Gabarit sobre, le style
+   viendra du front. Les relances se font sur les écrans de détail existants. #}
+
+{% block title %}Outils · Journal des traitements{% endblock %}
+
+{% set famille_libelles = familles %}
+{% set statuts_erreur = ['echoue', 'termine_avec_erreurs', 'failed', 'en_erreur'] %}
+
+{% block body %}
+<main class="page">
+    <header class="page-header">
+        <div class="page-header-copy">
+            <p class="page-kicker">Outils</p>
+            <h1>Journal des traitements</h1>
+            <p class="page-description">
+                Imports, extractions, traductions et médias, du plus récent au plus ancien.
+                {% if outbox_en_attente > 0 %}
+                    <span class="badge badge-warning">{{ outbox_en_attente }} message(s) en attente dans l'outbox</span>
+                {% endif %}
+            </p>
+        </div>
+        <a class="btn" href="{{ path('app_etl_import_index') }}">Importer un fichier</a>
+    </header>
+
+    <div class="toolbar">
+        <a class="btn btn-small {{ famille is null and not erreurs ? '' : 'btn-secondary' }}" href="{{ path('app_mdm_outils') }}">Tout</a>
+        {% for cle, libelle in familles %}
+            <a class="btn btn-small {{ famille == cle ? '' : 'btn-secondary' }}" href="{{ path('app_mdm_outils', {famille: cle}) }}">{{ libelle }}</a>
+        {% endfor %}
+        <a class="btn btn-small {{ erreurs ? '' : 'btn-secondary' }}" href="{{ path('app_mdm_outils', {erreurs: 1, famille: famille}) }}">En échec seulement</a>
+    </div>
+
+    <div class="table-shell"><div class="table-scroll"><table class="data-table">
+        <thead><tr><th>Quand</th><th>Famille</th><th>Sujet</th><th>Statut</th><th>Erreur</th><th></th></tr></thead>
+        <tbody>
+        {% for ligne in lignes %}
+            <tr>
+                <td><time datetime="{{ ligne.quand|date('c') }}">{{ ligne.quand|date('d/m/Y H:i') }}</time></td>
+                <td><span class="badge badge-neutral">{{ famille_libelles[ligne.famille] ?? ligne.famille }}</span></td>
+                <td>{{ ligne.sujet }}</td>
+                <td><span class="badge {{ ligne.statut in statuts_erreur ? 'badge-danger' : 'badge-info' }}">{{ ligne.statut }}</span></td>
+                <td>{{ ligne.erreur ?? '—' }}</td>
+                <td>
+                    {% if ligne.lien %}
+                        <a class="text-link" href="{{ path(ligne.lien.route, ligne.lien.params) }}">Détail</a>
+                    {% endif %}
+                </td>
+            </tr>
+        {% else %}
+            <tr><td class="empty-state" colspan="6">
+                {{ erreurs ? 'Aucun traitement en échec — tout roule.' : 'Aucun traitement enregistré.' }}
+            </td></tr>
+        {% endfor %}
+        </tbody>
+    </table></div></div>
+</main>
+{% endblock %}

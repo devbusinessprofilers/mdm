@@ -24,7 +24,8 @@ final class AdminWorkflowCatalog
                 'summary' => 'Le workflow éditorial reste piloté par les utilisateurs du PIM.',
                 'steps' => [
                     'En cours → soumission par un éditeur après validation complète de la fiche Lieu, Activité, Restaurant ou Service.',
-                    'En attente de validation → publication ou refus motivé par un validateur.',
+                    'En attente de validation → validation ou refus motivé par un validateur.',
+                    'Validée → publication par un validateur ; les traductions sont alors planifiées.',
                     'Publiée → archivage par un validateur ; les documents publics sont alors révoqués.',
                 ],
                 'rules' => [

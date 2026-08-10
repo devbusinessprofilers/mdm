@@ -51,6 +51,8 @@ security:
         - { path: ^/health$, roles: PUBLIC_ACCESS }
         # Protégé par jeton Bearer dans MetricsController (404 sans jeton valide).
         - { path: ^/metrics$, roles: PUBLIC_ACCESS }
+        - { path: ^/connexion$, roles: PUBLIC_ACCESS }
+        # Ancien chemin de connexion : simple redirection publique vers /connexion.
         - { path: ^/login$, roles: PUBLIC_ACCESS }
         - { path: ^/logout$, roles: PUBLIC_ACCESS }
         - { path: ^/invitation/, roles: PUBLIC_ACCESS }

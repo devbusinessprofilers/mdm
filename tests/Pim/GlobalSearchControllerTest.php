@@ -36,7 +36,7 @@ final class GlobalSearchControllerTest extends WebTestCase
     {
         $client = self::createClient();
         $client->request('GET', '/admin/recherche');
-        self::assertResponseRedirects('http://localhost/login');
+        self::assertResponseRedirects('http://localhost/connexion');
 
         $client->loginUser($this->persistUser('basic-search@example.test'));
         $client->request('GET', '/admin/recherche');

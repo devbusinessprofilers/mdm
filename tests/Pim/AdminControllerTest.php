@@ -13,6 +13,6 @@ final class AdminControllerTest extends WebTestCase
         $client = self::createClient();
         $client->request('GET', '/admin');
 
-        self::assertResponseRedirects('/login');
+        self::assertResponseRedirects('/connexion');
     }
 }

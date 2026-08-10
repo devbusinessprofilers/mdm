@@ -35,6 +35,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(options: ['default' => true])]
     private bool $isActive = true;
 
+    /** Mot de passe posé pour l'utilisateur (et non par lui) : à changer à la prochaine connexion. */
+    #[ORM\Column(options: ['default' => false])]
+    private bool $mustChangePassword = false;
+
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $createdAt;
 
@@ -100,6 +104,19 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setPassword(string $password): void
     {
         $this->password = $password;
+        // Un mot de passe fraîchement enregistré lève l'obligation de changement.
+        $this->mustChangePassword = false;
+        $this->touch();
+    }
+
+    public function mustChangePassword(): bool
+    {
+        return $this->mustChangePassword;
+    }
+
+    public function requirePasswordChange(): void
+    {
+        $this->mustChangePassword = true;
         $this->touch();
     }
 

@@ -10,7 +10,6 @@ use App\Pim\Entity\Activite\Activite;
 use App\Pim\Enum\StatutFiche;
 use App\Pim\Enum\TypeFiche;
 use App\Pim\Form\FicheActionFormFactory;
-use App\Pim\Form\ActiviteSearchType;
 use App\Pim\Form\ActiviteType;
 use App\Pim\ReadModel\FicheCursor;
 use App\Pim\Repository\ActiviteRepository;
@@ -31,155 +30,6 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/admin/activites', name: 'app_pim_activite_')]
 final class ActiviteController extends AbstractController
 {
-
-    #[Route('', name: 'index', methods: ['GET'])]
-    public function index(
-        Request $request,
-        ActiviteRepository $repo,
-        SearchEngineInterface $search,
-        FicheCountProvider $counts,
-    ): Response {
-        $form = $this->createForm(
-            ActiviteSearchType::class,
-            [
-                'q' => $request->query->getString('q'),
-                'status' => StatutFiche::tryFrom(
-                    $request->query->getString('status'),
-                ),
-                'limit' => max(
-                    1,
-                    min(100, $request->query->getInt('limit', 50)),
-                ),
-            ],
-            ['action' => $this->generateUrl('app_pim_activite_index')],
-        );
-        $form->handleRequest($request);
-        if ($form->isSubmitted() && !$form->isValid()) {
-            throw new BadRequestHttpException('Critères invalides.');
-        }
-        $data = $form->getData();
-        $status = $data['status'] ?? null;
-        $text = trim((string) ($data['q'] ?? ''));
-        $limit = max(1, min(100, (int) ($data['limit'] ?? 50)));
-        $cursor = $request->query->getString('cursor') ?: null;
-        try {
-            if ('' !== $text) {
-                $filters = ['type' => TypeFiche::Activite->value];
-                if ($status instanceof StatutFiche) {
-                    $filters['status'] = $status->value;
-                }
-                $page = $search->search(
-                    new SearchQuery($text, $filters, $limit, $cursor),
-                );
-                $items = $repo->findListItemsByIds(
-                    array_map(static fn ($r): string => $r->id, $page->results),
-                );
-                $count = $page->totalCount;
-            } else {
-                $page = $repo->findListPage(
-                    FicheCursor::decode($cursor),
-                    $limit,
-                    $status,
-                );
-                $items = $page->items;
-                $count = null;
-            }
-        } catch (\InvalidArgumentException $e) {
-            throw new BadRequestHttpException($e->getMessage(), $e);
-        }
-
-        return $this->render('pim/activite/index.html.twig', [
-            'activites' => $items,
-            'next_cursor' => $page->nextCursor,
-            'status' => $status,
-            'query' => $text,
-            'result_count' => $count,
-            'search_form' => $form->createView(),
-            'total_count' => $counts->totalByType(TypeFiche::Activite),
-            'pending_count' => $counts->countByStatus(
-                TypeFiche::Activite,
-                StatutFiche::EnAttenteValidation,
-            ),
-        ]);
-    }
-
-    #[Route('/nouveau', name: 'new', methods: ['GET'])]
-    public function new(): Response
-    {
-        // La création passe désormais par le formulaire unique de création de fiche.
-        return $this->redirectToRoute('app_pim_fiche_new');
-    }
-
-    #[
-        Route(
-            '/{id}',
-            name: 'show',
-            requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
-            methods: ['GET'],
-        ),
-    ]
-    public function show(string $id, ActiviteRepository $repo, FicheActionFormFactory $forms): Response
-    {
-        $a = $repo->find($id);
-        if (!$a instanceof Activite) { throw $this->createNotFoundException('Activité introuvable.'); }
-        $this->denyAccessUnlessGranted(FicheVoter::VIEW, $a->fiche());
-
-        return $this->render('pim/activite/show.html.twig', [
-            'activite' => $a,
-            'delete_form' => $forms->action('activite', $a->id(), 'delete', 'Supprimer')->createView(),
-            'submit_form' => $forms->action('activite', $a->id(), 'submit', 'Soumettre à validation')->createView(),
-            'validate_form' => $forms->action('activite', $a->id(), 'validate', 'Valider et publier')->createView(),
-            'archive_form' => $forms->action('activite', $a->id(), 'archive', 'Archiver')->createView(),
-            'reject_form' => $forms->reject('activite', $a->id())->createView(),
-        ]);
-    }
-
-    #[
-        Route(
-            '/{id}/modifier',
-            name: 'edit',
-            requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
-            methods: ['GET', 'POST'],
-        ),
-    ]
-    public function edit(
-        Request $request,
-        string $id,
-        ActiviteRepository $repo,
-        ActiviteAdminManager $manager,
-        ActiviteAdminViewBuilder $view,
-        CurrentActorProvider $actor,
-        InternalFicheMutationPolicy $mutationPolicy,
-    ): Response {
-        $a = $repo->find($id);
-        if (!$a instanceof Activite) { throw $this->createNotFoundException('Activité introuvable.'); }
-        $this->denyAccessUnlessGranted(FicheVoter::EDIT, $a->fiche());
-        $existing = $manager->photoAssetIds($a);
-        $form = $this->createForm(ActiviteType::class, $a);
-        $response = $mutationPolicy->execute(
-            $a->fiche(),
-            function () use ($request, $form, $manager, $a, $existing, $actor): ?Response {
-                $form->handleRequest($request);
-                if ($form->isSubmitted() && $form->isValid()) {
-                    try {
-                        $manager->save($a, $form, $existing, $actor->id());
-                        $this->addFlash('success', 'Activité modifiée.');
-
-                        return $this->redirectToRoute('app_pim_activite_show', ['id' => $a->id()]);
-                    } catch (\DomainException $exception) {
-                        $form->get('ressources')->addError(new FormError($exception->getMessage()));
-                    }
-                }
-
-                return null;
-            }
-        );
-        if ($response instanceof Response) {
-            return $response;
-        }
-
-        return $this->render('pim/activite/form.html.twig', $view->form($form, $a, false));
-    }
 
     #[
         Route(
@@ -206,7 +56,7 @@ final class ActiviteController extends AbstractController
             $this->addFlash('success', 'Activité supprimée.');
         }
 
-        return $this->redirectToRoute('app_pim_activite_index');
+        return $this->redirectToRoute('app_mdm_referentiel_gamme', ['gamme' => 'activites']);
     }
 
     #[
@@ -242,15 +92,11 @@ final class ActiviteController extends AbstractController
                     );
                 }
 
-                return $this->redirectToRoute('app_pim_activite_edit', [
-                    'id' => $a->id(),
-                ]);
+                return $this->redirectToRoute('app_mdm_fiche_gamme', ['gamme' => 'activites', 'id' => $a->id()]);
             }
         }
 
-        return $this->redirectToRoute('app_pim_activite_show', [
-            'id' => $a->id(),
-        ]);
+        return $this->redirectToRoute('app_mdm_fiche_gamme', ['gamme' => 'activites', 'id' => $a->id()]);
     }
 
     #[
@@ -276,7 +122,32 @@ final class ActiviteController extends AbstractController
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) { $workflow->validate($a->fiche(), $actor->id()); }
 
-        return $this->redirectToRoute('app_pim_activite_show', ['id' => $a->id()]);
+        return $this->redirectToRoute('app_mdm_fiche_gamme', ['gamme' => 'activites', 'id' => $a->id()]);
+    }
+
+    #[
+        Route(
+            '/{id}/publier',
+            name: 'publish',
+            requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
+            methods: ['POST'],
+        ),
+    ]
+    public function publishActivity(
+        Request $request,
+        string $id,
+        ActiviteRepository $repo,
+        FicheActionFormFactory $forms,
+        FicheWorkflowManager $workflow,
+    ): Response {
+        $a = $repo->find($id);
+        if (!$a instanceof Activite) { throw $this->createNotFoundException('Activité introuvable.'); }
+        $this->denyAccessUnlessGranted(FicheVoter::PUBLISH, $a->fiche());
+        $form = $forms->action('activite', $a->id(), 'publish', 'Publier');
+        $form->handleRequest($request);
+        if ($form->isSubmitted() && $form->isValid()) { $workflow->publish($a->fiche()); }
+
+        return $this->redirectToRoute('app_mdm_fiche_gamme', ['gamme' => 'activites', 'id' => $a->id()]);
     }
 
     #[
@@ -302,7 +173,7 @@ final class ActiviteController extends AbstractController
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) { $workflow->archive($a->fiche(), $actor->id()); }
 
-        return $this->redirectToRoute('app_pim_activite_show', ['id' => $a->id()]);
+        return $this->redirectToRoute('app_mdm_fiche_gamme', ['gamme' => 'activites', 'id' => $a->id()]);
     }
 
     #[
@@ -330,9 +201,7 @@ final class ActiviteController extends AbstractController
             $workflow->reject($a->fiche(), $actor->id(), (string) $f->get('reason')->getData());
         }
 
-        return $this->redirectToRoute('app_pim_activite_show', [
-            'id' => $a->id(),
-        ]);
+        return $this->redirectToRoute('app_mdm_fiche_gamme', ['gamme' => 'activites', 'id' => $a->id()]);
     }
 
 }

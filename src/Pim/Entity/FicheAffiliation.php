@@ -48,13 +48,18 @@ class FicheAffiliation
     #[ORM\Column(options: ['default' => false])]
     private bool $receivesRequests;
 
-    public function __construct(FicheCollaborateur $collaborateur, Fiche $fiche, FicheAffiliationRole $role, User $createdBy, bool $receivesRequests = false)
+    /** Contact de repli : le service référencement remplace le contact prestataire, aucun accès n'est envoyé. */
+    #[ORM\Column(options: ['default' => false])]
+    private bool $repli;
+
+    public function __construct(FicheCollaborateur $collaborateur, Fiche $fiche, FicheAffiliationRole $role, User $createdBy, bool $receivesRequests = false, bool $repli = false)
     {
         $this->id = new Ulid();
         $this->collaborateur = $collaborateur;
         $this->fiche = $fiche;
         $this->role = $role;
         $this->receivesRequests = $receivesRequests;
+        $this->repli = $repli;
         $this->createdByUser = $createdBy;
         $this->initializeTimestamps();
     }
@@ -65,6 +70,8 @@ class FicheAffiliation
     public function fiche(): Fiche { return $this->fiche; }
     public function role(): FicheAffiliationRole { return $this->role; }
     public function receivesRequests(): bool { return $this->receivesRequests; }
+    public function repli(): bool { return $this->repli; }
+    public function changeRepli(bool $value): void { $this->repli = $value; $this->touch(); }
     public function createdBy(): User|FicheCollaborateur { return $this->createdByUser ?? $this->createdByCollaborateur ?? throw new \LogicException('Auteur manquant.'); }
     public function changeRole(FicheAffiliationRole $role): void { $this->role = $role; $this->touch(); }
     public function changeReceivesRequests(bool $value): void { $this->receivesRequests = $value; $this->touch(); }

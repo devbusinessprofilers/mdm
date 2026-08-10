@@ -24,17 +24,20 @@ final readonly class DamFicheLinkResolver
 
     public function editUrl(Fiche $fiche): ?string
     {
-        [$route, $entity] = match ($fiche->type()) {
-            TypeFiche::Lieu => ['app_pim_lieu_edit', $this->lieux->findOneBy(['fiche' => $fiche])],
-            TypeFiche::Activite => ['app_pim_activite_edit', $this->activites->findOneByFiche($fiche)],
-            TypeFiche::Restaurant => ['app_pim_restaurant_edit', $this->restaurants->findOneByFiche($fiche)],
-            TypeFiche::ServiceEvenementiel => ['app_pim_service_edit', $this->services->findOneByFiche($fiche)],
-            TypeFiche::Traiteur => [null, null],
+        // L'éditeur MDM est la vue unique d'une fiche.
+        [$gamme, $entity] = match ($fiche->type()) {
+            TypeFiche::Lieu => [null, $this->lieux->findOneBy(['fiche' => $fiche])],
+            TypeFiche::Activite => ['activites', $this->activites->findOneByFiche($fiche)],
+            TypeFiche::Restaurant => ['restaurants', $this->restaurants->findOneByFiche($fiche)],
+            TypeFiche::ServiceEvenementiel => ['services', $this->services->findOneByFiche($fiche)],
+            TypeFiche::Traiteur => ['', null],
         };
-        if (null === $route || null === $entity) {
+        if (null === $entity) {
             return null;
         }
 
-        return $this->urls->generate($route, ['id' => $entity->id()]);
+        return null === $gamme
+            ? $this->urls->generate('app_mdm_fiche_lieu', ['id' => $entity->id()])
+            : $this->urls->generate('app_mdm_fiche_gamme', ['gamme' => $gamme, 'id' => $entity->id()]);
     }
 }

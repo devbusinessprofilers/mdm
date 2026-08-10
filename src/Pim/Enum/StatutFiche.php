@@ -8,6 +8,7 @@ enum StatutFiche: string
 {
     case EnCours = 'en_cours';
     case EnAttenteValidation = 'en_attente_validation';
+    case Validee = 'validee';
     case Publiee = 'publiee';
     case Archivee = 'archivee';
 }

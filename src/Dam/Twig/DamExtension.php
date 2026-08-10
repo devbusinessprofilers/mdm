@@ -15,6 +15,9 @@ final class DamExtension extends AbstractExtension
 
     public function getFunctions(): array
     {
-        return [new TwigFunction('dam_anomaly_counts', $this->counter->forFiche(...) )];
+        return [
+            new TwigFunction('dam_anomaly_counts', $this->counter->forFiche(...)),
+            new TwigFunction('qualite_badge', $this->counter->ouvertes(...)),
+        ];
     }
 }

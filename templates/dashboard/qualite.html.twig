@@ -1,0 +1,144 @@
+{% extends 'mdm/base.html.twig' %}
+
+{# Écran « Qualité » temps 1 : châssis 5 onglets de la maquette, branché sur
+   l'existant. Le miroir Salesforce/MDM/portail arrivera avec Salesforce.
+   Gabarit sobre, le style viendra du front. #}
+
+{% block title %}Qualité · {{ onglets[onglet_actif] }}{% endblock %}
+
+{% set gamme_libelles = {
+    'lieu': 'Lieux',
+    'restaurant': 'Restaurants',
+    'activite': 'Activités',
+    'service_evenementiel': 'Services',
+} %}
+
+{% block body %}
+<main class="page">
+    <header class="page-header">
+        <div class="page-header-copy">
+            <p class="page-kicker">Qualité</p>
+            <h1>Gouvernance des données</h1>
+            <p class="page-description">
+                Une donnée est saine quand toutes les sources portent la même valeur.
+                Le comparatif Salesforce / MDM / portail arrivera avec l'intégration Salesforce ;
+                en attendant, cet écran suit ce que le référentiel sait déjà mesurer.
+            </p>
+        </div>
+        <a class="btn btn-secondary btn-small" href="{{ path('app_pim_completeness_index') }}">Configuration de la complétude</a>
+    </header>
+
+    <nav class="toolbar" aria-label="Onglets de la qualité">
+        {% for cle, libelle in onglets %}
+            <a class="btn btn-small {{ onglet_actif == cle ? '' : 'btn-secondary' }}"
+               href="{{ path('app_mdm_qualite', {onglet: cle}) }}"
+               {% if onglet_actif == cle %}aria-current="page"{% endif %}>{{ libelle }}</a>
+        {% endfor %}
+    </nav>
+
+    {% if onglet_actif == 'miroir' %}
+        <section class="card" aria-label="Santé des données">
+            <h2>Complétude par gamme et par canal</h2>
+            <div class="table-shell"><div class="table-scroll"><table class="data-table">
+                <thead><tr><th>Gamme</th><th>Fiches</th><th>Global</th><th>Marketplace</th><th>Sites thématiques</th><th>Salesforce</th><th>Portail</th><th>Insuffisantes (&lt; 60 %)</th></tr></thead>
+                <tbody>
+                {% for ligne in sante %}
+                    <tr>
+                        <td>{{ gamme_libelles[ligne.type] ?? ligne.type }}</td>
+                        <td>{{ ligne.fiches }}</td>
+                        {% for canal in ['global', 'marketplace', 'thematic', 'salesforce', 'portal'] %}
+                            <td>{{ attribute(ligne, canal) is null ? '—' : attribute(ligne, canal) ~ ' %' }}</td>
+                        {% endfor %}
+                        <td>
+                            {% if ligne.insuffisantes > 0 %}
+                                <a class="text-link" href="{{ path('app_mdm_referentiel_general', {f: {gammes: [ligne.type], completudes: ['insuffisant']}}) }}">{{ ligne.insuffisantes }}</a>
+                            {% else %}0{% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table></div></div>
+        </section>
+    {% elseif onglet_actif == 'conflits' %}
+        <section class="card" aria-label="Suggestions IA à arbitrer">
+            <h2>Valeurs suggérées par l'IA en attente</h2>
+            <div class="table-shell"><div class="table-scroll"><table class="data-table">
+                <thead><tr><th>Fiche</th><th>Champ</th><th>Valeur lue</th><th>Confiance</th><th>Quand</th><th></th></tr></thead>
+                <tbody>
+                {% for suggestion in suggestions %}
+                    <tr>
+                        <td>{{ suggestion.label ?? 'Sans libellé' }}</td>
+                        <td><code>{{ suggestion.field }}</code></td>
+                        <td>{{ suggestion.valeur ?? '—' }}</td>
+                        <td>{{ suggestion.confiance is null ? '—' : (suggestion.confiance * 100)|round ~ ' %' }}</td>
+                        <td><time datetime="{{ suggestion.quand|date('c') }}">{{ suggestion.quand|date('d/m/Y H:i') }}</time></td>
+                        <td><a class="text-link" href="{{ path('app_ocr_index', {id: suggestion.fiche_id}) }}">Arbitrer</a></td>
+                    </tr>
+                {% else %}
+                    <tr><td class="empty-state" colspan="6">Aucune suggestion en attente.</td></tr>
+                {% endfor %}
+                </tbody>
+            </table></div></div>
+        </section>
+        <section class="card" aria-label="Doublons d'adresse">
+            <h2>Fiches partageant la même adresse</h2>
+            {% for groupe in doublons_adresse %}
+                <p>
+                    <strong>{{ groupe.ville ?? 'Ville inconnue' }}</strong> :
+                    {% for fiche in groupe.fiches %}
+                        <a class="text-link" href="{{ path('app_mdm_edition_rapide', {id: fiche.id}) }}">{{ fiche.label ?? 'Sans libellé' }}</a>{{ not loop.last ? ' · ' : '' }}
+                    {% endfor %}
+                </p>
+            {% else %}
+                <p class="page-description">Aucune adresse partagée par plusieurs fiches.</p>
+            {% endfor %}
+        </section>
+    {% elseif onglet_actif == 'formes' %}
+        <section class="dam-stats" aria-label="Écarts de forme">
+            <a class="card dam-stat" href="{{ path('app_mdm_referentiel_general') }}"><span>Localisations sans code pays</span><strong>{{ formes.sans_pays }}</strong></a>
+            <a class="card dam-stat" href="{{ path('app_mdm_referentiel_general') }}"><span>Localisations sans GPS</span><strong>{{ formes.sans_gps }}</strong></a>
+            <a class="card dam-stat" href="{{ path('app_mdm_referentiel_general') }}"><span>Fiches sans libellé</span><strong>{{ formes.sans_libelle }}</strong></a>
+        </section>
+        <p class="page-description">La liste des normalisations à appliquer (casse, formats, unités) est à définir avec le métier.</p>
+    {% elseif onglet_actif == 'notifs' %}
+        <section class="card" aria-label="Relances de complétude">
+            <h2>Relances de complétude envoyées</h2>
+            <div class="table-shell"><div class="table-scroll"><table class="data-table">
+                <thead><tr><th>Fiche</th><th>Complétude à l'envoi</th><th>Destinataires</th><th>Quand</th></tr></thead>
+                <tbody>
+                {% for relance in relances %}
+                    <tr>
+                        <td>{{ relance.label ?? 'Sans libellé' }}</td>
+                        <td>{{ relance.completude }} %</td>
+                        <td>{{ relance.destinataires }}</td>
+                        <td><time datetime="{{ relance.quand|date('c') }}">{{ relance.quand|date('d/m/Y H:i') }}</time></td>
+                    </tr>
+                {% else %}
+                    <tr><td class="empty-state" colspan="4">Aucune relance envoyée.</td></tr>
+                {% endfor %}
+                </tbody>
+            </table></div></div>
+        </section>
+    {% elseif onglet_actif == 'decisions' %}
+        <section class="card" aria-label="Décisions d'arbitrage">
+            <h2>Derniers arbitrages</h2>
+            <div class="table-shell"><div class="table-scroll"><table class="data-table">
+                <thead><tr><th>Quand</th><th>Fiche</th><th>Décision</th><th>Détail</th><th>Par</th></tr></thead>
+                <tbody>
+                {% for decision in decisions %}
+                    <tr>
+                        <td><time datetime="{{ decision.quand|date('c') }}">{{ decision.quand|date('d/m/Y H:i') }}</time></td>
+                        <td>{{ decision.label ?? 'Sans libellé' }}</td>
+                        <td><span class="badge badge-neutral">{{ decision.genre }}</span></td>
+                        <td>{{ decision.detail }}</td>
+                        <td>{{ decision.acteur }}</td>
+                    </tr>
+                {% else %}
+                    <tr><td class="empty-state" colspan="5">Aucun arbitrage enregistré.</td></tr>
+                {% endfor %}
+                </tbody>
+            </table></div></div>
+        </section>
+    {% endif %}
+</main>
+{% endblock %}

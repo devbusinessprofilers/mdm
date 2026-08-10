@@ -90,6 +90,13 @@ class Fiche
     private ?string $validationReviewedBy = null;
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $validationFeedback = null;
+    /** Adhérent Business Premium (interrupteur de la maquette, bloc « Statut et référencement »). */
+    #[ORM\Column(name: 'business_premium', options: ['default' => false])]
+    private bool $businessPremium = false;
+    /** Contributeur interne responsable de la fiche (organisationnel, sans effet sur le workflow). */
+    #[ORM\ManyToOne]
+    #[ORM\JoinColumn(name: 'assignee_id', nullable: true, onDelete: 'SET NULL')]
+    private ?\App\Account\Entity\User $assignee = null;
     #[ORM\OneToOne(cascade: ['persist', 'remove'], orphanRemoval: true)]
     #[
         ORM\JoinColumn(
@@ -123,6 +130,17 @@ class Fiche
     ]
     #[ORM\OrderBy(['position' => 'ASC'])]
     private Collection $resources;
+    /** @var Collection<int, FicheSiteDiffusion> */
+    #[
+        ORM\OneToMany(
+            mappedBy: 'fiche',
+            targetEntity: FicheSiteDiffusion::class,
+            cascade: ['persist', 'remove'],
+            orphanRemoval: true,
+            fetch: 'EXTRA_LAZY',
+        ),
+    ]
+    private Collection $siteSelections;
 
     public function __construct(TypeFiche $type, ?Ulid $id = null)
     {
@@ -130,6 +148,7 @@ class Fiche
         $this->type = $type;
         $this->attributValues = new ArrayCollection();
         $this->resources = new ArrayCollection();
+        $this->siteSelections = new ArrayCollection();
         $this->initializeTimestamps();
     }
 
@@ -259,6 +278,35 @@ class Fiche
         $this->markChanged();
     }
 
+    public function assignee(): ?\App\Account\Entity\User
+    {
+        return $this->assignee;
+    }
+
+    /** Assignation organisationnelle : la fiche est mise à jour sans transition de workflow. */
+    public function changeAssignee(?\App\Account\Entity\User $assignee): void
+    {
+        if ($assignee === $this->assignee) {
+            return;
+        }
+        $this->assignee = $assignee;
+        $this->touch();
+    }
+
+    public function businessPremium(): bool
+    {
+        return $this->businessPremium;
+    }
+
+    public function changeBusinessPremium(bool $businessPremium): void
+    {
+        if ($businessPremium === $this->businessPremium) {
+            return;
+        }
+        $this->businessPremium = $businessPremium;
+        $this->markChanged();
+    }
+
     public function changeLocalisation(?Localisation $localisation): void
     {
         $this->localisation = $localisation;
@@ -279,16 +327,25 @@ class Fiche
         $this->touch();
     }
 
-    public function validateAndPublish(string $actorId): void
+    public function validate(string $actorId): void
     {
         if (StatutFiche::EnAttenteValidation !== $this->status) {
             throw new \DomainException('Seule une fiche en attente peut être validée.');
         }
-        $this->status = StatutFiche::Publiee;
-        $this->publishedAt = new \DateTimeImmutable();
+        $this->status = StatutFiche::Validee;
         $this->validationReviewedAt = new \DateTimeImmutable();
         $this->validationReviewedBy = $actorId;
         $this->validationFeedback = null;
+        $this->touch();
+    }
+
+    public function publish(): void
+    {
+        if (StatutFiche::Validee !== $this->status) {
+            throw new \DomainException('Seule une fiche validée peut être publiée.');
+        }
+        $this->status = StatutFiche::Publiee;
+        $this->publishedAt = new \DateTimeImmutable();
         $this->touch();
     }
 
@@ -373,6 +430,39 @@ class Fiche
                 $this->attributValues->add(
                     new FicheAttributValeur($this, $attributeCode, $valueId),
                 );
+            }
+        }
+        $this->markChanged();
+    }
+
+    /** @return list<int> */
+    public function siteDiffusionIds(): array
+    {
+        return array_values(
+            array_map(
+                static fn (FicheSiteDiffusion $link): int => $link->siteId(),
+                $this->siteSelections->toArray(),
+            ),
+        );
+    }
+
+    /** @param list<SiteDiffusion> $sites */
+    public function replaceSiteDiffusion(array $sites): void
+    {
+        $requested = [];
+        foreach ($sites as $site) {
+            $requested[$site->id() ?? spl_object_id($site)] = $site;
+        }
+        $current = [];
+        foreach ($this->siteSelections as $link) {
+            $current[$link->siteId()] = true;
+            if (!isset($requested[$link->siteId()])) {
+                $this->siteSelections->removeElement($link);
+            }
+        }
+        foreach ($requested as $siteId => $site) {
+            if (!isset($current[$siteId])) {
+                $this->siteSelections->add(new FicheSiteDiffusion($this, $site));
             }
         }
         $this->markChanged();

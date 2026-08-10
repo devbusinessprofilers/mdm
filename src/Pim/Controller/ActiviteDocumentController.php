@@ -16,6 +16,8 @@ use App\Pim\Repository\RessourceLieuRepository;
 use App\Pim\Service\FicheDocumentManager;
 use App\Shared\Form\ActionType;
 use App\Shared\Service\PrivateObjectStorageInterface;
+use App\Pim\Service\FicheSectionsCatalogue;
+use App\Pim\Enum\TypeFiche;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -52,7 +54,7 @@ final class ActiviteDocumentController extends AbstractController
             $this->addFlash('success', 'Document modifié.');
         }
 
-        return $this->redirectToRoute('app_pim_activite_edit', ['id' => $activite->id()]);
+        return $this->redirectToRoute('app_mdm_fiche_gamme', ['gamme' => 'activites', 'id' => $activite->id(), 'section' => FicheSectionsCatalogue::indexBloc(TypeFiche::Activite, 'medias')]);
     }
 
     #[Route('/{resourceId}/fichier', name: 'replace', methods: ['POST'])]
@@ -71,7 +73,7 @@ final class ActiviteDocumentController extends AbstractController
             $this->addFlash('success', 'Fichier remplacé.');
         }
 
-        return $this->redirectToRoute('app_pim_activite_edit', ['id' => $activite->id()]);
+        return $this->redirectToRoute('app_mdm_fiche_gamme', ['gamme' => 'activites', 'id' => $activite->id(), 'section' => FicheSectionsCatalogue::indexBloc(TypeFiche::Activite, 'medias')]);
     }
 
     #[Route('/{resourceId}/publication', name: 'publication', methods: ['POST'])]
@@ -93,7 +95,7 @@ final class ActiviteDocumentController extends AbstractController
             }
         }
 
-        return $this->redirectToRoute('app_pim_activite_edit', ['id' => $activite->id()]);
+        return $this->redirectToRoute('app_mdm_fiche_gamme', ['gamme' => 'activites', 'id' => $activite->id(), 'section' => FicheSectionsCatalogue::indexBloc(TypeFiche::Activite, 'medias')]);
     }
 
     #[Route('/{resourceId}/supprimer', name: 'delete', methods: ['POST'])]
@@ -111,7 +113,7 @@ final class ActiviteDocumentController extends AbstractController
             $this->addFlash('success', 'Document supprimé.');
         }
 
-        return $this->redirectToRoute('app_pim_activite_edit', ['id' => $activite->id()]);
+        return $this->redirectToRoute('app_mdm_fiche_gamme', ['gamme' => 'activites', 'id' => $activite->id(), 'section' => FicheSectionsCatalogue::indexBloc(TypeFiche::Activite, 'medias')]);
     }
 
     #[Route('/{resourceId}/download', name: 'download', methods: ['GET'])]

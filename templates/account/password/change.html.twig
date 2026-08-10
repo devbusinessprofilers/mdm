@@ -1,0 +1,17 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Changer mon mot de passe{% endblock %}
+
+{% block body %}
+<main class="page page-narrow">
+    <section class="card form-card">
+        <h1>Changer mon mot de passe</h1>
+        {% if obligatoire %}
+            <p>Votre mot de passe a été défini pour vous : choisissez-en un nouveau pour continuer.</p>
+        {% else %}
+            <p>Choisissez un mot de passe d’au moins 12 caractères.</p>
+        {% endif %}
+        {{ form(form) }}
+    </section>
+</main>
+{% endblock %}

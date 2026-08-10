@@ -42,3 +42,19 @@ audit_controllers:
 dashboard_controllers:
     resource: '../src/Dashboard/Controller/'
     type: attribute
+
+# La création de fiche est aussi servie à l'emplacement prévu par la maquette
+# front (test-integration) : même contrôleur, même formulaire.
+app_mdm_creation_fiche:
+    path: /referentiel/fiche/nouvelle
+    controller: App\Pim\Controller\FicheController::new
+    methods: [GET, POST]
+
+# L'ancien nom de route de l'accueil reste servi : la racine est désormais le
+# tableau de bord MDM.
+app_pim_home:
+    alias: app_mdm_tableau_de_bord
+
+# Nom historique de la création de fiche (les anciens liens/redirects restent valides).
+app_pim_fiche_new:
+    alias: app_mdm_creation_fiche

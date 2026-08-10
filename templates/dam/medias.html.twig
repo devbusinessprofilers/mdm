@@ -1,0 +1,91 @@
+{% extends 'mdm/base.html.twig' %}
+
+{# Écran « Médias » : le DAM en onglets (maquette front). Les onglets adossés
+   à des données réutilisent le contenu de la supervision DAM ; les autres
+   décrivent ce que le back sait faire aujourd'hui. Gabarit sobre. #}
+
+{% block title %}Médias · {{ onglets[onglet_actif] }}{% endblock %}
+
+{% block body %}
+<main class="page">
+    <header class="page-header">
+        <div class="page-header-copy">
+            <p class="page-kicker">DAM</p>
+            <h1>Médias</h1>
+            <p class="page-description">
+                Un média est un actif porteur d'un droit d'usage : sans droits déclarés,
+                il ne part sur aucun canal tiers, même si la fiche est publiée.
+            </p>
+        </div>
+        <a class="btn btn-secondary btn-small" href="{{ path('app_dam_dashboard') }}">Supervision classique</a>
+    </header>
+
+    <nav class="toolbar" aria-label="Onglets du DAM">
+        {% for cle, libelle in onglets %}
+            <a class="btn btn-small {{ onglet_actif == cle ? '' : 'btn-secondary' }}"
+               href="{{ path('app_mdm_medias', {onglet: cle}) }}"
+               {% if onglet_actif == cle %}aria-current="page"{% endif %}>{{ libelle }}</a>
+        {% endfor %}
+    </nav>
+
+    {% if onglet_actif == 'sync' and scan_form %}
+        <div class="toolbar">{{ form(scan_form) }}</div>
+    {% endif %}
+
+    {% if vue %}
+        {% set ecran_route = 'app_mdm_medias' %}
+        {% include 'dam/_dashboard_contenu.html.twig' %}
+    {% elseif onglet_actif == 'formats' %}
+        <section class="card" aria-label="Formats et variantes">
+            <h2>Variantes générées</h2>
+            <p class="page-description">Chaque image traitée est déclinée dans ces formats, servis par le CDN public.</p>
+            <div class="table-shell"><div class="table-scroll"><table class="data-table">
+                <thead><tr><th>Variante</th><th>Dimensions cibles</th><th>Fichiers générés</th><th>Volume</th></tr></thead>
+                <tbody>
+                {% for nom, taille in variantes %}
+                    {% set stat = formats|filter(f => f.name == nom)|first %}
+                    <tr>
+                        <td><code>{{ nom }}</code></td>
+                        <td>{{ taille.width }} × {{ taille.height }}</td>
+                        <td>{{ stat ? stat.nb : 0 }}</td>
+                        <td>{{ stat ? (stat.octets / 1048576)|round(1) ~ ' Mo' : '—' }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table></div></div>
+        </section>
+    {% elseif onglet_actif == 'import' %}
+        <section class="card">
+            <h2>Import & retouche</h2>
+            <p class="page-description">
+                Le dépôt des photos et documents se fait sur la fiche (galerie, recadrage,
+                rotation, remplacement) : les variantes sont générées automatiquement au dépôt.
+                L'import en masse passe par l'import de fiches.
+            </p>
+            <div class="table-actions">
+                <a class="btn btn-secondary btn-small" href="{{ path('app_mdm_referentiel_general') }}">Ouvrir une fiche</a>
+                <a class="btn btn-secondary btn-small" href="{{ path('app_etl_import_index') }}">Import de fiches</a>
+            </div>
+        </section>
+    {% elseif onglet_actif == 'ia' %}
+        <section class="card">
+            <h2>Reconnaissance IA</h2>
+            <p class="page-description">
+                Le back détecte aujourd'hui les doublons visuels par empreinte perceptuelle
+                (onglet Doublons). La reconnaissance du contenu à l'import (sujets, qualité,
+                conformité) n'est pas encore branchée — écran à compléter avec le mécanisme.
+            </p>
+        </section>
+    {% elseif onglet_actif == 'meta' %}
+        <section class="card">
+            <h2>Métadonnées & types</h2>
+            <p class="page-description">
+                Chaque ressource porte sa nature (photo, document, vidéo), son usage, sa légende,
+                ses mots-clés, son recadrage et ses droits (accordés par qui, jusqu'à quand).
+                Les documents ont en plus un statut de publication vers le stockage public.
+                La saisie se fait sur la fiche, dans la gestion des médias.
+            </p>
+        </section>
+    {% endif %}
+</main>
+{% endblock %}

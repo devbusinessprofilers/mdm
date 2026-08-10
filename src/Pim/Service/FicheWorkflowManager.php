@@ -35,7 +35,13 @@ final readonly class FicheWorkflowManager
 
     public function validate(Fiche $fiche, string $actor): void
     {
-        $fiche->validateAndPublish($actor);
+        $fiche->validate($actor);
+        $this->indexAndFlush($fiche);
+    }
+
+    public function publish(Fiche $fiche): void
+    {
+        $fiche->publish();
         $this->translations->schedule($fiche);
         $this->indexAndFlush($fiche);
     }

@@ -4,13 +4,11 @@
 
 {% block body %}
 <main class="page">
-    {% set show_route = {
-        'lieu': 'app_pim_lieu_show',
-        'activite': 'app_pim_activite_show',
-        'restaurant': 'app_pim_restaurant_show',
-        'service_evenementiel': 'app_pim_service_show'
-    }[fiche.type.value] %}
-    <a class="back-link" href="{{ path(show_route, {id: fiche.idString}) }}">← Retour à la fiche</a>
+    {# L'éditeur MDM est la vue unique d'une fiche. #}
+    {% set retour_fiche = fiche.type.value == 'lieu'
+        ? path('app_mdm_fiche_lieu', {id: fiche.idString})
+        : path('app_mdm_fiche_gamme', {gamme: {'restaurant': 'restaurants', 'activite': 'activites', 'service_evenementiel': 'services'}[fiche.type.value], id: fiche.idString}) %}
+    <a class="back-link" href="{{ retour_fiche }}">← Retour à la fiche</a>
     <header class="page-header">
         <div>
             <p class="page-kicker">Traductions</p>

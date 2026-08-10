@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Dam\Service;
 
+use App\Dam\Enum\DamAnomalyType;
 use App\Dam\Enum\RightsValidityStatus;
+use App\Dam\Repository\DamAnomalyRepository;
 use App\Dam\Repository\MediaAssetRepository;
 use App\Dam\Repository\MediaDuplicateAlertRepository;
 use App\Pim\Entity\Fiche;
@@ -17,7 +19,19 @@ final readonly class DamAnomalyCounter
         private MediaDuplicateAlertRepository $alerts,
         private RessourceLieuRepository $resources,
         private MediaAssetRepository $assets,
+        private DamAnomalyRepository $anomalies,
     ) {}
+
+    /** Anomalies ouvertes tous sujets confondus — le badge « Qualité » de la navigation. */
+    public function ouvertes(): int
+    {
+        $total = $this->alerts->countPending();
+        foreach (DamAnomalyType::cases() as $type) {
+            $total += $this->anomalies->countOpen($type);
+        }
+
+        return $total;
+    }
 
     /** @return array{duplicates: int, rights_missing: int, rights_expiring: int, rights_expired: int, failed: int, total: int} */
     public function forFiche(Fiche $fiche): array

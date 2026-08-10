@@ -90,6 +90,16 @@ final readonly class AccountAdminFormFactory
     }
 
     /** @return FormInterface<mixed> */
+    public function internalForcePasswordChange(User $user): FormInterface
+    {
+        return $this->forms->createNamed('mot_de_passe_force_'.$user->id(), ActionType::class, null, [
+            'action' => $this->urls->generate('app_account_user_admin_force_password', ['id' => $user->id()]),
+            'button_label' => 'Forcer le changement de mot de passe',
+            'csrf_token_id' => 'user-force-password-'.$user->id(),
+        ]);
+    }
+
+    /** @return FormInterface<mixed> */
     public function internalResendCredentials(User $user): FormInterface
     {
         $label = null === $user->getPassword() ? 'Renvoyer l’invitation' : 'Envoyer un lien de reset';

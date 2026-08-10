@@ -1,0 +1,117 @@
+{# Gestion des photos et documents d'un lieu (DAM). Extrait de l'ancienne
+   vue « modifier » ; inclus par l'éditeur MDM, section Médias.
+   Variables : lieu, creation, photos, documents, media_upload_form,
+   media_csrf_token, document_upload_form. #}
+    {% if not creation %}
+        <section
+            class="card lieu-media-manager"
+            data-controller="lieu-media"
+            data-lieu-media-upload-url-value="{{ path('app_pim_lieu_photo_upload', {id: lieu.id}) }}"
+            data-lieu-media-order-url-value="{{ path('app_pim_lieu_photo_order', {id: lieu.id}) }}"
+            data-lieu-media-token-value="{{ media_csrf_token }}"
+        >
+            <div class="section-heading">
+                <div><p class="page-kicker">DAM</p><h2>Photos du lieu</h2></div>
+                <span class="badge badge-info">{{ photos|length }}/25</span>
+            </div>
+            {{ form_start(media_upload_form) }}
+                <div class="lieu-media-dropzone" data-lieu-media-target="dropzone" data-action="dragover->lieu-media#dragover dragleave->lieu-media#dragleave drop->lieu-media#drop">
+                    {{ form_label(media_upload_form.photos) }}
+                    <span>Choisissez plusieurs fichiers · JPG, PNG, WEBP · 25 Mo max · 960 × 480 px min.</span>
+                    {{ form_widget(media_upload_form.photos) }}
+                </div>
+            {{ form_end(media_upload_form) }}
+            <div class="lieu-media-progress" hidden data-lieu-media-target="progress"><span data-lieu-media-target="progressBar"></span></div>
+            <p class="form-error" hidden data-lieu-media-target="error"></p>
+
+            {% if photos is empty %}
+                <p class="empty-state">Aucune photo n’a encore été ajoutée.</p>
+            {% else %}
+                <div class="lieu-photo-grid" data-lieu-media-target="list">
+                    {% for photo in photos %}
+                        <article class="lieu-photo-card lieu-photo-editor" data-lieu-media-target="item" data-id="{{ photo.resource.id }}" draggable="true" data-action="dragstart->lieu-media#dragstart dragover->lieu-media#dragoverItem drop->lieu-media#dropItem">
+                            {% if photo.thumbnail_url %}<img src="{{ photo.thumbnail_url }}" alt="{{ photo.resource.legende ?: photo.asset.originalFilename }}" class="lieu-photo-image" loading="lazy">{% else %}<div class="lieu-photo-unavailable">Traitement en cours</div>{% endif %}
+                            <div class="lieu-photo-status"><span class="badge">{{ photo.asset ? photo.asset.status.value : 'introuvable' }}</span>{% if photo.asset and photo.asset.errorMessage %}<span title="{{ photo.asset.errorMessage }}">Erreur de traitement</span>{% endif %}</div>
+                            {{ form_start(photo.metadata_form, {attr: {'data-action': 'submit->lieu-media#save', 'data-url': photo.metadata_form.vars.action}}) }}
+                                {{ form_row(photo.metadata_form.usage) }}
+                                {{ form_row(photo.metadata_form.legende) }}
+                                {{ form_row(photo.metadata_form.source) }}
+                                {{ form_row(photo.metadata_form.keywords) }}
+                                {{ form_row(photo.metadata_form.rights_expires_at) }}
+                                {{ form_row(photo.metadata_form.salle_id) }}
+                                <details><summary>Recadrage et rotation</summary>
+                                    <div class="lieu-crop-fields">
+                                        {{ form_row(photo.metadata_form.crop_x) }}
+                                        {{ form_row(photo.metadata_form.crop_y) }}
+                                        {{ form_row(photo.metadata_form.crop_width) }}
+                                        {{ form_row(photo.metadata_form.crop_height) }}
+                                        {{ form_row(photo.metadata_form.rotation) }}
+                                    </div>
+                                </details>
+                                {{ form_widget(photo.metadata_form.save) }}
+                            {{ form_end(photo.metadata_form) }}
+                            <div class="lieu-photo-actions">
+                                <button type="button" data-action="lieu-media#moveUp">Monter</button><button type="button" data-action="lieu-media#moveDown">Descendre</button>
+                                <button type="button" data-action="lieu-media#retry" data-url="{{ path('app_pim_lieu_photo_retry', {id: lieu.id, resourceId: photo.resource.id}) }}">Relancer</button>
+                                {{ form_start(photo.replace_form, {attr: {class: 'button-label'}}) }}
+                                    {{ form_widget(photo.replace_form.photo, {attr: {'data-url': photo.replace_form.vars.action}}) }}
+                                {{ form_end(photo.replace_form) }}
+                                <button type="button" class="danger" data-action="lieu-media#remove" data-url="{{ path('app_pim_lieu_photo_delete', {id: lieu.id, resourceId: photo.resource.id}) }}">Supprimer</button>
+                            </div>
+                        </article>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </section>
+    {% else %}
+        <section class="card"><h2>Photos du lieu</h2><p>Enregistrez d’abord le lieu, puis vous pourrez ajouter plusieurs images et leurs métadonnées.</p></section>
+    {% endif %}
+
+    {% if not creation %}
+        <section class="card">
+            <div class="section-heading"><div><p class="page-kicker">DAM</p><h2>Documents</h2></div><span class="badge">{{ documents|length }}</span></div>
+            <p>Les originaux restent privés. Une copie publique n’est créée qu’après validation des droits et traitement par le worker.</p>
+            {{ form_start(document_upload_form, {attr: {class: 'crud-form'}}) }}
+                {{ form_widget(document_upload_form) }}
+            {{ form_end(document_upload_form) }}
+            {% for document in documents %}
+                <article class="lieu-photo-card">
+                    <p>
+                        <strong>{{ document.view.title ?: document.view.filename }}</strong>
+                        <span class="badge">
+                            {{ document.view.access }} · {{ document.view.publicationStatus }}
+                        </span>
+                    </p>
+                    <p>
+                        {{ document.view.mimeType }} ·
+                        {{ document.view.sizeBytes
+                            ? (document.view.sizeBytes / 1024 / 1024)|number_format(2, ',', ' ') ~ ' Mo'
+                            : 'fichier introuvable'
+                        }}
+                    </p>
+                    {{ form_start(document.metadata_form, {attr: {class: 'crud-form'}}) }}
+                        {{ form_widget(document.metadata_form) }}
+                    {{ form_end(document.metadata_form) }}
+                    {{ form_start(document.replace_form) }}{{ form_widget(document.replace_form) }}{{ form_end(document.replace_form) }}
+                    {% if document.view.access != 'private' or is_granted('ROLE_BP_VALIDATOR') %}
+                        <p>
+                            <a href="{{ path('app_pim_lieu_document_download', {
+                                id: lieu.id,
+                                resourceId: document.view.id
+                            }) }}">Télécharger l’original</a>
+                            {% if document.view.publicUrl %}
+                                · <a href="{{ document.view.publicUrl }}">Copie publique</a>
+                            {% endif %}
+                        </p>
+                    {% endif %}
+                    {% if is_granted('ROLE_BP_VALIDATOR') and document.view.access == 'publishable' %}
+                        {{ form(document.publication_form) }}
+                    {% endif %}
+                    {{ form(document.delete_form) }}
+                </article>
+            {% else %}<p class="empty-state">Aucun document.</p>{% endfor %}
+        </section>
+    {% else %}
+        <section class="card"><h2>Documents</h2><p>Enregistrez d’abord le lieu pour déposer des documents.</p></section>
+    {% endif %}
+

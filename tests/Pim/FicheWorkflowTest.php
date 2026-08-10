@@ -22,7 +22,11 @@ final class FicheWorkflowTest extends TestCase
         self::assertSame('Adresse à corriger', $fiche->validationFeedback());
 
         $fiche->submitForValidation('editor');
-        $fiche->validateAndPublish('validator');
+        $fiche->validate('validator');
+        self::assertSame(StatutFiche::Validee, $fiche->status());
+        self::assertNull($fiche->publishedAt());
+
+        $fiche->publish();
         self::assertSame(StatutFiche::Publiee, $fiche->status());
         self::assertNotNull($fiche->publishedAt());
 

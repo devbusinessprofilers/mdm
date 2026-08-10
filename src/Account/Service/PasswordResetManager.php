@@ -49,6 +49,18 @@ final readonly class PasswordResetManager
         return $request;
     }
 
+    /** Changement volontaire par l'utilisateur connecté : lève aussi l'obligation posée par un admin. */
+    public function changeOwnPassword(User $user, string $plainPassword): void
+    {
+        $this->entityManager->wrapInTransaction(function () use ($user, $plainPassword): void {
+            $this->entityManager->lock($user, LockMode::PESSIMISTIC_WRITE);
+            $user->setPassword($this->hasher->hashPassword($user, $plainPassword));
+            $this->requests->invalidateUsableFor($user);
+            $this->invitations->invalidateUsableFor($user);
+        });
+        $this->logger->info('account.password_change.completed', ['user_id' => $user->id()]);
+    }
+
     public function reset(PasswordResetRequest $request, string $plainPassword): void
     {
         if (!$request->isUsable()) {

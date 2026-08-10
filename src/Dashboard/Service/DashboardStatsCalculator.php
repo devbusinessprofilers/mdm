@@ -6,7 +6,11 @@ namespace App\Dashboard\Service;
 
 use App\Audit\Entity\AuditChange;
 use App\Audit\Entity\AuditRevision;
+use App\Pim\Entity\Activite\Activite;
 use App\Pim\Entity\Fiche;
+use App\Pim\Entity\Lieu\Lieu;
+use App\Pim\Entity\Restaurant\Restaurant;
+use App\Pim\Entity\Service\ServiceEvenementiel;
 use App\Pim\Enum\StatutFiche;
 use App\Pim\Enum\TypeFiche;
 use Doctrine\ORM\EntityManagerInterface;
@@ -116,23 +120,29 @@ final readonly class DashboardStatsCalculator
     }
 
     /**
+     * Croisement pays × typologie : volumes, fiches publiées et complétude
+     * moyenne par cellule (la complétude vit sur les entités de détail).
+     *
      * @return list<array{
      *     countryCode: string,
      *     pays: string,
      *     counts: array<string, int>,
+     *     published: array<string, int>,
+     *     completeness: array<string, int|null>,
      *     total: int,
      * }>
      */
     private function countryByType(): array
     {
-        /** @var list<array{cc: string, pays: string, type: string, nb: string|int}> $rows */
+        /** @var list<array{cc: string, pays: string, type: string|TypeFiche, nb: string|int, publiees: string|int|null}> $rows */
         $rows = $this->entityManager->createQuery(
             'SELECT COALESCE(l.countryCode, \'??\') AS cc,'
             .' COALESCE(l.pays, \'Non renseigné\') AS pays,'
-            .' f.type AS type, COUNT(f.id) AS nb'
+            .' f.type AS type, COUNT(f.id) AS nb,'
+            .' SUM(CASE WHEN f.status = :published THEN 1 ELSE 0 END) AS publiees'
             .' FROM '.Fiche::class.' f LEFT JOIN f.localisation l'
             .' GROUP BY cc, pays, type',
-        )->getResult();
+        )->setParameter('published', StatutFiche::Publiee)->getResult();
         $emptyCounts = array_fill_keys(
             array_map(
                 static fn (TypeFiche $type): string => $type->value,
@@ -140,6 +150,7 @@ final readonly class DashboardStatsCalculator
             ),
             0,
         );
+        $completeness = $this->completenessByCountryType();
         $countries = [];
         foreach ($rows as $row) {
             $key = $row['cc'].'|'.$row['pays'];
@@ -147,18 +158,52 @@ final readonly class DashboardStatsCalculator
                 'countryCode' => $row['cc'],
                 'pays' => $row['pays'],
                 'counts' => $emptyCounts,
+                'published' => $emptyCounts,
+                'completeness' => array_fill_keys(array_keys($emptyCounts), null),
                 'total' => 0,
             ];
             $type = $row['type'] instanceof TypeFiche ? $row['type']->value : (string) $row['type'];
             $countries[$key]['counts'][$type] = (int) $row['nb'];
+            $countries[$key]['published'][$type] = (int) $row['publiees'];
+            $countries[$key]['completeness'][$type] = $completeness[$key][$type] ?? null;
             $countries[$key]['total'] += (int) $row['nb'];
         }
+        $countries = array_values($countries);
         usort(
             $countries,
             static fn (array $a, array $b): int => [$b['total'], $a['pays']] <=> [$a['total'], $b['pays']],
         );
 
-        return array_values($countries);
+        return $countries;
+    }
+
+    /** @return array<string, array<string, int>> "cc|pays" => type => complétude moyenne arrondie. */
+    private function completenessByCountryType(): array
+    {
+        $sources = [
+            TypeFiche::Lieu->value => Lieu::class,
+            TypeFiche::Activite->value => Activite::class,
+            TypeFiche::Restaurant->value => Restaurant::class,
+            TypeFiche::ServiceEvenementiel->value => ServiceEvenementiel::class,
+        ];
+        $result = [];
+        foreach ($sources as $type => $entityClass) {
+            /** @var list<array{cc: string, pays: string, comp: string|float|null}> $rows */
+            $rows = $this->entityManager->createQuery(
+                'SELECT COALESCE(l.countryCode, \'??\') AS cc,'
+                .' COALESCE(l.pays, \'Non renseigné\') AS pays,'
+                .' AVG(e.completenessGlobal) AS comp'
+                .' FROM '.$entityClass.' e JOIN e.fiche f LEFT JOIN f.localisation l'
+                .' GROUP BY cc, pays',
+            )->getResult();
+            foreach ($rows as $row) {
+                if (null !== $row['comp']) {
+                    $result[$row['cc'].'|'.$row['pays']][$type] = (int) round((float) $row['comp']);
+                }
+            }
+        }
+
+        return $result;
     }
 
     /**

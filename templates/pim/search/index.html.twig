@@ -34,7 +34,7 @@
                     {% for result in page.results %}
                         {% set item = result.item %}
                         {% set type_label = item.type.value == 'lieu' ? 'Lieu' : (item.type.value == 'activite' ? 'Activité' : (item.type.value == 'restaurant' ? 'Restaurant' : 'Service')) %}
-                        {% set status_label = item.status.value == 'en_cours' ? 'En cours' : (item.status.value == 'en_attente_validation' ? 'En attente' : (item.status.value == 'publiee' ? 'Publiée' : 'Archivée')) %}
+                        {% set status_label = item.status.value == 'en_cours' ? 'En cours' : (item.status.value == 'en_attente_validation' ? 'En attente' : (item.status.value == 'validee' ? 'Validée' : (item.status.value == 'publiee' ? 'Publiée' : 'Archivée'))) %}
                         <tr>
                             <td><span class="badge badge-neutral">{{ type_label }}</span></td>
                             <td><strong>{{ item.code }}</strong><br>{{ item.label|default('—') }}</td>

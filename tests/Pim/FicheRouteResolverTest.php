@@ -15,16 +15,17 @@ final class FicheRouteResolverTest extends TestCase
     public function testResolvesShowAndEditRoutesForSupportedTypes(): void
     {
         $resolver = new FicheRouteResolver($this->urlGenerator());
+        // L'éditeur MDM est la vue unique : « voir » et « modifier » y mènent.
         $expected = [
-            TypeFiche::Lieu->value => ['app_pim_lieu_show', 'app_pim_lieu_edit'],
-            TypeFiche::Activite->value => ['app_pim_activite_show', 'app_pim_activite_edit'],
-            TypeFiche::Restaurant->value => ['app_pim_restaurant_show', 'app_pim_restaurant_edit'],
-            TypeFiche::ServiceEvenementiel->value => ['app_pim_service_show', 'app_pim_service_edit'],
+            TypeFiche::Lieu->value => 'app_mdm_fiche_lieu',
+            TypeFiche::Activite->value => 'app_mdm_fiche_gamme',
+            TypeFiche::Restaurant->value => 'app_mdm_fiche_gamme',
+            TypeFiche::ServiceEvenementiel->value => 'app_mdm_fiche_gamme',
         ];
 
-        foreach ($expected as $type => [$showRoute, $editRoute]) {
-            self::assertSame('/'.$showRoute.'/01ARZ', $resolver->showUrl(TypeFiche::from($type), '01ARZ'));
-            self::assertSame('/'.$editRoute.'/01ARZ', $resolver->editUrl(TypeFiche::from($type), '01ARZ'));
+        foreach ($expected as $type => $route) {
+            self::assertSame('/'.$route.'/01ARZ', $resolver->showUrl(TypeFiche::from($type), '01ARZ'));
+            self::assertSame($resolver->showUrl(TypeFiche::from($type), '01ARZ'), $resolver->editUrl(TypeFiche::from($type), '01ARZ'));
         }
     }
 

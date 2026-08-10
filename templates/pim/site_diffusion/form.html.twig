@@ -1,0 +1,16 @@
+{% extends 'base.html.twig' %}
+{% block title %}{{ site ? 'Modifier un site de diffusion' : 'Ajouter un site de diffusion' }}{% endblock %}
+{% block body %}
+<main class="page">
+    <a class="back-link" href="{{ path('app_pim_site_diffusion_index') }}">← Retour aux sites de diffusion</a>
+    <header class="page-header">
+        <div class="page-header-copy">
+            <p class="page-kicker">Administration</p>
+            <h1>{{ site ? 'Modifier « ' ~ site.label ~ ' »' : 'Ajouter un site de diffusion' }}</h1>
+        </div>
+    </header>
+    <section class="card">
+        {{ form(form) }}
+    </section>
+</main>
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends 'base.html.twig' %}
+{% block title %}Sites de diffusion{% endblock %}
+{% block body %}
+<main class="page">
+    <header class="page-header">
+        <div class="page-header-copy">
+            <p class="page-kicker">Administration</p>
+            <h1>Sites de diffusion</h1>
+            <p class="page-description">
+                Le référentiel des canaux de diffusion des fiches. Ce n'est pas une liste de valeurs :
+                un site porte un groupe, des mentions (obligatoire, payant) et une présélection par gamme.
+            </p>
+        </div>
+        <div class="table-actions">
+            <a class="btn" href="{{ path('app_pim_site_diffusion_new') }}">Ajouter un site</a>
+            <a class="btn btn-secondary" href="{{ path('app_pim_lov_index') }}">Listes de valeurs</a>
+        </div>
+    </header>
+    <section class="card table-wrapper"><table class="data-table">
+        <thead><tr><th>Position</th><th>Code</th><th>Libellé</th><th>Groupe</th><th>Mentions</th><th>Présélection</th><th>Actif</th><th></th></tr></thead>
+        <tbody>
+        {% for site in sites %}
+            <tr>
+                <td>{{ site.position }}</td>
+                <td><code>{{ site.code }}</code></td>
+                <td>{{ site.label }}</td>
+                <td>{{ site.groupe }}</td>
+                <td>
+                    {% if site.obligatoire %}<span class="badge badge-info">obligatoire</span>{% endif %}
+                    {% if site.payant %}<span class="badge badge-warning">payant</span>{% endif %}
+                </td>
+                <td>
+                    {% for gamme in site.gammesParDefaut %}<span class="badge badge-neutral">{{ gamme.value }}</span>{% else %}—{% endfor %}
+                </td>
+                <td>{{ site.actif ? 'Oui' : 'Non' }}</td>
+                <td><a class="btn btn-secondary btn-small" href="{{ path('app_pim_site_diffusion_edit', {id: site.id}) }}">Modifier</a></td>
+            </tr>
+        {% else %}
+            <tr><td class="empty-state" colspan="8">Aucun site. Lancez <code>app:sites-diffusion:sync</code> pour charger le catalogue provisoire.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table></section>
+</main>
+{% endblock %}

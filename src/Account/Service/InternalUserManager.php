@@ -89,6 +89,17 @@ final readonly class InternalUserManager
         $this->entityManager->flush();
     }
 
+    /** L'utilisateur devra choisir un nouveau mot de passe à sa prochaine navigation. */
+    public function forcePasswordChange(User $user): void
+    {
+        if ($user->isDeleted()) {
+            throw new \DomainException('Ce compte a été supprimé.');
+        }
+        $user->requirePasswordChange();
+        $this->entityManager->flush();
+        $this->logger->info('account.password_change.forced', ['user_id' => $user->id()]);
+    }
+
     public function delete(User $user, User $actor): void
     {
         if ($user->id() === $actor->id()) {

@@ -48,6 +48,7 @@ final class GlobalSearchType extends AbstractType
                 'choices' => [
                     'En cours' => StatutFiche::EnCours,
                     'En attente' => StatutFiche::EnAttenteValidation,
+                    'Validée' => StatutFiche::Validee,
                     'Publiée' => StatutFiche::Publiee,
                     'Archivée' => StatutFiche::Archivee,
                 ],

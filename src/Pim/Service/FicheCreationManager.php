@@ -22,16 +22,28 @@ use App\Pim\Form\FicheCreation;
 use App\Pim\Lov\LieuLovCatalog;
 use App\Pim\Message\IndexFiche;
 use App\Pim\Repository\FicheCollaborateurRepository;
+use App\Pim\Repository\SiteDiffusionRepository;
 use App\Shared\Outbox\OutboxPublisherInterface;
 use Doctrine\ORM\EntityManagerInterface;
 
 final readonly class FicheCreationManager
 {
+    /**
+     * Contact affecté quand « contact de repli » est coché. Adresse provisoire
+     * reprise de la maquette — à confirmer par le métier.
+     */
+    private const CONTACT_REPLI = [
+        'email' => 'referencement@businessprofilers.fr',
+        'prenom' => 'Service',
+        'nom' => 'Référencement',
+    ];
+
     public function __construct(
         private EntityManagerInterface $entityManager,
         private OutboxPublisherInterface $outbox,
         private FicheCollaborateurRepository $collaborateurs,
         private RechercheEntrepriseClient $entreprises,
+        private SiteDiffusionRepository $sitesDiffusion,
     ) {
     }
 
@@ -67,15 +79,25 @@ final readonly class FicheCreationManager
 
             $this->applyClassification($entity, $data);
             $this->applyReferencement($entity, $fiche, $data);
+            $this->applySitesDiffusion($fiche, $data);
             if ($entity instanceof Lieu && null !== $entreprise) {
                 self::enrichAdministratif($entity, $entreprise);
             }
 
-            $collaborateur = $this->resolveCollaborateur($data);
-            if (null !== $collaborateur) {
+            if ($data->contactRepli) {
+                // Le repli remplace le contact prestataire et verrouille l'envoi des accès.
+                $data->envoyerAcces = false;
                 $this->entityManager->persist(
-                    new FicheAffiliation($collaborateur, $fiche, FicheAffiliationRole::Manager, $actor),
+                    new FicheAffiliation($this->resolveContactRepli(), $fiche, FicheAffiliationRole::Manager, $actor, repli: true),
                 );
+                $collaborateur = null;
+            } else {
+                $collaborateur = $this->resolveCollaborateur($data);
+                if (null !== $collaborateur) {
+                    $this->entityManager->persist(
+                        new FicheAffiliation($collaborateur, $fiche, FicheAffiliationRole::Manager, $actor),
+                    );
+                }
             }
 
             $this->entityManager->persist($entity);
@@ -142,6 +164,7 @@ final readonly class FicheCreationManager
      */
     private function applyReferencement(object $entity, Fiche $fiche, FicheCreation $data): void
     {
+        $fiche->changeBusinessPremium($data->businessPremium);
         if (null !== $data->miceStatut) {
             $fiche->replaceAttributeValues('MICE_STATUT', [LieuLovCatalog::valueId('MICE_STATUT', $data->miceStatut)]);
         }
@@ -154,6 +177,33 @@ final readonly class FicheCreationManager
         if ($entity instanceof Lieu) {
             $entity->changeMiceStatut($data->miceStatut);
         }
+    }
+
+    /** La sélection soumise, complétée des sites obligatoires. */
+    private function applySitesDiffusion(Fiche $fiche, FicheCreation $data): void
+    {
+        $sites = array_values(array_filter(
+            $this->sitesDiffusion->findActifsOrdonnes(),
+            static fn ($site): bool => $site->obligatoire() || in_array($site->id(), $data->sitesDiffusion, true),
+        ));
+        if ([] !== $sites) {
+            $fiche->replaceSiteDiffusion($sites);
+        }
+    }
+
+    private function resolveContactRepli(): FicheCollaborateur
+    {
+        $collaborateur = $this->collaborateurs->findOneByEmail(self::CONTACT_REPLI['email']);
+        if (null === $collaborateur) {
+            $collaborateur = new FicheCollaborateur(
+                self::CONTACT_REPLI['email'],
+                self::CONTACT_REPLI['prenom'],
+                self::CONTACT_REPLI['nom'],
+            );
+            $this->entityManager->persist($collaborateur);
+        }
+
+        return $collaborateur;
     }
 
     private function resolveCollaborateur(FicheCreation $data): ?FicheCollaborateur

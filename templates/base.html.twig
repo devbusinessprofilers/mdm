@@ -20,15 +20,16 @@
         {% if app.user %}
             <header class="app-header">
                 <nav class="app-nav" aria-label="Navigation principale">
+                    {% block navigation %}
                     <a href="{{ path('app_pim_home') }}" class="brand">MDM Business Profilers</a>
                     <a class="nav-link" href="{{ path('app_dashboard_index') }}">Tableau de bord</a>
                     {% if is_granted('ROLE_BP_EDITOR') %}
                         <a class="nav-link" href="{{ path('app_pim_admin') }}">Administration</a>
-                        <a class="nav-link" href="{{ path('app_pim_fiche_index') }}">Fiches</a>
-                        <a class="nav-link" href="{{ path('app_pim_lieu_index') }}">Lieux</a>
-                        <a class="nav-link" href="{{ path('app_pim_activite_index') }}">Activités</a>
-                        <a class="nav-link" href="{{ path('app_pim_restaurant_index') }}">Restaurants</a>
-                        <a class="nav-link" href="{{ path('app_pim_service_index') }}">Services</a>
+                        <a class="nav-link" href="{{ path('app_mdm_referentiel_general') }}">Fiches</a>
+                        <a class="nav-link" href="{{ path('app_mdm_lieux') }}">Lieux</a>
+                        <a class="nav-link" href="{{ path('app_mdm_referentiel_gamme', {gamme: 'activites'}) }}">Activités</a>
+                        <a class="nav-link" href="{{ path('app_mdm_referentiel_gamme', {gamme: 'restaurants'}) }}">Restaurants</a>
+                        <a class="nav-link" href="{{ path('app_mdm_referentiel_gamme', {gamme: 'services'}) }}">Services</a>
                         <a class="nav-link" href="{{ path('app_dam_dashboard') }}">DAM</a>
                         {% if is_granted('ROLE_BP_VALIDATOR') %}
                             <a class="nav-link" href="{{ path('app_pim_lov_index') }}">Listes de valeurs</a>
@@ -44,6 +45,7 @@
                     {% endif %}
                     {% set logout_form_view = logout_form() %}
                     {{ form(logout_form_view) }}
+                    {% endblock %}
                 </nav>
             </header>
         {% endif %}

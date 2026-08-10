@@ -26,6 +26,7 @@ final class InternalUserAdminController extends AbstractController
         $toggleForms = [];
         $resendForms = [];
         $deleteForms = [];
+        $forcePasswordForms = [];
 
         foreach ($userEntities as $user) {
             if (in_array('ROLE_SUPER_ADMIN', $user->getRoles(), true)) {
@@ -35,6 +36,9 @@ final class InternalUserAdminController extends AbstractController
             $toggleForms[$user->id()] = $forms->internalToggle($user, $user->isActive() ? 'Désactiver' : 'Activer')->createView();
             $resendForms[$user->id()] = $forms->internalResendCredentials($user)->createView();
             $deleteForms[$user->id()] = $forms->internalDelete($user)->createView();
+            if (!$user->mustChangePassword()) {
+                $forcePasswordForms[$user->id()] = $forms->internalForcePasswordChange($user)->createView();
+            }
         }
 
         return $this->render('account/user_admin/index.html.twig', [
@@ -44,6 +48,7 @@ final class InternalUserAdminController extends AbstractController
             'toggle_forms' => $toggleForms,
             'resend_forms' => $resendForms,
             'delete_forms' => $deleteForms,
+            'force_password_forms' => $forcePasswordForms,
         ]);
     }
 
@@ -122,6 +127,25 @@ final class InternalUserAdminController extends AbstractController
 
         $manager->resendCredentials($user);
         $this->addFlash('success', null === $user->getPassword() ? 'Invitation renvoyée.' : 'Lien de réinitialisation envoyé.');
+
+        return $this->redirectToRoute('app_account_user_admin_index');
+    }
+
+    #[Route('/{id}/mot-de-passe-force', name: 'force_password', methods: ['POST'])]
+    public function forcePassword(string $id, Request $request, UserRepository $users, AccountAdminFormFactory $forms, InternalUserManager $manager): Response
+    {
+        $user = $users->find($id);
+        if (!$user instanceof User || $user->isDeleted() || in_array('ROLE_SUPER_ADMIN', $user->getRoles(), true)) {
+            throw $this->createNotFoundException();
+        }
+        $form = $forms->internalForcePasswordChange($user);
+        $form->handleRequest($request);
+        if (!$form->isSubmitted() || !$form->isValid()) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $manager->forcePasswordChange($user);
+        $this->addFlash('success', 'L\'utilisateur devra changer son mot de passe à sa prochaine connexion.');
 
         return $this->redirectToRoute('app_account_user_admin_index');
     }

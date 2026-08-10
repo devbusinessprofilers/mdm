@@ -79,21 +79,20 @@ final class FicheCreationControllerIntegrationTest extends WebTestCase
     {
         $client = $this->createClientWithUser();
         $expectations = [
-            ['lieu', 'pim_lieu', '/admin/lieux/'],
-            ['restaurant', 'pim_restaurant', '/admin/restaurants/'],
-            ['activite', 'pim_activite', '/admin/activites/'],
-            ['service_evenementiel', 'pim_service_evenementiel', '/admin/services/'],
+            ['lieu', 'pim_lieu', '/referentiel/lieux/fiche/'],
+            ['restaurant', 'pim_restaurant', '/referentiel/restaurants/fiche/'],
+            ['activite', 'pim_activite', '/referentiel/activites/fiche/'],
+            ['service_evenementiel', 'pim_service_evenementiel', '/referentiel/services/fiche/'],
         ];
         foreach ($expectations as [$type, $table, $editPrefix]) {
-            $client->request('GET', '/admin/fiches/nouvelle?type='.$type);
+            $client->request('GET', '/referentiel/fiche/nouvelle?type='.$type);
             self::assertResponseIsSuccessful();
             $client->submitForm('Créer la fiche', [
                 'fiche_creation[type]' => $type,
                 'fiche_creation[label]' => 'Fiche '.$type,
             ]);
             $location = (string) $client->getResponse()->headers->get('Location');
-            self::assertStringStartsWith($editPrefix, $location, 'Redirection vers l’édition '.$type);
-            self::assertStringEndsWith('/modifier', $location);
+            self::assertStringStartsWith($editPrefix, $location, 'Redirection vers l’éditeur '.$type);
             self::assertSame(1, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM '.$table));
             self::assertSame(
                 'en_cours',
@@ -105,7 +104,7 @@ final class FicheCreationControllerIntegrationTest extends WebTestCase
     public function testLieuCreationStoresLocalisationReferencementAndVisibilite(): void
     {
         $client = $this->createClientWithUser();
-        $client->request('GET', '/admin/fiches/nouvelle');
+        $client->request('GET', '/referentiel/fiche/nouvelle');
         $client->submitForm('Créer la fiche', [
             'fiche_creation[type]' => 'lieu',
             'fiche_creation[label]' => 'Château des tests',
@@ -113,13 +112,16 @@ final class FicheCreationControllerIntegrationTest extends WebTestCase
             'fiche_creation[localisation][codePostal]' => '60500',
             'fiche_creation[localisation][ville]' => 'Chantilly',
             'fiche_creation[lieuTypologie]' => ['GENERALE_TYPOLOGIE_6'],
-            'fiche_creation[miceStatut]' => 'MICE_STATUT_4',
+            'fiche_creation[businessPremium]' => '1',
             'fiche_creation[sitePremium]' => ['SITE_PREMIUM_1', 'SITE_PREMIUM_11'],
         ]);
         self::assertResponseRedirects();
 
         self::assertSame('Chantilly', $this->connection->fetchOne('SELECT ville FROM pim_localisation'));
-        self::assertSame('MICE_STATUT_4', $this->connection->fetchOne('SELECT mice_statut FROM pim_lieu'));
+        // Le niveau de statut (MICE_STATUT) ne se choisit plus à la création,
+        // seul l'interrupteur Business Premium y figure.
+        self::assertNull($this->connection->fetchOne('SELECT mice_statut FROM pim_lieu'));
+        self::assertSame(1, (int) $this->connection->fetchOne('SELECT business_premium FROM pim_fiche'));
         $valueIds = array_map('intval', $this->connection->fetchFirstColumn(
             'SELECT value_id FROM pim_fiche_attribute_value WHERE attribute_code = ? ORDER BY value_id',
             ['SITE_PREMIUM'],
@@ -131,18 +133,18 @@ final class FicheCreationControllerIntegrationTest extends WebTestCase
         sort($expected);
         self::assertSame($expected, $valueIds);
         self::assertSame(
-            [LieuLovCatalog::valueId('MICE_STATUT', 'MICE_STATUT_4')],
-            array_map('intval', $this->connection->fetchFirstColumn(
+            [],
+            $this->connection->fetchFirstColumn(
                 'SELECT value_id FROM pim_fiche_attribute_value WHERE attribute_code = ?',
                 ['MICE_STATUT'],
-            )),
+            ),
         );
     }
 
     public function testHiddenSectionsOfOtherGammesAreNeverPersisted(): void
     {
         $client = $this->createClientWithUser();
-        $client->request('GET', '/admin/fiches/nouvelle');
+        $client->request('GET', '/referentiel/fiche/nouvelle');
         $client->submitForm('Créer la fiche', [
             'fiche_creation[type]' => 'restaurant',
             'fiche_creation[label]' => 'Restaurant strict',
@@ -165,7 +167,7 @@ final class FicheCreationControllerIntegrationTest extends WebTestCase
         $this->entityManager->persist($collaborateur);
         $this->entityManager->flush();
 
-        $crawler = $client->request('GET', '/admin/fiches/nouvelle');
+        $crawler = $client->request('GET', '/referentiel/fiche/nouvelle');
         $autocompleteField = $crawler->filter('select[name="fiche_creation[collaborateurExistant]"]');
         self::assertCount(1, $autocompleteField);
         $autocompleteUrl = (string) $autocompleteField->attr('data-symfony--ux-autocomplete--autocomplete-url-value');
@@ -175,7 +177,7 @@ final class FicheCreationControllerIntegrationTest extends WebTestCase
         $payload = json_decode((string) $client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR);
         self::assertSame([['value' => $collaborateur->id(), 'text' => 'Ada Lovelace — manager@example.test']], $payload['results']);
 
-        $crawler = $client->request('GET', '/admin/fiches/nouvelle');
+        $crawler = $client->request('GET', '/referentiel/fiche/nouvelle');
         $form = $crawler->selectButton('Créer la fiche')->form();
         $form->disableValidation();
         $form->setValues([
@@ -197,7 +199,7 @@ final class FicheCreationControllerIntegrationTest extends WebTestCase
     public function testWarnsOnDuplicateThenCreatesAfterConfirmation(): void
     {
         $client = $this->createClientWithUser();
-        $client->request('GET', '/admin/fiches/nouvelle');
+        $client->request('GET', '/referentiel/fiche/nouvelle');
         $client->submitForm('Créer la fiche', [
             'fiche_creation[type]' => 'lieu',
             'fiche_creation[label]' => 'Château unique',
@@ -206,7 +208,7 @@ final class FicheCreationControllerIntegrationTest extends WebTestCase
         self::assertSame(1, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM pim_fiche'));
 
         // Même nom (casse différente) : avertissement, pas de création.
-        $client->request('GET', '/admin/fiches/nouvelle');
+        $client->request('GET', '/referentiel/fiche/nouvelle');
         $client->submitForm('Créer la fiche', [
             'fiche_creation[type]' => 'restaurant',
             'fiche_creation[label]' => 'château UNIQUE',
@@ -228,7 +230,7 @@ final class FicheCreationControllerIntegrationTest extends WebTestCase
     public function testCreatesANewCollaborateurWithPhoneAndQueuesAccessEmail(): void
     {
         $client = $this->createClientWithUser();
-        $client->request('GET', '/admin/fiches/nouvelle');
+        $client->request('GET', '/referentiel/fiche/nouvelle');
         $client->submitForm('Créer la fiche', [
             'fiche_creation[type]' => 'service_evenementiel',
             'fiche_creation[label]' => 'Service avec accès',

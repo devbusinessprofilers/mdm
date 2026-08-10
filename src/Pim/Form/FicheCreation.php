@@ -24,8 +24,17 @@ final class FicheCreation
     /** @var list<string> */ public array $thematiqueActivite = [];
     /** @var list<string> */ public array $typePrestataire = [];
 
+    public bool $businessPremium = false;
+
+    /** Niveau de statut : réservé au formulaire complet, conservé pour les reprises. */
     public ?string $miceStatut = null;
     /** @var list<string> */ public array $sitePremium = [];
+
+    /** @var list<int> Sites de diffusion retenus (les obligatoires sont réappliqués côté serveur). */
+    public array $sitesDiffusion = [];
+
+    /** Le service référencement remplace le contact prestataire ; l'envoi des accès est désactivé. */
+    public bool $contactRepli = false;
 
     public ?FicheCollaborateur $collaborateurExistant = null;
     public ?string $collabPrenom = null;

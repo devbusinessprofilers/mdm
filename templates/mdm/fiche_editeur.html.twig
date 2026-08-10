@@ -1,0 +1,185 @@
+{% extends 'mdm/base.html.twig' %}
+
+{# Éditeur de fiche par sections, toutes gammes — c'est LA vue de fiche (les
+   anciennes vues « voir » et « modifier » de /admin ont été fusionnées ici).
+   Gabarit sobre : structure et fonctionnement de la maquette, le style
+   viendra du front. #}
+
+{% macro collection(field, title) %}
+    <fieldset
+        data-controller="form-collection"
+        data-form-collection-index-value="{{ field|length }}"
+        data-form-collection-prototype-value="{{ form_widget(field.vars.prototype)|e('html_attr') }}"
+    >
+        <legend>{{ title }}</legend>
+        <div data-form-collection-target="items">
+            {% for item in field %}
+                <fieldset data-form-collection-item>
+                    {{ form_widget(item) }}
+                    <button type="button" data-action="form-collection#remove">Retirer</button>
+                </fieldset>
+            {% endfor %}
+        </div>
+        <button type="button" data-action="form-collection#add" data-remove-label="Retirer">Ajouter</button>
+    </fieldset>
+{% endmacro %}
+
+{% block title %}{{ fiche.label ?? 'Fiche' }} · {{ section.titre }}{% endblock %}
+
+{% set statut_libelles = {
+    'en_cours': 'En cours',
+    'en_attente_validation': 'En attente',
+    'validee': 'Validée',
+    'publiee': 'Publiée',
+    'archivee': 'Archivée',
+} %}
+
+{% block body %}
+<main class="page">
+    <header class="page-header">
+        <div class="page-header-copy">
+            <p class="page-kicker">Fiche</p>
+            <h1>{{ fiche.label ?? 'Sans libellé' }}</h1>
+            <p class="page-description">
+                {{ entete.reference }} · v{{ entete.version }}
+                · <span class="badge {{ entete.statut == 'publiee' ? 'badge-success' : (entete.statut == 'archivee' ? 'badge-neutral' : 'badge-info') }}">{{ statut_libelles[entete.statut] ?? entete.statut }}</span>
+                · Complétude {{ entete.completude }} %
+            </p>
+            {% include 'dam/_fiche_alerts.html.twig' %}
+        </div>
+        <div class="table-actions">
+            <a class="btn btn-secondary btn-small" href="{{ liens.ocr }}">Extraire d'un document</a>
+            <a class="btn btn-secondary btn-small" href="{{ liens.traductions }}">Traductions</a>
+            <a class="btn btn-secondary btn-small" href="{{ liens.historique }}">Historique complet</a>
+        </div>
+    </header>
+
+    <div class="table-actions">
+        {% for nom, action in actions %}
+            {% set attribut = {'submit': 'FICHE_SUBMIT', 'validate': 'FICHE_VALIDATE', 'reject': 'FICHE_VALIDATE', 'publish': 'FICHE_PUBLISH', 'archive': 'FICHE_ARCHIVE'}[nom] %}
+            {% if is_granted(attribut, fiche) %}{{ form(action) }}{% endif %}
+        {% endfor %}
+        {% if is_granted('FICHE_DELETE', fiche) %}<div class="danger-form">{{ form(action_suppression) }}</div>{% endif %}
+    </div>
+
+    <div class="admin-grid">
+        <aside>
+            <nav class="card" aria-label="Sections de la fiche">
+                <h2>Ma fiche</h2>
+                <ul>
+                    {% for onglet in onglets %}
+                        <li>
+                            <a class="text-link" href="{{ onglet.url }}"
+                               {% if onglet.actif %}aria-current="page"{% endif %}>
+                                {{ onglet.actif ? '▸ ' : '' }}{{ onglet.titre }}
+                            </a>
+                            {% if onglet.completude is not null %}<small>{{ onglet.completude }} %</small>{% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            </nav>
+        </aside>
+
+        <section class="card">
+            <h2>{{ section.titre }}{% if onglets[section_index].completude is not null %} <small>{{ onglets[section_index].completude }} % complété</small>{% endif %}</h2>
+
+            {% if section.champs is not empty %}
+                {{ form_start(form) }}
+                    {% for champ in section.champs %}
+                        {% set widget = attribute(form, champ) %}
+                        {% if widget.vars.prototype is defined %}
+                            {{ _self.collection(widget, widget.vars.label ?? champ) }}
+                        {% else %}
+                            {{ form_row(widget) }}
+                        {% endif %}
+                    {% endfor %}
+                    {# Le jeton CSRF doit voyager avec la soumission partielle. #}
+                    {{ form_widget(form._token) }}
+                    {{ form_row(form.submit, {label: 'Enregistrer la section'}) }}
+                {{ form_end(form, {render_rest: false}) }}
+            {% endif %}
+
+            {% if 'medias' in section.blocs and medias %}
+                {% if medias.gamme == 'lieu' %}
+                    {% include 'pim/lieu/_medias.html.twig' with medias.vars %}
+                {% else %}
+                    {% include 'pim/_documents_gamme.html.twig' with medias.vars %}
+                {% endif %}
+            {% endif %}
+
+            {% if 'collaborateurs' in section.blocs %}
+                {% set peut_gerer = is_granted('FICHE_MANAGE_AFFILIATIONS', fiche) %}
+                <div class="table-shell"><div class="table-scroll"><table class="data-table">
+                    <thead><tr><th>Nom</th><th>Email</th><th>Téléphone</th><th>Rôle · drapeaux</th>{% if peut_gerer %}<th></th>{% endif %}</tr></thead>
+                    <tbody>
+                    {% for ligne in affiliations %}
+                        {% set affiliation = ligne.affiliation %}
+                        <tr>
+                            <td>{{ affiliation.collaborateur.firstName }} {{ affiliation.collaborateur.lastName }}</td>
+                            <td>{{ affiliation.collaborateur.email }}</td>
+                            <td>{{ affiliation.collaborateur.phone ?? '—' }}</td>
+                            <td>
+                                {% if peut_gerer %}
+                                    {{ form(ligne.edition) }}
+                                {% else %}
+                                    <span class="badge badge-neutral">{{ affiliation.role.value }}</span>
+                                    {% if affiliation.receivesRequests %}<span class="badge badge-info">contact principal</span>{% endif %}
+                                    {% if affiliation.repli %}<span class="badge badge-warning">repli</span>{% endif %}
+                                {% endif %}
+                            </td>
+                            {% if peut_gerer %}<td>{{ form(ligne.suppression) }}</td>{% endif %}
+                        </tr>
+                    {% else %}
+                        <tr><td class="empty-state" colspan="{{ peut_gerer ? 5 : 4 }}">Aucun collaborateur affilié.</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table></div></div>
+                {% if peut_gerer and form_invitation %}
+                    <h3>Inviter un collaborateur</h3>
+                    <p class="page-description">L'email est la clé : une adresse déjà connue rattache le collaborateur existant. La marketplace crée le compte et envoie le mail d'accès.</p>
+                    {{ form(form_invitation) }}
+                {% else %}
+                    <p class="page-description">La gestion des collaborateurs est réservée aux validateurs.</p>
+                {% endif %}
+            {% endif %}
+
+            {% if 'sites' in section.blocs %}
+                <h3>Sites de diffusion</h3>
+                <p class="page-description">Les sites obligatoires restent cochés ; les sites payants sont signalés.</p>
+                {{ form(form_sites) }}
+            {% endif %}
+
+            {% if 'suggestions' in section.blocs %}
+                <h3>Extractions de documents</h3>
+                {% if extractions is not empty %}
+                    <ul>
+                        {% for extraction in extractions %}
+                            <li>
+                                <a class="text-link" href="{{ path('app_ocr_show', {id: fiche.idString, extractionId: extraction.id}) }}">{{ extraction.document.originalFilename }}</a>
+                                · {{ extraction.status.value }} · {{ extraction.suggestionCount|default('—') }} valeur(s)
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="page-description">Aucune extraction pour cette fiche.</p>
+                {% endif %}
+                <a class="btn btn-secondary btn-small" href="{{ liens.ocr }}">Extraire d'un document</a>
+            {% endif %}
+
+            {% if 'historique' in section.blocs %}
+                <h3>Dernières modifications</h3>
+                {% if historique is not empty %}
+                    <ul>
+                        {% for revision in historique %}
+                            <li>{{ revision.createdAt|date('d/m/Y H:i') }} · {{ revision.action }} · {{ revision.actor }} <small>({{ revision.source }})</small></li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="page-description">Aucune modification enregistrée.</p>
+                {% endif %}
+                <a class="btn btn-secondary btn-small" href="{{ liens.historique }}">Historique complet et restauration</a>
+            {% endif %}
+        </section>
+    </div>
+</main>
+{% endblock %}

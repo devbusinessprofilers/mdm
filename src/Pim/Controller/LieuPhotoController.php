@@ -10,6 +10,8 @@ use App\Pim\Repository\RessourceLieuRepository;
 use App\Pim\Service\InternalFicheMutationPolicy;
 use App\Pim\Service\LieuMediaCsrfGuard;
 use App\Pim\Service\LieuPhotoManager;
+use App\Pim\Service\FicheSectionsCatalogue;
+use App\Pim\Enum\TypeFiche;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\JsonResponse;

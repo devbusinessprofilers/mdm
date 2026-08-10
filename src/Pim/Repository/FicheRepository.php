@@ -71,6 +71,23 @@ final class FicheRepository extends ServiceEntityRepository
         return $fiches;
     }
 
+    /** @return list<Fiche> Dernières fiches publiées, les plus récentes d'abord. */
+    public function findDernieresPubliees(int $limit): array
+    {
+        /** @var list<Fiche> $fiches */
+        $fiches = $this->createQueryBuilder('fiche')
+            ->andWhere('fiche.status = :status')
+            ->setParameter('status', StatutFiche::Publiee)
+            ->andWhere('fiche.publishedAt IS NOT NULL')
+            ->orderBy('fiche.publishedAt', 'DESC')
+            ->addOrderBy('fiche.id', 'DESC')
+            ->setMaxResults(max(1, min(20, $limit)))
+            ->getQuery()
+            ->getResult();
+
+        return $fiches;
+    }
+
     /** @return list<Fiche> */
     public function findPublishedAfter(?string $afterId, int $limit): array
     {

@@ -90,9 +90,14 @@ services:
         arguments:
             $sender: '%env(MAILER_FROM)%'
 
-    App\Account\MessageHandler\CollaborateurAccessRequestedHandler:
+    # L'invitation d'un collaborateur est poussée vers la marketplace, qui crée
+    # le compte et envoie l'email. URL vide = envoi journalisé et ignoré (dev).
+    App\Account\Service\MarketplaceCollaborateurGatewayInterface: '@App\Account\Service\MarketplaceHttpGateway'
+
+    App\Account\Service\MarketplaceHttpGateway:
         arguments:
-            $sender: '%env(MAILER_FROM)%'
+            $endpoint: '%env(MARKETPLACE_API_URL)%'
+            $token: '%env(MARKETPLACE_API_TOKEN)%'
 
     App\Pim\Service\RechercheEntrepriseClient:
         arguments:

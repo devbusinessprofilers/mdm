@@ -11,6 +11,11 @@
             {{ form(role_forms[user.id]) }}
             {{ form(toggle_forms[user.id]) }}
             {{ form(resend_forms[user.id]) }}
+            {% if force_password_forms[user.id] is defined %}
+                {{ form(force_password_forms[user.id]) }}
+            {% else %}
+                <span class="badge badge-warning">Changement de mot de passe demandé</span>
+            {% endif %}
             <div class="danger-form">{{ form(delete_forms[user.id]) }}</div>
         {% else %}<span>Géré en console</span>{% endif %}
         </td></tr>
