@@ -12,6 +12,7 @@ use App\Pim\Entity\FicheCollaborateur;
 use App\Pim\Entity\Localisation;
 use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Entity\Lieu\Lieu;
+use App\Pim\Entity\SiteDiffusion;
 use App\Pim\Enum\StatutFiche;
 use App\Pim\Service\ReferentielActionGroupee;
 use Symfony\Component\Uid\Ulid;
@@ -253,6 +254,65 @@ final class ReferentielControllerTest extends WebTestCase
         self::assertStringContainsString('Mes fiches', $crawler->text(null, true));
     }
 
+    public function testActionGroupeeAttribueLaVisibiliteSansToucherLeWorkflow(): void
+    {
+        $client = self::createClient();
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $this->connection = self::getContainer()->get(Connection::class);
+        $this->clearTables();
+
+        $user = new User('visibilite@example.test', ['ROLE_BP_VALIDATOR']);
+        $user->setPassword('not-used-by-login-user');
+        $entityManager->persist($user);
+        $marketplace = new SiteDiffusion('MARKETPLACE_TEST', 'Marketplace', 'Réseau', false, false, 0, []);
+        $portail = new SiteDiffusion('PORTAIL_TEST', 'Portail', 'Réseau', false, false, 1, []);
+        $entityManager->persist($marketplace);
+        $entityManager->persist($portail);
+
+        $sansSites = new Lieu();
+        $sansSites->changeLabel('Château sans canal');
+        $sansSites->fiche()->publishForImport();
+        $entityManager->persist($sansSites);
+        $dejaServie = new Lieu();
+        $dejaServie->changeLabel('Château déjà diffusé');
+        $dejaServie->fiche()->replaceSiteDiffusion([$marketplace, $portail]);
+        $entityManager->persist($dejaServie);
+        $entityManager->flush();
+        $ficheId = $sansSites->fiche()->idString();
+        $client->loginUser($user);
+
+        $crawler = $client->request('GET', '/referentiel');
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('body', 'Attribuer la visibilité');
+        $form = $crawler->selectButton('Appliquer')->form();
+        $form['selection[action]'] = 'visibilite';
+        $values = $form->getPhpValues();
+        $values['selection']['ids'] = [$ficheId, $dejaServie->fiche()->idString()];
+        $values['selection']['sites'] = [(string) $marketplace->id(), (string) $portail->id()];
+        $client->request($form->getMethod(), $form->getUri(), $values);
+
+        self::assertResponseRedirects();
+        $client->followRedirect();
+        // La fiche déjà servie est comptée ignorée, rien n'est retiré.
+        self::assertSelectorTextContains('body', '1 élément(s) traité(s), 1 ignoré(s)');
+        $entityManager->clear();
+        $fiche = $entityManager->find(Fiche::class, $ficheId);
+        self::assertInstanceOf(Fiche::class, $fiche);
+        self::assertEqualsCanonicalizing(
+            [$marketplace->id(), $portail->id()],
+            $fiche->siteDiffusionIds(),
+        );
+        // Attribuer un canal est une mise à jour technique : le workflow ne bouge pas.
+        self::assertSame(StatutFiche::Publiee, $fiche->status());
+
+        // Sans site coché, l'action est refusée.
+        $values['selection']['sites'] = [];
+        $client->request($form->getMethod(), $form->getUri(), $values);
+        self::assertResponseRedirects();
+        $client->followRedirect();
+        self::assertSelectorTextContains('body', 'Choisissez au moins un site de diffusion à attribuer.');
+    }
+
     public function testVueEnregistreePuisSupprimee(): void
     {
         $client = self::createClient();
@@ -291,6 +351,7 @@ final class ReferentielControllerTest extends WebTestCase
         $this->connection->executeStatement('DELETE FROM pim_fiche_affiliation');
         $this->connection->executeStatement('DELETE FROM pim_fiche_collaborateur');
         $this->connection->executeStatement('DELETE FROM pim_fiche_site_diffusion');
+        $this->connection->executeStatement("DELETE FROM pim_site_diffusion WHERE code LIKE '%_TEST'");
         $this->connection->executeStatement('DELETE FROM pim_fiche_search');
         $this->connection->executeStatement('DELETE FROM pim_fiche_attribute_value');
         $this->connection->executeStatement('DELETE FROM pim_lieu_administratif');

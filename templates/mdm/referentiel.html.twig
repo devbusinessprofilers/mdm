@@ -154,6 +154,14 @@
                         <label for="{{ form_selection.tout.vars.id }}">Appliquer à tout le résultat filtré ({{ vue.total }})</label>
                     </span>
                 </div>
+                {% if form_selection.sites.children is not empty %}
+                    <details>
+                        <summary>Sites de diffusion — pour « Attribuer la visibilité » (ajout seul, sans repasser par la validation)</summary>
+                        {{ form_widget(form_selection.sites) }}
+                    </details>
+                {% else %}
+                    {% do form_selection.sites.setRendered %}
+                {% endif %}
                 {% set cases = form_selection.ids.children %}
                 <div class="table-shell"><div class="table-scroll"><table class="data-table">
                     <thead><tr>

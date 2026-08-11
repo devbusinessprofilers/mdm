@@ -9,9 +9,11 @@ use App\Account\Message\CollaborateurAccessRequested;
 use App\Account\Security\FicheVoter;
 use App\Enrichment\Service\FicheTranslationScheduler;
 use App\Pim\Entity\Fiche;
+use App\Pim\Entity\SiteDiffusion;
 use App\Pim\Message\IndexFiche;
 use App\Pim\Repository\FicheAffiliationRepository;
 use App\Pim\Repository\FicheRepository;
+use App\Pim\Repository\SiteDiffusionRepository;
 use App\Shared\Outbox\OutboxPublisherInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\SecurityBundle\Security;
@@ -33,6 +35,7 @@ final readonly class ReferentielActionGroupee
         'exporter' => 5000,
         'acces' => 500,
         'contributeur' => 5000,
+        'visibilite' => 5000,
     ];
 
     private const LOT = 100;
@@ -40,6 +43,7 @@ final readonly class ReferentielActionGroupee
     public function __construct(
         private FicheRepository $fiches,
         private FicheAffiliationRepository $affiliations,
+        private SiteDiffusionRepository $sites,
         private EntityManagerInterface $entityManager,
         private FicheTranslationScheduler $translations,
         private OutboxPublisherInterface $outbox,
@@ -53,13 +57,14 @@ final readonly class ReferentielActionGroupee
     }
 
     /**
-     * @param list<string> $ids ULID texte
+     * @param list<string> $ids     ULID texte
+     * @param list<int>    $siteIds Sites à attribuer (action « visibilite »)
      *
      * @return array{appliquees: int, ignorees: int}
      */
-    public function appliquer(string $action, array $ids, string $actorId, ?User $contributeur = null): array
+    public function appliquer(string $action, array $ids, string $actorId, ?User $contributeur = null, array $siteIds = []): array
     {
-        if (!in_array($action, ['valider', 'publier', 'archiver', 'acces', 'contributeur'], true)) {
+        if (!in_array($action, ['valider', 'publier', 'archiver', 'acces', 'contributeur', 'visibilite'], true)) {
             throw new \InvalidArgumentException(sprintf('Action groupée inconnue : "%s".', $action));
         }
         if (count($ids) > self::plafond($action)) {
@@ -68,12 +73,17 @@ final readonly class ReferentielActionGroupee
         if ('contributeur' === $action && null === $contributeur) {
             throw new \DomainException('Choisissez le contributeur à assigner.');
         }
+        $sitesRetenus = 'visibilite' === $action ? $this->sitesRetenus($siteIds) : [];
+        if ('visibilite' === $action && [] === $sitesRetenus) {
+            throw new \DomainException('Choisissez au moins un site de diffusion à attribuer.');
+        }
         $attribut = match ($action) {
             'valider' => FicheVoter::VALIDATE,
             'publier' => FicheVoter::PUBLISH,
             'archiver' => FicheVoter::ARCHIVE,
             // Accès extranet et assignation relèvent de la gestion des contacts.
             'acces', 'contributeur' => FicheVoter::MANAGE_AFFILIATIONS,
+            'visibilite' => FicheVoter::EDIT,
         };
         $appliquees = 0;
         $ignorees = 0;
@@ -98,6 +108,11 @@ final readonly class ReferentielActionGroupee
                 if ('contributeur' === $action) {
                     $fiche->changeAssignee($contributeur);
                     ++$appliquees;
+                    continue;
+                }
+                if ('visibilite' === $action) {
+                    // Une fiche qui a déjà tous les sites demandés est comptée ignorée.
+                    $fiche->ajouterSitesDiffusion($sitesRetenus) > 0 ? ++$appliquees : ++$ignorees;
                     continue;
                 }
                 try {
@@ -143,6 +158,21 @@ final readonly class ReferentielActionGroupee
         }
 
         return [$envoyes, $ignores];
+    }
+
+    /**
+     * @param list<int> $siteIds
+     *
+     * @return list<SiteDiffusion> Les sites actifs demandés, dans l'ordre d'affichage
+     */
+    private function sitesRetenus(array $siteIds): array
+    {
+        $demandes = array_fill_keys($siteIds, true);
+
+        return array_values(array_filter(
+            $this->sites->findActifsOrdonnes(),
+            static fn (SiteDiffusion $site): bool => null !== $site->id() && isset($demandes[$site->id()]),
+        ));
     }
 
     private function transition(string $action, Fiche $fiche, string $actorId): void

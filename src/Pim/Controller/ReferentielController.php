@@ -105,7 +105,7 @@ final class ReferentielController extends AbstractController
 
             return $retour;
         }
-        /** @var array{ids: list<string>, tout: bool, action: ?string, contributeur: ?\App\Account\Entity\User} $data */
+        /** @var array{ids: list<string>, tout: bool, action: ?string, contributeur: ?\App\Account\Entity\User, sites: list<int>} $data */
         $data = $form->getData();
         $action = (string) $data['action'];
         $plafond = ReferentielActionGroupee::plafond($action);
@@ -139,7 +139,7 @@ final class ReferentielController extends AbstractController
             return $retour;
         }
         try {
-            $resultat = $actionneur->appliquer($action, $ids, $actor->id(), $data['contributeur'] ?? null);
+            $resultat = $actionneur->appliquer($action, $ids, $actor->id(), $data['contributeur'] ?? null, $data['sites']);
         } catch (\DomainException $exception) {
             $this->addFlash('warning', $exception->getMessage());
 

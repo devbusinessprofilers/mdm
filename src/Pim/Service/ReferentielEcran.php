@@ -13,6 +13,7 @@ use App\Pim\Form\SavedViewType;
 use App\Pim\ReadModel\FicheCursor;
 use App\Account\Repository\UserRepository;
 use App\Pim\Repository\SavedViewRepository;
+use App\Pim\Repository\SiteDiffusionRepository;
 use App\Shared\Form\ActionType;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\Form\FormInterface;
@@ -29,6 +30,7 @@ final readonly class ReferentielEcran
         private ReferentielListeProvider $provider,
         private SavedViewRepository $vues,
         private UserRepository $utilisateurs,
+        private SiteDiffusionRepository $sites,
         private FicheRouteResolver $routes,
         private FormFactoryInterface $forms,
         private UrlGeneratorInterface $urls,
@@ -76,6 +78,7 @@ final readonly class ReferentielEcran
             'action' => $this->urls->generate('app_mdm_referentiel_actions', $parametresFiltre),
             'ids_choices' => $idsPage,
             'contributeurs' => $this->utilisateurs->findActifs(),
+            'sites_choices' => $this->sites->choicesGroupees(),
         ]);
         $formVue = $this->forms->createNamed('vue', SavedViewType::class, null, [
             'action' => $this->urls->generate('app_mdm_referentiel_vue_enregistrer', $parametresFiltre),
@@ -132,6 +135,7 @@ final readonly class ReferentielEcran
         return $this->forms->createNamed('selection', ReferentielSelectionType::class, null, [
             'ids_choices' => $choices,
             'contributeurs' => $this->utilisateurs->findActifs(),
+            'sites_choices' => $this->sites->choicesGroupees(),
         ]);
     }
 }

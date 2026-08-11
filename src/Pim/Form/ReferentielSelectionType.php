@@ -18,7 +18,7 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
  * lignes de la page, la bascule « tout le résultat filtré », l'action et son
  * bouton. Les plafonds sont contrôlés côté contrôleur/service.
  *
- * @extends AbstractType<array{ids: list<string>, tout: bool, action: ?string, contributeur: ?User}>
+ * @extends AbstractType<array{ids: list<string>, tout: bool, action: ?string, contributeur: ?User, sites: list<int>}>
  */
 final class ReferentielSelectionType extends AbstractType
 {
@@ -46,6 +46,7 @@ final class ReferentielSelectionType extends AbstractType
                     'Exporter (CSV)' => 'exporter',
                     'Envoyer les accès extranet' => 'acces',
                     'Assigner un contributeur' => 'contributeur',
+                    'Attribuer la visibilité' => 'visibilite',
                 ],
             ])
             ->add('contributeur', EntityType::class, [
@@ -55,6 +56,13 @@ final class ReferentielSelectionType extends AbstractType
                 'required' => false,
                 'placeholder' => '— pour « Assigner un contributeur » —',
                 'choices' => $options['contributeurs'],
+            ])
+            ->add('sites', ChoiceType::class, [
+                'label' => 'Sites de diffusion',
+                'required' => false,
+                'multiple' => true,
+                'expanded' => true,
+                'choices' => $options['sites_choices'],
             ])
             ->add('appliquer', SubmitType::class, ['label' => 'Appliquer']);
     }
@@ -67,9 +75,11 @@ final class ReferentielSelectionType extends AbstractType
             'csrf_token_id' => 'referentiel-selection',
             'ids_choices' => [],
             'contributeurs' => [],
+            'sites_choices' => [],
         ]);
         $resolver->setAllowedTypes('ids_choices', 'array');
         $resolver->setAllowedTypes('contributeurs', 'array');
+        $resolver->setAllowedTypes('sites_choices', 'array');
     }
 
     public function getBlockPrefix(): string

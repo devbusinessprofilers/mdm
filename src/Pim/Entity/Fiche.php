@@ -468,6 +468,34 @@ class Fiche
         $this->markChanged();
     }
 
+    /**
+     * Ajout de sites sans retrait ni transition de workflow : attribuer un
+     * canal de diffusion supplémentaire ne remet pas la fiche en validation.
+     *
+     * @param list<SiteDiffusion> $sites
+     *
+     * @return int Nombre de sites réellement ajoutés
+     */
+    public function ajouterSitesDiffusion(array $sites): int
+    {
+        $presents = array_fill_keys($this->siteDiffusionIds(), true);
+        $ajoutes = 0;
+        foreach ($sites as $site) {
+            $siteId = $site->id();
+            if (null === $siteId || isset($presents[$siteId])) {
+                continue;
+            }
+            $presents[$siteId] = true;
+            $this->siteSelections->add(new FicheSiteDiffusion($this, $site));
+            ++$ajoutes;
+        }
+        if ($ajoutes > 0) {
+            $this->touch();
+        }
+
+        return $ajoutes;
+    }
+
     public function markChanged(): void
     {
         if ($this->workflowTransitionSuppressionDepth > 0) {
