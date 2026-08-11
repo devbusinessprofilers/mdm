@@ -52,9 +52,12 @@ final class EditionRapideController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             /** @var array<string, mixed> $data */
             $data = $form->getData();
+            // Les voisines dépendent de updated_at : les calculer avant
+            // l'enregistrement, sinon la fiche éditée remonte en tête de la
+            // liste et « suivante » renvoie la fiche précédente.
+            $voisines = $provider->voisines($filtres, $id);
             $ecran->enregistrer($fiche, $localisation, $data);
             $this->addFlash('success', 'Fiche mise à jour.');
-            $voisines = $provider->voisines($filtres, $id);
             if (null !== $voisines['suivante']) {
                 return $this->redirectToRoute('app_mdm_edition_rapide', [
                     'id' => $voisines['suivante'],
@@ -65,12 +68,13 @@ final class EditionRapideController extends AbstractController
             return $this->redirectToRoute('app_mdm_referentiel_general', ['f' => $request->query->all('f')]);
         }
 
+        // 422 : Turbo Drive ignore une réponse 200 à un POST de formulaire.
         return $this->render('mdm/edition_rapide.html.twig', [
             'fiche' => $fiche,
             'form' => $form->createView(),
             'voisines' => $provider->voisines($filtres, $id),
             'parametres_filtre' => ['f' => $request->query->all('f')],
             'adresses_partagees' => $ecran->adressesPartagees($fiche),
-        ]);
+        ], new Response(null, $form->isSubmitted() ? Response::HTTP_UNPROCESSABLE_ENTITY : Response::HTTP_OK));
     }
 }

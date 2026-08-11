@@ -39,6 +39,7 @@ final readonly class LieuPhotoManager
     public function upload(Lieu $lieu, array $files): int
     {
         $count = count($this->photos($lieu));
+        if ($count >= self::MAX_PHOTOS) { throw new \DomainException('Le nombre maximal de photos est atteint.'); }
         if ([] === $files || $count + count($files) > self::MAX_PHOTOS) { throw new \DomainException('Sélectionnez entre 1 et '.(self::MAX_PHOTOS - $count).' image(s).'); }
         $uploaded = [];
         try {
@@ -99,7 +100,11 @@ final readonly class LieuPhotoManager
         $resource->changeSource((string) ($data['source'] ?? ''));
         $resource->changeKeywords((string) ($data['keywords'] ?? ''));
         $expiration = $data['rights_expires_at'] ?? null;
-        $resource->changeRightsExpiresAt($expiration instanceof \DateTimeImmutable ? $expiration : (is_string($expiration) && '' !== $expiration ? new \DateTimeImmutable($expiration) : null));
+        if (is_string($expiration) && '' !== $expiration) {
+            // Chaîne arbitraire du payload : une date malformée doit finir en 422, pas en 500.
+            try { $expiration = new \DateTimeImmutable($expiration); } catch (\Exception) { throw new \DomainException("Date d'expiration des droits invalide."); }
+        }
+        $resource->changeRightsExpiresAt($expiration instanceof \DateTimeImmutable ? $expiration : null);
         $resource->changeSalle($salle);
         $keys = ['crop_x', 'crop_y', 'crop_width', 'crop_height'];
         $crop = array_map(static fn (string $key): ?int => '' === (string) ($data[$key] ?? '') ? null : (int) $data[$key], $keys);

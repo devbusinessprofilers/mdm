@@ -21,6 +21,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
  * Liste du référentiel aux emplacements de la maquette front : facettes,
@@ -28,6 +29,7 @@ use Symfony\Component\Routing\Attribute\Route;
  * volontairement sobre — le style viendra du front.
  */
 #[Route('/referentiel', name: 'app_mdm_')]
+#[IsGranted('ROLE_BP_EDITOR')]
 final class ReferentielController extends AbstractController
 {
     private const PAR_PAGE = 14;
@@ -107,7 +109,13 @@ final class ReferentielController extends AbstractController
         }
         /** @var array{ids: list<string>, tout: bool, action: ?string, contributeur: ?\App\Account\Entity\User, sites: list<int>} $data */
         $data = $form->getData();
-        $action = (string) $data['action'];
+        // Le placeholder du choix d'action est soumis comme valeur nulle valide.
+        if (null === $data['action']) {
+            $this->addFlash('warning', 'Choisissez une action.');
+
+            return $retour;
+        }
+        $action = $data['action'];
         $plafond = ReferentielActionGroupee::plafond($action);
         $ids = $data['tout']
             ? $provider->idsPourFiltre($filtres, $plafond + 1)
@@ -118,14 +126,10 @@ final class ReferentielController extends AbstractController
             return $retour;
         }
         if ('exporter' === $action) {
-            $lignes = $provider->exportLignes($filtres, $plafond);
-            if (!$data['tout']) {
-                $retenus = array_fill_keys($ids, true);
-                $lignes = array_values(array_filter(
-                    $lignes,
-                    static fn (ReferentielLigne $ligne): bool => isset($retenus[$ligne->id]),
-                ));
-            }
+            // Sélection cochée : export direct des ids, sans balayer le filtre.
+            $lignes = $data['tout']
+                ? $provider->exportLignes($filtres, $plafond)
+                : $provider->lignesPourIds(array_slice($ids, 0, $plafond));
 
             return self::reponseCsv($lignes);
         }

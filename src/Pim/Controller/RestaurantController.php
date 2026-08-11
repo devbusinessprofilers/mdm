@@ -68,7 +68,13 @@ final class RestaurantController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $errors = $workflow->submit($restaurant, $restaurant->fiche(), $actor->id());
+            try {
+                $errors = $workflow->submit($restaurant, $restaurant->fiche(), $actor->id());
+            } catch (\DomainException $e) {
+                $this->addFlash('warning', $e->getMessage());
+
+                return $this->redirectToRoute('app_mdm_fiche_gamme', ['gamme' => 'restaurants', 'id' => $restaurant->id()]);
+            }
             if (count($errors) > 0) {
                 foreach ($errors as $error) {
                     $this->addFlash(
@@ -99,7 +105,9 @@ final class RestaurantController extends AbstractController
         $this->denyAccessUnlessGranted(FicheVoter::VALIDATE, $restaurant->fiche());
         $form = $forms->action('restaurant', $restaurant->id(), 'validate', 'Validate');
         $form->handleRequest($request);
-        if ($form->isSubmitted() && $form->isValid()) { $workflow->validate($restaurant->fiche(), $actor->id()); }
+        if ($form->isSubmitted() && $form->isValid()) {
+            try { $workflow->validate($restaurant->fiche(), $actor->id()); } catch (\DomainException $e) { $this->addFlash('warning', $e->getMessage()); }
+        }
 
         return $this->redirectToRoute('app_mdm_fiche_gamme', ['gamme' => 'restaurants', 'id' => $restaurant->id()]);
     }
@@ -117,7 +125,9 @@ final class RestaurantController extends AbstractController
         $this->denyAccessUnlessGranted(FicheVoter::PUBLISH, $restaurant->fiche());
         $form = $forms->action('restaurant', $restaurant->id(), 'publish', 'Publier');
         $form->handleRequest($request);
-        if ($form->isSubmitted() && $form->isValid()) { $workflow->publish($restaurant->fiche()); }
+        if ($form->isSubmitted() && $form->isValid()) {
+            try { $workflow->publish($restaurant->fiche()); } catch (\DomainException $e) { $this->addFlash('warning', $e->getMessage()); }
+        }
 
         return $this->redirectToRoute('app_mdm_fiche_gamme', ['gamme' => 'restaurants', 'id' => $restaurant->id()]);
     }
@@ -136,7 +146,9 @@ final class RestaurantController extends AbstractController
         $this->denyAccessUnlessGranted(FicheVoter::ARCHIVE, $restaurant->fiche());
         $form = $forms->action('restaurant', $restaurant->id(), 'archive', 'Archive');
         $form->handleRequest($request);
-        if ($form->isSubmitted() && $form->isValid()) { $workflow->archive($restaurant->fiche(), $actor->id()); }
+        if ($form->isSubmitted() && $form->isValid()) {
+            try { $workflow->archive($restaurant->fiche(), $actor->id()); } catch (\DomainException $e) { $this->addFlash('warning', $e->getMessage()); }
+        }
 
         return $this->redirectToRoute('app_mdm_fiche_gamme', ['gamme' => 'restaurants', 'id' => $restaurant->id()]);
     }
@@ -156,8 +168,13 @@ final class RestaurantController extends AbstractController
         $form = $forms->reject('restaurant', $restaurant->id());
         $form->handleRequest($request);
 
+        if ($form->isSubmitted() && !$form->isValid()) { $this->addFlash('warning', 'Le motif du refus est obligatoire.'); }
         if ($form->isSubmitted() && $form->isValid()) {
-            $workflow->reject($restaurant->fiche(), $actor->id(), (string) $form->get('reason')->getData());
+            try {
+                $workflow->reject($restaurant->fiche(), $actor->id(), (string) $form->get('reason')->getData());
+            } catch (\DomainException $e) {
+                $this->addFlash('warning', $e->getMessage());
+            }
         }
 
         return $this->redirectToRoute('app_mdm_fiche_gamme', ['gamme' => 'restaurants', 'id' => $restaurant->id()]);

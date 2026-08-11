@@ -48,10 +48,10 @@ final class LieuController extends AbstractController
         LieuAdminManager $manager,
     ): Response {
         $lieu = $repository->find($id);
-        if (!$lieu instanceof Lieu) { $this->addFlash('warning', 'Ce lieu n’existe plus ou vient d’être supprimé.'); return $this->redirectToRoute('app_mdm_lieux'); }
+        if (!$lieu instanceof Lieu) { throw $this->createNotFoundException('Lieu introuvable.'); }
         $this->denyAccessUnlessGranted(FicheVoter::DELETE, $lieu->fiche());
 
-        $form = $forms->action('lieu', $lieu->id(), 'delete', 'Supprimer', true);
+        $form = $forms->action('lieu', $lieu->id(), 'delete', 'Supprimer', true, 'Supprimer ce lieu ?');
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
             $manager->delete($lieu);
@@ -83,7 +83,13 @@ final class LieuController extends AbstractController
         $form = $forms->action('lieu', $lieu->id(), 'submit', 'Soumettre à validation');
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
-            $violations = $workflow->submit($lieu, $lieu->fiche(), $actor->id());
+            try {
+                $violations = $workflow->submit($lieu, $lieu->fiche(), $actor->id());
+            } catch (\DomainException $exception) {
+                $this->addFlash('warning', $exception->getMessage());
+
+                return $this->redirectToRoute('app_mdm_fiche_lieu', ['id' => $lieu->id()]);
+            }
             if (count($violations) > 0) {
                 foreach ($violations as $violation) {
                     $this->addFlash(
@@ -125,8 +131,12 @@ final class LieuController extends AbstractController
         $form = $forms->action('lieu', $lieu->id(), 'validate', 'Valider');
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
-            $workflow->validate($lieu->fiche(), $actor->id());
-            $this->addFlash('success', 'Fiche validée.');
+            try {
+                $workflow->validate($lieu->fiche(), $actor->id());
+                $this->addFlash('success', 'Fiche validée.');
+            } catch (\DomainException $exception) {
+                $this->addFlash('warning', $exception->getMessage());
+            }
         }
 
         return $this->redirectToRoute('app_mdm_fiche_lieu', ['id' => $lieu->id()]);
@@ -153,8 +163,12 @@ final class LieuController extends AbstractController
         $form = $forms->action('lieu', $lieu->id(), 'publish', 'Publier');
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
-            $workflow->publish($lieu->fiche());
-            $this->addFlash('success', 'Fiche publiée.');
+            try {
+                $workflow->publish($lieu->fiche());
+                $this->addFlash('success', 'Fiche publiée.');
+            } catch (\DomainException $exception) {
+                $this->addFlash('warning', $exception->getMessage());
+            }
         }
 
         return $this->redirectToRoute('app_mdm_fiche_lieu', ['id' => $lieu->id()]);
@@ -181,11 +195,18 @@ final class LieuController extends AbstractController
         $this->denyAccessUnlessGranted(FicheVoter::VALIDATE, $lieu->fiche());
         $form = $forms->reject('lieu', $lieu->id());
         $form->handleRequest($request);
+        if ($form->isSubmitted() && !$form->isValid()) {
+            $this->addFlash('warning', 'Le motif du refus est obligatoire.');
+        }
         if ($form->isSubmitted() && $form->isValid()) {
             /** @var array{reason: string} $data */
             $data = $form->getData();
-            $workflow->reject($lieu->fiche(), $actor->id(), $data['reason']);
-            $this->addFlash('success', 'Fiche refusée et renvoyée en cours.');
+            try {
+                $workflow->reject($lieu->fiche(), $actor->id(), $data['reason']);
+                $this->addFlash('success', 'Fiche refusée et renvoyée en cours.');
+            } catch (\DomainException $exception) {
+                $this->addFlash('warning', $exception->getMessage());
+            }
         }
 
         return $this->redirectToRoute('app_mdm_fiche_lieu', ['id' => $lieu->id()]);
@@ -213,8 +234,12 @@ final class LieuController extends AbstractController
         $form = $forms->action('lieu', $lieu->id(), 'archive', 'Archiver');
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
-            $manager->archive($lieu, $actor->id());
-            $this->addFlash('success', 'Fiche archivée.');
+            try {
+                $manager->archive($lieu, $actor->id());
+                $this->addFlash('success', 'Fiche archivée.');
+            } catch (\DomainException $exception) {
+                $this->addFlash('warning', $exception->getMessage());
+            }
         }
 
         return $this->redirectToRoute('app_mdm_fiche_lieu', ['id' => $lieu->id()]);

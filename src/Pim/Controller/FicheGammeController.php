@@ -72,10 +72,14 @@ final class FicheGammeController extends AbstractController
             }
         }
 
+        // 422 : Turbo Drive ignore une réponse 200 à un POST de formulaire.
+        $soumisInvalide = ($form->isSubmitted() && !$form->isValid())
+            || ($formSites->isSubmitted() && !$formSites->isValid());
+
         return $this->render('mdm/fiche_editeur.html.twig', [
             'fiche' => $entite->fiche(),
             'form' => $form->createView(),
             'form_sites' => $formSites->createView(),
-        ] + $ecran->variables($entite, $section, $form));
+        ] + $ecran->variables($entite, $section, $form), new Response(null, $soumisInvalide ? Response::HTTP_UNPROCESSABLE_ENTITY : Response::HTTP_OK));
     }
 }

@@ -414,6 +414,7 @@ class Fiche
         $valueIds = array_values(array_unique($valueIds));
         $requested = array_fill_keys($valueIds, true);
         $current = [];
+        $aRetirer = [];
         // Iterating initializes the persistent collection once; subsequent replacements
         // in the same request reuse that in-memory collection.
         foreach ($this->attributValues as $link) {
@@ -422,15 +423,27 @@ class Fiche
             }
             $current[$link->valueId()] = true;
             if (!isset($requested[$link->valueId()])) {
-                $this->attributValues->removeElement($link);
+                $aRetirer[] = $link;
             }
         }
-        foreach ($valueIds as $valueId) {
-            if (!isset($current[$valueId])) {
-                $this->attributValues->add(
-                    new FicheAttributValeur($this, $attributeCode, $valueId),
-                );
-            }
+        $aAjouter = array_values(
+            array_filter(
+                $valueIds,
+                static fn (int $valueId): bool => !isset($current[$valueId]),
+            ),
+        );
+        // Sélection inchangée : un enregistrement sans modification ne doit
+        // ni toucher la fiche ni la faire repasser en cours.
+        if ([] === $aRetirer && [] === $aAjouter) {
+            return;
+        }
+        foreach ($aRetirer as $link) {
+            $this->attributValues->removeElement($link);
+        }
+        foreach ($aAjouter as $valueId) {
+            $this->attributValues->add(
+                new FicheAttributValeur($this, $attributeCode, $valueId),
+            );
         }
         $this->markChanged();
     }
@@ -454,16 +467,29 @@ class Fiche
             $requested[$site->id() ?? spl_object_id($site)] = $site;
         }
         $current = [];
+        $aRetirer = [];
         foreach ($this->siteSelections as $link) {
             $current[$link->siteId()] = true;
             if (!isset($requested[$link->siteId()])) {
-                $this->siteSelections->removeElement($link);
+                $aRetirer[] = $link;
             }
         }
+        $aAjouter = [];
         foreach ($requested as $siteId => $site) {
             if (!isset($current[$siteId])) {
-                $this->siteSelections->add(new FicheSiteDiffusion($this, $site));
+                $aAjouter[] = $site;
             }
+        }
+        // Sélection inchangée : un enregistrement sans modification ne doit
+        // ni toucher la fiche ni la faire repasser en cours.
+        if ([] === $aRetirer && [] === $aAjouter) {
+            return;
+        }
+        foreach ($aRetirer as $link) {
+            $this->siteSelections->removeElement($link);
+        }
+        foreach ($aAjouter as $site) {
+            $this->siteSelections->add(new FicheSiteDiffusion($this, $site));
         }
         $this->markChanged();
     }

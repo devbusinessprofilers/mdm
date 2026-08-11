@@ -81,7 +81,13 @@ final class ActiviteController extends AbstractController
         $f = $forms->action('activite', $a->id(), 'submit', 'Soumettre');
         $f->handleRequest($request);
         if ($f->isSubmitted() && $f->isValid()) {
-            $errors = $workflow->submit($a, $a->fiche(), $actor->id());
+            try {
+                $errors = $workflow->submit($a, $a->fiche(), $actor->id());
+            } catch (\DomainException $e) {
+                $this->addFlash('warning', $e->getMessage());
+
+                return $this->redirectToRoute('app_mdm_fiche_gamme', ['gamme' => 'activites', 'id' => $a->id()]);
+            }
             if (count($errors)) {
                 foreach ($errors as $error) {
                     $this->addFlash(
@@ -120,7 +126,9 @@ final class ActiviteController extends AbstractController
         $this->denyAccessUnlessGranted(FicheVoter::VALIDATE, $a->fiche());
         $form = $forms->action('activite', $a->id(), 'validate', 'Validate');
         $form->handleRequest($request);
-        if ($form->isSubmitted() && $form->isValid()) { $workflow->validate($a->fiche(), $actor->id()); }
+        if ($form->isSubmitted() && $form->isValid()) {
+            try { $workflow->validate($a->fiche(), $actor->id()); } catch (\DomainException $e) { $this->addFlash('warning', $e->getMessage()); }
+        }
 
         return $this->redirectToRoute('app_mdm_fiche_gamme', ['gamme' => 'activites', 'id' => $a->id()]);
     }
@@ -145,7 +153,9 @@ final class ActiviteController extends AbstractController
         $this->denyAccessUnlessGranted(FicheVoter::PUBLISH, $a->fiche());
         $form = $forms->action('activite', $a->id(), 'publish', 'Publier');
         $form->handleRequest($request);
-        if ($form->isSubmitted() && $form->isValid()) { $workflow->publish($a->fiche()); }
+        if ($form->isSubmitted() && $form->isValid()) {
+            try { $workflow->publish($a->fiche()); } catch (\DomainException $e) { $this->addFlash('warning', $e->getMessage()); }
+        }
 
         return $this->redirectToRoute('app_mdm_fiche_gamme', ['gamme' => 'activites', 'id' => $a->id()]);
     }
@@ -171,7 +181,9 @@ final class ActiviteController extends AbstractController
         $this->denyAccessUnlessGranted(FicheVoter::ARCHIVE, $a->fiche());
         $form = $forms->action('activite', $a->id(), 'archive', 'Archive');
         $form->handleRequest($request);
-        if ($form->isSubmitted() && $form->isValid()) { $workflow->archive($a->fiche(), $actor->id()); }
+        if ($form->isSubmitted() && $form->isValid()) {
+            try { $workflow->archive($a->fiche(), $actor->id()); } catch (\DomainException $e) { $this->addFlash('warning', $e->getMessage()); }
+        }
 
         return $this->redirectToRoute('app_mdm_fiche_gamme', ['gamme' => 'activites', 'id' => $a->id()]);
     }
@@ -197,8 +209,13 @@ final class ActiviteController extends AbstractController
         $this->denyAccessUnlessGranted(FicheVoter::VALIDATE, $a->fiche());
         $f = $forms->reject('activite', $a->id());
         $f->handleRequest($request);
+        if ($f->isSubmitted() && !$f->isValid()) { $this->addFlash('warning', 'Le motif du refus est obligatoire.'); }
         if ($f->isSubmitted() && $f->isValid()) {
-            $workflow->reject($a->fiche(), $actor->id(), (string) $f->get('reason')->getData());
+            try {
+                $workflow->reject($a->fiche(), $actor->id(), (string) $f->get('reason')->getData());
+            } catch (\DomainException $e) {
+                $this->addFlash('warning', $e->getMessage());
+            }
         }
 
         return $this->redirectToRoute('app_mdm_fiche_gamme', ['gamme' => 'activites', 'id' => $a->id()]);

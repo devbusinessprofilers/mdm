@@ -80,7 +80,13 @@ final class ServiceEvenementielController extends AbstractController
         $f = $forms->action('service', $service->id(), 'submit', 'Soumettre');
         $f->handleRequest($request);
         if ($f->isSubmitted() && $f->isValid()) {
-            $errors = $workflow->submit($service, $service->fiche(), $actor->id());
+            try {
+                $errors = $workflow->submit($service, $service->fiche(), $actor->id());
+            } catch (\DomainException $e) {
+                $this->addFlash('warning', $e->getMessage());
+
+                return $this->redirectToRoute('app_mdm_fiche_gamme', ['gamme' => 'services', 'id' => $service->id()]);
+            }
             if (count($errors)) {
                 foreach ($errors as $error) {
                     $this->addFlash(
@@ -119,7 +125,9 @@ final class ServiceEvenementielController extends AbstractController
         $this->denyAccessUnlessGranted(FicheVoter::VALIDATE, $service->fiche());
         $form = $forms->action('service', $service->id(), 'validate', 'Validate');
         $form->handleRequest($request);
-        if ($form->isSubmitted() && $form->isValid()) { $workflow->validate($service->fiche(), $actor->id()); }
+        if ($form->isSubmitted() && $form->isValid()) {
+            try { $workflow->validate($service->fiche(), $actor->id()); } catch (\DomainException $e) { $this->addFlash('warning', $e->getMessage()); }
+        }
 
         return $this->redirectToRoute('app_mdm_fiche_gamme', ['gamme' => 'services', 'id' => $service->id()]);
     }
@@ -144,7 +152,9 @@ final class ServiceEvenementielController extends AbstractController
         $this->denyAccessUnlessGranted(FicheVoter::PUBLISH, $service->fiche());
         $form = $forms->action('service', $service->id(), 'publish', 'Publier');
         $form->handleRequest($request);
-        if ($form->isSubmitted() && $form->isValid()) { $workflow->publish($service->fiche()); }
+        if ($form->isSubmitted() && $form->isValid()) {
+            try { $workflow->publish($service->fiche()); } catch (\DomainException $e) { $this->addFlash('warning', $e->getMessage()); }
+        }
 
         return $this->redirectToRoute('app_mdm_fiche_gamme', ['gamme' => 'services', 'id' => $service->id()]);
     }
@@ -170,7 +180,9 @@ final class ServiceEvenementielController extends AbstractController
         $this->denyAccessUnlessGranted(FicheVoter::ARCHIVE, $service->fiche());
         $form = $forms->action('service', $service->id(), 'archive', 'Archive');
         $form->handleRequest($request);
-        if ($form->isSubmitted() && $form->isValid()) { $workflow->archive($service->fiche(), $actor->id()); }
+        if ($form->isSubmitted() && $form->isValid()) {
+            try { $workflow->archive($service->fiche(), $actor->id()); } catch (\DomainException $e) { $this->addFlash('warning', $e->getMessage()); }
+        }
 
         return $this->redirectToRoute('app_mdm_fiche_gamme', ['gamme' => 'services', 'id' => $service->id()]);
     }
@@ -196,8 +208,13 @@ final class ServiceEvenementielController extends AbstractController
         $this->denyAccessUnlessGranted(FicheVoter::VALIDATE, $service->fiche());
         $f = $forms->reject('service', $service->id());
         $f->handleRequest($request);
+        if ($f->isSubmitted() && !$f->isValid()) { $this->addFlash('warning', 'Le motif du refus est obligatoire.'); }
         if ($f->isSubmitted() && $f->isValid()) {
-            $workflow->reject($service->fiche(), $actor->id(), (string) $f->get('reason')->getData());
+            try {
+                $workflow->reject($service->fiche(), $actor->id(), (string) $f->get('reason')->getData());
+            } catch (\DomainException $e) {
+                $this->addFlash('warning', $e->getMessage());
+            }
         }
 
         return $this->redirectToRoute('app_mdm_fiche_gamme', ['gamme' => 'services', 'id' => $service->id()]);

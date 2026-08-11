@@ -25,8 +25,10 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/referentiel/fiche', name: 'app_pim_fiche_')]
+#[IsGranted('ROLE_BP_EDITOR')]
 final class FicheController extends AbstractController
 {
     // Route déclarée dans config/routes.yaml : /referentiel/fiche/nouvelle (app_mdm_creation_fiche).

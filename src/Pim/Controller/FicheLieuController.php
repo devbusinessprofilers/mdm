@@ -60,10 +60,14 @@ final class FicheLieuController extends AbstractController
             }
         }
 
+        // 422 : Turbo Drive ignore une réponse 200 à un POST de formulaire.
+        $soumisInvalide = ($form->isSubmitted() && !$form->isValid())
+            || ($formSites->isSubmitted() && !$formSites->isValid());
+
         return $this->render('mdm/fiche_editeur.html.twig', [
             'fiche' => $lieu->fiche(),
             'form' => $form->createView(),
             'form_sites' => $formSites->createView(),
-        ] + $ecran->variables($lieu, $section, $form));
+        ] + $ecran->variables($lieu, $section, $form), new Response(null, $soumisInvalide ? Response::HTTP_UNPROCESSABLE_ENTITY : Response::HTTP_OK));
     }
 }

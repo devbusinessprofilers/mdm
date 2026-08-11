@@ -85,11 +85,14 @@ final class LieuPhotoController extends AbstractController
         if (null === $resource || $resource->lieu() !== $lieu) { throw $this->createNotFoundException('Photo introuvable pour ce lieu.'); }
         $file = $request->files->get('photo');
         if (!$file instanceof UploadedFile) { return $this->json(['error' => 'Sélectionnez une image.'], Response::HTTP_UNPROCESSABLE_ENTITY); }
-        $mutationPolicy->execute($lieu->fiche(), static function () use ($manager, $resource, $lieu, $file): void {
-            $manager->replace($resource, $lieu, $file);
-        });
+        try {
+            $mutationPolicy->execute($lieu->fiche(), static function () use ($manager, $resource, $lieu, $file): void {
+                $manager->replace($resource, $lieu, $file);
+            });
 
-        return $this->json(['replaced' => true]);
+            return $this->json(['replaced' => true]);
+        }
+        catch (\DomainException $exception) { return $this->json(['error' => $exception->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY); }
     }
 
     #[Route('/{resourceId}/relancer', name: 'retry', methods: ['POST'])]
@@ -99,9 +102,12 @@ final class LieuPhotoController extends AbstractController
         $csrf->assertValid($lieu, (string) $request->headers->get('X-CSRF-TOKEN', $request->request->getString('_token')));
         $resource = $resources->findPhotoForFiche($lieu->fiche(), $resourceId);
         if (null === $resource || $resource->lieu() !== $lieu) { throw $this->createNotFoundException('Photo introuvable pour ce lieu.'); }
-        $manager->retry($resource);
+        try {
+            $manager->retry($resource);
 
-        return $this->json(['queued' => true]);
+            return $this->json(['queued' => true]);
+        }
+        catch (\DomainException $exception) { return $this->json(['error' => $exception->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY); }
     }
 
     #[Route('/{resourceId}', name: 'delete', methods: ['DELETE'])]
@@ -111,10 +117,13 @@ final class LieuPhotoController extends AbstractController
         $csrf->assertValid($lieu, (string) $request->headers->get('X-CSRF-TOKEN', $request->request->getString('_token')));
         $resource = $resources->findPhotoForFiche($lieu->fiche(), $resourceId);
         if (null === $resource || $resource->lieu() !== $lieu) { throw $this->createNotFoundException('Photo introuvable pour ce lieu.'); }
-        $mutationPolicy->execute($lieu->fiche(), static function () use ($manager, $resource, $lieu): void {
-            $manager->delete($resource, $lieu);
-        });
+        try {
+            $mutationPolicy->execute($lieu->fiche(), static function () use ($manager, $resource, $lieu): void {
+                $manager->delete($resource, $lieu);
+            });
 
-        return $this->json(null, Response::HTTP_NO_CONTENT);
+            return $this->json(null, Response::HTTP_NO_CONTENT);
+        }
+        catch (\DomainException $exception) { return $this->json(['error' => $exception->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY); }
     }
 }

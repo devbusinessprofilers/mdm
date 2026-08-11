@@ -172,11 +172,21 @@ final readonly class FicheEditeurEcran
         /** @var array{sites: list<int>} $data */
         $data = $form->getData();
         $this->policy->execute($entite->fiche(), function () use ($entite, $data): void {
+            $fiche = $entite->fiche();
             $retenus = array_values(array_filter(
                 $this->sites->findActifsOrdonnes(),
                 static fn (SiteDiffusion $site): bool => $site->obligatoire() || in_array($site->id(), $data['sites'], true),
             ));
-            $entite->fiche()->replaceSiteDiffusion($retenus);
+            $retenusIds = array_map(static fn (SiteDiffusion $site): ?int => $site->id(), $retenus);
+            // Ajout pur de canaux : mise à jour technique sans transition de
+            // workflow, comme l'action de masse. Un retrait reste une
+            // modification métier (remplacement complet).
+            if ([] === array_diff($fiche->siteDiffusionIds(), $retenusIds)) {
+                $fiche->ajouterSitesDiffusion($retenus);
+
+                return;
+            }
+            $fiche->replaceSiteDiffusion($retenus);
         });
         $this->workflow->indexAndFlush($entite->fiche());
 
@@ -237,7 +247,12 @@ final readonly class FicheEditeurEcran
                 'publish' => 'validee' === $statut ? $this->actions->action($domaine, $id, 'publish', 'Publier')->createView() : null,
                 'archive' => 'publiee' === $statut ? $this->actions->action($domaine, $id, 'archive', 'Archiver')->createView() : null,
             ]),
-            'action_suppression' => $this->actions->action($domaine, $id, 'delete', 'Supprimer', true)->createView(),
+            'action_suppression' => $this->actions->action($domaine, $id, 'delete', 'Supprimer', true, match ($type) {
+                TypeFiche::Lieu => 'Supprimer ce lieu ?',
+                TypeFiche::Activite => 'Supprimer cette activité ?',
+                TypeFiche::Restaurant => 'Supprimer ce restaurant ?',
+                default => 'Supprimer ce service ?',
+            })->createView(),
             'medias' => in_array('medias', $section['blocs'], true) ? $this->medias($entite, $form) : null,
             'affiliations' => in_array('collaborateurs', $section['blocs'], true)
                 ? array_map(
