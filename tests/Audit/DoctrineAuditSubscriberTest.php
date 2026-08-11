@@ -7,6 +7,7 @@ namespace App\Tests\Audit;
 use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Entity\Localisation;
 use App\Pim\Entity\Service\ServiceEvenementiel;
+use App\Pim\Entity\SiteDiffusion;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\Group;
@@ -103,10 +104,76 @@ final class DoctrineAuditSubscriberTest extends KernelTestCase
         );
     }
 
+    public function testPureSiteDiffusionCollectionChangeProducesARevision(): void
+    {
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $lieu = new Lieu();
+        $lieu->changeLabel('Château');
+        $site = new SiteDiffusion('site-audit', 'Site audit', 'Groupe test');
+        $entityManager->persist($site);
+        $entityManager->persist($lieu);
+        $entityManager->flush();
+
+        $this->connection->executeStatement('DELETE FROM audit_change');
+        $this->connection->executeStatement('DELETE FROM audit_revision');
+
+        // Ajout d'un canal de diffusion sans transition de workflow : seule la
+        // collection change, le touch technique (updatedAt/version) est ignoré.
+        $lieu->fiche()->ajouterSitesDiffusion([$site]);
+        $entityManager->flush();
+
+        self::assertSame(
+            1,
+            (int) $this->connection->fetchOne(
+                'SELECT COUNT(*) FROM audit_revision',
+            ),
+        );
+        $rows = $this->connection->fetchAllAssociative(
+            'SELECT path, old_value, new_value FROM audit_change',
+        );
+        self::assertCount(1, $rows);
+        self::assertSame('sitesDiffusion', $rows[0]['path']);
+        self::assertSame(
+            [],
+            json_decode((string) $rows[0]['old_value'], true),
+        );
+        self::assertSame(
+            [$site->id()],
+            json_decode((string) $rows[0]['new_value'], true),
+        );
+    }
+
+    public function testPureTouchWithoutCollectionChangeProducesNoRevision(): void
+    {
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $lieu = new Lieu();
+        $lieu->changeLabel('Château');
+        $entityManager->persist($lieu);
+        $entityManager->flush();
+
+        $this->connection->executeStatement('DELETE FROM audit_change');
+        $this->connection->executeStatement('DELETE FROM audit_revision');
+
+        // Mise à jour purement technique : aucun bruit d'audit attendu.
+        $lieu->fiche()->markSystemChanged();
+        $entityManager->flush();
+
+        self::assertSame(
+            0,
+            (int) $this->connection->fetchOne(
+                'SELECT COUNT(*) FROM audit_revision',
+            ),
+        );
+    }
+
     private function clear(): void
     {
         $this->connection->executeStatement('DELETE FROM audit_change');
         $this->connection->executeStatement('DELETE FROM audit_revision');
+        $this->connection->executeStatement(
+            'DELETE FROM pim_fiche_site_diffusion',
+        );
+        $this->connection->executeStatement('DELETE FROM pim_site_diffusion');
         $this->connection->executeStatement(
             'DELETE FROM pim_fiche_attribute_value',
         );

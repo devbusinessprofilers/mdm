@@ -12,6 +12,7 @@ use App\Pim\Entity\Activite\Activite;
 use App\Pim\Entity\Activite\OffreActivite;
 use App\Pim\Entity\Fiche;
 use App\Pim\Entity\FicheAttributValeur;
+use App\Pim\Entity\FicheSiteDiffusion;
 use App\Pim\Entity\Lieu\AccesLieu;
 use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Entity\Lieu\LieuAdministratif;
@@ -47,6 +48,27 @@ final readonly class DoctrineAuditSubscriber
         'completenessProviderPortal',
         'completenessCalculatedAt',
         'completenessRevision',
+    ];
+
+    /** @var list<class-string> */
+    private const AUDITED_CLASSES = [
+        Fiche::class,
+        Lieu::class,
+        Activite::class,
+        ServiceEvenementiel::class,
+        Restaurant::class,
+        RestaurantSalle::class,
+        RestaurantPeriodeFermeture::class,
+        RestaurantAcces::class,
+        OffreActivite::class,
+        Localisation::class,
+        LieuAdministratif::class,
+        LieuTarification::class,
+        Salle::class,
+        PeriodeFermeture::class,
+        AccesLieu::class,
+        RessourceLieu::class,
+        FicheAttributValeur::class,
     ];
 
     public function __construct(
@@ -151,11 +173,20 @@ final readonly class DoctrineAuditSubscriber
                         $changeset[$field] = [$pair[0], $pair[1]];
                     }
                 }
+                $metadata = $entityManager->getClassMetadata($entity::class);
                 $changes = [];
                 foreach ($changeset as $field => $pair) {
                     [$old, $new] = $pair;
                     if (
                         in_array($field, self::IGNORED_FIELDS, true)
+                        // Colonnes générées en SQL (ex. Fiche.code, attribué par
+                        // trigger à l'INSERT) : Doctrine recharge la valeur sans
+                        // rafraîchir le snapshot, elles réapparaissent donc dans
+                        // le changeset du flush suivant sans être des
+                        // modifications métier.
+                        || ('update' === $operation
+                            && $metadata->hasField($field)
+                            && true === $metadata->getFieldMapping($field)->notUpdatable)
                         || $this->normalizer->same($old, $new)
                     ) {
                         continue;
@@ -199,6 +230,112 @@ final readonly class DoctrineAuditSubscriber
                 }
             }
         }
+        // Les modifications purement collection (sites de diffusion, futures
+        // ManyToMany…) ne passent pas par les changesets d'entités : sans ce
+        // second passage, elles ne produiraient aucune révision d'audit.
+        $collectionOperations = [
+            'update' => $uow->getScheduledCollectionUpdates(),
+            'delete' => $uow->getScheduledCollectionDeletions(),
+        ];
+        foreach ($collectionOperations as $operation => $collections) {
+            foreach ($collections as $collection) {
+                $owner = $collection->getOwner();
+                if (
+                    null === $owner
+                    || !$this->isAudited($owner)
+                    // La suppression du propriétaire est déjà auditée avec son
+                    // changeset complet : inutile de dupliquer les collections.
+                    || $uow->isScheduledForDelete($owner)
+                    // La création est couverte par la révision « create » ; les
+                    // éléments liés dans le même flush n'ont pas encore d'id.
+                    || $uow->isScheduledForInsert($owner)
+                ) {
+                    continue;
+                }
+                $mapping = $collection->getMapping();
+                $field = $mapping->fieldName;
+                if (
+                    in_array($field, self::IGNORED_FIELDS, true)
+                    // Les collections d'entités elles-mêmes auditées (salles,
+                    // ressources, valeurs d'attributs…) sont déjà couvertes
+                    // par les insertions/suppressions d'entités : pas de doublon.
+                    || $this->isAuditedClass($mapping->targetEntity)
+                ) {
+                    continue;
+                }
+                $snapshot = array_values($collection->getSnapshot());
+                if ('delete' === $operation) {
+                    $current = [];
+                } else {
+                    $removed = $collection->getDeleteDiff();
+                    $inserted = $collection->getInsertDiff();
+                    if ([] === $removed && [] === $inserted) {
+                        continue;
+                    }
+                    $current = array_merge(
+                        array_values(array_filter(
+                            $snapshot,
+                            static fn (object $element): bool => !in_array(
+                                $element,
+                                $removed,
+                                true,
+                            ),
+                        )),
+                        array_values($inserted),
+                    );
+                }
+                $old = array_map($this->collectionElement(...), $snapshot);
+                $new = array_map($this->collectionElement(...), $current);
+                // L'ordre interne d'une collection n'est pas une donnée métier :
+                // seule la composition (ajouts/retraits) est auditée.
+                sort($old);
+                sort($new);
+                if ($old === $new) {
+                    continue;
+                }
+                $fiche = $this->resolveFiche(
+                    $owner,
+                    $lieux,
+                    $activites,
+                    $services,
+                    $restaurants,
+                );
+                if (null === $fiche) {
+                    continue;
+                }
+                $ficheId = $fiche->idString();
+                $action = $auditContext['action'] ?? 'update';
+                $source = in_array(
+                    $action,
+                    ['submission', 'publication', 'archive', 'rejection'],
+                    true,
+                )
+                    ? 'workflow'
+                    : $auditContext['source'];
+                if (!isset($revisions[$ficheId])) {
+                    $revisions[$ficheId] = new AuditRevision(
+                        $ficheId,
+                        $action,
+                        $source,
+                        $auditContext['actor'],
+                        $auditContext['rolesScopes'],
+                        $auditContext['correlationId'],
+                    );
+                } elseif (
+                    $this->actionPriority($action) >
+                    $this->actionPriority($revisions[$ficheId]->action())
+                ) {
+                    $revisions[$ficheId]->changeAction($action);
+                    $revisions[$ficheId]->changeSource($source);
+                }
+                new AuditChange(
+                    $revisions[$ficheId],
+                    $this->path($owner, $field),
+                    $old,
+                    $new,
+                );
+            }
+        }
         foreach ($revisions as $revision) {
             $entityManager->persist($revision);
             $uow->computeChangeSet(
@@ -217,23 +354,19 @@ final readonly class DoctrineAuditSubscriber
 
     private function isAudited(object $entity): bool
     {
-        return $entity instanceof Fiche
-            || $entity instanceof Lieu
-            || $entity instanceof Activite
-            || $entity instanceof ServiceEvenementiel
-            || $entity instanceof Restaurant
-            || $entity instanceof RestaurantSalle
-            || $entity instanceof RestaurantPeriodeFermeture
-            || $entity instanceof RestaurantAcces
-            || $entity instanceof OffreActivite
-            || $entity instanceof Localisation
-            || $entity instanceof LieuAdministratif
-            || $entity instanceof LieuTarification
-            || $entity instanceof Salle
-            || $entity instanceof PeriodeFermeture
-            || $entity instanceof AccesLieu
-            || $entity instanceof RessourceLieu
-            || $entity instanceof FicheAttributValeur;
+        return $this->isAuditedClass($entity::class);
+    }
+
+    /** @param class-string $class */
+    private function isAuditedClass(string $class): bool
+    {
+        foreach (self::AUDITED_CLASSES as $audited) {
+            if (is_a($class, $audited, true)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -354,12 +487,28 @@ final readonly class DoctrineAuditSubscriber
         return $changes;
     }
 
+    /**
+     * Représentation compacte d'un élément de collection : identifiants
+     * plutôt que sérialisation d'entités.
+     */
+    private function collectionElement(object $element): mixed
+    {
+        if ($element instanceof FicheSiteDiffusion) {
+            // Repli sur le code pour un site créé dans le même flush (id
+            // auto-incrémenté pas encore attribué au moment du onFlush).
+            return $element->site()->id() ?? $element->site()->code();
+        }
+
+        return $this->normalizer->normalize($element);
+    }
+
     private function path(object $entity, string $field): string
     {
         return match (true) {
             $entity instanceof Fiche => match ($field) {
                 'label' => 'nom',
                 'status' => 'workflow.status',
+                'siteSelections' => 'sitesDiffusion',
                 default => 'fiche.'.$field,
             },
             $entity instanceof Lieu => 'lieu.'.$field,
