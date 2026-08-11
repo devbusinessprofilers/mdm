@@ -43,7 +43,7 @@ applique les payloads reçus, le PIM décide de tout.
 | `MARKETPLACE_SYNC_API_LOGIN` / `_PASSWORD` | Compte machine ROLE_PIM (login_check) |
 
 En local : `MARKETPLACE_SYNC_API_URL=http://host.docker.internal:7080` dans
-`.env.dev.local` (le docker marketplace expose le port 7080 ; les conteneurs
+`.env.local` (le docker marketplace expose le port 7080 ; les conteneurs
 PIM résolvent `host.docker.internal` via `extra_hosts`). Workers à
 force-recreate après changement.
 

@@ -47,6 +47,12 @@ services:
     App\:
         resource: '../src/'
 
+    # Sessions en base (table `sessions`) : le handler ouvre sa propre connexion
+    # PDO paresseuse, indépendante de la connexion Doctrine et de ses transactions.
+    Symfony\Component\HttpFoundation\Session\Storage\Handler\PdoSessionHandler:
+        arguments:
+            - '%env(DATABASE_URL)%'
+
     App\Shared\Outbox\OutboxPublisher:
         arguments:
             $serializer: '@messenger.transport.symfony_serializer'

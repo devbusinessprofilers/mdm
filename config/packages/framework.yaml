@@ -4,10 +4,15 @@ framework:
 
     # Note that the session will be started ONLY if you read or write from it.
     session:
+        # Sessions en base MariaDB : elles survivent aux redéploiements du
+        # conteneur php et restent valables en multi-instance. Le rate limiter
+        # (cache filesystem ci-dessous) reste, lui, mono-instance.
+        handler_id: Symfony\Component\HttpFoundation\Session\Storage\Handler\PdoSessionHandler
         cookie_secure: auto
         cookie_httponly: true
         cookie_samesite: lax
         # session.use_strict_mode (anti-fixation) est activé via Docker/php/php.ini.
+        # La durée de vie (GC) suit session.gc_maxlifetime du php.ini.
 
     # lock_factory: null sur chaque limiter : symfony/lock n'est pas installé,
     # et un seul conteneur php sert le HTTP (compteurs sur le cache filesystem).

@@ -1,10 +1,10 @@
 # Gestion et rotation des secrets
 
-Les secrets ne sont **jamais** commités : `html/.env` (suivi) ne contient que des valeurs vides, les valeurs réelles vont dans `.env.local` (ignoré par git, template : `.env.local.dist`).
+Les secrets ne sont **jamais** commités : `html/.env` (suivi) liste toutes les variables avec des valeurs vides ou de dev, les valeurs réelles vont dans `.env.local` (ignoré par git).
 
 ## Règles générales
 
-- Copier `.env.local.dist` → `.env.local` et renseigner les valeurs.
+- Renseigner `.env.local` à partir de la liste des variables de `.env` (un `.env.local` minimal est généré au premier démarrage par `Docker/php/local-deploy.sh`). Générer les clés via `php -r "echo base64_encode(random_bytes(32)), PHP_EOL;"`.
 - En production (Upsun) : utiliser les variables d'environnement du projet, marquées sensibles, jamais de fichier `.env.local` déployé :
   ```bash
   upsun variable:create --level environment --name env:APP_SECRET --value '...' --sensitive true
