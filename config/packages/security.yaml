@@ -2,7 +2,9 @@ security:
     role_hierarchy:
         ROLE_BP_EDITOR: ROLE_USER
         ROLE_BP_VALIDATOR: ROLE_BP_EDITOR
-        ROLE_ADMIN: [ROLE_BP_VALIDATOR, ROLE_ALLOWED_TO_SWITCH]
+        # Réaccorder ROLE_ALLOWED_TO_SWITCH ici, avec switch_user sur le
+        # firewall main, si l'impersonation est mise en place un jour.
+        ROLE_ADMIN: ROLE_BP_VALIDATOR
         ROLE_SUPER_ADMIN: ROLE_ADMIN
 
     # https://symfony.com/doc/current/security.html#registering-the-user-hashing-passwords

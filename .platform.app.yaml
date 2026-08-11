@@ -24,9 +24,25 @@ disk: 2048
 
 # Seuls répertoires inscriptibles à l'exécution (le reste du FS est read-only).
 # Les médias DAM sont sur OVH Object Storage, les fichiers temporaires dans /tmp.
+# Les sessions sont en base de données (plus de mount var/sessions).
+# var/import : fichiers déposés pour l'import de fiches (FicheImportJobManager).
 mounts:
     'var/log': { source: local, source_path: log }
-    'var/sessions': { source: local, source_path: sessions }
+    'var/import': { source: local, source_path: import }
+
+# Sessions strictes également en production (aligné sur Docker/php/php.ini en local).
+variables:
+    php:
+        'session.use_strict_mode': 1
+        # Opcache dimensionné prudemment pour le code applicatif + vendors
+        # (le php.ini local ne s'applique pas sur Upsun).
+        'opcache.memory_consumption': 256
+        'opcache.max_accelerated_files': 20000
+        'opcache.interned_strings_buffer': 32
+        # Le code est en lecture seule entre deux déploiements sur Upsun :
+        # pas de revalidation des timestamps. Attention : tout hotfix sur les
+        # fichiers PHP exige donc un redéploiement pour être pris en compte.
+        'opcache.validate_timestamps': 0
 
 hooks:
     build: |

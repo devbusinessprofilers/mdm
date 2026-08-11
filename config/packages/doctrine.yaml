@@ -1,7 +1,7 @@
 doctrine:
     dbal:
         url: '%env(resolve:DATABASE_URL)%'
-        schema_filter: '~^(?!(messenger_messages|pim_fiche_code_counter|dam_media_phash_band)$)~'
+        schema_filter: '~^(?!(messenger_messages|pim_fiche_code_counter|dam_media_phash_band|sessions)$)~'
 
         # IMPORTANT: You MUST configure your server version,
         # either here or in the DATABASE_URL env var (see .env file)
