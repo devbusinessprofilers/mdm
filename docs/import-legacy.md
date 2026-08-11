@@ -1,6 +1,6 @@
 # Import legacy — CSV production → PIM
 
-Reprise des données de production (`lists_infos_produits_v2_*.csv`, 91 colonnes, ~26 600 lignes) dans une base PIM dédiée (`mdm_reel`). Trois commandes manuelles, idempotentes, relançables :
+Reprise des données de production (`lists_infos_produits_v2_*.csv`, 91 colonnes, ~26 600 lignes) dans une base PIM dédiée (`mdm_reel`). Commandes manuelles, idempotentes, relançables :
 
 | Commande | Rôle | Périmètre |
 |---|---|---|
@@ -10,6 +10,7 @@ Reprise des données de production (`lists_infos_produits_v2_*.csv`, 91 colonnes
 | `app:legacy:import-restaurants` | Fiches Restaurant | Gamme = Restaurant (~2 918) |
 | `app:legacy:import-photos` | Photos + variantes WebP | Toutes les fiches importées |
 | `app:legacy:import-translations` | Traductions (6 locales) | Lues dans le **dump SQL** de production (rejouable en prod au déploiement) |
+| `app:legacy:import-collaborateurs` | Collaborateurs + statut Business Premium | Lus dans le **XLSX** `listes_fiches_produits_*.xlsx` (~27 000 lignes) |
 
 **Pivot** : `pim_fiche.code` = « Id syspad » du CSV (fourni à l'insert, le trigger n'attribue le compteur qu'aux fiches créées sans code). La table `etl_legacy_fiche` (syspad ↔ fiche ULID, gamme, photos_json) porte l'idempotence ; `etl_legacy_photo` suit chaque photo (statuts `pending/done/error/missing_file/invalid/skipped_limit`).
 
@@ -35,6 +36,8 @@ php bin/console app:legacy:import-photos --shard=0/4  # 5. ×4 terminaux (0/4 �
 php bin/console app:legacy:import-photos --retry-errors   # reprise si besoin
 php bin/console app:legacy:import-translations        # 6. traductions (dump SQL)
 # 7. Nettoyage : supprimer var/tmp/import/ et le dossier tmp/ du bucket privé
+#    (déposer d'abord le XLSX de l'étape 8 s'il n'y est pas encore)
+php bin/console app:legacy:import-collaborateurs      # 8. collaborateurs + Business Premium (XLSX)
 ```
 
 Chaque import accepte `--dry-run` (répétition sans écriture ; pour les photos en mode S3, seule la présence des objets est contrôlée). En local, cibler la base réelle sans toucher `.env.local` :
@@ -170,3 +173,17 @@ Source : le **dump SQL** de production (`--file`, défaut `var/tmp/import/dump-p
 **Atouts et loisirs** : `bp_atout` / `bp_loisir` sont des référentiels partagés (pas de rattachement direct au produit dans les i18n) — la commande construit un dictionnaire *texte français → traductions* et l'applique aux champs libres du PIM : `lieu.atout1..5`, `lieu.loisirInterne[i]`, `activite.plus[i]`, `restaurant.atouts[i]`. Les variantes de troncature de l'import des fiches sont prises en compte (35 caractères + ellipse pour les atouts lieux, 255 pour restaurants/activités). ~497 000 traductions appariées.
 
 **Libellés de LOV** : les référentiels `bp_theme`, `bp_type_lieu`, `bp_type_prestataire`, `bp_type_activite`, `bp_objectif`, `bp_equipement` alimentent `pim_attribute_value_translation` par correspondance exacte de libellé français (~240 libellés traduits ; les libellés PIM renommés par la Bible ne matchent pas et restent à traduire).
+
+## Collaborateurs et Business Premium (`app:legacy:import-collaborateurs`)
+
+Source : le **XLSX** `listes_fiches_produits_*.xlsx` (`--file`, défaut `var/tmp/import/listes_fiches_produits_06-08-2026_17H31.xlsx`), lu nativement via openspout — ne pas convertir en CSV. Une ligne = une fiche (« ID Syspad » = `pim_fiche.code`) ; les collaborateurs sont empilés **dans les cellules** (une entrée par retour-ligne) sur trois colonnes parallèles « Identifiant email » / « Nom » / « Prénom ».
+
+⚠ **Alignement par index** : les trois listes sont appariées position par position et contiennent des entrées **vides** quand une information manque (ex. un email sans nom ni prénom). Elles ne doivent jamais être filtrées de leurs vides avant appariement, sous peine de mélanger les identités — le parseur conserve les trous.
+
+Écritures :
+- `FicheCollaborateur` (unique par email, normalisé minuscules) + `FicheAffiliation` (unique par couple collaborateur × fiche ; rôle `--role`, défaut `utilisateur` ; auteur `--created-by`, défaut premier super admin actif). Aucune invitation marketplace n'est envoyée (création directe, hors `FicheAffiliationManager::invite`).
+- Colonne « Adhérent Business Premium » (valeur `Adhérent`) → `Fiche.businessPremium`, appliqué sous `preserveWorkflowDuring` (aucune transition de workflow, les fiches publiées le restent).
+
+Ignorés (comptés dans le rapport) : entrées nom/prénom **sans email** (l'email est la clé), emails invalides, Id syspad sans fiche PIM, doublons d'email au sein d'une même cellule. Pas de colonne téléphone dans le fichier. Options : `--dry-run`, `--limit`, `--only-syspad`, `--batch-size`. À lancer **après** les imports de fiches (jointure par code syspad). Gros volume : exécuter avec `APP_DEBUG=0` (et `php -d memory_limit=1536M` au besoin) — le profiler dev accumule les requêtes SQL.
+
+Bilan `mdm_reel` (2026-08-11) : 19 467 collaborateurs, 25 272 affiliations, 491 fiches Business Premium ; 418 syspad inconnus, 238 emails invalides.
