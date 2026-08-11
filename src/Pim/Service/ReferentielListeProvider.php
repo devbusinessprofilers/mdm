@@ -73,10 +73,49 @@ final readonly class ReferentielListeProvider
         return $lignes;
     }
 
+    /**
+     * Lignes des seules fiches cochées, pour l'export d'une sélection : mêmes
+     * colonnes et hydratation que la liste, sans parcourir le filtre courant.
+     *
+     * @param list<string> $ids ULID texte
+     *
+     * @return list<ReferentielLigne>
+     */
+    public function lignesPourIds(array $ids): array
+    {
+        $binaires = [];
+        foreach ($ids as $id) {
+            try {
+                $binaires[] = Ulid::fromString($id)->toBinary();
+            } catch (\InvalidArgumentException) {
+            }
+        }
+
+        return $this->lignes($this->repository->rowsPourIds($binaires));
+    }
+
     /** @return array{list<ReferentielLigne>, ?string} */
     private function page(ReferentielFiltres $filtres, ?FicheCursor $cursor, int $limit): array
     {
         ['rows' => $rows, 'hasNext' => $hasNext] = $this->repository->pageRows($filtres, $cursor, $limit);
+        $lignes = $this->lignes($rows);
+        $derniere = [] === $lignes ? null : $lignes[array_key_last($lignes)];
+
+        return [
+            $lignes,
+            $hasNext && null !== $derniere
+                ? (new FicheCursor($derniere->updatedAt, Ulid::fromString($derniere->id)))->encode()
+                : null,
+        ];
+    }
+
+    /**
+     * @param list<array<string, mixed>> $rows
+     *
+     * @return list<ReferentielLigne>
+     */
+    private function lignes(array $rows): array
+    {
         $binaires = array_map(static fn (array $row): string => (string) $row['id'], $rows);
         $auteurs = $this->repository->auteurs($binaires);
         $vignettes = $this->repository->vignetteStorageKeys($binaires);
@@ -101,13 +140,7 @@ final readonly class ReferentielListeProvider
                 marqueIa: isset($marques[$binaire]),
             );
         }
-        $derniere = [] === $lignes ? null : $lignes[array_key_last($lignes)];
 
-        return [
-            $lignes,
-            $hasNext && null !== $derniere
-                ? (new FicheCursor($derniere->updatedAt, Ulid::fromString($derniere->id)))->encode()
-                : null,
-        ];
+        return $lignes;
     }
 }

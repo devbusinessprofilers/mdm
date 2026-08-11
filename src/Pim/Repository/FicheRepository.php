@@ -71,6 +71,30 @@ final class FicheRepository extends ServiceEntityRepository
         return $fiches;
     }
 
+    /**
+     * @param list<Ulid> $ids
+     *
+     * @return list<Fiche> Fiches du lot avec leurs sélections de sites déjà
+     *                     chargées : évite un chargement de collection par fiche
+     */
+    public function findByIdsAvecSiteSelections(array $ids): array
+    {
+        if ([] === $ids) {
+            return [];
+        }
+        /** @var list<Fiche> $fiches */
+        $fiches = $this->createQueryBuilder('fiche')
+            ->leftJoin('fiche.siteSelections', 'selection')
+            ->addSelect('selection')
+            ->andWhere('fiche.id IN (:ids)')
+            // En DQL, les Ulid ne passent pas par le type de colonne : binaire explicite.
+            ->setParameter('ids', array_map(static fn (Ulid $id): string => $id->toBinary(), $ids), ArrayParameterType::BINARY)
+            ->getQuery()
+            ->getResult();
+
+        return $fiches;
+    }
+
     /** @return list<Fiche> Dernières fiches publiées, les plus récentes d'abord. */
     public function findDernieresPubliees(int $limit): array
     {

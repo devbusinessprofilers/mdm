@@ -254,7 +254,7 @@ final readonly class ReferentielRepository
      */
     public function pageRows(ReferentielFiltres $filtres, ?FicheCursor $cursor, int $limit): array
     {
-        [$conditions, $params, $types, $joins] = $this->conditions($filtres, null);
+        [$conditions, $params, $types, $joins] = $this->conditions($filtres, null, ['loc', 'completude', 'sd']);
         $joins .= "\nLEFT JOIN account_user au ON au.id = f.assignee_id";
         if (null !== $cursor) {
             $conditions[] = '(f.updated_at, f.id) < (:cursor_updated_at, :cursor_id)';
@@ -302,6 +302,56 @@ final readonly class ReferentielRepository
         ];
     }
 
+    /**
+     * Lignes brutes des seules fiches demandées, dans l'ordre de la liste
+     * (modification décroissante) : l'export d'une sélection cochée n'a pas
+     * à parcourir tout le résultat filtré.
+     *
+     * @param list<string> $ids Identifiants binaires
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function rowsPourIds(array $ids): array
+    {
+        if ([] === $ids) {
+            return [];
+        }
+
+        return $this->connection->fetchAllAssociative(
+            sprintf(
+                <<<'SQL'
+                SELECT
+                    f.id,
+                    f.type,
+                    f.code,
+                    f.label,
+                    CASE f.type
+                        WHEN 'activite' THEN CASE WHEN a.mode_intervention = 'fixe' THEN loc.ville ELSE NULL END
+                        WHEN 'service_evenementiel' THEN CASE WHEN sv.mode_intervention = 'fixe' THEN loc.ville ELSE NULL END
+                        ELSE loc.ville
+                    END AS ville,
+                    f.status,
+                    %s AS completeness,
+                    (SELECT COUNT(*) FROM pim_fiche_site_diffusion psd WHERE psd.fiche_id = f.id) AS canaux,
+                    au.email AS contributeur,
+                    f.updated_at
+                FROM pim_fiche f
+                LEFT JOIN pim_localisation loc ON loc.id = f.localisation_id
+                LEFT JOIN pim_lieu l ON l.fiche_id = f.id AND f.type = 'lieu'
+                LEFT JOIN pim_activite a ON a.fiche_id = f.id AND f.type = 'activite'
+                LEFT JOIN pim_restaurant r ON r.fiche_id = f.id AND f.type = 'restaurant'
+                LEFT JOIN pim_service_evenementiel sv ON sv.fiche_id = f.id AND f.type = 'service_evenementiel'
+                LEFT JOIN account_user au ON au.id = f.assignee_id
+                WHERE f.id IN (:ids)
+                ORDER BY f.updated_at DESC, f.id DESC
+                SQL,
+                self::COMPLETENESS,
+            ),
+            ['ids' => $ids],
+            ['ids' => ArrayParameterType::BINARY],
+        );
+    }
+
     /** @return array<string, array<int|string, int>> Comptes de facettes par groupe puis par valeur. */
     public function comptes(ReferentielFiltres $filtres): array
     {
@@ -312,14 +362,14 @@ final readonly class ReferentielRepository
             'complet' => self::COMPLETENESS.' >= 75',
             'publiable' => self::COMPLETENESS.' BETWEEN 60 AND 74',
             'insuffisant' => 'COALESCE('.self::COMPLETENESS.', 0) < 60',
-        ]);
+        ], ['completude']);
         $comptes['canaux'] = $this->comptesSommes($filtres, 'canaux', [
             'c20' => 'COALESCE(sd.nb, 0) >= 20',
             'c5' => 'COALESCE(sd.nb, 0) BETWEEN 5 AND 19',
             'c1' => 'COALESCE(sd.nb, 0) BETWEEN 1 AND 4',
             'c0' => 'COALESCE(sd.nb, 0) = 0',
-        ]);
-        $comptes['pays'] = $this->comptesParExpression($filtres, 'pays', 'loc.country_code');
+        ], ['sd']);
+        $comptes['pays'] = $this->comptesParExpression($filtres, 'pays', 'loc.country_code', ['loc']);
         [$semaine, $jour, $sixMois] = self::bornesDates();
         $comptes['dates'] = $this->comptesSommes($filtres, 'dates', [
             'creees_semaine' => "f.created_at >= '".$semaine."'",
@@ -431,10 +481,14 @@ final readonly class ReferentielRepository
         return array_fill_keys(array_map(strval(...), $rows), true);
     }
 
-    /** @return array<string, int> */
-    private function comptesParExpression(ReferentielFiltres $filtres, string $groupe, string $expression): array
+    /**
+     * @param list<string> $jointuresSelect
+     *
+     * @return array<string, int>
+     */
+    private function comptesParExpression(ReferentielFiltres $filtres, string $groupe, string $expression, array $jointuresSelect = []): array
     {
-        [$conditions, $params, $types, $joins] = $this->conditions($filtres, $groupe);
+        [$conditions, $params, $types, $joins] = $this->conditions($filtres, $groupe, $jointuresSelect);
         $rows = $this->connection->fetchAllKeyValue(
             sprintf(
                 'SELECT %s AS k, COUNT(*) AS n FROM pim_fiche f %s WHERE %s AND %s IS NOT NULL GROUP BY %s',
@@ -453,12 +507,13 @@ final readonly class ReferentielRepository
 
     /**
      * @param array<string, string> $cas
+     * @param list<string>          $jointuresSelect
      *
      * @return array<string, int>
      */
-    private function comptesSommes(ReferentielFiltres $filtres, string $groupe, array $cas): array
+    private function comptesSommes(ReferentielFiltres $filtres, string $groupe, array $cas, array $jointuresSelect = []): array
     {
-        [$conditions, $params, $types, $joins] = $this->conditions($filtres, $groupe);
+        [$conditions, $params, $types, $joins] = $this->conditions($filtres, $groupe, $jointuresSelect);
         $selects = [];
         foreach ($cas as $cle => $condition) {
             $selects[] = sprintf('COALESCE(SUM(CASE WHEN %s THEN 1 ELSE 0 END), 0) AS `%s`', $condition, $cle);
@@ -511,23 +566,45 @@ final readonly class ReferentielRepository
     /**
      * Construit jointures et conditions pour le filtre donné, en excluant au
      * besoin un groupe : le compte d'une facette se calcule sous les filtres
-     * de tous les autres groupes.
+     * de tous les autres groupes. Seules les jointures réellement référencées
+     * sont émises — par un filtre actif ou par le SELECT de l'appelant
+     * ($jointuresSelect : 'loc', 'completude' et/ou 'sd') — car MySQL
+     * matérialise notamment la table dérivée sd même inutilisée.
+     *
+     * @param list<string> $jointuresSelect
      *
      * @return array{list<string>, array<string, mixed>, array<string, mixed>, string}
      */
-    private function conditions(ReferentielFiltres $filtres, ?string $groupeExclu): array
+    private function conditions(ReferentielFiltres $filtres, ?string $groupeExclu, array $jointuresSelect = []): array
     {
         $conditions = ['1 = 1'];
         $params = [];
         $types = [];
-        $joins = <<<'SQL'
-            LEFT JOIN pim_localisation loc ON loc.id = f.localisation_id
-            LEFT JOIN pim_lieu l ON l.fiche_id = f.id AND f.type = 'lieu'
-            LEFT JOIN pim_activite a ON a.fiche_id = f.id AND f.type = 'activite'
-            LEFT JOIN pim_restaurant r ON r.fiche_id = f.id AND f.type = 'restaurant'
-            LEFT JOIN pim_service_evenementiel sv ON sv.fiche_id = f.id AND f.type = 'service_evenementiel'
-            LEFT JOIN (SELECT fiche_id, COUNT(*) AS nb FROM pim_fiche_site_diffusion GROUP BY fiche_id) sd ON sd.fiche_id = f.id
-            SQL;
+        $requises = array_fill_keys($jointuresSelect, true);
+        if ('pays' !== $groupeExclu && [] !== $filtres->pays) {
+            $requises['loc'] = true;
+        }
+        if ('completude' !== $groupeExclu && [] !== $filtres->completudes) {
+            $requises['completude'] = true;
+        }
+        if ('canaux' !== $groupeExclu && [] !== $filtres->canaux) {
+            $requises['sd'] = true;
+        }
+        $joins = '';
+        if (isset($requises['loc'])) {
+            $joins .= "\nLEFT JOIN pim_localisation loc ON loc.id = f.localisation_id";
+        }
+        if (isset($requises['completude'])) {
+            $joins .= "\n".<<<'SQL'
+                LEFT JOIN pim_lieu l ON l.fiche_id = f.id AND f.type = 'lieu'
+                LEFT JOIN pim_activite a ON a.fiche_id = f.id AND f.type = 'activite'
+                LEFT JOIN pim_restaurant r ON r.fiche_id = f.id AND f.type = 'restaurant'
+                LEFT JOIN pim_service_evenementiel sv ON sv.fiche_id = f.id AND f.type = 'service_evenementiel'
+                SQL;
+        }
+        if (isset($requises['sd'])) {
+            $joins .= "\nLEFT JOIN (SELECT fiche_id, COUNT(*) AS nb FROM pim_fiche_site_diffusion GROUP BY fiche_id) sd ON sd.fiche_id = f.id";
+        }
 
         $q = trim((string) $filtres->q);
         if ('' !== $q) {

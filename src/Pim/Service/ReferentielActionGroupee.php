@@ -9,6 +9,7 @@ use App\Account\Message\CollaborateurAccessRequested;
 use App\Account\Security\FicheVoter;
 use App\Enrichment\Service\FicheTranslationScheduler;
 use App\Pim\Entity\Fiche;
+use App\Pim\Entity\FicheAffiliation;
 use App\Pim\Entity\SiteDiffusion;
 use App\Pim\Message\IndexFiche;
 use App\Pim\Repository\FicheAffiliationRepository;
@@ -89,10 +90,13 @@ final readonly class ReferentielActionGroupee
         $ignorees = 0;
         $emailsServis = [];
         foreach (array_chunk($ids, self::LOT) as $lot) {
-            $fiches = $this->fiches->findBy(['id' => array_map(
-                static fn (string $id): Ulid => Ulid::fromString($id),
-                $lot,
-            )]);
+            $ulids = array_map(static fn (string $id): Ulid => Ulid::fromString($id), $lot);
+            // Visibilité : les collections de sites sont chargées avec le lot,
+            // pour éviter une requête par fiche dans ajouterSitesDiffusion.
+            $fiches = 'visibilite' === $action
+                ? $this->fiches->findByIdsAvecSiteSelections($ulids)
+                : $this->fiches->findBy(['id' => $ulids]);
+            $affiliationsParFiche = 'acces' === $action ? $this->affiliationsParFiche($fiches) : [];
             $ignorees += count($lot) - count($fiches);
             foreach ($fiches as $fiche) {
                 if (!$this->security->isGranted($attribut, $fiche)) {
@@ -100,7 +104,7 @@ final readonly class ReferentielActionGroupee
                     continue;
                 }
                 if ('acces' === $action) {
-                    [$envoyes, $sautes] = $this->envoyerAcces($fiche, $emailsServis);
+                    [$envoyes, $sautes] = $this->envoyerAcces($fiche, $affiliationsParFiche[$fiche->idString()] ?? [], $emailsServis);
                     $appliquees += $envoyes;
                     $ignorees += $sautes;
                     continue;
@@ -134,19 +138,40 @@ final readonly class ReferentielActionGroupee
     }
 
     /**
+     * Les affiliations de tout le lot en une requête, indexées par fiche.
+     *
+     * @param list<Fiche> $fiches
+     *
+     * @return array<string, list<FicheAffiliation>>
+     */
+    private function affiliationsParFiche(array $fiches): array
+    {
+        if ([] === $fiches) {
+            return [];
+        }
+        $parFiche = [];
+        foreach ($this->affiliations->findBy(['fiche' => $fiches]) as $affiliation) {
+            $parFiche[$affiliation->fiche()->idString()][] = $affiliation;
+        }
+
+        return $parFiche;
+    }
+
+    /**
      * Un message marketplace par collaborateur actif, hors contact de repli,
      * chaque email n'étant servi qu'une fois sur l'ensemble de la sélection.
      * C'est la marketplace qui crée le compte et envoie le mail.
      *
-     * @param array<string, true> $emailsServis
+     * @param list<FicheAffiliation> $affiliations
+     * @param array<string, true>    $emailsServis
      *
      * @return array{int, int} [envoyés, ignorés]
      */
-    private function envoyerAcces(Fiche $fiche, array &$emailsServis): array
+    private function envoyerAcces(Fiche $fiche, array $affiliations, array &$emailsServis): array
     {
         $envoyes = 0;
         $ignores = 0;
-        foreach ($this->affiliations->findBy(['fiche' => $fiche->id()]) as $affiliation) {
+        foreach ($affiliations as $affiliation) {
             $collaborateur = $affiliation->collaborateur();
             if ($affiliation->repli() || !$collaborateur->isActive() || isset($emailsServis[$collaborateur->email()])) {
                 ++$ignores;
