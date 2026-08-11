@@ -6,6 +6,7 @@ namespace App\Pim\Repository;
 
 use App\Pim\Completeness\CompletenessScores;
 use App\Pim\Enum\TypeFiche;
+use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\ParameterType;
 use Symfony\Component\Uid\Ulid;
@@ -75,7 +76,19 @@ final readonly class CompletenessRepository
             implode(' UNION ALL ', $selects),
         );
 
-        return (int) $this->connection->executeStatement($sql, $params, $types);
+        $written = (int) $this->connection->executeStatement($sql, $params, $types);
+        if ($written === count($scoresByFiche)) {
+            return $written;
+        }
+
+        // pdo_mysql rapporte les lignes modifiées, pas les lignes trouvées : une fiche
+        // recalculée à l'identique dans la même seconde compte pour zéro. Seule une
+        // ligne domaine réellement absente doit manquer au compte retourné.
+        return (int) $this->connection->fetchOne(
+            sprintf('SELECT COUNT(*) FROM %s WHERE fiche_id IN (?)', self::table($type)),
+            [array_map(static fn (string $ficheId): string => Ulid::fromString($ficheId)->toBinary(), array_keys($scoresByFiche))],
+            [ArrayParameterType::BINARY],
+        );
     }
 
     private static function table(TypeFiche $type): string
