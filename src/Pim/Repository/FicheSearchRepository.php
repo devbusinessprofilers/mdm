@@ -24,6 +24,7 @@ final readonly class FicheSearchRepository
         int $limit,
         ?string $cursorScore,
         ?Ulid $cursorId,
+        ?string $labelLike = null,
     ): array {
         $scoreParts = [];
         $conditions = [];
@@ -34,6 +35,12 @@ final readonly class FicheSearchRepository
             $conditions[] = 'MATCH (s.content) AGAINST (:query IN BOOLEAN MODE)';
             $parameters['query'] = $booleanQuery;
             $types['query'] = ParameterType::STRING;
+        }
+        if (null !== $labelLike) {
+            $scoreParts[] = 'IF(f.label LIKE :labelLike, 1, 0)';
+            $conditions[] = 'f.label LIKE :labelLike';
+            $parameters['labelLike'] = $labelLike;
+            $types['labelLike'] = ParameterType::STRING;
         }
         if (null !== $exactCode) {
             $scoreParts[] = 'IF(f.code = :exactCode, 1000000, 0)';

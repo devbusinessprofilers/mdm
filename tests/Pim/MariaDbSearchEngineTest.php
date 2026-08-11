@@ -155,6 +155,21 @@ final class MariaDbSearchEngineTest extends KernelTestCase
         self::assertEqualsCanonicalizing($expectedIds, $actualIds);
     }
 
+    public function testLesMotsCourtsNEliminentPasLesResultats(): void
+    {
+        $pavillon = $this->createLieu(23503, 'Le Grand Pavillon Chantilly', 'Chantilly', StatutFiche::Publiee);
+        $this->createLieu(23504, 'Grand Palais des Congrès', 'Paris', StatutFiche::Publiee);
+
+        // « Le » (2 lettres) est sous innodb_ft_min_token_size : l'exiger en
+        // préfixe obligatoire rendait introuvable la fiche par son nom exact.
+        $page = $this->search('Le Grand Pavillon Chantilly');
+        self::assertSame([$pavillon->id()], $this->ids($page->results));
+
+        // Texte fait uniquement de mots courts : repli sur le libellé.
+        $courtePage = $this->search('Le');
+        self::assertContains($pavillon->id(), $this->ids($courtePage->results));
+    }
+
     public function testIndexerReplacesOutdatedContent(): void
     {
         $lieu = $this->createLieu(99, 'Ancien Belvédère', 'Bordeaux', StatutFiche::Publiee);

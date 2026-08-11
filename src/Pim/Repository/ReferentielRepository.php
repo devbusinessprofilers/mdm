@@ -8,6 +8,7 @@ use App\Pim\Enum\StatutFiche;
 use App\Pim\Enum\TypeFiche;
 use App\Pim\Form\ReferentielFiltres;
 use App\Pim\ReadModel\FicheCursor;
+use App\Shared\Search\BooleanQueryFactory;
 use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\ParameterType;
@@ -531,9 +532,7 @@ final readonly class ReferentielRepository
         $q = trim((string) $filtres->q);
         if ('' !== $q) {
             $joins .= "\nLEFT JOIN pim_fiche_search fs ON fs.fiche_id = f.id";
-            $tokens = preg_split('/[^\p{L}\p{N}]+/u', $q, -1, PREG_SPLIT_NO_EMPTY);
-            $tokens = false === $tokens ? [] : array_values(array_unique($tokens));
-            $boolean = implode(' ', array_map(static fn (string $t): string => '+'.$t.'*', $tokens));
+            $boolean = BooleanQueryFactory::fromText($q);
             $parts = [];
             if ('' !== $boolean) {
                 $parts[] = 'MATCH (fs.content) AGAINST (:recherche IN BOOLEAN MODE)';
@@ -545,7 +544,13 @@ final readonly class ReferentielRepository
                 $params['code_exact'] = (int) $q;
                 $types['code_exact'] = ParameterType::INTEGER;
             }
-            $conditions[] = [] === $parts ? '1 = 0' : '('.implode(' OR ', $parts).')';
+            if ([] === $parts) {
+                // Aucun mot assez long pour l'index FULLTEXT : repli sur le libellé.
+                $parts[] = 'f.label LIKE :recherche_libelle';
+                $params['recherche_libelle'] = BooleanQueryFactory::likePattern($q);
+                $types['recherche_libelle'] = ParameterType::STRING;
+            }
+            $conditions[] = '('.implode(' OR ', $parts).')';
         }
         if ('gamme' !== $groupeExclu && [] !== $filtres->gammes) {
             $conditions[] = 'f.type IN (:gammes)';

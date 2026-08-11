@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Pim\Service;
 
+use App\Shared\Search\BooleanQueryFactory;
 use App\Shared\Search\SearchPage;
 use App\Shared\Search\SearchQuery;
 use App\Shared\Search\SearchResult;
@@ -24,20 +25,17 @@ final readonly class MariaDbSearchEngine implements SearchEngineInterface
             return new SearchPage([], null, 0);
         }
 
-        $tokens = preg_split('/[^\p{L}\p{N}]+/u', $text, -1, PREG_SPLIT_NO_EMPTY);
-        $tokens = false === $tokens ? [] : array_values(array_unique($tokens));
-        $booleanQuery = implode(' ', array_map(static fn (string $token): string => '+'.$token.'*', $tokens));
+        $booleanQuery = BooleanQueryFactory::fromText($text);
         $exactCode = ctype_digit($text) && strlen($text) <= 10 && (int) $text <= 4_294_967_295 ? (int) $text : null;
-        if ('' === $booleanQuery && null === $exactCode) {
-            return new SearchPage([], null, 0);
-        }
+        // Aucun mot assez long pour l'index FULLTEXT : repli sur le libellé.
+        $labelLike = '' === $booleanQuery && null === $exactCode ? BooleanQueryFactory::likePattern($text) : null;
 
         $cursorScore = null;
         $cursorId = null;
         if (null !== $query->cursor) {
             [$cursorScore, $cursorId] = $this->decodeCursor($query->cursor);
         }
-        $search = $this->repository->search($booleanQuery, $exactCode, $query->filters, $query->limit, $cursorScore, $cursorId);
+        $search = $this->repository->search($booleanQuery, $exactCode, $query->filters, $query->limit, $cursorScore, $cursorId, $labelLike);
         $rows = $search['rows'];
         $hasNext = count($rows) > $query->limit;
         $rows = array_slice($rows, 0, $query->limit);

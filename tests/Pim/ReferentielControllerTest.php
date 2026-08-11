@@ -14,6 +14,7 @@ use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Entity\SiteDiffusion;
 use App\Pim\Enum\StatutFiche;
+use App\Pim\Service\FicheSearchIndexer;
 use App\Pim\Service\ReferentielActionGroupee;
 use Symfony\Component\Uid\Ulid;
 use Doctrine\DBAL\Connection;
@@ -311,6 +312,30 @@ final class ReferentielControllerTest extends WebTestCase
         self::assertResponseRedirects();
         $client->followRedirect();
         self::assertSelectorTextContains('body', 'Choisissez au moins un site de diffusion à attribuer.');
+    }
+
+    public function testLaRechercheTolereLesMotsSousLaTailleDIndexation(): void
+    {
+        $client = self::createClient();
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $this->connection = self::getContainer()->get(Connection::class);
+        $this->clearTables();
+
+        $user = new User('recherche@example.test', ['ROLE_BP_EDITOR']);
+        $user->setPassword('not-used-by-login-user');
+        $entityManager->persist($user);
+        $lieu = new Lieu();
+        $lieu->changeLabel('Le Grand Pavillon Chantilly');
+        $lieu->fiche()->publishForImport();
+        $entityManager->persist($lieu);
+        $entityManager->flush();
+        self::getContainer()->get(FicheSearchIndexer::class)->index($lieu->fiche());
+        $client->loginUser($user);
+
+        // Le nom exact contient « Le », absent de l'index FULLTEXT (min 3 lettres).
+        $client->request('GET', '/referentiel', ['f' => ['q' => 'Le Grand Pavillon Chantilly']]);
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('table', 'Le Grand Pavillon Chantilly');
     }
 
     public function testVueEnregistreePuisSupprimee(): void
