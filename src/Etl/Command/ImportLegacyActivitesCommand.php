@@ -83,7 +83,13 @@ final class ImportLegacyActivitesCommand extends Command
                 ++$counters['hors périmètre'];
                 continue;
             }
-            if (null !== $onlySyspad && $row->cell('Id syspad') !== (string) $onlySyspad) {
+            if (null !== $onlySyspad && $row->cell(LegacyActiviteRowMapper::SYSPAD_COLUMN) !== (string) $onlySyspad) {
+                continue;
+            }
+            // Idempotence avant mapping : une relance ne remappe pas les lignes
+            // déjà importées et --limit ne compte que les lignes traitées.
+            if (isset($known[(int) $row->cell(LegacyActiviteRowMapper::SYSPAD_COLUMN)])) {
+                ++$counters['déjà importées'];
                 continue;
             }
             if (null !== $limit && $processed >= $limit) {
@@ -95,15 +101,11 @@ final class ImportLegacyActivitesCommand extends Command
                 $mapped = $this->mapper->map($row);
             } catch (\Throwable $exception) {
                 ++$counters['erreurs'];
-                $errors[] = ['ligne' => $record->recordNumber, 'syspad' => $row->cell('Id syspad'), 'message' => $exception->getMessage()];
+                $errors[] = ['ligne' => $record->recordNumber, 'syspad' => $row->cell(LegacyActiviteRowMapper::SYSPAD_COLUMN), 'message' => $exception->getMessage()];
                 continue;
             }
             foreach ($mapped->warnings as $warning) {
                 $warningCounts[$warning] = ($warningCounts[$warning] ?? 0) + 1;
-            }
-            if (isset($known[$mapped->syspadId])) {
-                ++$counters['déjà importées'];
-                continue;
             }
             $known[$mapped->syspadId] = true;
 

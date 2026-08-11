@@ -68,7 +68,17 @@ final class ImportLegacyPhotosCommand extends Command
             ->addOption('retry-errors', null, InputOption::VALUE_NONE, 'Repasse les photos en erreur en attente avant de traiter.')
             ->addOption('syspad', null, InputOption::VALUE_REQUIRED, 'Ne traite que ce syspad_id (debug).')
             ->addOption('shard', null, InputOption::VALUE_REQUIRED, 'Partition i/n (ex. 0/4) pour paralléliser plusieurs exécutions.')
-            ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Contrôle la présence et la validité des fichiers sans rien écrire.');
+            ->addOption('seed-only', null, InputOption::VALUE_NONE, 'Décline uniquement photos_json en lignes de suivi, sans importer.')
+            ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Contrôle la présence et la validité des fichiers sans rien écrire.')
+            ->setHelp(<<<'HELP'
+                Sans --shard, la commande sème le suivi (déclinaison de photos_json en
+                lignes etl_legacy_photo) puis importe. Pour paralléliser, semer UNE SEULE
+                fois avant de lancer les shards — deux semis concurrents violeraient
+                l'unicité (syspad_id, legacy_path) :
+
+                  bin/console app:legacy:import-photos --seed-only
+                  bin/console app:legacy:import-photos --shard=0/4   # ×n terminaux, aucun semis
+                HELP);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -80,7 +90,13 @@ final class ImportLegacyPhotosCommand extends Command
         $batchSize = max(1, (int) $input->getOption('batch-size'));
         $syspad = null === $input->getOption('syspad') ? null : (int) $input->getOption('syspad');
         $dryRun = (bool) $input->getOption('dry-run');
+        $seedOnly = (bool) $input->getOption('seed-only');
         [$shardIndex, $shardCount] = $this->parseShard($input->getOption('shard'));
+        if ($seedOnly && null !== $shardIndex) {
+            $io->error('--seed-only et --shard sont incompatibles : semer une seule fois avant de lancer les shards.');
+
+            return Command::INVALID;
+        }
 
         if (null !== $imagesDir && !is_dir($imagesDir)) {
             $io->error(sprintf('Répertoire des images legacy introuvable : %s', $imagesDir));
@@ -100,9 +116,19 @@ final class ImportLegacyPhotosCommand extends Command
             return $this->dryRun($io, $imagesDir, $s3Prefix, $limit, $syspad);
         }
 
-        $seeded = $this->seed($io);
-        if ($seeded > 0) {
-            $io->text(sprintf('%d photos ajoutées au suivi.', $seeded));
+        // Jamais de semis en mode --shard : des shards concurrents sèmeraient
+        // les mêmes mappings (violation d'unicité (syspad_id, legacy_path)).
+        // Semer une seule fois via --seed-only (ou un lancement sans --shard).
+        if (null === $shardIndex) {
+            $seeded = $this->seed($io);
+            if ($seeded > 0) {
+                $io->text(sprintf('%d photos ajoutées au suivi.', $seeded));
+            }
+            if ($seedOnly) {
+                $io->success(sprintf('Semis terminé (%d photos ajoutées au suivi). Lancer maintenant les shards.', $seeded));
+
+                return Command::SUCCESS;
+            }
         }
         if ($input->getOption('retry-errors')) {
             $retried = $this->photos->resetErrorsToPending();

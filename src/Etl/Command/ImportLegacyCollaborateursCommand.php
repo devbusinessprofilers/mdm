@@ -106,6 +106,10 @@ final class ImportLegacyCollaborateursCommand extends Command
         $columns = null;
         $sinceFlush = 0;
         $createdThisBatch = [];
+        // Valeurs « Adhérent Business Premium » non vides et non reconnues :
+        // elles désactivent le premium, un warning final permet de repérer
+        // une variante de libellé (casse, libellé long) avant de conclure.
+        $unknownPremiumValues = [];
         // Paires (email, fiche) déjà traitées pendant ce run : le fichier
         // contient des emails dupliqués au sein d'une même cellule.
         $seenPairs = [];
@@ -142,7 +146,7 @@ final class ImportLegacyCollaborateursCommand extends Command
                     ++$stats['fiches inconnues'];
                     continue;
                 }
-                $this->applyBusinessPremium($fiche, $cells[$columns[self::HEADER_PREMIUM]] ?? '', $dryRun, $stats);
+                $this->applyBusinessPremium($fiche, $cells[$columns[self::HEADER_PREMIUM]] ?? '', $dryRun, $stats, $unknownPremiumValues);
                 foreach ($this->entries($cells, $columns) as $entry) {
                     $this->importEntry($fiche, $entry, $role, $createdBy, $dryRun, $stats, $createdThisBatch, $seenPairs);
                 }
@@ -163,6 +167,21 @@ final class ImportLegacyCollaborateursCommand extends Command
         }
 
         $io->table(array_keys($stats), [array_values($stats)]);
+        if ([] !== $unknownPremiumValues) {
+            arsort($unknownPremiumValues);
+            $io->warning(sprintf(
+                'Colonne « %s » : valeurs non reconnues, traitées comme non premium (seul « %s » active le flag) : %s. %d désactivation(s) de premium %s au total.',
+                self::HEADER_PREMIUM,
+                self::PREMIUM_VALUE,
+                implode(', ', array_map(
+                    static fn (string $value, int $count): string => sprintf('« %s » (×%d)', $value, $count),
+                    array_keys($unknownPremiumValues),
+                    array_values($unknownPremiumValues),
+                )),
+                $stats['premium désactivés'],
+                $dryRun ? 'seraient opérées' : 'opérées',
+            ));
+        }
         $io->success($dryRun ? 'Analyse terminée (aucune écriture).' : 'Import terminé.');
 
         return Command::SUCCESS;
@@ -262,10 +281,17 @@ final class ImportLegacyCollaborateursCommand extends Command
         }
     }
 
-    /** @param array<string, int> $stats */
-    private function applyBusinessPremium(Fiche $fiche, string $value, bool $dryRun, array &$stats): void
+    /**
+     * @param array<string, int> $stats
+     * @param array<string, int> $unknownValues occurrences par valeur non reconnue
+     */
+    private function applyBusinessPremium(Fiche $fiche, string $value, bool $dryRun, array &$stats, array &$unknownValues): void
     {
-        $premium = self::PREMIUM_VALUE === trim($value);
+        $value = trim($value);
+        if ('' !== $value && self::PREMIUM_VALUE !== $value) {
+            $unknownValues[$value] = ($unknownValues[$value] ?? 0) + 1;
+        }
+        $premium = self::PREMIUM_VALUE === $value;
         if ($premium === $fiche->businessPremium()) {
             return;
         }

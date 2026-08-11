@@ -21,6 +21,8 @@ use App\Pim\Lov\LieuLovCatalog;
 final readonly class LegacyLieuRowMapper
 {
     public const SUPPORTED_GAMMES = ['Hôtel', 'Lieu', 'Centre de congrès'];
+    /** Colonne CSV portant l'Id syspad (pivot d'idempotence des commandes d'import). */
+    public const SYSPAD_COLUMN = 'Id syspad';
 
     private const BIEN_ETRE_COLUMNS = [
         'Piscine Intérieure' => 'BIEN_ETRE_2',
@@ -43,7 +45,7 @@ final readonly class LegacyLieuRowMapper
     public function map(RawCsvRow $row): LegacyMappedLieu
     {
         $warnings = [];
-        $syspadId = $row->cell('Id syspad');
+        $syspadId = $row->cell(self::SYSPAD_COLUMN);
         if (1 !== preg_match('/^\d+$/', $syspadId)) {
             throw new \DomainException('Id syspad manquant ou non numérique.');
         }

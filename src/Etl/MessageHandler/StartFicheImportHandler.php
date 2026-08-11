@@ -56,6 +56,14 @@ final readonly class StartFicheImportHandler
 
             return;
         }
+        // Deux colonnes de même nom seraient silencieusement fusionnées à la
+        // lecture (la dernière gagne) : rejet explicite.
+        $duplicates = array_keys(array_filter(array_count_values($headers), static fn (int $count): bool => $count > 1));
+        if ([] !== $duplicates) {
+            $job->fail(sprintf('Colonnes en double : %s. Chaque colonne ne doit apparaître qu’une fois.', implode(', ', array_slice($duplicates, 0, 10))));
+
+            return;
+        }
         foreach (['code', 'label'] as $required) {
             if (!in_array($required, $headers, true)) {
                 $job->fail(sprintf('La colonne %s est obligatoire.', $required));

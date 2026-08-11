@@ -17,6 +17,8 @@ use App\Pim\Import\Dto\RawCsvRow;
 final readonly class LegacyActiviteRowMapper
 {
     public const SUPPORTED_GAMME = 'Idée';
+    /** Colonne CSV portant l'Id syspad (pivot d'idempotence des commandes d'import). */
+    public const SYSPAD_COLUMN = 'Id syspad';
 
     private const TOUTE_LA_FRANCE = 'toute la france';
 
@@ -33,7 +35,7 @@ final readonly class LegacyActiviteRowMapper
     public function map(RawCsvRow $row): LegacyMappedActivite
     {
         $warnings = [];
-        $syspadId = $row->cell('Id syspad');
+        $syspadId = $row->cell(self::SYSPAD_COLUMN);
         if (1 !== preg_match('/^\d+$/', $syspadId)) {
             throw new \DomainException('Id syspad manquant ou non numérique.');
         }

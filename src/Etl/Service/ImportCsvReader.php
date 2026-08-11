@@ -11,8 +11,10 @@ use OpenSpout\Reader\XLSX\Reader;
 
 /**
  * Lit les fichiers d'import de fiches : XLSX (première feuille uniquement) ou CSV.
- * Les numéros de lignes sont physiques (1 = en-têtes) ; en CSV, les lignes vides
- * et celles commençant par # sont ignorées.
+ * Les numéros de lignes sont des numéros d'enregistrement (1 = en-têtes) : en CSV,
+ * un champ quoté multiligne compte pour un seul enregistrement, le numéro peut donc
+ * différer du numéro de ligne physique du fichier. Les lignes vides et celles
+ * commençant par # sont ignorées.
  */
 final class ImportCsvReader
 {

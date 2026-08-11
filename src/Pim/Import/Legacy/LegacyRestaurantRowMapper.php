@@ -19,6 +19,8 @@ use App\Pim\Import\Dto\RawCsvRow;
 final readonly class LegacyRestaurantRowMapper
 {
     public const SUPPORTED_GAMME = 'Restaurant';
+    /** Colonne CSV portant l'Id syspad (pivot d'idempotence des commandes d'import). */
+    public const SYSPAD_COLUMN = 'Id syspad';
 
     public function __construct(
         private LegacyLovMapper $lovMapper,
@@ -33,7 +35,7 @@ final readonly class LegacyRestaurantRowMapper
     public function map(RawCsvRow $row): LegacyMappedRestaurant
     {
         $warnings = [];
-        $syspadId = $row->cell('Id syspad');
+        $syspadId = $row->cell(self::SYSPAD_COLUMN);
         if (1 !== preg_match('/^\d+$/', $syspadId)) {
             throw new \DomainException('Id syspad manquant ou non numérique.');
         }

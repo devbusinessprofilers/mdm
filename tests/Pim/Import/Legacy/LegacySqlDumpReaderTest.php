@@ -62,6 +62,25 @@ final class LegacySqlDumpReaderTest extends TestCase
         self::assertSame('en', $rows[2][1]['locale']);
     }
 
+    public function testUnexpectedLineInInsertBlockFailsLoudly(): void
+    {
+        $dump = <<<'SQL'
+            CREATE TABLE `bp_produit` (
+              `id` int(11) NOT NULL,
+              `nom_fr` varchar(200) NOT NULL,
+              PRIMARY KEY (`id`)
+            ) ENGINE=InnoDB;
+            INSERT INTO `bp_produit` VALUES
+            (1,'Début de description
+            suite sur une autre ligne physique'),
+            (2,'Autre produit');
+            SQL;
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Ligne inattendue dans un bloc INSERT de bp_produit');
+        iterator_to_array($this->read($dump, ['bp_produit']));
+    }
+
     /** @param list<string> $tables */
     private function read(string $dump, array $tables): \Generator
     {

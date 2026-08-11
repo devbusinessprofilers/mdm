@@ -32,7 +32,8 @@ php bin/console app:legacy:import-lieux               # 4. fiches, par entité
 php bin/console app:legacy:import-activites
 php bin/console app:legacy:import-services
 php bin/console app:legacy:import-restaurants
-php bin/console app:legacy:import-photos --shard=0/4  # 5. ×4 terminaux (0/4 … 3/4)
+php bin/console app:legacy:import-photos --seed-only  # 5a. semis du suivi, UNE seule fois
+php bin/console app:legacy:import-photos --shard=0/4  # 5b. ×4 terminaux (0/4 … 3/4), aucun semis
 php bin/console app:legacy:import-photos --retry-errors   # reprise si besoin
 php bin/console app:legacy:import-translations        # 6. traductions (dump SQL)
 # 7. Nettoyage : supprimer var/tmp/import/ et le dossier tmp/ du bucket privé

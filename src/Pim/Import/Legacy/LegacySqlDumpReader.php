@@ -40,6 +40,10 @@ final class LegacySqlDumpReader
                             throw new \RuntimeException(sprintf('Tuple inattendu pour %s : %d valeurs, %d colonnes.', $insertTable, count($values), count($names)));
                         }
                         yield [$insertTable, array_combine($names, $values)];
+                    } elseif (';' !== $trimmed) {
+                        // Le lecteur ne supporte que les dumps un-tuple-par-ligne :
+                        // un retour à la ligne littéral perdrait des données en silence.
+                        throw new \RuntimeException(sprintf('Ligne inattendue dans un bloc INSERT de %s : %s', $insertTable, mb_substr(ltrim($trimmed), 0, 80)));
                     }
                     if ($isLast) {
                         $insertTable = null;

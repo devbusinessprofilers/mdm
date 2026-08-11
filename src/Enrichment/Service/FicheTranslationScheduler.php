@@ -28,15 +28,22 @@ final readonly class FicheTranslationScheduler
         if (StatutFiche::Publiee !== $fiche->status()) { return 0; }
         $sources = $this->extractor->extract($fiche);
         $paths = array_fill_keys(array_map(static fn (TranslationSource $source): string => $source->path, $sources), true);
+        // Une seule requête : les traductions existantes, indexées par champ et locale.
+        $existing = $this->translations->forFiche($fiche);
+        $byKey = [];
+        foreach ($existing as $translation) {
+            $byKey[$translation->fieldPath().'|'.$translation->locale()->value] = $translation;
+        }
         $scheduled = 0;
         foreach (SupportedLocale::targets() as $locale) {
             $token = (string) new Ulid();
             $localeScheduled = false;
             foreach ($sources as $source) {
-                $translation = $this->translations->findOne($fiche, $source->path, $locale);
+                $translation = $byKey[$source->path.'|'.$locale->value] ?? null;
                 if (!$translation instanceof FicheTranslation) {
                     $translation = new FicheTranslation($fiche, $source->path, $source->label, $locale, $source->value);
                     $this->entityManager->persist($translation);
+                    $byKey[$source->path.'|'.$locale->value] = $translation;
                 }
                 $localeScheduled = $translation->schedule($source->label, $source->value, $token) || $localeScheduled;
             }
@@ -45,7 +52,7 @@ final readonly class FicheTranslationScheduler
                 ++$scheduled;
             }
         }
-        foreach ($this->translations->forFiche($fiche) as $translation) {
+        foreach ($existing as $translation) {
             if (!isset($paths[$translation->fieldPath()])) { $translation->markObsolete(); }
         }
 

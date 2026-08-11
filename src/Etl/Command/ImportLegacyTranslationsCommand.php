@@ -120,6 +120,7 @@ final class ImportLegacyTranslationsCommand extends Command
             'libellés LOV traduits' => 0, 'libellés LOV sans traduction' => 0,
             'déjà présentes' => 0, 'fiche introuvable' => 0, 'source PIM vide' => 0,
             'champ non mappé' => 0, 'locale ou contenu invalide' => 0,
+            'filtrées (locale non demandée)' => 0, 'fr (source, ignorée)' => 0,
         ];
         $this->pendingInBatch = 0;
 
@@ -175,14 +176,14 @@ final class ImportLegacyTranslationsCommand extends Command
     private function importDescriptions(string $file, SymfonyStyle $io): void
     {
         // Le code fiche = « Id syspad » du CSV = bp_produit.syspad_id (PAS
-        // bp_produit.id). bp_lieu arrive avant bp_produit dans le dump : on
-        // conserve ses lignes brutes et on résout produit_id → syspad au
-        // moment des traductions.
+        // bp_produit.id). L'ordre des tables du dump n'est pas garanti : les
+        // lignes i18n et bp_lieu sont bufferisées et résolues après lecture
+        // complète (sinon une table i18n placée avant son référentiel
+        // perdrait ses traductions en silence).
         $produitSyspad = [];
         $legacyProduits = [];
         $legacyLieux = [];
         $textNoms = [];
-        $lovNoms = [];
         $tables = array_merge(
             ['bp_lieu', 'bp_produit', 'i18n_translation_lieu', 'i18n_translation_produit'],
             array_keys(self::TEXT_REFERENTIALS),
@@ -200,7 +201,10 @@ final class ImportLegacyTranslationsCommand extends Command
         }
         $this->lovDictionary = [];
 
-        $processed = 0;
+        /** @var list<array{0: bool, 1: string, 2: int, 3: string, 4: string}> [texte libre ?, table référentiel, id legacy, locale, contenu] */
+        $dictionaryRows = [];
+        /** @var list<array{0: string, 1: array<string, ?string>, 2: SupportedLocale}> [table, ligne, locale] */
+        $descriptionRows = [];
         foreach ($this->reader->rows($file, $tables) as [$table, $row]) {
             if ('bp_produit' === $table) {
                 $syspad = null === $row['syspad_id'] ? null : (int) $row['syspad_id'];
@@ -222,25 +226,48 @@ final class ImportLegacyTranslationsCommand extends Command
                 [$referentialTable, $foreignKey] = $i18nTextTables[$table] ?? $i18nLovTables[$table];
                 $locale = $this->locale($row);
                 $content = trim((string) $row['content']);
-                $nom = $textNoms[$referentialTable][(int) $row[$foreignKey]] ?? '';
-                if (null === $locale || '' === $content || '' === $nom) {
+                if (null === $locale || '' === $content) {
                     continue;
                 }
-                if (isset($i18nTextTables[$table])) {
-                    $this->textDictionary[$nom][$locale->value] = $content;
-                } else {
-                    $this->lovDictionary[$nom][$locale->value] = $content;
-                }
+                $dictionaryRows[] = [isset($i18nTextTables[$table]), $referentialTable, (int) $row[$foreignKey], $locale->value, $content];
                 continue;
             }
 
             // i18n_translation_produit / i18n_translation_lieu : descriptions par fiche.
-            $locale = $this->locale($row);
+            $locale = SupportedLocale::tryFrom(strtolower((string) $row['locale']));
             $content = trim((string) $row['content']);
             if (null === $locale || '' === $content) {
                 ++$this->counters['locale ou contenu invalide'];
                 continue;
             }
+            if (SupportedLocale::Fr === $locale) {
+                ++$this->counters['fr (source, ignorée)'];
+                continue;
+            }
+            if (null !== $this->onlyLocale && $locale->value !== $this->onlyLocale) {
+                ++$this->counters['filtrées (locale non demandée)'];
+                continue;
+            }
+            $descriptionRows[] = [$table, $row, $locale];
+        }
+
+        // Dictionnaires atouts / loisirs / LOV : appariement nom ↔ traduction
+        // une fois tous les référentiels lus.
+        foreach ($dictionaryRows as [$isText, $referentialTable, $legacyId, $localeValue, $content]) {
+            $nom = $textNoms[$referentialTable][$legacyId] ?? '';
+            if ('' === $nom) {
+                continue;
+            }
+            if ($isText) {
+                $this->textDictionary[$nom][$localeValue] = $content;
+            } else {
+                $this->lovDictionary[$nom][$localeValue] = $content;
+            }
+        }
+
+        $processed = 0;
+        foreach ($descriptionRows as [$table, $row, $locale]) {
+            $content = trim((string) $row['content']);
             if ('i18n_translation_produit' === $table) {
                 $produitId = (int) $row['produit_id'];
                 $code = $produitSyspad[$produitId] ?? null;
