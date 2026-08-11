@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Ocr\Repository;
 
 use App\Ocr\Entity\DocumentExtraction;
+use App\Ocr\Enum\ExtractionStatus;
 use App\Pim\Entity\Fiche;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -23,5 +24,23 @@ final class DocumentExtractionRepository extends ServiceEntityRepository
     public function findForFiche(string $id, Fiche $fiche): ?DocumentExtraction
     {
         return $this->findOneBy(['id' => $id, 'fiche' => $fiche]);
+    }
+
+    /** L'extraction non terminée de la fiche : une seule lecture à la fois. */
+    public function enCours(Fiche $fiche): ?DocumentExtraction
+    {
+        return $this->findOneBy(
+            ['fiche' => $fiche, 'status' => [ExtractionStatus::Queued, ExtractionStatus::Processing]],
+            ['createdAt' => 'DESC'],
+        );
+    }
+
+    /** La dernière extraction dont des valeurs restent à arbitrer. */
+    public function aRevoir(Fiche $fiche): ?DocumentExtraction
+    {
+        return $this->findOneBy(
+            ['fiche' => $fiche, 'status' => [ExtractionStatus::Ready, ExtractionStatus::PartiallyReviewed]],
+            ['createdAt' => 'DESC'],
+        );
     }
 }

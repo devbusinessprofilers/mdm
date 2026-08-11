@@ -9,6 +9,7 @@ use App\Dam\Service\FicheDocumentUploader;
 use App\Ocr\Catalog\OcrFieldCatalog;
 use App\Ocr\Entity\DocumentExtraction;
 use App\Ocr\Message\ExtractDocument;
+use App\Ocr\Repository\DocumentExtractionRepository;
 use App\Pim\Entity\Fiche;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Shared\Outbox\OutboxPublisherInterface;
@@ -24,10 +25,13 @@ final readonly class OcrExtractionManager
         private OcrCategoryPolicy $categories,
         private OcrFieldCatalog $catalog,
         private OutboxPublisherInterface $outbox,
+        private DocumentExtractionRepository $extractions,
     ) {}
 
     public function upload(Fiche $fiche, UploadedFile $file, DocumentUsage $category, string $actor): DocumentExtraction
     {
+        // Une seule lecture à la fois par fiche : le document suivant attend la fin de la précédente.
+        if (null !== $this->extractions->enCours($fiche)) { throw new \DomainException('Une extraction est déjà en cours pour cette fiche : attendez qu’elle se termine avant de déposer un autre document.'); }
         if (!$this->categories->allows($fiche->type(), $category)) { throw new \DomainException('Cette catégorie documentaire n’est pas autorisée pour ce type de fiche.'); }
         $path = $file->getRealPath();
         if (false === $path) { throw new \DomainException('Le PDF téléversé est introuvable.'); }
@@ -57,6 +61,7 @@ final readonly class OcrExtractionManager
     public function retry(DocumentExtraction $failed, string $actor): DocumentExtraction
     {
         if (\App\Ocr\Enum\ExtractionStatus::Failed !== $failed->status()) { throw new \DomainException('Seule une extraction en échec peut être relancée.'); }
+        if (null !== $this->extractions->enCours($failed->fiche())) { throw new \DomainException('Une extraction est déjà en cours pour cette fiche : attendez qu’elle se termine avant de relancer.'); }
         $next = new DocumentExtraction($failed->fiche(), $failed->document(), $failed->documentCategory(), $this->catalog->snapshot($failed->fiche()->type()), $actor, $failed);
         $this->entityManager->persist($next);
         $this->outbox->enqueue(new ExtractDocument($next->id()));

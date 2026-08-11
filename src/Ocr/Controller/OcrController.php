@@ -77,14 +77,7 @@ final class OcrController extends AbstractController
         $form->handleRequest($request);
         if (!$form->isSubmitted() || !$form->isValid()) { $this->addFlash('error', 'Le formulaire de validation OCR est invalide.'); return $this->redirectToRoute('app_ocr_show', ['id' => $fiche->idString(), 'extractionId' => $extractionId]); }
         $raw = $form->getData();
-        $review = [];
-        foreach ($raw as $suggestionId => $input) {
-            if ('fiche_version' === $suggestionId || 'save' === $suggestionId) { continue; }
-            if (!is_array($input)) { continue; }
-            $value = $input['value'] ?? null;
-            if (is_string($value) && in_array(substr(ltrim($value), 0, 1), ['[', '{'], true)) { try { $value = json_decode($value, true, 512, JSON_THROW_ON_ERROR); } catch (\JsonException) {} }
-            $review[(string) $suggestionId] = ['value' => $value, 'accept' => true === ($input['accept'] ?? false), 'reject' => true === ($input['reject'] ?? false)];
-        }
+        $review = OcrReviewFormFactory::decisionsDepuisSoumission($raw);
         $request->attributes->set('_audit_source', 'box_ocr');
         try {
             $mutationPolicy->execute($fiche, function () use ($applier, $extraction, $raw, $review, $actor): void {

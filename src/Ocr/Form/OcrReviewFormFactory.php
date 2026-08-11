@@ -38,6 +38,27 @@ final readonly class OcrReviewFormFactory
         return $builder->getForm();
     }
 
+    /**
+     * Décisions par suggestion à partir des données soumises du formulaire de
+     * revue : les champs techniques sont écartés, les valeurs JSON décodées.
+     *
+     * @param array<string, mixed> $raw
+     *
+     * @return array<string, array{value: mixed, accept: bool, reject: bool}>
+     */
+    public static function decisionsDepuisSoumission(array $raw): array
+    {
+        $review = [];
+        foreach ($raw as $suggestionId => $input) {
+            if ('fiche_version' === $suggestionId || 'save' === $suggestionId) { continue; }
+            if (!is_array($input)) { continue; }
+            $value = $input['value'] ?? null;
+            if (is_string($value) && in_array(substr(ltrim($value), 0, 1), ['[', '{'], true)) { try { $value = json_decode($value, true, 512, JSON_THROW_ON_ERROR); } catch (\JsonException) {} }
+            $review[(string) $suggestionId] = ['value' => $value, 'accept' => true === ($input['accept'] ?? false), 'reject' => true === ($input['reject'] ?? false)];
+        }
+        return $review;
+    }
+
     /** @return FormInterface<mixed> */
     public function retry(DocumentExtraction $extraction, string $action): FormInterface
     {

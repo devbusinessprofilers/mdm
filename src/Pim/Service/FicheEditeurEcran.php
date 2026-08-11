@@ -6,7 +6,11 @@ namespace App\Pim\Service;
 
 use App\Account\Service\CurrentActorProvider;
 use App\Audit\Repository\AuditRevisionRepository;
+use App\Ocr\Form\OcrReviewFormFactory;
+use App\Ocr\Form\OcrUploadType;
 use App\Ocr\Repository\DocumentExtractionRepository;
+use App\Ocr\Service\OcrCategoryPolicy;
+use App\Pim\Entity\Fiche;
 use App\Pim\Completeness\CompletenessCalculator;
 use App\Pim\Completeness\CompletenessFieldCatalog;
 use App\Pim\Entity\Activite\Activite;
@@ -24,6 +28,7 @@ use App\Pim\Repository\CompletenessFieldConfigurationRepository;
 use App\Pim\Repository\FicheAffiliationRepository;
 use App\Pim\Repository\SiteDiffusionRepository;
 use League\Flysystem\FilesystemException;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\FormError;
@@ -73,6 +78,10 @@ final readonly class FicheEditeurEcran
         private DocumentExtractionRepository $extractions,
         private AuditRevisionRepository $revisions,
         private FicheWorkflowManager $workflow,
+        private OcrCategoryPolicy $ocrCategories,
+        private OcrReviewFormFactory $ocrRevues,
+        #[Autowire('%env(bool:BOX_OCR_ENABLED)%')]
+        private bool $ocrActif = false,
     ) {
     }
 
@@ -215,7 +224,9 @@ final readonly class FicheEditeurEcran
                 'completude_canaux' => $entite->completenessByChannel(),
             ],
             'liens' => [
-                'ocr' => $this->urls->generate('app_ocr_index', ['id' => $id]),
+                // Le dépôt et la revue vivent dans la section extraction de l'éditeur.
+                'ocr' => $this->urlExtraction($type, $id),
+                'ocr_admin' => $this->urls->generate('app_ocr_index', ['id' => $id]),
                 'traductions' => $this->urls->generate('app_enrichment_fiche_translation_show', ['id' => $id]),
                 'historique' => $this->routes->historyUrl($type, $id),
             ],
@@ -244,9 +255,64 @@ final readonly class FicheEditeurEcran
             'extractions' => in_array('suggestions', $section['blocs'], true)
                 ? $this->extractions->history($fiche)
                 : [],
+            'extraction' => in_array('suggestions', $section['blocs'], true)
+                ? $this->extractionVars($fiche)
+                : null,
             'historique' => in_array('historique', $section['blocs'], true)
                 ? $this->revisions->history($id, null, 10)
                 : [],
+        ];
+    }
+
+    /** URL de la section de l'éditeur qui porte le bloc extraction. */
+    public function urlExtraction(TypeFiche $type, string $id): string
+    {
+        $index = 0;
+        foreach (FicheSectionsCatalogue::pour($type) as $i => $section) {
+            if (in_array('suggestions', $section['blocs'], true)) {
+                $index = $i;
+                break;
+            }
+        }
+
+        return TypeFiche::Lieu === $type
+            ? $this->urls->generate('app_mdm_fiche_lieu', ['id' => $id, 'section' => $index])
+            : $this->urls->generate('app_mdm_fiche_gamme', ['gamme' => self::slug($type), 'id' => $id, 'section' => $index]);
+    }
+
+    /**
+     * Le bloc extraction en trois temps : déposer (si rien ne tourne), suivre
+     * la lecture en cours, valider les valeurs lues. Une seule extraction à la
+     * fois par fiche — le formulaire de dépôt disparaît tant qu'une lecture
+     * n'est pas terminée.
+     *
+     * @return array<string, mixed>
+     */
+    private function extractionVars(Fiche $fiche): array
+    {
+        if (!$this->ocrActif) {
+            return ['active' => false, 'en_cours' => null, 'form_depot' => null, 'a_revoir' => null, 'form_revue' => null];
+        }
+        $id = $fiche->idString();
+        $enCours = $this->extractions->enCours($fiche);
+        $aRevoir = $this->extractions->aRevoir($fiche);
+
+        return [
+            'active' => true,
+            'en_cours' => $enCours,
+            'form_depot' => null === $enCours
+                ? $this->forms->create(OcrUploadType::class, null, [
+                    'action' => $this->urls->generate('app_mdm_fiche_extraction_deposer', ['id' => $id]),
+                    'category_choices' => $this->ocrCategories->choices($fiche->type()),
+                ])->createView()
+                : null,
+            'a_revoir' => $aRevoir,
+            'form_revue' => null !== $aRevoir
+                ? $this->ocrRevues->review($aRevoir, $this->urls->generate('app_mdm_fiche_extraction_valider', [
+                    'id' => $id,
+                    'extractionId' => $aRevoir->id(),
+                ]))->createView()
+                : null,
         ];
     }
 

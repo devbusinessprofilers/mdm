@@ -150,20 +150,94 @@
             {% endif %}
 
             {% if 'suggestions' in section.blocs %}
-                <h3>Extractions de documents</h3>
+                {% set extraction_statuts = {
+                    'queued': 'En file',
+                    'processing': 'Lecture en cours',
+                    'ready': 'À valider',
+                    'partially_reviewed': 'Partiellement validée',
+                    'reviewed': 'Validée',
+                    'failed': 'En échec',
+                } %}
+                <h3>Extraire d'un document</h3>
+                {% if not extraction.active %}
+                    <p class="page-description">L'extraction de documents n'est pas activée sur cet environnement.</p>
+                {% elseif extraction.en_cours %}
+                    {# Temps 2 — la lecture court en tâche de fond : on suit, on ne redépose pas. #}
+                    {% set en_cours = extraction.en_cours %}
+                    <div class="card">
+                        <p>
+                            <strong>{{ en_cours.document.originalFilename }}</strong>
+                            · <span class="badge badge-info">{{ extraction_statuts[en_cours.status.value] ?? en_cours.status.value }}</span>
+                            {% if en_cours.pageCount %} · {{ en_cours.pageCount }} page{{ en_cours.pageCount > 1 ? 's' : '' }}{% endif %}
+                        </p>
+                        <p class="page-description">
+                            Déposé par {{ en_cours.createdBy }} le {{ en_cours.createdAt|date('d/m/Y à H:i') }}.
+                            La lecture peut prendre plusieurs minutes — vous pouvez continuer à travailler,
+                            les valeurs lues vous attendront ici.
+                        </p>
+                    </div>
+                    <p class="page-description">Vous pourrez déposer un autre document quand cette lecture sera terminée.</p>
+                    <a class="btn btn-secondary btn-small" href="{{ onglets[section_index].url }}">Actualiser</a>
+                {% elseif extraction.form_depot and is_granted('FICHE_EDIT', fiche) %}
+                    {# Temps 1 — le dépôt. #}
+                    <p class="page-description">
+                        Déposez une plaquette, un devis ou un plan (PDF). L'IA en lit les valeurs et vous
+                        les propose — rien n'est écrit dans la fiche sans votre accord, champ par champ.
+                    </p>
+                    {{ form(extraction.form_depot) }}
+                {% endif %}
+
+                {% if extraction.active and extraction.a_revoir %}
+                    {# Temps 3 — l'humain valide champ par champ ; la provenance est la page du document. #}
+                    <h3>Valider les valeurs lues</h3>
+                    <p class="page-description">
+                        {{ extraction.a_revoir.document.originalFilename }} ·
+                        {{ extraction.a_revoir.suggestions|filter(s => s.isPending)|length }} valeur(s) à arbitrer.
+                        Le document reste attaché à la fiche comme pièce justificative.
+                    </p>
+                    {% if is_granted('ROLE_BP_VALIDATOR') %}
+                        {% set form_revue = extraction.form_revue %}
+                        {{ form_start(form_revue) }}
+                            {{ form_widget(form_revue.fiche_version) }}
+                            {{ form_widget(form_revue._token) }}
+                            <div class="table-shell"><div class="table-scroll"><table class="data-table">
+                                <thead><tr><th>Champ</th><th>Valeur actuelle</th><th>Valeur lue (corrigible)</th><th>Confiance</th><th>Pages</th><th>Décision</th></tr></thead>
+                                <tbody>
+                                {% for suggestion in extraction.a_revoir.suggestions|filter(s => s.isPending) %}
+                                    {% set ligne = attribute(form_revue, suggestion.id) %}
+                                    <tr>
+                                        <td><strong>{{ suggestion.label }}</strong><br><small>{{ suggestion.fieldPath }}</small></td>
+                                        <td>{{ suggestion.observedValue is iterable ? suggestion.observedValue|json_encode : (suggestion.observedValue ?? 'Champ vide') }}</td>
+                                        <td>{{ form_widget(ligne.value) }}</td>
+                                        <td>{{ suggestion.confidence is null ? '—' : (suggestion.confidence * 100)|number_format(0) ~ ' %' }}</td>
+                                        <td>{{ suggestion.pageReferences|map(p => 'p. ' ~ p)|join(', ') ?: '—' }}</td>
+                                        <td>{{ form_row(ligne.accept) }}{{ form_row(ligne.reject) }}</td>
+                                    </tr>
+                                {% endfor %}
+                                </tbody>
+                            </table></div></div>
+                            {{ form_row(form_revue.save, {label: 'Appliquer les décisions'}) }}
+                        {{ form_end(form_revue, {render_rest: false}) }}
+                    {% else %}
+                        <p class="page-description">La validation des valeurs lues est réservée aux validateurs.</p>
+                    {% endif %}
+                {% endif %}
+
+                <h3>Extractions de la fiche</h3>
                 {% if extractions is not empty %}
                     <ul>
-                        {% for extraction in extractions %}
+                        {% for ligne_extraction in extractions %}
                             <li>
-                                <a class="text-link" href="{{ path('app_ocr_show', {id: fiche.idString, extractionId: extraction.id}) }}">{{ extraction.document.originalFilename }}</a>
-                                · {{ extraction.status.value }} · {{ extraction.suggestionCount|default('—') }} valeur(s)
+                                <a class="text-link" href="{{ path('app_ocr_show', {id: fiche.idString, extractionId: ligne_extraction.id}) }}">{{ ligne_extraction.document.originalFilename }}</a>
+                                · {{ extraction_statuts[ligne_extraction.status.value] ?? ligne_extraction.status.value }}
+                                · {{ ligne_extraction.suggestionCount|default('—') }} valeur(s)
                             </li>
                         {% endfor %}
                     </ul>
                 {% else %}
                     <p class="page-description">Aucune extraction pour cette fiche.</p>
                 {% endif %}
-                <a class="btn btn-secondary btn-small" href="{{ liens.ocr }}">Extraire d'un document</a>
+                <a class="text-link" href="{{ liens.ocr_admin }}">Écran complet des extractions</a>
             {% endif %}
 
             {% if 'historique' in section.blocs %}
