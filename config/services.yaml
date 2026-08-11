@@ -32,6 +32,9 @@ parameters:
     env(COMPLETENESS_REMINDER_THRESHOLD): '60'
     env(COMPLETENESS_REMINDER_COOLDOWN_DAYS): '30'
     env(RECHERCHE_ENTREPRISES_ENDPOINT): 'https://recherche-entreprises.api.gouv.fr'
+    env(MARKETPLACE_SYNC_API_URL): ''
+    env(MARKETPLACE_SYNC_API_LOGIN): ''
+    env(MARKETPLACE_SYNC_API_PASSWORD): ''
 
 services:
     # default configuration for services in *this* file
@@ -98,6 +101,16 @@ services:
         arguments:
             $endpoint: '%env(MARKETPLACE_API_URL)%'
             $token: '%env(MARKETPLACE_API_TOKEN)%'
+
+    # Synchronisation des fiches vers la marketplace (compte machine ROLE_PIM,
+    # JWT Lexik). URL vide = diffusion désactivée pour l'environnement.
+    App\Etl\Service\MarketplaceClientInterface: '@App\Etl\Service\MarketplaceApiClient'
+
+    App\Etl\Service\MarketplaceApiClient:
+        arguments:
+            $endpoint: '%env(MARKETPLACE_SYNC_API_URL)%'
+            $login: '%env(MARKETPLACE_SYNC_API_LOGIN)%'
+            $password: '%env(MARKETPLACE_SYNC_API_PASSWORD)%'
 
     App\Pim\Service\RechercheEntrepriseClient:
         arguments:

@@ -7,6 +7,7 @@ namespace App\Enrichment\Service;
 use App\Audit\AuditContext;
 use App\Audit\Entity\AuditChange;
 use App\Audit\Entity\AuditRevision;
+use App\Etl\Service\MarketplaceSyncScheduler;
 use App\Enrichment\Entity\FicheTranslation;
 use App\Enrichment\Enum\SupportedLocale;
 use App\Pim\Entity\Fiche;
@@ -18,6 +19,7 @@ final readonly class FicheTranslationManager
         private EntityManagerInterface $entityManager,
         private AuditContext $auditContext,
         private FicheTranslationScheduler $scheduler,
+        private MarketplaceSyncScheduler $marketplaceScheduler,
     ) {}
 
     public function correct(
@@ -52,6 +54,9 @@ final readonly class FicheTranslationManager
             $translation->translatedText(),
         );
         $this->entityManager->persist($revision);
+        // Une correction manuelle disponible doit redescendre vers la
+        // marketplace comme les traductions automatiques.
+        $this->marketplaceScheduler->schedule($fiche);
         $this->entityManager->flush();
     }
 

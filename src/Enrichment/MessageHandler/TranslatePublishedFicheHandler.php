@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Enrichment\MessageHandler;
 
+use App\Etl\Service\MarketplaceSyncScheduler;
 use App\Enrichment\Enum\SupportedLocale;
 use App\Enrichment\Message\TranslatePublishedFiche;
 use App\Enrichment\Repository\FicheTranslationRepository;
@@ -23,6 +24,7 @@ final readonly class TranslatePublishedFicheHandler
         private FicheTranslationRepository $translations,
         private TranslationProviderInterface $provider,
         private EntityManagerInterface $entityManager,
+        private MarketplaceSyncScheduler $marketplaceScheduler,
     ) {}
 
     public function __invoke(TranslatePublishedFiche $message): void
@@ -37,6 +39,9 @@ final readonly class TranslatePublishedFicheHandler
             $locale,
         );
         foreach ($rows as $index => $row) { $row->applyGoogle($translated[$index], $message->requestToken); }
+        // Les traductions fraîchement disponibles redescendent vers la
+        // marketplace via une resynchronisation du snapshot complet.
+        $this->marketplaceScheduler->schedule($fiche);
         $this->entityManager->flush();
     }
 }

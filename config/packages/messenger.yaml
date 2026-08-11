@@ -68,6 +68,18 @@ framework:
                     delay: 10000
                     multiplier: 2
                     max_delay: 60000
+            # Diffusion vers la marketplace : transport dédié pour qu'une
+            # indisponibilité de la marketplace ne bloque pas la file pim.
+            marketplace:
+                dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
+                options:
+                    queue_name: marketplace
+                    redeliver_timeout: 900
+                retry_strategy:
+                    max_retries: 5
+                    delay: 10000
+                    multiplier: 2
+                    max_delay: 60000
             failed:
                 dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
                 options:
@@ -92,6 +104,10 @@ framework:
             'App\Pim\Message\*': pim
             'App\Dashboard\Message\*': pim
             'App\Dam\Message\*': dam
+            # Avant le joker Etl : la diffusion marketplace a son transport
+            # dédié pour qu'une indisponibilité ne bloque pas la file etl.
+            App\Etl\Message\SyncFicheMarketplace: marketplace
+            App\Etl\Message\RemoveFicheFromMarketplace: marketplace
             'App\Etl\Message\*': etl
             'App\Enrichment\Message\*': enrichment
             'App\Ocr\Message\*': enrichment
@@ -117,6 +133,9 @@ when@test:
                     dsn: 'in-memory://'
                     options: { serialize: true }
                 mail:
+                    dsn: 'in-memory://'
+                    options: { serialize: true }
+                marketplace:
                     dsn: 'in-memory://'
                     options: { serialize: true }
                 failed:
