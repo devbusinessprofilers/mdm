@@ -18,7 +18,7 @@ final class ServiceHistoryController extends AbstractController
 {
     #[
         Route(
-            '/admin/services/{id}/historique',
+            '/referentiel/services/fiche/{id}/historique',
             name: 'app_pim_service_history',
             requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
             methods: ['GET'],

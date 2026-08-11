@@ -18,7 +18,7 @@ final class ActiviteHistoryController extends AbstractController
 {
     #[
         Route(
-            '/admin/activites/{id}/historique',
+            '/referentiel/activites/fiche/{id}/historique',
             name: 'app_pim_activite_history',
             requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
             methods: ['GET'],

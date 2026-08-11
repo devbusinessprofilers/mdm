@@ -131,7 +131,7 @@ final readonly class TableauDeBordProvider
                 'volume' => $comptes['echecs'],
                 // Un échec est un état : toute occurrence est critique.
                 'severite' => $comptes['echecs'] > 0 ? 'critique' : 'normale',
-                'url' => $this->urls->generate('app_etl_import_index'),
+                'url' => $this->urls->generate('app_dashboard_traitements_en_echec'),
             ],
         ];
     }

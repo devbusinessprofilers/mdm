@@ -17,7 +17,9 @@
                 il ne part sur aucun canal tiers, même si la fiche est publiée.
             </p>
         </div>
-        <a class="btn btn-secondary btn-small" href="{{ path('app_dam_dashboard') }}">Supervision classique</a>
+        {% if is_granted('ROLE_ADMIN') %}
+            <a class="btn btn-secondary btn-small" href="{{ path('app_dam_dashboard') }}">Supervision classique</a>
+        {% endif %}
     </header>
 
     <nav class="toolbar" aria-label="Onglets du DAM">
@@ -64,7 +66,9 @@
             </p>
             <div class="table-actions">
                 <a class="btn btn-secondary btn-small" href="{{ path('app_mdm_referentiel_general') }}">Ouvrir une fiche</a>
-                <a class="btn btn-secondary btn-small" href="{{ path('app_etl_import_index') }}">Import de fiches</a>
+                {% if is_granted('ROLE_ADMIN') %}
+                    <a class="btn btn-secondary btn-small" href="{{ path('app_etl_import_index') }}">Import de fiches</a>
+                {% endif %}
             </div>
         </section>
     {% elseif onglet_actif == 'ia' %}

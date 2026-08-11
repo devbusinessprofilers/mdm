@@ -23,8 +23,10 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
-#[Route('/admin/fiches/{id}/ocr', name: 'app_ocr_', requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'])]
+#[Route('/referentiel/fiche/{id}/ocr', name: 'app_ocr_', requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'])]
+#[IsGranted('ROLE_BP_EDITOR')]
 final class OcrController extends AbstractController
 {
     #[Route('', name: 'index', methods: ['GET'])]

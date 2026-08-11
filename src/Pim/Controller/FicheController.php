@@ -26,7 +26,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 
-#[Route('/admin/fiches', name: 'app_pim_fiche_')]
+#[Route('/referentiel/fiche', name: 'app_pim_fiche_')]
 final class FicheController extends AbstractController
 {
     // Route déclarée dans config/routes.yaml : /referentiel/fiche/nouvelle (app_mdm_creation_fiche).

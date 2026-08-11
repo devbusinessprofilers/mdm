@@ -55,7 +55,7 @@ final class FicheTranslationControllerTest extends WebTestCase
         $this->entityManager->flush();
         $client->loginUser($validator);
 
-        $crawler = $client->request('GET', '/admin/fiches/'.$lieu->id().'/traductions');
+        $crawler = $client->request('GET', '/referentiel/fiche/'.$lieu->id().'/traductions');
 
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('main', 'Détails des accès PMR');
@@ -66,7 +66,7 @@ final class FicheTranslationControllerTest extends WebTestCase
         $form = $crawler->filter('form[name="'.$formName.'"]')->form();
         $client->submit($form, [$formName.'[value]' => 'Venue to translate']);
 
-        self::assertResponseRedirects('/admin/fiches/'.$lieu->id().'/traductions');
+        self::assertResponseRedirects('/referentiel/fiche/'.$lieu->id().'/traductions');
         $this->entityManager->clear();
         $translation = $this->entityManager->getRepository(FicheTranslation::class)->findOneBy([
             'fiche' => $lieu->fiche()->id(),

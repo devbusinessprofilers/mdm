@@ -27,7 +27,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 
-#[Route('/admin/activites', name: 'app_pim_activite_')]
+#[Route('/referentiel/activites/fiche', name: 'app_pim_activite_')]
 final class ActiviteController extends AbstractController
 {
 

@@ -60,11 +60,11 @@ final class RestoreControllerTest extends WebTestCase
         $client->loginUser($user);
         $crawler = $client->request(
             'GET',
-            '/admin/lieux/'.$lieu->id().'/historique',
+            '/referentiel/lieux/fiche/'.$lieu->id().'/historique',
         );
         self::assertResponseIsSuccessful();
         $forms = $crawler->filter(
-            'form[action*="/admin/historique/changes/"]',
+            'form[action*="/referentiel/historique/changes/"]',
         );
         self::assertGreaterThan(
             0,

@@ -34,14 +34,14 @@ final class SiteDiffusionAdminTest extends WebTestCase
         parent::tearDown();
     }
 
-    public function testUnValidateurAdministreLesSitesDeDiffusion(): void
+    public function testUnAdminAdministreLesSitesDeDiffusion(): void
     {
         $client = self::createClient();
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $this->connection = self::getContainer()->get(Connection::class);
         $this->clearTables();
 
-        $user = new User('sites-admin@example.test', ['ROLE_BP_VALIDATOR']);
+        $user = new User('sites-admin@example.test', ['ROLE_ADMIN']);
         $user->setPassword('not-used-by-login-user');
         $entityManager->persist($user);
         $entityManager->flush();

@@ -59,7 +59,7 @@ security:
         - { path: ^/mot-de-passe-oublie$, roles: PUBLIC_ACCESS }
         - { path: ^/reinitialiser-mot-de-passe/, roles: PUBLIC_ACCESS }
         - { path: ^/api/v1/(?:lieux|activites|services|restaurants), roles: ROLE_EXTERNAL_SITE }
-        - { path: ^/admin, roles: ROLE_BP_EDITOR }
+        - { path: ^/admin, roles: ROLE_ADMIN }
         - { path: ^/, roles: ROLE_USER }
 
 when@test:

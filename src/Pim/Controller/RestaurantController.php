@@ -27,7 +27,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 
-#[Route('/admin/restaurants', name: 'app_pim_restaurant_')]
+#[Route('/referentiel/restaurants/fiche', name: 'app_pim_restaurant_')]
 final class RestaurantController extends AbstractController
 {
     #[Route('/{id}/supprimer', name: 'delete', requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'], methods: ['POST'])]

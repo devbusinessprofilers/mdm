@@ -121,6 +121,95 @@ final readonly class JournalTraitementsRepository
         return array_slice($lignes, 0, $limit);
     }
 
+    /**
+     * Traitements en échec uniquement, avec le message d'erreur réel. Les
+     * critères sont strictement ceux du compteur « Traitements en échec » du
+     * tableau de bord (FilesATraiterRepository::comptes()) : le filtre vit dans
+     * le WHERE, un échec ancien ne peut pas être évincé par des lignes saines.
+     *
+     * @return list<array{
+     *     famille: string,
+     *     sujet: string,
+     *     statut: string,
+     *     erreur: ?string,
+     *     quand: string,
+     *     lien: ?array{route: string, params: array<string, string>},
+     * }>
+     */
+    public function echecs(int $limit = 100): array
+    {
+        $lignes = [];
+        foreach ($this->connection->fetchAllAssociative(
+            "SELECT id, original_filename, status, error_count, failure_message,
+                    COALESCE(finished_at, created_at) AS quand
+             FROM etl_import_job
+             WHERE status IN ('echoue', 'termine_avec_erreurs')
+             ORDER BY quand DESC LIMIT ".$limit,
+        ) as $row) {
+            $lignes[] = [
+                'famille' => 'import',
+                'sujet' => (string) $row['original_filename'],
+                'statut' => (string) $row['status'],
+                'erreur' => null !== $row['failure_message']
+                    ? (string) $row['failure_message']
+                    : ((int) $row['error_count'] > 0 ? $row['error_count'].' ligne(s) en erreur' : null),
+                'quand' => (string) $row['quand'],
+                'lien' => ['route' => 'app_etl_import_show', 'params' => ['id' => self::ulid($row['id'])]],
+            ];
+        }
+        foreach ($this->connection->fetchAllAssociative(
+            "SELECT ext.id, ext.fiche_id, ext.status, ext.error_message,
+                    COALESCE(ext.finished_at, ext.updated_at) AS quand, f.label
+             FROM ocr_document_extraction ext
+             INNER JOIN pim_fiche f ON f.id = ext.fiche_id
+             WHERE ext.status = 'failed'
+             ORDER BY quand DESC LIMIT ".$limit,
+        ) as $row) {
+            $lignes[] = [
+                'famille' => 'ocr',
+                'sujet' => sprintf('Extraction · %s', (string) ($row['label'] ?? 'fiche')),
+                'statut' => (string) $row['status'],
+                'erreur' => null === $row['error_message'] ? null : (string) $row['error_message'],
+                'quand' => (string) $row['quand'],
+                'lien' => ['route' => 'app_ocr_show', 'params' => ['id' => self::ulid($row['fiche_id']), 'extractionId' => self::ulid($row['id'])]],
+            ];
+        }
+        foreach ($this->connection->fetchAllAssociative(
+            "SELECT t.fiche_id, t.locale, t.field_path, t.status, t.last_error, t.updated_at, f.label
+             FROM enrichment_fiche_translation t
+             INNER JOIN pim_fiche f ON f.id = t.fiche_id
+             WHERE t.status = 'en_erreur'
+             ORDER BY t.updated_at DESC LIMIT ".$limit,
+        ) as $row) {
+            $lignes[] = [
+                'famille' => 'traduction',
+                'sujet' => sprintf('%s · %s (%s)', (string) ($row['label'] ?? 'fiche'), (string) $row['field_path'], (string) $row['locale']),
+                'statut' => (string) $row['status'],
+                'erreur' => null === $row['last_error'] ? null : (string) $row['last_error'],
+                'quand' => (string) $row['updated_at'],
+                'lien' => ['route' => 'app_enrichment_fiche_translation_show', 'params' => ['id' => self::ulid($row['fiche_id'])]],
+            ];
+        }
+        foreach ($this->connection->fetchAllAssociative(
+            "SELECT original_filename, status, error_message, updated_at
+             FROM dam_media_asset
+             WHERE status = 'failed' AND deleted_at IS NULL
+             ORDER BY updated_at DESC LIMIT ".$limit,
+        ) as $row) {
+            $lignes[] = [
+                'famille' => 'media',
+                'sujet' => (string) $row['original_filename'],
+                'statut' => (string) $row['status'],
+                'erreur' => null === $row['error_message'] ? null : (string) $row['error_message'],
+                'quand' => (string) $row['updated_at'],
+                'lien' => ['route' => 'app_dam_dashboard', 'params' => ['filter' => 'failed']],
+            ];
+        }
+        usort($lignes, static fn (array $a, array $b): int => strcmp($b['quand'], $a['quand']));
+
+        return array_slice($lignes, 0, $limit);
+    }
+
     /** Messages de l'outbox pas encore relayés vers Messenger. */
     public function outboxEnAttente(): int
     {

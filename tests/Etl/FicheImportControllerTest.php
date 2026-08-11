@@ -38,7 +38,7 @@ final class FicheImportControllerTest extends WebTestCase
         parent::tearDown();
     }
 
-    public function testAccessIsRestrictedToValidators(): void
+    public function testAccessIsRestrictedToAdmins(): void
     {
         $client = self::createClient();
         $client->request('GET', '/admin/import-fiches');
@@ -47,12 +47,16 @@ final class FicheImportControllerTest extends WebTestCase
         $client->loginUser($this->persistUser('editor-import@example.test', ['ROLE_BP_EDITOR']));
         $client->request('GET', '/admin/import-fiches');
         self::assertResponseStatusCodeSame(403);
+
+        $client->loginUser($this->persistUser('validator-import@example.test', ['ROLE_BP_VALIDATOR']));
+        $client->request('GET', '/admin/import-fiches');
+        self::assertResponseStatusCodeSame(403);
     }
 
-    public function testValidatorCanDownloadTemplate(): void
+    public function testAdminCanDownloadTemplate(): void
     {
         $client = self::createClient();
-        $client->loginUser($this->persistUser('validator-template@example.test', ['ROLE_BP_VALIDATOR']));
+        $client->loginUser($this->persistUser('admin-template@example.test', ['ROLE_ADMIN']));
 
         $client->request('GET', '/admin/import-fiches/modele/lieu');
         self::assertResponseIsSuccessful();
@@ -62,10 +66,10 @@ final class FicheImportControllerTest extends WebTestCase
         self::assertStringStartsWith('PK', $client->getInternalResponse()->getContent());
     }
 
-    public function testValidatorCanUploadACsvAndSeeThePendingJob(): void
+    public function testAdminCanUploadACsvAndSeeThePendingJob(): void
     {
         $client = self::createClient();
-        $client->loginUser($this->persistUser('validator-upload@example.test', ['ROLE_BP_VALIDATOR']));
+        $client->loginUser($this->persistUser('admin-upload@example.test', ['ROLE_ADMIN']));
 
         $csv = tempnam(sys_get_temp_dir(), 'import');
         self::assertIsString($csv);

@@ -22,16 +22,18 @@
                 <nav class="app-nav" aria-label="Navigation principale">
                     {% block navigation %}
                     <a href="{{ path('app_pim_home') }}" class="brand">MDM Business Profilers</a>
-                    <a class="nav-link" href="{{ path('app_dashboard_index') }}">Tableau de bord</a>
+                    {% if is_granted('ROLE_ADMIN') %}
+                        <a class="nav-link" href="{{ path('app_dashboard_index') }}">Tableau de bord</a>
+                    {% endif %}
                     {% if is_granted('ROLE_BP_EDITOR') %}
-                        <a class="nav-link" href="{{ path('app_pim_admin') }}">Administration</a>
                         <a class="nav-link" href="{{ path('app_mdm_referentiel_general') }}">Fiches</a>
                         <a class="nav-link" href="{{ path('app_mdm_lieux') }}">Lieux</a>
                         <a class="nav-link" href="{{ path('app_mdm_referentiel_gamme', {gamme: 'activites'}) }}">Activités</a>
                         <a class="nav-link" href="{{ path('app_mdm_referentiel_gamme', {gamme: 'restaurants'}) }}">Restaurants</a>
                         <a class="nav-link" href="{{ path('app_mdm_referentiel_gamme', {gamme: 'services'}) }}">Services</a>
-                        <a class="nav-link" href="{{ path('app_dam_dashboard') }}">DAM</a>
-                        {% if is_granted('ROLE_BP_VALIDATOR') %}
+                        {% if is_granted('ROLE_ADMIN') %}
+                            <a class="nav-link" href="{{ path('app_pim_admin') }}">Administration</a>
+                            <a class="nav-link" href="{{ path('app_dam_dashboard') }}">DAM</a>
                             <a class="nav-link" href="{{ path('app_pim_lov_index') }}">Listes de valeurs</a>
                             <a class="nav-link" href="{{ path('app_etl_import_index') }}">Import de fiches</a>
                         {% endif %}

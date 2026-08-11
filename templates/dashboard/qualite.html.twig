@@ -25,7 +25,9 @@
                 en attendant, cet écran suit ce que le référentiel sait déjà mesurer.
             </p>
         </div>
-        <a class="btn btn-secondary btn-small" href="{{ path('app_pim_completeness_index') }}">Configuration de la complétude</a>
+        {% if is_granted('ROLE_SUPER_ADMIN') %}
+            <a class="btn btn-secondary btn-small" href="{{ path('app_pim_completeness_index') }}">Configuration de la complétude</a>
+        {% endif %}
     </header>
 
     <nav class="toolbar" aria-label="Onglets de la qualité">

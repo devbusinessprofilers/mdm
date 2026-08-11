@@ -25,7 +25,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Uid\Ulid;
 
 #[Route('/admin/import-fiches', name: 'app_etl_import_')]
-#[IsGranted('ROLE_BP_VALIDATOR')]
+#[IsGranted('ROLE_ADMIN')]
 final class FicheImportController extends AbstractController
 {
     #[Route('', name: 'index', methods: ['GET', 'POST'])]

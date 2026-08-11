@@ -25,7 +25,7 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
 
-#[Route('/admin/restaurants/{id}/documents', name: 'app_pim_restaurant_document_', requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'])]
+#[Route('/referentiel/restaurants/fiche/{id}/documents', name: 'app_pim_restaurant_document_', requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'])]
 final class RestaurantDocumentController extends AbstractController
 {
     #[Route('/{resourceId}/modifier', name: 'update', methods: ['POST'])]

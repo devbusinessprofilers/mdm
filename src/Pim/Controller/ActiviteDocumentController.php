@@ -25,7 +25,7 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
 
-#[Route('/admin/activites/{id}/documents', name: 'app_pim_activite_document_', requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'])]
+#[Route('/referentiel/activites/fiche/{id}/documents', name: 'app_pim_activite_document_', requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'])]
 final class ActiviteDocumentController extends AbstractController
 {
     #[Route('/{resourceId}/modifier', name: 'update', methods: ['POST'])]

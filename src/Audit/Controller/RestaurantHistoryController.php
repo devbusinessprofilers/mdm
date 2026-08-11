@@ -17,7 +17,7 @@ use Symfony\Component\Routing\Attribute\Route;
 final class RestaurantHistoryController extends AbstractController
 {
     #[Route(
-        '/admin/restaurants/{id}/historique',
+        '/referentiel/restaurants/fiche/{id}/historique',
         name: 'app_pim_restaurant_history',
         requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
         methods: ['GET'],

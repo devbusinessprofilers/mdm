@@ -20,7 +20,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Uid\Ulid;
 
-#[Route('/admin/fiches/{id}/traductions', name: 'app_enrichment_fiche_translation_', requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'])]
+#[Route('/referentiel/fiche/{id}/traductions', name: 'app_enrichment_fiche_translation_', requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'])]
 final class FicheTranslationController extends AbstractController
 {
     #[Route('', name: 'show', methods: ['GET'])]

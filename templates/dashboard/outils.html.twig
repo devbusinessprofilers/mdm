@@ -21,7 +21,9 @@
                 {% endif %}
             </p>
         </div>
+        {% if is_granted('ROLE_ADMIN') %}
         <a class="btn" href="{{ path('app_etl_import_index') }}">Importer un fichier</a>
+    {% endif %}
     </header>
 
     <div class="toolbar">
@@ -43,7 +45,8 @@
                 <td><span class="badge {{ ligne.statut in statuts_erreur ? 'badge-danger' : 'badge-info' }}">{{ ligne.statut }}</span></td>
                 <td>{{ ligne.erreur ?? '—' }}</td>
                 <td>
-                    {% if ligne.lien %}
+                    {# Les détails des imports et des médias vivent sous /admin : lien réservé aux admins. #}
+                    {% if ligne.lien and (is_granted('ROLE_ADMIN') or ligne.famille in ['ocr', 'traduction']) %}
                         <a class="text-link" href="{{ path(ligne.lien.route, ligne.lien.params) }}">Détail</a>
                     {% endif %}
                 </td>

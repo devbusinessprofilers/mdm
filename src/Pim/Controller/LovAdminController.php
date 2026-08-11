@@ -24,7 +24,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/admin/listes-de-valeurs', name: 'app_pim_lov_')]
-#[IsGranted('ROLE_BP_VALIDATOR')]
+#[IsGranted('ROLE_ADMIN')]
 final class LovAdminController extends AbstractController
 {
     #[Route('', name: 'index', methods: ['GET'])]

@@ -18,7 +18,7 @@ final class LieuHistoryController extends AbstractController
 {
     #[
         Route(
-            '/admin/lieux/{id}/historique',
+            '/referentiel/lieux/fiche/{id}/historique',
             name: 'app_pim_lieu_history',
             requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
             methods: ['GET'],

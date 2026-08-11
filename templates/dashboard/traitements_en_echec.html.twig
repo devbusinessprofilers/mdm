@@ -1,0 +1,45 @@
+{% extends 'mdm/base.html.twig' %}
+
+{# Vue admin des traitements en échec : périmètre identique au compteur du
+   tableau de bord. Lecture seule — les relances vivent sur les écrans de
+   détail vers lesquels pointe chaque ligne. #}
+
+{% block title %}Traitements en échec{% endblock %}
+
+{% block body %}
+<main class="page">
+    <header class="page-header">
+        <div class="page-header-copy">
+            <p class="page-kicker">Administration</p>
+            <h1>Traitements en échec</h1>
+            <p class="page-description">
+                Imports, extractions, traductions et médias en échec, du plus récent au plus ancien.
+                Les relances se font depuis l'écran de détail de chaque traitement.
+            </p>
+        </div>
+        <a class="btn btn-secondary btn-small" href="{{ path('app_mdm_outils') }}">Journal complet</a>
+    </header>
+
+    <div class="table-shell"><div class="table-scroll"><table class="data-table">
+        <thead><tr><th>Quand</th><th>Famille</th><th>Sujet</th><th>Statut</th><th>Erreur</th><th></th></tr></thead>
+        <tbody>
+        {% for ligne in lignes %}
+            <tr>
+                <td><time datetime="{{ ligne.quand|date('c') }}">{{ ligne.quand|date('d/m/Y H:i') }}</time></td>
+                <td><span class="badge badge-neutral">{{ familles[ligne.famille] ?? ligne.famille }}</span></td>
+                <td>{{ ligne.sujet }}</td>
+                <td><span class="badge badge-danger">{{ ligne.statut }}</span></td>
+                <td>{{ ligne.erreur ?? '—' }}</td>
+                <td>
+                    {% if ligne.lien %}
+                        <a class="text-link" href="{{ path(ligne.lien.route, ligne.lien.params) }}">Détail</a>
+                    {% endif %}
+                </td>
+            </tr>
+        {% else %}
+            <tr><td class="empty-state" colspan="6">Aucun traitement en échec.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table></div></div>
+</main>
+{% endblock %}

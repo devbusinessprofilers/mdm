@@ -26,7 +26,7 @@ final class RestoreController extends AbstractController
 {
     #[
         Route(
-            '/admin/historique/changes/{changeId}/restaurer',
+            '/referentiel/historique/changes/{changeId}/restaurer',
             name: 'app_audit_restore_change',
             requirements: ['changeId' => '[0-9A-HJKMNP-TV-Z]{26}'],
             methods: ['POST'],
@@ -83,7 +83,7 @@ final class RestoreController extends AbstractController
 
     #[
         Route(
-            '/admin/historique/revisions/{revisionId}/restaurer',
+            '/referentiel/historique/revisions/{revisionId}/restaurer',
             name: 'app_audit_restore_revision_preview',
             requirements: ['revisionId' => '[0-9A-HJKMNP-TV-Z]{26}'],
             methods: ['GET'],
@@ -129,7 +129,7 @@ final class RestoreController extends AbstractController
 
     #[
         Route(
-            '/admin/historique/revisions/{revisionId}/restaurer',
+            '/referentiel/historique/revisions/{revisionId}/restaurer',
             name: 'app_audit_restore_revision',
             requirements: ['revisionId' => '[0-9A-HJKMNP-TV-Z]{26}'],
             methods: ['POST'],

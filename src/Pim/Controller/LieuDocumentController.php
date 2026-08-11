@@ -25,7 +25,7 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
 
-#[Route('/admin/lieux/{id}/documents', name: 'app_pim_lieu_document_', requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'])]
+#[Route('/referentiel/lieux/fiche/{id}/documents', name: 'app_pim_lieu_document_', requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'])]
 final class LieuDocumentController extends AbstractController
 {
     #[Route('', name: 'upload', methods: ['POST'])]

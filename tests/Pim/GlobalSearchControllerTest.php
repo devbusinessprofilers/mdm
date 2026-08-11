@@ -35,11 +35,11 @@ final class GlobalSearchControllerTest extends WebTestCase
     public function testAnonymousAndBasicUsersCannotAccessSearch(): void
     {
         $client = self::createClient();
-        $client->request('GET', '/admin/recherche');
+        $client->request('GET', '/recherche');
         self::assertResponseRedirects('http://localhost/connexion');
 
         $client->loginUser($this->persistUser('basic-search@example.test'));
-        $client->request('GET', '/admin/recherche');
+        $client->request('GET', '/recherche');
         self::assertResponseStatusCodeSame(403);
     }
 
@@ -47,11 +47,11 @@ final class GlobalSearchControllerTest extends WebTestCase
     {
         $client = self::createClient();
         $client->loginUser($this->persistUser('editor-search@example.test', ['ROLE_BP_EDITOR']));
-        $client->request('GET', '/admin/recherche');
+        $client->request('GET', '/recherche');
 
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'Recherche globale');
-        self::assertSelectorExists('header form.header-search[action="/admin/recherche"] input[name="q"]');
+        self::assertSelectorExists('header form.header-search[action="/recherche"] input[name="q"]');
         self::assertSelectorTextContains('main', 'Saisissez un code');
         self::assertSelectorNotExists('main table');
     }
@@ -60,7 +60,7 @@ final class GlobalSearchControllerTest extends WebTestCase
     {
         $client = self::createClient();
         $client->loginUser($this->persistUser('empty-limit-search@example.test', ['ROLE_BP_EDITOR']));
-        $client->request('GET', '/admin/recherche?limit=&q=&status=&submit=&type=lieu');
+        $client->request('GET', '/recherche?limit=&q=&status=&submit=&type=lieu');
 
         self::assertResponseIsSuccessful();
         self::assertSelectorExists('input[name="limit"]');
@@ -82,7 +82,7 @@ final class GlobalSearchControllerTest extends WebTestCase
             'completeness_max=101',
             'q=test&completeness_min=60&completeness_max=40',
         ] as $query) {
-            $client->request('GET', '/admin/recherche?'.$query);
+            $client->request('GET', '/recherche?'.$query);
             self::assertResponseStatusCodeSame(400, $query);
         }
     }
@@ -91,7 +91,7 @@ final class GlobalSearchControllerTest extends WebTestCase
     {
         $client = self::createClient();
         $client->loginUser($this->persistUser('filters-search@example.test', ['ROLE_BP_EDITOR']));
-        $client->request('GET', '/admin/recherche?q=test&completeness_min=10&completeness_max=90');
+        $client->request('GET', '/recherche?q=test&completeness_min=10&completeness_max=90');
 
         self::assertResponseIsSuccessful();
         self::assertSelectorExists('main select[name="country"]');

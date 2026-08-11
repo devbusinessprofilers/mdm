@@ -21,7 +21,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * présélection par gamme — l'écran vit donc à côté des listes de valeurs.
  */
 #[Route('/admin/sites-de-diffusion', name: 'app_pim_site_diffusion_')]
-#[IsGranted('ROLE_BP_VALIDATOR')]
+#[IsGranted('ROLE_ADMIN')]
 final class SiteDiffusionAdminController extends AbstractController
 {
     #[Route('', name: 'index', methods: ['GET'])]

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Pim\Controller;
 
+use App\Account\Security\FicheVoter;
 use App\Account\Service\CurrentActorProvider;
 use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Repository\RessourceLieuRepository;
@@ -19,12 +20,13 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
-#[Route('/admin/lieux/{id}/photos', name: 'app_pim_lieu_photo_', requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'])]
+#[Route('/referentiel/lieux/fiche/{id}/photos', name: 'app_pim_lieu_photo_', requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'])]
 final class LieuPhotoController extends AbstractController
 {
     #[Route('', name: 'upload', methods: ['POST'])]
     public function upload(Request $request, Lieu $lieu, LieuMediaCsrfGuard $csrf, LieuPhotoManager $manager, InternalFicheMutationPolicy $mutationPolicy): JsonResponse
     {
+        $this->denyAccessUnlessGranted(FicheVoter::EDIT, $lieu->fiche());
         $csrf->assertValid($lieu, (string) $request->headers->get('X-CSRF-TOKEN', $request->request->getString('_token')));
         $files = $request->files->all('photos');
         if ([] === $files) { $single = $request->files->get('photos'); $files = $single instanceof UploadedFile ? [$single] : []; }
@@ -43,6 +45,7 @@ final class LieuPhotoController extends AbstractController
     #[Route('/ordre', name: 'order', methods: ['POST'])]
     public function order(Request $request, Lieu $lieu, LieuMediaCsrfGuard $csrf, LieuPhotoManager $manager, InternalFicheMutationPolicy $mutationPolicy): JsonResponse
     {
+        $this->denyAccessUnlessGranted(FicheVoter::EDIT, $lieu->fiche());
         $csrf->assertValid($lieu, (string) $request->headers->get('X-CSRF-TOKEN', $request->request->getString('_token')));
         $ids = array_values(array_map('strval', $request->getPayload()->all('ids')));
         try {
@@ -59,6 +62,7 @@ final class LieuPhotoController extends AbstractController
     #[Route('/{resourceId}', name: 'update', methods: ['PATCH'])]
     public function update(Request $request, Lieu $lieu, string $resourceId, LieuMediaCsrfGuard $csrf, RessourceLieuRepository $resources, LieuPhotoManager $manager, CurrentActorProvider $actor, InternalFicheMutationPolicy $mutationPolicy): JsonResponse
     {
+        $this->denyAccessUnlessGranted(FicheVoter::EDIT, $lieu->fiche());
         $csrf->assertValid($lieu, (string) $request->headers->get('X-CSRF-TOKEN', $request->request->getString('_token')));
         $resource = $resources->findPhotoForFiche($lieu->fiche(), $resourceId);
         if (null === $resource || $resource->lieu() !== $lieu) { throw $this->createNotFoundException('Photo introuvable pour ce lieu.'); }
@@ -75,6 +79,7 @@ final class LieuPhotoController extends AbstractController
     #[Route('/{resourceId}/remplacer', name: 'replace', methods: ['POST'])]
     public function replace(Request $request, Lieu $lieu, string $resourceId, LieuMediaCsrfGuard $csrf, RessourceLieuRepository $resources, LieuPhotoManager $manager, InternalFicheMutationPolicy $mutationPolicy): JsonResponse
     {
+        $this->denyAccessUnlessGranted(FicheVoter::EDIT, $lieu->fiche());
         $csrf->assertValid($lieu, (string) $request->headers->get('X-CSRF-TOKEN', $request->request->getString('_token')));
         $resource = $resources->findPhotoForFiche($lieu->fiche(), $resourceId);
         if (null === $resource || $resource->lieu() !== $lieu) { throw $this->createNotFoundException('Photo introuvable pour ce lieu.'); }
@@ -90,6 +95,7 @@ final class LieuPhotoController extends AbstractController
     #[Route('/{resourceId}/relancer', name: 'retry', methods: ['POST'])]
     public function retry(Request $request, Lieu $lieu, string $resourceId, LieuMediaCsrfGuard $csrf, RessourceLieuRepository $resources, LieuPhotoManager $manager): JsonResponse
     {
+        $this->denyAccessUnlessGranted(FicheVoter::EDIT, $lieu->fiche());
         $csrf->assertValid($lieu, (string) $request->headers->get('X-CSRF-TOKEN', $request->request->getString('_token')));
         $resource = $resources->findPhotoForFiche($lieu->fiche(), $resourceId);
         if (null === $resource || $resource->lieu() !== $lieu) { throw $this->createNotFoundException('Photo introuvable pour ce lieu.'); }
@@ -101,6 +107,7 @@ final class LieuPhotoController extends AbstractController
     #[Route('/{resourceId}', name: 'delete', methods: ['DELETE'])]
     public function delete(Request $request, Lieu $lieu, string $resourceId, LieuMediaCsrfGuard $csrf, RessourceLieuRepository $resources, LieuPhotoManager $manager, InternalFicheMutationPolicy $mutationPolicy): JsonResponse
     {
+        $this->denyAccessUnlessGranted(FicheVoter::EDIT, $lieu->fiche());
         $csrf->assertValid($lieu, (string) $request->headers->get('X-CSRF-TOKEN', $request->request->getString('_token')));
         $resource = $resources->findPhotoForFiche($lieu->fiche(), $resourceId);
         if (null === $resource || $resource->lieu() !== $lieu) { throw $this->createNotFoundException('Photo introuvable pour ce lieu.'); }

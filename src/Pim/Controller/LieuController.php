@@ -29,7 +29,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 
-#[Route('/admin/lieux', name: 'app_pim_lieu_')]
+#[Route('/referentiel/lieux/fiche', name: 'app_pim_lieu_')]
 final class LieuController extends AbstractController
 {
     #[
