@@ -22,13 +22,15 @@ final readonly class OutboxRelay
 
     public function relayBatch(string $workerId, int $limit = 100, int $leaseSeconds = 300): OutboxRelayResult
     {
-        $claimed = 0;
         $published = 0;
         $failed = 0;
 
-        while ($claimed < $limit && null !== $record = $this->repository->claimNext($workerId, $leaseSeconds)) {
-            ++$claimed;
+        // Tout le lot est réclamé en une seule transaction (bail par ligne),
+        // puis chaque événement est relayé dans sa propre transaction.
+        $records = $this->repository->claimBatch($workerId, $limit, $leaseSeconds);
+        $claimed = count($records);
 
+        foreach ($records as $record) {
             try {
                 $envelope = $this->serializer->decode([
                     'body' => $record->body,
@@ -42,7 +44,17 @@ final readonly class OutboxRelay
 
                 ++$published;
             } catch (\Throwable $error) {
-                $this->repository->recordFailure($record, $error);
+                try {
+                    $this->repository->recordFailure($record, $error);
+                } catch (\Throwable $recordError) {
+                    // Bail expiré : la ligne a été reprise par un autre worker,
+                    // qui enregistrera lui-même l'issue de sa tentative. Ne pas
+                    // tuer la boucle de consommation pour autant.
+                    $this->logger->warning('Outbox failure could not be recorded, the message is no longer owned by this worker.', [
+                        'event_id' => $record->id,
+                        'exception' => $recordError,
+                    ]);
+                }
                 $this->logger->error('Outbox message could not be relayed.', [
                     'event_id' => $record->id,
                     'message_type' => $record->messageType,

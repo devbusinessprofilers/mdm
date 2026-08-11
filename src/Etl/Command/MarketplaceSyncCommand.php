@@ -58,6 +58,11 @@ final class MarketplaceSyncCommand extends Command
             return Command::INVALID;
         }
         if ('' !== $ficheId) {
+            if (!Ulid::isValid($ficheId)) {
+                $output->writeln('<error>Identifiant de fiche invalide.</error>');
+
+                return Command::INVALID;
+            }
             $fiche = $this->fiches->find(Ulid::fromString($ficheId));
             if (!$fiche instanceof Fiche) {
                 $output->writeln('<error>Fiche introuvable.</error>');

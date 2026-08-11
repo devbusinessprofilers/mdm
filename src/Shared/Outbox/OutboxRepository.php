@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Shared\Outbox;
 
+use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\ParameterType;
 
 final readonly class OutboxRepository
 {
@@ -16,43 +18,70 @@ final readonly class OutboxRepository
 
     public function claimNext(string $workerId, int $leaseSeconds = 300): ?OutboxRecord
     {
-        return $this->connection->transactional(function () use ($workerId, $leaseSeconds): ?OutboxRecord {
+        return $this->claimBatch($workerId, 1, $leaseSeconds)[0] ?? null;
+    }
+
+    /**
+     * Réclame jusqu'à $limit événements en une seule transaction (au lieu
+     * d'une transaction par événement) : SELECT des ids sous FOR UPDATE
+     * SKIP LOCKED, pose du bail en un seul UPDATE, puis relecture des
+     * lignes réclamées. Le bail (locked_at/locked_by) protège du
+     * multi-worker exactement comme la réclamation unitaire.
+     *
+     * Tri par occurred_at (précision seconde) puis id : les ids sont des
+     * ULID monotones, le tie-breaker garantit l'ordre d'émission pour les
+     * événements enregistrés dans la même seconde.
+     *
+     * @return list<OutboxRecord>
+     */
+    public function claimBatch(string $workerId, int $limit = 100, int $leaseSeconds = 300): array
+    {
+        return $this->connection->transactional(function () use ($workerId, $limit, $leaseSeconds): array {
             $now = new \DateTimeImmutable();
-            $row = $this->connection->fetchAssociative(
+            $ids = $this->connection->fetchFirstColumn(
                 <<<'SQL'
-                    SELECT id, message_type, body, headers, attempts
+                    SELECT id
                     FROM outbox_message
                     WHERE status = :status
                       AND available_at <= :now
                       AND (locked_at IS NULL OR locked_at < :expired_at)
-                    ORDER BY occurred_at ASC
-                    LIMIT 1
+                    ORDER BY occurred_at ASC, id ASC
+                    LIMIT :limit
                     FOR UPDATE SKIP LOCKED
                     SQL,
                 [
                     'status' => OutboxStatus::Pending->value,
                     'now' => $this->formatDate($now),
                     'expired_at' => $this->formatDate($now->modify(sprintf('-%d seconds', $leaseSeconds))),
+                    'limit' => $limit,
                 ],
+                ['limit' => ParameterType::INTEGER],
             );
 
-            if (false === $row) {
-                return null;
+            if ([] === $ids) {
+                return [];
             }
 
-            $this->connection->update('outbox_message', [
-                'locked_at' => $this->formatDate($now),
-                'locked_by' => $workerId,
-            ], ['id' => $row['id']]);
+            $this->connection->executeStatement(
+                'UPDATE outbox_message SET locked_at = :locked_at, locked_by = :locked_by WHERE id IN (:ids)',
+                ['locked_at' => $this->formatDate($now), 'locked_by' => $workerId, 'ids' => $ids],
+                ['ids' => ArrayParameterType::STRING],
+            );
 
-            return new OutboxRecord(
+            $rows = $this->connection->fetchAllAssociative(
+                'SELECT id, message_type, body, headers, attempts FROM outbox_message WHERE id IN (:ids) ORDER BY occurred_at ASC, id ASC',
+                ['ids' => $ids],
+                ['ids' => ArrayParameterType::STRING],
+            );
+
+            return array_map(static fn (array $row): OutboxRecord => new OutboxRecord(
                 id: (string) $row['id'],
                 messageType: (string) $row['message_type'],
                 body: (string) $row['body'],
                 headers: (string) $row['headers'],
                 attempts: (int) $row['attempts'],
                 lockedBy: $workerId,
-            );
+            ), $rows);
         });
     }
 

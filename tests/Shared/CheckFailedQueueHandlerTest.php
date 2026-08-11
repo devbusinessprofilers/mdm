@@ -47,6 +47,7 @@ final class CheckFailedQueueHandlerTest extends KernelTestCase
         self::assertCount(1, $sent);
         $email = $sent[0];
         self::assertInstanceOf(Email::class, $email);
-        self::assertStringContainsString('Queue failed', (string) $email->getSubject());
+        self::assertStringContainsString('Messages en échec', (string) $email->getSubject());
+        self::assertStringContainsString('outbox', (string) $email->getSubject());
     }
 }

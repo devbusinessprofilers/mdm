@@ -11,6 +11,7 @@ use App\Dashboard\Repository\FilesATraiterRepository;
 use App\Enrichment\Entity\FicheTranslation;
 use App\Enrichment\Enum\SupportedLocale;
 use App\Etl\Entity\FicheImportJob;
+use App\Etl\Entity\FicheMarketplaceSync;
 use App\Ocr\Entity\DocumentExtraction;
 use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Enum\TypeFiche;
@@ -85,6 +86,17 @@ final class TraitementsEnEchecControllerTest extends WebTestCase
             [Ulid::fromString($traduction->id())->toBinary()],
         );
 
+        $marketplace = new FicheMarketplaceSync($lieu->fiche()->id(), $lieu->fiche()->code());
+        $marketplace->recordFailure('La marketplace a refusé la fiche (HTTP 422)');
+        $entityManager->persist($marketplace);
+        $entityManager->flush();
+
+        $this->connection->executeStatement(
+            "INSERT INTO outbox_message (id, message_type, body, headers, status, attempts, occurred_at, available_at, last_error)
+             VALUES (?, ?, '{}', '{}', 'failed', 5, NOW(), NOW(), 'Relais impossible : transport indisponible')",
+            [(string) new Ulid(), 'App\\Shared\\Message\\MediaUploaded'],
+        );
+
         $client->loginUser($admin);
         $crawler = $client->request('GET', '/admin/traitements-en-echec');
 
@@ -95,10 +107,12 @@ final class TraitementsEnEchecControllerTest extends WebTestCase
         self::assertStringContainsString('OCR indisponible : quota du fournisseur épuisé', $contenu);
         self::assertStringContainsString('Conversion impossible : image corrompue', $contenu);
         self::assertStringContainsString('Google Translate a répondu 500', $contenu);
+        self::assertStringContainsString('La marketplace a refusé la fiche (HTTP 422)', $contenu);
+        self::assertStringContainsString('Relais impossible : transport indisponible', $contenu);
 
         // Le périmètre de la vue est celui du compteur du tableau de bord.
         $comptes = self::getContainer()->get(FilesATraiterRepository::class)->comptes();
-        self::assertSame(4, $comptes['echecs']);
+        self::assertSame(6, $comptes['echecs']);
         self::assertSame($comptes['echecs'], $crawler->filter('table tbody tr')->count());
 
         // Chaque ligne pointe vers l'écran de détail où vit la relance.
@@ -146,6 +160,7 @@ final class TraitementsEnEchecControllerTest extends WebTestCase
         $this->connection->executeStatement('DELETE FROM enrichment_fiche_translation');
         $this->connection->executeStatement('DELETE FROM etl_import_job_error');
         $this->connection->executeStatement('DELETE FROM etl_import_job');
+        $this->connection->executeStatement('DELETE FROM etl_fiche_marketplace');
         $this->connection->executeStatement('DELETE FROM dam_media_rendition');
         $this->connection->executeStatement('DELETE FROM dam_media_asset');
         $this->connection->executeStatement('DELETE FROM pim_fiche_site_diffusion');

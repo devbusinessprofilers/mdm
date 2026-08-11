@@ -7,7 +7,6 @@ namespace App\Tests\Etl;
 use App\Etl\Service\MarketplaceApiClient;
 use App\Etl\Service\MarketplaceApiException;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\NullLogger;
 use Symfony\Component\HttpClient\MockHttpClient;
 use Symfony\Component\HttpClient\Response\MockResponse;
 
@@ -50,26 +49,45 @@ final class MarketplaceApiClientTest extends TestCase
         self::assertContains('Authorization: Bearer jwt-2', $this->requests[4]['options']['headers']);
     }
 
-    public function testStaleSequenceConflictIsASuccess(): void
+    public function testStaleSequenceConflictIsReportedWithoutThrowing(): void
     {
         $client = $this->client([
             new MockResponse('{"token":"jwt-1"}'),
             new MockResponse('', ['http_code' => 409]),
         ]);
-        $client->upsertFiche(123, []);
 
+        self::assertFalse($client->upsertFiche(123, []));
         self::assertCount(2, $this->requests);
     }
 
-    public function testRefusedSnapshotThrowsForMessengerRetry(): void
+    public function testServerErrorThrowsARetryableExceptionForMessengerRetry(): void
     {
         $client = $this->client([
             new MockResponse('{"token":"jwt-1"}'),
             new MockResponse('', ['http_code' => 500]),
         ]);
 
-        $this->expectException(MarketplaceApiException::class);
-        $client->upsertFiche(123, []);
+        try {
+            $client->upsertFiche(123, []);
+            self::fail('Une MarketplaceApiException était attendue.');
+        } catch (MarketplaceApiException $exception) {
+            self::assertTrue($exception->isRetryable());
+        }
+    }
+
+    public function testClientErrorThrowsANonRetryableException(): void
+    {
+        $client = $this->client([
+            new MockResponse('{"token":"jwt-1"}'),
+            new MockResponse('', ['http_code' => 422]),
+        ]);
+
+        try {
+            $client->upsertFiche(123, []);
+            self::fail('Une MarketplaceApiException était attendue.');
+        } catch (MarketplaceApiException $exception) {
+            self::assertFalse($exception->isRetryable());
+        }
     }
 
     public function testRemoveToleratesUnknownFiche(): void
@@ -78,10 +96,20 @@ final class MarketplaceApiClientTest extends TestCase
             new MockResponse('{"token":"jwt-1"}'),
             new MockResponse('', ['http_code' => 404]),
         ]);
-        $client->removeFiche(123, '01JSEQUENCE');
 
+        self::assertTrue($client->removeFiche(123, '01JSEQUENCE'));
         self::assertSame('DELETE', $this->requests[1]['method']);
         self::assertStringContainsString('sequence=01JSEQUENCE', $this->requests[1]['url']);
+    }
+
+    public function testRemoveReportsStaleSequenceConflict(): void
+    {
+        $client = $this->client([
+            new MockResponse('{"token":"jwt-1"}'),
+            new MockResponse('', ['http_code' => 409]),
+        ]);
+
+        self::assertFalse($client->removeFiche(123, '01JSEQUENCE'));
     }
 
     public function testRejectedAuthenticationThrows(): void
@@ -96,7 +124,6 @@ final class MarketplaceApiClientTest extends TestCase
     {
         $client = new MarketplaceApiClient(
             new MockHttpClient(),
-            new NullLogger(),
             '',
             'pim',
             'secret',
@@ -121,7 +148,6 @@ final class MarketplaceApiClientTest extends TestCase
 
         return new MarketplaceApiClient(
             $http,
-            new NullLogger(),
             'https://marketplace.test',
             'pim',
             'secret',

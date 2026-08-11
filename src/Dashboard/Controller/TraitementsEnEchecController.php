@@ -23,7 +23,7 @@ final class TraitementsEnEchecController extends AbstractController
     {
         return $this->render('dashboard/traitements_en_echec.html.twig', [
             'lignes' => $journal->echecs(),
-            'familles' => JournalTraitementsRepository::FAMILLES,
+            'familles' => JournalTraitementsRepository::FAMILLES + JournalTraitementsRepository::FAMILLES_ECHECS,
         ]);
     }
 }

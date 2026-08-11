@@ -23,16 +23,27 @@ use App\Shared\Outbox\OutboxPublisherInterface;
  *  - autres statuts (en cours, en attente, validée) → rien : la marketplace
  *    conserve le dernier état publié jusqu'à la republication.
  */
-final readonly class MarketplaceSyncScheduler
+final class MarketplaceSyncScheduler
 {
     /** Code du référentiel SiteDiffusion représentant la marketplace. */
     public const SITE_CODE = 'marketplace_bp';
 
+    /**
+     * Mémo du site marketplace (un seul SELECT par processus, au lieu d'un
+     * par fiche lors de app:marketplace:sync --all). Scalaires uniquement :
+     * l'entité Doctrine serait détachée par les em->clear() des traitements
+     * par lots.
+     *
+     * @var array{id: int, actif: bool}|null
+     */
+    private ?array $siteMarketplace = null;
+    private bool $siteMarketplaceCharge = false;
+
     public function __construct(
-        private SiteDiffusionRepository $sites,
-        private FicheMarketplaceSyncRepository $tracking,
-        private OutboxPublisherInterface $outbox,
-        private MarketplaceClientInterface $client,
+        private readonly SiteDiffusionRepository $sites,
+        private readonly FicheMarketplaceSyncRepository $tracking,
+        private readonly OutboxPublisherInterface $outbox,
+        private readonly MarketplaceClientInterface $client,
     ) {
     }
 
@@ -62,11 +73,29 @@ final readonly class MarketplaceSyncScheduler
     /** La fiche a-t-elle sélectionné le site marketplace (actif) ? */
     public function diffusable(Fiche $fiche): bool
     {
-        $site = $this->sites->findOneByCode(self::SITE_CODE);
+        $site = $this->siteMarketplace();
 
         return null !== $site
-            && $site->actif()
-            && null !== $site->id()
-            && in_array($site->id(), $fiche->siteDiffusionIds(), true);
+            && $site['actif']
+            && in_array($site['id'], $fiche->siteDiffusionIds(), true);
+    }
+
+    /**
+     * Charge une seule fois l'id et le drapeau actif du site marketplace,
+     * y compris son absence (référentiel non provisionné).
+     *
+     * @return array{id: int, actif: bool}|null
+     */
+    private function siteMarketplace(): ?array
+    {
+        if (!$this->siteMarketplaceCharge) {
+            $site = $this->sites->findOneByCode(self::SITE_CODE);
+            $this->siteMarketplace = null !== $site && null !== $site->id()
+                ? ['id' => $site->id(), 'actif' => $site->actif()]
+                : null;
+            $this->siteMarketplaceCharge = true;
+        }
+
+        return $this->siteMarketplace;
     }
 }

@@ -5,6 +5,7 @@ namespace App;
 use App\Dam\Message\ScanDamAnomalies;
 use App\Pim\Message\RemindIncompleteFiches;
 use App\Shared\Alert\Message\CheckFailedQueue;
+use Symfony\Component\Console\Messenger\RunCommandMessage;
 use Symfony\Component\Messenger\Message\RedispatchMessage;
 use Symfony\Component\Scheduler\Attribute\AsSchedule;
 use Symfony\Component\Scheduler\RecurringMessage;
@@ -35,6 +36,12 @@ class Schedule implements ScheduleProviderInterface
             // Relances hebdomadaires des fiches incomplètes, exécutées par le
             // worker pim (le fan-out dispatch ensuite un email par fiche).
             ->add(RecurringMessage::cron('0 8 * * 1', new RedispatchMessage(new RemindIncompleteFiches(), 'pim'), new \DateTimeZone('Europe/Paris')))
+
+            // Purges quotidiennes, exécutées directement par le consumer cron
+            // du scheduler (quelques DELETE bornés) : sans elles, l'outbox et
+            // les jetons de compte croissent sans limite.
+            ->add(RecurringMessage::cron('20 4 * * *', new RunCommandMessage('app:outbox:purge'), new \DateTimeZone('Europe/Paris')))
+            ->add(RecurringMessage::cron('25 4 * * *', new RunCommandMessage('app:account:purge-expired-tokens'), new \DateTimeZone('Europe/Paris')))
 
             // add your own tasks here
             // see https://symfony.com/doc/current/scheduler.html#attaching-recurring-messages-to-a-schedule

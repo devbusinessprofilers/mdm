@@ -24,13 +24,17 @@ final class RecordingMarketplaceClient implements MarketplaceClientInterface
         return $this->configured;
     }
 
-    public function upsertFiche(int $code, array $payload): void
+    public function upsertFiche(int $code, array $payload): bool
     {
         $this->upserts[] = ['code' => $code, 'payload' => $payload];
+
+        return true;
     }
 
-    public function removeFiche(int $code, string $sequence): void
+    public function removeFiche(int $code, string $sequence): bool
     {
         $this->removals[] = ['code' => $code, 'sequence' => $sequence];
+
+        return true;
     }
 }

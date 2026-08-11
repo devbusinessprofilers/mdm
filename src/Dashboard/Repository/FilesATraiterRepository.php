@@ -32,7 +32,9 @@ final readonly class FilesATraiterRepository
                     (SELECT COUNT(*) FROM etl_import_job WHERE status IN ('echoue', 'termine_avec_erreurs'))
                     + (SELECT COUNT(*) FROM enrichment_fiche_translation WHERE status = 'en_erreur')
                     + (SELECT COUNT(*) FROM ocr_document_extraction WHERE status = 'failed')
-                    + (SELECT COUNT(*) FROM dam_media_asset WHERE status = 'failed' AND deleted_at IS NULL)",
+                    + (SELECT COUNT(*) FROM dam_media_asset WHERE status = 'failed' AND deleted_at IS NULL)
+                    + (SELECT COUNT(*) FROM etl_fiche_marketplace WHERE status = 'failed')
+                    + (SELECT COUNT(*) FROM outbox_message WHERE status = 'failed')",
             ),
             'ia' => (int) $this->connection->fetchOne(
                 'SELECT COUNT(DISTINCT ext.fiche_id)

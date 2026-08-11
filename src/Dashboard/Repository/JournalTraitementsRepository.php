@@ -21,6 +21,12 @@ final readonly class JournalTraitementsRepository
         'media' => 'Médias',
     ];
 
+    /** Familles sans journal propre, visibles uniquement dans la vue des échecs. */
+    public const FAMILLES_ECHECS = [
+        'marketplace' => 'Diffusion marketplace',
+        'outbox' => 'Outbox',
+    ];
+
     private const STATUTS_ERREUR = ['echoue', 'termine_avec_erreurs', 'failed', 'en_erreur'];
 
     public function __construct(private Connection $connection)
@@ -203,6 +209,43 @@ final readonly class JournalTraitementsRepository
                 'erreur' => null === $row['error_message'] ? null : (string) $row['error_message'],
                 'quand' => (string) $row['updated_at'],
                 'lien' => ['route' => 'app_dam_dashboard', 'params' => ['filter' => 'failed']],
+            ];
+        }
+        // Fiches dont la diffusion marketplace a épuisé ses relances : la
+        // reprise se fait par `app:marketplace:sync --failed` (pas d'écran).
+        foreach ($this->connection->fetchAllAssociative(
+            "SELECT m.code, m.status, m.last_error, m.updated_at, f.label
+             FROM etl_fiche_marketplace m
+             LEFT JOIN pim_fiche f ON f.id = m.fiche_id
+             WHERE m.status = 'failed'
+             ORDER BY m.updated_at DESC LIMIT ".$limit,
+        ) as $row) {
+            $lignes[] = [
+                'famille' => 'marketplace',
+                'sujet' => sprintf('Diffusion · %s', (string) ($row['label'] ?? 'fiche '.$row['code'])),
+                'statut' => (string) $row['status'],
+                'erreur' => null === $row['last_error'] ? null : (string) $row['last_error'],
+                'quand' => (string) $row['updated_at'],
+                'lien' => null,
+            ];
+        }
+        // Événements de l'outbox jamais relayés : la reprise se fait par
+        // `app:outbox:failed:retry` (pas d'écran).
+        foreach ($this->connection->fetchAllAssociative(
+            "SELECT id, message_type, status, last_error, occurred_at
+             FROM outbox_message
+             WHERE status = 'failed'
+             ORDER BY occurred_at DESC LIMIT ".$limit,
+        ) as $row) {
+            $type = (string) $row['message_type'];
+            $court = false === ($pos = strrpos($type, '\\')) ? $type : substr($type, $pos + 1);
+            $lignes[] = [
+                'famille' => 'outbox',
+                'sujet' => sprintf('%s · %s', $court, (string) $row['id']),
+                'statut' => (string) $row['status'],
+                'erreur' => null === $row['last_error'] ? null : (string) $row['last_error'],
+                'quand' => (string) $row['occurred_at'],
+                'lien' => null,
             ];
         }
         usort($lignes, static fn (array $a, array $b): int => strcmp($b['quand'], $a['quand']));

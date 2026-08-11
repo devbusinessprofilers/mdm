@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Etl\Service;
 
-use Psr\Log\LoggerInterface;
 use Symfony\Contracts\HttpClient\Exception\ExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
@@ -21,13 +20,21 @@ final class MarketplaceApiClient implements MarketplaceClientInterface
 {
     private ?string $token = null;
 
+    private readonly HttpClientInterface $httpClient;
+
     public function __construct(
-        private readonly HttpClientInterface $httpClient,
-        private readonly LoggerInterface $logger,
+        HttpClientInterface $httpClient,
         private readonly string $endpoint,
         private readonly string $login,
         private readonly string $password,
     ) {
+        // Bornes dures sur chaque appel (login JWT compris) : le worker tient
+        // une transaction MySQL ouverte pendant la requête, un appel lent ne
+        // doit pas retenir la connexion indéfiniment.
+        $this->httpClient = $httpClient->withOptions([
+            'timeout' => 10,
+            'max_duration' => 30,
+        ]);
     }
 
     public function isConfigured(): bool
@@ -35,7 +42,7 @@ final class MarketplaceApiClient implements MarketplaceClientInterface
         return '' !== trim($this->endpoint);
     }
 
-    public function upsertFiche(int $code, array $payload): void
+    public function upsertFiche(int $code, array $payload): bool
     {
         $status = $this->authenticatedRequest(
             'PUT',
@@ -43,30 +50,49 @@ final class MarketplaceApiClient implements MarketplaceClientInterface
             ['json' => $payload],
         );
         if (409 === $status) {
-            $this->logger->info('Fiche ignorée par la marketplace : elle détient déjà une séquence plus récente.', [
-                'code' => $code,
-            ]);
-
-            return;
+            return false;
         }
         if ($status < 200 || $status >= 300) {
-            throw new MarketplaceApiException(sprintf('La marketplace a refusé la fiche %d (HTTP %d).', $code, $status));
+            throw new MarketplaceApiException(
+                sprintf('La marketplace a refusé la fiche %d (HTTP %d).', $code, $status),
+                retryable: self::retryable($status),
+            );
         }
+
+        return true;
     }
 
-    public function removeFiche(int $code, string $sequence): void
+    public function removeFiche(int $code, string $sequence): bool
     {
         $status = $this->authenticatedRequest(
             'DELETE',
             sprintf('/api/pim/fiches/%d', $code),
             ['query' => ['sequence' => $sequence]],
         );
-        if (404 === $status || 409 === $status) {
-            return;
+        if (409 === $status) {
+            return false;
+        }
+        if (404 === $status) {
+            return true;
         }
         if ($status < 200 || $status >= 300) {
-            throw new MarketplaceApiException(sprintf('La marketplace a refusé la dépublication de la fiche %d (HTTP %d).', $code, $status));
+            throw new MarketplaceApiException(
+                sprintf('La marketplace a refusé la dépublication de la fiche %d (HTTP %d).', $code, $status),
+                retryable: self::retryable($status),
+            );
         }
+
+        return true;
+    }
+
+    /**
+     * Un 4xx (hors cas tolérés en amont) est un refus permanent : relancer
+     * rejouerait le même échec. Les 5xx et le 401 persistant après
+     * ré-authentification (incident côté marketplace) restent relançables.
+     */
+    private static function retryable(int $status): bool
+    {
+        return $status >= 500 || 401 === $status;
     }
 
     /** @param array<string, mixed> $options */

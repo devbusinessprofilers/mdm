@@ -13,7 +13,11 @@ use Symfony\Component\Messenger\Stamp\HandledStamp;
 use Symfony\Component\Messenger\Stamp\ReceivedStamp;
 
 /**
- * Garde les envois HTTP sans connexion DB et rend transactionnels les handlers workers.
+ * Rend transactionnels les handlers exécutés côté worker (ReceivedStamp) :
+ * la transaction est ouverte avant le handler et englobe donc aussi ses
+ * appels HTTP sortants (PUT/DELETE marketplace) — comportement voulu,
+ * borné par les timeouts du client HTTP. Les dispatch synchrones (sans
+ * ReceivedStamp) traversent le middleware sans transaction.
  */
 final readonly class ReceivedDoctrineTransactionMiddleware implements MiddlewareInterface
 {

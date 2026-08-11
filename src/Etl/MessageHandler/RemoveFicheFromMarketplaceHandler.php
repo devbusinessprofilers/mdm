@@ -7,12 +7,15 @@ namespace App\Etl\MessageHandler;
 use App\Etl\Enum\MarketplaceSyncStatus;
 use App\Etl\Message\RemoveFicheFromMarketplace;
 use App\Etl\Repository\FicheMarketplaceSyncRepository;
+use App\Etl\Service\MarketplaceApiException;
 use App\Etl\Service\MarketplaceClientInterface;
 use App\Etl\Service\MarketplaceSyncScheduler;
 use App\Pim\Entity\Fiche;
 use App\Pim\Enum\StatutFiche;
 use App\Pim\Repository\FicheRepository;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
+use Symfony\Component\Messenger\Exception\UnrecoverableMessageHandlingException;
 use Symfony\Component\Uid\Ulid;
 
 #[AsMessageHandler]
@@ -23,6 +26,7 @@ final readonly class RemoveFicheFromMarketplaceHandler
         private FicheMarketplaceSyncRepository $tracking,
         private MarketplaceSyncScheduler $scheduler,
         private MarketplaceClientInterface $client,
+        private LoggerInterface $logger,
     ) {
     }
 
@@ -44,7 +48,28 @@ final readonly class RemoveFicheFromMarketplaceHandler
             return;
         }
         $sequence = (string) new Ulid();
-        $this->client->removeFiche($tracked->code(), $sequence);
+        try {
+            $applied = $this->client->removeFiche($tracked->code(), $sequence);
+        } catch (MarketplaceApiException $exception) {
+            // Refus permanent (4xx) : relancer rejouerait le même échec, le
+            // message part directement en failed et l'échec est enregistré
+            // par MarketplaceSyncFailureSubscriber.
+            if (!$exception->isRetryable()) {
+                throw new UnrecoverableMessageHandlingException($exception->getMessage(), 0, $exception);
+            }
+            throw $exception;
+        }
+        // Conflit de séquence : la marketplace détient déjà un état plus
+        // récent, l'état local ne doit pas être marqué retiré avec une
+        // séquence refusée.
+        if (!$applied) {
+            $this->logger->notice('Dépublication ignorée par la marketplace : elle détient déjà une séquence plus récente.', [
+                'code' => $tracked->code(),
+                'sequence' => $sequence,
+            ]);
+
+            return;
+        }
         $tracked->recordRemoved($sequence);
     }
 }
