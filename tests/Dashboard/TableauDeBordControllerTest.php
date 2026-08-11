@@ -69,6 +69,13 @@ final class TableauDeBordControllerTest extends WebTestCase
         $crawler = $client->request('GET', '/');
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'Tableau de bord');
+
+        // L'alias de la maquette sert le même écran.
+        $client->request('GET', '/tableau-de-bord');
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('h1', 'Tableau de bord');
+
+        $crawler = $client->request('GET', '/');
         $ligneValider = $crawler->filter('table tbody tr')->first();
         self::assertStringContainsString('Fiches à valider', $ligneValider->text(null, true));
         self::assertStringContainsString('1', $ligneValider->text(null, true));

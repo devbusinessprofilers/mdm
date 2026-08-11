@@ -14,7 +14,12 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Routing\Attribute\Route;
 
-#[Route('/tableau-de-bord', name: 'app_dashboard_')]
+/**
+ * Statistiques détaillées du référentiel (snapshots + recalcul planifié).
+ * `/tableau-de-bord` est désormais l'alias de la page d'accueil, comme dans
+ * la maquette : cet écran interne vit sous /admin avec les autres écrans back.
+ */
+#[Route('/admin/tableau-de-bord', name: 'app_dashboard_')]
 final class DashboardController extends AbstractController
 {
     #[Route('', name: 'index', methods: ['GET'])]
