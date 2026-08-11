@@ -7,6 +7,7 @@ namespace App\Dam\MessageHandler;
 use App\Dam\Enum\MediaStatus;
 use App\Dam\Message\DeleteMedia;
 use App\Dam\Repository\MediaAssetRepository;
+use App\Dam\Repository\MediaPerceptualHashBandRepository;
 use App\Shared\Service\PrivateObjectStorageInterface;
 use App\Shared\Service\PublicObjectStorageInterface;
 use Doctrine\ORM\EntityManagerInterface;
@@ -17,6 +18,7 @@ final readonly class DeleteMediaHandler
 {
     public function __construct(
         private MediaAssetRepository $mediaRepository,
+        private MediaPerceptualHashBandRepository $bands,
         private PrivateObjectStorageInterface $privateStorage,
         private PublicObjectStorageInterface $publicStorage,
         private EntityManagerInterface $entityManager,
@@ -34,6 +36,9 @@ final readonly class DeleteMediaHandler
             $this->publicStorage->delete($rendition->storageKey());
         }
         $this->privateStorage->delete($media->originalStorageKey());
+        // Sans purge, les bandes pHash du média supprimé resteraient candidates
+        // à la détection de doublons et la table grossirait indéfiniment.
+        $this->bands->deleteForMedia($media->id());
         $media->markDeleted();
         $this->entityManager->flush();
     }

@@ -9,9 +9,11 @@ use App\Pim\Entity\Fiche;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Enum\NatureRessource;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\Persistence\ManagerRegistry;
 use App\Dam\Enum\RightsValidityStatus;
 use App\Pim\Enum\TypeFiche;
+use Symfony\Component\Uid\Ulid;
 
 /** @extends ServiceEntityRepository<RessourceLieu> */
 final class RessourceLieuRepository extends ServiceEntityRepository
@@ -44,6 +46,33 @@ final class RessourceLieuRepository extends ServiceEntityRepository
      *
      * @return list<RessourceLieu>
      */
+    /**
+     * @param list<string> $ids
+     *
+     * @return list<RessourceLieu>
+     */
+    public function findByIds(array $ids): array
+    {
+        $ulids = array_values(array_filter($ids, Ulid::isValid(...)));
+        if ([] === $ulids) {
+            return [];
+        }
+
+        return $this->createQueryBuilder('resource')
+            ->addSelect('fiche')
+            ->join('resource.fiche', 'fiche')
+            ->where('resource.id IN (:ids)')
+            // DQL n'applique pas le type 'ulid' aux paramètres inférés : lier
+            // les valeurs binaires explicitement.
+            ->setParameter(
+                'ids',
+                array_map(static fn (string $id): string => Ulid::fromString($id)->toBinary(), $ulids),
+                ArrayParameterType::BINARY,
+            )
+            ->getQuery()
+            ->getResult();
+    }
+
     public function findByMediaIds(array $mediaIds): array
     {
         if ([] === $mediaIds) {

@@ -49,9 +49,15 @@ final readonly class ExtractDocumentHandler
         $batches = [];
         $boxFilesToClean = [];
         try {
-            $contents = $this->storage->read($extraction->document()->originalStorageKey());
-            if (hash('sha256', $contents) !== $extraction->documentChecksum()) { throw new \DomainException('L’empreinte du document DAM ne correspond plus à l’extraction.'); }
-            if (false === file_put_contents($temp, $contents)) { throw new \RuntimeException('Impossible de préparer le PDF DAM.'); }
+            // Copie en flux : un PDF de 50 Mo ne doit pas être chargé
+            // entièrement en mémoire par le worker.
+            $source = $this->storage->readStream($extraction->document()->originalStorageKey());
+            try {
+                $destination = fopen($temp, 'wb');
+                if (false === $destination) { throw new \RuntimeException('Impossible de préparer le PDF DAM.'); }
+                try { stream_copy_to_stream($source, $destination); } finally { fclose($destination); }
+            } finally { fclose($source); }
+            if (hash_file('sha256', $temp) !== $extraction->documentChecksum()) { throw new \DomainException('L’empreinte du document DAM ne correspond plus à l’extraction.'); }
             $pages = $this->pdf->inspect($temp);
             $extraction->start($pages);
             $batches = $this->pdf->batches($temp, $pages);

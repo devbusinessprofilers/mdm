@@ -75,13 +75,13 @@
         {% for item in items %}
             <article class="card dam-anomaly">
                 <div class="dam-media-preview">
-                    {% if item.thumbnail %}<img src="{{ item.thumbnail }}" alt="{{ item.resource.legende ?: (item.asset ? item.asset.originalFilename : 'Média') }}" loading="lazy">{% else %}<span>Aucun aperçu</span>{% endif %}
+                    {% if item.thumbnail %}<img src="{{ item.thumbnail }}" alt="{{ item.resource and item.resource.legende ? item.resource.legende : (item.asset ? item.asset.originalFilename : 'Média') }}" loading="lazy">{% else %}<span>Aucun aperçu</span>{% endif %}
                 </div>
                 <div class="dam-anomaly-content">
                     <div class="section-heading">
                         <div>
-                            <span class="badge badge-neutral">{{ item.fiche_type|replace({'_': ' '}) }}</span>
-                            <h2>{{ item.resource ? (item.resource.legende ?: (item.asset ? item.asset.originalFilename : item.resource.usage)) : item.fiche_label }}</h2>
+                            <span class="badge badge-neutral">{{ item.fiche_type ? item.fiche_type|replace({'_': ' '}) : '(sans fiche)' }}</span>
+                            <h2>{{ item.resource ? (item.resource.legende ?: (item.asset ? item.asset.originalFilename : item.resource.usage)) : (item.asset ? item.asset.originalFilename : item.fiche_label) }}</h2>
                         </div>
                         {% if item.fiche_url %}<a class="btn btn-secondary" href="{{ item.fiche_url }}">Ouvrir {{ item.fiche_label }}</a>{% endif %}
                     </div>

@@ -36,50 +36,61 @@ final readonly class ImageRenditionGenerator
             } finally {
                 fclose($destination);
             }
-            $renditions = [];
-            foreach (ImageVariantRegistry::all() as $name => $dimensions) {
-                $output = tempnam(sys_get_temp_dir(), 'dam-rendition-');
-                if (false === $output) {
-                    throw new \RuntimeException('Impossible de créer le rendu temporaire DAM.');
+            $variants = ImageVariantRegistry::all();
+            $outputs = [];
+            try {
+                foreach (array_keys($variants) as $name) {
+                    $output = tempnam(sys_get_temp_dir(), 'dam-rendition-');
+                    if (false === $output) {
+                        throw new \RuntimeException('Impossible de créer le rendu temporaire DAM.');
+                    }
+                    $outputs[$name] = $output;
                 }
-                try {
-                    $command = ['convert', $input, '-auto-orient'];
-                    if (null !== $crop) {
-                        $command = [
-                            ...$command,
-                            '-crop',
-                            sprintf(
-                                '%dx%d+%d+%d',
-                                $crop['width'],
-                                $crop['height'],
-                                $crop['x'],
-                                $crop['y'],
-                            ),
-                            '+repage',
-                        ];
-                    }
-                    if (0 !== $rotation) {
-                        $command = [...$command, '-rotate', (string) $rotation];
-                    }
-                    $geometry =
-                        $dimensions['width'].'x'.$dimensions['height'];
+                // Mémoire ImageMagick bornée : un original démesuré ne doit
+                // pas pouvoir mettre le worker en OOM.
+                $command = [
+                    'convert',
+                    '-limit', 'memory', '512MiB',
+                    '-limit', 'map', '1GiB',
+                    $input,
+                    '-auto-orient',
+                ];
+                if (null !== $crop) {
                     $command = [
                         ...$command,
-                        '-thumbnail',
-                        $geometry.'^',
-                        '-gravity',
-                        'center',
-                        '-extent',
-                        $geometry,
-                        '-strip',
-                        '-quality',
-                        '82',
-                        'webp:'.$output,
+                        '-crop',
+                        sprintf(
+                            '%dx%d+%d+%d',
+                            $crop['width'],
+                            $crop['height'],
+                            $crop['x'],
+                            $crop['y'],
+                        ),
+                        '+repage',
                     ];
-                    $process = new Process($command);
-                    $process->setTimeout(120);
-                    $process->mustRun();
-                    $contents = file_get_contents($output);
+                }
+                if (0 !== $rotation) {
+                    $command = [...$command, '-rotate', (string) $rotation];
+                }
+                // L'original n'est décodé qu'une fois : chaque variante est
+                // produite à partir d'un clone de l'image préparée, la
+                // dernière consommant l'image de base elle-même.
+                $command = [...$command, '-strip', '-quality', '82', '-gravity', 'center'];
+                $names = array_keys($variants);
+                $last = array_key_last($names);
+                foreach ($names as $index => $name) {
+                    $geometry = $variants[$name]['width'].'x'.$variants[$name]['height'];
+                    $steps = ['-thumbnail', $geometry.'^', '-extent', $geometry];
+                    $command = $index === $last
+                        ? [...$command, ...$steps, 'webp:'.$outputs[$name]]
+                        : [...$command, '(', '+clone', ...$steps, '-write', 'webp:'.$outputs[$name], '+delete', ')'];
+                }
+                $process = new Process($command);
+                $process->setTimeout(120);
+                $process->mustRun();
+                $renditions = [];
+                foreach ($variants as $name => $dimensions) {
+                    $contents = file_get_contents($outputs[$name]);
                     if (false === $contents || '' === $contents) {
                         throw new \RuntimeException('ImageMagick a produit un rendu vide.');
                     }
@@ -89,12 +100,14 @@ final readonly class ImageRenditionGenerator
                         $dimensions['height'],
                         $contents,
                     );
-                } finally {
+                }
+
+                return $renditions;
+            } finally {
+                foreach ($outputs as $output) {
                     @unlink($output);
                 }
             }
-
-            return $renditions;
         } finally {
             @unlink($input);
         }

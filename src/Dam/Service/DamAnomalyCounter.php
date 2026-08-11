@@ -12,6 +12,8 @@ use App\Dam\Repository\MediaDuplicateAlertRepository;
 use App\Pim\Entity\Fiche;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Repository\RessourceLieuRepository;
+use Symfony\Contracts\Cache\CacheInterface;
+use Symfony\Contracts\Cache\ItemInterface;
 
 final readonly class DamAnomalyCounter
 {
@@ -20,17 +22,23 @@ final readonly class DamAnomalyCounter
         private RessourceLieuRepository $resources,
         private MediaAssetRepository $assets,
         private DamAnomalyRepository $anomalies,
+        private CacheInterface $cache,
     ) {}
 
     /** Anomalies ouvertes tous sujets confondus — le badge « Qualité » de la navigation. */
     public function ouvertes(): int
     {
-        $total = $this->alerts->countPending();
-        foreach (DamAnomalyType::cases() as $type) {
-            $total += $this->anomalies->countOpen($type);
-        }
+        // Le badge est rendu sur chaque page du back-office : un cache court
+        // évite trois COUNT par requête, 60 s de retard sont acceptables.
+        return $this->cache->get('dam_anomaly_counter_ouvertes', function (ItemInterface $item): int {
+            $item->expiresAfter(60);
+            $total = $this->alerts->countPending();
+            foreach (DamAnomalyType::cases() as $type) {
+                $total += $this->anomalies->countOpen($type);
+            }
 
-        return $total;
+            return $total;
+        });
     }
 
     /** @return array{duplicates: int, rights_missing: int, rights_expiring: int, rights_expired: int, failed: int, total: int} */

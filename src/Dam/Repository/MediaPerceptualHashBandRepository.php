@@ -26,6 +26,14 @@ final readonly class MediaPerceptualHashBandRepository
         }
     }
 
+    /** Purge les bandes d'un média : celles d'un média supprimé ne doivent plus être candidates. */
+    public function deleteForMedia(string $mediaId): void
+    {
+        $this->connection->delete('dam_media_phash_band', [
+            'media_id' => Ulid::fromString($mediaId)->toBinary(),
+        ]);
+    }
+
     /** @return list<string> */
     public function candidateIds(string $hash, string $excludedMediaId, int $limit = 5000): array
     {

@@ -30,14 +30,24 @@ final readonly class MediaAnalysisService
         private int $distanceThreshold,
     ) {}
 
-    public function analyze(MediaAsset $media): ?MediaAsset
+    /**
+     * @param string|null $originalPath copie locale de l'original, pour éviter
+     *                                  un nouveau téléchargement S3 quand
+     *                                  l'appelant l'a déjà récupéré
+     */
+    public function analyze(MediaAsset $media, ?string $originalPath = null): ?MediaAsset
     {
         if (MediaKind::Image !== $media->kind() || in_array($media->status(), [MediaStatus::Deleting, MediaStatus::Deleted], true)) {
             return null;
         }
         $hash = $media->perceptualHash();
         if (null === $hash) {
-            $stream = $this->storage->readStream($media->originalStorageKey());
+            $stream = null === $originalPath
+                ? $this->storage->readStream($media->originalStorageKey())
+                : fopen($originalPath, 'rb');
+            if (false === $stream) {
+                throw new \RuntimeException("Impossible de lire la copie locale de l'original.");
+            }
             try {
                 $hash = $this->calculator->calculate($stream);
             } finally {

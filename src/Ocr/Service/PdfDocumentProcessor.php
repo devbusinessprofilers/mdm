@@ -65,6 +65,12 @@ final class PdfDocumentProcessor
     {
         foreach ($batches as $batch) { if (is_file($batch->path)) { @unlink($batch->path); } }
         $directory ??= [] === $batches ? null : dirname($batches[0]->path);
-        if (null !== $directory && is_dir($directory)) { @rmdir($directory); }
+        if (null !== $directory && is_dir($directory)) {
+            // Un échec de pdfseparate/pdfunite peut laisser des page-XXX.pdf
+            // intermédiaires : les purger, sinon rmdir échoue et le répertoire
+            // s'accumule dans /tmp à chaque retry.
+            foreach (glob($directory.'/*') ?: [] as $leftover) { if (is_file($leftover)) { @unlink($leftover); } }
+            @rmdir($directory);
+        }
     }
 }

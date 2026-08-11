@@ -7,10 +7,11 @@ namespace App\Ocr\EventSubscriber;
 use App\Ocr\Entity\DocumentExtraction;
 use App\Ocr\Message\ExtractDocument;
 use App\Ocr\Message\CleanupBoxFile;
-use App\Ocr\Repository\DocumentExtractionRepository;
 use App\Ocr\Service\OcrRecoverableExtractionException;
 use App\Shared\Outbox\OutboxPublisherInterface;
 use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\Persistence\ManagerRegistry;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\Messenger\Event\WorkerMessageFailedEvent;
 use Symfony\Component\Messenger\Exception\HandlerFailedException;
@@ -19,25 +20,34 @@ use Symfony\Component\Messenger\Exception\HandlerFailedException;
 final readonly class OcrFailureSubscriber
 {
     public function __construct(
-        private DocumentExtractionRepository $extractions,
-        private EntityManagerInterface $entityManager,
+        private ManagerRegistry $registry,
         private OutboxPublisherInterface $outbox,
+        private LoggerInterface $logger,
     ) {}
 
     public function __invoke(WorkerMessageFailedEvent $event): void
     {
         $message = $event->getEnvelope()->getMessage();
         if (!$message instanceof ExtractDocument) { return; }
-        $extraction = $this->extractions->find($message->extractionId);
-        if (!$extraction instanceof DocumentExtraction) { return; }
-        foreach ($this->cleanupFiles($event->getThrowable()) as $fileId) {
-            $extraction->rememberTemporaryBoxFile($fileId);
-            $this->outbox->enqueue(new CleanupBoxFile($extraction->id(), $fileId));
+        try {
+            // L'échec du handler peut avoir fermé l'EntityManager (exception
+            // Doctrine) : le réinitialiser avant de marquer l'extraction.
+            $manager = $this->registry->getManagerForClass(DocumentExtraction::class);
+            if (!$manager instanceof EntityManagerInterface || !$manager->isOpen()) { $manager = $this->registry->resetManager(); }
+            $extraction = $manager->find(DocumentExtraction::class, $message->extractionId);
+            if (!$extraction instanceof DocumentExtraction) { return; }
+            foreach ($this->cleanupFiles($event->getThrowable()) as $fileId) {
+                $extraction->rememberTemporaryBoxFile($fileId);
+                $this->outbox->enqueue(new CleanupBoxFile($extraction->id(), $fileId));
+            }
+            $extraction->recordTechnicalAttempt();
+            if ($event->willRetry()) { $manager->flush(); return; }
+            $extraction->fail($event->getThrowable()->getMessage());
+            $manager->flush();
+        } catch (\Throwable $error) {
+            // Dernier recours : un subscriber d'échec ne doit jamais relancer.
+            $this->logger->error('Impossible de marquer l’extraction OCR en échec.', ['extraction_id' => $message->extractionId, 'exception' => $error]);
         }
-        $extraction->recordTechnicalAttempt();
-        if ($event->willRetry()) { $this->entityManager->flush(); return; }
-        $extraction->fail($event->getThrowable()->getMessage());
-        $this->entityManager->flush();
     }
 
     /** @return list<string> */

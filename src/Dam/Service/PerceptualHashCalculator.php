@@ -33,8 +33,10 @@ final readonly class PerceptualHashCalculator
             } finally {
                 fclose($destination);
             }
+            // Mémoire ImageMagick bornée : un original démesuré ne doit pas
+            // pouvoir mettre le worker en OOM.
             $process = new Process([
-                'convert', $input, '-auto-orient', '-colorspace', 'Gray', '-resize', '32x32!', '-depth', '8', 'gray:'.$output,
+                'convert', '-limit', 'memory', '512MiB', '-limit', 'map', '1GiB', $input, '-auto-orient', '-colorspace', 'Gray', '-resize', '32x32!', '-depth', '8', 'gray:'.$output,
             ]);
             $process->setTimeout(60);
             $process->mustRun();

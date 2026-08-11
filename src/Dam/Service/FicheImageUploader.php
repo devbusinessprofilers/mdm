@@ -13,6 +13,8 @@ use Symfony\Component\Uid\Ulid;
 final readonly class FicheImageUploader
 {
     private const MAX_SIZE = 25 * 1024 * 1024;
+    // Garde anti « gigapixel » : au-delà, la génération des rendus épuise la mémoire du worker.
+    private const MAX_DIMENSION = 12000;
     private const EXTENSIONS = [
         'image/jpeg' => 'jpg',
         'image/png' => 'png',
@@ -42,6 +44,9 @@ final readonly class FicheImageUploader
         }
         if ($image[0] < 960 || $image[1] < 480) {
             throw new \DomainException('Les dimensions minimales sont de 960 × 480 pixels.');
+        }
+        if ($image[0] > self::MAX_DIMENSION || $image[1] > self::MAX_DIMENSION) {
+            throw new \DomainException('Les dimensions maximales sont de 12000 × 12000 pixels.');
         }
         $checksum = hash_file('sha256', $path);
         if (false === $checksum) {

@@ -11,6 +11,7 @@ use App\Pim\Repository\RessourceLieuRepository;
 use App\Shared\Service\PrivateObjectStorageInterface;
 use App\Shared\Service\PublicObjectStorageInterface;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
 final readonly class MediaProcessingService
@@ -22,13 +23,20 @@ final readonly class MediaProcessingService
         private PublicMediaUrlGenerator $urlGenerator,
         private RessourceLieuRepository $resources,
         private EntityManagerInterface $entityManager,
+        private LoggerInterface $logger,
         #[Autowire(env: 'S3_PREFIX')]
         private string $storagePrefix,
     ) {
     }
 
-    /** @return array<string, string> */
-    public function process(MediaAsset $media): array
+    /**
+     * @param string|null $originalPath copie locale de l'original, pour éviter
+     *                                  un nouveau téléchargement S3 quand
+     *                                  l'appelant l'a déjà récupéré
+     *
+     * @return array<string, string>
+     */
+    public function process(MediaAsset $media, ?string $originalPath = null): array
     {
         if (
             MediaStatus::Deleted === $media->status()
@@ -47,9 +55,13 @@ final readonly class MediaProcessingService
         $crop = $resource?->crop();
         $rotation = $resource?->rotation() ?? 0;
         $fingerprint = self::fingerprint($media, $crop, $rotation);
-        $stream = $this->privateStorage->readStream(
-            $media->originalStorageKey(),
-        );
+        $stream = null === $originalPath
+            ? $this->privateStorage->readStream($media->originalStorageKey())
+            : fopen($originalPath, 'rb');
+        if (false === $stream) {
+            throw new \RuntimeException("Impossible de lire la copie locale de l'original.");
+        }
+        $staleKeys = [];
         try {
             foreach (
                 $this->generator->generate($stream, $crop, $rotation) as $generated
@@ -83,7 +95,7 @@ final readonly class MediaProcessingService
                     // (recadrage, rotation) produit une nouvelle clé, l'ancienne
                     // devient orpheline et doit être purgée.
                     if ($staleKey !== $key) {
-                        $this->publicStorage->delete($staleKey);
+                        $staleKeys[] = $staleKey;
                     }
                 }
             }
@@ -92,6 +104,21 @@ final readonly class MediaProcessingService
         }
         $media->markProcessed();
         $this->entityManager->flush();
+        // Purge APRÈS le flush : en cas de rollback, les renditions en base
+        // pointeraient sinon vers des objets déjà supprimés. Un échec de purge
+        // ne laisse qu'un orphelin S3 bénin, il ne doit pas faire échouer le
+        // traitement.
+        foreach ($staleKeys as $staleKey) {
+            try {
+                $this->publicStorage->delete($staleKey);
+            } catch (\Throwable $error) {
+                $this->logger->warning('La purge d’un rendu public périmé a échoué.', [
+                    'media_id' => $media->id(),
+                    'storage_key' => $staleKey,
+                    'exception' => $error,
+                ]);
+            }
+        }
 
         return $this->urls($media);
     }

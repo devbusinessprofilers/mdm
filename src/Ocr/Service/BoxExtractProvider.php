@@ -28,11 +28,17 @@ final class BoxExtractProvider implements DocumentExtractionProviderInterface
     public function upload(string $path, string $filename): string
     {
         if (!is_file($path)) { throw new \InvalidArgumentException('Le lot PDF temporaire est introuvable.'); }
-        $form = new FormDataPart([
-            'attributes' => json_encode(['name' => $filename, 'parent' => ['id' => $this->folderId]], JSON_THROW_ON_ERROR),
-            'file' => DataPart::fromPath($path, $filename, 'application/pdf'),
-        ]);
-        $response = $this->authorizedRequest('POST', rtrim($this->uploadUrl, '/').'/2.0/files/content', ['headers' => $form->getPreparedHeaders()->toArray(), 'body' => $form->bodyToIterable()]);
+        // Le body multipart est un Generator à usage unique : il doit être
+        // reconstruit si la requête est rejouée après expiration du jeton.
+        $options = function () use ($path, $filename): array {
+            $form = new FormDataPart([
+                'attributes' => json_encode(['name' => $filename, 'parent' => ['id' => $this->folderId]], JSON_THROW_ON_ERROR),
+                'file' => DataPart::fromPath($path, $filename, 'application/pdf'),
+            ]);
+
+            return ['headers' => $form->getPreparedHeaders()->toArray(), 'body' => $form->bodyToIterable()];
+        };
+        $response = $this->authorizedRequest('POST', rtrim($this->uploadUrl, '/').'/2.0/files/content', $options);
         $payload = $this->json($response, 'upload');
         $id = $payload['entries'][0]['id'] ?? null;
         if (!is_string($id) || '' === $id) { throw new BoxProviderException('Réponse Box upload invalide.', false); }
@@ -59,15 +65,18 @@ final class BoxExtractProvider implements DocumentExtractionProviderInterface
         if (!in_array($status, [204, 404], true)) { $this->throwForStatus($response, 'suppression'); }
     }
 
-    /** @param array<string, mixed> $options */
-    private function authorizedRequest(string $method, string $url, array $options = []): ResponseInterface
+    /** @param array<string, mixed>|\Closure(): array<string, mixed> $options */
+    private function authorizedRequest(string $method, string $url, array|\Closure $options = []): ResponseInterface
     {
-        $options['auth_bearer'] = $this->token();
-        $response = $this->httpClient->request($method, $url, $options);
+        $build = $options instanceof \Closure ? $options : static fn (): array => $options;
+        $request = $build();
+        $request['auth_bearer'] = $this->token();
+        $response = $this->httpClient->request($method, $url, $request);
         if (401 !== $response->getStatusCode()) { return $response; }
         $this->accessToken = null;
-        $options['auth_bearer'] = $this->token();
-        return $this->httpClient->request($method, $url, $options);
+        $request = $build();
+        $request['auth_bearer'] = $this->token();
+        return $this->httpClient->request($method, $url, $request);
     }
 
     private function token(): string

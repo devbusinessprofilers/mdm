@@ -78,7 +78,7 @@ final readonly class DamDashboardProvider
             self::FILTER_RIGHTS_MISSING => $this->rights(RightsValidityStatus::NotGranted, $type, $page),
             self::FILTER_RIGHTS_EXPIRING => $this->rights(RightsValidityStatus::Expiring, $type, $page),
             self::FILTER_RIGHTS_EXPIRED => $this->rights(RightsValidityStatus::Expired, $type, $page),
-            self::FILTER_FAILED => $this->failed($type, $page),
+            self::FILTER_FAILED => $this->failed($page),
             self::FILTER_PUBLISHED_NO_PHOTO => $this->publishedWithoutPhoto($type, $page),
             self::FILTER_PUBLISHED_RIGHTS => $this->publishedRights($type, $page),
             self::FILTER_ORPHANS => $this->orphanAnomalies($page),
@@ -104,13 +104,28 @@ final readonly class DamDashboardProvider
     private function duplicates(?TypeFiche $type, int $page): array
     {
         $total = $this->alerts->countPending($type?->value);
+        $alerts = $this->alerts->findPendingPage($type?->value, $page, self::PAGE_SIZE);
+        $resourcesById = [];
+        foreach ($this->resources->findByIds(array_map(static fn (MediaDuplicateAlert $alert): string => $alert->resourceId(), $alerts)) as $resource) {
+            $resourcesById[$resource->id()] = $resource;
+        }
+        $referenceResources = [];
+        foreach ($this->resources->findByMediaIds(array_map(static fn (MediaDuplicateAlert $alert): string => $alert->duplicateOf()->id(), $alerts)) as $resource) {
+            $referenceResources[$resource->damAssetId()] = $resource;
+        }
+        // Précharge les renditions des médias signalés et de leurs références :
+        // les vignettes n'entraînent ainsi aucun chargement paresseux par ligne.
+        $this->assets->findByStringIds(array_merge(
+            array_map(static fn (MediaDuplicateAlert $alert): string => $alert->media()->id(), $alerts),
+            array_map(static fn (MediaDuplicateAlert $alert): string => $alert->duplicateOf()->id(), $alerts),
+        ));
         $items = [];
-        foreach ($this->alerts->findPendingPage($type?->value, $page, self::PAGE_SIZE) as $alert) {
-            $resource = $this->resources->find($alert->resourceId());
+        foreach ($alerts as $alert) {
+            $resource = $resourcesById[$alert->resourceId()] ?? null;
             if (!$resource instanceof RessourceLieu || null === $resource->fiche()) {
                 continue;
             }
-            $referenceResource = $this->resources->findOneByMediaId($alert->duplicateOf()->id());
+            $referenceResource = $referenceResources[$alert->duplicateOf()->id()] ?? null;
             $items[] = $this->resourceItem($resource, $alert->media()) + [
                 'alert' => $alert,
                 'reference' => $alert->duplicateOf(),
@@ -139,13 +154,28 @@ final readonly class DamDashboardProvider
     }
 
     /** @return array{list<array<string, mixed>>, int} */
-    private function failed(?TypeFiche $type, int $page): array
+    private function failed(int $page): array
     {
         $total = $this->assets->countFailed();
+        $assets = $this->assets->findFailedPage($page, self::PAGE_SIZE);
+        // Précharge les renditions : les vignettes n'entraînent ainsi aucun
+        // chargement paresseux par ligne.
+        $this->assets->findByStringIds(array_map(static fn (MediaAsset $asset): string => $asset->id(), $assets));
+        $resources = $this->resourceMap($assets);
         $items = [];
-        foreach ($this->assets->findFailedPage($page, self::PAGE_SIZE) as $asset) {
-            $resource = $this->resources->findOneByMediaId($asset->id());
-            if (null === $resource || null === $resource->fiche() || (null !== $type && $resource->fiche()->type() !== $type)) {
+        foreach ($assets as $asset) {
+            $resource = $resources[$asset->id()] ?? null;
+            if (null === $resource || null === $resource->fiche()) {
+                // Média en échec sans fiche rattachée : l'afficher quand même,
+                // sinon il serait compté mais invisible et irrelançable.
+                $items[] = [
+                    'resource' => null,
+                    'asset' => $asset,
+                    'thumbnail' => $this->thumbnail($asset),
+                    'fiche_label' => '(sans fiche)',
+                    'fiche_type' => null,
+                    'fiche_url' => null,
+                ];
                 continue;
             }
             $items[] = $this->resourceItem($resource, $asset);
@@ -159,10 +189,7 @@ final readonly class DamDashboardProvider
     {
         $total = $this->assets->countActiveByKind($kind);
         $assets = $this->assets->findActiveByKindPage($kind, $page, self::PAGE_SIZE);
-        $resourcesByMediaId = [];
-        foreach ($this->resources->findByMediaIds(array_map(static fn (MediaAsset $asset): string => $asset->id(), $assets)) as $resource) {
-            $resourcesByMediaId[$resource->damAssetId()] = $resource;
-        }
+        $resourcesByMediaId = $this->resourceMap($assets);
         $items = [];
         foreach ($assets as $asset) {
             $resource = $resourcesByMediaId[$asset->id()] ?? null;
@@ -237,13 +264,14 @@ final readonly class DamDashboardProvider
         foreach ($this->assets->findByStringIds(array_map(static fn (DamAnomaly $anomaly): string => $anomaly->subjectId(), $anomalies)) as $asset) {
             $assetsById[$asset->id()] = $asset;
         }
+        $resources = $this->resourceMap(array_values($assetsById));
         $items = [];
         foreach ($anomalies as $anomaly) {
             $asset = $assetsById[$anomaly->subjectId()] ?? null;
             if (!$asset instanceof MediaAsset) {
                 continue;
             }
-            $resource = $this->resources->findOneByMediaId($asset->id());
+            $resource = $resources[$asset->id()] ?? null;
             if (!$resource instanceof RessourceLieu || null === $resource->fiche()) {
                 continue;
             }
@@ -273,6 +301,19 @@ final readonly class DamDashboardProvider
             'fiche_type' => $fiche->type()->value,
             'fiche_url' => $this->links->editUrl($fiche),
         ];
+    }
+
+    /** @param list<MediaAsset> $assets
+     *  @return array<string, RessourceLieu> ressources indexées par identifiant de média
+     */
+    private function resourceMap(array $assets): array
+    {
+        $map = [];
+        foreach ($this->resources->findByMediaIds(array_map(static fn (MediaAsset $asset): string => $asset->id(), $assets)) as $resource) {
+            $map[$resource->damAssetId()] = $resource;
+        }
+
+        return $map;
     }
 
     /** @param list<RessourceLieu> $resources
