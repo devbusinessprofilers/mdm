@@ -68,9 +68,12 @@ initiale / resync manuelle).
 1. Migrations marketplace, déploiement des deux applis, force-recreate des
    workers PIM.
 2. `app:marketplace:sync --lov` — le dictionnaire d'abord (adoption des
-   lignes legacy).
-3. Contrôle des adoptions + arbitrage manuel des lignes sans équivalent
-   (voir ci-dessous).
+   lignes legacy équivalentes).
+3. Contrôle des adoptions, puis **purge du legacy** côté marketplace :
+   `app:pim:purge-referentiels-legacy` (simulation par défaut, `--force`
+   pour exécuter). Supprime toutes les lignes sans `pim_code`, leurs
+   relations produit (FK CASCADE) et détache les prestataires de leur type
+   legacy.
 4. `app:marketplace:sync --all` — les fiches réappliquent leurs relations.
 
 ⚠️ La politique photos dépublie les fiches lieu sans 4 photos DAM traitées
@@ -87,74 +90,40 @@ leurs relations ne basculent donc pas.
   avec `typologie` → relation remplacée sur le front (« Hôtel (toutes
   catégories) » → « Hôtel 4 étoiles ») ; code inconnu ignoré + warning.
 
-## Arbitrages restants : lignes legacy sans équivalent PIM
+## Purge du legacy (décision du 2026-08-12)
 
-48 lignes publiées restent sans `pim_code` (toujours visibles dans les
-filtres). Deux voies de résorption : corriger le libellé côté PIM (adoption
-au prochain `--lov`) ou poser le `pim_code` à la main sur la ligne legacy
-(fusion), puis dépublier le reste.
+**Décision : les listes legacy de la marketplace sont supprimées, seules les
+valeurs du dictionnaire PIM restent disponibles.** Pas de fusion manuelle :
+les lignes que l'adoption par libellé n'a pas rattachées au dictionnaire
+sont purgées par `app:pim:purge-referentiels-legacy --force`, avec leurs
+relations produit (FK CASCADE : `bp_lieu_type_lieu`, `bp_produit_theme`,
+`bp_produit_equipement`, tables i18n) ; les prestataires pointant un type
+legacy sont détachés (`type_prestataire_id = NULL`, FK RESTRICT).
 
-### Types de lieu (10)
+Exécuté en local le 2026-08-12 : 48 lignes supprimées (10 types de lieu,
+9 thèmes, 15 équipements, 14 types de prestataire), ~28 800 relations
+produit purgées, 542 prestataires détachés.
 
-| Legacy | Équivalent PIM probable |
-|---|---|
-| Hôtel (toutes catégories) | Éclaté en Hôtel 2/3/4/5 étoiles + Palace — pas de 1:1 |
-| Maison d'hôtel / Gîte / Ferme | « Maison d'**hôte** / Gîte / Ferme » (typo legacy) |
-| Circuits Automobiles / Kartings | « Circuits Automobiles / Karting » (un « s » d'écart) |
-| Centre de congrès | « Centre de congrès / Convention / Parc des expositions » |
-| Village vacances | « Village vacances / Camping » |
-| Résidence / Appart'hotel | « Appartement / Loft » ? à trancher |
-| Salle / Bureau | « Salle sèche » ou « Salle de réception » ? à trancher |
-| Avec Hébergements | Aucun (critère, pas une typologie) |
-| Lieu avec incentive intégré | Aucun |
-| Restaurant | Aucun (type de fiche à part côté PIM) |
+Conséquences assumées :
 
-### Thèmes (9)
-
-Au vert, Campagne, Châteaux, Esat, Ile, Lac, Mer, Montagne, RSE.
-
-→ Correspondent surtout à **`TA_CADRE_ENV`** du PIM (Mer, Au Vert, Campagne,
-Montagne, Lac, Centre Ville), pas à `TA_THEMATIQUE` projeté. **Question
-métier : projeter aussi `TA_CADRE_ENV` → Theme ?** (Châteaux relève de la
-typologie ; Esat/RSE de l'impact social.)
-
-### Équipements (15)
-
-Wifi, Fibre Optique, Piscine Intérieure/Extérieure, Spa, Sauna, Hammam,
-Jacuzzi, Fitness, Centre de remise en forme, Court de tennis, Parcours de
-golf, Accès PMR, Climatisation en chambre / en salles de réunion.
-
-→ Le `EQUIPEMENTS` du PIM est un équipement **de chambre** (TV, Balcon,
-Bureau…), alors que cette liste legacy ressemble à **`BIEN_ETRE`** (Piscine,
-Spa, Sauna, Fitness…) + `TECHNIQUE_REUNION` (Wi-Fi) + `INSTALLATION`.
-**Question métier : la projection `EQUIPEMENTS` → Equipement est-elle la
-bonne, ou faut-il plutôt projeter `BIEN_ETRE` (± `INSTALLATION`) ?**
-
-### Types de prestataire (14)
-
-| Legacy | Équivalent PIM probable |
-|---|---|
-| Animations Evènementielles | Animations & Artistes |
-| Communications - Pub | Communication & Publicité |
-| Goodies | Cadeaux clients & Goodies |
-| Traductions - Interprètes de conférences | Traduction & Interprétariat |
-| Transporteurs | Transports & Logistique |
-| Techniques - Sonorisations | Technique & Audiovisuel / Son & Vidéo |
-| Réalisations audiovisuelles - Vidéos - Visio | Technique & Audiovisuel / Son & Vidéo |
-| Apps et sites web evenementiels | Digital & Hybride |
-| Location de mobiliers / matériels | Divers & Sur-mesure ? |
-| Photographes | Aucun |
-| Imprimeurs | Aucun |
-| Fleuristes / Décorations Evénementielles | Aucun |
-| Constructions éphémères (chapiteau, stand...) | Aucun |
-| Signalétiques événementielles | Aucun |
+- Les produits perdent ces classements jusqu'à la resynchronisation de leur
+  fiche par le PIM (`--all`, après le traitement de masse des photos DAM).
+- Les valeurs legacy qui manquent au dictionnaire (Photographes, Imprimeurs,
+  Fleuristes, Constructions éphémères, Signalétiques…) ne réapparaîtront que
+  si le métier les **ajoute au dictionnaire PIM** (`/admin/listes-de-valeurs`)
+  — c'est désormais l'unique porte d'entrée.
 
 ## Points ouverts
 
 - Relation `TypePrestataire` non branchée : le PIM envoie `prestations[]`
   (multi), la marketplace a un `ManyToOne` (mono) — à trancher avec le métier.
+  542 prestataires sont détachés de tout type depuis la purge.
 - Attributs non projetés (BIEN_ETRE, SERVICES, INSTALLATION, RSE…) : au
-  miroir seulement, en attente de validation métier.
-- Arbitrage des 48 lignes legacy ci-dessus (un script SQL de fusion peut être
-  préparé une fois les décisions prises).
+  miroir seulement. Question métier toujours ouverte : l'`EQUIPEMENTS` du PIM
+  est un équipement de chambre alors que l'ancien référentiel équipements
+  ressemblait à `BIEN_ETRE` + `TECHNIQUE_REUNION` ; faut-il projeter
+  `BIEN_ETRE` (± `INSTALLATION`) vers `Equipement` et `TA_CADRE_ENV` vers
+  `Theme` ?
+- Verrouiller l'admin marketplace (EasyAdmin) sur ces référentiels : toute
+  modification locale serait écrasée au prochain snapshot du dictionnaire.
 - Maîtrise des traiteurs (PIM vs import Salesforce `app:pr-import-produits`).
