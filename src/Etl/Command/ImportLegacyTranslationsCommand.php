@@ -75,14 +75,16 @@ final class ImportLegacyTranslationsCommand extends Command
         'bp_equipement' => ['i18n_translation_equipement', 'equipement_id'],
     ];
 
-    /** @var array<string, array{0: Ulid, 1: string, 2: string}> code → [id fiche, type, hex] */
+    /** @var array<int, array{0: Ulid, 1: string, 2: string}> code → [id fiche, type, hex] */
     private array $fichesByCode = [];
-    /** @var array<string, array<string, ?string>> hex fiche → sources françaises PIM */
+    /** @var array<string, array{description: ?string, liste: ?string, atouts?: array<int, ?string>, 'lieu.chambreDescGenerale'?: ?string, 'lieu.salleReunionDescSalleSeminaire'?: ?string}> hex fiche → sources françaises PIM */
     private array $pimSources = [];
     /** @var array<string, true> clés (fiche|path|locale) existantes */
     private array $existingFiche = [];
     /** @var array<string, array<string, string>> texte français → [locale => traduction] */
     private array $textDictionary = [];
+    /** @var array<string, array<string, string>> libellé français → [locale => traduction] */
+    private array $lovDictionary = [];
     /** @var array<string, int> compteurs du rapport */
     private array $counters = [];
     private int $pendingInBatch = 0;
@@ -191,13 +193,13 @@ final class ImportLegacyTranslationsCommand extends Command
             array_keys(self::LOV_REFERENTIALS),
             array_column(self::LOV_REFERENTIALS, 0),
         );
-        $i18nTextTables = [];
+        // table i18n → [texte libre ?, table référentiel, clé étrangère]
+        $i18nTables = [];
         foreach (self::TEXT_REFERENTIALS as $referentialTable => [$i18nTable, $foreignKey]) {
-            $i18nTextTables[$i18nTable] = [$referentialTable, $foreignKey];
+            $i18nTables[$i18nTable] = [true, $referentialTable, $foreignKey];
         }
-        $i18nLovTables = [];
         foreach (self::LOV_REFERENTIALS as $referentialTable => [$i18nTable, $foreignKey]) {
-            $i18nLovTables[$i18nTable] = [$referentialTable, $foreignKey];
+            $i18nTables[$i18nTable] = [false, $referentialTable, $foreignKey];
         }
         $this->lovDictionary = [];
 
@@ -222,14 +224,14 @@ final class ImportLegacyTranslationsCommand extends Command
                 $textNoms[$table][(int) $row['id']] = trim((string) $row['nom']);
                 continue;
             }
-            if (isset($i18nTextTables[$table]) || isset($i18nLovTables[$table])) {
-                [$referentialTable, $foreignKey] = $i18nTextTables[$table] ?? $i18nLovTables[$table];
+            if (isset($i18nTables[$table])) {
+                [$isText, $referentialTable, $foreignKey] = $i18nTables[$table];
                 $locale = $this->locale($row);
                 $content = trim((string) $row['content']);
                 if (null === $locale || '' === $content) {
                     continue;
                 }
-                $dictionaryRows[] = [isset($i18nTextTables[$table]), $referentialTable, (int) $row[$foreignKey], $locale->value, $content];
+                $dictionaryRows[] = [$isText, $referentialTable, (int) $row[$foreignKey], $locale->value, $content];
                 continue;
             }
 
@@ -285,7 +287,7 @@ final class ImportLegacyTranslationsCommand extends Command
             } else {
                 $lieuLegacy = $legacyLieux[(int) $row['lieu_id']] ?? null;
                 $code = null === $lieuLegacy ? null : ($produitSyspad[$lieuLegacy[0]] ?? null);
-                if (null === $code) {
+                if (null === $lieuLegacy || null === $code) {
                     ++$this->counters['fiche introuvable'];
                     continue;
                 }
@@ -319,7 +321,8 @@ final class ImportLegacyTranslationsCommand extends Command
             if ($this->dryRun) {
                 continue;
             }
-            $fiche = $this->entityManager->getReference(Fiche::class, $this->fichesByCode[$code][0]);
+            $fiche = $this->entityManager->getReference(Fiche::class, $this->fichesByCode[$code][0])
+                ?? throw new \LogicException('Référence de fiche introuvable.');
             if (LegacyTranslationRule::AVAILABLE === $decision) {
                 $translation = new FicheTranslation($fiche, $fieldPath, $label, $locale, trim((string) $pimSource));
                 $translation->applyManual($content, self::ACTOR);
@@ -340,9 +343,6 @@ final class ImportLegacyTranslationsCommand extends Command
             $io->newLine();
         }
     }
-
-    /** @var array<string, array<string, string>> libellé français → [locale => traduction] */
-    private array $lovDictionary = [];
 
     /**
      * Atouts et loisirs : champs libres du PIM appariés au dictionnaire de
@@ -411,7 +411,8 @@ final class ImportLegacyTranslationsCommand extends Command
                     if ($this->dryRun) {
                         continue;
                     }
-                    $fiche = $this->entityManager->getReference(Fiche::class, $ulid);
+                    $fiche = $this->entityManager->getReference(Fiche::class, $ulid)
+                        ?? throw new \LogicException('Référence de fiche introuvable.');
                     $translation = new FicheTranslation($fiche, $fieldPath, $label, SupportedLocale::from($localeValue), $text);
                     $translation->applyManual($content, self::ACTOR);
                     $this->entityManager->persist($translation);
@@ -453,7 +454,8 @@ final class ImportLegacyTranslationsCommand extends Command
                 if ($this->dryRun) {
                     continue;
                 }
-                $value = $this->entityManager->getReference(ValeurAttribut::class, (int) $row['id']);
+                $value = $this->entityManager->getReference(ValeurAttribut::class, (int) $row['id'])
+                    ?? throw new \LogicException('Référence de valeur d’attribut introuvable.');
                 $translation = new AttributeValueTranslation($value, SupportedLocale::from($localeValue), $label);
                 $translation->applyManual($content, self::ACTOR);
                 $this->entityManager->persist($translation);

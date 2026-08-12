@@ -71,7 +71,7 @@ final class ImportLegacyServicesCommandTest extends KernelTestCase
 
     private function tester(): CommandTester
     {
-        $application = new Application(self::$kernel);
+        $application = new Application(self::$kernel ?? throw new \LogicException('Kernel non démarré.'));
 
         return new CommandTester($application->find('app:legacy:import-services'));
     }

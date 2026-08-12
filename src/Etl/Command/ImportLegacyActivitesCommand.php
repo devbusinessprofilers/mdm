@@ -73,12 +73,12 @@ final class ImportLegacyActivitesCommand extends Command
             if ($record->recordNumber < $from) {
                 continue;
             }
-            if (null !== $record->error) {
+            $row = $record->row;
+            if (null !== $record->error || null === $row) {
                 ++$counters['erreurs'];
-                $errors[] = ['ligne' => $record->recordNumber, 'syspad' => '?', 'message' => $record->error];
+                $errors[] = ['ligne' => $record->recordNumber, 'syspad' => '?', 'message' => $record->error ?? 'Ligne invalide.'];
                 continue;
             }
-            $row = $record->row;
             if (!$this->mapper->supports($row)) {
                 ++$counters['hors périmètre'];
                 continue;

@@ -119,10 +119,10 @@ final class ImportLegacyCollaborateursCommand extends Command
         $reader->open($file);
         foreach ($reader->getSheetIterator() as $sheet) {
             foreach ($sheet->getRowIterator() as $row) {
-                $cells = array_map(
+                $cells = array_values(array_map(
                     static fn (mixed $value): string => is_scalar($value) ? (string) $value : '',
                     $row->toArray(),
-                );
+                ));
                 if (null === $columns) {
                     $columns = $this->mapColumns($cells);
                     if (null === $columns) {
