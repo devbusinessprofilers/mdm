@@ -71,9 +71,15 @@ final class SyncLovDictionaryHandlerTest extends KernelTestCase
         $payload = $this->client->lovUpserts[0];
         self::assertNotEmpty($payload['sequence']);
         $attributes = array_column($payload['attributes'], null, 'code');
-        // Le dictionnaire statique des catalogues est complet.
+        // Le dictionnaire statique des catalogues est complet, chaque
+        // attribut porte sa famille pour le rangement dans l'admin.
         self::assertArrayHasKey('GENERALE_TYPOLOGIE', $attributes);
         self::assertArrayHasKey('TYPE_PRESTATAIRE', $attributes);
+        self::assertSame('lieu', $attributes['GENERALE_TYPOLOGIE']['famille']);
+        self::assertSame('prestataire', $attributes['TYPE_PRESTATAIRE']['famille']);
+        self::assertSame('activite', $attributes['THEMATIQUE_ACTIVITE']['famille']);
+        self::assertSame('restaurant', $attributes['TYPE_RESTAURANT']['famille']);
+        self::assertSame('autre', $attributes[self::ATTRIBUTE_CODE]['famille']);
         // Les lignes en base sont poussées, désactivées comprises, avec les
         // seules traductions disponibles.
         self::assertArrayHasKey(self::ATTRIBUTE_CODE, $attributes);

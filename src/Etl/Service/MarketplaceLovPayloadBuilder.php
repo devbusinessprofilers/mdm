@@ -54,6 +54,7 @@ final readonly class MarketplaceLovPayloadBuilder
             ];
         }
         $translated = $this->translations->findAvailableDictionaryRows();
+        $families = $this->families();
         ksort($dictionary);
         $attributes = [];
         foreach ($dictionary as $attribute => $values) {
@@ -68,10 +69,39 @@ final readonly class MarketplaceLovPayloadBuilder
                     'translations' => $translated[$attribute][$code] ?? [],
                 ];
             }
-            $attributes[] = ['code' => $attribute, 'values' => $list];
+            $attributes[] = [
+                'code' => $attribute,
+                'famille' => $families[$attribute] ?? 'autre',
+                'values' => $list,
+            ];
         }
 
         return ['attributes' => $attributes];
+    }
+
+    /**
+     * Famille de chaque attribut, d'après le catalogue qui le porte — sert au
+     * rangement des listes dans l'admin marketplace. Les attributs partagés
+     * (TYPE_CUISINE, DISPO_JOUR_OUVERTURE…) sont rattachés au lieu, les
+     * attributs seulement en base restent « autre ».
+     *
+     * @return array<string, string>
+     */
+    private function families(): array
+    {
+        $families = [];
+        foreach (array_keys(LieuLovCatalog::allChoices()) as $attribute) {
+            $families[$attribute] ??= 'lieu';
+        }
+        foreach (array_keys(ActiviteLovCatalog::allChoices()) as $attribute) {
+            $families[$attribute] ??= 'activite';
+        }
+        foreach (RestaurantLovCatalog::attributes() as $attribute) {
+            $families[$attribute] ??= 'restaurant';
+        }
+        $families['TYPE_PRESTATAIRE'] ??= 'prestataire';
+
+        return $families;
     }
 
     /**
