@@ -42,33 +42,57 @@ initiale / resync manuelle).
   1. Garde de séquence (409 si périmée).
   2. Miroir intégral : upsert par code ; valeur absente du snapshot →
      `active=false`, **jamais de suppression**.
-  3. Projection des attributs mappés :
+  3. Projection des attributs mappés — **mapping complet du 2026-08-12**,
+     source cahier des charges (colonne « Table BDD » des classeurs
+     `lamp-PIM/Cahier des charges/*.xlsx`) et bible des attributs : les
+     anciennes listes marketplace étaient l'**union** des sous-listes PIM.
 
-     | Attribut PIM | Référentiel marketplace |
+     | Attribut(s) PIM | Référentiel marketplace |
      |---|---|
      | `GENERALE_TYPOLOGIE` | `TypeLieu` |
-     | `TA_THEMATIQUE` | `Theme` |
-     | `EQUIPEMENTS` | `Equipement` |
-     | `TYPE_PRESTATAIRE` | `TypePrestataire` (dictionnaire seul, relation non branchée) |
+     | `TA_THEMATIQUE` + `TA_CADRE_ENV` + `TA_AMBIANCE` | `Theme` |
+     | `EQUIPEMENTS` + `SERVICES` + `TECHNIQUE_REUNION` + `INSTALLATION` + `BIEN_ETRE` | `Equipement` |
+     | `THEMATIQUE_ACTIVITE` | `TypeActivite` |
+     | `OBJECTIF_SEMINAIRE` | `Objectif` |
+     | `LANGUE_PARLEE` | `Langue` (sans traductions Gedmo) |
+     | `TYPE_PRESTATAIRE` | `TypePrestataire` |
+
+     Les autres sous-listes (RSE, chaînes hôtelières, jours d'ouverture,
+     sous-thématiques d'activité, listes restaurant…) restent au miroir sans
+     projection (pas de référentiel front correspondant).
 
      Résolution : lookup par `pim_code`, sinon **adoption par libellé
      normalisé** d'une ligne legacy (reprise au go-live, pas de doublon),
      sinon création. Dès qu'une ligne porte un `pim_code`, le PIM en est
      propriétaire : nom, traductions i18n Gedmo et `is_published` suivent le
      dictionnaire.
-- **Relations produit ↔ référentiel** (`PimFicheUpsertService`, fiches de
-  type `lieu` uniquement) : `data.typologie` → `Lieu.typesLieu`,
-  `data.thematiques` → `Produit.themes`, `data.equipements` →
-  `Produit.equipements`. Règle des photos transposée : **clé absente → on ne
-  touche à rien ; clé présente → remplacement complet**. Code non résolu →
-  ignoré + warning (pousser le dictionnaire puis resynchroniser la fiche).
+- **Relations produit ↔ référentiel** (`PimFicheUpsertService`). Règle des
+  photos transposée : **aucune clé du groupe présente → on ne touche à
+  rien ; sinon remplacement complet par l'union des clés présentes**. Code
+  non résolu → ignoré + warning (pousser le dictionnaire puis resynchroniser
+  la fiche).
+  - Lieu : `typologie` → `Lieu.typesLieu` ; `thematiques ∪ cadres ∪
+    ambiances` → `Produit.themes` ; `equipements ∪ services ∪
+    techniqueReunion ∪ installations ∪ bienEtre` → `Produit.equipements`.
+  - Activité : `objectifs` → `Activite.objectifs` ; `langues` →
+    `Activite.langues` ; `thematiques` → `Activite.typeActivite`
+    (**première valeur = type principal**, relation mono).
+  - Prestataire : `prestations` → `Prestataire.typePrestataire`
+    (**première valeur**, mono — résout les prestataires détachés par la
+    purge à la prochaine resync).
+  - La règle « première valeur » est transitoire : voir
+    `docs/TODO-referentiels-multi-valeurs.md` (repo marketplace) pour le
+    chantier ManyToMany.
 
 ## Runbook go-live (ordre impératif)
 
 1. Migrations marketplace, déploiement des deux applis, force-recreate des
    workers PIM.
-2. `app:marketplace:sync --lov` — le dictionnaire d'abord (adoption des
-   lignes legacy équivalentes).
+2. `app:marketplace:sync --lov` — le dictionnaire d'abord. Avec le mapping
+   complet, l'adoption par libellé rattrapera la plupart des lignes legacy
+   (« Piscine intérieure », « Wi-fi »…) **avant** la purge : leurs relations
+   produit seront préservées (contrairement au local où la purge est passée
+   avant, les valeurs y sont recréées vides).
 3. Contrôle des adoptions, puis **purge du legacy** côté marketplace :
    `app:pim:purge-referentiels-legacy` (simulation par défaut, `--force`
    pour exécuter). Supprime toutes les lignes sans `pim_code`, leurs
@@ -115,15 +139,7 @@ Conséquences assumées :
 
 ## Points ouverts
 
-- Relation `TypePrestataire` non branchée : le PIM envoie `prestations[]`
-  (multi), la marketplace a un `ManyToOne` (mono) — à trancher avec le métier.
-  542 prestataires sont détachés de tout type depuis la purge.
-- Attributs non projetés (BIEN_ETRE, SERVICES, INSTALLATION, RSE…) : au
-  miroir seulement. Question métier toujours ouverte : l'`EQUIPEMENTS` du PIM
-  est un équipement de chambre alors que l'ancien référentiel équipements
-  ressemblait à `BIEN_ETRE` + `TECHNIQUE_REUNION` ; faut-il projeter
-  `BIEN_ETRE` (± `INSTALLATION`) vers `Equipement` et `TA_CADRE_ENV` vers
-  `Theme` ?
-- Verrouiller l'admin marketplace (EasyAdmin) sur ces référentiels : toute
-  modification locale serait écrasée au prochain snapshot du dictionnaire.
+- Types d'activité et de prestataire en multi-valeurs (règle transitoire
+  « première valeur » en place) : chantier décrit dans
+  `docs/TODO-referentiels-multi-valeurs.md` du repo marketplace.
 - Maîtrise des traiteurs (PIM vs import Salesforce `app:pr-import-produits`).
