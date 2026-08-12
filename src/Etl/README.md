@@ -1,7 +1,24 @@
 # ETL
 
-Contexte responsable des imports, exports, synchronisations Salesforce,
-webhooks et publications vers les systèmes externes.
+Contexte responsable des imports de fiches (fichiers CSV/XLSX et reprise du
+legacy) et de la diffusion vers la marketplace. Les exports, synchronisations
+Salesforce et webhooks sont des lots ultérieurs : rien de tel n'existe encore
+dans le module.
+
+## Import de fiches
+
+`FicheImportController` permet de déposer un fichier CSV ou XLSX ; chaque dépôt
+crée un `FicheImportJob` traité par lots de façon asynchrone
+(`StartFicheImport` puis `ProcessFicheImportBatch`), avec suivi d'avancement et
+détail des erreurs ligne par ligne. Les schémas de colonnes et la conversion
+des lignes viennent de `Pim/Import`. Après le dernier échec Messenger,
+`FicheImportFailureSubscriber` place le job en erreur.
+
+La reprise du legacy dispose de commandes dédiées, une par volet :
+`app:legacy:import-lieux`, `-restaurants`, `-activites`, `-services`,
+`-collaborateurs`, `-photos` et `-translations`. `LegacyFicheMapping` conserve
+la correspondance des identifiants historiques et `LegacyPhotoImport` l'état
+d'avancement des photos.
 
 ## Diffusion marketplace
 
@@ -24,7 +41,8 @@ applique les payloads reçus, le PIM décide de tout.
    resynchronisation (hooks dans le module Enrichment).
 5. `FicheMarketplaceSync` (table `etl_fiche_marketplace`) trace l'état
    (synced/failed/removed) et la dernière séquence (ULID, garde
-   anti-régression côté marketplace).
+   anti-régression côté marketplace). Après le dernier échec Messenger,
+   `MarketplaceSyncFailureSubscriber` y enregistre l'erreur.
 
 ### Sémantique
 
@@ -54,3 +72,6 @@ php bin/console app:marketplace:sync --all      # reprise initiale
 php bin/console app:marketplace:sync --fiche=01H…
 php bin/console app:marketplace:sync --failed   # rejoue les erreurs
 ```
+
+`--all` accepte `--batch` (100 par défaut, 1 à 1000) pour régler la taille des
+lots.

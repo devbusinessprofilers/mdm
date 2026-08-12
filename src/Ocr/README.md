@@ -7,8 +7,24 @@ lot de cinq pages.
 
 L'extraction est asynchrone sur le transport Messenger `enrichment`. Elle utilise
 le schéma typé de `FicheImportSchemaRegistry`, appelle Structured Extract avec les
-confiances et références, puis crée uniquement des suggestions. Aucune donnée
-n'est appliquée ou publiée automatiquement.
+confiances et références, puis crée uniquement des suggestions. Rien n'est
+appliqué sans arbitrage humain.
+
+## Revue et arbitrage
+
+Un validateur (`ROLE_BP_VALIDATOR`) revoit chaque suggestion depuis la fiche :
+la valeur proposée est affichée face à la valeur actuelle du champ, et peut
+être acceptée, corrigée avant acceptation, ou refusée. Les suggestions
+acceptées sont appliquées aux champs PIM par `OcrSuggestionApplier`, avec
+réindexation et recalcul de complétude ; chaque décision conserve son auteur et
+sa date.
+
+L'extraction suit les statuts `queued`, `processing`, `ready`,
+`partially_reviewed`, `reviewed` et `failed`. Les réponses des lots de pages
+sont fusionnées par `OcrExtractionConsolidator`, qui retient la meilleure
+confiance par champ. Une extraction en échec peut être relancée ;
+`OcrFailureSubscriber` capture les erreurs et planifie le nettoyage des
+fichiers Box orphelins.
 
 ## Configuration
 

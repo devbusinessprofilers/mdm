@@ -27,13 +27,13 @@ suppression.
 Le cycle nominal est :
 
 ```text
-en_cours -> en_attente_validation -> publiee -> archivee
+en_cours -> en_attente_validation -> validee -> publiee -> archivee
                     |-> rejet -> en_cours
 ```
 
 La soumission exécute les groupes de validation Draft et Submission. La
-publication, le rejet et l'archivage passent par `FicheWorkflowManager` et sont
-contrôlés par le module `Account`. Une mutation PIM effectuée par un validateur
+validation, la publication, le rejet et l'archivage passent par
+`FicheWorkflowManager` et sont contrôlés par le module `Account`. Une mutation PIM effectuée par un validateur
 conserve le statut et toutes les métadonnées du workflow ; la même mutation par
 un éditeur renvoie la fiche en cours. Une publication, ou la modification par
 un validateur d'une fiche publiée, planifie les traductions lorsqu'une source
@@ -65,7 +65,24 @@ traductions.
 `FicheSearchIndexer` construit `pim_fiche_search` après les changements utiles.
 `MariaDbSearchEngine` utilise la recherche FULLTEXT MariaDB, une priorité sur le
 code exact, des filtres par type/statut et une pagination par curseur. La route
-`/admin/recherche` interroge simultanément les quatre domaines opérationnels.
+`/recherche` interroge simultanément les quatre domaines opérationnels.
+`FicheDuplicateDetector` signale les fiches candidates au doublon.
+
+## Diffusion, relances et collaborateurs
+
+`FicheSiteDiffusion` relie chaque fiche à ses canaux de diffusion, administrés
+sous `/admin/sites-de-diffusion`. Ajouter un canal est une mise à jour
+technique : la fiche est touchée sans transition de workflow, et l'action de
+masse ne fait qu'ajouter des canaux.
+
+`FicheRelance` journalise en append-only les relances d'incomplétude envoyées
+aux collaborateurs, avec protection anti-spam. `FicheCollaborateur` porte les
+prestataires rattachés à une fiche ; leurs règles d'accès sont décrites dans le
+module `Account`.
+
+Le répertoire `Import/` fournit les schémas typés, le générateur de modèle et
+le traitement de lignes utilisés par les imports de fiches (module `Etl`) et
+par l'extraction documentaire (module `Ocr`).
 
 ## Complétude
 
@@ -90,4 +107,7 @@ plus aucune fiche en attente.
 - `Dam` : upload, traitement, publication et suppression des médias ;
 - `Enrichment` : traduction des fiches publiées et des LOV ;
 - `Account` : utilisateurs, JWT, affiliations et autorisations ;
-- `Audit` : historique append-only des modifications et transitions.
+- `Audit` : historique append-only des modifications et transitions ;
+- `Ocr` : suggestions d'extraction documentaire arbitrées depuis la fiche ;
+- `Etl` : imports de fiches et diffusion marketplace (planifiée à chaque
+  indexation).

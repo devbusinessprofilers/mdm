@@ -12,13 +12,17 @@ par responsabilité fonctionnelle.
 | `Pim` | Fiches, workflow, LOV, recherche, complétude, administration et API |
 | `Dam` | Originaux, rendus d'images, documents et stockage objet |
 | `Enrichment` | Traduction des fiches publiées et des LOV |
+| `Ocr` | Extraction documentaire Box et suggestions soumises à arbitrage |
 | `Account` | Comptes internes, invitations, JWT, affiliations et autorisations |
-| `Audit` | Historique append-only des modifications et transitions |
-| `Etl` | Imports, exports et synchronisations ; documentation non modifiée dans ce lot |
-| `Shared` | Outbox, contrats inter-modules et adaptateurs techniques communs |
+| `Audit` | Historique append-only des modifications et restauration de champs |
+| `Etl` | Imports de fiches (CSV/XLSX, legacy) et diffusion marketplace |
+| `Dashboard` | Tableaux de bord, qualité des données et journal des traitements |
+| `Shared` | Outbox, contrats inter-modules, supervision et adaptateurs communs |
 
-L'OCR, le tagging, le scraping, Google Business Profile et les autres fonctions
-d'IA ne sont pas livrés dans le module `Enrichment` actuel.
+`DataFixtures` fournit les jeux de démonstration et n'existe qu'en
+développement. Le tagging, le scraping, Google Business Profile et les autres
+fonctions d'IA ne sont pas livrés ; l'extraction documentaire OCR est portée
+par le module `Ocr` (Box, désactivée par défaut), distinct d'`Enrichment`.
 
 ## Dépendances
 
@@ -33,6 +37,9 @@ Account ---------> PIM <---------- Enrichment
                    Shared
 
 Audit observe les modifications Doctrine des domaines métier.
+Etl (imports entrants, diffusion marketplace sortante), Ocr
+(suggestions arbitrées) et Dashboard (lecture seule) gravitent
+autour du PIM.
 ```
 
 Ces flèches représentent les collaborations réelles, pas des couches totalement
@@ -86,8 +93,10 @@ requête HTTP/commande
 ```
 
 Les transports MariaDB V1 sont séparés : `pim`, `dam`, `etl`, `enrichment`,
-`completeness`, `mail` et `failed`. Les workers ne découvrent pas eux-mêmes du
-travail : ils consomment uniquement les messages déjà planifiés. Une ligne
+`completeness`, `marketplace`, `mail` et `failed`. Les messages récurrents
+(statistiques du tableau de bord) passent par les transports `scheduler_*`,
+consommés par le service `cron-scheduler`. Les workers ne découvrent pas
+eux-mêmes du travail : ils consomment uniquement les messages déjà planifiés. Une ligne
 outbox `published` confirme la remise au transport, pas la réussite du handler.
 
 Les handlers reçus sont transactionnels et idempotents grâce à l'ULID
@@ -133,7 +142,9 @@ d'images et documents explicitement publiés utilisent un bucket public.
 
 ## Sécurité
 
-- les routes `/admin` exigent au minimum `ROLE_BP_EDITOR` ;
+- les routes `/admin` sont réservées à `ROLE_ADMIN` ; les flux éditeur et
+  validateur vivent sous `/referentiel`, `/recherche` et `/dam`, contrôlés par
+  les rôles BP et les voters ;
 - les actions sensibles sont contrôlées par `FicheVoter` et les rôles BP ;
 - les API de sites externes configurées utilisent un JWT RS256 stateless ;
 - les mutations versionnées exigent `If-Match` ;

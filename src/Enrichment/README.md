@@ -57,6 +57,10 @@ change, elle devient obsolète et la nouvelle proposition automatique est
 conservée séparément pour validation. Les validateurs BP peuvent consulter,
 corriger et relancer les traductions depuis l'administration.
 
+Toute traduction devenue disponible — reçue de Google ou corrigée à la main —
+déclenche la resynchronisation de la fiche vers la marketplace via le module
+`Etl`.
+
 ## Composants principaux
 
 - `Service/FicheTranslationScheduler.php` et

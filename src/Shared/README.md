@@ -35,13 +35,37 @@ contrôler `processed_message`, les files et le transport `failed`.
 - `Service/PrivateObjectStorageInterface.php` et
   `PublicObjectStorageInterface.php` : stockage objet ;
 - `Service/OvhS3ObjectStorage.php` : adaptateur S3 compatible OVH ;
-- `Service/SearchEngineInterface.php` et `Search/` : recherche paginée ;
+- `Service/SearchEngineInterface.php` et `Search/` : recherche paginée,
+  `BooleanQueryFactory` transforme le texte libre en requête FULLTEXT
+  booléenne ;
 - `Entity/TimestampableTrait.php` : horodatage Doctrine commun ;
 - `Form/` et `Twig/` : composants d'interface transverses.
 
-La route publique `GET /health` expose uniquement l'identité de l'application
-et un statut `ok`. Elle ne constitue pas un diagnostic de la base, des buckets
-ou des workers.
+## Supervision et exploitation
+
+La route publique `GET /health` (`HealthReporter`) renvoie l'identité de
+l'application et un statut `ok`, `degraded` ou `down`, avec un test de
+connectivité de la base et l'état des files Messenger (messages en attente et
+en échec). Elle ne couvre ni les buckets ni l'activité réelle des workers.
+
+`Metrics/` expose `GET /metrics` au format Prometheus, protégé par jeton
+Bearer : durée des requêtes HTTP (les requêtes lentes et les erreurs 5xx sont
+journalisées) et temps de traitement des messages Messenger.
+
+`Alert/` envoie des alertes par email avec déduplication d'une heure par type
+et empreinte : échec définitif d'un message asynchrone
+(`WorkerFailureAlertSubscriber`) et dépassement de seuil des files en échec
+(`CheckFailedQueueHandler`, Messenger et outbox).
+
+Côté requêtes, `RequestIdListener` propage un ULID `X-Request-Id`,
+`RequestContextProcessor` l'ajoute à chaque ligne de log,
+`SecurityHeadersListener` pose les en-têtes de sécurité et `RateLimitListener`
+limite le trafic par JWT ou IP sur `/api/v1/` et les endpoints sensibles
+(réponse 429 avec `Retry-After`).
+
+En développement uniquement, `app:dev:database:clean` vide les tables en
+conservant les versions de migration et les listes de valeurs, et purge les
+médias des buckets.
 
 ## Règles de dépendance
 

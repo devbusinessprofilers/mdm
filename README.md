@@ -35,10 +35,10 @@ Symfony 7.4 + API Platform (Upsun, projet dédié)
 
 - Le MDM dispose de ressources distinctes de la Marketplace BP.
 - MariaDB stocke les données et les messages asynchrones en V1.
-- Les files PIM, DAM, ETL, Enrichment, Completeness et Mail restent séparées ; elles sont consommées par cinq workers (outbox, mail, pim, dam et batch pour etl/enrichment/completeness).
+- Les files PIM, DAM, ETL, Enrichment, Completeness, Marketplace et Mail restent séparées ; elles sont consommées par cinq workers (outbox, mail, pim, dam et batch pour etl/enrichment/completeness/marketplace), plus le service `cron-scheduler` pour les messages planifiés.
 - RabbitMQ, Redis et OpenSearch sont reportés en V2 jusqu'à ce que des mesures prouvent leur utilité.
 
-## 2. État actuel — 31 juillet 2026
+## 2. État actuel — 12 août 2026
 
 Légende : `[x]` terminé, `[~]` partiel, `[ ]` à faire.
 
@@ -58,13 +58,14 @@ Légende : `[x]` terminé, `[~]` partiel, `[ ]` à faire.
   validation livrés. L’autocomplétion géographique et la minicarte sont
   reportées au passage au front.
 - [ ] Traiteurs et Plateaux-repas : A NE PAS FAIRE POUR LE MOMENT
-- [~] Imports : import de fiches Lieu/Activité/Restaurant/Service depuis `/admin/import-fiches` (modèle XLSX par type — feuille Données + feuille Notice & LOV —, upload XLSX ou CSV ; upsert par code ; jobs asynchrones sur la file `etl` avec rapport d'erreurs ligne par ligne), LOV Prestataire CSV et commandes de contrôle disponibles ; formats Excel/XML/JSON, exports et synchronisations à faire
-- [~] Dashboards et qualité des données : supervision technique et complétude configurable globale/par canal livrées ; autres indicateurs métier à faire
-- [~] Traduction Google asynchrone des fiches et LOV et vues de suivi livrées ; OCR et enrichissement IA reportés au lot IA ultérieur
+- [~] Imports : import de fiches Lieu/Activité/Restaurant/Service depuis `/admin/import-fiches` (modèle XLSX par type — feuille Données + feuille Notice & LOV —, upload XLSX ou CSV ; upsert par code ; jobs asynchrones sur la file `etl` avec rapport d'erreurs ligne par ligne), commandes d'import legacy et LOV Prestataire CSV disponibles ; formats XML/JSON, exports et synchronisation Salesforce à faire
+- [x] Diffusion marketplace : push asynchrone des fiches publiées vers la Marketplace BP (snapshot idempotent, retrait à l'archivage, reprise par commande — voir `src/Etl/README.md`)
+- [~] Dashboards et qualité des données : supervision technique, complétude configurable globale/par canal, tableau de bord d'accueil, pages Qualité et Outils, snapshots planifiés et vue des traitements en échec livrés ; indicateurs Salesforce à faire
+- [~] Traduction Google asynchrone des fiches et LOV et vues de suivi livrées ; extraction documentaire des PDF livrée via Box (module `Ocr`, désactivée par défaut) ; le reste de l'enrichissement IA (tagging, génération de contenu) reporté au lot IA
 - [ ] Déploiement Upsun et stockage OVH de production
 
 La dernière vérification locale couvre les migrations MariaDB jusqu’à
-`Version20260803110000`, un schéma Doctrine synchronisé, 220 tests (1 011
+`Version20260811120000`, un schéma Doctrine synchronisé, 476 tests (3 223
 assertions), l’analyse PHPStan, les templates Twig et l’export OpenAPI. Les
 formulaires PIM sont construits avec les FormTypes Symfony et rendus par les
 helpers Twig ; aucun formulaire métier n’est écrit directement en HTML.
@@ -187,7 +188,8 @@ Toujours terminer une étape avec ses tests avant de commencer la suivante.
 
 Conserver `Fiche` comme tronc commun : identifiant ULID, type, code, libellé, statut, complétude, version et dates. Chaque domaine possède ensuite ses propres entités et tables.
 
-1. Finaliser le workflow `en_cours -> validee -> publiee -> archivee`.
+1. Finaliser le workflow
+   `en_cours -> en_attente_validation -> validee -> publiee -> archivee`.
 2. Ajouter les règles de transition et les droits de validation/publication.
 3. Calculer la complétude selon les champs obligatoires et conditionnels.
 4. Ajouter un audit en insertion seule : fiche, champ, ancienne valeur, nouvelle valeur, auteur et date.
@@ -322,10 +324,12 @@ Ajouter un cron de relance des fiches incomplètes et les alertes d'exploitation
 
 ### Étape 8 — Livrer la traduction ; reporter l'OCR au lot IA
 
-La traduction constitue le socle livré du lot Enrichment. L'OCR, l'extraction
-documentaire, la génération de contenu et les autres fonctions d'IA ne font pas
-partie du lot actuel : ils sont reportés ensemble dans un lot IA ultérieur,
-après un cadrage métier, juridique, budgétaire et technique distinct.
+La traduction constitue le socle livré du lot Enrichment. L'extraction
+documentaire des PDF est désormais livrée via Box Structured Extract dans le
+module `Ocr` (désactivée par défaut, voir `src/Ocr/README.md`). La génération
+de contenu et les autres fonctions d'IA restent reportées à un lot IA
+ultérieur, après un cadrage métier, juridique, budgétaire et technique
+distinct.
 
 #### 8.1 Cadrer les données et les usages
 
@@ -404,9 +408,10 @@ après un cadrage métier, juridique, budgétaire et technique distinct.
 
 #### 8.5 Livrer l'OCR et l'extraction documentaire
 
-> **Statut : reporté au lot IA.** Cette étape n'est pas à implémenter dans le
-> lot traduction actuel. Le plan ci-dessous est conservé comme cadrage de la
-> future phase IA.
+> **Statut : livré en V1 pour les PDF via Box Structured Extract (module
+> `Ocr`).** La mise en œuvre effective est documentée dans
+> `src/Ocr/README.md` ; le plan ci-dessous est conservé comme cadrage pour
+> l'élargissement futur (images scannées, extraction native Word/Excel).
 
 ##### 8.5.1 Comprendre ce que fait l'OCR
 
@@ -624,8 +629,8 @@ charges. Légende : **Oui** = à faire ou à conserver, **Non** = écarté,
 
 ### Cycle de vie des fiches
 
-- **Oui** — Workflow de statuts `en_cours -> validee -> publiee -> archivee` (déjà livré, à conserver).
-- **Non** — Workflow de validation multi-niveaux (CDC §4) : le workflow simple à quatre statuts suffit.
+- **Oui** — Workflow de statuts `en_cours -> en_attente_validation -> validee -> publiee -> archivee` (déjà livré, à conserver).
+- **Non** — Workflow de validation multi-niveaux (CDC §4) : le workflow simple à cinq statuts suffit.
 - **Non** — Statuts de publication distincts `non publié / publié` par canal (CDC §6.3).
 - **Oui** — Validation bloquée sous le nombre minimum de photos (4 pour Lieux, 1 pour les autres).
 - **Oui** — Alerte non bloquante de doublon d'adresse à la création (Lieux et Restaurants).
@@ -664,16 +669,19 @@ charges. Légende : **Oui** = à faire ou à conserver, **Non** = écarté,
   valeur sans modifier son code.
 - **Oui** — Vue des traductions depuis chaque fiche, consultation par les
   éditeurs autorisés et correction manuelle par les validateurs BP.
-- **Reporté au lot IA** — Extraction documentaire OCR (image et PDF scanné) et
-  extraction native des PDF textuels, fichiers Excel et Word (CDC §10.2).
+- **Livré en V1 (Box)** — Extraction documentaire des PDF via Box Structured
+  Extract, en suggestions arbitrées par un validateur (module `Ocr`, feature
+  flag). L'OCR des images scannées et l'extraction native Excel/Word restent à
+  faire (CDC §10.2).
 - **Oui** — Les traductions Google sont disponibles automatiquement. Une
   correction manuelle n'est jamais écrasée et devient `obsolete` si sa source
   française change.
 
 ### IA — phase ultérieure
 
-- **Reporté** — OCR des images et PDF scannés, extraction native des documents
-  textuels et création de propositions PIM soumises à validation humaine.
+- **Livré en partie** — l'extraction des PDF et les propositions PIM soumises
+  à validation humaine sont livrées (module `Ocr`) ; l'OCR des images scannées
+  et l'extraction native Word/Excel restent reportés.
 - **Reporté** — Création automatique de fiche avec attribution de la visibilité géographique selon l'adresse (CDC §10.1).
 - **Reporté** — Génération et reformulation de textes avec pictogramme « provisoire » et validation humaine obligatoire (CDC §10.2).
 - **Reporté** — Préremplissage intelligent des salles, chambres, couverts et équipements à partir des extractions documentaires (CDC §10.2).
@@ -686,11 +694,17 @@ charges. Légende : **Oui** = à faire ou à conserver, **Non** = écarté,
 
 ## 9. Documentation d'exploitation
 
+- [Architecture des modules](ARCHITECTURE.md)
 - [Workers et files Symfony Messenger](docs/runbooks/messenger.md)
 - [Module PIM](src/Pim/README.md)
 - [Module DAM](src/Dam/README.md)
 - [Module ETL](src/Etl/README.md)
 - [Module Enrichment](src/Enrichment/README.md)
+- [Module OCR](src/Ocr/README.md)
 - [Module Account](src/Account/README.md)
+- [Module Audit](src/Audit/README.md)
+- [Module Dashboard](src/Dashboard/README.md)
+- [Module Shared](src/Shared/README.md)
+- [Fixtures de démonstration](src/DataFixtures/README.md)
 - [Import legacy — mappings CSV production](docs/import-legacy.md)
 - [Gestion et rotation des secrets](docs/SECRETS.md)
