@@ -11,7 +11,11 @@ use App\Enrichment\Enum\TranslationStatus;
 use App\Enrichment\Repository\FicheTranslationRepository;
 use App\Pim\Entity\Activite\Activite;
 use App\Pim\Entity\Fiche;
+use App\Pim\Entity\Lieu\AccesLieu;
 use App\Pim\Entity\Lieu\Lieu;
+use App\Pim\Entity\Lieu\LieuAdministratif;
+use App\Pim\Entity\Lieu\LieuTarification;
+use App\Pim\Entity\Lieu\PeriodeFermeture;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Entity\Service\ServiceEvenementiel;
@@ -139,10 +143,32 @@ final readonly class MarketplaceFichePayloadBuilder
                 $lieu->atout4(),
                 $lieu->atout5(),
             ], static fn (?string $v): bool => null !== $v && '' !== trim($v))),
+            'typologie' => $lieu->generaleTypologie(),
+            'chainesGroupeHotelier' => $lieu->generaleChainesGroupeHot(),
+            'etablissementRp' => $lieu->generaleEtabRp(),
+            'evenementsPredilection' => $lieu->evenementsPredilection(),
             'gamme' => $lieu->generaleGammeLibelle(),
+            'gammeCode' => $lieu->generaleGamme(),
+            'miceStatut' => $lieu->miceStatut(),
+            'sitesPremium' => $lieu->sitePremium(),
+            'afficherContact' => $lieu->afficherContact(),
             'siteWeb' => $lieu->generaleWebsiteUrl(),
             'youtube' => $lieu->generaleYoutube(),
             'privatisable' => $lieu->dispoLieuPrivatisable(),
+            'joursOuverture' => $lieu->joursOuverture(),
+            'joursOuvertureDetails' => $lieu->dispoJourOuverture(),
+            'horaires' => [
+                'ouverture' => self::horaire($lieu->dispoHeureOuvertureHeure(), $lieu->dispoHeureOuvertureMinutes()),
+                'fermeture' => self::horaire($lieu->dispoHeureFermetureHeure(), $lieu->dispoHeureFermetureMinutes()),
+            ],
+            'periodesFermeture' => array_values(array_map(static fn (PeriodeFermeture $periode): array => [
+                'nom' => $periode->nom(),
+                'dateDebut' => $periode->dateDebut()?->format('Y-m-d'),
+                'dateFin' => $periode->dateFin()?->format('Y-m-d'),
+            ], $lieu->periodesFermeture()->toArray())),
+            'thematiques' => $lieu->taThematique(),
+            'cadres' => $lieu->taCadreEnv(),
+            'ambiances' => $lieu->taAmbiance(),
             'pmr' => [
                 'acces' => $lieu->pmrAcces(),
                 'details' => $lieu->pmrDetails(),
@@ -155,6 +181,12 @@ final readonly class MarketplaceFichePayloadBuilder
                 'capaciteTotale' => $lieu->chambreCapaciteTotale(),
                 'description' => $lieu->chambreDescGenerale(),
             ],
+            'equipements' => $lieu->equipements(),
+            'services' => $lieu->services(),
+            'techniqueReunion' => $lieu->techniqueReunion(),
+            'installations' => $lieu->installation(),
+            'bienEtre' => $lieu->bienEtre(),
+            'modesPaiementCarte' => $lieu->modePaiementCarteListe(),
             'sallesReunion' => !$lieu->salleReunionExist() ? null : [
                 'total' => $lieu->salleReunionNbTotal(),
                 'capaciteMaxCocktail' => $lieu->salleReunionCapaciteMaxCocktail(),
@@ -170,8 +202,37 @@ final readonly class MarketplaceFichePayloadBuilder
                 'capaciteDebout' => $lieu->restaurantCapaciteDebout(),
                 'capaciteAssis' => $lieu->restaurantCapaciteAssis(),
                 'privatisable' => $lieu->restaurantPrivatisable(),
+                'soireeDansante' => $lieu->restaurantSoireeDansante(),
+                'cocktailDinatoire' => $lieu->restaurantCocktailDinatoire(),
+                'traiteurSurPlace' => $lieu->restaurantTraiteurSurPlace(),
+                'interventionTraiteurExterne' => $lieu->restaurantInterventionTraiteurExterne(),
+                'traiteurExterneClient' => $lieu->restaurantTrateurExterneClient(),
+                'heureInterruptionMusique' => $lieu->restaurantHeureInterruptionMusique(),
+                'typesCuisine' => $lieu->typeCuisine(),
+                'servicesRestauration' => $lieu->serviceRestauration(),
             ],
             'rse' => $lieu->rseDescGenerale(),
+            'achatResponsable' => $lieu->achatResponsable(),
+            'impactEnvironnemental' => $lieu->impactEnv(),
+            'impactSocial' => $lieu->impactSocial(),
+            'volumeAchatEsatStpa' => $lieu->volumeAchatCatEsatStpa(),
+            'mobilite' => $lieu->mobilite(),
+            'certifications' => $lieu->certification(),
+            'loisirsInternes' => $lieu->loisirInterne(),
+            'loisirsExternes' => [
+                'prestataires' => $lieu->loisirExterneNomPresta(),
+                'activites' => $lieu->loisirExterneNomActivite(),
+            ],
+            'acces' => array_values(array_map(static fn (AccesLieu $acces): array => [
+                'type' => $acces->type()->value,
+                'nom' => $acces->nom(),
+                'distanceKilometres' => $acces->distanceKilometres(),
+                'dureeMinutes' => $acces->dureeMinutes(),
+                'modeTransport' => $acces->modeTransport(),
+                'position' => $acces->position(),
+            ], $lieu->acces()->toArray())),
+            'tarifs' => self::tarifs($lieu->tarification()),
+            'administratif' => self::administratif($lieu->administratif()),
             'salles' => array_map(static fn ($salle): array => [
                 'nom' => $salle->nom(),
                 'superficie' => $salle->superficie(),
@@ -296,6 +357,115 @@ final readonly class MarketplaceFichePayloadBuilder
             ],
             'demarcheRse' => $service->demarcheRse(),
             'prestataireEsat' => $service->prestataireEsat(),
+        ];
+    }
+
+    private static function horaire(?int $heure, ?int $minutes): ?string
+    {
+        if (null === $heure) {
+            return null;
+        }
+
+        return sprintf('%02d:%02d', $heure, $minutes ?? 0);
+    }
+
+    /**
+     * Montants en chaînes décimales Doctrine (DECIMAL 12,2), transmis tels
+     * quels pour éviter toute perte de précision en flottant.
+     *
+     * @return array<string, array<string, ?string>>
+     */
+    private static function tarifs(LieuTarification $tarification): array
+    {
+        return [
+            'seminaire' => [
+                'demiJourneeEtude' => $tarification->seminaireJourneeDemiJourneeEtude(),
+                'journeeEtude' => $tarification->seminaireJourneeJourneeEtude(),
+                'demiJourneeEtudeCocktail' => $tarification->seminaireJourneeDemiJourneeEtudeCocktail(),
+                'journeeEtudeCocktail' => $tarification->seminaireJourneeJourneeEtudeCocktail(),
+                'nuiteeSemiResidentiel' => $tarification->seminaireNuiteeSemiResidentiel(),
+                'nuiteeResidentiel' => $tarification->seminaireNuiteeResidentiel(),
+                'nuiteeResidentielAllInclusive' => $tarification->seminaireNuiteeResidentielAllInclusive(),
+            ],
+            'locationSalle' => [
+                'demiJournee' => $tarification->locSalleSeulDemiJournee(),
+                'journee' => $tarification->locSalleSeulJournee(),
+                'soiree' => $tarification->locSalleSeulSoiree(),
+            ],
+            'cocktailsSoirees' => [
+                'cocktailDejeunatoire10Pers' => $tarification->csCocktailDejeunatoire10Pers(),
+                'cocktailDinatoire' => $tarification->csCocktailDinatoire(),
+                'soireeDansante' => $tarification->csSoireeDansante(),
+                'soireeDinerAssis' => $tarification->csSoireeDinerAssis(),
+            ],
+            'restauration' => [
+                'dejeunerAssis' => $tarification->tarifRestDejeunerAssis(),
+                'dinerAssis' => $tarification->tarifRestDinerAssis(),
+                'optionVin' => $tarification->tarifRestOptVin(),
+                'optionAlcool' => $tarification->tarifRestOptAlcool(),
+                'forfaitPersonnalise' => $tarification->tarifRestForfaitPersonalise(),
+            ],
+            'hebergementGroupe' => [
+                'chambreSingle' => $tarification->hebergGroupTarifChambreSingle(),
+                'chambreTwin' => $tarification->hebergGroupTarifChambreTwin(),
+                'chambreDouble' => $tarification->hebergGroupTarifChambreDouble(),
+            ],
+        ];
+    }
+
+    /** @return array<string, array<string, mixed>> */
+    private static function administratif(LieuAdministratif $administratif): array
+    {
+        return [
+            'infoLegale' => [
+                'nom' => $administratif->infoLegaleNom(),
+                'formeJuridique' => $administratif->infoLegaleFormeJuridique(),
+                'ruePostal' => $administratif->infoLegaleRuePostal(),
+                'adresse2' => $administratif->infoLegaleAdresse2(),
+                'codePostal' => $administratif->infoLegaleCodePostal(),
+                'ville' => $administratif->infoLegaleVille(),
+                'pays' => $administratif->inforLegalePays(),
+                'siret' => $administratif->infoLegaleSiret(),
+                'numTva' => $administratif->infoLegaleNumTva(),
+                'assujettiTva' => $administratif->infoLegaleAssujettiTva(),
+                'tva' => $administratif->infoLegaleTva(),
+                'typeProcedureJudiciaire' => $administratif->infoLegaleTypeDeProcedureJudiciaire(),
+            ],
+            'facturation' => [
+                'nom' => $administratif->adresseFacturationNom(),
+                'ruePostal' => $administratif->adresseFacturationRuePostal(),
+                'codePostal' => $administratif->adresseFacturationCodePostal(),
+                'ville' => $administratif->adresseFacturationVille(),
+                'pays' => $administratif->adresseFacturationPays(),
+                'numTva' => $administratif->adresseFacturationNumTva(),
+                'contact' => [
+                    'nom' => $administratif->contactFacturationNom(),
+                    'prenom' => $administratif->contactFacturationPrenom(),
+                    'email' => $administratif->contactFacturationEmail(),
+                    'telephone' => $administratif->contactFacturationTelephone(),
+                ],
+            ],
+            'paiement' => [
+                'bic' => $administratif->modePaiementBic(),
+                'iban' => $administratif->modePaiementIban(),
+                'acceptDeductionCom' => $administratif->modePaiementAcceptDeductionCom(),
+                'affacturage' => $administratif->modePaiementAffacturage(),
+                'affacturageBic' => $administratif->affacturageBic(),
+                'affacturageIban' => $administratif->affacturageIban(),
+                'condPaieAccSignature' => $administratif->condPaieAccSignature(),
+                'condPaieAnnSignature' => $administratif->condPaieAnnSignature(),
+                'commissionApplicable' => $administratif->commissionApplicable(),
+                'datePaiementSold' => $administratif->datePaiementSold(),
+            ],
+            'convention' => [
+                'signeeLe' => $administratif->convPartSigneeLe(),
+                'taux' => $administratif->convPartTaux(),
+                'signataire' => [
+                    'email' => $administratif->signataireEmail(),
+                    'prenom' => $administratif->signatairePrenom(),
+                    'nom' => $administratif->signataireNom(),
+                ],
+            ],
         ];
     }
 

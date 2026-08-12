@@ -17,11 +17,14 @@ use App\Etl\Service\MarketplaceSyncScheduler;
 use App\Enrichment\Entity\FicheTranslation;
 use App\Enrichment\Enum\SupportedLocale;
 use App\Pim\Entity\Fiche;
+use App\Pim\Entity\Lieu\AccesLieu;
 use App\Pim\Entity\Lieu\Lieu;
+use App\Pim\Entity\Lieu\PeriodeFermeture;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Entity\Localisation;
 use App\Pim\Entity\SiteDiffusion;
 use App\Pim\Enum\NatureRessource;
+use App\Pim\Enum\TypeAccesLieu;
 use App\Pim\Repository\SiteDiffusionRepository;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
@@ -75,6 +78,17 @@ final class SyncFicheMarketplaceHandlerTest extends KernelTestCase
         self::assertSame('lieu', $payload['type']);
         self::assertSame('Château des tests', $payload['data']['nom']);
         self::assertSame('Paris', $payload['data']['adresse']['ville']);
+        self::assertSame(['GENERALE_TYPOLOGIE_3'], $payload['data']['typologie']);
+        self::assertSame('08:30', $payload['data']['horaires']['ouverture']);
+        self::assertNull($payload['data']['horaires']['fermeture']);
+        self::assertSame('120.50', $payload['data']['tarifs']['seminaire']['journeeEtude']);
+        self::assertSame('12345678900012', $payload['data']['administratif']['infoLegale']['siret']);
+        self::assertSame('gare', $payload['data']['acces'][0]['type']);
+        self::assertSame('Gare de Lyon', $payload['data']['acces'][0]['nom']);
+        self::assertSame('2.50', $payload['data']['acces'][0]['distanceKilometres']);
+        self::assertSame('Fermeture annuelle', $payload['data']['periodesFermeture'][0]['nom']);
+        self::assertSame('2026-08-01', $payload['data']['periodesFermeture'][0]['dateDebut']);
+        self::assertSame('2026-08-15', $payload['data']['periodesFermeture'][0]['dateFin']);
         self::assertSame('English description', $payload['translations']['en']['description']);
         self::assertSame([], $payload['photos']);
         self::assertNotEmpty($payload['sequence']);
@@ -174,6 +188,21 @@ final class SyncFicheMarketplaceHandlerTest extends KernelTestCase
         $localisation = new Localisation();
         $localisation->changeVille('Paris');
         $lieu->changeLocalisation($localisation);
+        $lieu->changeGeneraleTypologie(['GENERALE_TYPOLOGIE_3']);
+        $lieu->changeDispoHeureOuvertureHeure(8);
+        $lieu->changeDispoHeureOuvertureMinutes(30);
+        $lieu->tarification()->changeSeminaireJourneeJourneeEtude('120.50');
+        $lieu->administratif()->changeInfoLegaleSiret('12345678900012');
+        $acces = new AccesLieu();
+        $acces->changeType(TypeAccesLieu::Gare);
+        $acces->changeNom('Gare de Lyon');
+        $acces->changeDistanceKilometres('2.50');
+        $lieu->addAcces($acces);
+        $periode = new PeriodeFermeture();
+        $periode->changeNom('Fermeture annuelle');
+        $periode->changeDateDebut(new \DateTimeImmutable('2026-08-01'));
+        $periode->changeDateFin(new \DateTimeImmutable('2026-08-15'));
+        $lieu->addPeriodeFermeture($periode);
         $fiche = $lieu->fiche();
         $fiche->replaceSiteDiffusion([$this->site]);
         $fiche->publishForImport();
@@ -213,7 +242,10 @@ final class SyncFicheMarketplaceHandlerTest extends KernelTestCase
                 'enrichment_fiche_translation',
                 'etl_fiche_marketplace',
                 'pim_fiche_site_diffusion',
+                'pim_fiche_attribute_value',
                 'pim_ressource_lieu',
+                'pim_acces_lieu',
+                'pim_periode_fermeture',
                 'pim_lieu_administratif',
                 'pim_lieu_tarification',
                 'pim_lieu',
