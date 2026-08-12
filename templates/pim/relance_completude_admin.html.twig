@@ -1,0 +1,85 @@
+{% extends 'mdm/base.html.twig' %}
+
+{# Dashboard des relances de complétude : le lot est préparé le lundi à 8h
+   (ou via « Relancer l'analyse ») puis envoyé à 14h si l'envoi automatique
+   est actif. Entre les deux, chaque ligne peut être exclue. #}
+
+{% block title %}Relances de complétude{% endblock %}
+
+{% block body %}
+<main class="page">
+    <header class="page-header">
+        <div class="page-header-copy">
+            <p class="page-kicker">Administration</p>
+            <h1>Relances de complétude</h1>
+            <p class="page-description">
+                Chaque lundi à 8h, un lot de relances est préparé pour les fiches sous {{ seuil_rappel }} % de complétude.
+                L'envoi aux collaborateurs a lieu à 14h si l'envoi automatique est actif : d'ici là, vérifiez la liste et excluez les lignes à ne pas relancer.
+            </p>
+        </div>
+    </header>
+
+    <section class="card">
+        <h2 class="card-title">Envoi automatique</h2>
+        <p>
+            État :
+            {% if envoi_auto_actif %}
+                <span class="badge badge-success">Actif</span> — le lot planifié partira lundi à 14h.
+            {% else %}
+                <span class="badge badge-danger">Désactivé</span> — aucun mail ne part sans « Envoyer maintenant » ; le lot en attente sera remplacé par la préparation du lundi suivant.
+            {% endif %}
+        </p>
+        {{ form(toggle_form) }}
+    </section>
+
+    <section class="card">
+        <h2 class="card-title">Lot en cours</h2>
+        <div class="dashboard-actions">
+            {{ form(analyse_form) }}
+            {{ form(envoi_form) }}
+        </div>
+        <div class="table-shell"><div class="table-scroll"><table class="data-table">
+            <thead><tr><th>Fiche</th><th>Complétude</th><th>Destinataires</th><th>Préparé le</th><th>Statut</th><th>Motif</th><th></th></tr></thead>
+            <tbody>
+            {% for ligne in lignes %}
+                {% set planifiee = ligne.planifiee %}
+                <tr>
+                    <td><a class="text-link" href="{{ ligne.fiche_url }}">{{ planifiee.fiche.label ?: 'Fiche ' ~ planifiee.fiche.code }}</a></td>
+                    <td>{{ planifiee.completenessAtPreparation }} %</td>
+                    <td>{{ planifiee.recipientEmails|join(', ') }}</td>
+                    <td><time datetime="{{ planifiee.preparedAt|date('c') }}">{{ planifiee.preparedAt|date('d/m/Y H:i') }}</time></td>
+                    <td><span class="badge {{ planifiee.statut.badgeClass }}">{{ planifiee.statut.label }}</span></td>
+                    <td>{{ planifiee.motif ?? '—' }}</td>
+                    <td>
+                        {% if ligne.exclure_form %}
+                            {{ form(ligne.exclure_form) }}
+                        {% endif %}
+                    </td>
+                </tr>
+            {% else %}
+                <tr><td class="empty-state" colspan="7">Aucun lot préparé. Utilisez « Relancer l'analyse » pour en constituer un.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table></div></div>
+    </section>
+
+    <section class="card">
+        <h2 class="card-title">Historique des envois</h2>
+        <div class="table-shell"><div class="table-scroll"><table class="data-table">
+            <thead><tr><th>Envoyé le</th><th>Fiche</th><th>Complétude à l'envoi</th><th>Destinataires</th></tr></thead>
+            <tbody>
+            {% for relance in historique %}
+                <tr>
+                    <td><time datetime="{{ relance.sentAt|date('c') }}">{{ relance.sentAt|date('d/m/Y H:i') }}</time></td>
+                    <td>{{ relance.fiche.label ?: 'Fiche ' ~ relance.fiche.code }}</td>
+                    <td>{{ relance.completenessAtSend }} %</td>
+                    <td>{{ relance.recipientEmails|join(', ') }}</td>
+                </tr>
+            {% else %}
+                <tr><td class="empty-state" colspan="4">Aucune relance envoyée pour le moment.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table></div></div>
+    </section>
+</main>
+{% endblock %}

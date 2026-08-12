@@ -23,13 +23,13 @@ final class FicheRelanceRepository extends ServiceEntityRepository
      * Fiches sous le seuil de complétude, non archivées, avec au moins un
      * collaborateur destinataire actif et sans relance depuis le cooldown.
      *
-     * @return list<string> identifiants de fiches (ULID base32)
+     * @return list<array{id: string, completeness: int}> identifiants de fiches (ULID base32) et score global
      */
-    public function findFicheIdsNeedingReminder(int $threshold, \DateTimeImmutable $cooldownDate): array
+    public function findFichesNeedingReminder(int $threshold, \DateTimeImmutable $cooldownDate): array
     {
-        /** @var list<string> $binaryIds */
-        $binaryIds = $this->getEntityManager()->getConnection()->fetchFirstColumn(
-            'SELECT f.id FROM pim_fiche f
+        /** @var list<array{id: string, completeness: int|string}> $rows */
+        $rows = $this->getEntityManager()->getConnection()->fetchAllAssociative(
+            'SELECT f.id, detail.completeness_global AS completeness FROM pim_fiche f
              JOIN (
                  SELECT fiche_id, completeness_global FROM pim_lieu
                  UNION ALL SELECT fiche_id, completeness_global FROM pim_activite
@@ -56,7 +56,20 @@ final class FicheRelanceRepository extends ServiceEntityRepository
             ],
         );
 
-        return array_map(static fn (string $id): string => (string) Ulid::fromBinary($id), $binaryIds);
+        return array_map(static fn (array $row): array => [
+            'id' => (string) Ulid::fromBinary($row['id']),
+            'completeness' => (int) $row['completeness'],
+        ], $rows);
+    }
+
+    /**
+     * Dernières relances envoyées, pour la section historique du dashboard.
+     *
+     * @return list<FicheRelance>
+     */
+    public function dernieres(int $max = 50): array
+    {
+        return $this->findBy([], ['sentAt' => 'DESC', 'id' => 'DESC'], $max);
     }
 
     public function lastSentAt(Fiche $fiche): ?\DateTimeImmutable

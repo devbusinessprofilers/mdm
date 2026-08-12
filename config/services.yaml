@@ -31,6 +31,7 @@ parameters:
     env(DAM_PHASH_DISTANCE_THRESHOLD): '8'
     env(COMPLETENESS_REMINDER_THRESHOLD): '60'
     env(COMPLETENESS_REMINDER_COOLDOWN_DAYS): '30'
+    env(COMPLETENESS_REMINDER_ENABLED): '1'
     env(RECHERCHE_ENTREPRISES_ENDPOINT): 'https://recherche-entreprises.api.gouv.fr'
     env(MARKETPLACE_SYNC_API_URL): ''
     env(MARKETPLACE_SYNC_API_LOGIN): ''
@@ -196,6 +197,7 @@ services:
                 alerte.seuil_file_echec: '%env(ALERT_FAILED_QUEUE_THRESHOLD)%'
                 box.ocr_active: '%env(BOX_OCR_ENABLED)%'
                 completude.delai_rappel_jours: '%env(COMPLETENESS_REMINDER_COOLDOWN_DAYS)%'
+                completude.rappel_auto_actif: '%env(COMPLETENESS_REMINDER_ENABLED)%'
                 completude.seuil_rappel: '%env(COMPLETENESS_REMINDER_THRESHOLD)%'
                 dam.seuil_distance_phash: '%env(DAM_PHASH_DISTANCE_THRESHOLD)%'
 

@@ -3,6 +3,7 @@
 namespace App;
 
 use App\Dam\Message\ScanDamAnomalies;
+use App\Pim\Message\EnvoyerRelancesPlanifiees;
 use App\Pim\Message\RemindIncompleteFiches;
 use App\Shared\Alert\Message\CheckFailedQueue;
 use Symfony\Component\Console\Messenger\RunCommandMessage;
@@ -33,9 +34,12 @@ class Schedule implements ScheduleProviderInterface
             // dans le consumer cron du scheduler.
             ->add(RecurringMessage::every('1 hour', new RedispatchMessage(new ScanDamAnomalies(), 'dam')))
 
-            // Relances hebdomadaires des fiches incomplètes, exécutées par le
-            // worker pim (le fan-out dispatch ensuite un email par fiche).
+            // Relances hebdomadaires des fiches incomplètes, en deux temps
+            // exécutés par le worker pim : préparation du lot à 8h (vérifiable
+            // dans /admin/relances-completude), envoi des lignes restantes à
+            // 14h si l'envoi automatique est actif.
             ->add(RecurringMessage::cron('0 8 * * 1', new RedispatchMessage(new RemindIncompleteFiches(), 'pim'), new \DateTimeZone('Europe/Paris')))
+            ->add(RecurringMessage::cron('0 14 * * 1', new RedispatchMessage(new EnvoyerRelancesPlanifiees(), 'pim'), new \DateTimeZone('Europe/Paris')))
 
             // Purges quotidiennes, exécutées directement par le consumer cron
             // du scheduler (quelques DELETE bornés) : sans elles, l'outbox et
