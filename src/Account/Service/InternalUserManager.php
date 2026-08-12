@@ -11,6 +11,7 @@ use App\Account\Repository\AccountInvitationRepository;
 use App\Account\Repository\PasswordResetRequestRepository;
 use App\Account\Repository\UserRepository;
 use App\Shared\Outbox\OutboxPublisherInterface;
+use App\Shared\Service\ParametreProviderInterface;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
@@ -24,6 +25,7 @@ final readonly class InternalUserManager
         private PasswordResetManager $passwordResetManager,
         private EntityManagerInterface $entityManager,
         private OutboxPublisherInterface $outbox,
+        private ParametreProviderInterface $parametres,
         private LoggerInterface $logger,
     ) {}
 
@@ -32,7 +34,7 @@ final readonly class InternalUserManager
         if ($this->users->findOneByEmail($email) instanceof User) { throw new \DomainException('Un compte existe déjà pour cette adresse.'); }
         $user = new User($email, [$role]);
         $user->deactivate();
-        $invitation = new AccountInvitation($user);
+        $invitation = new AccountInvitation($user, $this->parametres->int('compte.invitation_validite_heures'));
         $this->entityManager->persist($user);
         $this->entityManager->persist($invitation);
         $this->outbox->enqueue(new InternalUserInvited($invitation->id()));
@@ -64,7 +66,7 @@ final readonly class InternalUserManager
             $this->entityManager->lock($user, LockMode::PESSIMISTIC_WRITE);
             $this->invitations->invalidateUsableFor($user);
             $this->passwordResets->invalidateUsableFor($user);
-            $invitation = new AccountInvitation($user);
+            $invitation = new AccountInvitation($user, $this->parametres->int('compte.invitation_validite_heures'));
             $this->entityManager->persist($invitation);
             $this->outbox->enqueue(new InternalUserInvited($invitation->id()));
         });

@@ -8,12 +8,13 @@ use App\Pim\Entity\Fiche;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Enum\NatureRessource;
 use App\Pim\Enum\TypeFiche;
+use App\Pim\Service\PhotoObligations;
 
 /**
- * Obligations photos de la diffusion, alignées sur les validateurs de
- * soumission (Valid{Lieu,Restaurant,Activite,ServiceEvenementiel}Validator) :
- * au moins le minimum de photos du type et une photo principale. Une fiche qui
- * ne les respecte plus ne doit plus être servie : elle est dépubliée de la
+ * Obligations photos de la diffusion, mêmes seuils que la soumission
+ * (PhotoObligations, surchargeable dans /admin/parametres) : au moins le
+ * minimum de photos du type et une photo principale. Une fiche qui ne les
+ * respecte plus ne doit plus être servie : elle est dépubliée de la
  * marketplace jusqu'à sa republication PIM.
  *
  * Transition legacy : tant que le PIM ne possède aucune photo de la fiche
@@ -22,14 +23,18 @@ use App\Pim\Enum\TypeFiche;
  * `appliesTo()`. Côté marketplace, la même distinction se fait sur les
  * compteurs de photos PIM (`removed + remaining`).
  */
-final class MarketplacePhotoPolicy
+final readonly class MarketplacePhotoPolicy
 {
     /** Usage métier de la photo principale exigée à la soumission. */
     private const USAGE_PRINCIPALE = 'PHOTO_PRINCIPALE';
 
+    public function __construct(private PhotoObligations $obligations)
+    {
+    }
+
     public function minimumFor(TypeFiche $type): int
     {
-        return TypeFiche::Lieu === $type ? 4 : 1;
+        return $this->obligations->minimum($type);
     }
 
     /** Le PIM possède-t-il l'imagerie de la fiche (au moins une photo) ? */

@@ -7,6 +7,7 @@ namespace App\Pim\Form;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Entity\Lieu\Salle;
 use App\Pim\Enum\NatureRessource;
+use App\Shared\Service\ParametreProviderInterface;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
@@ -26,6 +27,10 @@ use Symfony\Component\Validator\Constraints\Image;
 /** @extends AbstractType<RessourceLieu> */
 final class RessourceLieuType extends AbstractType
 {
+    public function __construct(private readonly ParametreProviderInterface $parametres)
+    {
+    }
+
     /** @param FormBuilderInterface<RessourceLieu|null> $builder */
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
@@ -35,16 +40,19 @@ final class RessourceLieuType extends AbstractType
             'help' => 'Renseigné automatiquement après le téléversement.',
             'attr' => ['readonly' => true],
         ]);
+        $maxMo = $this->parametres->int('dam.image_poids_max_mo');
+        $minWidth = $this->parametres->int('dam.image_largeur_min');
+        $minHeight = $this->parametres->int('dam.image_hauteur_min');
         $builder->add('image', FileType::class, [
             'label' => 'Image à téléverser',
             'mapped' => false,
             'required' => false,
-            'help' => 'PNG, JPG, JPEG ou WEBP — 25 Mo maximum — 960 × 480 px minimum.',
+            'help' => sprintf('PNG, JPG, JPEG ou WEBP — %d Mo maximum — %d × %d px minimum.', $maxMo, $minWidth, $minHeight),
             'constraints' => [new Image(
-                maxSize: '25M',
+                maxSize: $maxMo.'M',
                 mimeTypes: ['image/png', 'image/jpeg', 'image/webp'],
-                minWidth: 960,
-                minHeight: 480,
+                minWidth: $minWidth,
+                minHeight: $minHeight,
                 detectCorrupted: true,
             )],
         ]);

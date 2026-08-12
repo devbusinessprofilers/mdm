@@ -139,7 +139,7 @@ final class AdminEventCatalog
                 'transport' => 'mail',
                 'worker' => 'worker-mail',
                 'handler' => InternalUserInvitedHandler::class,
-                'result' => 'Envoie un lien signé, valable 24 heures et utilisable une seule fois, pour créer le mot de passe.',
+                'result' => 'Envoie un lien signé à usage unique pour créer le mot de passe, valable pendant la durée paramétrée (compte.invitation_validite_heures).',
                 'next' => null,
             ],
             [

@@ -6,7 +6,9 @@ namespace App\Tests\Dam;
 
 use App\Dam\Service\LieuImageUploader;
 use App\Pim\Entity\Lieu\Lieu;
+use App\Shared\Service\ParametreProviderInterface;
 use App\Shared\Service\PrivateObjectStorageInterface;
+use App\Tests\Support\ParametresFixes;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
@@ -25,7 +27,7 @@ final class LieuImageUploaderTest extends TestCase
     public function testValidLieuImageIsStreamedToThePrivatePrefix(): void
     {
         $storage = new RecordingObjectStorage();
-        $uploader = new LieuImageUploader($storage, 'test');
+        $uploader = new LieuImageUploader($storage, $this->parametres(), 'test');
         $lieu = new Lieu();
         $file = $this->uploadedPng(960, 480, 'façade.png');
         $media = $uploader->upload($file, $lieu);
@@ -56,13 +58,22 @@ final class LieuImageUploaderTest extends TestCase
     public function testImageSmallerThanTheCahierDesChargesMinimumIsRejected(): void
     {
         $storage = new RecordingObjectStorage();
-        $uploader = new LieuImageUploader($storage, 'test');
+        $uploader = new LieuImageUploader($storage, $this->parametres(), 'test');
         $this->expectException(\DomainException::class);
         $this->expectExceptionMessage('960 × 480');
         $uploader->upload(
             $this->uploadedPng(959, 480, 'trop-petite.png'),
             new Lieu(),
         );
+    }
+
+    private function parametres(): ParametreProviderInterface
+    {
+        return new ParametresFixes([
+            'dam.image_poids_max_mo' => '25',
+            'dam.image_largeur_min' => '960',
+            'dam.image_hauteur_min' => '480',
+        ]);
     }
 
     private function uploadedPng(

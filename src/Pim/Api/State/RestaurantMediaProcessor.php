@@ -23,7 +23,9 @@ use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Entity\Restaurant\RestaurantSalle;
 use App\Pim\Enum\NatureRessource;
+use App\Pim\Enum\TypeFiche;
 use App\Pim\Repository\RessourceLieuRepository;
+use App\Pim\Service\PhotoObligations;
 use App\Shared\Message\MediaUploaded;
 use App\Shared\Outbox\OutboxPublisherInterface;
 use Doctrine\ORM\EntityManagerInterface;
@@ -39,6 +41,7 @@ final readonly class RestaurantMediaProcessor implements ProcessorInterface
         private RestaurantApiState $state,
         private RestaurantApiMapper $mapper,
         private FicheImageUploader $uploader,
+        private PhotoObligations $photoObligations,
         private RessourceLieuRepository $resources,
         private EntityManagerInterface $entityManager,
         private OutboxPublisherInterface $outbox,
@@ -124,11 +127,12 @@ final readonly class RestaurantMediaProcessor implements ProcessorInterface
 
     private function upload(Restaurant $restaurant): LieuMediaResource
     {
-        if (count($this->photos($restaurant)) >= 10) {
+        $maximum = $this->photoObligations->maximum(TypeFiche::Restaurant);
+        if (count($this->photos($restaurant)) >= $maximum) {
             throw new ApiProblemException(
                 422,
                 'media_limit_reached',
-                'Un Restaurant ne peut pas contenir plus de dix photos.',
+                sprintf('Un Restaurant ne peut pas contenir plus de %d photos.', $maximum),
             );
         }
 

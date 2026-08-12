@@ -33,12 +33,13 @@ final class PasswordResetRequest
     #[ORM\Column(type: 'datetime_immutable')]
     private \DateTimeImmutable $createdAt;
 
-    public function __construct(User $user)
+    /** @param int $validiteHeures durée de validité (paramètre compte.reset_validite_heures, défaut historique 1 h) */
+    public function __construct(User $user, int $validiteHeures = 1)
     {
         $this->id = (string) new Ulid();
         $this->user = $user;
         $this->createdAt = new \DateTimeImmutable();
-        $this->expiresAt = $this->createdAt->modify('+1 hour');
+        $this->expiresAt = $this->createdAt->modify(sprintf('+%d hours', $validiteHeures));
     }
 
     public function id(): string { return $this->id; }

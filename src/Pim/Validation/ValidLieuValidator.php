@@ -10,7 +10,9 @@ use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Enum\NatureRessource;
 use App\Pim\Enum\TypeAccesLieu;
+use App\Pim\Enum\TypeFiche;
 use App\Pim\Form\LieuFormCatalog;
+use App\Pim\Service\PhotoObligations;
 use Symfony\Component\Validator\Constraint;
 use Symfony\Component\Validator\ConstraintValidator;
 
@@ -18,6 +20,7 @@ final class ValidLieuValidator extends ConstraintValidator
 {
     public function __construct(
         private readonly MediaAssetRepository $assets,
+        private readonly PhotoObligations $photoObligations,
     ) {
     }
 
@@ -352,9 +355,10 @@ final class ValidLieuValidator extends ConstraintValidator
                 }
             }
         }
-        if (count($photos) > 25) {
+        $maximum = $this->photoObligations->maximum(TypeFiche::Lieu);
+        if (count($photos) > $maximum) {
             $this->violation(
-                'Un lieu ne peut pas contenir plus de 25 photos.',
+                sprintf('Un lieu ne peut pas contenir plus de %d photos.', $maximum),
                 'ressources',
             );
         }
@@ -391,9 +395,11 @@ final class ValidLieuValidator extends ConstraintValidator
                 ): bool => NatureRessource::Photo === $resource->nature(),
             ),
         );
-        if (count($photos) < 4 || count($photos) > 25) {
+        $minimum = $this->photoObligations->minimum(TypeFiche::Lieu);
+        $maximum = $this->photoObligations->maximum(TypeFiche::Lieu);
+        if (count($photos) < $minimum || count($photos) > $maximum) {
             $this->violation(
-                'La soumission exige entre 4 et 25 photos.',
+                sprintf('La soumission exige entre %d et %d photos.', $minimum, $maximum),
                 'ressources',
             );
         }

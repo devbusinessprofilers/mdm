@@ -23,6 +23,7 @@ final readonly class FicheDocumentUploader
 
     public function __construct(
         private PrivateObjectStorageInterface $storage,
+        private DocumentContraintes $contraintes,
         private string $storagePrefix,
     ) {
     }
@@ -38,7 +39,7 @@ final readonly class FicheDocumentUploader
             throw new \DomainException('Le fichier téléversé n’est plus disponible.');
         }
         $size = filesize($path);
-        $maximumBytes ??= $usage->maximumBytes();
+        $maximumBytes ??= $this->contraintes->maximumBytes($usage);
         if (false === $size || $size > $maximumBytes) {
             throw new DocumentUploadException(413, sprintf('Ce document ne peut pas dépasser %d Mo.', intdiv($maximumBytes, 1024 * 1024)));
         }

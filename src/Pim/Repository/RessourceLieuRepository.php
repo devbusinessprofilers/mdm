@@ -13,13 +13,16 @@ use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\Persistence\ManagerRegistry;
 use App\Dam\Enum\RightsValidityStatus;
 use App\Pim\Enum\TypeFiche;
+use App\Shared\Service\ParametreProviderInterface;
 use Symfony\Component\Uid\Ulid;
 
 /** @extends ServiceEntityRepository<RessourceLieu> */
 final class RessourceLieuRepository extends ServiceEntityRepository
 {
-    public function __construct(ManagerRegistry $registry)
-    {
+    public function __construct(
+        ManagerRegistry $registry,
+        private readonly ParametreProviderInterface $parametres,
+    ) {
         parent::__construct($registry, RessourceLieu::class);
     }
 
@@ -173,7 +176,10 @@ final class RessourceLieuRepository extends ServiceEntityRepository
                 ->andWhere('resource.rightsExpiresAt >= :today')
                 ->andWhere('resource.rightsExpiresAt <= :limitDate')
                 ->setParameter('today', $today)
-                ->setParameter('limitDate', $today->modify('+30 days'));
+                ->setParameter('limitDate', $today->modify(sprintf(
+                    '+%d days',
+                    $this->parametres->int('dam.delai_alerte_droits_jours'),
+                )));
         } else {
             throw new \InvalidArgumentException('Statut de droits non pris en charge par le dashboard.');
         }

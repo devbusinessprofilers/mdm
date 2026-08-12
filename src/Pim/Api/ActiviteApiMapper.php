@@ -11,11 +11,14 @@ use App\Pim\Api\Dto\LieuMediaResource;
 use App\Pim\Entity\Activite\Activite;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\ReadModel\ActiviteListItem;
+use App\Shared\Service\ParametreProviderInterface;
 
 final readonly class ActiviteApiMapper
 {
-    public function __construct(private FichePhotoPresenter $photos)
-    {
+    public function __construct(
+        private FichePhotoPresenter $photos,
+        private ParametreProviderInterface $parametres,
+    ) {
     }
 
     public function listItem(ActiviteListItem $i): ActiviteListResource
@@ -136,7 +139,7 @@ final readonly class ActiviteApiMapper
             [],
             $resource->keywords(),
             $resource->rightsExpiresAt()?->format('Y-m-d'),
-            $resource->rightsValidity()->value,
+            $resource->rightsValidity(alerteJours: $this->parametres->int('dam.delai_alerte_droits_jours'))->value,
         );
     }
 
@@ -161,7 +164,7 @@ final readonly class ActiviteApiMapper
             $photo['variants'],
             $r->keywords(),
             $r->rightsExpiresAt()?->format('Y-m-d'),
-            $r->rightsValidity()->value,
+            $r->rightsValidity(alerteJours: $this->parametres->int('dam.delai_alerte_droits_jours'))->value,
         );
     }
 

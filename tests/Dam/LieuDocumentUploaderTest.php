@@ -6,10 +6,12 @@ namespace App\Tests\Dam;
 
 use App\Dam\Enum\DocumentUsage;
 use App\Dam\Enum\MediaKind;
+use App\Dam\Service\DocumentContraintes;
 use App\Dam\Service\DocumentUploadException;
 use App\Dam\Service\LieuDocumentUploader;
 use App\Pim\Entity\Lieu\Lieu;
 use App\Shared\Service\PrivateObjectStorageInterface;
+use App\Tests\Support\ParametresFixes;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
@@ -24,10 +26,18 @@ final class LieuDocumentUploaderTest extends TestCase
         }
     }
 
+    private function contraintes(): DocumentContraintes
+    {
+        return new DocumentContraintes(new ParametresFixes([
+            'dam.document_poids_max_mo' => '10',
+            'dam.support_commercial_poids_max_mo' => '100',
+        ]));
+    }
+
     public function testPdfIsStreamedPrivatelyWithoutImageRenditions(): void
     {
         $storage = new DocumentRecordingObjectStorage();
-        $uploader = new LieuDocumentUploader($storage, 'test');
+        $uploader = new LieuDocumentUploader($storage, $this->contraintes(), 'test');
         $asset = $uploader->upload(
             $this->upload('%PDF-1.4 test', 'Présentation commerciale.pdf'),
             new Lieu(),
@@ -47,6 +57,7 @@ final class LieuDocumentUploaderTest extends TestCase
     {
         $uploader = new LieuDocumentUploader(
             new DocumentRecordingObjectStorage(),
+            $this->contraintes(),
             'test',
         );
         $this->expectException(DocumentUploadException::class);

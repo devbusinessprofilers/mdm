@@ -15,6 +15,7 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\GreaterThanOrEqual;
 use Symfony\Component\Validator\Constraints\Length;
 use Symfony\Component\Validator\Constraints\NotNull;
+use Symfony\Component\Validator\Constraints\Range;
 
 /** @extends AbstractType<array<string, mixed>> */
 final class ParametreType extends AbstractType
@@ -23,12 +24,21 @@ final class ParametreType extends AbstractType
     {
         /** @var TypeParametre $type */
         $type = $options['type'];
+        /** @var array{min: int, max: int}|null $bornes */
+        $bornes = $options['bornes'];
         match ($type) {
             TypeParametre::Booleen => $builder->add('valeur', CheckboxType::class, [
                 'label' => 'Activé', 'required' => false,
             ]),
             TypeParametre::Entier => $builder->add('valeur', IntegerType::class, [
-                'label' => 'Valeur', 'constraints' => [new NotNull(), new GreaterThanOrEqual(0)],
+                'label' => 'Valeur',
+                'help' => null === $bornes ? null : sprintf('Entre %d et %d.', $bornes['min'], $bornes['max']),
+                'constraints' => [
+                    new NotNull(),
+                    null === $bornes
+                        ? new GreaterThanOrEqual(0)
+                        : new Range(min: $bornes['min'], max: $bornes['max']),
+                ],
             ]),
             TypeParametre::Texte => $builder->add('valeur', TextType::class, [
                 'label' => 'Valeur', 'required' => false, 'empty_data' => '',
@@ -40,8 +50,9 @@ final class ParametreType extends AbstractType
 
     public function configureOptions(OptionsResolver $resolver): void
     {
-        $resolver->setDefaults(['data_class' => null]);
+        $resolver->setDefaults(['data_class' => null, 'bornes' => null]);
         $resolver->setRequired('type');
         $resolver->setAllowedTypes('type', TypeParametre::class);
+        $resolver->setAllowedTypes('bornes', ['null', 'array']);
     }
 }

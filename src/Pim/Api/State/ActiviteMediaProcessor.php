@@ -22,7 +22,9 @@ use App\Pim\Api\ExternalScopeGuard;
 use App\Pim\Entity\Activite\Activite;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Enum\NatureRessource;
+use App\Pim\Enum\TypeFiche;
 use App\Pim\Repository\RessourceLieuRepository;
+use App\Pim\Service\PhotoObligations;
 use App\Shared\Message\MediaUploaded;
 use App\Shared\Outbox\OutboxPublisherInterface;
 use Doctrine\ORM\EntityManagerInterface;
@@ -36,6 +38,7 @@ final readonly class ActiviteMediaProcessor implements ProcessorInterface
         private ActiviteApiState $state,
         private ActiviteApiMapper $mapper,
         private FicheImageUploader $uploader,
+        private PhotoObligations $photoObligations,
         private RessourceLieuRepository $resources,
         private EntityManagerInterface $em,
         private OutboxPublisherInterface $outbox,
@@ -111,8 +114,9 @@ final readonly class ActiviteMediaProcessor implements ProcessorInterface
 
     private function upload(Activite $a): LieuMediaResource
     {
-        if (count($this->photos($a)) >= 10) {
-            throw new ApiProblemException(422, 'media_limit_reached', 'Une activité ne peut pas contenir plus de dix photos.');
+        $maximum = $this->photoObligations->maximum(TypeFiche::Activite);
+        if (count($this->photos($a)) >= $maximum) {
+            throw new ApiProblemException(422, 'media_limit_reached', sprintf('Une activité ne peut pas contenir plus de %d photos.', $maximum));
         }
         $request = $this->requests->getCurrentRequest();
         if (null === $request) {

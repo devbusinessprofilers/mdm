@@ -7,6 +7,7 @@ namespace App\Dam\Service;
 use App\Dam\Repository\MediaAssetRepository;
 use App\Pim\Api\Dto\LieuDocumentResource;
 use App\Pim\Entity\Lieu\RessourceLieu;
+use App\Shared\Service\ParametreProviderInterface;
 use App\Shared\Service\PrivateObjectStorageInterface;
 
 final readonly class LieuDocumentPresenter
@@ -15,6 +16,7 @@ final readonly class LieuDocumentPresenter
         private MediaAssetRepository $assets,
         private PublicMediaUrlGenerator $publicUrl,
         private PrivateObjectStorageInterface $privateStorage,
+        private ParametreProviderInterface $parametres,
     ) {
     }
 
@@ -54,7 +56,7 @@ final readonly class LieuDocumentPresenter
             downloadUrl: $download,
             keywords: $document->keywords(),
             rightsExpiresAt: $document->rightsExpiresAt()?->format('Y-m-d'),
-            rightsValidity: $document->rightsValidity()->value,
+            rightsValidity: $document->rightsValidity(alerteJours: $this->parametres->int('dam.delai_alerte_droits_jours'))->value,
         );
     }
 }

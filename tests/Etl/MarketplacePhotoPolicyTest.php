@@ -10,6 +10,8 @@ use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Enum\NatureRessource;
 use App\Pim\Enum\TypeFiche;
+use App\Pim\Service\PhotoObligations;
+use App\Tests\Support\ParametresFixes;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Ulid;
 
@@ -19,7 +21,12 @@ final class MarketplacePhotoPolicyTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->policy = new MarketplacePhotoPolicy();
+        $this->policy = new MarketplacePhotoPolicy(new PhotoObligations(new ParametresFixes([
+            'photos.min_lieu' => '4',
+            'photos.max_lieu' => '25',
+            'photos.min_autres' => '1',
+            'photos.max_autres' => '10',
+        ])));
     }
 
     public function testMinimumIsFourForLieuAndOneElsewhere(): void

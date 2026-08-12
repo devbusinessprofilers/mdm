@@ -12,11 +12,14 @@ use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Form\LieuFormCatalog;
 use App\Pim\ReadModel\LieuListItem;
+use App\Shared\Service\ParametreProviderInterface;
 
 final readonly class LieuApiMapper
 {
-    public function __construct(private LieuPhotoPresenter $photos)
-    {
+    public function __construct(
+        private LieuPhotoPresenter $photos,
+        private ParametreProviderInterface $parametres,
+    ) {
     }
 
     public function listItem(LieuListItem $item): LieuListResource
@@ -177,7 +180,7 @@ final readonly class LieuApiMapper
             [],
             $resource->keywords(),
             $resource->rightsExpiresAt()?->format('Y-m-d'),
-            $resource->rightsValidity()->value,
+            $resource->rightsValidity(alerteJours: $this->parametres->int('dam.delai_alerte_droits_jours'))->value,
         );
     }
 
@@ -236,7 +239,7 @@ final readonly class LieuApiMapper
             $photo['variants'],
             $resource->keywords(),
             $resource->rightsExpiresAt()?->format('Y-m-d'),
-            $resource->rightsValidity()->value,
+            $resource->rightsValidity(alerteJours: $this->parametres->int('dam.delai_alerte_droits_jours'))->value,
         );
     }
 }

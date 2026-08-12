@@ -22,7 +22,9 @@ use App\Pim\Api\ExternalScopeGuard;
 use App\Pim\Entity\Service\ServiceEvenementiel;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Enum\NatureRessource;
+use App\Pim\Enum\TypeFiche;
 use App\Pim\Repository\RessourceLieuRepository;
+use App\Pim\Service\PhotoObligations;
 use App\Shared\Message\MediaUploaded;
 use App\Shared\Outbox\OutboxPublisherInterface;
 use Doctrine\ORM\EntityManagerInterface;
@@ -37,6 +39,7 @@ final readonly class ServiceEvenementielMediaProcessor implements
         private ServiceEvenementielApiState $state,
         private ServiceEvenementielApiMapper $mapper,
         private FicheImageUploader $uploader,
+        private PhotoObligations $photoObligations,
         private RessourceLieuRepository $resources,
         private EntityManagerInterface $em,
         private OutboxPublisherInterface $outbox,
@@ -117,11 +120,12 @@ final readonly class ServiceEvenementielMediaProcessor implements
 
     private function upload(ServiceEvenementiel $a): LieuMediaResource
     {
-        if (count($this->photos($a)) >= 10) {
+        $maximum = $this->photoObligations->maximum(TypeFiche::ServiceEvenementiel);
+        if (count($this->photos($a)) >= $maximum) {
             throw new ApiProblemException(
                 422,
                 "media_limit_reached",
-                "Une service ne peut pas contenir plus de dix photos.",
+                sprintf("Une service ne peut pas contenir plus de %d photos.", $maximum),
             );
         }
         $request = $this->requests->getCurrentRequest();

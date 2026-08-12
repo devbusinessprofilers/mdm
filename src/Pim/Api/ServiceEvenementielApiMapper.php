@@ -12,10 +12,14 @@ use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Entity\Localisation;
 use App\Pim\Entity\Service\ServiceEvenementiel;
 use App\Pim\ReadModel\ServiceEvenementielListItem;
+use App\Shared\Service\ParametreProviderInterface;
 
 final readonly class ServiceEvenementielApiMapper
 {
-    public function __construct(private FichePhotoPresenter $photos) {}
+    public function __construct(
+        private FichePhotoPresenter $photos,
+        private ParametreProviderInterface $parametres,
+    ) {}
 
     public function listItem(
         ServiceEvenementielListItem $item,
@@ -108,7 +112,7 @@ final readonly class ServiceEvenementielApiMapper
             [],
             $resource->keywords(),
             $resource->rightsExpiresAt()?->format('Y-m-d'),
-            $resource->rightsValidity()->value,
+            $resource->rightsValidity(alerteJours: $this->parametres->int('dam.delai_alerte_droits_jours'))->value,
         );
     }
 
@@ -134,7 +138,7 @@ final readonly class ServiceEvenementielApiMapper
             $photo["variants"],
             $resource->keywords(),
             $resource->rightsExpiresAt()?->format('Y-m-d'),
-            $resource->rightsValidity()->value,
+            $resource->rightsValidity(alerteJours: $this->parametres->int('dam.delai_alerte_droits_jours'))->value,
         );
     }
 

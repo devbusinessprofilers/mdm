@@ -10,6 +10,7 @@ use App\Account\Message\InternalUserPasswordResetRequested;
 use App\Account\Repository\AccountInvitationRepository;
 use App\Account\Repository\PasswordResetRequestRepository;
 use App\Shared\Outbox\OutboxPublisherInterface;
+use App\Shared\Service\ParametreProviderInterface;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
@@ -23,6 +24,7 @@ final readonly class PasswordResetManager
         private EntityManagerInterface $entityManager,
         private OutboxPublisherInterface $outbox,
         private UserPasswordHasherInterface $hasher,
+        private ParametreProviderInterface $parametres,
         private LoggerInterface $logger,
     ) {}
 
@@ -38,7 +40,7 @@ final readonly class PasswordResetManager
         $request = $this->entityManager->wrapInTransaction(function () use ($user): PasswordResetRequest {
             $this->entityManager->lock($user, LockMode::PESSIMISTIC_WRITE);
             $this->requests->invalidateUsableFor($user);
-            $request = new PasswordResetRequest($user);
+            $request = new PasswordResetRequest($user, $this->parametres->int('compte.reset_validite_heures'));
             $this->entityManager->persist($request);
             $this->outbox->enqueue(new InternalUserPasswordResetRequested($request->id()));
 

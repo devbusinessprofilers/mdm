@@ -11,6 +11,8 @@ use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Enum\NatureRessource;
 use App\Pim\Enum\TypeAccesRestaurant;
+use App\Pim\Enum\TypeFiche;
+use App\Pim\Service\PhotoObligations;
 use Symfony\Component\Validator\Constraint;
 use Symfony\Component\Validator\ConstraintValidator;
 
@@ -18,6 +20,7 @@ final class ValidRestaurantValidator extends ConstraintValidator
 {
     public function __construct(
         private readonly MediaAssetRepository $assets,
+        private readonly PhotoObligations $photoObligations,
     ) {
     }
 
@@ -116,9 +119,10 @@ final class ValidRestaurantValidator extends ConstraintValidator
         }
 
         $photos = $this->photos($value);
-        if (count($photos) > 10) {
+        $maximum = $this->photoObligations->maximum(TypeFiche::Restaurant);
+        if (count($photos) > $maximum) {
             $this->violation(
-                'Un Restaurant ne peut pas contenir plus de dix photos.',
+                sprintf('Un Restaurant ne peut pas contenir plus de %d photos.', $maximum),
                 'ressources',
             );
         }
@@ -291,9 +295,11 @@ final class ValidRestaurantValidator extends ConstraintValidator
             );
         }
 
-        if (count($photos) < 1 || count($photos) > 10) {
+        $minimum = $this->photoObligations->minimum(TypeFiche::Restaurant);
+        $maximum = $this->photoObligations->maximum(TypeFiche::Restaurant);
+        if (count($photos) < $minimum || count($photos) > $maximum) {
             $this->violation(
-                'Une fiche Restaurant doit contenir entre une et dix photos.',
+                sprintf('Une fiche Restaurant doit contenir entre %d et %d photos.', $minimum, $maximum),
                 'ressources',
             );
         }

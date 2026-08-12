@@ -5,11 +5,20 @@ declare(strict_types=1);
 namespace App\Tests\Ocr;
 
 use App\Ocr\Service\PdfDocumentProcessor;
+use App\Tests\Support\ParametresFixes;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 final class PdfDocumentProcessorTest extends TestCase
 {
+    private static function processor(): PdfDocumentProcessor
+    {
+        return new PdfDocumentProcessor(new ParametresFixes([
+            'ocr.pdf_poids_max_mo' => '50',
+            'ocr.pdf_pages_max' => '100',
+        ]));
+    }
+
     /** @return iterable<string, array{int, list<array{int, int}>}> */
     public static function pageCases(): iterable
     {
@@ -24,7 +33,7 @@ final class PdfDocumentProcessorTest extends TestCase
     public function testInspectsAndSplitsPdfInFivePageBatches(int $pages, array $expectedRanges): void
     {
         $path = $this->createPdf($pages);
-        $processor = new PdfDocumentProcessor();
+        $processor = self::processor();
         $batches = [];
         try {
             self::assertSame($pages, $processor->inspect($path));
@@ -45,7 +54,7 @@ final class PdfDocumentProcessorTest extends TestCase
         try {
             $this->expectException(\DomainException::class);
             $this->expectExceptionMessage('entre 1 et 100 pages');
-            (new PdfDocumentProcessor())->inspect($path);
+            self::processor()->inspect($path);
         } finally {
             @unlink($path);
         }
@@ -58,7 +67,7 @@ final class PdfDocumentProcessorTest extends TestCase
         file_put_contents($path, '%PDF-not-a-real-document');
         try {
             $this->expectException(\DomainException::class);
-            (new PdfDocumentProcessor())->inspect($path);
+            self::processor()->inspect($path);
         } finally {
             @unlink($path);
         }

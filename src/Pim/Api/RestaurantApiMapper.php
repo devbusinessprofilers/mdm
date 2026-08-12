@@ -12,11 +12,14 @@ use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Entity\Localisation;
 use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\ReadModel\RestaurantListItem;
+use App\Shared\Service\ParametreProviderInterface;
 
 final readonly class RestaurantApiMapper
 {
-    public function __construct(private FichePhotoPresenter $photos)
-    {
+    public function __construct(
+        private FichePhotoPresenter $photos,
+        private ParametreProviderInterface $parametres,
+    ) {
     }
 
     public function listItem(RestaurantListItem $item): RestaurantListResource
@@ -145,7 +148,7 @@ final readonly class RestaurantApiMapper
             [],
             $resource->keywords(),
             $resource->rightsExpiresAt()?->format('Y-m-d'),
-            $resource->rightsValidity()->value,
+            $resource->rightsValidity(alerteJours: $this->parametres->int('dam.delai_alerte_droits_jours'))->value,
         );
     }
 
@@ -170,7 +173,7 @@ final readonly class RestaurantApiMapper
             $photo['variants'],
             $resource->keywords(),
             $resource->rightsExpiresAt()?->format('Y-m-d'),
-            $resource->rightsValidity()->value,
+            $resource->rightsValidity(alerteJours: $this->parametres->int('dam.delai_alerte_droits_jours'))->value,
         );
     }
 

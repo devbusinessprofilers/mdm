@@ -7,27 +7,33 @@ namespace App\Tests\Dam;
 use App\Dam\Enum\DocumentAccess;
 use App\Dam\Enum\DocumentPublicationStatus;
 use App\Dam\Enum\DocumentUsage;
+use App\Dam\Service\DocumentContraintes;
 use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Entity\Lieu\RessourceLieu;
+use App\Tests\Support\ParametresFixes;
 use PHPUnit\Framework\TestCase;
 
 final class DocumentRulesTest extends TestCase
 {
     public function testUsageRulesMatchTheContract(): void
     {
+        $contraintes = new DocumentContraintes(new ParametresFixes([
+            'dam.document_poids_max_mo' => '10',
+            'dam.support_commercial_poids_max_mo' => '100',
+        ]));
         self::assertSame(
             10 * 1024 * 1024,
-            DocumentUsage::RoomPlan->maximumBytes(),
+            $contraintes->maximumBytes(DocumentUsage::RoomPlan),
         );
         self::assertSame(
             100 * 1024 * 1024,
-            DocumentUsage::CommercialSupport->maximumBytes(),
+            $contraintes->maximumBytes(DocumentUsage::CommercialSupport),
         );
         self::assertSame(2, DocumentUsage::RoomPlan->maximumCount());
         self::assertNull(DocumentUsage::CommercialSupport->maximumCount());
         self::assertSame(
             10 * 1024 * 1024,
-            DocumentUsage::RestaurantMenu->maximumBytes(),
+            $contraintes->maximumBytes(DocumentUsage::RestaurantMenu),
         );
         self::assertNull(DocumentUsage::RestaurantMenu->maximumCount());
         self::assertSame(

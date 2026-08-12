@@ -8,6 +8,7 @@ use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Entity\Restaurant\RestaurantSalle;
 use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Enum\NatureRessource;
+use App\Shared\Service\ParametreProviderInterface;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
@@ -27,20 +28,27 @@ use Symfony\Component\Validator\Constraints\Image;
 /** @extends AbstractType<RessourceLieu> */
 final class RestaurantRessourceType extends AbstractType
 {
+    public function __construct(private readonly ParametreProviderInterface $parametres)
+    {
+    }
+
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
+        $maxMo = $this->parametres->int('dam.image_poids_max_mo');
+        $minWidth = $this->parametres->int('dam.image_largeur_min');
+        $minHeight = $this->parametres->int('dam.image_hauteur_min');
         $builder
             ->add('image', FileType::class, [
                 'label' => 'Photo',
                 'mapped' => false,
                 'required' => false,
-                'help' => 'PNG, JPG ou WEBP — 25 Mo maximum — 960 × 480 px minimum.',
+                'help' => sprintf('PNG, JPG ou WEBP — %d Mo maximum — %d × %d px minimum.', $maxMo, $minWidth, $minHeight),
                 'constraints' => [
                     new Image(
-                        maxSize: '25M',
+                        maxSize: $maxMo.'M',
                         mimeTypes: ['image/png', 'image/jpeg', 'image/webp'],
-                        minWidth: 960,
-                        minHeight: 480,
+                        minWidth: $minWidth,
+                        minHeight: $minHeight,
                         detectCorrupted: true,
                     ),
                 ],

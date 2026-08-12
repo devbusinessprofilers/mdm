@@ -6,13 +6,13 @@ namespace App\Dam\Service;
 
 use App\Dam\Entity\MediaAsset;
 use App\Pim\Entity\Fiche;
+use App\Shared\Service\ParametreProviderInterface;
 use App\Shared\Service\PrivateObjectStorageInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Uid\Ulid;
 
 final readonly class FicheImageUploader
 {
-    private const MAX_SIZE = 25 * 1024 * 1024;
     // Garde anti « gigapixel » : au-delà, la génération des rendus épuise la mémoire du worker.
     private const MAX_DIMENSION = 12000;
     private const EXTENSIONS = [
@@ -23,12 +23,14 @@ final readonly class FicheImageUploader
 
     public function __construct(
         private PrivateObjectStorageInterface $storage,
+        private ParametreProviderInterface $parametres,
         private string $storagePrefix,
     ) {
     }
 
     public function upload(UploadedFile $file, Fiche $fiche): MediaAsset
     {
+        $maxMo = $this->parametres->int('dam.image_poids_max_mo');
         $path = $file->getRealPath();
         $size = $file->getSize();
         $image = false === $path ? false : @getimagesize($path);
@@ -36,14 +38,16 @@ final readonly class FicheImageUploader
             false === $path
             || !is_file($path)
             || false === $size
-            || $size > self::MAX_SIZE
+            || $size > $maxMo * 1024 * 1024
             || !is_array($image)
             || !isset(self::EXTENSIONS[$image['mime']])
         ) {
-            throw new \DomainException('Image PNG, JPG ou WEBP de 25 Mo maximum attendue.');
+            throw new \DomainException(sprintf('Image PNG, JPG ou WEBP de %d Mo maximum attendue.', $maxMo));
         }
-        if ($image[0] < 960 || $image[1] < 480) {
-            throw new \DomainException('Les dimensions minimales sont de 960 × 480 pixels.');
+        $minWidth = $this->parametres->int('dam.image_largeur_min');
+        $minHeight = $this->parametres->int('dam.image_hauteur_min');
+        if ($image[0] < $minWidth || $image[1] < $minHeight) {
+            throw new \DomainException(sprintf('Les dimensions minimales sont de %d × %d pixels.', $minWidth, $minHeight));
         }
         if ($image[0] > self::MAX_DIMENSION || $image[1] > self::MAX_DIMENSION) {
             throw new \DomainException('Les dimensions maximales sont de 12000 × 12000 pixels.');

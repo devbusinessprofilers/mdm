@@ -11,6 +11,8 @@ use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Entity\Service\ServiceEvenementiel;
 use App\Pim\Enum\ModeInterventionService;
 use App\Pim\Enum\NatureRessource;
+use App\Pim\Enum\TypeFiche;
+use App\Pim\Service\PhotoObligations;
 use Symfony\Component\Validator\Constraint;
 use Symfony\Component\Validator\ConstraintValidator;
 
@@ -18,6 +20,7 @@ final class ValidServiceEvenementielValidator extends ConstraintValidator
 {
     public function __construct(
         private readonly MediaAssetRepository $assets,
+        private readonly PhotoObligations $photoObligations,
     ) {}
 
     public function validate(mixed $value, Constraint $constraint): void
@@ -78,9 +81,10 @@ final class ValidServiceEvenementielValidator extends ConstraintValidator
             }
         }
 
-        if (count($photos) > 10) {
+        $maximum = $this->photoObligations->maximum(TypeFiche::ServiceEvenementiel);
+        if (count($photos) > $maximum) {
             $this->violation(
-                "Un Service ne peut pas contenir plus de dix photos.",
+                sprintf("Un Service ne peut pas contenir plus de %d photos.", $maximum),
                 "ressources",
             );
         }
@@ -187,9 +191,11 @@ final class ValidServiceEvenementielValidator extends ConstraintValidator
             }
         }
 
-        if (count($photos) < 1 || count($photos) > 10) {
+        $minimum = $this->photoObligations->minimum(TypeFiche::ServiceEvenementiel);
+        $maximum = $this->photoObligations->maximum(TypeFiche::ServiceEvenementiel);
+        if (count($photos) < $minimum || count($photos) > $maximum) {
             $this->violation(
-                "Une fiche Service doit contenir entre une et dix photos.",
+                sprintf("Une fiche Service doit contenir entre %d et %d photos.", $minimum, $maximum),
                 "ressources",
             );
         }

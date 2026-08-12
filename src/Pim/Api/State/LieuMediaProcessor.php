@@ -22,7 +22,9 @@ use App\Pim\Api\LieuApiMapper;
 use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Enum\NatureRessource;
+use App\Pim\Enum\TypeFiche;
 use App\Pim\Repository\RessourceLieuRepository;
+use App\Pim\Service\PhotoObligations;
 use App\Shared\Message\MediaUploaded;
 use App\Shared\Outbox\OutboxPublisherInterface;
 use Doctrine\ORM\EntityManagerInterface;
@@ -33,7 +35,6 @@ use Symfony\Component\HttpFoundation\Response;
 /** @implements ProcessorInterface<mixed, LieuMediaResource|LieuResource|void> */
 final readonly class LieuMediaProcessor implements ProcessorInterface
 {
-    private const MAX_PHOTOS = 25;
     private const USAGES = [
         'PHOTO_PRINCIPALE',
         'PHOTO_FACADE',
@@ -50,6 +51,7 @@ final readonly class LieuMediaProcessor implements ProcessorInterface
         private LieuApiState $state,
         private LieuApiMapper $mapper,
         private LieuImageUploader $uploader,
+        private PhotoObligations $photoObligations,
         private RessourceLieuRepository $resources,
         private EntityManagerInterface $entityManager,
         private OutboxPublisherInterface $outbox,
@@ -125,8 +127,9 @@ final readonly class LieuMediaProcessor implements ProcessorInterface
 
     private function upload(Lieu $lieu): LieuMediaResource
     {
-        if (count($this->photos($lieu)) >= self::MAX_PHOTOS) {
-            throw new ApiProblemException(Response::HTTP_UNPROCESSABLE_ENTITY, 'media_limit_reached', 'Un lieu ne peut pas contenir plus de 25 photos.');
+        $maximum = $this->photoObligations->maximum(TypeFiche::Lieu);
+        if (count($this->photos($lieu)) >= $maximum) {
+            throw new ApiProblemException(Response::HTTP_UNPROCESSABLE_ENTITY, 'media_limit_reached', sprintf('Un lieu ne peut pas contenir plus de %d photos.', $maximum));
         }
         $request = $this->requests->getCurrentRequest();
         if (null === $request) {

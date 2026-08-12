@@ -54,12 +54,21 @@ final class ParametreAdminController extends AbstractController
         if (!$parametre instanceof Parametre) {
             throw $this->createNotFoundException('Paramètre introuvable.');
         }
-        $form = $this->createForm(ParametreType::class, ['valeur' => $manager->donnees($parametre)], ['type' => $parametre->type()]);
+        $form = $this->createForm(ParametreType::class, ['valeur' => $manager->donnees($parametre)], [
+            'type' => $parametre->type(),
+            'bornes' => $manager->bornes($nom),
+        ]);
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
             /** @var array<string, mixed> $data */
             $data = $form->getData();
-            $manager->surcharger($parametre, $data['valeur']);
+            try {
+                $manager->surcharger($parametre, $data['valeur']);
+            } catch (\DomainException $exception) {
+                $this->addFlash('error', $exception->getMessage());
+
+                return $this->redirectToRoute('app_parametre_edit', ['nom' => $nom]);
+            }
             $this->addFlash('success', sprintf('Paramètre « %s » mis à jour.', $parametre->nom()));
 
             return $this->redirectToRoute('app_parametre_index');

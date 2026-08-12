@@ -6,6 +6,7 @@ namespace App\Account\Command;
 
 use App\Account\Entity\User;
 use App\Account\Repository\UserRepository;
+use App\Shared\Service\ParametreProviderInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -28,6 +29,7 @@ final class CreateSuperAdminCommand extends Command
         private readonly EntityManagerInterface $entityManager,
         private readonly UserPasswordHasherInterface $passwordHasher,
         private readonly ValidatorInterface $validator,
+        private readonly ParametreProviderInterface $parametres,
     ) {
         parent::__construct();
     }
@@ -62,7 +64,8 @@ final class CreateSuperAdminCommand extends Command
             return Command::FAILURE;
         }
 
-        $password = (string) $io->askHidden('Mot de passe (12 caractères minimum)');
+        $longueurMin = max(1, $this->parametres->int('compte.mot_de_passe_longueur_min'));
+        $password = (string) $io->askHidden(sprintf('Mot de passe (%d caractères minimum)', $longueurMin));
         $confirmation = (string) $io->askHidden('Confirmez le mot de passe');
 
         if (!hash_equals($password, $confirmation)) {
@@ -72,11 +75,11 @@ final class CreateSuperAdminCommand extends Command
         }
 
         $passwordViolations = $this->validator->validate($password, [
-            new Assert\Length(min: 12, max: 4096),
+            new Assert\Length(min: $longueurMin, max: 4096),
             new Assert\NotCompromisedPassword(),
         ]);
         if (count($passwordViolations) > 0) {
-            $io->error('Le mot de passe doit contenir au moins 12 caractères et ne pas être compromis.');
+            $io->error(sprintf('Le mot de passe doit contenir au moins %d caractères et ne pas être compromis.', $longueurMin));
 
             return Command::INVALID;
         }

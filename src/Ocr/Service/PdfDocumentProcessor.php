@@ -4,19 +4,23 @@ declare(strict_types=1);
 
 namespace App\Ocr\Service;
 
+use App\Shared\Service\ParametreProviderInterface;
 use Symfony\Component\Process\Process;
 
 final class PdfDocumentProcessor
 {
-    public const MAX_BYTES = 50 * 1024 * 1024;
-    public const MAX_PAGES = 100;
     public const BATCH_SIZE = 5;
+
+    public function __construct(private readonly ParametreProviderInterface $parametres)
+    {
+    }
 
     public function inspect(string $path): int
     {
         if (!is_file($path)) { throw new \DomainException('Le PDF est introuvable.'); }
+        $maxMo = $this->parametres->int('ocr.pdf_poids_max_mo');
         $size = filesize($path);
-        if (false === $size || $size > self::MAX_BYTES) { throw new \DomainException('Le PDF ne peut pas dépasser 50 Mo.'); }
+        if (false === $size || $size > $maxMo * 1024 * 1024) { throw new \DomainException(sprintf('Le PDF ne peut pas dépasser %d Mo.', $maxMo)); }
         $mime = (new \finfo(FILEINFO_MIME_TYPE))->file($path);
         if ('application/pdf' !== $mime || '%PDF-' !== file_get_contents($path, false, null, 0, 5)) { throw new \DomainException('Un PDF réel est requis.'); }
         $process = new Process(['pdfinfo', $path]);
@@ -25,14 +29,15 @@ final class PdfDocumentProcessor
         if (1 === preg_match('/^Encrypted:\s+yes/im', $process->getOutput())) { throw new \DomainException('Les PDF chiffrés ne sont pas acceptés.'); }
         if (1 !== preg_match('/^Pages:\s+(\d+)/im', $process->getOutput(), $matches)) { throw new \DomainException('Le nombre de pages du PDF est introuvable.'); }
         $pages = (int) $matches[1];
-        if ($pages < 1 || $pages > self::MAX_PAGES) { throw new \DomainException('Le PDF doit contenir entre 1 et 100 pages.'); }
+        $maxPages = $this->parametres->int('ocr.pdf_pages_max');
+        if ($pages < 1 || $pages > $maxPages) { throw new \DomainException(sprintf('Le PDF doit contenir entre 1 et %d pages.', $maxPages)); }
         return $pages;
     }
 
     /** @return list<PdfBatch> */
     public function batches(string $source, int $pages): array
     {
-        if ($pages < 1 || $pages > self::MAX_PAGES) { throw new \InvalidArgumentException('Nombre de pages invalide.'); }
+        if ($pages < 1 || $pages > $this->parametres->int('ocr.pdf_pages_max')) { throw new \InvalidArgumentException('Nombre de pages invalide.'); }
         $directory = sys_get_temp_dir().'/mdm-ocr-'.bin2hex(random_bytes(8));
         if (!mkdir($directory, 0700) && !is_dir($directory)) { throw new \RuntimeException('Impossible de créer le répertoire OCR temporaire.'); }
         $batches = [];

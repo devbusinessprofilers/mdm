@@ -33,12 +33,13 @@ class AccountInvitation
     #[ORM\Column(type: 'datetime_immutable')]
     private \DateTimeImmutable $createdAt;
 
-    public function __construct(User $user)
+    /** @param int $validiteHeures durée de validité (paramètre compte.invitation_validite_heures, défaut historique 24 h) */
+    public function __construct(User $user, int $validiteHeures = 24)
     {
         $this->id = (string) new Ulid();
         $this->user = $user;
         $this->createdAt = new \DateTimeImmutable();
-        $this->expiresAt = $this->createdAt->modify('+24 hours');
+        $this->expiresAt = $this->createdAt->modify(sprintf('+%d hours', $validiteHeures));
     }
 
     public function id(): string { return $this->id; }

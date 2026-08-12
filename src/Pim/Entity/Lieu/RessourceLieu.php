@@ -353,7 +353,13 @@ class RessourceLieu
         $this->touch();
     }
 
-    public function rightsValidity(?\DateTimeImmutable $today = null): RightsValidityStatus
+    /**
+     * @param int|null $alerteJours délai d'alerte avant échéance ; les
+     *                              appelants de production le lisent du
+     *                              paramètre dam.delai_alerte_droits_jours,
+     *                              null = défaut historique de 30 jours
+     */
+    public function rightsValidity(?\DateTimeImmutable $today = null, ?int $alerteJours = null): RightsValidityStatus
     {
         if (!$this->rightsGranted) {
             return RightsValidityStatus::NotGranted;
@@ -366,7 +372,7 @@ class RessourceLieu
         if ($this->rightsExpiresAt < $today) {
             return RightsValidityStatus::Expired;
         }
-        if ($this->rightsExpiresAt <= $today->modify('+30 days')) {
+        if ($this->rightsExpiresAt <= $today->modify(sprintf('+%d days', $alerteJours ?? 30))) {
             return RightsValidityStatus::Expiring;
         }
 

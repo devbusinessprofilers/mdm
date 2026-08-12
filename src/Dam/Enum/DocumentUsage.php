@@ -30,13 +30,6 @@ enum DocumentUsage: string
         };
     }
 
-    public function maximumBytes(): int
-    {
-        return self::CommercialSupport === $this
-            ? 100 * 1024 * 1024
-            : 10 * 1024 * 1024;
-    }
-
     public function maximumCount(): ?int
     {
         return match ($this) {

@@ -10,8 +10,10 @@ use App\Pim\Entity\Activite\Activite;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Enum\ModeInterventionActivite;
 use App\Pim\Enum\NatureRessource;
+use App\Pim\Enum\TypeFiche;
 use App\Pim\Enum\TypeOffreActivite;
 use App\Pim\Lov\ActiviteLovCatalog;
+use App\Pim\Service\PhotoObligations;
 use Symfony\Component\Validator\Constraint;
 use Symfony\Component\Validator\ConstraintValidator;
 
@@ -19,6 +21,7 @@ final class ValidActiviteValidator extends ConstraintValidator
 {
     public function __construct(
         private readonly MediaAssetRepository $assets,
+        private readonly PhotoObligations $photoObligations,
     ) {
     }
 
@@ -148,9 +151,10 @@ final class ValidActiviteValidator extends ConstraintValidator
                 );
             }
         }
-        if (count($photos) > 10) {
+        $maximum = $this->photoObligations->maximum(TypeFiche::Activite);
+        if (count($photos) > $maximum) {
             $this->violation(
-                'Une activité ne peut pas contenir plus de dix photos.',
+                sprintf('Une activité ne peut pas contenir plus de %d photos.', $maximum),
                 'ressources',
             );
         }
@@ -288,9 +292,11 @@ final class ValidActiviteValidator extends ConstraintValidator
                 ): bool => NatureRessource::Photo === $resource->nature(),
             ),
         );
-        if (count($photos) < 1 || count($photos) > 10) {
+        $minimum = $this->photoObligations->minimum(TypeFiche::Activite);
+        $maximum = $this->photoObligations->maximum(TypeFiche::Activite);
+        if (count($photos) < $minimum || count($photos) > $maximum) {
             $this->violation(
-                'La soumission exige entre une et dix photos.',
+                sprintf('La soumission exige entre %d et %d photos.', $minimum, $maximum),
                 'ressources',
             );
         }

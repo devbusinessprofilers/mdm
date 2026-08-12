@@ -8,6 +8,7 @@ use App\Account\Entity\User;
 use App\Account\Form\AccountAdminFormFactory;
 use App\Account\Repository\UserRepository;
 use App\Account\Service\InternalUserManager;
+use App\Shared\Service\ParametreProviderInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -53,8 +54,12 @@ final class InternalUserAdminController extends AbstractController
     }
 
     #[Route('/inviter', name: 'invite', methods: ['POST'])]
-    public function invite(Request $request, AccountAdminFormFactory $forms, InternalUserManager $manager): Response
-    {
+    public function invite(
+        Request $request,
+        AccountAdminFormFactory $forms,
+        InternalUserManager $manager,
+        ParametreProviderInterface $parametres,
+    ): Response {
         $form = $forms->internalInvite();
         $form->handleRequest($request);
         if (!$form->isSubmitted() || !$form->isValid()) {
@@ -67,7 +72,7 @@ final class InternalUserAdminController extends AbstractController
         $data = $form->getData();
         try {
             $manager->invite($data['email'], $data['role']);
-            $this->addFlash('success', 'Invitation envoyée pour 24 heures.');
+            $this->addFlash('success', sprintf('Invitation envoyée pour %d heures.', $parametres->int('compte.invitation_validite_heures')));
         } catch (\DomainException $exception) {
             $this->addFlash('error', $exception->getMessage());
         }

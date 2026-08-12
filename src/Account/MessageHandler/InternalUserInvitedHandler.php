@@ -8,6 +8,7 @@ use App\Account\Entity\AccountInvitation;
 use App\Account\Message\InternalUserInvited;
 use App\Account\Repository\AccountInvitationRepository;
 use App\Account\Service\InvitationTokenSigner;
+use App\Shared\Service\ParametreProviderInterface;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Mime\Email;
@@ -21,6 +22,7 @@ final readonly class InternalUserInvitedHandler
         private InvitationTokenSigner $signer,
         private UrlGeneratorInterface $urls,
         private MailerInterface $mailer,
+        private ParametreProviderInterface $parametres,
         private string $sender,
     ) {}
 
@@ -36,6 +38,10 @@ final readonly class InternalUserInvitedHandler
             ->from($this->sender)
             ->to($invitation->user()->email())
             ->subject('Votre accès au PIM Business Profilers')
-            ->text("Créez votre mot de passe dans les 24 heures :\n\n".$url));
+            ->text(sprintf(
+                "Créez votre mot de passe dans les %d heures :\n\n%s",
+                $this->parametres->int('compte.invitation_validite_heures'),
+                $url,
+            )));
     }
 }

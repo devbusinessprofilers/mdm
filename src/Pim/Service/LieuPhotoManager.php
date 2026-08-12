@@ -12,6 +12,7 @@ use App\Dam\Service\LieuImageUploader;
 use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Enum\NatureRessource;
+use App\Pim\Enum\TypeFiche;
 use App\Pim\Message\IndexFiche;
 use App\Shared\Message\MediaUploaded;
 use App\Shared\Outbox\OutboxPublisherInterface;
@@ -20,11 +21,11 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 final readonly class LieuPhotoManager
 {
-    public const MAX_PHOTOS = 25;
     private const USAGES = ['PHOTO_PRINCIPALE', 'PHOTO_FACADE', 'PHOTO_CHAMBRE', 'PHOTO_RESTAURATION', 'CONFIG_PHOTO_SALLE', 'PHOTO_DIVERSE', 'CONFIG_PLAN_SALLE', 'LOISIR_EXTERNE_PHOTO', 'PHOTO'];
 
     public function __construct(
         private LieuImageUploader $uploader,
+        private PhotoObligations $photoObligations,
         private EntityManagerInterface $entityManager,
         private OutboxPublisherInterface $outbox,
     ) {}
@@ -39,8 +40,9 @@ final readonly class LieuPhotoManager
     public function upload(Lieu $lieu, array $files): int
     {
         $count = count($this->photos($lieu));
-        if ($count >= self::MAX_PHOTOS) { throw new \DomainException('Le nombre maximal de photos est atteint.'); }
-        if ([] === $files || $count + count($files) > self::MAX_PHOTOS) { throw new \DomainException('Sélectionnez entre 1 et '.(self::MAX_PHOTOS - $count).' image(s).'); }
+        $maximum = $this->photoObligations->maximum(TypeFiche::Lieu);
+        if ($count >= $maximum) { throw new \DomainException('Le nombre maximal de photos est atteint.'); }
+        if ([] === $files || $count + count($files) > $maximum) { throw new \DomainException('Sélectionnez entre 1 et '.($maximum - $count).' image(s).'); }
         $uploaded = [];
         try {
             foreach ($files as $offset => $file) {

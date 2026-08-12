@@ -6,15 +6,13 @@ namespace App\Dam\Service;
 
 use App\Dam\Entity\MediaAsset;
 use App\Pim\Entity\Lieu\Lieu;
+use App\Shared\Service\ParametreProviderInterface;
 use App\Shared\Service\PrivateObjectStorageInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Uid\Ulid;
 
 final readonly class LieuImageUploader
 {
-    private const MAX_SIZE = 25 * 1024 * 1024;
-    private const MIN_WIDTH = 960;
-    private const MIN_HEIGHT = 480;
     // Garde anti « gigapixel » : au-delà, la génération des rendus épuise la mémoire du worker.
     private const MAX_DIMENSION = 12000;
     private const EXTENSIONS = [
@@ -25,6 +23,7 @@ final readonly class LieuImageUploader
 
     public function __construct(
         private PrivateObjectStorageInterface $storage,
+        private ParametreProviderInterface $parametres,
         private string $storagePrefix,
     ) {
     }
@@ -35,9 +34,10 @@ final readonly class LieuImageUploader
         if (false === $path || !is_file($path)) {
             throw new \DomainException("Le fichier téléversé n'est plus disponible.");
         }
+        $maxMo = $this->parametres->int('dam.image_poids_max_mo');
         $size = $file->getSize();
-        if (false === $size || $size > self::MAX_SIZE) {
-            throw new \DomainException('Une image de lieu ne peut pas dépasser 25 Mo.');
+        if (false === $size || $size > $maxMo * 1024 * 1024) {
+            throw new \DomainException(sprintf('Une image de lieu ne peut pas dépasser %d Mo.', $maxMo));
         }
         $image = @getimagesize($path);
         if (!is_array($image)) {
@@ -47,8 +47,10 @@ final readonly class LieuImageUploader
         if (!isset(self::EXTENSIONS[$mimeType])) {
             throw new \DomainException('Formats autorisés : PNG, JPG, JPEG et WEBP.');
         }
-        if ($image[0] < self::MIN_WIDTH || $image[1] < self::MIN_HEIGHT) {
-            throw new \DomainException('Les dimensions minimales sont de 960 × 480 pixels.');
+        $minWidth = $this->parametres->int('dam.image_largeur_min');
+        $minHeight = $this->parametres->int('dam.image_hauteur_min');
+        if ($image[0] < $minWidth || $image[1] < $minHeight) {
+            throw new \DomainException(sprintf('Les dimensions minimales sont de %d × %d pixels.', $minWidth, $minHeight));
         }
         if ($image[0] > self::MAX_DIMENSION || $image[1] > self::MAX_DIMENSION) {
             throw new \DomainException('Les dimensions maximales sont de 12000 × 12000 pixels.');

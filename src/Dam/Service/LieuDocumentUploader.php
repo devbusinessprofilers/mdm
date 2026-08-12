@@ -23,6 +23,7 @@ final readonly class LieuDocumentUploader
 
     public function __construct(
         private PrivateObjectStorageInterface $storage,
+        private DocumentContraintes $contraintes,
         private string $storagePrefix,
     ) {
     }
@@ -37,8 +38,9 @@ final readonly class LieuDocumentUploader
             throw new \DomainException("Le fichier téléversé n'est plus disponible.");
         }
         $size = filesize($path);
-        if (false === $size || $size > $usage->maximumBytes()) {
-            throw new DocumentUploadException(413, sprintf('Ce document ne peut pas dépasser %d Mo.', intdiv($usage->maximumBytes(), 1024 * 1024)));
+        $maximumBytes = $this->contraintes->maximumBytes($usage);
+        if (false === $size || $size > $maximumBytes) {
+            throw new DocumentUploadException(413, sprintf('Ce document ne peut pas dépasser %d Mo.', intdiv($maximumBytes, 1024 * 1024)));
         }
         $mime = (new \finfo(FILEINFO_MIME_TYPE))->file($path);
         $extension = strtolower(

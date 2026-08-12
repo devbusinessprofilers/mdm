@@ -11,17 +11,17 @@ use App\Pim\Entity\FicheAffiliation;
 use App\Pim\Entity\FicheCollaborateur;
 use App\Pim\Repository\FicheAffiliationRepository;
 use App\Pim\Repository\FicheCollaborateurRepository;
+use App\Shared\Service\ParametreProviderInterface;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
 
 final readonly class FicheAffiliationManager
 {
-    public const MAX_REQUEST_RECIPIENTS = 3;
-
     public function __construct(
         private EntityManagerInterface $entityManager,
         private FicheAffiliationRepository $affiliations,
         private FicheCollaborateurRepository $collaborateurs,
+        private ParametreProviderInterface $parametres,
     ) {
     }
 
@@ -116,8 +116,9 @@ final readonly class FicheAffiliationManager
 
     private function assertRecipientCapacity(Fiche $fiche, bool $receivesRequests, ?FicheAffiliation $excluding = null): void
     {
-        if ($receivesRequests && $this->affiliations->countRequestRecipients($fiche, $excluding) >= self::MAX_REQUEST_RECIPIENTS) {
-            throw new \DomainException('Une fiche ne peut avoir que trois destinataires de demandes.');
+        $maximum = $this->parametres->int('compte.max_destinataires_demandes');
+        if ($receivesRequests && $this->affiliations->countRequestRecipients($fiche, $excluding) >= $maximum) {
+            throw new \DomainException(sprintf('Une fiche ne peut avoir que %d destinataires de demandes.', $maximum));
         }
     }
 
