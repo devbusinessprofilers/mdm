@@ -15,6 +15,7 @@ use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\Group;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\DomCrawler\Field\ChoiceFormField;
 use Symfony\Component\Uid\Ulid;
 
 /**
@@ -136,7 +137,11 @@ final class FicheExtractionEditeurTest extends WebTestCase
         self::assertSelectorTextContains('table', '90 %');
 
         $form = $crawler->selectButton('Appliquer les décisions')->form();
-        $form['ocr_review['.$suggestion->id().'][reject]']->tick();
+        $reject = $form['ocr_review['.$suggestion->id().'][reject]'];
+        if (!$reject instanceof ChoiceFormField) {
+            self::fail('Le champ de rejet doit être une case à cocher.');
+        }
+        $reject->tick();
         $client->submit($form);
         self::assertResponseRedirects();
         $client->followRedirect();

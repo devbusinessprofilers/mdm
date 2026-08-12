@@ -40,6 +40,7 @@ final class FicheRouteResolverTest extends TestCase
     private function urlGenerator(): UrlGeneratorInterface
     {
         return new class implements UrlGeneratorInterface {
+            /** @param array<string, mixed> $parameters */
             public function generate(string $name, array $parameters = [], int $referenceType = self::ABSOLUTE_PATH): string
             {
                 return '/'.$name.'/'.($parameters['id'] ?? '');

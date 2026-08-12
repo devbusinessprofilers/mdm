@@ -53,6 +53,9 @@ final class MediasSousOngletsTest extends WebTestCase
         self::assertSame(9, $cartes->count(), 'Les neuf cartes d\'anomalies doivent être présentes.');
 
         foreach ($cartes as $carte) {
+            if (!$carte instanceof \DOMElement) {
+                self::fail('Chaque carte doit être un élément DOM.');
+            }
             $href = (string) $carte->getAttribute('href');
             self::assertStringContainsString('/medias?filter=', $href, 'Les cartes doivent rester sur /medias avec un paramètre filter.');
             $libelle = trim((string) $carte->getElementsByTagName('span')->item(0)?->textContent);

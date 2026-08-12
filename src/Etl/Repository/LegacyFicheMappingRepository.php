@@ -21,7 +21,7 @@ final class LegacyFicheMappingRepository extends ServiceEntityRepository
     {
         $rows = $this->createQueryBuilder('m')->select('m.syspadId')->getQuery()->getSingleColumnResult();
 
-        return array_map(intval(...), $rows);
+        return array_values(array_map(intval(...), $rows));
     }
 
     /** @return list<LegacyFicheMapping> mappings dont les photos n'ont pas encore été déclinées */

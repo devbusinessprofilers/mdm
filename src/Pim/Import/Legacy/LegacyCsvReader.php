@@ -19,7 +19,7 @@ final class LegacyCsvReader
         $handle = $this->open($path);
         try {
             $headers = fgetcsv($handle, null, ',', '"', '');
-            if (!is_array($headers) || [] === $headers) {
+            if (!is_array($headers)) {
                 throw new \RuntimeException('Impossible de lire les en-têtes du CSV.');
             }
             $headers[0] = ltrim((string) $headers[0], "\u{FEFF}");
@@ -42,7 +42,7 @@ final class LegacyCsvReader
             fgetcsv($handle, null, ',', '"', '');
             $recordNumber = 0;
             while (false !== ($cells = fgetcsv($handle, null, ',', '"', ''))) {
-                if ([null] === $cells || [] === $cells) {
+                if ([null] === $cells) {
                     continue;
                 }
                 ++$recordNumber;

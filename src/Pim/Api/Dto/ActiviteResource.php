@@ -309,6 +309,8 @@ final readonly class ActiviteResource
     /**
      * @param array{code:string,label:string}|null $prestataire
      * @param list<string>                         $types
+     * @param list<string>                         $thematiques
+     * @param list<string>                         $sousThematiques
      * @param list<string>                         $langues
      * @param list<string>                         $engagementsRse
      * @param list<string>                         $paysMobiles

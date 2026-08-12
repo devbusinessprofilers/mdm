@@ -67,8 +67,9 @@ final class LegacyRestaurantRowMapperTest extends TestCase
 
         $salles = $restaurant->salles();
         self::assertCount(1, $salles);
-        self::assertSame('Salon privé', $salles->first()->nom());
-        self::assertSame(30, $salles->first()->capaciteBanquet());
+        $salle = $salles->first() ?: self::fail('Le restaurant doit avoir une salle.');
+        self::assertSame('Salon privé', $salle->nom());
+        self::assertSame(30, $salle->capaciteBanquet());
 
         $types = array_map(static fn ($acces) => $acces->type(), $restaurant->acces()->toArray());
         self::assertContains(TypeAccesRestaurant::Aeroport, $types);

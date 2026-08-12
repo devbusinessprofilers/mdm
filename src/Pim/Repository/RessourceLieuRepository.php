@@ -76,6 +76,11 @@ final class RessourceLieuRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    /**
+     * @param list<string> $mediaIds
+     *
+     * @return list<RessourceLieu>
+     */
     public function findByMediaIds(array $mediaIds): array
     {
         if ([] === $mediaIds) {

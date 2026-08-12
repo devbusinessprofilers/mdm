@@ -118,7 +118,7 @@ final class LegacyLieuRowMapperTest extends TestCase
 
         $salles = $lieu->salles();
         self::assertCount(1, $salles);
-        $salle = $salles->first();
+        $salle = $salles->first() ?: self::fail('Le lieu doit avoir une salle.');
         self::assertSame('Salle 1', $salle->nom());
         self::assertSame(120, $salle->superficie());
         self::assertSame(30, $salle->capaciteReunion());

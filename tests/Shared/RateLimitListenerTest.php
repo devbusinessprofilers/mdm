@@ -95,6 +95,7 @@ final class RateLimitListenerTest extends TestCase
         self::assertTrue($response->headers->has('RateLimit-Reset'));
     }
 
+    /** @param non-empty-string $subject */
     private function authenticate(string $subject): void
     {
         $this->tokenStorage->setToken(new PostAuthenticationToken(
