@@ -107,12 +107,17 @@ leurs relations ne basculent donc pas.
 
 ## Validation effectuée (local, 2026-08-12)
 
-- Tests : PIM 510/510 + PHPStan propre ; marketplace 11/11 (services PIM),
+- Tests : PIM 510/510 + PHPStan propre ; marketplace 13/13 (services PIM),
   `lint:container` OK.
-- Bout en bout : `--lov` → 40 attributs / 596 valeurs en miroir, projections
-  posées (40 TypeLieu, 8 Theme, 7 Equipement, 11 TypePrestataire) ; fiche
-  avec `typologie` → relation remplacée sur le front (« Hôtel (toutes
-  catégories) » → « Hôtel 4 étoiles ») ; code inconnu ignoré + warning.
+- Bout en bout, mapping complet : `--lov` → 40 attributs / 596 valeurs en
+  miroir, **149 projections** (40 TypeLieu, 23 Theme, 52 Equipement,
+  9 TypeActivite, 8 Objectif, 6 Langue — toutes adoptées sans doublon,
+  11 TypePrestataire) ; fiche avec `typologie` → relation remplacée sur le
+  front (« Hôtel (toutes catégories) » → « Hôtel 4 étoiles ») ; code inconnu
+  ignoré + warning.
+- Bug préexistant corrigé au passage : l'entité `Langue` déclarait son
+  repository sans l'importer (import orphelin `AtoutRepository`) → HTTP 500
+  à la première résolution du repository.
 
 ## Purge du legacy (décision du 2026-08-12)
 
@@ -124,9 +129,15 @@ relations produit (FK CASCADE : `bp_lieu_type_lieu`, `bp_produit_theme`,
 `bp_produit_equipement`, tables i18n) ; les prestataires pointant un type
 legacy sont détachés (`type_prestataire_id = NULL`, FK RESTRICT).
 
+La purge couvre les sept référentiels projetés : types de lieu, thèmes,
+équipements, types d'activité (activités détachées de leur type, FK
+RESTRICT), objectifs, langues, types de prestataire.
+
 Exécuté en local le 2026-08-12 : 48 lignes supprimées (10 types de lieu,
 9 thèmes, 15 équipements, 14 types de prestataire), ~28 800 relations
-produit purgées, 542 prestataires détachés.
+produit purgées, 542 prestataires détachés ; puis, après le mapping
+complet : 9 types d'activité + 10 objectifs legacy supprimés,
+948 activités détachées (retypées à la resynchronisation).
 
 Conséquences assumées :
 
@@ -137,8 +148,42 @@ Conséquences assumées :
   si le métier les **ajoute au dictionnaire PIM** (`/admin/listes-de-valeurs`)
   — c'est désormais l'unique porte d'entrée.
 
+## Valeurs sans équivalent — audit du 2026-08-12, à arbitrer avec le métier
+
+Rien ne bloque techniquement : ajouter une valeur dans l'admin PIM
+(`/admin/listes-de-valeurs`) suffit, la sync et la projection sont
+automatiques. Pour chaque ligne : créer la valeur dans le PIM, ou acter
+l'abandon.
+
+### Valeurs legacy purgées sans équivalent au dictionnaire
+
+| Référentiel | Disparues | Remarque |
+|---|---|---|
+| Types de lieu | Lieu avec incentive intégré · Avec Hébergements · Restaurant · Résidence / Appart'hotel · Salle / Bureau | « Avec Hébergements » = critère (bloc hébergement) ; « Restaurant » = type de fiche à part ; cousins possibles : « Appartement / Loft », « Salle sèche / de réception » |
+| Thèmes | **Île** · Esat · RSE | Esat existe en typologie (« Lieu ESAT »), RSE ≈ « Eco Responsable » ; Île n'a aucun équivalent |
+| Équipements | **Court de tennis** · **Parcours de golf** · Fibre Optique · Accès PMR | tennis/golf absents de toutes les listes (« Golf » = thématique, « Golfs » = typologie) ; Fibre ≈ « Connexion internet filaire » ; Accès PMR = champ dédié `pmr` |
+| Types d'activité | **Insolites** | seul « Atypique / Insolite » existe, en ambiance de lieu |
+| Objectifs | **Animer** · **Intégration** | les 8 autres ont des équivalents élargis |
+| Types de prestataire | **Photographes** · **Imprimeurs** · **Fleuristes / Décorations** · **Constructions éphémères** · **Signalétiques** · Location de mobiliers | le lot le plus significatif : ces métiers n'ont plus de catégorie (Location ≈ « Divers & Sur-mesure » ?) |
+
+### Écarts cahier des charges ↔ dictionnaire implémenté
+
+L'onglet Typologies du CDC liste **Camping** (séparé — fusionné dans
+« Village vacances / Camping » par la bible), **Cave**, **Moulin**, et le
+libellé long « Châteaux / Domaines / Manoir / Abbaye » (bible : « Châteaux /
+Domaines »). Si la bible fait foi, rien à faire ; sinon, valeurs à créer.
+
+### Hors périmètre volontaire (pas des manques)
+
+Listes restaurant, traiteur et plateaux-repas au miroir sans projection
+(fiches restaurant servies comme des lieux, traiteurs sous Salesforce) ;
+~30 attributs sans référentiel front (RSE détaillé, chaînes hôtelières,
+modes de paiement…).
+
 ## Points ouverts
 
+- Arbitrage métier des valeurs sans équivalent ci-dessus (en priorité les
+  six types de prestataire).
 - Types d'activité et de prestataire en multi-valeurs (règle transitoire
   « première valeur » en place) : chantier décrit dans
   `docs/TODO-referentiels-multi-valeurs.md` du repo marketplace.
