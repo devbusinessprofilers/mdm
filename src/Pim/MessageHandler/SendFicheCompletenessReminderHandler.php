@@ -14,8 +14,8 @@ use App\Pim\Repository\FicheAffiliationRepository;
 use App\Pim\Repository\FicheRelanceRepository;
 use App\Pim\Repository\FicheRepository;
 use App\Pim\Service\CompletenessReminderMailer;
+use App\Shared\Service\ParametreProviderInterface;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Uid\Ulid;
@@ -37,10 +37,7 @@ final readonly class SendFicheCompletenessReminderHandler
         private CompletenessReminderMailer $reminderMailer,
         private MailerInterface $mailer,
         private EntityManagerInterface $entityManager,
-        #[Autowire(env: 'int:COMPLETENESS_REMINDER_THRESHOLD')]
-        private int $threshold,
-        #[Autowire(env: 'int:COMPLETENESS_REMINDER_COOLDOWN_DAYS')]
-        private int $cooldownDays,
+        private ParametreProviderInterface $parametres,
     ) {
     }
 
@@ -54,7 +51,8 @@ final readonly class SendFicheCompletenessReminderHandler
             return;
         }
         $lastSentAt = $this->relances->lastSentAt($fiche);
-        if (null !== $lastSentAt && $lastSentAt > new \DateTimeImmutable(sprintf('-%d days', max(1, $this->cooldownDays)))) {
+        $cooldownDays = $this->parametres->int('completude.delai_rappel_jours');
+        if (null !== $lastSentAt && $lastSentAt > new \DateTimeImmutable(sprintf('-%d days', max(1, $cooldownDays)))) {
             return;
         }
         $detail = $this->resolver->resolve($fiche);
@@ -62,7 +60,7 @@ final readonly class SendFicheCompletenessReminderHandler
             return;
         }
         $score = $detail->completeness();
-        if (!is_int($score) || $score >= $this->threshold) {
+        if (!is_int($score) || $score >= $this->parametres->int('completude.seuil_rappel')) {
             // La fiche a été complétée entre la sélection et l'envoi.
             return;
         }

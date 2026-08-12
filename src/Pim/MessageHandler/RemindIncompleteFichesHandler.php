@@ -7,8 +7,8 @@ namespace App\Pim\MessageHandler;
 use App\Pim\Message\RemindIncompleteFiches;
 use App\Pim\Message\SendFicheCompletenessReminder;
 use App\Pim\Repository\FicheRelanceRepository;
+use App\Shared\Service\ParametreProviderInterface;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Messenger\MessageBusInterface;
 
@@ -24,26 +24,25 @@ final readonly class RemindIncompleteFichesHandler
         private FicheRelanceRepository $relances,
         private MessageBusInterface $bus,
         private LoggerInterface $logger,
-        #[Autowire(env: 'int:COMPLETENESS_REMINDER_THRESHOLD')]
-        private int $threshold,
-        #[Autowire(env: 'int:COMPLETENESS_REMINDER_COOLDOWN_DAYS')]
-        private int $cooldownDays,
+        private ParametreProviderInterface $parametres,
     ) {
     }
 
     public function __invoke(RemindIncompleteFiches $message): void
     {
-        if ($this->threshold <= 0) {
+        $threshold = $this->parametres->int('completude.seuil_rappel');
+        if ($threshold <= 0) {
             return;
         }
-        $cooldownDate = new \DateTimeImmutable(sprintf('-%d days', max(1, $this->cooldownDays)));
-        $ficheIds = $this->relances->findFicheIdsNeedingReminder($this->threshold, $cooldownDate);
+        $cooldownDays = $this->parametres->int('completude.delai_rappel_jours');
+        $cooldownDate = new \DateTimeImmutable(sprintf('-%d days', max(1, $cooldownDays)));
+        $ficheIds = $this->relances->findFicheIdsNeedingReminder($threshold, $cooldownDate);
         foreach ($ficheIds as $ficheId) {
             $this->bus->dispatch(new SendFicheCompletenessReminder($ficheId));
         }
         $this->logger->info('Relances de complétude planifiées.', [
             'fiches' => count($ficheIds),
-            'threshold' => $this->threshold,
+            'threshold' => $threshold,
         ]);
     }
 }

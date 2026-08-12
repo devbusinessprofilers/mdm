@@ -707,4 +707,5 @@ charges. Légende : **Oui** = à faire ou à conserver, **Non** = écarté,
 - [Module Shared](src/Shared/README.md)
 - [Fixtures de démonstration](src/DataFixtures/README.md)
 - [Import legacy — mappings CSV production](docs/import-legacy.md)
+- [Configuration — paramètres applicatifs et variables d'environnement](docs/configuration.md)
 - [Gestion et rotation des secrets](docs/SECRETS.md)

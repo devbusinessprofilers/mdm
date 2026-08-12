@@ -22,6 +22,9 @@ framework:
             # Compteurs de métriques applicatives exposés par /metrics.
             cache.metrics:
                 adapter: cache.app
+            # Surcharges des paramètres applicatifs (table parametre).
+            cache.parametres:
+                adapter: cache.app
 
 when@test:
     framework:
@@ -32,4 +35,6 @@ when@test:
                 rate_limiter.storage:
                     adapter: cache.adapter.array
                 cache.metrics:
+                    adapter: cache.adapter.array
+                cache.parametres:
                     adapter: cache.adapter.array

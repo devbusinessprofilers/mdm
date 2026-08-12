@@ -20,6 +20,7 @@ final readonly class AdminPageCatalog
         'app_account_admin_index' => 'Collaborateurs',
         'app_account_admin_show' => 'Fiche d’un collaborateur',
         'app_account_user_admin_index' => 'Utilisateurs internes',
+        'app_parametre_index' => 'Paramètres applicatifs',
         'app_dam_dashboard' => 'Supervision DAM',
         'api_doc' => 'Documentation API Platform',
         'api_entrypoint' => 'Point d’entrée REST',

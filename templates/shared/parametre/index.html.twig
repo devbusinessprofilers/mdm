@@ -1,0 +1,34 @@
+{% extends 'base.html.twig' %}
+{% block title %}Paramètres applicatifs{% endblock %}
+{% block body %}
+<main class="page">
+    <header class="page-header">
+        <div>
+            <p class="page-kicker">Administration</p>
+            <h1>Paramètres applicatifs</h1>
+            <p class="page-description">Réglages métier modifiables sans redéploiement. Sans surcharge, la valeur par défaut du serveur s'applique ; une surcharge est prise en compte immédiatement côté web et sous cinq minutes par les workers.</p>
+        </div>
+    </header>
+    <section class="card">
+        <table>
+            <thead><tr><th>Paramètre</th><th>Type</th><th>Valeur effective</th><th>Origine</th><th>Actions</th></tr></thead>
+            <tbody>
+            {% for ligne in lignes %}
+                <tr>
+                    <td><code>{{ ligne.parametre.nom }}</code><br><small>{{ ligne.parametre.description }}</small></td>
+                    <td>{{ ligne.parametre.type.label }}</td>
+                    <td>{{ ligne.affichage }}</td>
+                    <td>{% if ligne.parametre.estSurcharge %}<span class="badge badge-warning">Surchargé</span>{% else %}<span class="badge">Défaut</span>{% endif %}</td>
+                    <td>
+                        <a href="{{ path('app_parametre_edit', {nom: ligne.parametre.nom}) }}">Modifier</a>
+                        {% if ligne.reset_form %}{{ form(ligne.reset_form) }}{% endif %}
+                    </td>
+                </tr>
+            {% else %}
+                <tr><td colspan="5">Aucun paramètre : les migrations n'ont pas encore été jouées.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </section>
+</main>
+{% endblock %}

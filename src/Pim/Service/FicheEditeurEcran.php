@@ -27,8 +27,8 @@ use App\Pim\Form\ServiceEvenementielType;
 use App\Pim\Repository\CompletenessFieldConfigurationRepository;
 use App\Pim\Repository\FicheAffiliationRepository;
 use App\Pim\Repository\SiteDiffusionRepository;
+use App\Shared\Service\ParametreProviderInterface;
 use League\Flysystem\FilesystemException;
-use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\FormError;
@@ -80,8 +80,7 @@ final readonly class FicheEditeurEcran
         private FicheWorkflowManager $workflow,
         private OcrCategoryPolicy $ocrCategories,
         private OcrReviewFormFactory $ocrRevues,
-        #[Autowire('%env(bool:BOX_OCR_ENABLED)%')]
-        private bool $ocrActif = false,
+        private ParametreProviderInterface $parametres,
     ) {
     }
 
@@ -305,7 +304,7 @@ final readonly class FicheEditeurEcran
      */
     private function extractionVars(Fiche $fiche): array
     {
-        if (!$this->ocrActif) {
+        if (!$this->parametres->bool('box.ocr_active')) {
             return ['active' => false, 'en_cours' => null, 'form_depot' => null, 'a_revoir' => null, 'form_revue' => null];
         }
         $id = $fiche->idString();

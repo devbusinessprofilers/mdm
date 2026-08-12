@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Shared;
 
 use App\Shared\Alert\AlertNotifier;
+use App\Tests\Support\ParametresFixes;
 use App\Shared\Alert\WorkerFailureAlertSubscriber;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
@@ -30,7 +31,7 @@ final class WorkerFailureAlertSubscriberTest extends TestCase
             }
         };
         $subscriber = new WorkerFailureAlertSubscriber(
-            new AlertNotifier($mailer, new ArrayAdapter(), new NullLogger(), 'ops@example.test', 'noreply@example.test'),
+            new AlertNotifier($mailer, new ArrayAdapter(), new NullLogger(), new ParametresFixes(['alerte.email' => 'ops@example.test']), 'noreply@example.test'),
         );
 
         $retried = new WorkerMessageFailedEvent(new Envelope(new \stdClass()), 'pim', new \RuntimeException('boom'));

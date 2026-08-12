@@ -1,7 +1,5 @@
 twig:
     file_name_pattern: '*.twig'
-    globals:
-        box_ocr_enabled: '%env(bool:BOX_OCR_ENABLED)%'
 
 when@test:
     twig:

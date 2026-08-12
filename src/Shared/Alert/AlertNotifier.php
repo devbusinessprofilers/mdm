@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Shared\Alert;
 
+use App\Shared\Service\ParametreProviderInterface;
 use Psr\Cache\CacheItemPoolInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
@@ -24,15 +25,15 @@ final readonly class AlertNotifier
         private MailerInterface $mailer,
         private CacheItemPoolInterface $cache,
         private LoggerInterface $logger,
-        #[Autowire(env: 'ALERT_EMAIL_TO')]
-        private string $recipient,
+        private ParametreProviderInterface $parametres,
         #[Autowire(env: 'MAILER_FROM')]
         private string $sender,
     ) {}
 
     public function notify(string $type, string $fingerprint, string $subject, string $body): void
     {
-        if ('' === $this->recipient) {
+        $recipient = $this->parametres->string('alerte.email');
+        if ('' === $recipient) {
             return;
         }
         $item = $this->cache->getItem('alert_dedup_'.$type.'_'.hash('sha256', $fingerprint));
@@ -46,7 +47,7 @@ final readonly class AlertNotifier
             $this->mailer->send(
                 (new Email())
                     ->from($this->sender)
-                    ->to($this->recipient)
+                    ->to($recipient)
                     ->subject('[MDM][ALERTE] '.$subject)
                     ->text($body),
             );

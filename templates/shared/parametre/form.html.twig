@@ -1,0 +1,18 @@
+{% extends 'base.html.twig' %}
+{% block title %}Modifier {{ parametre.nom }}{% endblock %}
+{% block body %}
+<main class="page page-narrow">
+    <a class="back-link" href="{{ path('app_parametre_index') }}">← Retour aux paramètres</a>
+    <header class="page-header">
+        <div>
+            <p class="page-kicker"><code>{{ parametre.nom }}</code></p>
+            <h1>Modifier le paramètre</h1>
+            <p class="page-description">{{ parametre.description }}</p>
+        </div>
+    </header>
+    <section class="card">
+        {% if defaut is not null %}<p>Valeur par défaut (serveur) : <code>{{ defaut == '' ? '(vide)' : defaut }}</code></p>{% endif %}
+        {{ form(form) }}
+    </section>
+</main>
+{% endblock %}

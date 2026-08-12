@@ -185,9 +185,19 @@ services:
 
     App\Ocr\Service\DocumentExtractionProviderInterface: '@App\Ocr\Service\BoxExtractProvider'
 
-    App\Dam\Service\MediaAnalysisService:
+    # Paramètres applicatifs modifiables dans /admin : la variable d'env reste
+    # la valeur par défaut, la table `parametre` la surcharge à chaud.
+    App\Shared\Service\ParametreProviderInterface: '@App\Shared\Service\ParametreProvider'
+
+    App\Shared\Service\ParametreProvider:
         arguments:
-            $distanceThreshold: '%env(int:DAM_PHASH_DISTANCE_THRESHOLD)%'
+            $defauts:
+                alerte.email: '%env(ALERT_EMAIL_TO)%'
+                alerte.seuil_file_echec: '%env(ALERT_FAILED_QUEUE_THRESHOLD)%'
+                box.ocr_active: '%env(BOX_OCR_ENABLED)%'
+                completude.delai_rappel_jours: '%env(COMPLETENESS_REMINDER_COOLDOWN_DAYS)%'
+                completude.seuil_rappel: '%env(COMPLETENESS_REMINDER_THRESHOLD)%'
+                dam.seuil_distance_phash: '%env(DAM_PHASH_DISTANCE_THRESHOLD)%'
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones

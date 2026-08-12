@@ -19,6 +19,7 @@ use App\Pim\Repository\FicheAffiliationRepository;
 use App\Pim\Repository\FicheRelanceRepository;
 use App\Pim\Repository\FicheRepository;
 use App\Pim\Service\CompletenessReminderMailer;
+use App\Tests\Support\ParametresFixes;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\Group;
 use Psr\Log\NullLogger;
@@ -98,8 +99,10 @@ final class CompletenessReminderTest extends KernelTestCase
             self::getContainer()->get(FicheRelanceRepository::class),
             $bus,
             new NullLogger(),
-            self::THRESHOLD,
-            self::COOLDOWN_DAYS,
+            new ParametresFixes([
+                'completude.seuil_rappel' => (string) self::THRESHOLD,
+                'completude.delai_rappel_jours' => (string) self::COOLDOWN_DAYS,
+            ]),
         );
         $handler(new RemindIncompleteFiches());
 
@@ -166,8 +169,10 @@ final class CompletenessReminderTest extends KernelTestCase
             new CompletenessReminderMailer('noreply@businessprofilers.fr'),
             $mailer,
             $this->entityManager,
-            self::THRESHOLD,
-            self::COOLDOWN_DAYS,
+            new ParametresFixes([
+                'completude.seuil_rappel' => (string) self::THRESHOLD,
+                'completude.delai_rappel_jours' => (string) self::COOLDOWN_DAYS,
+            ]),
         );
     }
 

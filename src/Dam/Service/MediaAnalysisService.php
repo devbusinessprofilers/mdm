@@ -13,6 +13,7 @@ use App\Dam\Enum\MediaStatus;
 use App\Dam\Repository\MediaAssetRepository;
 use App\Dam\Repository\MediaDuplicateAlertRepository;
 use App\Dam\Repository\MediaPerceptualHashBandRepository;
+use App\Shared\Service\ParametreProviderInterface;
 use App\Shared\Service\PrivateObjectStorageInterface;
 use App\Pim\Repository\RessourceLieuRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -27,7 +28,7 @@ final readonly class MediaAnalysisService
         private MediaPerceptualHashBandRepository $bands,
         private RessourceLieuRepository $resources,
         private EntityManagerInterface $entityManager,
-        private int $distanceThreshold,
+        private ParametreProviderInterface $parametres,
     ) {}
 
     /**
@@ -96,14 +97,15 @@ final readonly class MediaAnalysisService
     private function nearestPerceptualDuplicate(MediaAsset $media, string $hash): array
     {
         $best = null;
-        $bestDistance = $this->distanceThreshold + 1;
+        $distanceThreshold = $this->parametres->int('dam.seuil_distance_phash');
+        $bestDistance = $distanceThreshold + 1;
         foreach ($this->assets->findActiveImagesByStringIds($this->bands->candidateIds($hash, $media->id())) as $candidate) {
             $candidateHash = $candidate->perceptualHash();
             if (null === $candidateHash) {
                 continue;
             }
             $distance = $this->calculator->distance($hash, $candidateHash);
-            if ($distance > $this->distanceThreshold) {
+            if ($distance > $distanceThreshold) {
                 continue;
             }
             if (null === $best || $distance < $bestDistance || ($distance === $bestDistance && [$candidate->createdAt(), $candidate->id()] < [$best->createdAt(), $best->id()])) {

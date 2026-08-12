@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Shared;
 
 use App\Shared\Alert\AlertNotifier;
+use App\Tests\Support\ParametresFixes;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
@@ -51,6 +52,6 @@ final class AlertNotifierTest extends TestCase
             }
         };
 
-        return new AlertNotifier($mailer, new ArrayAdapter(), new NullLogger(), $recipient, 'noreply@example.test');
+        return new AlertNotifier($mailer, new ArrayAdapter(), new NullLogger(), new ParametresFixes(['alerte.email' => $recipient]), 'noreply@example.test');
     }
 }
