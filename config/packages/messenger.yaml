@@ -108,6 +108,7 @@ framework:
             # dédié pour qu'une indisponibilité ne bloque pas la file etl.
             App\Etl\Message\SyncFicheMarketplace: marketplace
             App\Etl\Message\RemoveFicheFromMarketplace: marketplace
+            App\Etl\Message\PruneMarketplacePhotos: marketplace
             'App\Etl\Message\*': etl
             'App\Enrichment\Message\*': enrichment
             'App\Ocr\Message\*': enrichment

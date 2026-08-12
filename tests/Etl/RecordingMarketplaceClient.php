@@ -15,6 +15,12 @@ final class RecordingMarketplaceClient implements MarketplaceClientInterface
     /** @var list<array{code: int, sequence: string}> */
     public array $removals = [];
 
+    /** @var list<array{code: int, sequence: string, locations: list<string>}> */
+    public array $prunes = [];
+
+    /** @var array{removed: int, remaining: int, principaleRemaining: bool}|false|null */
+    public array|false|null $pruneResult = ['removed' => 0, 'remaining' => 4, 'principaleRemaining' => true];
+
     public function __construct(private readonly bool $configured = true)
     {
     }
@@ -36,5 +42,12 @@ final class RecordingMarketplaceClient implements MarketplaceClientInterface
         $this->removals[] = ['code' => $code, 'sequence' => $sequence];
 
         return true;
+    }
+
+    public function pruneFichePhotos(int $code, string $sequence, array $locations): array|false|null
+    {
+        $this->prunes[] = ['code' => $code, 'sequence' => $sequence, 'locations' => $locations];
+
+        return $this->pruneResult;
     }
 }

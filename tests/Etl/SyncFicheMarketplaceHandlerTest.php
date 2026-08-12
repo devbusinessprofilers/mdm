@@ -6,6 +6,7 @@ namespace App\Tests\Etl;
 
 use App\Etl\Entity\FicheMarketplaceSync;
 use App\Etl\Enum\MarketplaceSyncStatus;
+use App\Etl\Message\PruneMarketplacePhotos;
 use App\Etl\Message\RemoveFicheFromMarketplace;
 use App\Etl\Message\SyncFicheMarketplace;
 use App\Etl\MessageHandler\RemoveFicheFromMarketplaceHandler;
@@ -17,8 +18,10 @@ use App\Enrichment\Entity\FicheTranslation;
 use App\Enrichment\Enum\SupportedLocale;
 use App\Pim\Entity\Fiche;
 use App\Pim\Entity\Lieu\Lieu;
+use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Entity\Localisation;
 use App\Pim\Entity\SiteDiffusion;
+use App\Pim\Enum\NatureRessource;
 use App\Pim\Repository\SiteDiffusionRepository;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
@@ -80,6 +83,33 @@ final class SyncFicheMarketplaceHandlerTest extends KernelTestCase
         self::assertNotNull($tracked);
         self::assertSame(MarketplaceSyncStatus::Synced, $tracked->status());
         self::assertSame($payload['sequence'], $tracked->lastSequence());
+        // Payload sans photos : une purge de nettoyage suit l'upsert pour
+        // retirer d'éventuelles lignes PIM orphelines.
+        self::assertSame(1, $this->outboxCount(PruneMarketplacePhotos::class));
+    }
+
+    public function testFicheBelowPhotoPolicyIsPrunedAndDepublished(): void
+    {
+        $fiche = $this->publishedFiche();
+        $resource = new RessourceLieu();
+        $resource->changeDamAssetId((string) new \Symfony\Component\Uid\Ulid());
+        $resource->changeNature(NatureRessource::Photo);
+        $resource->changeUsage('PHOTO_PRINCIPALE');
+        $fiche->preserveWorkflowDuring(function () use ($fiche, $resource): void {
+            $fiche->addResource($resource);
+        });
+        $tracked = new FicheMarketplaceSync($fiche->id(), $fiche->code());
+        $tracked->recordSynced('01JOLDSEQ');
+        $this->entityManager->persist($tracked);
+        $this->entityManager->persist($resource);
+        $this->entityManager->flush();
+
+        $this->handler()(new SyncFicheMarketplace($fiche->idString()));
+        $this->entityManager->flush();
+
+        self::assertSame([], $this->client->upserts);
+        self::assertSame(1, $this->outboxCount(PruneMarketplacePhotos::class));
+        self::assertSame(1, $this->outboxCount(RemoveFicheFromMarketplace::class));
     }
 
     public function testStaleMessageForUnpublishedFicheIsSkipped(): void
@@ -167,6 +197,14 @@ final class SyncFicheMarketplaceHandlerTest extends KernelTestCase
         return $site;
     }
 
+    private function outboxCount(string $messageType): int
+    {
+        return (int) $this->connection->fetchOne(
+            'SELECT COUNT(*) FROM outbox_message WHERE message_type = ?',
+            [$messageType],
+        );
+    }
+
     private function clear(): void
     {
         foreach (
@@ -175,6 +213,7 @@ final class SyncFicheMarketplaceHandlerTest extends KernelTestCase
                 'enrichment_fiche_translation',
                 'etl_fiche_marketplace',
                 'pim_fiche_site_diffusion',
+                'pim_ressource_lieu',
                 'pim_lieu_administratif',
                 'pim_lieu_tarification',
                 'pim_lieu',

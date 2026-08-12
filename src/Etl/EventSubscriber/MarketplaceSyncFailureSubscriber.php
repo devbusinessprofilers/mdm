@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Etl\EventSubscriber;
 
 use App\Etl\Entity\FicheMarketplaceSync;
+use App\Etl\Message\PruneMarketplacePhotos;
 use App\Etl\Message\RemoveFicheFromMarketplace;
 use App\Etl\Message\SyncFicheMarketplace;
 use App\Etl\Repository\FicheMarketplaceSyncRepository;
@@ -39,6 +40,7 @@ final readonly class MarketplaceSyncFailureSubscriber
         if (
             !$message instanceof SyncFicheMarketplace
             && !$message instanceof RemoveFicheFromMarketplace
+            && !$message instanceof PruneMarketplacePhotos
         ) {
             return;
         }

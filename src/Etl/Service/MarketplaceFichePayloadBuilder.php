@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Etl\Service;
 
 use App\Dam\Entity\MediaAsset;
+use App\Dam\Enum\MediaStatus;
 use App\Dam\Repository\MediaAssetRepository;
 use App\Enrichment\Enum\TranslationStatus;
 use App\Enrichment\Repository\FicheTranslationRepository;
@@ -351,6 +352,42 @@ final readonly class MarketplaceFichePayloadBuilder
     /** @return list<array<string, mixed>> */
     private function photos(Fiche $fiche): array
     {
+        $photos = [];
+        foreach ($this->locatedPhotos($fiche) as $located) {
+            $photos[] = [
+                'location' => $located['location'],
+                'legende' => $located['resource']->legende(),
+                'principale' => [] === $photos,
+                'position' => $located['resource']->position(),
+            ];
+        }
+
+        return $photos;
+    }
+
+    /**
+     * Locations des photos que le PIM détient encore pour la fiche : la liste
+     * « à conserver » envoyée à la purge marketplace hors publication.
+     *
+     * @return list<string>
+     */
+    public function photoLocations(Fiche $fiche): array
+    {
+        return array_map(
+            static fn (array $located): string => $located['location'],
+            $this->locatedPhotos($fiche),
+        );
+    }
+
+    /**
+     * Ressources photo résolues en location et triées par position : nature
+     * Photo, asset DAM ni supprimé ni en cours de suppression, rendition
+     * `large` disponible.
+     *
+     * @return list<array{resource: RessourceLieu, location: string}>
+     */
+    private function locatedPhotos(Fiche $fiche): array
+    {
         $resources = array_values(array_filter(
             $fiche->resources()->toArray(),
             static fn (RessourceLieu $r): bool => NatureRessource::Photo === $r->nature(),
@@ -364,24 +401,21 @@ final readonly class MarketplaceFichePayloadBuilder
             static fn (RessourceLieu $r): string => $r->damAssetId(),
             $resources,
         )) as $asset) {
-            $assets[$asset->id()] = $asset;
+            if (!in_array($asset->status(), [MediaStatus::Deleting, MediaStatus::Deleted], true)) {
+                $assets[$asset->id()] = $asset;
+            }
         }
-        $photos = [];
+        $located = [];
         foreach ($resources as $resource) {
             $asset = $assets[$resource->damAssetId()] ?? null;
             $location = null === $asset ? null : $this->location($asset);
             if (null === $location) {
                 continue;
             }
-            $photos[] = [
-                'location' => $location,
-                'legende' => $resource->legende(),
-                'principale' => [] === $photos,
-                'position' => $resource->position(),
-            ];
+            $located[] = ['resource' => $resource, 'location' => $location];
         }
 
-        return $photos;
+        return $located;
     }
 
     /**

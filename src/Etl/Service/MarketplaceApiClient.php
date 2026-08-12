@@ -6,6 +6,7 @@ namespace App\Etl\Service;
 
 use Symfony\Contracts\HttpClient\Exception\ExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
+use Symfony\Contracts\HttpClient\ResponseInterface;
 
 /**
  * Client HTTP de l'API de synchronisation marketplace. L'authentification est
@@ -48,7 +49,7 @@ final class MarketplaceApiClient implements MarketplaceClientInterface
             'PUT',
             sprintf('/api/pim/fiches/%d', $code),
             ['json' => $payload],
-        );
+        )->getStatusCode();
         if (409 === $status) {
             return false;
         }
@@ -68,7 +69,7 @@ final class MarketplaceApiClient implements MarketplaceClientInterface
             'DELETE',
             sprintf('/api/pim/fiches/%d', $code),
             ['query' => ['sequence' => $sequence]],
-        );
+        )->getStatusCode();
         if (409 === $status) {
             return false;
         }
@@ -83,6 +84,43 @@ final class MarketplaceApiClient implements MarketplaceClientInterface
         }
 
         return true;
+    }
+
+    public function pruneFichePhotos(int $code, string $sequence, array $locations): array|false|null
+    {
+        $response = $this->authenticatedRequest(
+            'PUT',
+            sprintf('/api/pim/fiches/%d/photos', $code),
+            ['json' => ['sequence' => $sequence, 'photos' => $locations]],
+        );
+        $status = $response->getStatusCode();
+        if (409 === $status) {
+            return false;
+        }
+        if (404 === $status) {
+            return null;
+        }
+        if ($status < 200 || $status >= 300) {
+            throw new MarketplaceApiException(
+                sprintf('La marketplace a refusé la purge des photos de la fiche %d (HTTP %d).', $code, $status),
+                retryable: self::retryable($status),
+            );
+        }
+        try {
+            $data = $response->toArray(false);
+        } catch (ExceptionInterface $exception) {
+            throw new MarketplaceApiException(
+                sprintf('Réponse illisible à la purge des photos de la fiche %d.', $code),
+                0,
+                $exception,
+            );
+        }
+
+        return [
+            'removed' => (int) ($data['removed'] ?? 0),
+            'remaining' => (int) ($data['remaining'] ?? 0),
+            'principaleRemaining' => (bool) ($data['principaleRemaining'] ?? false),
+        ];
     }
 
     /**
@@ -100,18 +138,18 @@ final class MarketplaceApiClient implements MarketplaceClientInterface
         string $method,
         string $path,
         array $options,
-    ): int {
+    ): ResponseInterface {
         if (!$this->isConfigured()) {
             throw new MarketplaceApiException('MARKETPLACE_SYNC_API_URL n\'est pas configurée.');
         }
-        $status = $this->send($method, $path, $options, $this->obtainToken());
+        $response = $this->send($method, $path, $options, $this->obtainToken());
         // Jeton expiré entre deux appels du worker : une seule ré-authentification.
-        if (401 === $status) {
+        if (401 === $response->getStatusCode()) {
             $this->token = null;
-            $status = $this->send($method, $path, $options, $this->obtainToken());
+            $response = $this->send($method, $path, $options, $this->obtainToken());
         }
 
-        return $status;
+        return $response;
     }
 
     /** @param array<string, mixed> $options */
@@ -120,15 +158,19 @@ final class MarketplaceApiClient implements MarketplaceClientInterface
         string $path,
         array $options,
         string $token,
-    ): int {
+    ): ResponseInterface {
         $options['headers'] = array_merge(
             $options['headers'] ?? [],
             ['Authorization' => 'Bearer '.$token],
         );
         try {
-            return $this->httpClient
-                ->request($method, rtrim($this->endpoint, '/').$path, $options)
-                ->getStatusCode();
+            $response = $this->httpClient
+                ->request($method, rtrim($this->endpoint, '/').$path, $options);
+            // Force la résolution ici : les erreurs transport sortent en
+            // MarketplaceApiException plutôt qu'au premier getStatusCode().
+            $response->getStatusCode();
+
+            return $response;
         } catch (ExceptionInterface $exception) {
             throw new MarketplaceApiException('La marketplace est injoignable.', 0, $exception);
         }

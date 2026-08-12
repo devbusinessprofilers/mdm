@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Etl;
 
 use App\Etl\Entity\FicheMarketplaceSync;
+use App\Etl\Message\PruneMarketplacePhotos;
 use App\Etl\Message\RemoveFicheFromMarketplace;
 use App\Etl\Message\SyncFicheMarketplace;
 use App\Etl\Service\MarketplaceClientInterface;
@@ -100,7 +101,7 @@ final class MarketplaceSyncSchedulerTest extends KernelTestCase
         self::assertSame(1, $this->outboxCount(RemoveFicheFromMarketplace::class));
     }
 
-    public function testDraftFicheKeepsItsLastPublishedState(): void
+    public function testDraftFicheKeepsItsLastPublishedStateButPrunesPhotos(): void
     {
         $fiche = $this->publishedFiche(withSite: true);
         $tracked = new FicheMarketplaceSync($fiche->id(), $fiche->code());
@@ -113,6 +114,35 @@ final class MarketplaceSyncSchedulerTest extends KernelTestCase
         $this->entityManager->flush();
 
         self::assertSame(0, $this->outboxCount(SyncFicheMarketplace::class));
+        self::assertSame(0, $this->outboxCount(RemoveFicheFromMarketplace::class));
+        self::assertSame(1, $this->outboxCount(PruneMarketplacePhotos::class));
+    }
+
+    public function testDraftUntrackedFicheIsIgnored(): void
+    {
+        $fiche = $this->publishedFiche(withSite: true);
+        $fiche->markChanged();
+        $this->entityManager->flush();
+
+        $this->scheduler->schedule($fiche);
+        $this->entityManager->flush();
+
+        self::assertSame(0, $this->outboxCount(PruneMarketplacePhotos::class));
+    }
+
+    public function testDraftRemovedFicheIsStillPruned(): void
+    {
+        $fiche = $this->publishedFiche(withSite: true);
+        $tracked = new FicheMarketplaceSync($fiche->id(), $fiche->code());
+        $tracked->recordRemoved('01JOLDSEQ');
+        $this->entityManager->persist($tracked);
+        $fiche->markChanged();
+        $this->entityManager->flush();
+
+        $this->scheduler->schedule($fiche);
+        $this->entityManager->flush();
+
+        self::assertSame(1, $this->outboxCount(PruneMarketplacePhotos::class));
         self::assertSame(0, $this->outboxCount(RemoveFicheFromMarketplace::class));
     }
 

@@ -34,4 +34,18 @@ interface MarketplaceClientInterface
      * @throws MarketplaceApiException
      */
     public function removeFiche(int $code, string $sequence): bool;
+
+    /**
+     * Purge des photos (PUT /api/pim/fiches/{code}/photos) : la marketplace ne
+     * conserve que les locations transmises, sans jamais en ajouter.
+     *
+     * @param list<string> $locations
+     *
+     * @return array{removed: int, remaining: int, principaleRemaining: bool}|false|null
+     *         les compteurs après purge ; faux sur 409 (séquence dépassée) ;
+     *         null sur 404 (fiche inconnue de la marketplace : rien à purger)
+     *
+     * @throws MarketplaceApiException
+     */
+    public function pruneFichePhotos(int $code, string $sequence, array $locations): array|false|null;
 }

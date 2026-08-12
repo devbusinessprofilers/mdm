@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Etl\Service;
 
 use App\Etl\Enum\MarketplaceSyncStatus;
+use App\Etl\Message\PruneMarketplacePhotos;
 use App\Etl\Message\RemoveFicheFromMarketplace;
 use App\Etl\Message\SyncFicheMarketplace;
 use App\Etl\Repository\FicheMarketplaceSyncRepository;
@@ -20,8 +21,10 @@ use App\Shared\Outbox\OutboxPublisherInterface;
  *  - fiche publiée et diffusée sur le site marketplace → envoi (upsert) ;
  *  - fiche archivée, ou publiée sans le site, alors que la marketplace la
  *    connaît → dépublication ;
- *  - autres statuts (en cours, en attente, validée) → rien : la marketplace
- *    conserve le dernier état publié jusqu'à la republication.
+ *  - autres statuts (en cours, en attente, validée) : la marketplace conserve
+ *    le dernier état publié jusqu'à la republication, mais les photos
+ *    supprimées du PIM doivent en être purgées — leurs fichiers S3 sont déjà
+ *    détruits.
  */
 final class MarketplaceSyncScheduler
 {
@@ -59,15 +62,24 @@ final class MarketplaceSyncScheduler
             return;
         }
         $tracked = $this->tracking->forFiche($fiche->id());
-        if (null === $tracked || MarketplaceSyncStatus::Removed === $tracked->status()) {
+        if (null === $tracked) {
             return;
         }
         if (
             StatutFiche::Archivee === $fiche->status()
             || (StatutFiche::Publiee === $fiche->status() && !$diffusable)
         ) {
-            $this->outbox->enqueue(new RemoveFicheFromMarketplace($fiche->idString()));
+            if (MarketplaceSyncStatus::Removed !== $tracked->status()) {
+                $this->outbox->enqueue(new RemoveFicheFromMarketplace($fiche->idString()));
+            }
+
+            return;
         }
+        // Statuts intermédiaires : purge des photos supprimées du snapshot
+        // encore servi — y compris pour une fiche déjà dépubliée, dont les
+        // lignes photo doivent aussi disparaître. Le handler ré-évalue tout
+        // au traitement (no-op sûr).
+        $this->outbox->enqueue(new PruneMarketplacePhotos($fiche->idString()));
     }
 
     /** La fiche a-t-elle sélectionné le site marketplace (actif) ? */

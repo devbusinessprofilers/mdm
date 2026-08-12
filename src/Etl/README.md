@@ -48,6 +48,19 @@ applique les payloads reçus, le PIM décide de tout.
 
 - Un statut `en_cours`/`validee` après modification ne retire PAS la fiche :
   la marketplace conserve le dernier état publié jusqu'à republication.
+- Exception : une photo supprimée du PIM est retirée du snapshot même hors
+  publication. `MarketplaceSyncScheduler` enfile `PruneMarketplacePhotos`
+  (transport `marketplace`), dont le handler envoie la liste des locations
+  encore détenues à `PUT /api/pim/fiches/{code}/photos` : la marketplace
+  supprime ses lignes `bp_photo` PIM absentes de la liste, sans jamais en
+  ajouter — l'éditorial publié et les photos ajoutées en brouillon ne bougent
+  pas.
+- Obligations photos (`MarketplacePhotoPolicy`, seuils des validateurs de
+  soumission : 4 photos pour un Lieu, 1 sinon, plus la photo principale) : si
+  le snapshot passe en dessous après une suppression, la fiche est dépubliée
+  de la marketplace jusqu'à sa republication PIM. Les fiches encore sur
+  imagerie legacy (aucune photo PIM, `removed + remaining = 0` à la purge) ne
+  sont jamais dépubliées pour ce motif.
 - `DELETE` = dépublication (`is_published=false`), jamais de suppression.
 - 409 (séquence dépassée) et 404 (jamais reçue) sont des succès.
 - Photos : chemins relatifs des rendus DAM (`photos/{variante}/…`), la

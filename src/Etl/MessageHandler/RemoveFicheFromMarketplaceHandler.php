@@ -9,6 +9,7 @@ use App\Etl\Message\RemoveFicheFromMarketplace;
 use App\Etl\Repository\FicheMarketplaceSyncRepository;
 use App\Etl\Service\MarketplaceApiException;
 use App\Etl\Service\MarketplaceClientInterface;
+use App\Etl\Service\MarketplacePhotoPolicy;
 use App\Etl\Service\MarketplaceSyncScheduler;
 use App\Pim\Entity\Fiche;
 use App\Pim\Enum\StatutFiche;
@@ -25,6 +26,7 @@ final readonly class RemoveFicheFromMarketplaceHandler
         private FicheRepository $fiches,
         private FicheMarketplaceSyncRepository $tracking,
         private MarketplaceSyncScheduler $scheduler,
+        private MarketplacePhotoPolicy $photoPolicy,
         private MarketplaceClientInterface $client,
         private LoggerInterface $logger,
     ) {
@@ -39,11 +41,14 @@ final readonly class RemoveFicheFromMarketplaceHandler
             return;
         }
         $fiche = $this->fiches->find($ficheId);
-        // Rediffusée entre-temps : le Sync qui suit ce changement fera foi.
+        // Rediffusée entre-temps : le Sync qui suit ce changement fera foi —
+        // sauf si ses photos PIM ne suffisent plus à la diffusion, auquel cas
+        // la dépublication reste due.
         if (
             $fiche instanceof Fiche
             && StatutFiche::Publiee === $fiche->status()
             && $this->scheduler->diffusable($fiche)
+            && $this->photoPolicy->allowsPublication($fiche)
         ) {
             return;
         }
