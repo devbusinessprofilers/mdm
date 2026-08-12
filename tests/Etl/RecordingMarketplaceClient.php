@@ -15,6 +15,9 @@ final class RecordingMarketplaceClient implements MarketplaceClientInterface
     /** @var list<array{code: int, sequence: string}> */
     public array $removals = [];
 
+    /** @var list<array<string, mixed>> */
+    public array $lovUpserts = [];
+
     /** @var list<array{code: int, sequence: string, locations: list<string>}> */
     public array $prunes = [];
 
@@ -33,6 +36,13 @@ final class RecordingMarketplaceClient implements MarketplaceClientInterface
     public function upsertFiche(int $code, array $payload): bool
     {
         $this->upserts[] = ['code' => $code, 'payload' => $payload];
+
+        return true;
+    }
+
+    public function upsertLovDictionary(array $payload): bool
+    {
+        $this->lovUpserts[] = $payload;
 
         return true;
     }

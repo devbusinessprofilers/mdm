@@ -109,6 +109,7 @@ framework:
             App\Etl\Message\SyncFicheMarketplace: marketplace
             App\Etl\Message\RemoveFicheFromMarketplace: marketplace
             App\Etl\Message\PruneMarketplacePhotos: marketplace
+            App\Etl\Message\SyncLovDictionary: marketplace
             'App\Etl\Message\*': etl
             'App\Enrichment\Message\*': enrichment
             'App\Ocr\Message\*': enrichment

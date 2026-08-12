@@ -63,6 +63,26 @@ final class MarketplaceApiClient implements MarketplaceClientInterface
         return true;
     }
 
+    public function upsertLovDictionary(array $payload): bool
+    {
+        $status = $this->authenticatedRequest(
+            'PUT',
+            '/api/pim/referentiels',
+            ['json' => $payload],
+        )->getStatusCode();
+        if (409 === $status) {
+            return false;
+        }
+        if ($status < 200 || $status >= 300) {
+            throw new MarketplaceApiException(
+                sprintf('La marketplace a refusé le dictionnaire LOV (HTTP %d).', $status),
+                retryable: self::retryable($status),
+            );
+        }
+
+        return true;
+    }
+
     public function removeFiche(int $code, string $sequence): bool
     {
         $status = $this->authenticatedRequest(

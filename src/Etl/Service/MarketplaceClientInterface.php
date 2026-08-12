@@ -25,6 +25,19 @@ interface MarketplaceClientInterface
     public function upsertFiche(int $code, array $payload): bool;
 
     /**
+     * Upsert du snapshot complet du dictionnaire LOV
+     * (PUT /api/pim/referentiels).
+     *
+     * @param array<string, mixed> $payload
+     *
+     * @return bool vrai si le snapshot est appliqué, faux sur 409 (séquence
+     *              dépassée) : la marketplace détient déjà un état plus récent
+     *
+     * @throws MarketplaceApiException
+     */
+    public function upsertLovDictionary(array $payload): bool;
+
+    /**
      * Dépublication (DELETE /api/pim/fiches/{code}). Une réponse 404 est un
      * succès : la fiche n'a jamais atteint la marketplace.
      *

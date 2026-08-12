@@ -8,6 +8,7 @@ use App\Enrichment\Entity\AttributeValueTranslation;
 use App\Enrichment\Enum\SupportedLocale;
 use App\Enrichment\Repository\AttributeValueTranslationRepository;
 use App\Enrichment\Service\LovTranslationScheduler;
+use App\Etl\Service\MarketplaceLovSyncScheduler;
 use App\Pim\Entity\AttributDefinition;
 use App\Pim\Entity\ValeurAttribut;
 use App\Pim\Lov\LovRuntimeCatalog;
@@ -23,6 +24,7 @@ final readonly class LovAdminManager
         private AttributeValueTranslationRepository $translations,
         private LovStableIdGenerator $ids,
         private LovTranslationScheduler $scheduler,
+        private MarketplaceLovSyncScheduler $marketplace,
         private LovRuntimeCatalog $runtime,
     ) {}
 
@@ -45,6 +47,9 @@ final readonly class LovAdminManager
         $this->scheduler->scheduleValue($value);
         $this->entityManager->flush();
         $this->applyManualTranslations($value, $data, $actor);
+        // Même transaction que la mutation (outbox) : la marketplace reçoit
+        // le snapshot complet du dictionnaire.
+        $this->marketplace->schedule();
         $this->entityManager->flush();
         $this->runtime->reload();
 
@@ -62,6 +67,7 @@ final readonly class LovAdminManager
             $this->scheduler->scheduleValue($value);
         }
         $this->applyManualTranslations($value, $data, $actor);
+        $this->marketplace->schedule();
         $this->entityManager->flush();
         $this->runtime->reload();
     }

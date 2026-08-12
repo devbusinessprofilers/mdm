@@ -124,6 +124,25 @@ final class ValeurAttributRepository extends ServiceEntityRepository
         return $rows;
     }
 
+    /**
+     * Lignes du dictionnaire pour la diffusion marketplace : toutes les
+     * valeurs, désactivées comprises (une désactivation doit être poussée
+     * pour dépublier la valeur côté marketplace).
+     *
+     * @return list<array{attribute_code: string, code: string, label: string, position: int|string, active: int|string|bool}>
+     */
+    public function findDictionaryRows(): array
+    {
+        /** @var list<array{attribute_code: string, code: string, label: string, position: int|string, active: int|string|bool}> */
+        return $this->getEntityManager()->getConnection()->fetchAllAssociative(
+            "SELECT a.code attribute_code, v.code, v.label, v.position, v.active
+             FROM pim_attribute_value v
+             INNER JOIN pim_attribute_definition a ON a.id = v.attribute_id
+             WHERE a.code <> 'PRESTATAIRE'
+             ORDER BY a.code, v.position, v.id",
+        );
+    }
+
     public function upsertPrestataire(int $id, int $attributeId, string $code, string $label, int $position): void
     {
         $this->getEntityManager()->getConnection()->executeStatement(

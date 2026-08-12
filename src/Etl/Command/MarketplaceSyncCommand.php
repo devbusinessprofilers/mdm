@@ -6,6 +6,7 @@ namespace App\Etl\Command;
 
 use App\Etl\Repository\FicheMarketplaceSyncRepository;
 use App\Etl\Service\MarketplaceClientInterface;
+use App\Etl\Service\MarketplaceLovSyncScheduler;
 use App\Etl\Service\MarketplaceSyncScheduler;
 use App\Pim\Entity\Fiche;
 use App\Pim\Repository\FicheRepository;
@@ -19,7 +20,9 @@ use Symfony\Component\Uid\Ulid;
 
 /**
  * Reprise de la synchronisation marketplace : pousse tout le stock publié
- * (reprise initiale), une fiche précise, ou rejoue les fiches en erreur.
+ * (reprise initiale), une fiche précise, rejoue les fiches en erreur, ou
+ * pousse le dictionnaire LOV (--lov, à faire AVANT --all au go-live : les
+ * fiches référencent les valeurs par code).
  * La commande ne fait qu'enfiler les messages ; l'envoi reste asynchrone
  * (worker du transport `marketplace`).
  */
@@ -31,6 +34,7 @@ final class MarketplaceSyncCommand extends Command
         private readonly FicheRepository $fiches,
         private readonly FicheMarketplaceSyncRepository $tracking,
         private readonly MarketplaceSyncScheduler $scheduler,
+        private readonly MarketplaceLovSyncScheduler $lovScheduler,
         private readonly MarketplaceClientInterface $client,
     ) {
         parent::__construct();
@@ -41,6 +45,7 @@ final class MarketplaceSyncCommand extends Command
         $this->addOption('all', null, InputOption::VALUE_NONE, 'Toutes les fiches publiées (reprise initiale)')
             ->addOption('fiche', null, InputOption::VALUE_REQUIRED, 'ULID d\'une fiche précise')
             ->addOption('failed', null, InputOption::VALUE_NONE, 'Rejoue les fiches en erreur')
+            ->addOption('lov', null, InputOption::VALUE_NONE, 'Pousse le dictionnaire LOV (listes de valeurs)')
             ->addOption('batch', null, InputOption::VALUE_REQUIRED, 'Taille des lots de la reprise complète', '100');
     }
 
@@ -52,10 +57,17 @@ final class MarketplaceSyncCommand extends Command
             return Command::FAILURE;
         }
         $ficheId = trim((string) $input->getOption('fiche'));
-        if (1 !== count(array_filter([$input->getOption('all'), '' !== $ficheId, $input->getOption('failed')]))) {
-            $output->writeln('<error>Choisir exactement une option : --all, --fiche=ULID ou --failed.</error>');
+        if (1 !== count(array_filter([$input->getOption('all'), '' !== $ficheId, $input->getOption('failed'), $input->getOption('lov')]))) {
+            $output->writeln('<error>Choisir exactement une option : --all, --fiche=ULID, --failed ou --lov.</error>');
 
             return Command::INVALID;
+        }
+        if ($input->getOption('lov')) {
+            $this->lovScheduler->schedule();
+            $this->entityManager->flush();
+            $output->writeln('<info>Dictionnaire LOV planifié.</info>');
+
+            return Command::SUCCESS;
         }
         if ('' !== $ficheId) {
             if (!Ulid::isValid($ficheId)) {
