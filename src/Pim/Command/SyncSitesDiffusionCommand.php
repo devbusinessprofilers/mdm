@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Pim\Command;
 
+use App\Etl\Service\MarketplaceSyncScheduler;
 use App\Pim\Entity\SiteDiffusion;
 use App\Pim\Enum\TypeFiche;
 use App\Pim\Repository\SiteDiffusionRepository;
@@ -19,9 +20,13 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  * entrée existante : les libellés, groupes, mentions et positions du catalogue
  * sont réappliqués, les sites inconnus du catalogue restent intacts.
  *
- * ⚠️ Le catalogue ci-dessous est PROVISOIRE : il reprend la liste de la
- * maquette front (test-integration) en attendant la liste métier réelle.
- * Remplacer les entrées puis relancer la commande suffira.
+ * Catalogue métier réel (2026-08-13) : les 38 sites de la colonne
+ * « Attribution visibilité » du XLSX production `listes_fiches_produits_*`
+ * (libellés conservés à l'identique — l'import legacy des collaborateurs
+ * résout les sites par libellé). Les groupes sont un rangement éditorial,
+ * modifiables dans l'admin. « Business Profilers » est porté par le site
+ * `marketplace_bp` existant : c'est la marketplace, son code déclenche la
+ * synchronisation (MarketplaceSyncScheduler::SITE_CODE).
  */
 #[AsCommand(name: 'app:sites-diffusion:sync', description: 'Synchronise le référentiel des sites de diffusion avec le catalogue embarqué.')]
 final class SyncSitesDiffusionCommand extends Command
@@ -32,44 +37,54 @@ final class SyncSitesDiffusionCommand extends Command
      * @var array<string, list<array{string, string, bool, bool, bool}>>
      */
     private const CATALOGUE = [
-        'Réseau Business Profilers' => [
-            ['BUSINESS_PROFILERS', 'Business Profilers', true, false, false],
-            ['BP_LIEUX', 'BP Lieux', false, false, true],
-            ['BP_SEMINAIRES', 'BP Séminaires', false, false, true],
-            ['BP_EVENEMENTS', 'BP Événements', false, false, false],
+        'Business Profilers' => [
+            // 26 612 fiches sur 26 900 dans l'export production : présélectionné.
+            [MarketplaceSyncScheduler::SITE_CODE, 'Business Profilers', false, false, true],
         ],
-        'Partenaires MICE' => [
-            ['BEDOUK', 'Bedouk', false, false, true],
-            ['ABC_SALLES', 'ABC Salles', false, false, false],
-            ['1001_SALLES', '1001 Salles', false, false, false],
-            ['SEMINAIRE_COM', 'Séminaire.com', false, false, true],
-            ['KACTUS', 'Kactus', false, false, true],
-            ['EVENTMAKER', 'Eventmaker', false, false, false],
-            ['MEETINGPACKAGE', 'MeetingPackage', false, false, false],
-            ['CVENT', 'Cvent', false, false, false],
-            ['VENUEDIRECTORY', 'VenueDirectory', false, false, false],
+        'BPmeetings' => [
+            ['bpmeetings_fr', 'BPmeetings FR', false, false, false],
+            ['bpmeetings_de', 'BPmeetings DE', false, false, false],
+            ['bpmeetings_es', 'BPmeetings ES', false, false, false],
+            ['bpmeetings_uk', 'BPmeetings UK', false, false, false],
+            ['bpmeetings_it', 'BPmeetings IT', false, false, false],
+            ['bpmeetings_us', 'BPmeetings US', false, false, false],
+            ['bpmeetings_nl', 'BPmeetings NL', false, false, false],
         ],
-        'Régies & médias' => [
-            ['FIGARO_EVENEMENTS', 'Le Figaro Événements', false, true, true],
-            ['ECHOS_LE_PARISIEN', 'Les Échos Le Parisien', false, true, false],
-            ['CHALLENGES', 'Challenges', false, false, false],
-            ['STRATEGIES', 'Stratégies', false, false, false],
-            ['VOYAGES_AFFAIRES', "Voyages d'Affaires", false, false, false],
-            ['DEPLACEMENTS_PROS', 'Déplacements Pros', false, false, false],
-            ['ECHO_TOURISTIQUE', "L'Écho Touristique", false, false, false],
-            ['TENDANCE_HOTELLERIE', 'Tendance Hôtellerie', false, false, false],
+        'Guides & supports' => [
+            ['hotel_seminaire', 'Hôtel & Séminaire', false, false, false],
+            ['web_seminaire_business_france', 'WEB Séminaire Business France', false, false, false],
+            ['guide_sbf', 'Guide SBF', false, false, false],
+            ['vouchers', 'VOUCHERS', false, false, false],
         ],
-        'International' => [
-            ['TRIVAGO_BUSINESS', 'Trivago Business', false, false, false],
-            ['BOOKING_MEETINGS', 'Booking Meetings', false, false, false],
-            ['HRS_MEETINGS', 'HRS Meetings', false, false, false],
-            ['CITUATION', 'Cituation', false, false, false],
-            ['VENUU', 'Venuu', false, false, false],
-            ['TAGVENUE', 'Tagvenue', false, false, true],
-            ['VENUESCANNER', 'VenueScanner', false, false, false],
-            ['SPACEBASE', 'Spacebase', false, false, false],
-            ['EVENTUP', 'EventUp', false, false, false],
-            ['HIRE_SPACE', 'Hire Space', false, false, false],
+        'Sites thématiques' => [
+            ['seminaire_paris', 'Séminaire PARIS', false, false, false],
+            ['seminaire_chateau', 'Séminaire CHATEAU', false, false, false],
+            ['seminaire_mer', 'Séminaire MER', false, false, false],
+            ['seminaire_paca', 'Séminaire PACA', false, false, false],
+            ['destination_chantilly', 'Destination CHANTILLY', false, false, false],
+            ['seminaire_montagne', 'Séminaire MONTAGNE', false, false, false],
+            ['fontainebleau_seminaire', 'Fontainebleau Séminaire', false, false, false],
+            ['seminaire_au_vert', 'Séminaire au vert', false, false, false],
+        ],
+        'Sites régionaux' => [
+            ['bretagne', 'Bretagne', false, false, false],
+            ['lyon', 'Lyon', false, false, false],
+            ['strasbourg_colmar', 'Strasbourg / Colmar', false, false, false],
+            ['nantes', 'Nantes', false, false, false],
+            ['toulouse', 'Toulouse', false, false, false],
+            ['lille', 'Lille', false, false, false],
+            ['montpellier', 'Montpellier', false, false, false],
+            ['annecy', 'Annecy', false, false, false],
+            ['bordeaux', 'Bordeaux', false, false, false],
+            ['biarritz', 'Biarritz', false, false, false],
+            ['tours', 'Tours', false, false, false],
+            ['corse', 'Corse', false, false, false],
+            ['roissy_cdg', 'Roissy CDG', false, false, false],
+            ['reims', 'Reims', false, false, false],
+            ['versailles', 'Versailles', false, false, false],
+            ['rennes', 'Rennes', false, false, false],
+            ['normandie', 'Normandie', false, false, false],
+            ['marne_la_vallee', 'Marne-la-Vallée', false, false, false],
         ],
     ];
 
@@ -111,7 +126,6 @@ final class SyncSitesDiffusionCommand extends Command
         $this->entityManager->flush();
 
         $io->success(sprintf('Sites de diffusion synchronisés : %d créés, %d mis à jour.', $created, $updated));
-        $io->note('Catalogue provisoire issu de la maquette — à remplacer par la liste métier.');
 
         return Command::SUCCESS;
     }

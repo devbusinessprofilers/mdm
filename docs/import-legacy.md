@@ -10,13 +10,13 @@ Reprise des données de production (`lists_infos_produits_v2_*.csv`, 91 colonnes
 | `app:legacy:import-restaurants` | Fiches Restaurant | Gamme = Restaurant (~2 918) |
 | `app:legacy:import-photos` | Photos + variantes WebP | Toutes les fiches importées |
 | `app:legacy:import-translations` | Traductions (6 locales) | Lues dans le **dump SQL** de production (rejouable en prod au déploiement) |
-| `app:legacy:import-collaborateurs` | Collaborateurs + statut Business Premium | Lus dans le **XLSX** `listes_fiches_produits_*.xlsx` (~27 000 lignes) |
+| `app:legacy:import-collaborateurs` | Collaborateurs + statut Business Premium + visibilité (sites de diffusion) | Lus dans le **XLSX** `listes_fiches_produits_*.xlsx` (~27 000 lignes) |
 
 **Pivot** : `pim_fiche.code` = « Id syspad » du CSV (fourni à l'insert, le trigger n'attribue le compteur qu'aux fiches créées sans code). La table `etl_legacy_fiche` (syspad ↔ fiche ULID, gamme, photos_json) porte l'idempotence ; `etl_legacy_photo` suit chaque photo (statuts `pending/done/error/missing_file/invalid/skipped_limit`).
 
 ## Sources et préfixe S3
 
-- **CSV + dump SQL** : `var/tmp/import/` du projet (chemins par défaut des `--file`). En dev, le docker-compose parent y monte le dossier hôte en lecture seule ; en prod, y déposer les fichiers le jour du déploiement.
+- **CSV + dump SQL + XLSX collaborateurs** : `var/tmp/import/` du projet (chemins par défaut des `--file`), ignoré par git. En dev les fichiers y sont déposés directement (`lists_infos_produits_v2_06-08-2026_02H24.csv`, `dump-production.sql`, `listes_fiches_produits_06-08-2026_17H31.xlsx`) ; en prod, y déposer les fichiers le jour du déploiement.
 - **Images originales** : dossier `tmp/` **à la racine du bucket S3 privé** (source par défaut de `app:legacy:import-photos`, option `--images-s3-prefix`). L'option `--images-dir` bascule sur une copie locale (montée sur `/var/legacy-images` en dev).
 - **Préfixe des médias** : tous les chemins S3 (imports, uploads via les fiches, documents) suivent `{S3_PREFIX}/{type d'entité}/…`. `S3_PREFIX` vaut `dev` par défaut ; en préprod/prod, définir la valeur de l'environnement (variable Upsun). Ne jamais surcharger le préfixe à la main dans les commandes.
 
@@ -38,7 +38,8 @@ php bin/console app:legacy:import-photos --retry-errors   # reprise si besoin
 php bin/console app:legacy:import-translations        # 6. traductions (dump SQL)
 # 7. Nettoyage : supprimer var/tmp/import/ et le dossier tmp/ du bucket privé
 #    (déposer d'abord le XLSX de l'étape 8 s'il n'y est pas encore)
-php bin/console app:legacy:import-collaborateurs      # 8. collaborateurs + Business Premium (XLSX)
+php bin/console app:sites-diffusion:sync              # 8a. référentiel des sites (catalogue métier)
+php bin/console app:legacy:import-collaborateurs      # 8b. collaborateurs + Business Premium + visibilité (XLSX)
 ```
 
 Chaque import accepte `--dry-run` (répétition sans écriture ; pour les photos en mode S3, seule la présence des objets est contrôlée). En local, cibler la base réelle sans toucher `.env.local` :
@@ -80,7 +81,14 @@ Options communes des imports de fiches : `--file`, `--dry-run`, `--limit`, `--fr
 | Accès PMR | `pmrAcces` | booléen |
 | Photos (JSON) | `etl_legacy_fiche.photos_json` | traité par `app:legacy:import-photos` |
 
-**Colonnes ignorées (Lieu)** : Restauration / Gastronomie (aucun champ description restauration sur `pim_lieu` — même lacune que les traductions `restaurationFr`), Offre spéciale + dates promotion (pas de champ cible), Téléphone (seul un téléphone de facturation existe côté administratif), Lien youtube (champ vidéo inexistant sur Lieu), Plan des salles, Le mot de l'expert, colonnes activité/prestataire (80-86, 88-91).
+**Colonnes ignorées (Lieu)** : Restauration / Gastronomie et Le mot de l'expert (champs supprimés de la marketplace le 2026-08-13, non repris), Lien youtube (champ vidéo inexistant sur Lieu), Plan des salles, colonnes activité/prestataire (80-86, 88-91).
+
+**Offre spéciale + dates promotion (reprises le 2026-08-13)** : vers `pim_lieu_tarification` (`offre_speciale`, `promotion_debut/fin`, bloc « Tarifs & formules ») — les en-têtes exacts variant selon l'export, la résolution se fait par motif (`/^offre spéciale/`, `/début|fin .* promo/`) : à vérifier au retour du CSV dans `var/tmp/import`.
+
+**Depuis le 2026-08-13** : la colonne « Téléphone » est reprise sur toutes
+les gammes (`pim_fiche.telephone`, source du `bp_produit.telephone` de la
+marketplace) — relancer l'import (idempotent) pour peupler les fiches déjà
+importées.
 
 ## Mapping Activité (`LegacyActiviteRowMapper`)
 
@@ -120,7 +128,7 @@ Options communes des imports de fiches : `--file`, `--dry-run`, `--limit`, `--fr
 | Pays…Ville, GPS | `Localisation` | idem Lieu |
 | Photos (JSON) | `photos_json` du pivot | plafond 10, usages PRINCIPALE/DIVERSE |
 
-**Colonnes ignorées (Service)** : Les plus 1-5 (pas d'atouts sur les services — warning), Téléphone, Objectifs, Tag. Booléens d'adaptabilité, matériel, sur devis et les 4 autres tarifs : aucune donnée CSV → null, à compléter dans l'admin.
+**Colonnes ignorées (Service)** : Les plus 1-5 (pas d'atouts sur les services — warning), Objectifs, Tag. Booléens d'adaptabilité, matériel, sur devis et les 4 autres tarifs : aucune donnée CSV → null, à compléter dans l'admin.
 
 ## Mapping Restaurant (`LegacyRestaurantRowMapper`)
 
@@ -139,7 +147,7 @@ Options communes des imports de fiches : `--file`, `--dry-run`, `--limit`, `--fr
 | Lien youtube | `youtubeUrl` | tronqué 255 |
 | Photos (JSON) | `photos_json` du pivot | plafond 10, usages PRINCIPALE/DIVERSE |
 
-**Colonnes ignorées (Restaurant)** : Classification ★ (8 lignes, étoiles hôtelières), Salles de séminaires (texte — pas de champ cible + warning), Hébergement (532 restaurants d'hôtels — l'hébergement est porté par la fiche Lieu), colonnes chambres/tarifs séminaire, Téléphone. Types de cuisine, jours d'ouverture, horaires, privatisation, services : aucune donnée CSV → à compléter dans l'admin.
+**Colonnes ignorées (Restaurant)** : Classification ★ (8 lignes, étoiles hôtelières), Salles de séminaires (texte — pas de champ cible + warning), Hébergement (532 restaurants d'hôtels — l'hébergement est porté par la fiche Lieu), colonnes chambres/tarifs séminaire. Types de cuisine, jours d'ouverture, horaires, privatisation, services : aucune donnée CSV → à compléter dans l'admin.
 
 ## Photos (`app:legacy:import-photos`)
 
@@ -184,7 +192,19 @@ Source : le **XLSX** `listes_fiches_produits_*.xlsx` (`--file`, défaut `var/tmp
 Écritures :
 - `FicheCollaborateur` (unique par email, normalisé minuscules) + `FicheAffiliation` (unique par couple collaborateur × fiche ; rôle `--role`, défaut `utilisateur` ; auteur `--created-by`, défaut premier super admin actif). Aucune invitation marketplace n'est envoyée (création directe, hors `FicheAffiliationManager::invite`).
 - Colonne « Adhérent Business Premium » (valeur `Adhérent`) → `Fiche.businessPremium`, appliqué sous `preserveWorkflowDuring` (aucune transition de workflow, les fiches publiées le restent).
+- Colonne « Attribution visibilité » (un site par retour-ligne, 38 libellés
+  distincts dans l'export) → **remplace** la sélection de sites de diffusion
+  de la fiche, sous `preserveWorkflowDuring`. Les libellés sont résolus sur
+  le référentiel `pim_site_diffusion` seedé par `app:sites-diffusion:sync`
+  (catalogue métier réel tiré de cette même colonne ; « Business Profilers »
+  = site `marketplace_bp`, celui qui déclenche la sync marketplace) — à
+  lancer **avant** l'import. Libellé inconnu → ignoré + warning final ;
+  cellule vide → sélection intacte.
 
 Ignorés (comptés dans le rapport) : entrées nom/prénom **sans email** (l'email est la clé), emails invalides, Id syspad sans fiche PIM, doublons d'email au sein d'une même cellule. Pas de colonne téléphone dans le fichier. Options : `--dry-run`, `--limit`, `--only-syspad`, `--batch-size`. À lancer **après** les imports de fiches (jointure par code syspad). Gros volume : exécuter avec `APP_DEBUG=0` (et `php -d memory_limit=1536M` au besoin) — le profiler dev accumule les requêtes SQL.
 
 Bilan `mdm_reel` (2026-08-11) : 19 467 collaborateurs, 25 272 affiliations, 491 fiches Business Premium ; 418 syspad inconnus, 238 emails invalides.
+
+Bilan visibilité `mdm_reel` (2026-08-13) : 26 611 fiches avec sites appliqués
+(0 site inconnu) — dont 26 612 sélections « Business Profilers »
+(= marketplace) et 20 127 fiches publiées diffusées marketplace.
