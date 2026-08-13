@@ -154,6 +154,9 @@ final class LieuImportSchema extends AbstractFicheImportSchema
             $this->text('signatairePrenom', targetPath: 'administratif'),
             $this->text('signataireNom', targetPath: 'administratif'),
             // Bloc tarification
+            $this->text('offreSpeciale', targetPath: 'tarification'),
+            new ColumnDefinition('tarification_promotion_debut', ColumnKind::Date, 'promotionDebut', targetPath: 'tarification', help: 'date AAAA-MM-JJ'),
+            new ColumnDefinition('tarification_promotion_fin', ColumnKind::Date, 'promotionFin', targetPath: 'tarification', help: 'date AAAA-MM-JJ'),
             $this->decimal('seminaireJourneeDemiJourneeEtude', 'tarification'),
             $this->decimal('seminaireJourneeJourneeEtude', 'tarification'),
             $this->decimal('seminaireJourneeDemiJourneeEtudeCocktail', 'tarification'),

@@ -59,6 +59,9 @@ final readonly class LegacyLieuRowMapper
         // Le code fiche reprend l'Id syspad legacy (pivot des reprises i18n/photos).
         $lieu->fiche()->assignImportedCode((int) $syspadId);
         $lieu->changeLabel(mb_substr($label, 0, 255));
+        $lieu->fiche()->changeTelephone(self::nullable($row->cell('Téléphone')));
+        // Règle legacy : colonne « Tag » vide = partenaire BP (icône marketplace).
+        $lieu->fiche()->changePartenaireBp('' === $row->cell('Tag'));
         $lieu->changeGeneraleGammeLibelle($gamme);
 
         $typologies = $this->lovMapper->typologies($row->cell('Classification'), $gamme, $row->cell('Type de lieux'));
@@ -82,7 +85,7 @@ final readonly class LegacyLieuRowMapper
         $this->atouts($lieu, $row, $warnings);
         $this->loisirs($lieu, $row);
         $this->equipements($lieu, $row);
-        $this->tarification($lieu, $row);
+        $this->tarification($lieu, $row, $warnings);
         $this->localisation($lieu, $row, $warnings);
         $this->salles($lieu, $row, $warnings);
         $this->acces($lieu, $row);
@@ -200,7 +203,11 @@ final readonly class LegacyLieuRowMapper
         }
     }
 
-    private function tarification(Lieu $lieu, RawCsvRow $row): void
+    /**
+     * @param list<string> $warnings
+     * @param-out list<string> $warnings
+     */
+    private function tarification(Lieu $lieu, RawCsvRow $row, array &$warnings): void
     {
         $journee = self::priceOrNull($row->cell("Journée d'étude à partir de xx € /pers"));
         if (null !== $journee) {
@@ -210,6 +217,51 @@ final readonly class LegacyLieuRowMapper
         if (null !== $residentiel) {
             $lieu->tarification()->changeSeminaireNuiteeResidentiel($residentiel);
         }
+        // Bloc promo : les intitulés exacts des colonnes varient selon
+        // l'export, résolution par motif (cf. docs/import-legacy.md).
+        $offreSpeciale = self::cellParMotif($row, '/^offre\s*sp[eé]ciale/iu');
+        if ('' !== $offreSpeciale) {
+            $lieu->tarification()->changeOffreSpeciale($offreSpeciale);
+        }
+        $lieu->tarification()->changePromotionDebut(self::promoDate(self::cellParMotif($row, '/d[ée]but.*promo|promo.*d[ée]but/iu'), $warnings));
+        $lieu->tarification()->changePromotionFin(self::promoDate(self::cellParMotif($row, '/fin.*promo|promo.*fin/iu'), $warnings));
+    }
+
+    /** Première cellule dont l'en-tête correspond au motif. */
+    private static function cellParMotif(RawCsvRow $row, string $pattern): string
+    {
+        foreach ($row->cells as $header => $value) {
+            if (1 === preg_match($pattern, (string) $header)) {
+                return trim((string) $value);
+            }
+        }
+
+        return '';
+    }
+
+    /**
+     * Timestamp Unix (format marketplace) ou date, sinon warning.
+     *
+     * @param list<string> $warnings
+     * @param-out list<string> $warnings
+     */
+    private static function promoDate(string $value, array &$warnings): ?\DateTimeImmutable
+    {
+        if ('' === $value) {
+            return null;
+        }
+        if (1 === preg_match('/^\d{9,}$/', $value)) {
+            return (new \DateTimeImmutable('@'.$value))->setTime(0, 0);
+        }
+        foreach (['!Y-m-d', '!d/m/Y'] as $format) {
+            $date = \DateTimeImmutable::createFromFormat($format, $value);
+            if (false !== $date) {
+                return $date;
+            }
+        }
+        $warnings[] = 'promotion_date_invalide';
+
+        return null;
     }
 
     /** @param list<string> $warnings */

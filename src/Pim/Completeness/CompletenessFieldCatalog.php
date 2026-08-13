@@ -152,12 +152,15 @@ final class CompletenessFieldCatalog
         $type = TypeFiche::ServiceEvenementiel;
         $fields = $this->common($type);
         $map = [
-            'TYPE_PRESTATAIRE' => ['Prestations', 'prestations'], 'GENERAL_DESC' => ['Description générale', 'descriptionGenerale'],
+            'TYPE_PRESTATAIRE' => ['Prestations', 'prestations'], 'SOUS_PRESTATION' => ['Sous-prestations', 'sousPrestations'],
+            'GENERAL_DESC' => ['Description générale', 'descriptionGenerale'],
             'TYPE_PRESTATAIRE_ESAT' => ['Prestataire ESAT', 'prestataireEsat'], 'TYPE_PRESTATAIRE_RSE' => ['Démarche RSE', 'demarcheRse'],
             'PRESTATION_FEMME_ENCEINTE' => ['Adapté aux femmes enceintes', 'adapteFemmesEnceintes'], 'PRESTATION_MAL_ENTENDENT' => ['Adapté aux personnes malentendantes', 'adapteMalentendants'],
             'PRESTATION_MAL_VOYANTE' => ['Adapté aux personnes malvoyantes', 'adapteMalvoyants'], 'MATERIEL_LIST' => ['Matériel inclus', 'materielInclus'],
             'MATERIEL_A_PREVOIR_PARTICIPANT' => ['Équipement participants requis', 'equipementParticipantsRequis'], 'MATERIEL_A_PREVOIR_RECEPTION' => ['Équipement réception requis', 'equipementReceptionRequis'],
             'MATERIEL_CONTRAINTE' => ['Contraintes logistiques', 'contraintesLogistiques'], 'RAYON_ACTION' => ["Rayon d’action", 'modeIntervention'],
+            'PRESTATION_PERSONNE_MIN' => ['Prestation à partir de (personnes)', 'participantsMin'], 'PRESTATION_PERSONNE_MAX' => ["Prestation jusqu'à (personnes)", 'participantsMax'],
+            'PRESTATION_DUREE' => ['Durée de la prestation', 'dureeMinutes'],
             'PAR_PRESTATION' => ['Tarif par prestation', 'tarifParPrestation'], 'PAR_PERSONNE' => ['Tarif par personne', 'tarifParPersonne'],
             'PAR_JOUR' => ['Tarif par jour', 'tarifParJour'], 'PAR_DEMI_JOURNNEE' => ['Tarif par demi-journée', 'tarifParDemiJournee'],
             'PAR_HEURE' => ['Tarif par heure', 'tarifParHeure'], 'SUR_DEVIS' => ['Sur devis', 'surDevis'],

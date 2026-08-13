@@ -9,6 +9,8 @@ use App\Pim\Entity\Localisation;
 use App\Pim\Entity\SiteDiffusion;
 use App\Pim\Enum\TypeFiche;
 use App\Pim\Form\LocalisationType;
+use App\Pim\Lov\ActiviteLovCatalog;
+use App\Pim\Lov\ServiceLovCatalog;
 use App\Pim\Repository\FicheRepository;
 use App\Pim\Repository\SiteDiffusionRepository;
 use App\Pim\Repository\ValeurAttributRepository;
@@ -27,14 +29,19 @@ use Symfony\Component\Uid\Ulid;
  */
 final readonly class EditionRapideEcran
 {
-    /** Attributs de classification proposés par gamme, alignés sur la maquette. */
-    private const CLASSIFICATION = [
-        'lieu' => ['GENERALE_TYPOLOGIE', 'TA_THEMATIQUE'],
-        'restaurant' => ['TYPE_RESTAURANT', 'TYPE_CUISINE'],
-        'activite' => ['THEMATIQUE_ACTIVITE', 'SOUS_THEMATIQUE_ACTIVITE'],
-        'service_evenementiel' => ['TYPE_PRESTATAIRE'],
-        'traiteur' => [],
-    ];
+    /** Attributs de classification proposés par gamme, alignés sur la maquette.
+     * @return list<string>
+     */
+    private static function classification(string $type): array
+    {
+        return match ($type) {
+            'lieu' => ['GENERALE_TYPOLOGIE', 'TA_THEMATIQUE'],
+            'restaurant' => ['TYPE_RESTAURANT', 'TYPE_CUISINE'],
+            'activite' => ['THEMATIQUE_ACTIVITE', ...array_keys(ActiviteLovCatalog::sousThematiqueAttributes())],
+            'service_evenementiel' => ['TYPE_PRESTATAIRE', ...array_keys(ServiceLovCatalog::sousPrestationAttributes())],
+            default => [],
+        };
+    }
 
     public function __construct(
         private FicheRepository $fiches,
@@ -133,7 +140,7 @@ final readonly class EditionRapideEcran
     /** @return list<array{code: string, label: string, choices: array<string, int>}> */
     private function attributsClassification(TypeFiche $type): array
     {
-        return $this->valeurs->classificationChoices(self::CLASSIFICATION[$type->value]);
+        return $this->valeurs->classificationChoices(self::classification($type->value));
     }
 
     /**

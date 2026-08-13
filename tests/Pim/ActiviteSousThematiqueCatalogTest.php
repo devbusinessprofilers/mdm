@@ -9,11 +9,14 @@ use PHPUnit\Framework\TestCase;
 
 final class ActiviteSousThematiqueCatalogTest extends TestCase
 {
-    public function testEverySousThematiqueBelongsToAKnownThematique(): void
+    public function testEverySousThematiqueAttributeBelongsToAKnownThematique(): void
     {
-        $sousThematiques = ActiviteLovCatalog::allChoices()['SOUS_THEMATIQUE_ACTIVITE'];
+        $sousThematiques = ActiviteLovCatalog::sousThematiques();
         self::assertCount(64, $sousThematiques);
         $thematiques = array_keys(ActiviteLovCatalog::allChoices()['THEMATIQUE_ACTIVITE']);
+        foreach (array_keys(ActiviteLovCatalog::sousThematiqueAttributes()) as $attribute) {
+            self::assertContains(ActiviteLovCatalog::thematiqueOf($attribute), $thematiques, $attribute);
+        }
         foreach (array_keys($sousThematiques) as $code) {
             self::assertContains(ActiviteLovCatalog::parentOf($code), $thematiques, $code);
         }
@@ -27,9 +30,9 @@ final class ActiviteSousThematiqueCatalogTest extends TestCase
         self::assertCount(4, ActiviteLovCatalog::sousThematiquesFor('TA_DIGITAL_HIGH_TECH'));
     }
 
-    public function testParentOfRejectsUnknownCode(): void
+    public function testParentOfRejectsCodeWithoutSuffix(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        ActiviteLovCatalog::parentOf('TA_INCONNU_SS_1');
+        ActiviteLovCatalog::parentOf('TA_SPORTIVE_LUDIQUE');
     }
 }

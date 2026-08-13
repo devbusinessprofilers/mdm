@@ -393,16 +393,53 @@ class Activite
         $this->replaceLov('THEMATIQUE_ACTIVITE', $value);
     }
 
-    /** @return list<string> */
+    /**
+     * Toutes les sous-thématiques, thématiques confondues (complétude,
+     * import, API) — chaque thématique reste un attribut à part, comme les
+     * listes des lieux.
+     *
+     * @return list<string>
+     */
     public function sousThematiques(): array
     {
-        return $this->lovValues('SOUS_THEMATIQUE_ACTIVITE');
+        $codes = [];
+        foreach (array_keys(ActiviteLovCatalog::SOUS_THEMATIQUE_FIELDS) as $attribute) {
+            $codes = array_merge($codes, $this->lovValues($attribute));
+        }
+
+        return $codes;
     }
 
-    /** @param list<string> $value */
+    /**
+     * Remplacement toutes thématiques confondues : chaque code est réparti
+     * sur l'attribut de sa thématique, les thématiques absentes sont vidées.
+     *
+     * @param list<string> $value
+     */
     public function changeSousThematiques(array $value): void
     {
-        $this->replaceLov('SOUS_THEMATIQUE_ACTIVITE', $value);
+        $parAttribut = array_fill_keys(
+            array_keys(ActiviteLovCatalog::SOUS_THEMATIQUE_FIELDS),
+            [],
+        );
+        foreach ($value as $code) {
+            $parAttribut[ActiviteLovCatalog::sousThematiqueAttributeOf($code)][] = $code;
+        }
+        foreach ($parAttribut as $attribute => $codes) {
+            $this->replaceLov($attribute, $codes);
+        }
+    }
+
+    /** @return list<string> */
+    public function sousThematiquesPour(string $attributeCode): array
+    {
+        return $this->lovValues($attributeCode);
+    }
+
+    /** @param list<string> $values */
+    public function changeSousThematiquesPour(string $attributeCode, array $values): void
+    {
+        $this->replaceLov($attributeCode, $values);
     }
 
     /** @return list<string> */

@@ -62,8 +62,8 @@ final class LieuMappingTest extends KernelTestCase
         self::assertSame(Lieu::class, $entityManager->getClassMetadata(AccesLieu::class)->getAssociationTargetClass('lieu'));
         self::assertSame(Lieu::class, $entityManager->getClassMetadata(RessourceLieu::class)->getAssociationTargetClass('lieu'));
 
-        self::assertCount(16, $ficheMetadata->getFieldNames());
-        foreach (['type', 'code', 'label', 'status', 'version', 'publishedAt', 'archivedAt', 'validationRequestedAt', 'validationRequestedBy', 'validationReviewedAt', 'validationReviewedBy', 'validationFeedback', 'businessPremium'] as $field) {
+        self::assertCount(18, $ficheMetadata->getFieldNames());
+        foreach (['type', 'code', 'label', 'status', 'version', 'publishedAt', 'archivedAt', 'validationRequestedAt', 'validationRequestedBy', 'validationReviewedAt', 'validationReviewedBy', 'validationFeedback', 'businessPremium', 'telephone', 'partenaireBp'] as $field) {
             self::assertTrue($ficheMetadata->hasField($field));
         }
         self::assertFalse($ficheMetadata->hasField('completeness'));
@@ -82,7 +82,7 @@ final class LieuMappingTest extends KernelTestCase
         }
 
         self::assertCount(37, $entityManager->getClassMetadata(LieuAdministratif::class)->getFieldNames());
-        self::assertCount(22, $entityManager->getClassMetadata(LieuTarification::class)->getFieldNames());
+        self::assertCount(25, $entityManager->getClassMetadata(LieuTarification::class)->getFieldNames());
 
         // Nine source fields, three normalized/indexed fields, id and timestamps.
         self::assertCount(15, $localisationMetadata->getFieldNames());

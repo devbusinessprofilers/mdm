@@ -17,6 +17,8 @@ final class ImportSchemaCoverageTest extends KernelTestCase
     private const GLOBAL_EXCLUSIONS = [
         'changeLocalisation',   // géré via les colonnes localisation_*
         'changePosition',       // position déduite de l'ordre des groupes CSV
+        'changeSousThematiquesPour', // accès par thématique : couvert par la colonne à plat sous_thematiques
+        'changeSousPrestationsPour', // accès par famille : couvert par la colonne à plat sous_prestations
     ];
 
     private const CLASS_EXCLUSIONS = [

@@ -100,6 +100,9 @@ final readonly class MarketplaceLovPayloadBuilder
             $families[$attribute] ??= 'restaurant';
         }
         $families['TYPE_PRESTATAIRE'] ??= 'prestataire';
+        foreach (array_keys(ServiceLovCatalog::sousPrestationAttributes()) as $attribute) {
+            $families[$attribute] ??= 'prestataire';
+        }
 
         return $families;
     }
@@ -123,6 +126,9 @@ final readonly class MarketplaceLovPayloadBuilder
             $all[$attribute] = ($all[$attribute] ?? []) + RestaurantLovCatalog::values($attribute);
         }
         $all['TYPE_PRESTATAIRE'] = ($all['TYPE_PRESTATAIRE'] ?? []) + ServiceLovCatalog::prestations();
+        foreach (array_keys(ServiceLovCatalog::sousPrestationAttributes()) as $attribute) {
+            $all[$attribute] = ($all[$attribute] ?? []) + ServiceLovCatalog::sousPrestationsFor($attribute);
+        }
 
         return $all;
     }

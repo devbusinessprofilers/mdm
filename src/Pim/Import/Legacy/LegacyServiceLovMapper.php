@@ -28,6 +28,26 @@ final class LegacyServiceLovMapper
     ];
 
     /**
+     * Sous-prestation équivalente quand le type legacy est plus fin que la
+     * famille TYPE_PRESTATAIRE (granularité conservée, aucune donnée perdue).
+     *
+     * @var array<string, list<string>>
+     */
+    private const SOUS_PRESTATIONS = [
+        'traiteurs' => ['TS_TRAITEUR_SS_1'],
+        'techniques - sonorisations' => ['TS_SON_VIDEO_SS_1'],
+        'realisations audiovisuelles - videos - visio' => ['TS_SON_VIDEO_SS_2', 'TS_SON_VIDEO_SS_5'],
+        'photographes' => ['TS_ANIMATION_ARTISTE_SS_10'],
+        'imprimeurs' => ['TS_COMMUNICATION_PUBLICITÉ_SS_7'],
+        'signaletiques evenementielles' => ['TS_COMMUNICATION_PUBLICITÉ_SS_3'],
+        'fleuristes / decorations evenementielles' => ['TS_TECHNIQUE_AUDIOVISUEL_SS_1'],
+        'constructions ephemeres (chapiteau, stand...)' => ['TS_TECHNIQUE_AUDIOVISUEL_SS_5'],
+        'location de mobiliers / materiels' => ['TS_TECHNIQUE_AUDIOVISUEL_SS_3'],
+        'traductions - interpretes de conferences' => ['TS_TRADUCTION_INTERPRETARIAT_SS_1'],
+        'apps et sites web evenementiels' => ['TS_DIGITAL_HYBRIDE_SS_1', 'TS_DIGITAL_HYBRIDE_SS_2'],
+    ];
+
+    /**
      * @return array{codes: list<string>, warnings: list<string>}
      */
     public function prestations(string $typePrestataire): array
@@ -42,6 +62,17 @@ final class LegacyServiceLovMapper
         }
 
         return ['codes' => [$code], 'warnings' => []];
+    }
+
+    /**
+     * Sous-prestations déduites du type legacy — vide sans équivalent fin
+     * (la famille seule suffit alors, pas un avertissement).
+     *
+     * @return list<string>
+     */
+    public function sousPrestations(string $typePrestataire): array
+    {
+        return self::SOUS_PRESTATIONS[self::normalize(trim($typePrestataire))] ?? [];
     }
 
     private static function normalize(string $value): string

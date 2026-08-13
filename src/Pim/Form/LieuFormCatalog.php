@@ -7,6 +7,7 @@ namespace App\Pim\Form;
 use App\Pim\Lov\LieuLovCatalog;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
+use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\UrlType;
 use Symfony\Component\Validator\Constraints\Range;
@@ -205,7 +206,11 @@ final class LieuFormCatalog
             'tarifRestOptAlcool' => 'Option alcool', 'tarifRestForfaitPersonalise' => 'Forfait personnalisé',
             'hebergGroupTarifChambreSingle' => 'Tarif chambre single', 'hebergGroupTarifChambreTwin' => 'Tarif chambre twin',
             'hebergGroupTarifChambreDouble' => 'Tarif chambre double',
-        ]);
+        ]) + [
+            'offreSpeciale' => ['label' => 'Offre spéciale', 'type' => TextareaType::class],
+            'promotionDebut' => ['label' => 'Début de la promotion', 'type' => DateType::class, 'options' => ['widget' => 'single_text', 'input' => 'datetime_immutable']],
+            'promotionFin' => ['label' => 'Fin de la promotion', 'type' => DateType::class, 'options' => ['widget' => 'single_text', 'input' => 'datetime_immutable']],
+        ];
     }
 
     /**

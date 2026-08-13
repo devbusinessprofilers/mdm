@@ -47,6 +47,9 @@ final readonly class LegacyRestaurantRowMapper
         $restaurant = new Restaurant();
         $restaurant->fiche()->assignImportedCode((int) $syspadId);
         $restaurant->changeLabel(mb_substr($label, 0, 255));
+        $restaurant->fiche()->changeTelephone(self::nullable($row->cell('Téléphone')));
+        // Règle legacy : colonne « Tag » vide = partenaire BP (icône marketplace).
+        $restaurant->fiche()->changePartenaireBp('' === $row->cell('Tag'));
 
         $themes = $this->restaurantLovMapper->themes($row->cell('Thématique'));
         array_push($warnings, ...$themes['warnings']);

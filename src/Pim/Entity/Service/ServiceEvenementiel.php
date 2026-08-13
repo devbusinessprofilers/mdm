@@ -77,6 +77,17 @@ class ServiceEvenementiel
     #[ORM\Column(nullable: true)]
     private ?bool $contraintesLogistiques = null;
 
+    // CDC « Prestation à partir de / jusqu'à combien de personnes ».
+    #[ORM\Column(nullable: true)]
+    private ?int $participantsMin = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?int $participantsMax = null;
+
+    // CDC « Durée de la prestation », en minutes comme les activités.
+    #[ORM\Column(nullable: true)]
+    private ?int $dureeMinutes = null;
+
     #[
         ORM\Column(
             length: 16,
@@ -179,6 +190,92 @@ class ServiceEvenementiel
             ServiceLovCatalog::valueIds($values),
         );
         $this->touch();
+    }
+
+    /**
+     * Toutes les sous-prestations, familles confondues (complétude, import,
+     * API) — chaque famille reste un attribut à part, comme les listes des
+     * lieux.
+     *
+     * @return list<string>
+     */
+    public function sousPrestations(): array
+    {
+        $codes = [];
+        foreach (array_keys(ServiceLovCatalog::sousPrestationAttributes()) as $attribute) {
+            $codes = array_merge($codes, $this->sousPrestationsPour($attribute));
+        }
+
+        return $codes;
+    }
+
+    /**
+     * Remplacement toutes familles confondues : chaque code est réparti sur
+     * l'attribut de sa famille, les familles absentes sont vidées.
+     *
+     * @param list<string> $values
+     */
+    public function changeSousPrestations(array $values): void
+    {
+        $parAttribut = array_fill_keys(
+            array_keys(ServiceLovCatalog::sousPrestationAttributes()),
+            [],
+        );
+        foreach ($values as $code) {
+            $parAttribut[ServiceLovCatalog::sousPrestationAttributeOf($code)][] = $code;
+        }
+        foreach ($parAttribut as $attribute => $codes) {
+            $this->changeSousPrestationsPour($attribute, $codes);
+        }
+    }
+
+    /** @return list<string> */
+    public function sousPrestationsPour(string $attributeCode): array
+    {
+        return array_map(
+            static fn (int $id): string => ServiceLovCatalog::sousPrestationValueCode($attributeCode, $id),
+            $this->fiche->valueIdsFor($attributeCode),
+        );
+    }
+
+    /** @param list<string> $values */
+    public function changeSousPrestationsPour(string $attributeCode, array $values): void
+    {
+        $this->fiche->replaceAttributeValues(
+            $attributeCode,
+            ServiceLovCatalog::sousPrestationValueIds($attributeCode, $values),
+        );
+        $this->touch();
+    }
+
+    public function participantsMin(): ?int
+    {
+        return $this->participantsMin;
+    }
+
+    public function changeParticipantsMin(?int $value): void
+    {
+        $this->set("participantsMin", $value);
+    }
+
+    public function participantsMax(): ?int
+    {
+        return $this->participantsMax;
+    }
+
+    public function changeParticipantsMax(?int $value): void
+    {
+        $this->set("participantsMax", $value);
+    }
+
+    public function dureeMinutes(): ?int
+    {
+        return $this->dureeMinutes;
+    }
+
+    public function changeDureeMinutes(?int $value): void
+    {
+        $this->set("dureeMinutes", $value);
     }
 
     public function descriptionGenerale(): ?string

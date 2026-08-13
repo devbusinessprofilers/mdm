@@ -308,6 +308,7 @@ final readonly class ServiceEvenementielResource
 {
     /**
      * @param list<string>             $prestations
+     * @param list<string>             $sousPrestations
      * @param list<string>             $paysMobiles
      * @param list<string>             $regionsMobiles
      * @param list<string>             $departementsMobiles
@@ -327,6 +328,7 @@ final readonly class ServiceEvenementielResource
         public ?string $publishedAt,
         public string $updatedAt,
         public array $prestations,
+        public array $sousPrestations,
         public ?bool $prestataireEsat,
         public ?bool $demarcheRse,
         public ?string $descriptionGenerale,
@@ -337,6 +339,9 @@ final readonly class ServiceEvenementielResource
         public ?bool $equipementParticipantsRequis,
         public ?bool $equipementReceptionRequis,
         public ?bool $contraintesLogistiques,
+        public ?int $participantsMin,
+        public ?int $participantsMax,
+        public ?int $dureeMinutes,
         public ?string $modeIntervention,
         public array $paysMobiles,
         public array $regionsMobiles,

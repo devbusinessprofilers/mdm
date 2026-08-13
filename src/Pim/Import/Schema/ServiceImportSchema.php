@@ -27,6 +27,7 @@ final class ServiceImportSchema extends AbstractFicheImportSchema
         return [
             ...$this->commonColumns(),
             $this->lovMulti('prestations', 'TYPE_PRESTATAIRE'),
+            $this->lovMulti('sousPrestations', 'SOUS_PRESTATION'),
             $this->text('descriptionGenerale'),
             $this->boolNull('prestataireEsat'),
             $this->boolNull('demarcheRse'),
@@ -37,6 +38,9 @@ final class ServiceImportSchema extends AbstractFicheImportSchema
             $this->boolNull('equipementParticipantsRequis'),
             $this->boolNull('equipementReceptionRequis'),
             $this->boolNull('contraintesLogistiques'),
+            $this->int('participantsMin'),
+            $this->int('participantsMax'),
+            $this->int('dureeMinutes'),
             $this->enum('modeIntervention', ModeInterventionService::class),
             $this->list('paysMobiles'),
             $this->list('regionsMobiles'),
@@ -58,7 +62,10 @@ final class ServiceImportSchema extends AbstractFicheImportSchema
 
     public function lovChoices(): array
     {
-        return ['TYPE_PRESTATAIRE' => ServiceLovCatalog::prestations()];
+        return [
+            'TYPE_PRESTATAIRE' => ServiceLovCatalog::prestations(),
+            'SOUS_PRESTATION' => ServiceLovCatalog::sousPrestations(),
+        ];
     }
 
     public function createAggregate(): object

@@ -35,6 +35,11 @@ class LieuTarification
     #[ORM\Column(name: 'tarif_rest_opt_vin', type: Types::DECIMAL, precision: 12, scale: 2, nullable: true)] private ?string $tarifRestOptVin = null;
     #[ORM\Column(name: 'tarif_rest_opt_alcool', type: Types::DECIMAL, precision: 12, scale: 2, nullable: true)] private ?string $tarifRestOptAlcool = null;
     #[ORM\Column(name: 'tarif_rest_forfait_personalise', type: Types::DECIMAL, precision: 12, scale: 2, nullable: true)] private ?string $tarifRestForfaitPersonalise = null;
+
+    // Offre spéciale du bloc « Tarifs & formules » (bloc promo marketplace).
+    #[ORM\Column(name: 'offre_speciale', type: Types::TEXT, nullable: true)] private ?string $offreSpeciale = null;
+    #[ORM\Column(name: 'promotion_debut', type: Types::DATE_IMMUTABLE, nullable: true)] private ?\DateTimeImmutable $promotionDebut = null;
+    #[ORM\Column(name: 'promotion_fin', type: Types::DATE_IMMUTABLE, nullable: true)] private ?\DateTimeImmutable $promotionFin = null;
     #[ORM\Column(name: 'heberg_group_tarif_chambre_single', type: Types::DECIMAL, precision: 12, scale: 2, nullable: true)] private ?string $hebergGroupTarifChambreSingle = null;
     #[ORM\Column(name: 'heberg_group_tarif_chambre_twin', type: Types::DECIMAL, precision: 12, scale: 2, nullable: true)] private ?string $hebergGroupTarifChambreTwin = null;
     #[ORM\Column(name: 'heberg_group_tarif_chambre_double', type: Types::DECIMAL, precision: 12, scale: 2, nullable: true)] private ?string $hebergGroupTarifChambreDouble = null;
@@ -88,6 +93,13 @@ class LieuTarification
     public function changeHebergGroupTarifChambreTwin(?string $value): void { $this->hebergGroupTarifChambreTwin = self::normalizeDecimal($value); $this->lieu->markChanged(); }
     public function hebergGroupTarifChambreDouble(): ?string { return $this->hebergGroupTarifChambreDouble; }
     public function changeHebergGroupTarifChambreDouble(?string $value): void { $this->hebergGroupTarifChambreDouble = self::normalizeDecimal($value); $this->lieu->markChanged(); }
+
+    public function offreSpeciale(): ?string { return $this->offreSpeciale; }
+    public function changeOffreSpeciale(?string $value): void { $value = null === $value ? null : trim($value); $this->offreSpeciale = '' === $value ? null : $value; $this->lieu->markChanged(); }
+    public function promotionDebut(): ?\DateTimeImmutable { return $this->promotionDebut; }
+    public function changePromotionDebut(?\DateTimeImmutable $value): void { $this->promotionDebut = $value; $this->lieu->markChanged(); }
+    public function promotionFin(): ?\DateTimeImmutable { return $this->promotionFin; }
+    public function changePromotionFin(?\DateTimeImmutable $value): void { $this->promotionFin = $value; $this->lieu->markChanged(); }
 
     private static function normalizeDecimal(?string $value): ?string
     {

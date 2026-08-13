@@ -77,6 +77,9 @@ final class ActiviteImportSchema extends AbstractFicheImportSchema
         foreach (self::LOV_ATTRIBUTES as $attribute) {
             $choices[$attribute] = ActiviteLovCatalog::choicesFor($attribute);
         }
+        // Colonne unique à plat : les codes portent leur thématique, le
+        // setter les répartit sur les attributs par famille.
+        $choices['SOUS_THEMATIQUE_ACTIVITE'] = ActiviteLovCatalog::sousThematiques();
 
         return $choices;
     }

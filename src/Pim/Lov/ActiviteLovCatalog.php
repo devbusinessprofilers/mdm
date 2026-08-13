@@ -42,9 +42,10 @@ final class ActiviteLovCatalog
             'TA_BIEN_ETRE_DETENTE' => 'Bien-être & Détente',
             'TA_DIGITAL_HIGH_TECH' => 'Digital & High-Tech',
         ],
-        // Sous-thématiques (Bible, onglet LOV) : le code de la thématique
-        // parente est le préfixe du code de chaque sous-thématique.
-        'SOUS_THEMATIQUE_ACTIVITE' => [
+        // Sous-thématiques (Bible, onglet LOV) : un attribut par thématique
+        // — code `{THEMATIQUE}_SS` — comme les listes des lieux ; le code de
+        // la thématique parente est le préfixe de chaque valeur.
+        'TA_SPORTIVE_LUDIQUE_SS' => [
             'TA_SPORTIVE_LUDIQUE_SS_1' => 'Olympiades',
             'TA_SPORTIVE_LUDIQUE_SS_2' => 'Parc aventure & Accrobranche',
             'TA_SPORTIVE_LUDIQUE_SS_3' => 'Escalade',
@@ -57,23 +58,31 @@ final class ActiviteLovCatalog
             'TA_SPORTIVE_LUDIQUE_SS_10' => 'Chasse au trésor & Rallyes',
             'TA_SPORTIVE_LUDIQUE_SS_11' => 'Randonnée, Course d’orientation',
             'TA_SPORTIVE_LUDIQUE_SS_12' => 'Tir à l’arc & Jeux d’adresse',
+        ],
+        'TA_SENSATION_SPORT_MECA_SS' => [
             'TA_SENSATION_SPORT_MECA_SS_1' => 'Karting',
             'TA_SENSATION_SPORT_MECA_SS_2' => 'Rallye automobile',
             'TA_SENSATION_SPORT_MECA_SS_3' => 'Quad, Buggy & SSV',
             'TA_SENSATION_SPORT_MECA_SS_4' => 'Activités aériennes (parapente, montgolfière, hélico…)',
             'TA_SENSATION_SPORT_MECA_SS_5' => 'Sensations fortes (saut à l’élastique, chute libre, simulateur...)',
             'TA_SENSATION_SPORT_MECA_SS_6' => 'Motoneige',
+        ],
+        'TA_NAUTIQUE_AQUATIQUE_SS' => [
             'TA_NAUTIQUE_AQUATIQUE_SS_1' => 'Canoë, Kayak & Paddle',
             'TA_NAUTIQUE_AQUATIQUE_SS_2' => 'Voile & Catamaran',
             'TA_NAUTIQUE_AQUATIQUE_SS_3' => 'Sports d’eaux vives',
             'TA_NAUTIQUE_AQUATIQUE_SS_4' => 'Plongée & Snorkeling',
             'TA_NAUTIQUE_AQUATIQUE_SS_5' => 'Croisières & Balades en bateau',
+        ],
+        'TA_CULINAIRE_OENOLOGIQUE_SS' => [
             'TA_CULINAIRE_OENOLOGIQUE_SS_1' => 'Œnologie & Dégustation de vins',
             'TA_CULINAIRE_OENOLOGIQUE_SS_2' => 'Mixologie & Cocktails',
             'TA_CULINAIRE_OENOLOGIQUE_SS_3' => 'Ateliers de cuisine & Gastronomie',
             'TA_CULINAIRE_OENOLOGIQUE_SS_4' => 'Ateliers sucrés',
             'TA_CULINAIRE_OENOLOGIQUE_SS_5' => 'Atelier de chocolat',
             'TA_CULINAIRE_OENOLOGIQUE_SS_6' => 'Food Tours & Découvertes culinaires',
+        ],
+        'TA_CREATIVE_ARTISTIQUE_MUSICALE_SS' => [
             'TA_CREATIVE_ARTISTIQUE_MUSICALE_SS_1' => 'Atelier de peinture & Sculpture',
             'TA_CREATIVE_ARTISTIQUE_MUSICALE_SS_2' => 'Atelier de mosaïque & Céramique',
             'TA_CREATIVE_ARTISTIQUE_MUSICALE_SS_3' => 'Parfum & Cosmétique',
@@ -85,6 +94,8 @@ final class ActiviteLovCatalog
             'TA_CREATIVE_ARTISTIQUE_MUSICALE_SS_9' => 'Atelier bijoux',
             'TA_CREATIVE_ARTISTIQUE_MUSICALE_SS_10' => 'Doublage de films & Clip Vidéo',
             'TA_CREATIVE_ARTISTIQUE_MUSICALE_SS_11' => 'Atelier floral (couronnes, terrariums, kokedama)',
+        ],
+        'TA_CULTURELLE_REFLEXION_DECOUVERTE_SS' => [
             'TA_CULTURELLE_REFLEXION_DECOUVERTE_SS_1' => 'Visites culturelles & Patrimoine',
             'TA_CULTURELLE_REFLEXION_DECOUVERTE_SS_2' => 'Jeux de piste & Rallyes urbains',
             'TA_CULTURELLE_REFLEXION_DECOUVERTE_SS_3' => 'Escape Games',
@@ -95,16 +106,22 @@ final class ActiviteLovCatalog
             'TA_CULTURELLE_REFLEXION_DECOUVERTE_SS_8' => 'Casino & Jeux de stratégie',
             'TA_CULTURELLE_REFLEXION_DECOUVERTE_SS_9' => 'Spectacles (magie, mentalisme, hypnose…)',
             'TA_CULTURELLE_REFLEXION_DECOUVERTE_SS_10' => 'Action Games',
+        ],
+        'TA_NATURE_RSE_SS' => [
             'TA_NATURE_RSE_SS_1' => 'Fresque du Climat, Fresque de la Biodiversité…',
             'TA_NATURE_RSE_SS_2' => 'Randonnée, marche en forêt, orientation nature…',
             'TA_NATURE_RSE_SS_3' => 'Atelier zéro déchet, cosmétiques naturels, recyclage…',
             'TA_NATURE_RSE_SS_4' => 'Construction de nichoirs, hôtels à insectes, mobilier en palettes…',
             'TA_NATURE_RSE_SS_5' => 'Plantation d’arbres, nettoyage de plages ou de forêts, collecte de déchets…',
+        ],
+        'TA_BIEN_ETRE_DETENTE_SS' => [
             'TA_BIEN_ETRE_DETENTE_SS_1' => 'Yoga & Méditation',
             'TA_BIEN_ETRE_DETENTE_SS_2' => 'Sophrologie & Relaxation',
             'TA_BIEN_ETRE_DETENTE_SS_3' => 'Massages & Soins',
             'TA_BIEN_ETRE_DETENTE_SS_4' => 'Coaching & Développement personnel',
             'TA_BIEN_ETRE_DETENTE_SS_5' => 'Bien-être au travail (gestion du stress, respiration, pleine conscience…)',
+        ],
+        'TA_DIGITAL_HIGH_TECH_SS' => [
             'TA_DIGITAL_HIGH_TECH_SS_1' => 'Réalité virtuelle & Réalité augmentée',
             'TA_DIGITAL_HIGH_TECH_SS_2' => 'Expériences digitales interactives',
             'TA_DIGITAL_HIGH_TECH_SS_3' => 'Serious Games & Escape Games digitaux',
@@ -173,25 +190,80 @@ final class ActiviteLovCatalog
         );
     }
 
-    /** Code de la thématique parente d'une sous-thématique (préfixe avant « _SS_ »). */
-    public static function parentOf(string $sousThematiqueCode): string
+    /**
+     * Nom de champ (formulaire, payload marketplace) de chaque attribut de
+     * sous-thématiques.
+     *
+     * @var array<string, string>
+     */
+    public const SOUS_THEMATIQUE_FIELDS = [
+        'TA_SPORTIVE_LUDIQUE_SS' => 'sousThematiquesSportivesLudiques',
+        'TA_SENSATION_SPORT_MECA_SS' => 'sousThematiquesSensationsSportsMecaniques',
+        'TA_NAUTIQUE_AQUATIQUE_SS' => 'sousThematiquesNautiquesAquatiques',
+        'TA_CULINAIRE_OENOLOGIQUE_SS' => 'sousThematiquesCulinairesOenologiques',
+        'TA_CREATIVE_ARTISTIQUE_MUSICALE_SS' => 'sousThematiquesCreativesArtistiquesMusicales',
+        'TA_CULTURELLE_REFLEXION_DECOUVERTE_SS' => 'sousThematiquesCulturellesReflexionsDecouvertes',
+        'TA_NATURE_RSE_SS' => 'sousThematiquesNatureRse',
+        'TA_BIEN_ETRE_DETENTE_SS' => 'sousThematiquesBienEtreDetente',
+        'TA_DIGITAL_HIGH_TECH_SS' => 'sousThematiquesDigitalHighTech',
+    ];
+
+    /** @return array<string, string> attribut de sous-thématiques => libellé de la thématique */
+    public static function sousThematiqueAttributes(): array
     {
-        $position = strrpos($sousThematiqueCode, '_SS_');
-        if (false === $position || !isset(self::CHOICES['SOUS_THEMATIQUE_ACTIVITE'][$sousThematiqueCode])) {
+        $attributes = [];
+        foreach (array_keys(self::SOUS_THEMATIQUE_FIELDS) as $attribute) {
+            $thematique = self::thematiqueOf($attribute);
+            $attributes[$attribute] = self::choicesFor('THEMATIQUE_ACTIVITE')[$thematique]
+                ?? self::CHOICES['THEMATIQUE_ACTIVITE'][$thematique]
+                ?? $thematique;
+        }
+
+        return $attributes;
+    }
+
+    /** Code de la thématique d'un attribut de sous-thématiques. */
+    public static function thematiqueOf(string $sousThematiqueAttribute): string
+    {
+        return (string) preg_replace('/_SS$/', '', $sousThematiqueAttribute);
+    }
+
+    /** Attribut de rattachement d'un code de sous-thématique (préfixe avant « _SS_ »). */
+    public static function sousThematiqueAttributeOf(string $code): string
+    {
+        $position = strrpos($code, '_SS_');
+        if (false === $position) {
             throw new \InvalidArgumentException('Sous-thématique d\'activité inconnue.');
         }
 
-        return substr($sousThematiqueCode, 0, $position);
+        return substr($code, 0, $position).'_SS';
+    }
+
+    /** Code de la thématique parente d'une sous-thématique (préfixe avant « _SS_ »). */
+    public static function parentOf(string $sousThematiqueCode): string
+    {
+        return self::thematiqueOf(self::sousThematiqueAttributeOf($sousThematiqueCode));
+    }
+
+    /**
+     * Dictionnaire à plat, toutes thématiques (complétude, import, API).
+     *
+     * @return array<string, string>
+     */
+    public static function sousThematiques(): array
+    {
+        $all = [];
+        foreach (array_keys(self::SOUS_THEMATIQUE_FIELDS) as $attribute) {
+            $all += self::choicesFor($attribute);
+        }
+
+        return $all;
     }
 
     /** @return array<string, string> sous-thématiques (code => libellé) d'une thématique */
     public static function sousThematiquesFor(string $thematiqueCode): array
     {
-        return array_filter(
-            self::choicesFor('SOUS_THEMATIQUE_ACTIVITE'),
-            static fn (string $code): bool => str_starts_with($code, $thematiqueCode.'_SS_'),
-            ARRAY_FILTER_USE_KEY,
-        );
+        return self::choicesFor($thematiqueCode.'_SS');
     }
 
     private static function stableId(string $value): int

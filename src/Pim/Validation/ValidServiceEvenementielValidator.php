@@ -63,6 +63,32 @@ final class ValidServiceEvenementielValidator extends ConstraintValidator
             }
         }
 
+        foreach (
+            [
+                "participantsMin" => $value->participantsMin(),
+                "participantsMax" => $value->participantsMax(),
+                "dureeMinutes" => $value->dureeMinutes(),
+            ]
+            as $field => $number
+        ) {
+            if (null !== $number && $number < 0) {
+                $this->violation(
+                    "Cette valeur doit être un nombre positif.",
+                    $field,
+                );
+            }
+        }
+        if (
+            null !== $value->participantsMin() &&
+            null !== $value->participantsMax() &&
+            $value->participantsMin() > $value->participantsMax()
+        ) {
+            $this->violation(
+                "Le minimum de participants doit être inférieur ou égal au maximum.",
+                "participantsMin",
+            );
+        }
+
         $photos = [];
         foreach ($value->ressources() as $resource) {
             if (null !== $resource->lieu() || null !== $resource->salle()) {

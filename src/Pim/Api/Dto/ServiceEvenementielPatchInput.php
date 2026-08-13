@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Pim\Api\Dto;
 
+use App\Pim\Lov\ServiceLovCatalog;
+
 final class ServiceEvenementielPatchInput
 {
     /** @var array<string, mixed> */
@@ -18,6 +20,44 @@ final class ServiceEvenementielPatchInput
     public function setPrestations(array $value): void
     {
         $this->payload["prestations"] = $value;
+    }
+
+    /**
+     * Contrat API à plat : les codes sont répartis sur les champs de
+     * formulaire par famille, les familles absentes sont vidées.
+     *
+     * @param list<string> $value
+     */
+    public function setSousPrestations(array $value): void
+    {
+        $parChamp = array_fill_keys(
+            array_values(ServiceLovCatalog::SOUS_PRESTATION_FIELDS),
+            [],
+        );
+        foreach ($value as $code) {
+            $attribute = ServiceLovCatalog::sousPrestationAttributeOf((string) $code);
+            $field = ServiceLovCatalog::SOUS_PRESTATION_FIELDS[$attribute]
+                ?? throw new \InvalidArgumentException("Sous-prestation Service inconnue.");
+            $parChamp[$field][] = $code;
+        }
+        foreach ($parChamp as $field => $codes) {
+            $this->payload[$field] = $codes;
+        }
+    }
+
+    public function setParticipantsMin(?int $value): void
+    {
+        $this->payload["participantsMin"] = $value;
+    }
+
+    public function setParticipantsMax(?int $value): void
+    {
+        $this->payload["participantsMax"] = $value;
+    }
+
+    public function setDureeMinutes(?int $value): void
+    {
+        $this->payload["dureeMinutes"] = $value;
     }
 
     public function setPrestataireEsat(?bool $value): void

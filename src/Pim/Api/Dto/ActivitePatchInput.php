@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Pim\Api\Dto;
 
+use App\Pim\Lov\ActiviteLovCatalog;
+
 final class ActivitePatchInput
 {
     /** @var array<string,mixed> */
@@ -31,10 +33,27 @@ final class ActivitePatchInput
         $this->payload['thematiques'] = $v;
     }
 
-    /** @param list<string> $v */
+    /**
+     * Contrat API à plat : les codes sont répartis sur les champs de
+     * formulaire par thématique, les thématiques absentes sont vidées.
+     *
+     * @param list<string> $v
+     */
     public function setSousThematiques(array $v): void
     {
-        $this->payload['sousThematiques'] = $v;
+        $parChamp = array_fill_keys(
+            array_values(ActiviteLovCatalog::SOUS_THEMATIQUE_FIELDS),
+            [],
+        );
+        foreach ($v as $code) {
+            $attribute = ActiviteLovCatalog::sousThematiqueAttributeOf((string) $code);
+            $field = ActiviteLovCatalog::SOUS_THEMATIQUE_FIELDS[$attribute]
+                ?? throw new \InvalidArgumentException("Sous-thématique d'activité inconnue.");
+            $parChamp[$field][] = $code;
+        }
+        foreach ($parChamp as $field => $codes) {
+            $this->payload[$field] = $codes;
+        }
     }
 
     /** @param list<string> $v */
