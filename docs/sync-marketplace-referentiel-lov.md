@@ -143,10 +143,10 @@ Conséquences assumées :
 
 - Les produits perdent ces classements jusqu'à la resynchronisation de leur
   fiche par le PIM (`--all`, après le traitement de masse des photos DAM).
-- Les valeurs legacy qui manquent au dictionnaire (Photographes, Imprimeurs,
-  Fleuristes, Constructions éphémères, Signalétiques…) ne réapparaîtront que
-  si le métier les **ajoute au dictionnaire PIM** (`/admin/listes-de-valeurs`)
-  — c'est désormais l'unique porte d'entrée.
+- Les valeurs legacy qui manquent au dictionnaire (Île, Court de tennis,
+  Parcours de golf…) ne réapparaîtront que si le métier les **ajoute au
+  dictionnaire PIM** (`/admin/listes-de-valeurs`) — c'est désormais l'unique
+  porte d'entrée.
 
 ## Valeurs sans équivalent — audit du 2026-08-12, à arbitrer avec le métier
 
@@ -164,7 +164,29 @@ l'abandon.
 | Équipements | **Court de tennis** · **Parcours de golf** · Fibre Optique · Accès PMR | tennis/golf absents de toutes les listes (« Golf » = thématique, « Golfs » = typologie) ; Fibre ≈ « Connexion internet filaire » ; Accès PMR = champ dédié `pmr` |
 | Types d'activité | **Insolites** | seul « Atypique / Insolite » existe, en ambiance de lieu |
 | Objectifs | **Animer** · **Intégration** | les 8 autres ont des équivalents élargis |
-| Types de prestataire | **Photographes** · **Imprimeurs** · **Fleuristes / Décorations** · **Constructions éphémères** · **Signalétiques** · Location de mobiliers | le lot le plus significatif : ces métiers n'ont plus de catégorie (Location ≈ « Divers & Sur-mesure » ?) |
+
+### Types de prestataire — résolu le 2026-08-13 (fausse alerte)
+
+Photographes, Imprimeurs, Fleuristes, Constructions éphémères, Signalétiques
+et Location de mobiliers ne sont **pas perdus** : le CDC les prévoit comme
+**sous-prestations** des familles `TYPE_PRESTATAIRE` (`D - Services
+Evénementiels - Champs.xlsx`, onglet « Typologie de prestataire »), et
+l'import legacy (`LegacyServiceLovMapper`) reclasse déjà chaque prestataire
+dans sa famille parente — aucune fiche n'a perdu son classement.
+
+| Legacy purgé | Valeur CDC | Famille TYPE_PRESTATAIRE |
+|---|---|---|
+| Photographes | Photographe | Animations & Artistes |
+| Imprimeurs | Imprimeur | Communication & Publicité |
+| Signalétiques évén. | PLV / Signalétique | Communication & Publicité |
+| Fleuristes / Décorations | Décoration florale | Technique & Audiovisuel |
+| Constructions éphémères | Tentes & Chapiteaux | Technique & Audiovisuel |
+| Location de mobiliers | Mobilier événementiel | Technique & Audiovisuel |
+
+La granularité fine attend l'implémentation de la sous-liste de prestations
+du CDC dans le PIM (à ce jour : ni catalogue statique, ni valeurs en base —
+seules les 11 familles existent). Une fois créée, elle partira au miroir
+marketplace automatiquement ; sa projection front resterait à décider.
 
 ### Écarts cahier des charges ↔ dictionnaire implémenté
 
@@ -182,8 +204,12 @@ modes de paiement…).
 
 ## Points ouverts
 
-- Arbitrage métier des valeurs sans équivalent ci-dessus (en priorité les
-  six types de prestataire).
+- Arbitrage métier des valeurs sans équivalent ci-dessus (types de
+  prestataire résolus le 2026-08-13 : restent Île, tennis/golf, Insolites,
+  Animer, Intégration et les cousins approximatifs).
+- Sous-prestations `TYPE_PRESTATAIRE` du CDC à implémenter dans le PIM
+  (Photographe, Imprimeur, PLV / Signalétique…) pour retrouver la
+  granularité des anciens types de prestataire.
 - Types d'activité et de prestataire en multi-valeurs (règle transitoire
   « première valeur » en place) : chantier décrit dans
   `docs/TODO-referentiels-multi-valeurs.md` du repo marketplace.
