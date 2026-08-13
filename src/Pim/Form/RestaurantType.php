@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Pim\Form;
 
+use App\Etl\Repository\FicheSalesforceRepository;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Entity\Localisation;
 use App\Pim\Entity\Restaurant\Restaurant;
@@ -31,8 +32,17 @@ use Symfony\Component\Validator\Constraints\File;
 /** @extends AbstractType<Restaurant> */
 final class RestaurantType extends AbstractType
 {
+    public function __construct(private readonly FicheSalesforceRepository $salesforce)
+    {
+    }
+
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
+        // Fiche connue de Salesforce : le statut partenaire est écrasé à
+        // chaque refresh, la case devient consultative.
+        $data = $options['data'] ?? null;
+        $partenaireGereParSf = $data instanceof Restaurant
+            && $this->salesforce->existePourFiche($data->fiche()->id());
         $builder
             ->add(
                 'label',
@@ -44,6 +54,20 @@ final class RestaurantType extends AbstractType
                 'required' => false,
                 'getter' => static fn (Restaurant $restaurant): bool => $restaurant->fiche()->businessPremium(),
                 'setter' => static function (Restaurant &$restaurant, mixed $value): void { $restaurant->fiche()->changeBusinessPremium((bool) $value); },
+            ])
+            ->add('partenaireBp', CheckboxType::class, [
+                'label' => 'Partenaire BP',
+                'required' => false,
+                'disabled' => $partenaireGereParSf,
+                'help' => $partenaireGereParSf ? 'Géré par Salesforce.' : null,
+                'getter' => static fn (Restaurant $restaurant): bool => $restaurant->fiche()->partenaireBp(),
+                'setter' => static function (Restaurant &$restaurant, mixed $value): void { $restaurant->fiche()->changePartenaireBp((bool) $value); },
+            ])
+            ->add('telephone', TextType::class, [
+                'label' => 'Téléphone',
+                'required' => false,
+                'getter' => static fn (Restaurant $restaurant): ?string => $restaurant->fiche()->telephone(),
+                'setter' => static function (Restaurant &$restaurant, mixed $value): void { $restaurant->fiche()->changeTelephone(null === $value ? null : (string) $value); },
             ]);
 
         $this->selection(

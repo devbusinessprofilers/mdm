@@ -7,6 +7,7 @@ namespace App\Etl\Service;
 use App\Dam\Entity\MediaAsset;
 use App\Dam\Enum\MediaStatus;
 use App\Dam\Repository\MediaAssetRepository;
+use App\Etl\Repository\FicheSalesforceRepository;
 use App\Enrichment\Enum\TranslationStatus;
 use App\Enrichment\Repository\FicheTranslationRepository;
 use App\Pim\Entity\Activite\Activite;
@@ -20,6 +21,8 @@ use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Entity\Service\ServiceEvenementiel;
 use App\Pim\Enum\NatureRessource;
+use App\Pim\Lov\ActiviteLovCatalog;
+use App\Pim\Lov\ServiceLovCatalog;
 use App\Pim\Repository\ActiviteRepository;
 use App\Pim\Repository\LieuRepository;
 use App\Pim\Repository\RestaurantRepository;
@@ -64,6 +67,7 @@ final readonly class MarketplaceFichePayloadBuilder
         private ServiceEvenementielRepository $services,
         private FicheTranslationRepository $translations,
         private MediaAssetRepository $assets,
+        private FicheSalesforceRepository $salesforce,
         #[Autowire(env: 'S3_PREFIX')]
         private string $storagePrefix,
     ) {
@@ -90,8 +94,17 @@ final readonly class MarketplaceFichePayloadBuilder
     {
         $data = [
             'nom' => $fiche->label(),
+            'telephone' => $fiche->telephone(),
+            'businessPremium' => $fiche->businessPremium(),
+            'partenaireBp' => $fiche->partenaireBp(),
             'adresse' => $this->adresse($fiche),
         ];
+        // Clé absente tant que la fiche n'est pas connue de Salesforce :
+        // la marketplace ne touche alors pas à ses valeurs existantes.
+        $salesforce = $this->salesforceData($fiche);
+        if (null !== $salesforce) {
+            $data['salesforce'] = $salesforce;
+        }
         $detail = match ($fiche->type()->value) {
             'lieu' => $this->lieux->find($fiche->id()),
             'restaurant' => $this->restaurants->find($fiche->id()),
@@ -107,6 +120,29 @@ final readonly class MarketplaceFichePayloadBuilder
             $detail instanceof ServiceEvenementiel => $this->service($detail),
             default => [],
         };
+    }
+
+    /** @return array<string, mixed>|null */
+    private function salesforceData(Fiche $fiche): ?array
+    {
+        $donnees = $this->salesforce->forFiche($fiche->id());
+        if (null === $donnees) {
+            return null;
+        }
+
+        return [
+            'rse' => [
+                'achatsResponsables' => $donnees->noteAchatsResponsables(),
+                'impactEnvironnemental' => $donnees->noteImpactEnvironnemental(),
+                'impactSocial' => $donnees->noteImpactSocial(),
+                'mobilite' => $donnees->noteMobilite(),
+                'labelsEtDemarcheQualite' => $donnees->noteLabelsEtDemarcheQualite(),
+                'globale' => $donnees->noteGlobale(),
+            ],
+            'evaluationClient' => $donnees->evaluationClient(),
+            'procedureJudiciaire' => $donnees->procedureJudiciaire(),
+            'contratsComptes' => $donnees->contratsComptes(),
+        ];
     }
 
     /** @return array<string, mixed>|null */
@@ -232,6 +268,11 @@ final readonly class MarketplaceFichePayloadBuilder
                 'position' => $acces->position(),
             ], $lieu->acces()->toArray())),
             'tarifs' => self::tarifs($lieu->tarification()),
+            'offreSpeciale' => $lieu->tarification()->offreSpeciale(),
+            'promotion' => [
+                'debut' => $lieu->tarification()->promotionDebut()?->format('Y-m-d'),
+                'fin' => $lieu->tarification()->promotionFin()?->format('Y-m-d'),
+            ],
             'administratif' => self::administratif($lieu->administratif()),
             'salles' => array_map(static fn ($salle): array => [
                 'nom' => $salle->nom(),
@@ -300,6 +341,11 @@ final readonly class MarketplaceFichePayloadBuilder
     /** @return array<string, mixed> */
     private function activite(Activite $activite): array
     {
+        $sousThematiques = [];
+        foreach (ActiviteLovCatalog::SOUS_THEMATIQUE_FIELDS as $attribute => $field) {
+            $sousThematiques[$field] = $activite->sousThematiquesPour($attribute);
+        }
+
         return [
             'description' => $activite->descriptionGenerale(),
             'comprendPrestation' => $activite->comprendPrestation(),
@@ -323,7 +369,7 @@ final readonly class MarketplaceFichePayloadBuilder
             ],
             'types' => $activite->types(),
             'thematiques' => $activite->thematiques(),
-            'sousThematiques' => $activite->sousThematiques(),
+            ...$sousThematiques,
             'langues' => $activite->langues(),
             'objectifs' => $activite->objectifs(),
             'engagementsRse' => $activite->engagementsRse(),
@@ -337,9 +383,27 @@ final readonly class MarketplaceFichePayloadBuilder
     /** @return array<string, mixed> */
     private function service(ServiceEvenementiel $service): array
     {
+        $sousPrestations = [];
+        foreach (ServiceLovCatalog::SOUS_PRESTATION_FIELDS as $attribute => $field) {
+            $sousPrestations[$field] = $service->sousPrestationsPour($attribute);
+        }
+
         return [
             'description' => $service->descriptionGenerale(),
             'prestations' => $service->prestations(),
+            ...$sousPrestations,
+            'participants' => [
+                'min' => $service->participantsMin(),
+                'max' => $service->participantsMax(),
+            ],
+            'dureeMinutes' => $service->dureeMinutes(),
+            'adapteFemmesEnceintes' => $service->adapteFemmesEnceintes(),
+            'adapteMalentendants' => $service->adapteMalentendants(),
+            'adapteMalvoyants' => $service->adapteMalvoyants(),
+            'materielInclus' => $service->materielInclus(),
+            'equipementParticipantsRequis' => $service->equipementParticipantsRequis(),
+            'equipementReceptionRequis' => $service->equipementReceptionRequis(),
+            'contraintesLogistiques' => $service->contraintesLogistiques(),
             'youtube' => $service->youtubeUrl(),
             'modeIntervention' => $service->modeIntervention()?->value,
             'couverture' => [

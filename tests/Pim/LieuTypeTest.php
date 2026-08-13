@@ -29,7 +29,7 @@ final class LieuTypeTest extends KernelTestCase
         self::assertTrue($form->get('accessibiliteDescription')->has('descGeneralePointInteret'));
         self::assertTrue($form->get('rse')->has('rseDescGenerale'));
         self::assertCount(37, $form->get('administratif'));
-        self::assertCount(22, $form->get('tarification'));
+        self::assertCount(25, $form->get('tarification'));
 
         $form->submit([
             'label' => 'Lieu Bible',

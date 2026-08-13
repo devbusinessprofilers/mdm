@@ -52,10 +52,10 @@ initiale / resync manuelle).
      | `GENERALE_TYPOLOGIE` | `TypeLieu` |
      | `TA_THEMATIQUE` + `TA_CADRE_ENV` + `TA_AMBIANCE` | `Theme` |
      | `EQUIPEMENTS` + `SERVICES` + `TECHNIQUE_REUNION` + `INSTALLATION` + `BIEN_ETRE` | `Equipement` |
-     | `THEMATIQUE_ACTIVITE` | `TypeActivite` |
+     | `THEMATIQUE_ACTIVITE` + les 9 attributs `TA_*_SS` (sous-thématiques par thématique) | `TypeActivite` (les deux niveaux cohabitent) |
      | `OBJECTIF_SEMINAIRE` | `Objectif` |
      | `LANGUE_PARLEE` | `Langue` (sans traductions Gedmo) |
-     | `TYPE_PRESTATAIRE` | `TypePrestataire` |
+     | `TYPE_PRESTATAIRE` + les 11 attributs `TS_*_SS` (sous-prestations par famille) | `TypePrestataire` (les deux niveaux cohabitent, comme la liste legacy) |
 
      Les autres sous-listes (RSE, chaînes hôtelières, jours d'ouverture,
      sous-thématiques d'activité, listes restaurant…) restent au miroir sans
@@ -75,14 +75,71 @@ initiale / resync manuelle).
     ambiances` → `Produit.themes` ; `equipements ∪ services ∪
     techniqueReunion ∪ installations ∪ bienEtre` → `Produit.equipements`.
   - Activité : `objectifs` → `Activite.objectifs` ; `langues` →
-    `Activite.langues` ; `thematiques` → `Activite.typeActivite`
-    (**première valeur = type principal**, relation mono).
-  - Prestataire : `prestations` → `Prestataire.typePrestataire`
-    (**première valeur**, mono — résout les prestataires détachés par la
-    purge à la prochaine resync).
+    `Activite.langues` ; `sousThematiques* ∪ thematiques` →
+    `Activite.typeActivite` (**première valeur résolue, la sous-thématique
+    prime sur la thématique**, relation mono).
+  - Prestataire : `sousPrestations ∪ prestations` → `Prestataire.typePrestataire`
+    (**première valeur résolue, la sous-prestation prime sur la famille** —
+    résout les prestataires détachés par la purge à la prochaine resync) ;
+    `participants` → capacités min/max ; `couverture.departements` →
+    `Prestataire.departements`.
   - La règle « première valeur » est transitoire : voir
     `docs/TODO-referentiels-multi-valeurs.md` (repo marketplace) pour le
     chantier ManyToMany.
+
+## Mapping des champs hors LOV (2026-08-13)
+
+La marketplace consomme désormais aussi, selon la règle « clé absente →
+intouché » :
+
+| Payload | Cible marketplace | Note |
+|---|---|---|
+| `typologie` (projetée) | `Lieu.hotelNbEtoiles` | « Hôtel N étoiles » → N, Palace → 5, sinon null |
+| `tarifs.seminaire.journeeEtude` | `Lieu.prixJourneeEtude` | montant entier |
+| `tarifs.seminaire.nuiteeResidentiel` (repli semi-résidentiel) | `Lieu.prixSeminaire` | montant entier |
+| `youtube` (lieu + restaurant) | `Lieu.videoFr` | URL brute |
+| `atouts` (lieu, restaurant, activité) | `Produit.atouts` (`bp_atout`) | réutilisation par nom, création sinon |
+| `salles` (lieu + restaurant) | `Produit.salles` (`bp_salle`) | remplacement complet |
+| `acces` (lieu) | `bp_distance_produit_transport` + `bp_moyen_transport` | gare→1, aéroport→2, métro→4 ; tramway/grandes villes/points d'intérêt ignorés ; distance en mètres |
+| `loisirsInternes` (lieu) | `Produit.loisirs` (`bp_loisir`) | adoption par libellé normalisé uniquement (référentiel fermé, PIM en texte libre), aucune création |
+| `participants` (service) | `Prestataire.capaciteMin/Max` | nouveaux champs PIM (CDC) |
+| `couverture.departements` (activité + service) | `departements` | résolution par numéro puis par nom |
+| `couverture` (activité) | `Activite.rayonActionFr` | « Toute la France » ou liste régions + départements |
+| `telephone` (toutes gammes) | `Produit.telephone` | nouveau champ `pim_fiche.telephone`, colonne CSV « Téléphone » reprise à l'import ; espaces retirés, 14 car. max |
+| `adresse.arrondissement` (toutes gammes) | `Produit.arrondissement` (`bp_arrondissement`) | valeur PIM, sinon déduit du code postal pour Paris/Lyon/Marseille (règle legacy) ; ligne créée au besoin |
+| `prestataireEsat` / `demarcheRse` (service) | `Prestataire.categories` (`bp_categorie` : « ESAT / STPA », « RSE ») | reconstruit depuis les deux radios PIM |
+| photos (sync + prune) | `Produit.nb_photos` | compteur legacy maintenu (il ne l'était plus — régression corrigée) |
+| `partenaireBp` (toutes gammes) | `Produit.isPartenaire` | nouveau champ `pim_fiche.partenaire_bp`, colonne CSV « Tag » (vide → partenaire) reprise à l'import |
+| `offreSpeciale` + `promotion.debut/fin` (lieu) | `Lieu.offreSpecialeFr` + `promotionStartDate/EndDate` | bloc « Tarifs & formules » PIM (`pim_lieu_tarification`, migration `Version20260813170000`), repris du CSV legacy ; le front n'affiche l'offre que pendant la période |
+
+Corrigé au passage : `MoyenTransport::setVille()` assignait une propriété
+inexistante `produit` (la ville n'était jamais enregistrée).
+
+### Sous-listes par famille (implémentées le 2026-08-13)
+
+**Chaque sous-liste est un champ à part** — comme thématique / cadre /
+ambiance pour les lieux — et la marketplace **regroupe** leurs valeurs dans
+la liste unique du front, comme le legacy :
+
+- **Services** : 11 attributs `{FAMILLE}_SS` (65 valeurs CDC, ex.
+  `TS_ANIMATION_ARTISTE_SS_10` = Photographe), seed
+  `Version20260813100000`. L'import legacy pose famille **et**
+  sous-prestation (Photographes → Animations & Artistes + Photographe…).
+  Champs CDC ajoutés au passage : `participants_min/max`, `duree_minutes`.
+- **Activités** : `SOUS_THEMATIQUE_ACTIVITE` éclaté en 9 attributs
+  `{THEMATIQUE}_SS` (64 valeurs, codes inchangés) ; les bases déjà migrées
+  sont remappées par `Version20260813110000` (définitions, identifiants
+  stables et valeurs de fiches), `Version20260806180000` réécrite pour les
+  installations neuves.
+
+Dans les deux cas : un champ de formulaire par famille (cases filtrées par
+le contrôleur Stimulus `sous-thematiques`, attaché via l'option `attr` du
+formulaire), accesseur plat conservé en **union** pour la complétude,
+l'import CSV (colonne unique, codes répartis par famille) et l'API portail
+(contrat à plat, réparti par le PatchInput). Le payload fiche envoie une
+clé par famille (`sousPrestationsAnimationsArtistes`,
+`sousThematiquesSportivesLudiques`…) ; la marketplace fait l'union de ces
+clés — même principe que thématiques + cadres + ambiances → thèmes.
 
 ## Runbook go-live (ordre impératif)
 
@@ -105,6 +162,15 @@ initiale / resync manuelle).
 fait, la plupart des fiches lieu partent en dépublication, pas en upsert —
 leurs relations ne basculent donc pas.
 
+Le canal marketplace n'a plus besoin d'action de masse : depuis le
+2026-08-13, la sélection des sites de diffusion vient de la colonne
+« Attribution visibilité » de l'export production, appliquée par
+`app:legacy:import-collaborateurs` sur le référentiel métier réel seedé
+par `app:sites-diffusion:sync` (38 sites, « Business Profilers » =
+`marketplace_bp`, présélectionné pour les nouvelles fiches). Sur
+`mdm_reel` : 26 612 fiches avec le canal marketplace, dont 20 127
+publiées. Voir `docs/import-legacy.md`.
+
 ## Validation effectuée (local, 2026-08-12)
 
 - Tests : PIM 510/510 + PHPStan propre ; marketplace 13/13 (services PIM),
@@ -115,6 +181,10 @@ leurs relations ne basculent donc pas.
   11 TypePrestataire) ; fiche avec `typologie` → relation remplacée sur le
   front (« Hôtel (toutes catégories) » → « Hôtel 4 étoiles ») ; code inconnu
   ignoré + warning.
+- Après les sous-listes par famille (2026-08-13) : 60 attributs au miroir,
+  `bp_type_activite` = 73 lignes PIM (9 thématiques + 64 sous-thématiques),
+  `bp_type_prestataire` = 76 (11 familles + 65 sous-prestations) ; remap
+  local des 800 valeurs de fiches sous-thématiques sans reliquat.
 - Bug préexistant corrigé au passage : l'entité `Langue` déclarait son
   repository sans l'importer (import orphelin `AtoutRepository`) → HTTP 500
   à la première résolution du repository.
@@ -202,6 +272,136 @@ Listes restaurant, traiteur et plateaux-repas au miroir sans projection
 ~30 attributs sans référentiel front (RSE détaillé, chaînes hôtelières,
 modes de paiement…).
 
+## Audit de couverture marketplace (2026-08-13)
+
+Principe acté : peu importe que des champs MDM restent inutilisés ; en
+revanche **tout champ lu par le front marketplace doit garder une source**
+après l'arrêt de l'import CSV legacy. État par source :
+
+- **PIM (sync)** : tout le contenu fiche — nom, description, téléphone,
+  adresse + arrondissement, référentiels, capacités, tarifs de référence,
+  atouts, salles, accès, loisirs, photos (+ compteur `nb_photos`),
+  catégories ESAT/RSE, i18n.
+- **Salesforce (conservé)** : les 6 notes RSE (`note*`) et tout le
+  périmètre traiteurs plateaux-repas (`app:pr-import-produits`).
+- **API Google (runtime)** : `google_place_id`, `google_note`,
+  `google_review_count`.
+- **Salesforce, bis** : `app:update-product-from-salesforce` couvre TOUS
+  les produits publiés (match syspadId ↔ `Product2.ID__c`) et alimente
+  aussi `evaluationClient`, `legalProceedings`, `restrictionRoles` — pas
+  des orphelins ; `priceBookEntryId` par `updatePriceBookIdFromSF` (créa
+  des lignes d'opportunité du tunnel événement). Voir « Reprise
+  Salesforce → PIM » ci-dessous pour le devenir de ces commandes.
+- **Supprimés le 2026-08-13 (décision : on ne garde rien)** :
+  - jamais alimentés : `metadescFr`/`metakeyFr` (meta SEO), 
+    `locationFichePdf`, `isSelectionHomepage` (slider homepage vidé),
+    `videoEn`, `Produit.quartier` (FK morte), propriété fantôme
+    `Prestataire.objectifs` — migration `Version20260813180000` ;
+  - blocs éditoriaux CSV de la fiche lieu non repris : `restaurationFr` et
+    `motExpert` (gabarits, ImportCommand et traductions Gedmo nettoyés) —
+    migration `Version20260813190000`. L'offre spéciale et ses dates de
+    promotion sont en revanche **reprises dans le PIM** (bloc « Tarifs &
+    formules », voir tableau ci-dessus) ;
+  - nettoyage complémentaire du 2026-08-13 : getters/setters fantômes
+    `Prestataire.dureeMin/dureeMax` (aucune propriété ni colonne),
+    colonnes `legal_proceedings` jamais alimentées des gammes `bp_lieu`,
+    `bp_activite`, `bp_prestataire` (migration `Version20260813200000` —
+    `bp_produit.legal_proceedings`, alimentée par Salesforce et lue par le
+    front, est conservée), et attributs `#[Gedmo\Translatable]` orphelins
+    laissés dans `Produit` par la purge metadesc/metakey (le slug héritait
+    de deux Translatable → mapping Doctrine en erreur).
+- **Partenaire BP (tranché le 2026-08-13)** : champ dédié
+  `pim_fiche.partenaire_bp` (case « Partenaire BP » dans les 4 formulaires),
+  repris de la colonne « Tag » du CSV à l'import (vide → partenaire, règle
+  legacy) et consommé par la marketplace (`bp_produit.is_partenaire`).
+  Volontairement distinct de `businessPremium`, qui pilote les relances de
+  complétude.
+
+## Reprise Salesforce → PIM (décisions du 2026-08-13, implémentée le jour même)
+
+Le PIM devient le point de passage des données **fiche** issues de
+Salesforce ; la plomberie **transactionnelle** reste sur la marketplace.
+
+**Implémentation (non commité, les deux repos)** :
+
+- **PIM** : `SalesforceApiClient` (OAuth JWT Bearer RS256 signé en openssl,
+  SOQL paginée, env `SALESFORCE_LOGIN_URL/CLIENT_ID/USERNAME/PRIVATE_KEY` —
+  vide = désactivé, voir `docs/SECRETS.md`) ; entité `FicheSalesforce`
+  (`etl_fiche_salesforce`, migration `Version20260813210000`, une ligne par
+  fiche connue de SF) ; `SalesforceFicheRefresher` (match
+  `Fiche.code = intval(Product2.ID__c)`, garde-diff, `partenaireBp` écrasé
+  via `preserveWorkflowDuring` — commission absente/non nulle → partenaire,
+  règle legacy —, évaluation client 0.0 → null, fiches modifiées
+  replanifiées par `MarketplaceSyncScheduler` dans la même transaction) ;
+  commande `app:salesforce:refresh-fiches [--code]` ; cron quotidien 3h
+  (`Schedule.php` → `RefreshFichesSalesforce` redispatché sur le worker
+  etl) ; payload : bloc `data.salesforce` `{rse{6 clés}, evaluationClient,
+  procedureJudiciaire, contratsComptes[]}`, clé absente tant que la fiche
+  n'a pas de ligne `etl_fiche_salesforce`. Les 4 formulaires affichent la
+  case « Partenaire BP » désactivée avec l'aide « Géré par Salesforce. »
+  dès que la fiche est connue de SF (éditable sinon). L'éditeur de fiche
+  affiche un bloc lecture seule « Données Salesforce » (section
+  « Visibilité & diffusion », bloc `salesforce` du catalogue de sections) :
+  6 notes RSE, évaluation client, procédure judiciaire, contrats avec
+  comptes et date du dernier rafraîchissement — ou un message d'absence si
+  la fiche est inconnue de Salesforce.
+- **Marketplace** : `PimFicheUpsertService::applySalesforce()` consomme le
+  bloc (règle clé absente → intouché) → `note*`, `evaluationClient`
+  (troncature int, comme l'ancienne commande), `legalProceedings`,
+  `restrictionRoles` résolus depuis les contrats bruts via
+  `UserService::getContractRoleMap()` (option `domaines_roles`).
+- Tests : PIM 517 verts (dont `SalesforceFicheRefresherTest`, 4 tests
+  database) + PHPStan propre ; marketplace 20 verts (dont bloc salesforce)
+  + PHPStan propre sur le fichier modifié.
+- **Refresh complet validé (sandbox, 2026-08-13)** : 23 607 produits
+  Salesforce reçus, 22 619 fiches appariées, 11 807 modifiées, 988 sans
+  fiche PIM. Récupérés : 524 notes RSE globales (dont détail complet sur
+  certaines fiches), 1 227 évaluations client, 2 procédures judiciaires,
+  2 jeux de contrats comptes (Edf/Engie/TotalEnergies/Covea), statut
+  partenaire recalculé partout (22 369 partenaires / 7 424 non). ⚠️ En
+  exécution **manuelle en local (env dev)**, lancer avec
+  `php -d memory_limit=1G bin/console --no-debug app:salesforce:refresh-fiches` :
+  le profiler Doctrine (backtrace par requête SQL) épuise sinon la
+  mémoire sur ~23k produits. Le cron passe par le worker etl en
+  `APP_DEBUG=0`, non concerné.
+- **Validé sur fiches legacy réelles (sandbox SF, 2026-08-13)** : codes 1,
+  2, 3, 5, 6, 1311, 1422 et 23503 appariés et rafraîchis (notes, éval,
+  procédure, partenaire 0→1, statut `publiee` conservé). Bout en bout sur
+  la fiche 23503 (seule publiée + diffusée marketplace + éligible photos
+  en local) : PUT reçu, `bp_produit` mis à jour (éval 4→5, séquence
+  avancée). Bug préexistant corrigé au passage :
+  `replaceDistancesTransport` supprimait puis recréait les stations dans
+  le même flush (INSERT avant DELETE chez Doctrine → violation de l'unique
+  `produit_transport_station` à toute resynchronisation) ; réécrit en
+  réutilisation par (type, nom) avec purge du reliquat et garde anti-
+  doublon du payload.
+
+**Retrait effectué sur `feature/pim-sync` (2026-08-13)** :
+`app:update-product-from-salesforce` et `app:update-sf-ispartner`
+supprimées de la marketplace, ainsi que leurs lignes de
+`run-salesforce-refresh.sh` et les méthodes `SalesforceGlobalService`
+devenues orphelines (`UPDATABLE_FIELDS`, `getProductsForUpdate`,
+`getProductEntryIds`, `getRSEEntryIds`, `getReviewEntryId` —
+`normalizeRecord`, `getPriceBookEntryIds` et `updateProviderMainPhoto`
+conservées, encore utilisées). ⚠️ Conséquence pour le déploiement : dès
+que cette branche part en prod, les notes RSE / évaluation / procédure /
+partenaire ne sont plus rafraîchies **que** par le PIM — configurer les
+secrets `SALESFORCE_*` du PIM et vérifier le premier
+`app:salesforce:refresh-fiches` dans la même fenêtre de mise en prod.
+
+| Commande marketplace | Décision |
+|---|---|
+| `app:update-product-from-salesforce` (6 notes RSE, évaluation client, procédure judiciaire, contrats comptes → rôles) | **Reprise dans le PIM** : le PIM interroge Salesforce (match `Fiche.code` = `Product2.ID__c`), stocke les valeurs sur la fiche (mise à jour technique, sans transition workflow) et les pousse via le payload de sync existant |
+| `app:update-sf-ispartner` (`commission_standard__c` → `isPartenaire`) | **Supprimée à terme** : Salesforce est la source de vérité du statut partenaire ; le PIM alimente `partenaireBp` depuis `commission_standard__c` lors du même refresh, la sync existante (`partenaireBp` → `bp_produit.is_partenaire`) fait le reste. Résout la collision des deux écrivains sur `is_partenaire` |
+| `app:import-sf-price` (`priceBookEntryId`) | **Reste sur la marketplace** : donnée du tunnel de commande (opportunités SF), une panne de sync PIM ne doit pas bloquer les ventes |
+| `app:pr-import-produits` (traiteurs plateaux-repas) | **Reste sur la marketplace** pour le moment (les traiteurs sont hors PIM ; leurs notes RSE viennent déjà de `Product2Mapping`, aucun recouvrement avec la reprise ci-dessus — les produits traiteurs n'ont pas de `syspad_id`) |
+| `app:update-sf-main-photo` (photo principale → SF, écriture) | **Reste sur la marketplace** ; à réexaminer quand le DAM sera la source des photos |
+
+Point de design acté : la résolution `restrictionRoles` (contrats
+Salesforce → rôles portail via l'option `domaines_roles`) est une notion
+marketplace — le PIM transmettra les **valeurs de contrat brutes**, la
+marketplace continue de les résoudre en rôles à la réception.
+
 ## Points ouverts
 
 - Arbitrage métier des valeurs sans équivalent ci-dessus (types de
@@ -214,3 +414,8 @@ modes de paiement…).
   « première valeur » en place) : chantier décrit dans
   `docs/TODO-referentiels-multi-valeurs.md` du repo marketplace.
 - Maîtrise des traiteurs (PIM vs import Salesforce `app:pr-import-produits`).
+- Reprise Salesforce → PIM implémentée, anciennes commandes marketplace
+  supprimées (voir section dédiée) ; reste au go-live : configurer les
+  secrets `SALESFORCE_*` du PIM et vérifier le premier
+  `app:salesforce:refresh-fiches` dans la même fenêtre que le déploiement
+  marketplace.

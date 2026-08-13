@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Pim\Form;
 
+use App\Etl\Repository\FicheSalesforceRepository;
 use App\Pim\Entity\Activite\Activite;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Entity\Localisation;
@@ -30,8 +31,17 @@ use Symfony\Component\Validator\Constraints\File;
 /** @extends AbstractType<Activite> */
 final class ActiviteType extends AbstractType
 {
+    public function __construct(private readonly FicheSalesforceRepository $salesforce)
+    {
+    }
+
     public function buildForm(FormBuilderInterface $b, array $options): void
     {
+        // Fiche connue de Salesforce : le statut partenaire est écrasé à
+        // chaque refresh, la case devient consultative.
+        $data = $options['data'] ?? null;
+        $partenaireGereParSf = $data instanceof Activite
+            && $this->salesforce->existePourFiche($data->fiche()->id());
         $b->add(
                 'label',
                 TextType::class,
@@ -42,6 +52,20 @@ final class ActiviteType extends AbstractType
                 'required' => false,
                 'getter' => static fn (Activite $activite): bool => $activite->fiche()->businessPremium(),
                 'setter' => static function (Activite &$activite, mixed $value): void { $activite->fiche()->changeBusinessPremium((bool) $value); },
+            ])
+            ->add('partenaireBp', CheckboxType::class, [
+                'label' => 'Partenaire BP',
+                'required' => false,
+                'disabled' => $partenaireGereParSf,
+                'help' => $partenaireGereParSf ? 'Géré par Salesforce.' : null,
+                'getter' => static fn (Activite $activite): bool => $activite->fiche()->partenaireBp(),
+                'setter' => static function (Activite &$activite, mixed $value): void { $activite->fiche()->changePartenaireBp((bool) $value); },
+            ])
+            ->add('telephone', TextType::class, [
+                'label' => 'Téléphone',
+                'required' => false,
+                'getter' => static fn (Activite $activite): ?string => $activite->fiche()->telephone(),
+                'setter' => static function (Activite &$activite, mixed $value): void { $activite->fiche()->changeTelephone(null === $value ? null : (string) $value); },
             ])
             ->add(
                 'prestataire',
@@ -81,31 +105,44 @@ final class ActiviteType extends AbstractType
                         'data-action' => 'sous-thematiques#refresh',
                     ],
                 ],
-            )
-            ->add(
-                'sousThematiques',
+            );
+
+        // Un champ de sous-thématiques par thématique, comme les listes des
+        // lieux ; le contrôleur Stimulus sous-thematiques masque les cases
+        // dont la thématique n'est pas cochée.
+        foreach (ActiviteLovCatalog::sousThematiqueAttributes() as $attribute => $thematique) {
+            $b->add(
+                ActiviteLovCatalog::SOUS_THEMATIQUE_FIELDS[$attribute],
                 ChoiceType::class,
-                $this->field(
-                    'Sous-thématiques',
-                    'sousThematiques',
-                    'changeSousThematiques',
-                ) + [
-                    // Chaque case porte sa thématique parente : le contrôleur
-                    // Stimulus sous-thematiques masque celles dont la
-                    // thématique n'est pas cochée.
+                [
+                    'label' => 'Sous-thématiques — '.$thematique,
+                    'required' => false,
+                    'getter' => static fn (
+                        Activite $activite,
+                    ): array => $activite->sousThematiquesPour($attribute),
+                    'setter' => static function (
+                        Activite &$activite,
+                        mixed $value,
+                    ) use ($attribute): void {
+                        $activite->changeSousThematiquesPour(
+                            $attribute,
+                            array_values(array_filter((array) $value, is_string(...))),
+                        );
+                    },
                     'choices' => array_flip(
-                        ActiviteLovCatalog::choicesFor(
-                            'SOUS_THEMATIQUE_ACTIVITE',
-                        ),
+                        ActiviteLovCatalog::choicesFor($attribute),
                     ),
                     'multiple' => true,
                     'expanded' => true,
-                    'choice_attr' => static fn (string $code): array => [
+                    'choice_attr' => static fn (): array => [
                         'data-sous-thematiques-target' => 'sousThematique',
-                        'data-parent' => ActiviteLovCatalog::parentOf($code),
+                        'data-parent' => ActiviteLovCatalog::thematiqueOf($attribute),
                     ],
                 ],
-            )
+            );
+        }
+
+        $b
             ->add(
                 'langues',
                 ChoiceType::class,
@@ -406,6 +443,9 @@ final class ActiviteType extends AbstractType
         $r->setDefaults([
             'data_class' => Activite::class,
             'validation_groups' => [ValidationGroups::DRAFT],
+            // Racine du contrôleur Stimulus qui filtre les sous-thématiques
+            // par thématique cochée (les cibles sont dans ce formulaire).
+            'attr' => ['data-controller' => 'sous-thematiques'],
         ]);
     }
 }

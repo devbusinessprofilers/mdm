@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Pim\Form;
 
+use App\Etl\Repository\FicheSalesforceRepository;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Entity\Localisation;
 use App\Pim\Entity\Service\ServiceEvenementiel;
@@ -18,6 +19,7 @@ use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\CollectionType;
 use Symfony\Component\Form\Extension\Core\Type\FileType;
+use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\MoneyType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
@@ -31,10 +33,19 @@ use Symfony\Component\Validator\Constraints\File;
 /** @extends AbstractType<ServiceEvenementiel> */
 final class ServiceEvenementielType extends AbstractType
 {
+    public function __construct(private readonly FicheSalesforceRepository $salesforce)
+    {
+    }
+
     public function buildForm(
         FormBuilderInterface $builder,
         array $options,
     ): void {
+        // Fiche connue de Salesforce : le statut partenaire est écrasé à
+        // chaque refresh, la case devient consultative.
+        $data = $options['data'] ?? null;
+        $partenaireGereParSf = $data instanceof ServiceEvenementiel
+            && $this->salesforce->existePourFiche($data->fiche()->id());
         $builder
             ->add(
                 "label",
@@ -47,6 +58,20 @@ final class ServiceEvenementielType extends AbstractType
                 "getter" => static fn (ServiceEvenementiel $service): bool => $service->fiche()->businessPremium(),
                 "setter" => static function (ServiceEvenementiel &$service, mixed $value): void { $service->fiche()->changeBusinessPremium((bool) $value); },
             ])
+            ->add("partenaireBp", CheckboxType::class, [
+                "label" => "Partenaire BP",
+                "required" => false,
+                "disabled" => $partenaireGereParSf,
+                "help" => $partenaireGereParSf ? "Géré par Salesforce." : null,
+                "getter" => static fn (ServiceEvenementiel $service): bool => $service->fiche()->partenaireBp(),
+                "setter" => static function (ServiceEvenementiel &$service, mixed $value): void { $service->fiche()->changePartenaireBp((bool) $value); },
+            ])
+            ->add("telephone", TextType::class, [
+                "label" => "Téléphone",
+                "required" => false,
+                "getter" => static fn (ServiceEvenementiel $service): ?string => $service->fiche()->telephone(),
+                "setter" => static function (ServiceEvenementiel &$service, mixed $value): void { $service->fiche()->changeTelephone(null === $value ? null : (string) $value); },
+            ])
             ->add(
                 "prestations",
                 ChoiceType::class,
@@ -58,8 +83,49 @@ final class ServiceEvenementielType extends AbstractType
                     "choices" => array_flip(ServiceLovCatalog::prestations()),
                     "multiple" => true,
                     "expanded" => true,
+                    "choice_attr" => static fn (): array => [
+                        "data-sous-thematiques-target" => "thematique",
+                        "data-action" => "sous-thematiques#refresh",
+                    ],
                 ],
-            )
+            );
+
+        // Un champ de sous-prestations par famille, comme les listes des
+        // lieux ; le contrôleur Stimulus sous-thematiques masque les cases
+        // dont la famille n'est pas cochée.
+        foreach (ServiceLovCatalog::sousPrestationAttributes() as $attribute => $famille) {
+            $builder->add(
+                ServiceLovCatalog::SOUS_PRESTATION_FIELDS[$attribute],
+                ChoiceType::class,
+                [
+                    "label" => "Sous-prestations — ".$famille,
+                    "required" => false,
+                    "getter" => static fn (
+                        ServiceEvenementiel $service,
+                    ): array => $service->sousPrestationsPour($attribute),
+                    "setter" => static function (
+                        ServiceEvenementiel &$service,
+                        mixed $value,
+                    ) use ($attribute): void {
+                        $service->changeSousPrestationsPour(
+                            $attribute,
+                            array_values(array_filter((array) $value, is_string(...))),
+                        );
+                    },
+                    "choices" => array_flip(
+                        ServiceLovCatalog::sousPrestationsFor($attribute),
+                    ),
+                    "multiple" => true,
+                    "expanded" => true,
+                    "choice_attr" => static fn (): array => [
+                        "data-sous-thematiques-target" => "sousThematique",
+                        "data-parent" => ServiceLovCatalog::familleOf($attribute),
+                    ],
+                ],
+            );
+        }
+
+        $builder
             ->add(
                 "descriptionGenerale",
                 TextareaType::class,
@@ -145,6 +211,20 @@ final class ServiceEvenementielType extends AbstractType
                     "changeDepartementsMobiles",
                 ),
             );
+
+        foreach (
+            [
+                "participantsMin" => ["Prestation à partir de (personnes)", "changeParticipantsMin"],
+                "participantsMax" => ["Prestation jusqu'à (personnes)", "changeParticipantsMax"],
+                "dureeMinutes" => ["Durée de la prestation (minutes)", "changeDureeMinutes"],
+            ] as $name => [$label, $setter]
+        ) {
+            $builder->add(
+                $name,
+                IntegerType::class,
+                $this->field($label, $name, $setter),
+            );
+        }
 
         foreach ($this->tariffFields() as $name => [$label, $setter]) {
             $builder->add(
@@ -241,6 +321,9 @@ final class ServiceEvenementielType extends AbstractType
         $resolver->setDefaults([
             "data_class" => ServiceEvenementiel::class,
             "validation_groups" => [ValidationGroups::DRAFT],
+            // Racine du contrôleur Stimulus qui filtre les sous-prestations
+            // par famille cochée.
+            "attr" => ["data-controller" => "sous-thematiques"],
         ]);
     }
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Pim\Form;
 
+use App\Etl\Repository\FicheSalesforceRepository;
 use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Entity\Lieu\LieuAdministratif;
 use App\Pim\Entity\Lieu\LieuTarification;
@@ -25,9 +26,18 @@ use App\Pim\Validation\ValidationGroups;
 /** @extends AbstractType<Lieu> */
 final class LieuType extends AbstractType
 {
+    public function __construct(private readonly FicheSalesforceRepository $salesforce)
+    {
+    }
+
     /** @param FormBuilderInterface<Lieu|null> $builder */
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
+        // Fiche connue de Salesforce : le statut partenaire est écrasé à
+        // chaque refresh, la case devient consultative.
+        $data = $options['data'] ?? null;
+        $partenaireGereParSf = $data instanceof Lieu
+            && $this->salesforce->existePourFiche($data->fiche()->id());
         $builder
             ->add('label', TextType::class, $this->field('Libellé', 'label', 'changeLabel'))
             ->add('businessPremium', CheckboxType::class, [
@@ -35,6 +45,20 @@ final class LieuType extends AbstractType
                 'required' => false,
                 'getter' => static fn (Lieu $lieu): bool => $lieu->fiche()->businessPremium(),
                 'setter' => static function (Lieu &$lieu, mixed $value): void { $lieu->fiche()->changeBusinessPremium((bool) $value); },
+            ])
+            ->add('partenaireBp', CheckboxType::class, [
+                'label' => 'Partenaire BP',
+                'required' => false,
+                'disabled' => $partenaireGereParSf,
+                'help' => $partenaireGereParSf ? 'Géré par Salesforce.' : null,
+                'getter' => static fn (Lieu $lieu): bool => $lieu->fiche()->partenaireBp(),
+                'setter' => static function (Lieu &$lieu, mixed $value): void { $lieu->fiche()->changePartenaireBp((bool) $value); },
+            ])
+            ->add('telephone', TextType::class, [
+                'label' => 'Téléphone',
+                'required' => false,
+                'getter' => static fn (Lieu $lieu): ?string => $lieu->fiche()->telephone(),
+                'setter' => static function (Lieu &$lieu, mixed $value): void { $lieu->fiche()->changeTelephone(null === $value ? null : (string) $value); },
             ])
             ->add('generaleTypologie', ChoiceType::class, $this->field('Typologie', 'generaleTypologie', 'changeGeneraleTypologie', false) + [
                 'choices' => array_flip(LieuLovCatalog::choicesFor('GENERALE_TYPOLOGIE')),
