@@ -40,6 +40,11 @@ Les secrets ne sont **jamais** commités : `html/.env` (suivi) liste toutes les 
 ### METRICS_TOKEN
 - Générer comme APP_SECRET. Utilisé en Bearer par l'outil de scrape de `/metrics`. Rotation libre : mettre à jour l'app puis le scraper.
 
+### Salesforce (SALESFORCE_CLIENT_ID / SALESFORCE_PRIVATE_KEY)
+- Connected App Salesforce en OAuth JWT Bearer : la clé privée RS256 signe l'assertion, Salesforce détient le certificat public. Mêmes credentials que la marketplace (repo `lamp-docker`, `certs/salesforce_{env}.key`) tant que la Connected App est partagée.
+- `SALESFORCE_PRIVATE_KEY` porte le PEM complet (les `\n` littéraux d'une variable mono-ligne sont acceptés) ; `SALESFORCE_USERNAME` est le compte d'intégration (`portail@businessprofilers.fr`), `SALESFORCE_LOGIN_URL` `https://login.salesforce.com` en prod, `https://test.salesforce.com` en sandbox.
+- Rotation : générer un nouveau couple clé/certificat, téléverser le certificat sur la Connected App, déployer la clé privée, vérifier `app:salesforce:refresh-fiches --code=<code>` puis retirer l'ancien certificat.
+
 ### Credentials MariaDB (dépôt parent `.env` : DB_PASSWORD)
 - Dev uniquement (conteneur non exposé publiquement). Pour changer : mettre à jour le `.env` racine, recréer le volume SQL ou exécuter `ALTER USER` dans le conteneur, mettre à jour `DATABASE_URL` dans `.env.local`.
 

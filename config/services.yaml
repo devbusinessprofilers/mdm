@@ -36,6 +36,10 @@ parameters:
     env(MARKETPLACE_SYNC_API_URL): ''
     env(MARKETPLACE_SYNC_API_LOGIN): ''
     env(MARKETPLACE_SYNC_API_PASSWORD): ''
+    env(SALESFORCE_LOGIN_URL): ''
+    env(SALESFORCE_CLIENT_ID): ''
+    env(SALESFORCE_USERNAME): ''
+    env(SALESFORCE_PRIVATE_KEY): ''
 
 services:
     # default configuration for services in *this* file
@@ -118,6 +122,17 @@ services:
             $endpoint: '%env(MARKETPLACE_SYNC_API_URL)%'
             $login: '%env(MARKETPLACE_SYNC_API_LOGIN)%'
             $password: '%env(MARKETPLACE_SYNC_API_PASSWORD)%'
+
+    # Lecture Salesforce (refresh des données fiche : RSE, évaluation,
+    # procédure judiciaire, contrats, partenaire). Vide = désactivé.
+    App\Etl\Service\SalesforceClientInterface: '@App\Etl\Service\SalesforceApiClient'
+
+    App\Etl\Service\SalesforceApiClient:
+        arguments:
+            $loginUrl: '%env(SALESFORCE_LOGIN_URL)%'
+            $clientId: '%env(SALESFORCE_CLIENT_ID)%'
+            $username: '%env(SALESFORCE_USERNAME)%'
+            $privateKey: '%env(SALESFORCE_PRIVATE_KEY)%'
 
     App\Pim\Service\RechercheEntrepriseClient:
         arguments:

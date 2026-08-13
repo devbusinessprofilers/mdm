@@ -3,6 +3,7 @@
 namespace App;
 
 use App\Dam\Message\ScanDamAnomalies;
+use App\Etl\Message\RefreshFichesSalesforce;
 use App\Pim\Message\EnvoyerRelancesPlanifiees;
 use App\Pim\Message\RemindIncompleteFiches;
 use App\Shared\Alert\Message\CheckFailedQueue;
@@ -40,6 +41,13 @@ class Schedule implements ScheduleProviderInterface
             // 14h si l'envoi automatique est actif.
             ->add(RecurringMessage::cron('0 8 * * 1', new RedispatchMessage(new RemindIncompleteFiches(), 'pim'), new \DateTimeZone('Europe/Paris')))
             ->add(RecurringMessage::cron('0 14 * * 1', new RedispatchMessage(new EnvoyerRelancesPlanifiees(), 'pim'), new \DateTimeZone('Europe/Paris')))
+
+            // Refresh Salesforce quotidien des fiches (RSE, évaluation client,
+            // procédure judiciaire, contrats, statut partenaire), exécuté par
+            // le worker etl : SOQL + écritures par lots, trop lourd pour le
+            // consumer cron. Les fiches modifiées repartent vers la
+            // marketplace par la sync habituelle.
+            ->add(RecurringMessage::cron('0 3 * * *', new RedispatchMessage(new RefreshFichesSalesforce(), 'etl'), new \DateTimeZone('Europe/Paris')))
 
             // Purges quotidiennes, exécutées directement par le consumer cron
             // du scheduler (quelques DELETE bornés) : sans elles, l'outbox et
