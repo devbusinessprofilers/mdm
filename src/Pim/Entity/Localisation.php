@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Pim\Entity;
 
 use App\Pim\Repository\LocalisationRepository;
+use App\Pim\Service\ReferentielGeographiqueFrancais;
 use App\Shared\Entity\TimestampableTrait;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
@@ -60,6 +61,13 @@ class Localisation
     #[ORM\Column(type: Types::DECIMAL, precision: 18, scale: 15, nullable: true)]
     private ?string $longitude = null;
 
+    /** Score de la dernière vérification API Adresse (BAN), 0..1. */
+    #[ORM\Column(nullable: true)]
+    private ?float $banScore = null;
+
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $banVerifieLe = null;
+
     public function __construct()
     {
         $this->id = new Ulid();
@@ -106,7 +114,10 @@ class Localisation
 
     public function changeRegion(?string $region): void
     {
-        $this->region = self::normalizeNullableString($region);
+        $region = self::normalizeNullableString($region);
+        // Libellé canonique INSEE (« Île-De-France » → « Île-de-France ») ;
+        // une valeur hors référentiel (région étrangère) reste telle quelle.
+        $this->region = null === $region ? null : ReferentielGeographiqueFrancais::normaliserRegion($region);
         $this->touch();
     }
 
@@ -117,7 +128,8 @@ class Localisation
 
     public function changeDepartement(?string $departement): void
     {
-        $this->departement = self::normalizeNullableString($departement);
+        $departement = self::normalizeNullableString($departement);
+        $this->departement = null === $departement ? null : ReferentielGeographiqueFrancais::normaliserDepartement($departement);
         $this->touch();
     }
 
@@ -140,9 +152,23 @@ class Localisation
 
     public function changeCodePostal(?string $codePostal): void
     {
-        $this->codePostal = self::normalizeNullableString($codePostal);
+        $codePostal = self::normalizeNullableString($codePostal);
+        // Zéro initial perdu par un tableur : réparé pour la France
+        // uniquement (les CP belges ou suisses à 4 chiffres sont légitimes).
+        // Le pays est renseigné avant le code postal dans tous les flux
+        // (imports, formulaire, API).
+        if (null !== $codePostal && $this->estFrance()) {
+            $codePostal = ReferentielGeographiqueFrancais::reparerCodePostal($codePostal);
+        }
+        $this->codePostal = $codePostal;
         $this->refreshSearchFields();
         $this->touch();
+    }
+
+    private function estFrance(): bool
+    {
+        return 'FR' === $this->countryCode
+            || (null !== $this->pays && 'france' === ReferentielGeographiqueFrancais::cle($this->pays));
     }
 
     public function ville(): ?string
@@ -200,6 +226,23 @@ class Localisation
     public static function normalizeLongitude(?string $longitude): ?string
     {
         return self::normalizeCoordinate($longitude, 180, 'longitude');
+    }
+
+    public function banScore(): ?float
+    {
+        return $this->banScore;
+    }
+
+    public function banVerifieLe(): ?\DateTimeImmutable
+    {
+        return $this->banVerifieLe;
+    }
+
+    /** Trace de vérification API Adresse (BAN) — donnée technique, pas de touch(). */
+    public function recordBanVerification(?float $score): void
+    {
+        $this->banScore = $score;
+        $this->banVerifieLe = new \DateTimeImmutable();
     }
 
     public function villeNormalisee(): ?string

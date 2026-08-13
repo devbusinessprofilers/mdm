@@ -33,6 +33,7 @@ parameters:
     env(COMPLETENESS_REMINDER_COOLDOWN_DAYS): '30'
     env(COMPLETENESS_REMINDER_ENABLED): '1'
     env(RECHERCHE_ENTREPRISES_ENDPOINT): 'https://recherche-entreprises.api.gouv.fr'
+    env(BAN_API_ENDPOINT): 'https://api-adresse.data.gouv.fr'
     env(MARKETPLACE_SYNC_API_URL): ''
     env(MARKETPLACE_SYNC_API_LOGIN): ''
     env(MARKETPLACE_SYNC_API_PASSWORD): ''
@@ -137,6 +138,14 @@ services:
     App\Pim\Service\RechercheEntrepriseClient:
         arguments:
             $endpoint: '%env(RECHERCHE_ENTREPRISES_ENDPOINT)%'
+
+    # Vérification des adresses françaises (Base Adresse Nationale,
+    # gratuite et sans clé). Vide = vérification désactivée.
+    App\Pim\Service\BanClientInterface: '@App\Pim\Service\BanApiClient'
+
+    App\Pim\Service\BanApiClient:
+        arguments:
+            $endpoint: '%env(BAN_API_ENDPOINT)%'
 
     App\Shared\Service\OvhS3ObjectStorage:
         factory: ['App\Shared\Service\OvhS3ObjectStorage', 'create']

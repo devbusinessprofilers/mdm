@@ -112,6 +112,29 @@ final class FicheRepository extends ServiceEntityRepository
         return $fiches;
     }
 
+    /**
+     * Fiches avec localisation, tous statuts, paginées par identifiant
+     * (parcours par lots des commandes de normalisation d'adresses).
+     *
+     * @return list<Fiche>
+     */
+    public function findWithLocalisationAfter(?string $afterId, int $limit): array
+    {
+        $builder = $this->createQueryBuilder('fiche')
+            ->addSelect('localisation')
+            ->join('fiche.localisation', 'localisation')
+            ->orderBy('fiche.id', 'ASC')
+            ->setMaxResults(max(1, min(1000, $limit)));
+        if (null !== $afterId && '' !== $afterId) {
+            $builder->andWhere('fiche.id > :after')->setParameter('after', Ulid::fromString($afterId), 'ulid');
+        }
+
+        /** @var list<Fiche> $fiches */
+        $fiches = $builder->getQuery()->getResult();
+
+        return $fiches;
+    }
+
     /** @return list<Fiche> */
     public function findPublishedAfter(?string $afterId, int $limit): array
     {
