@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Pim;
 
 use App\Account\Entity\User;
+use App\Etl\Entity\FicheSalesforce;
 use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Entity\SiteDiffusion;
 use Doctrine\DBAL\Connection;
@@ -93,6 +94,23 @@ final class FicheLieuEditeurTest extends WebTestCase
         $entityManager->flush();
         $crawler = $client->request('GET', '/referentiel/lieux/fiche/'.$id.'?section=14');
         self::assertResponseIsSuccessful();
+
+        // Bloc Données Salesforce : message d'absence tant que la fiche est
+        // inconnue de Salesforce, valeurs en lecture seule dès qu'une ligne
+        // de refresh existe.
+        self::assertSelectorTextContains('body', 'Fiche inconnue de Salesforce');
+        $donnees = new FicheSalesforce($recharge->fiche()->id(), $recharge->fiche()->code());
+        $donnees->mettreAJour(3.5, null, null, null, null, 4.2, 4.0, 'Redressement judiciaire', ['Compte A']);
+        $entityManager->persist($donnees);
+        $entityManager->flush();
+        $crawler = $client->request('GET', '/referentiel/lieux/fiche/'.$id.'?section=14');
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('body', 'Données Salesforce');
+        self::assertSelectorTextContains('body', 'Note RSE globale');
+        self::assertSelectorTextContains('body', '4.2');
+        self::assertSelectorTextContains('body', 'Redressement judiciaire');
+        self::assertSelectorTextContains('body', 'Compte A');
+
         $form = $crawler->selectButton('Enregistrer la diffusion')->form();
         $values = $form->getPhpValues();
         $values['sites_diffusion']['sites'] = [(string) $site->id()];
@@ -107,6 +125,7 @@ final class FicheLieuEditeurTest extends WebTestCase
 
     private function clearTables(): void
     {
+        $this->connection->executeStatement('DELETE FROM etl_fiche_salesforce');
         $this->connection->executeStatement('DELETE FROM pim_fiche_site_diffusion');
         $this->connection->executeStatement("DELETE FROM pim_site_diffusion WHERE code LIKE '%_TEST'");
         $this->connection->executeStatement('DELETE FROM pim_fiche_affiliation');

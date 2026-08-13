@@ -6,13 +6,15 @@ namespace App\Pim\Service;
 
 use App\Pim\Enum\TypeFiche;
 use App\Pim\Form\LieuFormCatalog;
+use App\Pim\Lov\ActiviteLovCatalog;
+use App\Pim\Lov\ServiceLovCatalog;
 
 /**
  * Les sections de l'éditeur de fiche, par gamme, alignées sur la maquette
  * front. Chaque section porte :
  *  - `champs`     : les champs de premier niveau du formulaire de la gamme rendus dans la section ;
  *  - `proprietes` : les propriétés racines de l'entité, pour rattacher la complétude ;
- *  - `blocs`      : les blocs spécialisés (medias, collaborateurs, sites, suggestions, historique).
+ *  - `blocs`      : les blocs spécialisés (medias, collaborateurs, sites, salesforce, suggestions, historique).
  *
  * Le rattachement fin aux champs de la maquette sera affiné avec le
  * dictionnaire des attributs ; cette ossature suit les blocs du back.
@@ -61,7 +63,7 @@ final class FicheSectionsCatalogue
         return [
             [
                 'titre' => 'Informations générales',
-                'champs' => ['label', 'businessPremium', 'generaleTypologie', 'generaleWebsiteUrl', 'informationsGenerales'],
+                'champs' => ['label', 'businessPremium', 'partenaireBp', 'telephone', 'generaleTypologie', 'generaleWebsiteUrl', 'informationsGenerales'],
                 'proprietes' => ['label', 'generaleTypologie', 'generaleWebsiteUrl', ...array_keys(LieuFormCatalog::general())],
                 'blocs' => [],
             ],
@@ -147,7 +149,7 @@ final class FicheSectionsCatalogue
                 'titre' => 'Visibilité & diffusion',
                 'champs' => ['visibilite'],
                 'proprietes' => array_keys(LieuFormCatalog::visibility()),
-                'blocs' => ['sites'],
+                'blocs' => ['sites', 'salesforce'],
             ],
             [
                 'titre' => 'Suggestions IA & historique',
@@ -164,7 +166,7 @@ final class FicheSectionsCatalogue
         return [
             [
                 'titre' => 'Informations générales',
-                'champs' => ['label', 'businessPremium', 'siteOfficiel', 'youtubeUrl'],
+                'champs' => ['label', 'businessPremium', 'partenaireBp', 'telephone', 'siteOfficiel', 'youtubeUrl'],
                 'proprietes' => ['label', 'siteOfficiel', 'youtubeUrl'],
                 'blocs' => [],
             ],
@@ -220,7 +222,7 @@ final class FicheSectionsCatalogue
                 'titre' => 'Visibilité & diffusion',
                 'champs' => [],
                 'proprietes' => [],
-                'blocs' => ['sites'],
+                'blocs' => ['sites', 'salesforce'],
             ],
             [
                 'titre' => 'Suggestions IA & historique',
@@ -237,7 +239,7 @@ final class FicheSectionsCatalogue
         return [
             [
                 'titre' => 'Informations générales',
-                'champs' => ['label', 'businessPremium', 'prestataire', 'types', 'langues', 'youtubeUrl'],
+                'champs' => ['label', 'businessPremium', 'partenaireBp', 'telephone', 'prestataire', 'types', 'langues', 'youtubeUrl'],
                 'proprietes' => ['label', 'prestataire', 'types', 'langues', 'youtubeUrl'],
                 'blocs' => [],
             ],
@@ -255,7 +257,7 @@ final class FicheSectionsCatalogue
             ],
             [
                 'titre' => 'Classification',
-                'champs' => ['thematiques', 'sousThematiques', 'engagementsRse'],
+                'champs' => ['thematiques', ...array_values(ActiviteLovCatalog::SOUS_THEMATIQUE_FIELDS), 'engagementsRse'],
                 'proprietes' => ['thematiques', 'sousThematiques', 'engagementsRse'],
                 'blocs' => [],
             ],
@@ -287,7 +289,7 @@ final class FicheSectionsCatalogue
                 'titre' => 'Visibilité & diffusion',
                 'champs' => [],
                 'proprietes' => [],
-                'blocs' => ['sites'],
+                'blocs' => ['sites', 'salesforce'],
             ],
             [
                 'titre' => 'Suggestions IA & historique',
@@ -304,8 +306,14 @@ final class FicheSectionsCatalogue
         return [
             [
                 'titre' => 'Informations générales',
-                'champs' => ['label', 'businessPremium', 'prestations', 'youtubeUrl'],
-                'proprietes' => ['label', 'prestations', 'youtubeUrl'],
+                'champs' => ['label', 'businessPremium', 'partenaireBp', 'telephone', 'prestations', ...array_values(ServiceLovCatalog::SOUS_PRESTATION_FIELDS), 'prestataireEsat', 'demarcheRse', 'youtubeUrl'],
+                'proprietes' => ['label', 'prestations', 'sousPrestations', 'prestataireEsat', 'demarcheRse', 'youtubeUrl'],
+                'blocs' => [],
+            ],
+            [
+                'titre' => 'Prestation & accessibilité',
+                'champs' => ['participantsMin', 'participantsMax', 'dureeMinutes', 'adapteFemmesEnceintes', 'adapteMalentendants', 'adapteMalvoyants', 'materielInclus', 'equipementParticipantsRequis', 'equipementReceptionRequis', 'contraintesLogistiques'],
+                'proprietes' => ['participantsMin', 'participantsMax', 'dureeMinutes', 'adapteFemmesEnceintes', 'adapteMalentendants', 'adapteMalvoyants', 'materielInclus', 'equipementParticipantsRequis', 'equipementReceptionRequis', 'contraintesLogistiques'],
                 'blocs' => [],
             ],
             [
@@ -318,6 +326,12 @@ final class FicheSectionsCatalogue
                 'titre' => 'Descriptif',
                 'champs' => ['descriptionGenerale'],
                 'proprietes' => ['descriptionGenerale'],
+                'blocs' => [],
+            ],
+            [
+                'titre' => 'Tarifs',
+                'champs' => ['tarifParPrestation', 'tarifParPersonne', 'tarifParJour', 'tarifParDemiJournee', 'tarifParHeure', 'surDevis'],
+                'proprietes' => ['tarifParPrestation', 'tarifParPersonne', 'tarifParJour', 'tarifParDemiJournee', 'tarifParHeure', 'surDevis'],
                 'blocs' => [],
             ],
             [
@@ -336,7 +350,7 @@ final class FicheSectionsCatalogue
                 'titre' => 'Visibilité & diffusion',
                 'champs' => [],
                 'proprietes' => [],
-                'blocs' => ['sites'],
+                'blocs' => ['sites', 'salesforce'],
             ],
             [
                 'titre' => 'Suggestions IA & historique',

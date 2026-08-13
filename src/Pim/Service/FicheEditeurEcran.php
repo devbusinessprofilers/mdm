@@ -6,6 +6,7 @@ namespace App\Pim\Service;
 
 use App\Account\Service\CurrentActorProvider;
 use App\Audit\Repository\AuditRevisionRepository;
+use App\Etl\Repository\FicheSalesforceRepository;
 use App\Ocr\Form\OcrReviewFormFactory;
 use App\Ocr\Form\OcrUploadType;
 use App\Ocr\Repository\DocumentExtractionRepository;
@@ -81,6 +82,7 @@ final readonly class FicheEditeurEcran
         private OcrCategoryPolicy $ocrCategories,
         private OcrReviewFormFactory $ocrRevues,
         private ParametreProviderInterface $parametres,
+        private FicheSalesforceRepository $salesforce,
     ) {
     }
 
@@ -275,6 +277,11 @@ final readonly class FicheEditeurEcran
             'historique' => in_array('historique', $section['blocs'], true)
                 ? $this->revisions->history($id, null, 10)
                 : [],
+            // Données Salesforce en lecture seule (refresh quotidien) ; null =
+            // bloc hors section, false = fiche inconnue de Salesforce.
+            'salesforce' => in_array('salesforce', $section['blocs'], true)
+                ? ($this->salesforce->forFiche($fiche->id()) ?? false)
+                : null,
         ];
     }
 

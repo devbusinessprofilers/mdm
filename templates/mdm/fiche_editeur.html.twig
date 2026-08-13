@@ -149,6 +149,32 @@
                 {{ form(form_sites) }}
             {% endif %}
 
+            {% if 'salesforce' in section.blocs %}
+                <h3>Données Salesforce</h3>
+                {% if salesforce %}
+                    <p class="page-description">
+                        Lecture seule — rafraîchies chaque nuit depuis Salesforce et diffusées sur la marketplace.
+                        Dernier rafraîchissement : {{ salesforce.refreshedAt|date('d/m/Y H:i') }}.
+                    </p>
+                    <table class="data-table">
+                        <tbody>
+                            <tr><th scope="row">Note RSE globale</th><td>{{ salesforce.noteGlobale ?? '—' }}</td></tr>
+                            <tr><th scope="row">RSE — Achats responsables</th><td>{{ salesforce.noteAchatsResponsables ?? '—' }}</td></tr>
+                            <tr><th scope="row">RSE — Impact environnemental</th><td>{{ salesforce.noteImpactEnvironnemental ?? '—' }}</td></tr>
+                            <tr><th scope="row">RSE — Impact social</th><td>{{ salesforce.noteImpactSocial ?? '—' }}</td></tr>
+                            <tr><th scope="row">RSE — Mobilité</th><td>{{ salesforce.noteMobilite ?? '—' }}</td></tr>
+                            <tr><th scope="row">RSE — Labels et démarche qualité</th><td>{{ salesforce.noteLabelsEtDemarcheQualite ?? '—' }}</td></tr>
+                            <tr><th scope="row">Évaluation client</th><td>{{ salesforce.evaluationClient ?? '—' }}</td></tr>
+                            <tr><th scope="row">Procédure judiciaire</th><td>{{ salesforce.procedureJudiciaire ?? '—' }}</td></tr>
+                            <tr><th scope="row">Contrats avec comptes</th><td>{{ salesforce.contratsComptes is not empty ? salesforce.contratsComptes|join(', ') : '—' }}</td></tr>
+                        </tbody>
+                    </table>
+                    <p class="page-description">Le statut « Partenaire BP » de cette fiche est également piloté par Salesforce.</p>
+                {% else %}
+                    <p class="page-description">Fiche inconnue de Salesforce : aucune donnée RSE, évaluation ou statut partenaire n'en est reçue.</p>
+                {% endif %}
+            {% endif %}
+
             {% if 'suggestions' in section.blocs %}
                 {% set extraction_statuts = {
                     'queued': 'En file',
