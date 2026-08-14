@@ -308,6 +308,12 @@ final readonly class FicheEditeurEcran
             $lignes[] = [
                 'source' => 'BAN',
                 'label' => 'Adresse',
+                'actuel' => trim(sprintf(
+                    '%s %s %s',
+                    $localisation->ruePostale() ?? '',
+                    $localisation->codePostal() ?? '',
+                    $localisation->ville() ?? '',
+                )),
                 'valeur' => self::propositionAffichable($proposition),
                 'confiance' => null === $localisation->banScore() ? null : (int) round($localisation->banScore() * 100),
                 // Sans proposition (aucun résultat fiable), il n'y a rien à

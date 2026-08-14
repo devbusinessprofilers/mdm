@@ -61,6 +61,7 @@ final class FicheAdresseSuggestionTest extends WebTestCase
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('body', 'Suggestions en attente');
         self::assertSelectorTextContains('table', 'BAN');
+        self::assertSelectorTextContains('table', '12 Chemin Imaginaire 49590 Fontevraud-l\'Abbaye');
         self::assertSelectorTextContains('table', '24 Rue des Tests');
         self::assertSelectorTextContains('table', '91 %');
 

@@ -109,6 +109,7 @@
                         <tr>
                             <th>Source</th>
                             <th>Champ</th>
+                            <th>Valeur actuelle</th>
                             <th>Proposition</th>
                             <th>Confiance</th>
                             {% if is_granted('ROLE_BP_VALIDATOR') %}<th></th><th></th>{% endif %}
@@ -119,6 +120,7 @@
                             <tr>
                                 <td>{{ ligne.source }}</td>
                                 <th scope="row">{{ ligne.label }}</th>
+                                <td>{{ ligne.actuel != '' ? ligne.actuel : '—' }}</td>
                                 <td>{{ ligne.valeur }}</td>
                                 <td>{% if ligne.confiance is not null %}{{ ligne.confiance }} %{% else %}—{% endif %}</td>
                                 {% if is_granted('ROLE_BP_VALIDATOR') %}
@@ -127,7 +129,7 @@
                                 {% endif %}
                             </tr>
                         {% else %}
-                            <tr><td class="empty-state" colspan="{{ is_granted('ROLE_BP_VALIDATOR') ? 6 : 4 }}">Aucune suggestion en attente sur cette fiche.</td></tr>
+                            <tr><td class="empty-state" colspan="{{ is_granted('ROLE_BP_VALIDATOR') ? 7 : 5 }}">Aucune suggestion en attente sur cette fiche.</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>
