@@ -87,9 +87,16 @@ final class LocalisationBanVerifier
     {
         $panier = self::panier($localisation, $resultat, $seuil);
         $ecart = in_array($panier, ['douteuse', 'correction'], true);
+        // Le lot CSV renvoie une ligne même sans correspondance, toutes
+        // colonnes vides : rien d'exploitable → pas de proposition, l'écart
+        // part dans la file « aucun résultat fiable ».
+        $exploitable = null !== $resultat && (
+            null !== $resultat['label'] || null !== $resultat['name']
+            || null !== $resultat['codePostal'] || null !== $resultat['ville']
+        );
         $localisation->recordBanVerification(
             $resultat['score'] ?? null,
-            $ecart && null !== $resultat ? [
+            $ecart && $exploitable ? [
                 'label' => $resultat['label'],
                 // La voie seule et le niveau du résultat (housenumber, street,
                 // locality, municipality) : l'acceptation en un clic ne

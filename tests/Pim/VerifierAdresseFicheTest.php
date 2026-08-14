@@ -115,6 +115,33 @@ final class VerifierAdresseFicheTest extends KernelTestCase
         self::assertStringContainsString('Queyrac', (string) $suggestions[0]['proposition']);
     }
 
+    public function testUnResultatVideNeLaisseAucunePropositionAArbitrer(): void
+    {
+        $lieu = $this->lieuFrancais();
+        // Le lot CSV renvoie une ligne pour chaque adresse soumise, même sans
+        // correspondance : toutes les colonnes sont vides.
+        self::getContainer()->set(BanClientInterface::class, new FakeBanClient([
+            (string) $lieu->fiche()->code() => [
+                'score' => null,
+                'label' => null,
+                'name' => null,
+                'codePostal' => null,
+                'ville' => null,
+                'latitude' => null,
+                'longitude' => null,
+                'type' => null,
+            ],
+        ]));
+
+        $verifHandler = self::getContainer()->get(VerifierAdresseFicheHandler::class);
+        $verifHandler(new VerifierAdresseFiche($lieu->fiche()->idString()));
+
+        $ligne = $this->connection->fetchAssociative('SELECT ban_ecart, ban_proposition FROM pim_localisation LIMIT 1');
+        self::assertIsArray($ligne);
+        self::assertSame(1, (int) $ligne['ban_ecart']);
+        self::assertNull($ligne['ban_proposition'], 'Un résultat vide vaut « aucun résultat fiable », pas une proposition.');
+    }
+
     private function lieuFrancais(): Lieu
     {
         $lieu = new Lieu();
