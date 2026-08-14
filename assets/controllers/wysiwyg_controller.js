@@ -1,12 +1,51 @@
 import { Controller } from '@hotwired/stimulus';
 import { getDefaultLocale } from '@symfony/ux-translator';
 
+/*
+ * TinyMCE n'est pas un module de l'importmap, et le portail le chargeait par une
+ * balise <script> inline — interdite ici par la policy de templates. On l'injecte
+ * donc à la volée depuis /tinymce/tinymce.min.js (servi tel quel, hors asset map).
+ * La promesse est mémorisée au niveau du module : plusieurs éditeurs sur une même
+ * page partagent un seul chargement. TinyMCE déduit l'emplacement de ses skins et
+ * greffons du `src` de ce script.
+ */
+let tinymceLoader = null;
+
+function loadTinymce() {
+    if (window.tinymce) {
+        return Promise.resolve(window.tinymce);
+    }
+
+    if (null === tinymceLoader) {
+        tinymceLoader = new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = '/tinymce/tinymce.min.js';
+            script.referrerPolicy = 'origin';
+            script.addEventListener('load', () => resolve(window.tinymce));
+            script.addEventListener('error', () => {
+                tinymceLoader = null;
+                reject(new Error('Impossible de charger TinyMCE.'));
+            });
+            document.head.appendChild(script);
+        });
+    }
+
+    return tinymceLoader;
+}
+
 export default class extends Controller {
     static targets = ['wysiwyg'];
     static values = { maxHeight: Number, maxLength: Number };
 
     connect() {
-        this.init();
+        loadTinymce().then((tinymce) => {
+            // L'élément peut avoir été retiré du DOM pendant le chargement.
+            if (!this.element.isConnected) {
+                return;
+            }
+            this.tinymce = tinymce;
+            this.init();
+        });
     }
 
     init() {
@@ -16,6 +55,10 @@ export default class extends Controller {
         const lang = 'fr' === locale ? 'fr-FR' : 'en';
 
         const options = {
+            // Une instance auto-hébergée sans clé passe en lecture seule depuis
+            // TinyMCE 7 ; `gpl` déclare l'usage sous GNU GPL v2+, l'une des deux
+            // licences du paquet auto-hébergé (le portail, lui, passe par le CDN).
+            license_key: 'gpl',
             target: this.wysiwygTarget,
             language: lang,
             menubar: false,
@@ -34,7 +77,7 @@ export default class extends Controller {
             options.max_height = this.maxHeightValue;
         }
 
-        tinymce.init(options);
+        this.tinymce.init(options);
     }
 
     onChange(editor) {
@@ -76,7 +119,10 @@ export default class extends Controller {
     }
 
     disconnect() {
-        const editor = tinymce.get(this.wysiwygTarget.id);
+        if (!this.tinymce) {
+            return;
+        }
+        const editor = this.tinymce.get(this.wysiwygTarget.id);
         if (editor) {
             editor.remove();
         }

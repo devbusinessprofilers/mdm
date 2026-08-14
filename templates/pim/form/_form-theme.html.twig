@@ -79,12 +79,27 @@
 {%- endblock -%}
 
 {%- block textarea_widget -%}
-    <twig:Form:Textarea
-        id="{{ id }}"
-        name="{{ full_name }}"
-        value="{{ value }}"
-        :disabled="disabled"
-    />
+    {%- if attr['data-wysiwyg']|default(false) -%}
+        {#- Zone de texte enrichie (opt-in via `attr: { 'data-wysiwyg': true }`
+            dans la définition du champ) : montée sur TinyMCE par le composant
+            Wysiwyg. `[&_.tox-tinymce]:h-[200px]!` cale la hauteur compacte de la
+            maquette — `maxHeight` ne borne que l'auto-croissance, pas le socle. -#}
+        <twig:Form:Wysiwyg
+            id="{{ id }}"
+            name="{{ full_name }}"
+            value="{{ value }}"
+            :disabled="disabled"
+            :maxLength="attr.maxlength|default(0)"
+            class="[&_.tox-tinymce]:h-[200px]!"
+        />
+    {%- else -%}
+        <twig:Form:Textarea
+            id="{{ id }}"
+            name="{{ full_name }}"
+            value="{{ value }}"
+            :disabled="disabled"
+        />
+    {%- endif -%}
 {%- endblock -%}
 
 {%- block choice_widget_collapsed -%}

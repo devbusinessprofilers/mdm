@@ -9,7 +9,5 @@
         {% if disabled %}disabled{% endif %}
         {% if readonly %}readonly{% endif %}
         {{ attributes.without('class', 'value') }}
-    >
-        {{ value|default('') }}
-    </textarea>
+    >{{ value|default('') }}</textarea>
 </div>

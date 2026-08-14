@@ -51,7 +51,7 @@ final class LieuFormCatalog
             'taThematique' => self::choice('TA_THEMATIQUE', 'Thématique', true),
             'taCadreEnv' => self::choice('TA_CADRE_ENV', 'Cadre / environnement', true),
             'taAmbiance' => self::choice('TA_AMBIANCE', 'Ambiance', true),
-            'descGenerale' => ['label' => 'Description générale', 'type' => TextareaType::class],
+            'descGenerale' => self::richText('Description générale'),
             'atout1' => ['label' => 'Plus n°1'],
             'atout2' => ['label' => 'Plus n°2'],
             'atout3' => ['label' => 'Plus n°3'],
@@ -85,8 +85,9 @@ final class LieuFormCatalog
             'salleReunionCapaciteMinTheatre' => 'Capacité minimale théâtre',
             'salleReunionSurfaceMinReunion' => 'Surface minimale de réunion',
             'salleReunionSurfaceMaxReunion' => 'Surface maximale de réunion',
-            'salleReunionDescSalleSeminaire' => 'Description des salles de séminaire',
-        ], ['salleReunionDescSalleSeminaire']);
+        ]) + [
+            'salleReunionDescSalleSeminaire' => self::richText('Description des salles de séminaire'),
+        ];
     }
 
     /** @return array<string, array<string, mixed>> */
@@ -230,6 +231,17 @@ final class LieuFormCatalog
         }
 
         return $result;
+    }
+
+    /**
+     * Champ de texte long enrichi : rendu par le composant Wysiwyg (TinyMCE) via
+     * le drapeau `data-wysiwyg` que le thème de formulaire lit sur la zone de texte.
+     *
+     * @return array<string, mixed>
+     */
+    private static function richText(string $label): array
+    {
+        return ['label' => $label, 'type' => TextareaType::class, 'options' => ['attr' => ['data-wysiwyg' => true]]];
     }
 
     /** @return array<string, mixed> */
