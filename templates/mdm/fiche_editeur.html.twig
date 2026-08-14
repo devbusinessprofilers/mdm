@@ -100,19 +100,29 @@
             {% endif %}
 
             {% if 'suggestions_attente' in section.blocs and suggestions_attente is not null and suggestions_attente.lignes is not empty %}
-                <h3>Suggestions IA en attente</h3>
+                <h3>Suggestions en attente</h3>
                 <p class="page-description">
-                    Valeurs lues dans les documents déposés, à arbitrer — Accepter les applique immédiatement à la fiche.
+                    Corrections et enrichissements proposés par les vérifications automatiques, à arbitrer — Accepter les applique immédiatement à la fiche.
                 </p>
                 <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Source</th>
+                            <th>Champ</th>
+                            <th>Proposition</th>
+                            <th>Confiance</th>
+                            {% if is_granted('ROLE_BP_VALIDATOR') %}<th></th><th></th>{% endif %}
+                        </tr>
+                    </thead>
                     <tbody>
                         {% for ligne in suggestions_attente.lignes %}
                             <tr>
+                                <td>{{ ligne.source }}</td>
                                 <th scope="row">{{ ligne.label }}</th>
                                 <td>{{ ligne.valeur }}</td>
-                                <td>{% if ligne.confiance is not null %}confiance {{ ligne.confiance }} %{% else %}—{% endif %}</td>
+                                <td>{% if ligne.confiance is not null %}{{ ligne.confiance }} %{% else %}—{% endif %}</td>
                                 {% if is_granted('ROLE_BP_VALIDATOR') %}
-                                    <td>{{ form(ligne.accepter) }}</td>
+                                    <td>{% if ligne.accepter is not null %}{{ form(ligne.accepter) }}{% endif %}</td>
                                     <td>{{ form(ligne.ignorer) }}</td>
                                 {% endif %}
                             </tr>
@@ -122,9 +132,6 @@
                 {% if not is_granted('ROLE_BP_VALIDATOR') %}
                     <p class="page-description">L'arbitrage des suggestions est réservé aux validateurs.</p>
                 {% endif %}
-                <a class="btn btn-secondary btn-small" href="{{ suggestions_attente.url_revue }}">
-                    Revue complète{% if suggestions_attente.total > suggestions_attente.lignes|length %} ({{ suggestions_attente.total }} en attente){% endif %}
-                </a>
             {% endif %}
 
             {% if 'medias' in section.blocs and medias %}

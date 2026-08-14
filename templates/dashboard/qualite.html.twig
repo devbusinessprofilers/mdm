@@ -84,9 +84,9 @@
         </section>
         <section class="card" aria-label="Suggestions d'adresse">
             <h2>Suggestions d'adresse (vérification BAN)</h2>
-            <p class="page-description">Adresses dont la Base Adresse Nationale propose autre chose ou ne trouve pas d'équivalent fiable — à arbitrer dans la fiche, section « Localisation & accès ».</p>
+            <p class="page-description">Adresses dont la Base Adresse Nationale propose autre chose ou ne trouve pas d'équivalent fiable — Accepter applique la proposition, Ignorer garde la saisie, la fiche reste modifiable via « Ouvrir ».</p>
             <div class="table-shell"><div class="table-scroll"><table class="data-table">
-                <thead><tr><th>Fiche</th><th>Adresse saisie</th><th>Proposition BAN</th><th>Score</th><th>Vérifiée le</th><th></th></tr></thead>
+                <thead><tr><th>Fiche</th><th>Adresse saisie</th><th>Proposition BAN</th><th>Score</th><th>Vérifiée le</th>{% if is_granted('ROLE_BP_VALIDATOR') %}<th></th><th></th>{% endif %}<th></th></tr></thead>
                 <tbody>
                 {% for ligne in suggestions_adresse %}
                     <tr>
@@ -95,16 +95,20 @@
                         <td>{{ ligne.proposition ?? 'Aucun résultat fiable' }}</td>
                         <td>{{ ligne.score is null ? '—' : (ligne.score * 100)|round ~ ' %' }}</td>
                         <td>{% if ligne.quand %}<time datetime="{{ ligne.quand|date('c') }}">{{ ligne.quand|date('d/m/Y H:i') }}</time>{% else %}—{% endif %}</td>
+                        {% if is_granted('ROLE_BP_VALIDATOR') %}
+                            <td>{% if ligne.accepter is not null %}{{ form(ligne.accepter) }}{% endif %}</td>
+                            <td>{{ form(ligne.ignorer) }}</td>
+                        {% endif %}
                         <td>
                             {% if ligne.type == 'lieu' %}
-                                <a class="text-link" href="{{ path('app_mdm_fiche_lieu', {id: ligne.fiche_id, section: 1}) }}">Arbitrer</a>
+                                <a class="text-link" href="{{ path('app_mdm_fiche_lieu', {id: ligne.fiche_id, section: 1}) }}">Ouvrir</a>
                             {% else %}
-                                <a class="text-link" href="{{ path('app_mdm_fiche_gamme', {gamme: ligne.type == 'restaurant' ? 'restaurants' : (ligne.type == 'activite' ? 'activites' : 'services'), id: ligne.fiche_id, section: 1}) }}">Arbitrer</a>
+                                <a class="text-link" href="{{ path('app_mdm_fiche_gamme', {gamme: ligne.type == 'restaurant' ? 'restaurants' : (ligne.type == 'activite' ? 'activites' : 'services'), id: ligne.fiche_id, section: 1}) }}">Ouvrir</a>
                             {% endif %}
                         </td>
                     </tr>
                 {% else %}
-                    <tr><td class="empty-state" colspan="6">Aucun écart d'adresse relevé par la BAN.</td></tr>
+                    <tr><td class="empty-state" colspan="{{ is_granted('ROLE_BP_VALIDATOR') ? 8 : 6 }}">Aucun écart d'adresse relevé par la BAN.</td></tr>
                 {% endfor %}
                 </tbody>
             </table></div></div>

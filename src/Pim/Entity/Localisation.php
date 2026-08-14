@@ -256,7 +256,7 @@ class Localisation
         return $this->banFingerprint;
     }
 
-    /** @return array{label?: ?string, codePostal?: ?string, ville?: ?string, latitude?: ?string, longitude?: ?string}|null */
+    /** @return array{label?: ?string, name?: ?string, type?: ?string, codePostal?: ?string, ville?: ?string, latitude?: ?string, longitude?: ?string}|null */
     public function banProposition(): ?array
     {
         return $this->banProposition;
@@ -272,7 +272,7 @@ class Localisation
      * touch(). L'empreinte capturée permet de ne revérifier que les adresses
      * modifiées depuis le dernier passage.
      *
-     * @param array{label?: ?string, codePostal?: ?string, ville?: ?string, latitude?: ?string, longitude?: ?string}|null $proposition
+     * @param array{label?: ?string, name?: ?string, type?: ?string, codePostal?: ?string, ville?: ?string, latitude?: ?string, longitude?: ?string}|null $proposition
      */
     public function recordBanVerification(?float $score, ?array $proposition = null, bool $ecart = false): void
     {
@@ -281,6 +281,17 @@ class Localisation
         $this->banFingerprint = $this->addressFingerprint;
         $this->banProposition = $proposition;
         $this->banEcart = $ecart;
+    }
+
+    /**
+     * Arbitrage humain d'une suggestion BAN (acceptée ou ignorée) : l'écart
+     * est soldé, la trace du passage (score, date, empreinte) reste — pas de
+     * nouvelle vérification tant que l'adresse ne change pas.
+     */
+    public function arbitrerBanSuggestion(): void
+    {
+        $this->banProposition = null;
+        $this->banEcart = false;
     }
 
     public function villeNormalisee(): ?string

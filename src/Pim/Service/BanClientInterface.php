@@ -13,7 +13,7 @@ interface BanClientInterface
      *
      * @param list<array{id: string, adresse: string, codePostal: string, ville: string}> $lignes
      *
-     * @return array<array-key, array{score: ?float, label: ?string, codePostal: ?string, ville: ?string, latitude: ?string, longitude: ?string, type: ?string}> indexé par id (PHP force les clés numériques en int)
+     * @return array<array-key, array{score: ?float, label: ?string, name: ?string, codePostal: ?string, ville: ?string, latitude: ?string, longitude: ?string, type: ?string}> indexé par id (PHP force les clés numériques en int)
      *
      * @throws \RuntimeException quand la BAN est injoignable ou répond hors 2xx
      */

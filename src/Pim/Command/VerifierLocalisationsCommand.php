@@ -111,7 +111,7 @@ final class VerifierLocalisationsCommand extends Command
     }
 
     /**
-     * @param array{score: ?float, label: ?string, codePostal: ?string, ville: ?string, latitude: ?string, longitude: ?string, type: ?string}|null $resultat
+     * @param array{score: ?float, label: ?string, name: ?string, codePostal: ?string, ville: ?string, latitude: ?string, longitude: ?string, type: ?string}|null $resultat
      * @param array<string, int>                                                                                                                   $stats
      * @param list<array{panier: string, code: int, adresse: string, ban: string, score: string}>                                                  $rapport
      */

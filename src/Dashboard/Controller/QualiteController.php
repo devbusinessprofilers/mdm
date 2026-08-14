@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Dashboard\Controller;
 
 use App\Dashboard\Repository\QualiteRepository;
+use App\Pim\Form\AdresseSuggestionFormFactory;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -26,7 +27,7 @@ final class QualiteController extends AbstractController
     ];
 
     #[Route('/qualite', name: 'app_mdm_qualite', methods: ['GET'])]
-    public function __invoke(Request $request, QualiteRepository $qualite): Response
+    public function __invoke(Request $request, QualiteRepository $qualite, AdresseSuggestionFormFactory $adresseForms): Response
     {
         $onglet = $request->query->getString('onglet');
         if (!array_key_exists($onglet, self::ONGLETS)) {
@@ -38,7 +39,16 @@ final class QualiteController extends AbstractController
             'onglet_actif' => $onglet,
             'sante' => 'miroir' === $onglet ? $qualite->santeParGamme() : [],
             'suggestions' => 'conflits' === $onglet ? $qualite->suggestionsEnAttente() : [],
-            'suggestions_adresse' => 'conflits' === $onglet ? $qualite->suggestionsAdresse() : [],
+            // Mêmes décisions un clic que le bloc « Suggestions en attente »
+            // de la fiche, avec retour sur cet écran après le POST.
+            'suggestions_adresse' => 'conflits' === $onglet
+                ? array_map(static fn (array $ligne): array => $ligne + [
+                    'accepter' => null === $ligne['proposition']
+                        ? null
+                        : $adresseForms->action($ligne['fiche_id'], 'accepter', 'qualite')->createView(),
+                    'ignorer' => $adresseForms->action($ligne['fiche_id'], 'ignorer', 'qualite')->createView(),
+                ], $qualite->suggestionsAdresse())
+                : [],
             'doublons_adresse' => 'conflits' === $onglet ? $qualite->doublonsAdresse() : [],
             'formes' => 'formes' === $onglet ? $qualite->ecartsDeForme() : null,
             'relances' => 'notifs' === $onglet ? $qualite->relances() : [],

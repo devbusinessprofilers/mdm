@@ -22,7 +22,7 @@ final class LocalisationBanVerifier
     public const SEUIL_DEFAUT = 0.85;
     public const SCORE_DOUTEUX = 0.4;
 
-    /** @param array{score: ?float, label: ?string, codePostal: ?string, ville: ?string, latitude: ?string, longitude: ?string, type: ?string}|null $resultat */
+    /** @param array{score: ?float, label: ?string, name: ?string, codePostal: ?string, ville: ?string, latitude: ?string, longitude: ?string, type: ?string}|null $resultat */
     public static function panier(Localisation $localisation, ?array $resultat, float $seuil): string
     {
         $score = $resultat['score'] ?? null;
@@ -41,7 +41,7 @@ final class LocalisationBanVerifier
      * seuil) : GPS manquants, CP/ville vides, recasage d'une ville identique
      * aux accents près. Retourne vrai si la fiche a été modifiée.
      *
-     * @param array{score: ?float, label: ?string, codePostal: ?string, ville: ?string, latitude: ?string, longitude: ?string, type: ?string}|null $resultat
+     * @param array{score: ?float, label: ?string, name: ?string, codePostal: ?string, ville: ?string, latitude: ?string, longitude: ?string, type: ?string}|null $resultat
      */
     public static function appliquerEnrichissements(Localisation $localisation, ?array $resultat, float $seuil): bool
     {
@@ -81,7 +81,7 @@ final class LocalisationBanVerifier
      * Trace du passage : score, date, empreinte, et — en cas d'écart —
      * la proposition BAN pour l'arbitrage dans l'écran Qualité.
      *
-     * @param array{score: ?float, label: ?string, codePostal: ?string, ville: ?string, latitude: ?string, longitude: ?string, type: ?string}|null $resultat
+     * @param array{score: ?float, label: ?string, name: ?string, codePostal: ?string, ville: ?string, latitude: ?string, longitude: ?string, type: ?string}|null $resultat
      */
     public static function tracer(Localisation $localisation, ?array $resultat, float $seuil): void
     {
@@ -91,6 +91,11 @@ final class LocalisationBanVerifier
             $resultat['score'] ?? null,
             $ecart && null !== $resultat ? [
                 'label' => $resultat['label'],
+                // La voie seule et le niveau du résultat (housenumber, street,
+                // locality, municipality) : l'acceptation en un clic ne
+                // réécrit la rue qu'au niveau rue/numéro.
+                'name' => $resultat['name'],
+                'type' => $resultat['type'],
                 'codePostal' => $resultat['codePostal'],
                 'ville' => $resultat['ville'],
                 'latitude' => $resultat['latitude'],
@@ -127,7 +132,7 @@ final class LocalisationBanVerifier
             || (null !== $localisation->pays() && 'france' === ReferentielGeographiqueFrancais::cle($localisation->pays()));
     }
 
-    /** @param array{score: ?float, label: ?string, codePostal: ?string, ville: ?string, latitude: ?string, longitude: ?string, type: ?string} $resultat */
+    /** @param array{score: ?float, label: ?string, name: ?string, codePostal: ?string, ville: ?string, latitude: ?string, longitude: ?string, type: ?string} $resultat */
     private static function concordant(Localisation $localisation, array $resultat): bool
     {
         $cpConcorde = null === $resultat['codePostal'] || null === $localisation->codePostal()

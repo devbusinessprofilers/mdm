@@ -78,14 +78,25 @@ déclenche automatiquement une vérification BAN, sans commande à lancer :
   donc pas de boucle vérification → index → vérification.
 - **Trace** sur `pim_localisation` : `ban_score`, `ban_verifie_le`,
   `ban_fingerprint`, et en cas d'écart `ban_proposition` (JSON : label BAN,
-  CP, ville, GPS) + `ban_ecart` (booléen indexé). Ces colonnes sont exclues
-  de l'audit JSON (`DoctrineAuditSubscriber::IGNORED_FIELDS` — le binaire
-  de l'empreinte n'est pas sérialisable).
-- **Arbitrage humain** : les écarts (`ban_ecart = 1`) remontent dans
-  `/qualite` → onglet « Conflits à arbitrer » → tableau « Suggestions
-  d'adresse (vérification BAN) », avec adresse actuelle, proposition BAN,
-  score, et lien vers la section « Localisation & accès » de la fiche.
-  Rien n'est écrit automatiquement sur une adresse divergente.
+  voie seule `name`, niveau `type`, CP, ville, GPS) + `ban_ecart` (booléen
+  indexé). Ces colonnes sont exclues de l'audit JSON
+  (`DoctrineAuditSubscriber::IGNORED_FIELDS` — le binaire de l'empreinte
+  n'est pas sérialisable).
+- **Arbitrage humain en un clic** (`AdresseSuggestionArbitre`), depuis deux
+  écrans : le bloc **« Suggestions en attente »** en bas de l'onglet
+  Informations générales de la fiche (une ligne source « BAN » avec la
+  proposition et le score ; le bloc accueillera d'autres sources — IA — plus
+  tard), et `/qualite` → onglet « Conflits à arbitrer » → tableau
+  « Suggestions d'adresse » (mêmes boutons, retour sur place). Réservé aux
+  validateurs (`ROLE_BP_VALIDATOR`), audité en source `ban`.
+  - **Accepter** applique la proposition : la rue seulement quand le
+    résultat BAN est au niveau rue/numéro (`housenumber`/`street` — jamais
+    quand la BAN n'a trouvé qu'une commune), puis CP, ville et GPS. Refusé
+    si l'adresse a changé depuis la vérification (empreintes différentes).
+  - **Ignorer** garde la saisie et solde l'écart ; la trace du passage
+    reste, pas de nouvelle vérification tant que l'adresse ne change pas.
+  - Rien n'est écrit automatiquement sur une adresse divergente : sans
+    clic, l'écart attend.
 
 Le stock existant se (re)peuple au fil des modifications ; pour alimenter
 l'écran Qualité immédiatement, rejouer `app:localisation:verifier

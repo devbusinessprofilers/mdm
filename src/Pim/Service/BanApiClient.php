@@ -13,8 +13,8 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
  * Client de l'API Adresse (Base Adresse Nationale, data.gouv) — géocodage
  * et vérification d'adresses françaises, gratuit et sans clé. Le lot passe
  * par l'endpoint CSV (/search/csv/) : une requête pour plusieurs milliers
- * de lignes, colonnes retour result_score / result_label / result_postcode
- * / result_city / latitude / longitude / result_type.
+ * de lignes, colonnes retour result_score / result_label / result_name
+ * / result_postcode / result_city / latitude / longitude / result_type.
  */
 final class BanApiClient implements BanClientInterface
 {
@@ -76,7 +76,7 @@ final class BanApiClient implements BanClientInterface
         return $this->parse($body);
     }
 
-    /** @return array<array-key, array{score: ?float, label: ?string, codePostal: ?string, ville: ?string, latitude: ?string, longitude: ?string, type: ?string}> */
+    /** @return array<array-key, array{score: ?float, label: ?string, name: ?string, codePostal: ?string, ville: ?string, latitude: ?string, longitude: ?string, type: ?string}> */
     private function parse(string $body): array
     {
         $rows = array_values(array_filter(array_map(
@@ -103,6 +103,9 @@ final class BanApiClient implements BanClientInterface
             $resultats[$id] = [
                 'score' => null === $score ? null : (float) $score,
                 'label' => $cell($row, 'result_label'),
+                // La voie seule (sans CP/ville) : ce qui s'écrit dans
+                // ruePostale quand l'humain accepte la proposition.
+                'name' => $cell($row, 'result_name'),
                 'codePostal' => $cell($row, 'result_postcode'),
                 'ville' => $cell($row, 'result_city'),
                 'latitude' => $cell($row, 'latitude'),

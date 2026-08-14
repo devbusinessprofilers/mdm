@@ -7,12 +7,10 @@ namespace App\Pim\Service;
 use App\Account\Service\CurrentActorProvider;
 use App\Audit\Repository\AuditRevisionRepository;
 use App\Etl\Repository\FicheSalesforceRepository;
-use App\Ocr\Entity\OcrSuggestion;
 use App\Ocr\Form\OcrReviewFormFactory;
 use App\Ocr\Form\OcrUploadType;
 use App\Ocr\Repository\DocumentExtractionRepository;
 use App\Ocr\Service\OcrCategoryPolicy;
-use App\Shared\Form\ActionType;
 use App\Pim\Entity\Fiche;
 use App\Pim\Completeness\CompletenessCalculator;
 use App\Pim\Completeness\CompletenessFieldCatalog;
@@ -23,6 +21,7 @@ use App\Pim\Entity\Service\ServiceEvenementiel;
 use App\Pim\Entity\SiteDiffusion;
 use App\Pim\Enum\TypeFiche;
 use App\Pim\Form\ActiviteType;
+use App\Pim\Form\AdresseSuggestionFormFactory;
 use App\Pim\Form\FicheActionFormFactory;
 use App\Pim\Form\LieuType;
 use App\Pim\Form\RestaurantType;
@@ -85,6 +84,7 @@ final readonly class FicheEditeurEcran
         private OcrReviewFormFactory $ocrRevues,
         private ParametreProviderInterface $parametres,
         private FicheSalesforceRepository $salesforce,
+        private AdresseSuggestionFormFactory $adresseSuggestions,
     ) {
     }
 
@@ -285,68 +285,60 @@ final readonly class FicheEditeurEcran
                 ? ($this->salesforce->forFiche($fiche->id()) ?? false)
                 : null,
             'suggestions_attente' => in_array('suggestions_attente', $section['blocs'], true)
-                && $this->parametres->bool('box.ocr_active')
                 ? $this->suggestionsAttenteVars($fiche)
                 : null,
         ];
     }
 
     /**
-     * Bloc « Suggestions IA en attente » de l'onglet Informations générales :
-     * les valeurs lues dans les documents du DAM encore à arbitrer, avec
-     * Accepter / Ignorer en un clic (application immédiate par l'applicateur
-     * OCR). La revue complète reste dans la section dédiée.
+     * Bloc « Suggestions en attente » de l'onglet Informations générales :
+     * corrections et enrichissements proposés par les vérifications
+     * automatiques, une suggestion par ligne avec sa source (BAN aujourd'hui,
+     * IA demain), à arbitrer en un clic. Les suggestions de l'extraction OCR
+     * ne passent pas ici : elles vivent dans le flux d'extraction.
      *
-     * @return array{lignes: list<array<string, mixed>>, total: int, url_revue: string}
+     * @return array{lignes: list<array<string, mixed>>}
      */
     private function suggestionsAttenteVars(Fiche $fiche): array
     {
-        $pending = $this->extractions->suggestionsEnAttente($fiche);
         $lignes = [];
-        foreach (array_slice($pending, 0, 5) as $suggestion) {
+        $localisation = $fiche->localisation();
+        if (null !== $localisation && $localisation->banEcart()) {
+            $proposition = $localisation->banProposition();
             $lignes[] = [
-                'label' => $suggestion->label(),
-                'valeur' => self::valeurAffichable($suggestion->correctedValue()),
-                'confiance' => null === $suggestion->confidence() ? null : (int) round($suggestion->confidence() * 100),
-                'accepter' => $this->suggestionAction($fiche, $suggestion, 'accepter', 'Accepter')->createView(),
-                'ignorer' => $this->suggestionAction($fiche, $suggestion, 'ignorer', 'Ignorer')->createView(),
+                'source' => 'BAN',
+                'label' => 'Adresse',
+                'valeur' => self::propositionAffichable($proposition),
+                'confiance' => null === $localisation->banScore() ? null : (int) round($localisation->banScore() * 100),
+                // Sans proposition (aucun résultat fiable), il n'y a rien à
+                // accepter : la correction se fait dans la section Localisation.
+                'accepter' => null === $proposition
+                    ? null
+                    : $this->adresseSuggestions->action($fiche->idString(), 'accepter')->createView(),
+                'ignorer' => $this->adresseSuggestions->action($fiche->idString(), 'ignorer')->createView(),
             ];
         }
 
-        return [
-            'lignes' => $lignes,
-            'total' => count($pending),
-            'url_revue' => $this->urlExtraction($fiche->type(), $fiche->idString()),
-        ];
+        return ['lignes' => $lignes];
     }
 
-    /** @return FormInterface<mixed> */
-    private function suggestionAction(Fiche $fiche, OcrSuggestion $suggestion, string $decision, string $label): FormInterface
+    /** @param array{label?: ?string, name?: ?string, codePostal?: ?string, ville?: ?string}|null $proposition */
+    private static function propositionAffichable(?array $proposition): string
     {
-        return $this->forms->createNamed('suggestion_'.$decision.'_'.$suggestion->id(), ActionType::class, null, [
-            'action' => $this->urls->generate('app_mdm_fiche_extraction_suggestion', [
-                'id' => $fiche->idString(),
-                'suggestionId' => $suggestion->id(),
-                'decision' => $decision,
-            ]),
-            'button_label' => $label,
-            'csrf_token_id' => 'suggestion-'.$decision.'-'.$suggestion->id(),
-        ]);
-    }
-
-    private static function valeurAffichable(mixed $valeur): string
-    {
-        if (null === $valeur || '' === $valeur) {
-            return '—';
+        if (null === $proposition) {
+            return 'Aucun résultat fiable dans la Base Adresse Nationale — adresse à vérifier manuellement.';
         }
-        if (is_bool($valeur)) {
-            return $valeur ? 'oui' : 'non';
-        }
-        if (is_array($valeur)) {
-            $valeur = json_encode($valeur, JSON_UNESCAPED_UNICODE) ?: '—';
+        $label = $proposition['label'] ?? null;
+        if (null !== $label && '' !== $label) {
+            return $label;
         }
 
-        return mb_strimwidth((string) $valeur, 0, 120, '…');
+        return trim(sprintf(
+            '%s %s %s',
+            $proposition['name'] ?? '',
+            $proposition['codePostal'] ?? '',
+            $proposition['ville'] ?? '',
+        ));
     }
 
     /** URL d'une section précise de l'éditeur, toutes gammes. */
