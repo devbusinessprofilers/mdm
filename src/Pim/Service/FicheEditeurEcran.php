@@ -7,10 +7,12 @@ namespace App\Pim\Service;
 use App\Account\Service\CurrentActorProvider;
 use App\Audit\Repository\AuditRevisionRepository;
 use App\Etl\Repository\FicheSalesforceRepository;
+use App\Ocr\Entity\OcrSuggestion;
 use App\Ocr\Form\OcrReviewFormFactory;
 use App\Ocr\Form\OcrUploadType;
 use App\Ocr\Repository\DocumentExtractionRepository;
 use App\Ocr\Service\OcrCategoryPolicy;
+use App\Shared\Form\ActionType;
 use App\Pim\Entity\Fiche;
 use App\Pim\Completeness\CompletenessCalculator;
 use App\Pim\Completeness\CompletenessFieldCatalog;
@@ -282,7 +284,77 @@ final readonly class FicheEditeurEcran
             'salesforce' => in_array('salesforce', $section['blocs'], true)
                 ? ($this->salesforce->forFiche($fiche->id()) ?? false)
                 : null,
+            'suggestions_attente' => in_array('suggestions_attente', $section['blocs'], true)
+                && $this->parametres->bool('box.ocr_active')
+                ? $this->suggestionsAttenteVars($fiche)
+                : null,
         ];
+    }
+
+    /**
+     * Bloc « Suggestions IA en attente » de l'onglet Informations générales :
+     * les valeurs lues dans les documents du DAM encore à arbitrer, avec
+     * Accepter / Ignorer en un clic (application immédiate par l'applicateur
+     * OCR). La revue complète reste dans la section dédiée.
+     *
+     * @return array{lignes: list<array<string, mixed>>, total: int, url_revue: string}
+     */
+    private function suggestionsAttenteVars(Fiche $fiche): array
+    {
+        $pending = $this->extractions->suggestionsEnAttente($fiche);
+        $lignes = [];
+        foreach (array_slice($pending, 0, 5) as $suggestion) {
+            $lignes[] = [
+                'label' => $suggestion->label(),
+                'valeur' => self::valeurAffichable($suggestion->correctedValue()),
+                'confiance' => null === $suggestion->confidence() ? null : (int) round($suggestion->confidence() * 100),
+                'accepter' => $this->suggestionAction($fiche, $suggestion, 'accepter', 'Accepter')->createView(),
+                'ignorer' => $this->suggestionAction($fiche, $suggestion, 'ignorer', 'Ignorer')->createView(),
+            ];
+        }
+
+        return [
+            'lignes' => $lignes,
+            'total' => count($pending),
+            'url_revue' => $this->urlExtraction($fiche->type(), $fiche->idString()),
+        ];
+    }
+
+    /** @return FormInterface<mixed> */
+    private function suggestionAction(Fiche $fiche, OcrSuggestion $suggestion, string $decision, string $label): FormInterface
+    {
+        return $this->forms->createNamed('suggestion_'.$decision.'_'.$suggestion->id(), ActionType::class, null, [
+            'action' => $this->urls->generate('app_mdm_fiche_extraction_suggestion', [
+                'id' => $fiche->idString(),
+                'suggestionId' => $suggestion->id(),
+                'decision' => $decision,
+            ]),
+            'button_label' => $label,
+            'csrf_token_id' => 'suggestion-'.$decision.'-'.$suggestion->id(),
+        ]);
+    }
+
+    private static function valeurAffichable(mixed $valeur): string
+    {
+        if (null === $valeur || '' === $valeur) {
+            return '—';
+        }
+        if (is_bool($valeur)) {
+            return $valeur ? 'oui' : 'non';
+        }
+        if (is_array($valeur)) {
+            $valeur = json_encode($valeur, JSON_UNESCAPED_UNICODE) ?: '—';
+        }
+
+        return mb_strimwidth((string) $valeur, 0, 120, '…');
+    }
+
+    /** URL d'une section précise de l'éditeur, toutes gammes. */
+    public function urlSection(TypeFiche $type, string $id, int $index): string
+    {
+        return TypeFiche::Lieu === $type
+            ? $this->urls->generate('app_mdm_fiche_lieu', ['id' => $id, 'section' => $index])
+            : $this->urls->generate('app_mdm_fiche_gamme', ['gamme' => self::slug($type), 'id' => $id, 'section' => $index]);
     }
 
     /** URL de la section de l'éditeur qui porte le bloc extraction. */

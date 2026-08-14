@@ -35,6 +35,7 @@ final readonly class ParametreAdminManager
         'dam.delai_alerte_droits_jours' => ['min' => 1, 'max' => 365],
         'ocr.pdf_poids_max_mo' => ['min' => 1, 'max' => 200],
         'ocr.pdf_pages_max' => ['min' => 1, 'max' => 500],
+        'ocr.seuil_application_auto' => ['min' => 0, 'max' => 100],
         'compte.invitation_validite_heures' => ['min' => 1, 'max' => 720],
         'compte.reset_validite_heures' => ['min' => 1, 'max' => 72],
         'compte.purge_jetons_jours' => ['min' => 1, 'max' => 365],

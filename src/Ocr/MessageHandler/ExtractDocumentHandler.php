@@ -8,6 +8,7 @@ use App\Ocr\Catalog\OcrFieldCatalog;
 use App\Ocr\Entity\DocumentExtraction;
 use App\Ocr\Entity\OcrSuggestion;
 use App\Ocr\Enum\ExtractionStatus;
+use App\Ocr\Message\AutoApplyOcrSuggestions;
 use App\Ocr\Message\CleanupBoxFile;
 use App\Ocr\Message\ExtractDocument;
 use App\Ocr\Repository\DocumentExtractionRepository;
@@ -91,6 +92,12 @@ final readonly class ExtractDocumentHandler
                 ));
             }
             $extraction->complete($result['raw'], $result['agent'], $result['model']);
+            if ([] !== $result['suggestions']) {
+                // L'application automatique (seuil paramétrable, 0 = manuel)
+                // court dans son propre message : un refus de validation
+                // métier ne doit pas faire échouer l'extraction.
+                $this->outbox->enqueue(new AutoApplyOcrSuggestions($extraction->id()));
+            }
         } catch (BoxProviderException $error) {
             if ($error->retryable) {
                 // The worker transaction is rolled back before its failure event.

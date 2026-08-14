@@ -21,6 +21,7 @@ Réglages exposés dans `/admin/parametres`, lus via `App\Shared\Service\Paramet
 | `completude.delai_rappel_jours` | Entier | `COMPLETENESS_REMINDER_COOLDOWN_DAYS` (30) | Délai minimum entre deux relances de complétude pour une même fiche | `RemindIncompleteFichesHandler`, `SendFicheCompletenessReminderHandler` |
 | `completude.seuil_rappel` | Entier | `COMPLETENESS_REMINDER_THRESHOLD` (60) | Score de complétude (%) sous lequel une fiche déclenche une relance email. **0 désactive les relances.** | idem |
 | `dam.seuil_distance_phash` | Entier | `DAM_PHASH_DISTANCE_THRESHOLD` (8) | Distance pHash maximale pour signaler deux images comme doublons visuels (plus élevé = plus sensible) | `MediaAnalysisService` |
+| `ocr.seuil_application_auto` | Entier | `OCR_AUTO_APPLY_THRESHOLD` (0) | Confiance (%) à partir de laquelle une suggestion OCR s'applique automatiquement à la fin de l'extraction (sans transition de workflow). **0 = tout manuel** : les suggestions attendent l'arbitrage dans le bloc « Suggestions IA en attente » ou la revue complète | `AutoApplyOcrSuggestionsHandler` |
 
 ### Fonctionnement
 

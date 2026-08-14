@@ -65,7 +65,7 @@ final class FicheSectionsCatalogue
                 'titre' => 'Informations générales',
                 'champs' => ['label', 'businessPremium', 'partenaireBp', 'telephone', 'generaleTypologie', 'generaleWebsiteUrl', 'informationsGenerales'],
                 'proprietes' => ['label', 'generaleTypologie', 'generaleWebsiteUrl', ...array_keys(LieuFormCatalog::general())],
-                'blocs' => [],
+                'blocs' => ['suggestions_attente'],
             ],
             [
                 'titre' => 'Localisation & accès',
@@ -168,7 +168,7 @@ final class FicheSectionsCatalogue
                 'titre' => 'Informations générales',
                 'champs' => ['label', 'businessPremium', 'partenaireBp', 'telephone', 'siteOfficiel', 'youtubeUrl'],
                 'proprietes' => ['label', 'siteOfficiel', 'youtubeUrl'],
-                'blocs' => [],
+                'blocs' => ['suggestions_attente'],
             ],
             [
                 'titre' => 'Localisation & accès',
@@ -241,7 +241,7 @@ final class FicheSectionsCatalogue
                 'titre' => 'Informations générales',
                 'champs' => ['label', 'businessPremium', 'partenaireBp', 'telephone', 'prestataire', 'types', 'langues', 'youtubeUrl'],
                 'proprietes' => ['label', 'prestataire', 'types', 'langues', 'youtubeUrl'],
-                'blocs' => [],
+                'blocs' => ['suggestions_attente'],
             ],
             [
                 'titre' => 'Localisation & zone d\'intervention',
@@ -308,7 +308,7 @@ final class FicheSectionsCatalogue
                 'titre' => 'Informations générales',
                 'champs' => ['label', 'businessPremium', 'partenaireBp', 'telephone', 'prestations', ...array_values(ServiceLovCatalog::SOUS_PRESTATION_FIELDS), 'prestataireEsat', 'demarcheRse', 'youtubeUrl'],
                 'proprietes' => ['label', 'prestations', 'sousPrestations', 'prestataireEsat', 'demarcheRse', 'youtubeUrl'],
-                'blocs' => [],
+                'blocs' => ['suggestions_attente'],
             ],
             [
                 'titre' => 'Prestation & accessibilité',

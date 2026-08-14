@@ -7,6 +7,7 @@ namespace App\Pim\Controller;
 use App\Account\Security\FicheVoter;
 use App\Account\Service\CurrentActorProvider;
 use App\Dam\Enum\DocumentUsage;
+use App\Ocr\Entity\OcrSuggestion;
 use App\Ocr\Form\OcrReviewFormFactory;
 use App\Ocr\Form\OcrUploadType;
 use App\Ocr\Repository\DocumentExtractionRepository;
@@ -16,9 +17,12 @@ use App\Ocr\Service\OcrReviewException;
 use App\Ocr\Service\OcrSuggestionApplier;
 use App\Pim\Entity\Fiche;
 use App\Pim\Service\FicheEditeurEcran;
+use App\Pim\Service\FicheSectionsCatalogue;
 use App\Pim\Service\InternalFicheMutationPolicy;
+use App\Shared\Form\ActionType;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
+use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -63,6 +67,75 @@ final class FicheExtractionController extends AbstractController
             $this->addFlash('success', 'Document déposé : la lecture démarre. Vous pouvez continuer à travailler, les valeurs lues vous attendront ici.');
         } catch (\DomainException $error) {
             $this->addFlash('error', $error->getMessage());
+        }
+
+        return $retour;
+    }
+
+    /**
+     * Décision en un clic depuis le bloc « Suggestions IA en attente » de
+     * l'onglet Informations générales : Accepter applique immédiatement la
+     * valeur lue (mêmes validations que la revue complète), Ignorer la
+     * rejette. La valeur n'est pas corrigible ici — passer par la revue.
+     */
+    #[Route('/suggestion/{suggestionId}/{decision}', name: 'suggestion', requirements: ['suggestionId' => '[0-9A-HJKMNP-TV-Z]{26}', 'decision' => 'accepter|ignorer'], methods: ['POST'])]
+    public function suggestion(
+        Request $request,
+        Fiche $fiche,
+        string $suggestionId,
+        string $decision,
+        DocumentExtractionRepository $extractions,
+        FormFactoryInterface $forms,
+        OcrSuggestionApplier $applier,
+        InternalFicheMutationPolicy $mutationPolicy,
+        CurrentActorProvider $actor,
+        FicheEditeurEcran $ecran,
+        #[Autowire('%env(bool:BOX_OCR_ENABLED)%')] bool $enabled,
+    ): RedirectResponse {
+        if (!$enabled) {
+            throw $this->createNotFoundException();
+        }
+        $this->denyAccessUnlessGranted('ROLE_BP_VALIDATOR');
+        $suggestion = $extractions->suggestionPourFiche($suggestionId, $fiche)
+            ?? throw $this->createNotFoundException('Suggestion introuvable.');
+        $retour = new RedirectResponse($ecran->urlSection(
+            $fiche->type(),
+            $fiche->idString(),
+            FicheSectionsCatalogue::indexBloc($fiche->type(), 'suggestions_attente'),
+        ));
+        // Même nom et même jeton que le formulaire rendu par l'éditeur.
+        $form = $forms->createNamed('suggestion_'.$decision.'_'.$suggestionId, ActionType::class, null, [
+            'button_label' => 'accepter' === $decision ? 'Accepter' : 'Ignorer',
+            'csrf_token_id' => 'suggestion-'.$decision.'-'.$suggestionId,
+        ]);
+        $form->handleRequest($request);
+        if (!$form->isSubmitted() || !$form->isValid()) {
+            $this->addFlash('error', 'La décision est invalide (jeton expiré ?). Rechargez la page.');
+
+            return $retour;
+        }
+        if (!$suggestion->isPending()) {
+            $this->addFlash('error', 'Cette suggestion a déjà été arbitrée.');
+
+            return $retour;
+        }
+        $request->attributes->set('_audit_source', 'box_ocr');
+        $review = [$suggestionId => [
+            'value' => $suggestion->correctedValue(),
+            'accept' => 'accepter' === $decision,
+            'reject' => 'ignorer' === $decision,
+        ]];
+        try {
+            $mutationPolicy->execute($fiche, function () use ($applier, $suggestion, $fiche, $review, $actor): void {
+                $applier->apply($suggestion->extraction(), $fiche->version(), $review, $actor->id());
+            });
+            $this->addFlash('success', 'accepter' === $decision
+                ? sprintf('« %s » appliqué à la fiche.', $suggestion->label())
+                : sprintf('Suggestion « %s » ignorée.', $suggestion->label()));
+        } catch (OcrReviewException $error) {
+            foreach ($error->errors as $message) {
+                $this->addFlash('error', $message);
+            }
         }
 
         return $retour;

@@ -153,6 +153,107 @@ final class FicheExtractionEditeurTest extends WebTestCase
         self::assertSame(SuggestionStatus::Rejected, $rejouee->status());
     }
 
+    public function testLeBlocSuggestionsEnAttentePermetLArbitrageEnUnClic(): void
+    {
+        $client = self::createClient();
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $this->connection = self::getContainer()->get(Connection::class);
+        $this->clearTables();
+
+        $user = new User('bloc@example.test', ['ROLE_BP_VALIDATOR']);
+        $user->setPassword('not-used-by-login-user');
+        $entityManager->persist($user);
+        $lieu = new Lieu();
+        $lieu->changeLabel('Château bloqué');
+        $entityManager->persist($lieu);
+
+        $asset = new MediaAsset(new Ulid(), 'private/plaquette.pdf', 'plaquette.pdf', 'application/pdf', 123, str_repeat('c', 64), MediaKind::Document);
+        $extraction = new DocumentExtraction($lieu->fiche(), $asset, 'PJ_PLAN_GENERAL', ['version' => 1, 'fields' => []], 'bloc@example.test');
+        $extraction->start(1);
+        $extraction->complete([], null, null);
+        $suggestion = new OcrSuggestion($extraction, 'fiche.label', 'Libellé', 'string', 'Château débloqué', 'Château bloqué', 0.94, [1]);
+        $entityManager->persist($asset);
+        $entityManager->persist($extraction);
+        $entityManager->persist($suggestion);
+        $entityManager->flush();
+        $client->loginUser($user);
+
+        // Le bloc apparaît en bas de l'onglet Informations générales.
+        $crawler = $client->request('GET', '/referentiel/lieux/fiche/'.$lieu->fiche()->idString());
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('body', 'Suggestions IA en attente');
+        self::assertSelectorTextContains('body', 'Château débloqué');
+        self::assertSelectorTextContains('body', 'confiance 94 %');
+
+        // Accepter en un clic applique la valeur à la fiche.
+        $form = $crawler->selectButton('Accepter')->form();
+        $client->submit($form);
+        self::assertResponseRedirects();
+        $client->followRedirect();
+        self::assertSelectorTextContains('body', 'appliqué à la fiche');
+
+        $entityManager->clear();
+        $recharge = $entityManager->find(Lieu::class, (string) $lieu->id());
+        self::assertInstanceOf(Lieu::class, $recharge);
+        self::assertSame('Château débloqué', $recharge->label());
+        $decidee = $entityManager->find(OcrSuggestion::class, $suggestion->id());
+        self::assertInstanceOf(OcrSuggestion::class, $decidee);
+        self::assertSame(SuggestionStatus::Accepted, $decidee->status());
+    }
+
+    public function testLApplicationAutomatiqueRespecteLeSeuilParametre(): void
+    {
+        self::bootKernel();
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $this->connection = self::getContainer()->get(Connection::class);
+        $this->clearTables();
+
+        $lieu = new Lieu();
+        $lieu->changeLabel('Château manuel');
+        $lieu->fiche()->publishForImport();
+        $entityManager->persist($lieu);
+        $asset = new MediaAsset(new Ulid(), 'private/plaquette.pdf', 'plaquette.pdf', 'application/pdf', 123, str_repeat('d', 64), MediaKind::Document);
+        $extraction = new DocumentExtraction($lieu->fiche(), $asset, 'PJ_PLAN_GENERAL', ['version' => 1, 'fields' => []], 'auto@example.test');
+        $extraction->start(1);
+        $extraction->complete([], null, null);
+        $sure = new OcrSuggestion($extraction, 'fiche.label', 'Libellé', 'string', 'Château automatique', 'Château manuel', 0.93, [1]);
+        $douteuse = new OcrSuggestion($extraction, 'champ.inconnu', 'Champ incertain', 'string', 'valeur incertaine', null, 0.42, [1]);
+        $entityManager->persist($asset);
+        $entityManager->persist($extraction);
+        $entityManager->persist($sure);
+        $entityManager->persist($douteuse);
+        $entityManager->flush();
+
+        $handler = self::getContainer()->get(\App\Ocr\MessageHandler\AutoApplyOcrSuggestionsHandler::class);
+        $provider = self::getContainer()->get(\App\Shared\Service\ParametreProvider::class);
+
+        // Seuil à 0 (défaut) : rien ne bouge, tout reste manuel.
+        $handler(new \App\Ocr\Message\AutoApplyOcrSuggestions($extraction->id()));
+        self::assertSame('pending', $this->connection->fetchOne('SELECT status FROM ocr_suggestion WHERE id = ?', [Ulid::fromString($sure->id())->toBinary()]));
+
+        // Seuil surchargé en table : la suggestion sûre s'applique, la
+        // douteuse attend, la fiche publiée le reste (pas de transition).
+        $this->connection->executeStatement("UPDATE parametre SET valeur = '85' WHERE nom = 'ocr.seuil_application_auto'");
+        $provider->invalider();
+        $handler(new \App\Ocr\Message\AutoApplyOcrSuggestions($extraction->id()));
+
+        $entityManager->clear();
+        $recharge = $entityManager->find(Lieu::class, (string) $lieu->id());
+        self::assertInstanceOf(Lieu::class, $recharge);
+        self::assertSame('Château automatique', $recharge->label());
+        self::assertSame('publiee', $this->connection->fetchOne('SELECT status FROM pim_fiche'));
+        $decidee = $entityManager->find(OcrSuggestion::class, $sure->id());
+        self::assertInstanceOf(OcrSuggestion::class, $decidee);
+        self::assertSame(SuggestionStatus::Accepted, $decidee->status());
+        self::assertStringContainsString('automatique', (string) $decidee->decidedBy());
+        $attente = $entityManager->find(OcrSuggestion::class, $douteuse->id());
+        self::assertInstanceOf(OcrSuggestion::class, $attente);
+        self::assertSame(SuggestionStatus::Pending, $attente->status());
+
+        $this->connection->executeStatement("UPDATE parametre SET valeur = NULL WHERE nom = 'ocr.seuil_application_auto'");
+        $provider->invalider();
+    }
+
     private function clearTables(): void
     {
         $this->connection->executeStatement('DELETE FROM ocr_suggestion');
