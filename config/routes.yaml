@@ -58,3 +58,13 @@ app_pim_home:
 # Nom historique de la création de fiche (les anciens liens/redirects restent valides).
 app_pim_fiche_new:
     alias: app_mdm_creation_fiche
+
+# Alias des routes du portail prestataire vers les écrans réels du back-office.
+# Les composants repris du front (Header:Profil, etc.) citent des noms de route
+# `provider_portal_*` ; ces alias les rattachent aux vraies pages sans retoucher
+# les composants. D'autres suivront au fil de l'intégration des écrans.
+provider_portal_index:
+    alias: app_mdm_tableau_de_bord
+
+provider_portal_account_personal_information:
+    alias: app_mdm_espace_travail

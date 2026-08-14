@@ -1,94 +1,90 @@
 {% extends 'mdm/base.html.twig' %}
 
-{# Écran « Médias » : le DAM en onglets (maquette front). Les onglets adossés
-   à des données réutilisent le contenu de la supervision DAM ; les autres
-   décrivent ce que le back sait faire aujourd'hui. Gabarit sobre. #}
+{# Écran « Médias » : le DAM en onglets, habillé au langage front. Les onglets
+   adossés à des données réutilisent le contenu de supervision DAM (partial
+   inchangé) ; les autres décrivent ce que le back sait faire aujourd'hui. #}
 
 {% block title %}Médias · {{ onglets[onglet_actif] }}{% endblock %}
 
-{% block body %}
-<main class="page">
-    <header class="page-header">
-        <div class="page-header-copy">
-            <p class="page-kicker">DAM</p>
-            <h1>Médias</h1>
-            <p class="page-description">
-                Un média est un actif porteur d'un droit d'usage : sans droits déclarés,
-                il ne part sur aucun canal tiers, même si la fiche est publiée.
-            </p>
+{% block contenu %}
+<main class="flex flex-col h-full min-h-0 overflow-y-auto scrollbar px-6 py-5 gap-5">
+
+    <div class="shrink-0 flex items-start justify-between gap-4">
+        <div class="flex flex-col gap-1 max-w-[720px]">
+            <twig:Typography variant="body-xs" textColor="neutral-500" bold class="uppercase tracking-[0.8px]">DAM</twig:Typography>
+            <twig:Typography variant="heading-2" element="h1" bold>Médias</twig:Typography>
+            <twig:Typography variant="body-sm" textColor="neutral-500">
+                Un média est un actif porteur d'un droit d'usage : sans droits déclarés, il ne part sur aucun canal tiers, même si la fiche est publiée.
+            </twig:Typography>
         </div>
         {% if is_granted('ROLE_ADMIN') %}
-            <a class="btn btn-secondary btn-small" href="{{ path('app_dam_dashboard') }}">Supervision classique</a>
+            <twig:Button variant="outline" size="sm" asLink href="{{ path('app_dam_dashboard') }}">Supervision classique</twig:Button>
         {% endif %}
-    </header>
+    </div>
 
-    <nav class="toolbar" aria-label="Onglets du DAM">
+    <nav class="shrink-0 flex flex-wrap items-center gap-2" aria-label="Onglets du DAM">
         {% for cle, libelle in onglets %}
-            <a class="btn btn-small {{ onglet_actif == cle ? '' : 'btn-secondary' }}"
-               href="{{ path('app_mdm_medias', {onglet: cle}) }}"
-               {% if onglet_actif == cle %}aria-current="page"{% endif %}>{{ libelle }}</a>
+            <twig:Button variant="{{ onglet_actif == cle ? 'primary' : 'outline' }}" size="sm" asLink
+                         href="{{ path('app_mdm_medias', {onglet: cle}) }}">{{ libelle }}</twig:Button>
         {% endfor %}
     </nav>
 
     {% if onglet_actif == 'sync' and scan_form %}
-        <div class="toolbar">{{ form(scan_form) }}</div>
+        <div class="shrink-0">{{ form(scan_form) }}</div>
     {% endif %}
 
     {% if vue %}
         {% set ecran_route = 'app_mdm_medias' %}
         {% include 'dam/_dashboard_contenu.html.twig' %}
     {% elseif onglet_actif == 'formats' %}
-        <section class="card" aria-label="Formats et variantes">
-            <h2>Variantes générées</h2>
-            <p class="page-description">Chaque image traitée est déclinée dans ces formats, servis par le CDN public.</p>
-            <div class="table-shell"><div class="table-scroll"><table class="data-table">
-                <thead><tr><th>Variante</th><th>Dimensions cibles</th><th>Fichiers générés</th><th>Volume</th></tr></thead>
-                <tbody>
-                {% for nom, taille in variantes %}
-                    {% set stat = formats|filter(f => f.name == nom)|first %}
-                    <tr>
-                        <td><code>{{ nom }}</code></td>
-                        <td>{{ taille.width }} × {{ taille.height }}</td>
-                        <td>{{ stat ? stat.nb : 0 }}</td>
-                        <td>{{ stat ? (stat.octets / 1048576)|round(1) ~ ' Mo' : '—' }}</td>
-                    </tr>
-                {% endfor %}
-                </tbody>
-            </table></div></div>
+        <section class="shrink-0 flex flex-col gap-3 p-6 rounded-[20px] bg-neutral-100 shadow-(--shadow)" aria-label="Formats et variantes">
+            <twig:Typography variant="heading-3" element="h2" bold>Variantes générées</twig:Typography>
+            <twig:Typography variant="body-sm" textColor="neutral-500">Chaque image traitée est déclinée dans ces formats, servis par le CDN public.</twig:Typography>
+            <div class="overflow-x-auto rounded-md inset-ring-1 inset-ring-neutral-200">
+                <table class="w-full border-collapse">
+                    <thead class="bg-primary-5"><tr class="text-left h-10 border-b border-neutral-200">
+                        {% for col in ['Variante', 'Dimensions cibles', 'Fichiers générés', 'Volume'] %}<th class="px-3"><twig:Typography variant="body-xs" textColor="neutral-500" bold>{{ col }}</twig:Typography></th>{% endfor %}
+                    </tr></thead>
+                    <tbody>
+                    {% for nom, taille in variantes %}
+                        {% set stat = formats|filter(f => f.name == nom)|first %}
+                        <tr class="h-11 border-t border-neutral-200 first:border-t-0">
+                            <td class="px-3"><twig:Typography variant="body-sm" bold>{{ nom }}</twig:Typography></td>
+                            <td class="px-3"><twig:Typography variant="body-sm">{{ taille.width }} × {{ taille.height }}</twig:Typography></td>
+                            <td class="px-3"><twig:Typography variant="body-sm">{{ stat ? stat.nb : 0 }}</twig:Typography></td>
+                            <td class="px-3"><twig:Typography variant="body-sm">{{ stat ? (stat.octets / 1048576)|round(1) ~ ' Mo' : '—' }}</twig:Typography></td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </section>
     {% elseif onglet_actif == 'import' %}
-        <section class="card">
-            <h2>Import & retouche</h2>
-            <p class="page-description">
-                Le dépôt des photos et documents se fait sur la fiche (galerie, recadrage,
-                rotation, remplacement) : les variantes sont générées automatiquement au dépôt.
-                L'import en masse passe par l'import de fiches.
-            </p>
-            <div class="table-actions">
-                <a class="btn btn-secondary btn-small" href="{{ path('app_mdm_referentiel_general') }}">Ouvrir une fiche</a>
+        <section class="shrink-0 flex flex-col gap-3 p-6 rounded-[20px] bg-neutral-100 shadow-(--shadow)">
+            <twig:Typography variant="heading-3" element="h2" bold>Import & retouche</twig:Typography>
+            <twig:Typography variant="body-sm" textColor="neutral-500">
+                Le dépôt des photos et documents se fait sur la fiche (galerie, recadrage, rotation, remplacement) : les variantes sont générées automatiquement au dépôt. L'import en masse passe par l'import de fiches.
+            </twig:Typography>
+            <div class="flex flex-wrap items-center gap-2">
+                <twig:Button variant="outline" size="sm" asLink href="{{ path('app_mdm_referentiel_general') }}">Ouvrir une fiche</twig:Button>
                 {% if is_granted('ROLE_ADMIN') %}
-                    <a class="btn btn-secondary btn-small" href="{{ path('app_etl_import_index') }}">Import de fiches</a>
+                    <twig:Button variant="outline" size="sm" asLink href="{{ path('app_etl_import_index') }}">Import de fiches</twig:Button>
                 {% endif %}
             </div>
         </section>
     {% elseif onglet_actif == 'ia' %}
-        <section class="card">
-            <h2>Reconnaissance IA</h2>
-            <p class="page-description">
-                Le back détecte aujourd'hui les doublons visuels par empreinte perceptuelle
-                (onglet Doublons). La reconnaissance du contenu à l'import (sujets, qualité,
-                conformité) n'est pas encore branchée — écran à compléter avec le mécanisme.
-            </p>
+        <section class="shrink-0 flex flex-col gap-3 p-6 rounded-[20px] bg-neutral-100 shadow-(--shadow)">
+            <twig:Typography variant="heading-3" element="h2" bold>Reconnaissance IA</twig:Typography>
+            <twig:Typography variant="body-sm" textColor="neutral-500">
+                Le back détecte aujourd'hui les doublons visuels par empreinte perceptuelle (onglet Doublons). La reconnaissance du contenu à l'import (sujets, qualité, conformité) n'est pas encore branchée — écran à compléter avec le mécanisme.
+            </twig:Typography>
         </section>
     {% elseif onglet_actif == 'meta' %}
-        <section class="card">
-            <h2>Métadonnées & types</h2>
-            <p class="page-description">
-                Chaque ressource porte sa nature (photo, document, vidéo), son usage, sa légende,
-                ses mots-clés, son recadrage et ses droits (accordés par qui, jusqu'à quand).
-                Les documents ont en plus un statut de publication vers le stockage public.
-                La saisie se fait sur la fiche, dans la gestion des médias.
-            </p>
+        <section class="shrink-0 flex flex-col gap-3 p-6 rounded-[20px] bg-neutral-100 shadow-(--shadow)">
+            <twig:Typography variant="heading-3" element="h2" bold>Métadonnées & types</twig:Typography>
+            <twig:Typography variant="body-sm" textColor="neutral-500">
+                Chaque ressource porte sa nature (photo, document, vidéo), son usage, sa légende, ses mots-clés, son recadrage et ses droits (accordés par qui, jusqu'à quand). Les documents ont en plus un statut de publication vers le stockage public. La saisie se fait sur la fiche, dans la gestion des médias.
+            </twig:Typography>
         </section>
     {% endif %}
 </main>

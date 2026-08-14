@@ -1,0 +1,145 @@
+{#
+    Thème de formulaire Tailwind du back-office.
+
+    Il adapte le rendu Symfony aux composants du design-system : les pages
+    gardent {{ form_row() }} / {{ form_widget() }} / {{ form() }} (donc le CSRF
+    et la validation natifs), et l'apparence vient d'ici. Chaque widget délègue
+    au composant Twig correspondant — source unique de vérité pour le markup et
+    les classes, plutôt qu'une copie du HTML.
+
+    Enregistré globalement dans config/packages/twig.yaml.
+#}
+{% use 'form_div_layout.html.twig' %}
+
+{%- block form_row -%}
+    <div class="flex flex-col gap-2{% if row_attr.class is defined %} {{ row_attr.class }}{% endif %}">
+        {{- form_label(form) -}}
+        {{- form_errors(form) -}}
+        {{- form_widget(form) -}}
+        {{- form_help(form) -}}
+    </div>
+{%- endblock -%}
+
+{%- block form_label -%}
+    {%- if label is not same as(false) -%}
+        {%- if label is empty -%}
+            {%- set label = name|humanize -%}
+        {%- endif -%}
+        <label for="{{ id }}"{% if disabled %} class="cursor-not-allowed"{% endif %}>
+            <twig:Typography variant="button" bold>
+                {{- label is same as(false) ? '' : (translation_domain is same as(false) ? label : label|trans({}, translation_domain)) -}}
+                {%- if required %} *{% endif -%}
+            </twig:Typography>
+        </label>
+    {%- endif -%}
+{%- endblock -%}
+
+{%- block form_help -%}
+    {%- if help is not empty -%}
+        <twig:Typography variant="body-sm" textColor="neutral-500">
+            {{- translation_domain is same as(false) ? help : help|trans({}, translation_domain) -}}
+        </twig:Typography>
+    {%- endif -%}
+{%- endblock -%}
+
+{%- block form_errors -%}
+    {%- if errors|length > 0 -%}
+        <ul class="flex flex-col gap-1">
+            {%- for error in errors -%}
+                <li><twig:Typography variant="body-sm" textColor="error">{{ error.message }}</twig:Typography></li>
+            {%- endfor -%}
+        </ul>
+    {%- endif -%}
+{%- endblock -%}
+
+{%- block form_widget_simple -%}
+    {%- set type = type|default('text') -%}
+    {%- if type in ['hidden', 'file'] -%}
+        {#- champs sans composant dédié : rendu Symfony standard -#}
+        {{- parent() -}}
+    {%- else -%}
+        <twig:Form:TextInput
+            id="{{ id }}"
+            name="{{ full_name }}"
+            value="{{ value }}"
+            :disabled="disabled"
+            :readonly="attr.readonly is defined and attr.readonly"
+            placeholder="{{ attr.placeholder|default('') }}"
+            :inputAttributes="{ 'type': type == 'text' ? 'text' : type }"
+        />
+    {%- endif -%}
+{%- endblock -%}
+
+{%- block password_widget -%}
+    <twig:Form:Password
+        id="{{ id }}"
+        name="{{ full_name }}"
+        :disabled="disabled"
+    />
+{%- endblock -%}
+
+{%- block textarea_widget -%}
+    <twig:Form:Textarea
+        id="{{ id }}"
+        name="{{ full_name }}"
+        value="{{ value }}"
+        :disabled="disabled"
+    />
+{%- endblock -%}
+
+{%- block choice_widget_collapsed -%}
+    {%- set est_autocomplete = attr['data-controller'] is defined and 'autocomplete' in attr['data-controller'] -%}
+    {%- if est_autocomplete -%}
+        {#- Champ ux-autocomplete : garder le <select> natif porteur du contrôleur
+            Stimulus et de l'URL, que tom-select transforme côté JS. -#}
+        {{- parent() -}}
+    {%- else -%}
+        {#- Un select multiple soumet un tableau : son `name` doit porter `[]`,
+            sinon la valeur arrive en scalaire et la contrainte de choix échoue. -#}
+        <twig:Form:Select
+            id="{{ id }}"
+            name="{{ full_name }}{{ multiple ? '[]' : '' }}"
+            :choices="choices"
+            :value="value"
+            :multiple="multiple"
+            :disabled="disabled"
+            placeholder="{{ attr.placeholder|default('') }}"
+        />
+    {%- endif -%}
+{%- endblock -%}
+
+{%- block checkbox_widget -%}
+    {#- `value` porte « 1 » pour une case booléenne, ou la valeur du choix pour
+        une case issue d'un ChoiceType « expanded » — indispensable pour que la
+        bonne valeur soit soumise. -#}
+    <twig:Form:Checkbox
+        id="{{ id }}"
+        name="{{ full_name }}"
+        value="{{ value|default('1') }}"
+        :checked="checked"
+        :disabled="disabled"
+    />
+{%- endblock -%}
+
+{%- block button_widget -%}
+    {%- set button_label = label is not same as(false)
+        ? (label is empty ? name|humanize : (translation_domain is same as(false) ? label : label|trans(label_translation_parameters, translation_domain)))
+        : '' -%}
+    {#- `name` et `id` sont indispensables : Symfony détecte un bouton d'action
+        cliqué (SubmitButton::isClicked) par la présence de son `name` dans la
+        requête. Sans lui, les boutons nommés (« Créer quand même », etc.) ne
+        déclenchent plus rien. -#}
+    <twig:Button
+        variant="primary"
+        type="{{ type|default('button') }}"
+        name="{{ full_name }}"
+        id="{{ id }}"
+        :disabled="disabled"
+        full
+    >{{ button_label }}</twig:Button>
+{%- endblock -%}
+
+{%- block submit_widget -%}
+    {%- set type = type|default('submit') -%}
+    {{- block('button_widget') -}}
+{%- endblock -%}

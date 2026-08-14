@@ -1,0 +1,87 @@
+{% set triggerCva = cva({
+    base: 'flex items-center justify-between gap-2 relative pt-1.5 pb-2.5 px-4 cursor-pointer w-full',
+    variants: {
+        isFloating: {
+            true: '
+                after:max-w-0 after:w-full after:transition-[max-width] after:content-[""] after:absolute after:bottom-0 after:h-1 after:bg-primary
+                hover:after:max-w-[calc(100%-(var(--spacing)*8))]
+            ',
+        },
+        level: { 1: 'p-0! h-8!' },
+    },
+    compoundVariants: [
+        { isActive: true, isFloating: true, class: 'after:max-w-[calc(100%-(var(--spacing)*8))]' },
+    ],
+}) %}
+
+{% set menuCva= cva({
+    base: 'flex flex-col w-full',
+    variants: {
+        level: { 0: 'gap-2 min-w-[224px]' },
+        isFixed: { true: 'pl-4' },
+    },
+    compoundVariants: [
+        { level: 0, isFixed: false, class: 'p-4' },
+    ],
+}) %}
+
+<twig:Dropdown
+    isFloating="{{ isFloating }}"
+    isFixed="{{ isFixed }}"
+    class="{{ triggerCva.apply({ isActive, isFloating, level }, attributes.render('class')) }}"
+>
+    {# twig:block because contains other twig components and can't mixup several syntaxes #}
+    <twig:block name="trigger">
+        <div class="flex gap-2.5">
+            {% if icon %}
+                <twig:Typography textColor="{{ iconColor.value }}" class="w-6 h-6">
+                    <twig:Icon name="{{ icon }}" />
+                </twig:Typography>
+            {% endif %}
+            <twig:Typography variant="{{ labelVariant.value }}" bold class="flex gap-2 items-center">
+                {{ label }}
+                {% if notification is defined and notification and notification > 0 %} 
+                    <twig:Sticker value="{{ notification }}" />
+                {% endif %}
+            </twig:Typography>
+        </div>
+    </twig:block>
+
+    <ul class="{{ menuCva.apply({ level, isFixed }) }}">
+        {% for item in items %}
+            {% set isActive = item.isActive(currentRoute, currentRouteParameters) %}
+            {% if item.items is defined and item.items|length > 0 %}
+                <li>
+                    <twig:Header:Menu:DropdownNavLink
+                        label="{{ item.label|trans }}"
+                        notification="{{ item.notification ?? null }}"
+                        currentRoute="{{ currentRoute }}"
+                        currentRouteParameters="{{ currentRouteParameters }}"
+                        items="{{ item.items }}"
+                        isFloating="{{ false }}"
+                        icon="{{ item.icon }}"
+                        iconColor="{{ item.iconColor }}"
+                        level="{{ level + 1 }}"
+                        isParentExpanded="{{ isFixed or isParentExpanded }}"
+                        isActive="{{ isActive }}"
+                    />
+                </li>
+            {% else %}
+                <li class="w-fit">
+                    <twig:Header:Menu:NavLink
+                        route="{{ item.route }}"
+                        routeParameters="{{ item.routeParameters }}"
+                        label="{{ item.label|trans }}"
+                        notification="{{ item.notification ?? null }}"
+                        icon="{{ item.icon }}"
+                        iconColor="{{ item.iconColor }}"
+                        level="{{ level + 1 }}"
+                        isParentExpanded="{{ isFixed or isParentExpanded }}"
+                        isActive="{{ isActive }}"
+                    />
+                </li>
+            {% endif %}
+        {% endfor %}
+    </ul>
+</twig:Dropdown>
+

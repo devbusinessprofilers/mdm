@@ -114,7 +114,10 @@ final class FicheGammeEditeurTest extends WebTestCase
         self::assertGreaterThanOrEqual(7, $crawler->filter('nav[aria-label="Sections de la fiche"] li')->count());
         $client->request('GET', '/referentiel/services/fiche/'.$service->id().'?section=1');
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('main', 'zone d\'intervention');
+        // Le rail des sections vit désormais dans son propre créneau (coquille front),
+        // hors du <main> : on y retrouve le titre de la section « Localisation & zone
+        // d'intervention », preuve que l'éditeur Service rend bien toutes ses sections.
+        self::assertSelectorTextContains('nav[aria-label="Sections de la fiche"]', 'zone d\'intervention');
     }
 
     private function clearTables(): void

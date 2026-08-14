@@ -1,0 +1,28 @@
+{% set cva = cva({
+    base: 'flex flex-col gap-4 border-b border-neutral-300 pb-4',
+}) %}
+
+<article {{ attributes.without('class') }} class="{{ cva.apply({}, attributes.render('class')) }}">
+    <div class="flex flex-col gap-2 sm:gap-4 sm:flex-row">
+        {% if review.logoUrl %}
+            <img src="{{ asset(review.logoUrl) }}" alt="{{ review.companyName }}" class="h-12 w-12 rounded-full shrink-0" />
+        {% else %}
+            <div class="flex justify-center items-center h-12 w-12 rounded-full border-2 border-primary-3 bg-primary-4 shrink-0">
+                <twig:Typography variant="subtitle" textColor="primary-3" center>{{ review.companyName|first|upper }}</twig:Typography>
+            </div>
+        {% endif %}
+        <div class="flex flex-col gap-2">
+            <h1><twig:Typography variant="subtitle" bold>{{ review.companyName }}</twig:Typography></h1>
+            <div class="flex flex-col gap-2 sm:items-center sm:flex-row sm:flex-wrap">
+                <twig:Typography>{{ review.eventName }}</twig:Typography>
+                <twig:Typography>{{ review.eventReference }}</twig:Typography>
+                <twig:Typography>{{ review.placeName }}</twig:Typography>
+                <twig:Typography>{{ review.date|date('d/m/Y') }}</twig:Typography>
+            </div>
+        </div>
+    </div>
+    <div class="flex flex-col">
+        <twig:Stars value="{{ review.scorePercentage }}" class="max-w-[120px]" />
+        <p><twig:Typography>{{ review.content }}</twig:Typography></p>
+    </div>
+</article>

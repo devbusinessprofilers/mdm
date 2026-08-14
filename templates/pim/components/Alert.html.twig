@@ -1,0 +1,11 @@
+<div
+    {{ attributes.without('class') }}
+    class="w-full p-4 bg-primary rounded-[8px] flex gap-2 {{ attributes.render('class') }}"
+>
+    {% if icon %}
+        <twig:Icon name="{{ icon }}" class="min-w-6 min-h-6 w-6 h-6 text-neutral-100"/>
+    {% endif %}
+    <twig:Typography textColor="neutral-100" bold>
+        {{ block(outerBlocks.content) }}
+    </twig:Typography>
+</div>

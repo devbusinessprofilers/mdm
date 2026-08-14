@@ -1,62 +1,66 @@
 {% extends 'mdm/base.html.twig' %}
 
-{# Écran « Outils » : journal unifié des traitements. Gabarit sobre, le style
-   viendra du front. Les relances se font sur les écrans de détail existants. #}
+{# Écran « Outils » : journal unifié des traitements (imports, extractions,
+   traductions, médias), habillé au langage front. #}
 
 {% block title %}Outils · Journal des traitements{% endblock %}
 
 {% set famille_libelles = familles %}
 {% set statuts_erreur = ['echoue', 'termine_avec_erreurs', 'failed', 'en_erreur'] %}
 
-{% block body %}
-<main class="page">
-    <header class="page-header">
-        <div class="page-header-copy">
-            <p class="page-kicker">Outils</p>
-            <h1>Journal des traitements</h1>
-            <p class="page-description">
-                Imports, extractions, traductions et médias, du plus récent au plus ancien.
+{% block contenu %}
+<main class="flex flex-col h-full min-h-0 overflow-y-auto scrollbar px-6 py-5 gap-5">
+
+    <div class="shrink-0 flex items-start justify-between gap-4">
+        <div class="flex flex-col gap-1 max-w-[720px]">
+            <twig:Typography variant="body-xs" textColor="neutral-500" bold class="uppercase tracking-[0.8px]">Outils</twig:Typography>
+            <twig:Typography variant="heading-2" element="h1" bold>Journal des traitements</twig:Typography>
+            <div class="flex items-center gap-2 flex-wrap">
+                <twig:Typography variant="body-sm" textColor="neutral-500">Imports, extractions, traductions et médias, du plus récent au plus ancien.</twig:Typography>
                 {% if outbox_en_attente > 0 %}
-                    <span class="badge badge-warning">{{ outbox_en_attente }} message(s) en attente dans l'outbox</span>
+                    <twig:Tag label="{{ outbox_en_attente }} message(s) en attente dans l'outbox" variant="old-gold" size="sm" />
                 {% endif %}
-            </p>
+            </div>
         </div>
         {% if is_granted('ROLE_ADMIN') %}
-        <a class="btn" href="{{ path('app_etl_import_index') }}">Importer un fichier</a>
-    {% endif %}
-    </header>
-
-    <div class="toolbar">
-        <a class="btn btn-small {{ famille is null and not erreurs ? '' : 'btn-secondary' }}" href="{{ path('app_mdm_outils') }}">Tout</a>
-        {% for cle, libelle in familles %}
-            <a class="btn btn-small {{ famille == cle ? '' : 'btn-secondary' }}" href="{{ path('app_mdm_outils', {famille: cle}) }}">{{ libelle }}</a>
-        {% endfor %}
-        <a class="btn btn-small {{ erreurs ? '' : 'btn-secondary' }}" href="{{ path('app_mdm_outils', {erreurs: 1, famille: famille}) }}">En échec seulement</a>
+            <twig:Button variant="primary" size="md" icon="upload-simple" asLink href="{{ path('app_etl_import_index') }}">Importer un fichier</twig:Button>
+        {% endif %}
     </div>
 
-    <div class="table-shell"><div class="table-scroll"><table class="data-table">
-        <thead><tr><th>Quand</th><th>Famille</th><th>Sujet</th><th>Statut</th><th>Erreur</th><th></th></tr></thead>
-        <tbody>
-        {% for ligne in lignes %}
-            <tr>
-                <td><time datetime="{{ ligne.quand|date('c') }}">{{ ligne.quand|date('d/m/Y H:i') }}</time></td>
-                <td><span class="badge badge-neutral">{{ famille_libelles[ligne.famille] ?? ligne.famille }}</span></td>
-                <td>{{ ligne.sujet }}</td>
-                <td><span class="badge {{ ligne.statut in statuts_erreur ? 'badge-danger' : 'badge-info' }}">{{ ligne.statut }}</span></td>
-                <td>{{ ligne.erreur ?? '—' }}</td>
-                <td>
-                    {# Les détails des imports et des médias vivent sous /admin : lien réservé aux admins. #}
-                    {% if ligne.lien and (is_granted('ROLE_ADMIN') or ligne.famille in ['ocr', 'traduction']) %}
-                        <a class="text-link" href="{{ path(ligne.lien.route, ligne.lien.params) }}">Détail</a>
-                    {% endif %}
-                </td>
-            </tr>
-        {% else %}
-            <tr><td class="empty-state" colspan="6">
-                {{ erreurs ? 'Aucun traitement en échec — tout roule.' : 'Aucun traitement enregistré.' }}
-            </td></tr>
+    <nav class="shrink-0 flex flex-wrap items-center gap-2" aria-label="Filtre du journal">
+        <twig:Button variant="{{ famille is null and not erreurs ? 'primary' : 'outline' }}" size="sm" asLink href="{{ path('app_mdm_outils') }}">Tout</twig:Button>
+        {% for cle, libelle in familles %}
+            <twig:Button variant="{{ famille == cle ? 'primary' : 'outline' }}" size="sm" asLink href="{{ path('app_mdm_outils', {famille: cle}) }}">{{ libelle }}</twig:Button>
         {% endfor %}
-        </tbody>
-    </table></div></div>
+        <twig:Button variant="{{ erreurs ? 'primary' : 'outline' }}" size="sm" asLink href="{{ path('app_mdm_outils', {erreurs: 1, famille: famille}) }}">En échec seulement</twig:Button>
+    </nav>
+
+    <section class="shrink-0 flex flex-col p-6 rounded-[20px] bg-neutral-100 shadow-(--shadow)">
+        <div class="overflow-x-auto rounded-md inset-ring-1 inset-ring-neutral-200">
+            <table class="w-full border-collapse">
+                <thead class="bg-primary-5"><tr class="text-left h-10 border-b border-neutral-200">
+                    {% for col in ['Quand', 'Famille', 'Sujet', 'Statut', 'Erreur', ''] %}<th class="px-3"><twig:Typography variant="body-xs" textColor="neutral-500" bold>{{ col }}</twig:Typography></th>{% endfor %}
+                </tr></thead>
+                <tbody>
+                {% for ligne in lignes %}
+                    <tr class="h-11 border-t border-neutral-200 first:border-t-0">
+                        <td class="px-3"><twig:Typography variant="body-sm">{{ ligne.quand|date('d/m/Y H:i') }}</twig:Typography></td>
+                        <td class="px-3"><twig:Tag label="{{ famille_libelles[ligne.famille] ?? ligne.famille }}" variant="neutral" size="sm" /></td>
+                        <td class="px-3"><twig:Typography variant="body-sm">{{ ligne.sujet }}</twig:Typography></td>
+                        <td class="px-3"><twig:Tag label="{{ ligne.statut }}" variant="{{ ligne.statut in statuts_erreur ? 'error' : 'primary-3' }}" size="sm" /></td>
+                        <td class="px-3"><twig:Typography variant="body-sm" textColor="neutral-500">{{ ligne.erreur ?? '—' }}</twig:Typography></td>
+                        <td class="px-3">
+                            {% if ligne.lien and (is_granted('ROLE_ADMIN') or ligne.famille in ['ocr', 'traduction']) %}
+                                <a href="{{ path(ligne.lien.route, ligne.lien.params) }}" class="hover:underline"><twig:Typography variant="body-sm" textColor="primary-3" bold element="span">Détail</twig:Typography></a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="6" class="p-6 text-center"><twig:Typography variant="body-sm" textColor="neutral-500">{{ erreurs ? 'Aucun traitement en échec — tout roule.' : 'Aucun traitement enregistré.' }}</twig:Typography></td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
 </main>
 {% endblock %}

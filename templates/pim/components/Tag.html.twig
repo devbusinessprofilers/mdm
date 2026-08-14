@@ -1,0 +1,40 @@
+{% set tagCva = cva({
+    base: 'flex items-center justify-center gap-1 rounded-lg',
+    variants: {
+        variant: {
+            'error': 'bg-error-pastel border border-error-pastel',
+            'neutral': 'bg-neutral-200 border border-neutral-500',
+            'old-gold': 'bg-old-gold border border-old-gold',
+            'primary': 'bg-primary border border-primary',
+            'primary-3': 'bg-primary-3 border border-primary-3',
+            'peach': 'bg-peach border border-peach',
+            'success': 'bg-success border border-success',
+            'success-pastel': 'bg-success-pastel border border-success',
+        },
+        size: {
+            'lg': 'px-2 py-2 xs:h-[1.875rem]',
+            'sm': 'px-2 py-1 xs:h-[1.5rem]',
+        },
+    },
+}) %}
+
+{% set iconCva = cva({
+    variants: {
+        size: {
+            'lg': 'w-[1.25rem] h-[1.25rem]',
+            'sm': 'w-[1rem] h-[1rem]',
+        },
+    },
+}) %}
+
+<div
+    {{ attributes.without('class') }}
+    class="{{ tagCva.apply({ variant: variant.value, size: size.value }, attributes.render('class')) }}"
+>
+    {% if icon %}
+        <twig:Typography variant="{{ size.getTypographyVariantEnum().value }}" textColor="{{ variant.getTypographyTextColorEnum().value }}">
+            <twig:Icon name="{{ icon }}" class="{{ iconCva.apply({ size: size.value }) }}"/>
+        </twig:Typography>
+    {% endif %}
+    <twig:Typography variant="{{ size.getTypographyVariantEnum().value }}" textColor="{{ variant.getTypographyTextColorEnum().value }}" bold>{{ label }}</twig:Typography>
+</div>

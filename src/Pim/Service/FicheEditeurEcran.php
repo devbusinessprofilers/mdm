@@ -218,6 +218,8 @@ final readonly class FicheEditeurEcran
                 'completude' => $parSection[$i],
                 'actif' => $i === $index,
                 'url' => $lienSection($i),
+                'icone' => self::iconeSection($section['titre']),
+                'groupe' => self::groupeSection($section['blocs']),
             ];
         }
         $section = $sections[$index];
@@ -458,6 +460,50 @@ final readonly class FicheEditeurEcran
             TypeFiche::ServiceEvenementiel => 'services',
             TypeFiche::Traiteur => throw new \InvalidArgumentException('Gamme hors de cette version du MDM.'),
         };
+    }
+
+    /**
+     * Icône du rail pour une section, dérivée de son titre (glyphes du
+     * design-system). Repli neutre pour les sections non mappées.
+     */
+    private static function iconeSection(string $titre): string
+    {
+        $t = mb_strtolower($titre);
+
+        return match (true) {
+            str_contains($t, 'information') => 'info-circle',
+            str_contains($t, 'localisation'), str_contains($t, 'accès'), str_contains($t, 'acces') => 'area',
+            str_contains($t, 'descript') => 'note',
+            str_contains($t, 'héberg'), str_contains($t, 'heberg') => 'bed',
+            str_contains($t, 'restaur') => 'utensils',
+            str_contains($t, 'salle'), str_contains($t, 'capacit') => 'conference',
+            str_contains($t, 'prestation') => 'call-bell',
+            str_contains($t, 'service'), str_contains($t, 'équipement'), str_contains($t, 'equipement') => 'gear',
+            str_contains($t, 'rse'), str_contains($t, 'engagement') => 'plant',
+            str_contains($t, 'loisir'), str_contains($t, 'bien-être'), str_contains($t, 'bien-etre') => 'spa',
+            str_contains($t, 'tarif'), str_contains($t, 'formule') => 'currency-euro',
+            str_contains($t, 'administratif') => 'list',
+            str_contains($t, 'média'), str_contains($t, 'media') => 'images',
+            str_contains($t, 'disponibil'), str_contains($t, 'fermeture') => 'calendar',
+            str_contains($t, 'collaborateur') => 'users',
+            str_contains($t, 'visibilité'), str_contains($t, 'visibilite'), str_contains($t, 'diffusion') => 'rocket',
+            str_contains($t, 'suggestion'), str_contains($t, 'historique'), str_contains($t, 'ia') => 'star',
+            default => 'note',
+        };
+    }
+
+    /**
+     * Groupe de rail d'une section : « Paramètres » pour les sections de
+     * configuration (blocs médias/collaborateurs/diffusion/salesforce/
+     * historique), « Ma fiche » pour le contenu éditorial.
+     *
+     * @param list<string> $blocs
+     */
+    private static function groupeSection(array $blocs): string
+    {
+        $configuration = ['medias', 'collaborateurs', 'sites', 'salesforce', 'historique'];
+
+        return array_intersect($blocs, $configuration) !== [] ? 'parametres' : 'ma_fiche';
     }
 
     /** Domaine des routes d'action existantes (app_pim_<domaine>_submit…). */

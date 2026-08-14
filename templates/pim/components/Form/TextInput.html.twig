@@ -1,0 +1,58 @@
+{% set cva = cva({
+    base: 'border rounded-xs p-2 focus:outline-none text-[0.75rem] leading-[1.25rem] w-full bg-transparent relative z-1',
+    variants: {
+        leftIcon: {
+            true: 'pl-10',
+        },
+        rightIcon: {
+            true: 'pr-10',
+        },
+        disabled: {
+            true: 'cursor-not-allowed text-neutral-500 border-neutral-300',
+            false: 'border-primary',
+        },
+    },
+    compoundVariants: [
+        { disabled: false, readonly: false, class: 'cursor-text' },
+        { disabled: false, readonly: true, class: 'cursor-pointer' },
+    ],
+}) %}
+
+{% set wrapperCva = cva({
+    base: 'w-full relative',
+    variants: {
+        disabled: {
+            true: 'cursor-not-allowed text-neutral-500 bg-neutral-200 focus-within:outline focus-within:outline-neutral-500',
+            false: 'bg-primary-5 focus-within:bg-neutral-100',
+        },
+    },
+}) %}
+
+{% set hasLeftIcon = leftIcon is defined and leftIcon %}
+{% set hasRightIcon = rightIcon is defined and rightIcon %}
+
+<div class="{{ wrapperCva.apply({ disabled }) }}">
+    <input
+        id="{{ id }}"
+        name="{{ name }}"
+        type="text"
+        value="{{ value }}"
+        {% if disabled %}disabled{% endif %}
+        {% if readonly %}readonly{% endif %}
+        {% if placeholder is not empty %}placeholder="{{ placeholder }}"{% endif %}
+        class="{{ cva.apply({ disabled, readonly, leftIcon: hasLeftIcon, rightIcon: hasRightIcon }, attributes.render('class')) }}"
+        {% for key, value in inputAttributes %}
+            {{ key }}="{{ value }}"
+        {% endfor %}
+    >
+    {% if hasLeftIcon %}
+        <twig:Typography textColor="{{ iconColor.value }}" class="absolute top-1/2 -translate-y-1/2 left-2">
+            <twig:Icon name="{{ leftIcon }}" class="w-6 aspect-square" />
+        </twig:Typography>
+    {% endif %}
+    {% if hasRightIcon %}
+        <twig:Typography textColor="{{ iconColor.value }}" class="absolute top-1/2 -translate-y-1/2 right-2">
+            <twig:Icon name="{{ rightIcon }}" class="w-6 aspect-square" />
+        </twig:Typography>
+    {% endif %}
+</div>

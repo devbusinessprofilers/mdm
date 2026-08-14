@@ -1,0 +1,61 @@
+{% set cva = cva({
+    base: 'border rounded-xs p-2 focus:outline-none text-[0.75rem] leading-[1.25rem] w-full bg-transparent relative no-spin',
+    variants: {
+        disabled: {
+            true: 'cursor-not-allowed text-neutral-500 border-neutral-300',
+            false: 'border-primary',
+        },
+    },
+    compoundVariants: [
+        { disabled: false, readonly: false, class: 'cursor-text' },
+        { disabled: false, readonly: true, class: 'cursor-pointer' },
+    ],
+}) %}
+
+{% set wrapperCva = cva({
+    base: 'w-full relative',
+    variants: {
+        disabled: {
+            true: 'cursor-not-allowed text-neutral-500 bg-neutral-200 focus-within:outline focus-within:outline-neutral-500',
+            false: 'bg-primary-5 focus-within:bg-neutral-100',
+        },
+    },
+}) %}
+
+<div
+    class="{{ wrapperCva.apply({ disabled }) }}"
+    {{ stimulus_controller('number-input', {
+        'step': step,
+        'scale': scale,
+        'radix': radix,
+        'thousandsSeparator': thousandsSeparator,
+        'padFractionalZeros': padFractionalZeros,
+        'min': minValue,
+        'max': maxValue,
+    }) }}
+>
+    {% set stimulusDataActions = stimulusDataActions|merge([
+        'keydown.up->number-input#increase',
+        'keydown.down->number-input#decrease',
+    ]) %}
+
+    {# IMPORTANT: use input type text (not number) to avoid conflict with IMask #}
+    <input
+        id="{{ id }}"
+        name="{{ name }}"
+        type="text"
+        {% if disabled %}disabled{% endif %}
+        {% if readonly %}readonly{% endif %}
+        {% if placeholder is not empty %}placeholder="{{ placeholder }}"{% endif %}
+        class="{{ cva.apply({ disabled, readonly }, attributes.render('class')) }}"
+        {{ stimulus_target('number-input', 'input') }}
+        data-action="{{ stimulusDataActions|join(' ') }}"
+        {% for key, value in inputAttributes %}
+            {{ key }}="{{ value }}"
+        {% endfor %}
+        {{ attributes.without('class') }}
+    >
+    <twig:Typography class="absolute top-1/2 -translate-y-1/2 right-2">
+        <twig:Icon name="{{ currencyIcon }}" class="w-6 aspect-square" />
+    </twig:Typography>
+</div>

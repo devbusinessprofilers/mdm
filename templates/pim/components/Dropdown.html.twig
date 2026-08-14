@@ -1,0 +1,52 @@
+{% set dropdownCva = cva({
+    base: 'bg-neutral-100 h-fit',
+    variants: {
+        isFloating: { true: 'absolute left-50/100 -translate-x-50/100 rounded-xs shadow-(--shadow)' },
+        isFixed: { false: 'hidden' },
+    },
+}) %}
+
+{% set displayCva = cva({
+    variants: {
+        above: { true: 'bottom-[calc(100%_+_(--spacing(2)))]' },
+        below: { true: 'top-[calc(100%_+_(--spacing(2)))]' },
+    },
+}) %}
+
+<div
+    class="relative{{ wrapperClass is not null ? ' ' ~ wrapperClass : '' }}"
+    {% if not isFixed %}
+        {{ stimulus_controller('dropdown', {
+            aboveClass: displayCva.apply({above: true}),
+            belowClass: displayCva.apply({below: true}),
+        }) }}
+    {% endif %}
+>
+    <button
+        type="button"
+        {# WARNING: ignore trigger on rendering for dynamic form => avoid to rotate indicator while updating dropdown selection! #}
+        data-live-ignore
+        {{ attributes }}
+        {% if not isFixed %}
+            {{ stimulus_action('dropdown', 'toggle', 'click') }}
+            {{ stimulus_target('dropdown', 'trigger') }}
+        {% endif %}
+    >
+        {%- block trigger -%}{% endblock -%}
+        {% if not isFixed and withIndicator %}
+            <twig:Icon
+                data-dropdown-target="indicator"
+                name="caret-down"
+                class="w-6 h-6 transition-[rotate] duration-100 cursor-pointer"
+            />
+        {% endif %}
+    </button>
+    <div
+        {% if not isFixed %}
+            {{ stimulus_target('dropdown', 'content') }}
+        {% endif %}
+        class="{{ dropdownCva.apply({ isFloating, isFixed }, containerClass) }}"
+    >
+        {%- block content -%}{% endblock -%}
+    </div>
+</div>

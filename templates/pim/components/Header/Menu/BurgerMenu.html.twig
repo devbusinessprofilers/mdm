@@ -1,0 +1,78 @@
+{% set currentRoute = app.request.attributes.get('_route') %}
+{% set currentRouteParameters = app.request.attributes.get('_route_params') %}
+
+<div
+    {{ attributes.without('class') }}
+    {{ stimulus_controller('burger-menu') }}
+    class="flex {{ attributes.render('class') }}"
+>
+    <twig:Button
+        variant="text"
+        icon="list"
+        iconSize="lg"
+        textColor="primary-3"
+        data-action="click->burger-menu#toggle"
+        data-burger-menu-target="outsideTrigger"
+    />
+    <twig:Button
+        variant="text"
+        icon="cross"
+        iconSize="lg"
+        textColor="primary-3"
+        class="hidden"
+        data-action="click->burger-menu#toggle"
+        data-burger-menu-target="insideTrigger"
+    />
+    <aside
+        {{ stimulus_target('burger-menu', 'menu') }}
+        class="
+            opacity-0 translate-x-full
+            w-full transition-[opacity_translate] bg-neutral-100 fixed right-0 top-(--navbar-height) bottom-0 flex flex-col justify-between pt-8 shadow-(--shadow) clip-inset-[0_0_-10px_-10px]
+            sm:max-w-[500px] sm:rounded-bl-4xl
+        "
+    >
+        <div class="flex flex-col max-h-full overflow-y-auto">
+            <twig:Header:Profil isMobile currentRoute="{{ currentRoute }}" />
+            <nav class="py-4 px-6 max-h-full overflow-y-auto overflow-x-hidden scrollbar">
+                <ul class="flex flex-col gap-2">
+                    {% for item in items %}
+                        {% set isActive = (item.isActive(currentRoute, currentRouteParameters)) %}
+                        {% if item.items is defined and item.items|length > 0 %}
+                            <li class="w-full">
+                                <twig:Header:Menu:DropdownNavLink
+                                    label="{{ item.label|trans }}"
+                                    notification="{{ item.notification ?? null }}"
+                                    currentRoute="{{ currentRoute }}"
+                                    currentRouteParameters="{{ currentRouteParameters }}"
+                                    items="{{ item.items }}"
+                                    icon="{{ item.icon }}"
+                                    iconColor="{{ item.iconColor }}"
+                                    isFixed="{{ true }}"
+                                    isActive="{{ isActive }}"
+                                    class="h-[40px]"
+                                />
+                            </li>
+                        {% else %}
+                            <li class="w-fit">
+                                <twig:Header:Menu:NavLink
+                                    route="{{ item.route }}"
+                                    routeParameters="{{ item.routeParameters }}"
+                                    label="{{ item.label|trans }}"
+                                    notification="{{ item.notification ?? null }}"
+                                    icon="{{ item.icon }}"
+                                    iconColor="{{ item.iconColor }}"
+                                    isActive="{{ isActive }}"
+                                    class="h-[40px]"
+                                />
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                </ul>
+            </nav>
+        </div>
+
+        <div class="flex items-center justify-center w-full min-h-[40px] border-t border-neutral-200">
+            <twig:Header:LanguageSwitcher />
+        </div>
+    </aside>
+</div>

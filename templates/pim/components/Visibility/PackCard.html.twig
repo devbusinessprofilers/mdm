@@ -1,0 +1,36 @@
+{% set cva = cva({
+    'base': 'relative flex flex-col gap-4 px-4 py-8 rounded-sm border justify-between',
+    'variants': {
+        'isSelected': {
+            false: 'border-neutral-300',
+        },
+    },
+    'compoundVariants': [
+        { isSelected: true, isPremium: true, class: 'border-2 border-old-gold bg-old-gold-pastel' },
+        { isSelected: true, isPremium: false, class: 'border-2 border-primary bg-primary-4' },
+    ],
+}) %}
+
+<div {{ attributes.without('class') }} class="{{ cva.apply({ isPremium, isSelected }, attributes.render('class')) }}">
+    <div class="flex flex-col gap-12">
+        <twig:Typography variant="heading-3" textColor="{{ labelColor.value }}" class="border-b border-neutral-300 pb-2" bold>{{ label|trans }}</twig:Typography>
+        <twig:ProgressChart value="{{ value }}" class="w-full" />
+        <ul class="flex flex-col gap-2 px-6">
+            {% for option in options %}
+                <li class="flex gap-2">
+                    <span class="bg-neutral-900 w-1 h-1 rounded-full flex-none mt-2.5"></span>
+                    <twig:Typography>{{ option }}</twig:Typography>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+    <div class="relative">
+        <twig:Button asLink variant="{{ buttonVariant.value }}" icon="{{ buttonIcon }}" href="{{ buttonLink }}" full>{{ 'visibility.pack.cta'|trans }}</twig:Button>
+        {% if isSelected %}
+            <span class="absolute inset-0 bg-transparent"></span>
+        {% endif %}
+    </div>
+    {% if tagVariant and tagLabel %}
+        <twig:Tag variant="{{ tagVariant.value }}" label="{{ tagLabel|trans }}" class="absolute top-0 left-4 -translate-y-1/2" />
+    {% endif %}
+</div>

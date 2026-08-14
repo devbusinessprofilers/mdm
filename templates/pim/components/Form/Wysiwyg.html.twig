@@ -1,0 +1,15 @@
+<div
+    class="{{ attributes.render('class') }}"
+    {{ stimulus_controller('wysiwyg', { 'maxHeight': maxHeight, 'maxLength': maxLength }) }}
+>
+    <textarea
+        id="{{ id }}"
+        name="{{ name }}"
+        {{ stimulus_target('wysiwyg', 'wysiwyg') }}
+        {% if disabled %}disabled{% endif %}
+        {% if readonly %}readonly{% endif %}
+        {{ attributes.without('class', 'value') }}
+    >
+        {{ value|default('') }}
+    </textarea>
+</div>

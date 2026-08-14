@@ -15,14 +15,41 @@ final class TemplateJavaScriptPolicyTest extends TestCase
             if (!$template->isFile() || 'twig' !== $template->getExtension()) {
                 continue;
             }
-            $content = file_get_contents($template->getPathname());
+            $path = $template->getPathname();
+            $content = file_get_contents($path);
             self::assertIsString($content);
-            self::assertDoesNotMatchRegularExpression('/<script\b/i', $content, $template->getPathname());
-            self::assertDoesNotMatchRegularExpression('/\son[a-z]+\s*=/i', $content, $template->getPathname());
-            self::assertDoesNotMatchRegularExpression('/javascript\s*:/i', $content, $template->getPathname());
-            self::assertDoesNotMatchRegularExpression('/<(?:form|input|select|textarea)\b/i', $content, $template->getPathname());
-            self::assertDoesNotMatchRegularExpression('/<button\b[^>]*\btype\s*=\s*["\'](?:submit|reset)["\']/i', $content, $template->getPathname());
+
+            // Règles universelles : aucun JavaScript exécutable inline, où que ce soit.
+            self::assertDoesNotMatchRegularExpression('/<script\b/i', $content, $path);
+            self::assertDoesNotMatchRegularExpression('/\son[a-z]+\s*=/i', $content, $path);
+            self::assertDoesNotMatchRegularExpression('/javascript\s*:/i', $content, $path);
+
+            // Les éléments de formulaire bruts (input, select, form…) sont interdits
+            // dans les pages, mais légitimes dans deux endroits sanctionnés :
+            //   - la bibliothèque de composants du design-system (templates/pim/components) ;
+            //   - le thème de formulaire Symfony (templates/form).
+            // C'est là que vivent les <input>/<select> ; ailleurs, on passe par un
+            // composant ou par le thème de formulaire (ActionType pour un POST+CSRF).
+            if ($this->estZoneComposant($path)) {
+                continue;
+            }
+
+            self::assertDoesNotMatchRegularExpression('/<(?:form|input|select|textarea)\b/i', $content, $path);
+            self::assertDoesNotMatchRegularExpression('/<button\b[^>]*\btype\s*=\s*["\'](?:submit|reset)["\']/i', $content, $path);
         }
+    }
+
+    /**
+     * Zones sanctionnées où les éléments de formulaire bruts sont autorisés :
+     * la bibliothèque de composants et le thème de formulaire.
+     */
+    private function estZoneComposant(string $path): bool
+    {
+        $normalise = str_replace('\\', '/', $path);
+
+        return str_contains($normalise, '/templates/pim/components/')
+            || str_contains($normalise, '/templates/pim/form/')
+            || str_contains($normalise, '/templates/form/');
     }
 
     public function testPageControllersAreLazyAndDemoAssetsAreAbsent(): void

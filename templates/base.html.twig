@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html>
+{# `lang` sert aux lecteurs d'écran et au contrôleur `wysiwyg` (langue de l'éditeur). #}
+<html lang="{{ app.request.locale|default('fr') }}">
     <head>
         <meta charset="UTF-8">
         <title>{% block title %}MDM Business Profilers{% endblock %}</title>
@@ -16,7 +17,11 @@
         <meta name="frankenphp-hot-reload:url" content="{{ frankenphp_hot_reload }}" data-controller="hot-reload">
         {% endif %}
     </head>
-    <body>
+    <body class="{% block body_class %}{% endblock %}">
+        {# Barre de navigation provisoire du back : les écrans repris par le vrai
+           front (coquille `mdm/base.html.twig`) neutralisent ce bloc et posent
+           leur propre en-tête. #}
+        {% block navbar %}
         {% if app.user %}
             <header class="app-header">
                 <nav class="app-nav" aria-label="Navigation principale">
@@ -51,11 +56,14 @@
                 </nav>
             </header>
         {% endif %}
+        {% endblock %}
+        {% block flashes %}
         {% for type, messages in app.flashes %}
             {% for message in messages %}
                 <p role="status" class="flash-{{ type }}">{{ message }}</p>
             {% endfor %}
         {% endfor %}
+        {% endblock %}
         {% block body %}{% endblock %}
     </body>
 </html>

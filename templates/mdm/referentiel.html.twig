@@ -1,228 +1,324 @@
 {% extends 'mdm/base.html.twig' %}
 
-{# Gabarit sobre : la structure et le fonctionnement suivent la maquette MDM,
-   le style viendra du front (branche test-integration). #}
+{#
+    Référentiel / liste des fiches — habillé au langage visuel du front
+    (rail à facettes, carte-table dense, Tags, barres de complétude, toolbar
+    d'actions de masse), piloté par les vraies données et formulaires du back.
+    Toutes les fonctions sont conservées : filtres à facettes comptées,
+    sélection + actions de masse, vues enregistrées, édition rapide, pagination
+    par curseur.
+#}
 
 {% set gamme_titres = {
-    'lieu': 'Lieux',
-    'restaurant': 'Restaurants',
-    'activite': 'Activités',
-    'service_evenementiel': 'Services événementiels',
-} %}
-{% block title %}{{ gamme_imposee ? 'Référentiel · ' ~ (gamme_titres[gamme_imposee.value] ?? gamme_imposee.value) : 'Référentiel' }}{% endblock %}
-
-{% set statut_libelles = {
-    'en_cours': 'En cours',
-    'en_attente_validation': 'En attente',
-    'validee': 'Validée',
-    'publiee': 'Publiée',
-    'archivee': 'Archivée',
+    'lieu': 'Lieux', 'restaurant': 'Restaurants',
+    'activite': 'Activités', 'service_evenementiel': 'Services événementiels',
 } %}
 {% set gamme_libelles = {
-    'lieu': 'Lieu',
-    'restaurant': 'Restaurant',
-    'activite': 'Activité',
-    'service_evenementiel': 'Service',
-    'traiteur': 'Plateau repas',
+    'lieu': 'Lieu', 'restaurant': 'Restaurant', 'activite': 'Activité',
+    'service_evenementiel': 'Service', 'traiteur': 'Plateau repas',
+} %}
+{% set statut_libelles = {
+    'en_cours': 'En cours', 'en_attente_validation': 'En attente',
+    'validee': 'Validée', 'publiee': 'Publiée', 'archivee': 'Archivée',
 } %}
 
-{% block body %}
-<main class="page">
-    <header class="page-header">
-        <div class="page-header-copy">
-            <p class="page-kicker">Référentiel</p>
-            <h1>{{ gamme_imposee ? (gamme_titres[gamme_imposee.value] ?? gamme_imposee.value) : 'Toutes les fiches' }}</h1>
-            <p class="page-description">
-                {{ vue.total }} fiche{{ vue.total == 1 ? '' : 's' }} dans le filtre courant ·
-                {{ vue.totalReferentiel }} au total dans le référentiel.
-            </p>
-        </div>
-        <a class="btn" href="{{ path('app_mdm_creation_fiche') }}">Nouvelle fiche</a>
-    </header>
+{% block title %}{{ gamme_imposee ? 'Référentiel · ' ~ (gamme_titres[gamme_imposee.value] ?? gamme_imposee.value) : 'Référentiel' }}{% endblock %}
 
-    <div class="admin-grid">
-        <aside>
-            <section class="card">
-                <h2>Filtres {% if filtres.actifs > 0 %}<span class="badge badge-info">{{ filtres.actifs }} actif{{ filtres.actifs == 1 ? '' : 's' }}</span>{% endif %}</h2>
-                {{ form_start(form_filtres) }}
-                    {{ form_row(form_filtres.q) }}
-                    {% for groupe in ['gammes', 'statuts', 'completudes', 'canaux', 'pays', 'dates'] %}
-                        {% set champ = attribute(form_filtres, groupe) %}
-                        <fieldset>
-                            <legend>{{ champ.vars.label }}</legend>
-                            {% for case in champ %}
-                                <div>
-                                    {{ form_widget(case) }}
-                                    <label for="{{ case.vars.id }}">
-                                        {{ case.vars.label }}
-                                        <small>({{ vue.comptes[groupe][case.vars.value] ?? 0 }})</small>
-                                    </label>
-                                </div>
-                            {% endfor %}
-                        </fieldset>
-                    {% endfor %}
-                    {% if form_filtres.contributeurs.children is not empty %}
-                        <fieldset>
-                            <legend>Contributeur <a class="text-link" href="{{ url_mes_fiches }}">Mes fiches</a></legend>
-                            {% for case in form_filtres.contributeurs %}
-                                <div>
-                                    {{ form_widget(case) }}
-                                    <label for="{{ case.vars.id }}">
-                                        {{ case.vars.label }}
-                                        <small>({{ vue.comptes.contributeurs[case.vars.value] ?? 0 }})</small>
-                                    </label>
-                                </div>
-                            {% endfor %}
-                        </fieldset>
-                    {% else %}
-                        {% do form_filtres.contributeurs.setRendered %}
-                    {% endif %}
-                    <fieldset>
-                        <legend>Files de travail</legend>
-                        <div>
-                            {{ form_widget(form_filtres.ia) }}
-                            <label for="{{ form_filtres.ia.vars.id }}">
-                                Valeurs IA à arbitrer <small>({{ vue.comptes.ia['1'] ?? 0 }})</small>
-                            </label>
-                        </div>
-                        <div>
-                            {{ form_widget(form_filtres.repli) }}
-                            <label for="{{ form_filtres.repli.vars.id }}">
-                                Contact de repli <small>({{ vue.comptes.repli['1'] ?? 0 }})</small>
-                            </label>
-                        </div>
-                    </fieldset>
-                    <fieldset>
-                        <legend>Attributs</legend>
-                        <div>
-                            {{ form_widget(form_filtres.premium) }}
-                            <label for="{{ form_filtres.premium.vars.id }}">
-                                Adhérent Business Premium <small>({{ vue.comptes.premium['1'] ?? 0 }})</small>
-                            </label>
-                        </div>
-                    </fieldset>
-                    {% if form_filtres.valeurs.children is not empty %}
-                        <fieldset>
-                            <legend>Catégorie et thématiques</legend>
-                            {% for case in form_filtres.valeurs %}
-                                <div>
-                                    {{ form_widget(case) }}
-                                    <label for="{{ case.vars.id }}">
-                                        {{ case.vars.label }}
-                                        <small>({{ vue.comptes.valeurs[case.vars.value] ?? 0 }})</small>
-                                    </label>
-                                </div>
-                            {% endfor %}
-                        </fieldset>
-                    {% else %}
-                        {% do form_filtres.valeurs.setRendered %}
-                    {% endif %}
-                    {{ form_row(form_filtres.filtrer) }}
-                {{ form_end(form_filtres) }}
+{# Ton de Tag par statut réel. #}
+{% macro ton_statut(statut) %}
+    {%- if 'publiee' == statut -%}success
+    {%- elseif 'validee' == statut -%}primary-3
+    {%- elseif 'en_attente_validation' == statut -%}old-gold
+    {%- else -%}neutral
+    {%- endif -%}
+{% endmacro %}
+
+{# Une facette : case (vraie, soumise) + libellé + compteur. #}
+{% macro facette(case, compte, libelle = null) %}
+    <label for="{{ case.vars.id }}"
+           class="group flex items-center gap-2 px-2 py-1.5 rounded-xs cursor-pointer hover:bg-primary-4">
+        {{ form_widget(case) }}
+        <twig:Typography variant="body-sm" class="flex-1 min-w-0">{{ libelle ?? case.vars.label }}</twig:Typography>
+        <twig:Typography variant="body-xs" textColor="neutral-500" class="shrink-0">{{ compte }}</twig:Typography>
+    </label>
+{% endmacro %}
+
+{# Fonction du front pas encore adossée au back : bouton visible mais inactif,
+   avec une infobulle « à venir » (garde-fou « rien ne se perd », côté front). #}
+{% macro bouton_a_venir(icone, label) %}
+    <span title="Fonction à venir — en développement" class="inline-flex">
+        <twig:Button variant="outline" size="sm" icon="{{ icone }}" disabled>{{ label }}</twig:Button>
+    </span>
+{% endmacro %}
+
+{# Le contrôleur Stimulus `liste` porte le repli du rail et (Phase 2) les menus. #}
+{% block main_attributs %}data-controller="liste"{% endblock %}
+
+{# ------------------------------------------------------------------ Rail : filtres à facettes, repliable #}
+{% block rail %}
+<div data-liste-target="panneau" class="shrink-0 flex flex-col w-[284px] transition-[width] overflow-hidden">
+
+    {# État replié : bouton de déploiement + compteur de filtres actifs. #}
+    <div data-liste-target="replie" class="hidden flex-col items-center gap-3 pt-4">
+        <button type="button" data-action="liste#basculerPanneau" aria-label="Déplier les filtres"
+                class="w-[34px] h-[34px] flex items-center justify-center rounded-full bg-primary-5 hover:bg-primary-4">
+            <twig:Icon name="caret-right" class="w-4 h-4 text-primary-3" />
+        </button>
+        {% if filtres.actifs > 0 %}<twig:Tag label="{{ filtres.actifs }}" variant="primary-3" size="sm" />{% endif %}
+    </div>
+
+    {# État ouvert : le formulaire de filtres à facettes. #}
+    <nav data-liste-target="ouvert" class="flex flex-col w-full box-border pl-5 pr-3 py-4 gap-4 overflow-y-auto scrollbar"
+         aria-label="Filtres du référentiel">
+    {{ form_start(form_filtres) }}
+        <div class="flex items-center justify-between px-1">
+            <div class="flex items-center gap-2">
+                <twig:Typography variant="body-sm" bold>Filtres</twig:Typography>
                 {% if filtres.actifs > 0 %}
-                    <a class="text-link" href="{{ path('app_mdm_referentiel_general') }}">Effacer les filtres</a>
+                    <twig:Tag label="{{ filtres.actifs }}" variant="primary-3" size="sm" />
                 {% endif %}
-            </section>
-
-            <section class="card">
-                <h2>Vues enregistrées</h2>
-                {% if vues_enregistrees is not empty %}
-                    <ul>
-                        {% for entree in vues_enregistrees %}
-                            <li>
-                                <a class="text-link" href="{{ entree.url }}">{{ entree.vue.name }}</a>
-                                <small>{{ entree.vue.shared ? 'Partagée · ' ~ entree.vue.ownerLabel : 'Personnelle' }}</small>
-                                {% if entree.suppression %}{{ form(entree.suppression) }}{% endif %}
-                            </li>
-                        {% endfor %}
-                    </ul>
-                {% else %}
-                    <p class="page-description">Aucune vue enregistrée.</p>
+            </div>
+            <div class="flex items-center gap-2">
+                {% if filtres.actifs > 0 %}
+                    <a href="{{ path('app_mdm_referentiel_general') }}">
+                        <twig:Typography variant="body-xs" textColor="primary-3" bold>Tout effacer</twig:Typography>
+                    </a>
                 {% endif %}
-                {{ form(form_vue) }}
-            </section>
-        </aside>
+                <button type="button" data-action="liste#basculerPanneau" aria-label="Replier les filtres"
+                        class="w-7 h-7 flex items-center justify-center rounded-full hover:bg-primary-4">
+                    <twig:Icon name="caret-left" class="w-4 h-4 text-primary-3" />
+                </button>
+            </div>
+        </div>
 
-        <section>
-            {{ form_start(form_selection) }}
-                <div class="toolbar">
-                    {{ form_widget(form_selection.action) }}
-                    {{ form_widget(form_selection.contributeur) }}
-                    {{ form_widget(form_selection.appliquer, {attr: {class: 'btn btn-small'}}) }}
-                    <span>
-                        {{ form_widget(form_selection.tout) }}
-                        <label for="{{ form_selection.tout.vars.id }}">Appliquer à tout le résultat filtré ({{ vue.total }})</label>
-                    </span>
+        <div>{{ form_row(form_filtres.q) }}</div>
+
+        {% for groupe in ['gammes', 'statuts', 'completudes', 'canaux', 'pays', 'dates'] %}
+            {% set champ = attribute(form_filtres, groupe) %}
+            {% if champ.children is not empty %}
+                <div class="flex flex-col gap-1.5">
+                    <twig:Typography variant="body-xs" textColor="neutral-500" bold>{{ champ.vars.label }}</twig:Typography>
+                    {% for case in champ %}
+                        {{ _self.facette(case, vue.comptes[groupe][case.vars.value] ?? 0) }}
+                    {% endfor %}
                 </div>
-                {% if form_selection.sites.children is not empty %}
-                    <details>
-                        <summary>Sites de diffusion — pour « Attribuer la visibilité » (ajout seul, sans repasser par la validation)</summary>
-                        {{ form_widget(form_selection.sites) }}
-                    </details>
-                {% else %}
-                    {% do form_selection.sites.setRendered %}
-                {% endif %}
-                {% set cases = form_selection.ids.children %}
-                <div class="table-shell"><div class="table-scroll"><table class="data-table">
-                    <thead><tr>
-                        <th></th><th></th><th>Code</th><th>Nom</th><th>Ville</th><th>Gamme</th>
-                        <th>Statut</th><th>Complétude</th><th>Canaux</th><th>Contributeur</th><th>Modification</th><th>Actions</th>
-                    </tr></thead>
+            {% endif %}
+        {% endfor %}
+
+        {% if form_filtres.contributeurs.children is not empty %}
+            <div class="flex flex-col gap-1.5">
+                <div class="flex items-center justify-between">
+                    <twig:Typography variant="body-xs" textColor="neutral-500" bold>Contributeur</twig:Typography>
+                    <a href="{{ url_mes_fiches }}"><twig:Typography variant="body-xs" textColor="primary-3" bold>Mes fiches</twig:Typography></a>
+                </div>
+                {% for case in form_filtres.contributeurs %}
+                    {{ _self.facette(case, vue.comptes.contributeurs[case.vars.value] ?? 0) }}
+                {% endfor %}
+            </div>
+        {% else %}
+            {% do form_filtres.contributeurs.setRendered %}
+        {% endif %}
+
+        <div class="flex flex-col gap-1.5">
+            <twig:Typography variant="body-xs" textColor="neutral-500" bold>Files de travail</twig:Typography>
+            {{ _self.facette(form_filtres.ia, vue.comptes.ia['1'] ?? 0, 'Valeurs IA à arbitrer') }}
+            {{ _self.facette(form_filtres.repli, vue.comptes.repli['1'] ?? 0, 'Contact de repli') }}
+        </div>
+
+        <div class="flex flex-col gap-1.5">
+            <twig:Typography variant="body-xs" textColor="neutral-500" bold>Attributs</twig:Typography>
+            {{ _self.facette(form_filtres.premium, vue.comptes.premium['1'] ?? 0, 'Adhérent Business Premium') }}
+        </div>
+
+        {% if form_filtres.valeurs.children is not empty %}
+            <div class="flex flex-col gap-1.5">
+                <twig:Typography variant="body-xs" textColor="neutral-500" bold>Catégorie et thématiques</twig:Typography>
+                {% for case in form_filtres.valeurs %}
+                    {{ _self.facette(case, vue.comptes.valeurs[case.vars.value] ?? 0) }}
+                {% endfor %}
+            </div>
+        {% else %}
+            {% do form_filtres.valeurs.setRendered %}
+        {% endif %}
+
+        <div class="pt-1">
+            <twig:Button variant="primary" size="sm" type="submit">Filtrer</twig:Button>
+        </div>
+        {% do form_filtres.filtrer.setRendered %}
+    {{ form_end(form_filtres) }}
+    </nav>
+</div>
+{% endblock %}
+
+{# ------------------------------------------------------------------ Contenu #}
+{% block contenu %}
+<div class="flex flex-col h-full min-h-0 px-6 py-5 gap-4">
+    {# Cibles du contrôleur `liste` non encore branchées (menu « Plus d'actions », gérer les vues). #}
+    <span data-liste-target="plus" hidden></span>
+    <span data-liste-target="vues" hidden></span>
+
+    {# En-tête + barre d'outils #}
+    <div class="shrink-0 flex items-start justify-between gap-4">
+        <div class="flex flex-col gap-1">
+            <twig:Typography variant="body-xs" textColor="neutral-500" bold class="uppercase tracking-[0.8px]">Référentiel</twig:Typography>
+            <twig:Typography variant="heading-2" element="h1" bold>
+                {{ gamme_imposee ? (gamme_titres[gamme_imposee.value] ?? gamme_imposee.value) : 'Toutes les fiches' }}
+            </twig:Typography>
+            <twig:Typography variant="body-sm" textColor="neutral-500">
+                {{ vue.total }} fiche{{ vue.total == 1 ? '' : 's' }} dans le filtre courant · {{ vue.totalReferentiel }} au total.
+            </twig:Typography>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-end gap-2 shrink-0">
+            {# Sélecteur de vues enregistrées (donnée réelle), en menu déroulant. #}
+            <div class="relative">
+                <twig:Button variant="outline" size="sm" icon="layout" data-action="liste#basculerPicker"
+                             aria-haspopup="true" aria-expanded="false">Vues</twig:Button>
+                <div data-liste-target="picker" hidden
+                     class="absolute right-0 top-full mt-1 z-10 w-[320px] flex flex-col gap-1 p-3 rounded-md bg-neutral-100 shadow-(--shadow) inset-ring-1 inset-ring-neutral-200">
+                    {% for entree in vues_enregistrees %}
+                        <div class="flex items-center justify-between gap-2 px-2 py-1.5 rounded-xs hover:bg-primary-4">
+                            <a href="{{ entree.url }}" class="min-w-0"><twig:Typography variant="body-sm" bold textColor="primary-3" ellipsis>{{ entree.vue.name }}</twig:Typography></a>
+                            <div class="flex items-center gap-1 shrink-0">
+                                <twig:Typography variant="body-xs" textColor="neutral-500">{{ entree.vue.shared ? 'Partagée' : 'Perso' }}</twig:Typography>
+                                {% if entree.suppression %}<span class="[&_button]:p-0!">{{ form(entree.suppression) }}</span>{% endif %}
+                            </div>
+                        </div>
+                    {% else %}
+                        <twig:Typography variant="body-sm" textColor="neutral-500" class="px-2 py-1">Aucune vue enregistrée.</twig:Typography>
+                    {% endfor %}
+                    <div class="pt-2 mt-1 border-t border-neutral-200 [&_form]:flex [&_form]:items-center [&_form]:gap-2">{{ form(form_vue) }}</div>
+                </div>
+            </div>
+
+            {# Fonctions du front pas encore adossées au back → visibles mais désactivées. #}
+            {{ _self.bouton_a_venir('list', 'Trier') }}
+            {{ _self.bouton_a_venir('eye', 'Colonnes') }}
+            {{ _self.bouton_a_venir('paper-plane', 'Copier le lien') }}
+
+            {% if is_granted('ROLE_BP_EDITOR') %}
+                <twig:Button variant="primary" size="md" icon="plus-circle" asLink
+                             href="{{ path('app_mdm_creation_fiche') }}">Créer une fiche</twig:Button>
+            {% endif %}
+        </div>
+    </div>
+
+    {# Actions de masse + tableau, dans le formulaire de sélection #}
+    {{ form_start(form_selection) }}
+        <div class="shrink-0 flex flex-wrap items-center gap-3 p-3 rounded-[14px] bg-neutral-100 shadow-(--shadow)">
+            <twig:Typography variant="body-sm" bold class="shrink-0">Action groupée</twig:Typography>
+            <div class="min-w-[220px]">{{ form_widget(form_selection.action) }}</div>
+            <div class="min-w-[200px]">{{ form_widget(form_selection.contributeur) }}</div>
+            {{ form_widget(form_selection.appliquer) }}
+            <label for="{{ form_selection.tout.vars.id }}" class="flex items-center gap-2 cursor-pointer">
+                {{ form_widget(form_selection.tout) }}
+                <twig:Typography variant="body-sm">Tout le résultat filtré ({{ vue.total }})</twig:Typography>
+            </label>
+        </div>
+
+        {% if form_selection.sites.children is not empty %}
+            <details class="shrink-0 mt-2 px-3">
+                <summary class="cursor-pointer">
+                    <twig:Typography variant="body-sm" textColor="primary-3" bold element="span">Sites de diffusion — pour « Attribuer la visibilité » (ajout seul)</twig:Typography>
+                </summary>
+                <div class="pt-2">{{ form_widget(form_selection.sites) }}</div>
+            </details>
+        {% else %}
+            {% do form_selection.sites.setRendered %}
+        {% endif %}
+
+        {% set cases = form_selection.ids.children %}
+        <div class="flex-1 min-h-0 flex flex-col mt-3 overflow-hidden rounded-[18px] bg-neutral-100 shadow-(--shadow)">
+            <div class="flex-1 min-h-0 overflow-auto scrollbar">
+                <table class="w-full border-collapse">
+                    <thead class="sticky top-0 z-1 bg-primary-5">
+                        <tr class="h-[42px] border-b border-neutral-200 text-left">
+                            {% for col in ['', 'Nom', 'Gamme', 'Statut', 'Complétude', 'Canaux', 'Contributeur', 'Modification', 'Actions'] %}
+                                <th class="px-4 whitespace-nowrap">
+                                    <twig:Typography variant="body-xs" textColor="neutral-500" bold class="uppercase tracking-[0.3px] text-[10px]!">{{ col }}</twig:Typography>
+                                </th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
                     <tbody>
                     {% for ligne in vue.lignes %}
-                        <tr>
-                            <td>{% if cases[loop.index0] is defined %}{{ form_widget(cases[loop.index0], {label: false}) }}{% endif %}</td>
-                            <td>
-                                {% if ligne.vignette %}
-                                    <img src="{{ ligne.vignette }}" alt="" width="48" height="32" loading="lazy">
+                        <tr class="h-[54px] border-t border-neutral-200 hover:bg-primary-5/40 align-middle">
+                            <td class="px-4">
+                                <div class="flex items-center gap-2">
+                                    {% if cases[loop.index0] is defined %}{{ form_widget(cases[loop.index0], {label: false}) }}{% endif %}
+                                    <span class="flex items-center justify-center w-10 h-8 rounded-xxs shrink-0 {{ ligne.vignette ? 'bg-primary-4' : 'bg-primary-5 inset-ring-1 inset-ring-peach' }}">
+                                        {% if ligne.vignette %}
+                                            <twig:Icon name="images" class="w-4 h-4 text-primary-3" />
+                                        {% else %}
+                                            <span class="block w-[5px] h-[5px] rounded-full bg-peach"></span>
+                                        {% endif %}
+                                    </span>
+                                </div>
+                            </td>
+                            <td class="px-4 max-w-[320px]">
+                                <a href="{{ urls[ligne.id].editeur ?? urls[ligne.id].edition_rapide }}" class="min-w-0 hover:underline flex items-center gap-1.5">
+                                    <twig:Typography variant="body" bold ellipsis>{{ ligne.label ?? 'Sans libellé' }}</twig:Typography>
+                                    {% if ligne.marqueIa %}<twig:Tag label="IA" variant="primary-3" size="sm" />{% endif %}
+                                </a>
+                                <twig:Typography variant="body-xs" textColor="neutral-500" ellipsis>
+                                    {{ ligne.code }}{% if ligne.ville %} · {{ ligne.ville }}{% endif %}
+                                </twig:Typography>
+                            </td>
+                            <td class="px-4"><twig:Tag label="{{ gamme_libelles[ligne.type.value] ?? ligne.type.value }}" variant="neutral" size="sm" /></td>
+                            <td class="px-4"><twig:Tag label="{{ statut_libelles[ligne.status.value] ?? ligne.status.value }}" variant="{{ _self.ton_statut(ligne.status.value) }}" size="sm" /></td>
+                            <td class="px-4">
+                                {% if ligne.completeness is not null %}
+                                    <div class="flex items-center gap-2 w-[120px]">
+                                        <twig:ProgressBar :value="ligne.completeness" />
+                                        <twig:Typography variant="body-xs" textColor="neutral-500" class="shrink-0">{{ ligne.completeness }} %</twig:Typography>
+                                    </div>
                                 {% else %}
-                                    <span class="badge badge-neutral">—</span>
+                                    <twig:Typography variant="body-sm" textColor="neutral-500">—</twig:Typography>
                                 {% endif %}
                             </td>
-                            <td>{{ ligne.code }}</td>
-                            <td>
-                                {{ ligne.label ?? 'Sans libellé' }}
-                                {% if ligne.marqueIa %}<span class="badge badge-info" title="Valeurs suggérées par l'IA en attente d'arbitrage">IA</span>{% endif %}
+                            <td class="px-4"><twig:Typography variant="body-sm">{{ ligne.canaux }}</twig:Typography></td>
+                            <td class="px-4"><twig:Typography variant="body-sm" textColor="neutral-500">{{ ligne.contributeur ?? '—' }}</twig:Typography></td>
+                            <td class="px-4 whitespace-nowrap">
+                                <twig:Typography variant="body-sm">{{ ligne.updatedAt|date('d/m/Y H:i') }}</twig:Typography>
+                                {% if ligne.auteur %}<twig:Typography variant="body-xs" textColor="neutral-500">{{ ligne.auteur }}</twig:Typography>{% endif %}
                             </td>
-                            <td>{{ ligne.ville ?? '—' }}</td>
-                            <td><span class="badge badge-neutral">{{ gamme_libelles[ligne.type.value] ?? ligne.type.value }}</span></td>
-                            <td><span class="badge {{ ligne.status.value == 'publiee' ? 'badge-success' : (ligne.status.value == 'archivee' ? 'badge-neutral' : 'badge-info') }}">{{ statut_libelles[ligne.status.value] ?? ligne.status.value }}</span></td>
-                            <td>{{ ligne.completeness is null ? '—' : ligne.completeness ~ ' %' }}</td>
-                            <td>{{ ligne.canaux }}</td>
-                            <td>{{ ligne.contributeur ?? '—' }}</td>
-                            <td>
-                                <time datetime="{{ ligne.updatedAt|date('c') }}">{{ ligne.updatedAt|date('d/m/Y H:i') }}</time>
-                                {% if ligne.auteur %}<br><small>{{ ligne.auteur }}</small>{% endif %}
+                            <td class="px-4">
+                                <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                                    {% if urls[ligne.id].editeur %}<a href="{{ urls[ligne.id].editeur }}"><twig:Typography variant="body-xs" textColor="primary-3" bold>Fiche</twig:Typography></a>{% endif %}
+                                    <a href="{{ urls[ligne.id].edition_rapide }}"><twig:Typography variant="body-xs" textColor="primary-3" bold>Éd. rapide</twig:Typography></a>
+                                    {% if urls[ligne.id].voir %}<a href="{{ urls[ligne.id].voir }}"><twig:Typography variant="body-xs" textColor="neutral-500">Voir</twig:Typography></a>{% endif %}
+                                </div>
                             </td>
-                            <td><div class="table-actions">
-                                {% if urls[ligne.id].voir %}<a class="text-link" href="{{ urls[ligne.id].voir }}">Voir</a>{% endif %}
-                                {% if urls[ligne.id].editeur %}<a class="text-link" href="{{ urls[ligne.id].editeur }}">Fiche</a>{% endif %}
-                                <a class="text-link" href="{{ urls[ligne.id].edition_rapide }}">Édition rapide</a>
-                                {% if urls[ligne.id].modifier and is_granted('ROLE_BP_EDITOR') %}<a class="text-link" href="{{ urls[ligne.id].modifier }}">Modifier</a>{% endif %}
-                            </div></td>
                         </tr>
                     {% else %}
-                        <tr><td class="empty-state" colspan="12">
-                            {% if filtres.actifs > 0 %}
-                                Aucune fiche ne correspond à ces filtres — le référentiel en compte {{ vue.totalReferentiel }}. Retirez un filtre.
-                            {% else %}
-                                Le référentiel est vide.
-                            {% endif %}
-                        </td></tr>
+                        <tr>
+                            <td colspan="9" class="p-10 text-center">
+                                <twig:Typography variant="body" textColor="neutral-500" center>
+                                    {% if filtres.actifs > 0 %}
+                                        Aucune fiche ne correspond à ces filtres — le référentiel en compte {{ vue.totalReferentiel }}.
+                                    {% else %}
+                                        Le référentiel est vide.
+                                    {% endif %}
+                                </twig:Typography>
+                            </td>
+                        </tr>
                     {% endfor %}
                     </tbody>
-                </table></div></div>
-            {{ form_end(form_selection) }}
+                </table>
+            </div>
+        </div>
+    {{ form_end(form_selection) }}
 
-            <nav class="pagination" aria-label="Pagination">
-                {% if app.request.query.has('cursor') %}
-                    <a class="btn btn-secondary btn-small" href="{{ path(app.request.attributes.get('_route'), app.request.attributes.get('_route_params')|merge(parametres_filtre)) }}">Retour au début</a>
-                {% endif %}
-                {% if vue.nextCursor %}
-                    <a class="btn btn-secondary btn-small" href="{{ path(app.request.attributes.get('_route'), app.request.attributes.get('_route_params')|merge(parametres_filtre)|merge({cursor: vue.nextCursor})) }}">Page suivante</a>
-                {% endif %}
-            </nav>
-        </section>
+    {# Pagination par curseur #}
+    <div class="shrink-0 flex items-center justify-center gap-3">
+        {% if app.request.query.has('cursor') %}
+            <twig:Button variant="outline" size="sm" asLink
+                         href="{{ path(app.request.attributes.get('_route'), app.request.attributes.get('_route_params')|merge(parametres_filtre)) }}">Retour au début</twig:Button>
+        {% endif %}
+        {% if vue.nextCursor %}
+            <twig:Button variant="outline" size="sm" asLink
+                         href="{{ path(app.request.attributes.get('_route'), app.request.attributes.get('_route_params')|merge(parametres_filtre)|merge({cursor: vue.nextCursor})) }}">Page suivante</twig:Button>
+        {% endif %}
     </div>
-</main>
+</div>
 {% endblock %}

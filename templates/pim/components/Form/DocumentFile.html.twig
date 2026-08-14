@@ -1,0 +1,40 @@
+<div
+    class="relative w-full min-w-20 max-w-40 {{ class }}"
+    {{ attributes }}
+    {# @todo: remove asset to resolve URL #}
+    {{ stimulus_controller('document-file', { 'fileName': fileName }) }}
+>
+    {# Contain prototype for picture preview #}
+    <div class="hidden">
+        <div
+            data-document-file-target="prototype"
+            class="z-2 w-full h-full px-2 flex gap-x-2 items-center justify-between bg-neutral-100"
+        >
+            <twig:Typography variant="medium" bold ellipsis data-prototype-document="" class="grow"></twig:Typography>
+            <twig:Icon name="cross" data-prototype-delete="" class="w-6 h-6 flex-none cursor-pointer" />
+        </div>
+    </div>
+    <div class="w-full h-full px-2 py-1 flex items-center justify-center cursor-pointer">
+        <twig:Typography variant="body" textColor="primary-3" underline class="cursor-pointer">
+            {{ 'form.document_file.import.label'|trans }}
+        </twig:Typography>
+    </div>
+    <div
+        class="absolute top-0 left-0 w-full h-full flex items-center justify-center cursor-pointer"
+        data-document-file-target="preview"
+    >
+    </div>
+    <input
+        id="{{ id }}"
+        name="{{ name }}"
+        accept="{{ accept }}"
+        type="file"
+        {% if disabled %}
+            disabled
+        {% else %}
+            data-document-file-target="inputFile"
+            data-action="change->document-file#onFileChange"
+        {% endif %}
+        class="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer"
+    >
+</div>

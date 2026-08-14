@@ -1,0 +1,48 @@
+{#
+    Coquille commune aux écrans « Connexion & mot de passe ».
+
+    Carte à deux panneaux : un visuel de marque à gauche (dégradé, faute de
+    photo livrée), un panneau blanc à droite qui porte le formulaire. Sous
+    1280 px le visuel disparaît et le panneau repasse en flux normal.
+
+    Reprise du vrai front ; les pages remplissent `{% block panneau %}`.
+#}
+{% extends 'base.html.twig' %}
+
+{# Écrans d'authentification : pas de barre de navigation. #}
+{% block navbar %}{% endblock %}
+{% block flashes %}{% endblock %}
+
+{% block body_class %}bg-primary-5 antialiased{% endblock %}
+
+{% block stylesheets %}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&family=Ubuntu+Sans:wght@400;500;700;800&display=swap">
+{% endblock %}
+
+{% block body %}
+    <main class="flex flex-col items-center justify-center box-border min-h-screen py-8 min-[600px]:py-20">
+        <div class="relative shrink-0 w-full max-w-[calc(100%-32px)]
+                    min-[600px]:max-w-[560px]
+                    min-[1280px]:w-[1536px] min-[1280px]:max-w-[calc(100%-64px)] min-[1280px]:h-[800px]">
+
+            <div class="hidden min-[1280px]:block absolute top-0 left-0 w-[52.164%] h-full
+                        rounded-[30px] overflow-hidden bg-neutral-100" aria-hidden="true">
+                <div class="w-full h-full bg-cover bg-center bg-no-repeat
+                            bg-[linear-gradient(140deg,var(--color-primary-3)_0%,var(--color-primary)_55%,var(--color-neon)_100%)]"></div>
+            </div>
+
+            <div class="relative flex flex-col items-center justify-center box-border w-full
+                        px-6 py-10 min-[600px]:px-10 min-[600px]:py-14
+                        min-[1280px]:absolute min-[1280px]:top-0 min-[1280px]:left-[47.836%]
+                        min-[1280px]:w-[52.164%] min-[1280px]:h-full
+                        min-[1280px]:px-[12.956%] min-[1280px]:py-[104px]
+                        rounded-md bg-neutral-100 shadow-(--shadow)
+                        {% block classe_panneau %}gap-6{% endblock %}">
+                {% block panneau %}{% endblock %}
+            </div>
+        </div>
+    </main>
+{% endblock %}

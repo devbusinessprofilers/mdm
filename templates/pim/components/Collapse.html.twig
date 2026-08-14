@@ -1,0 +1,50 @@
+{% set wrapperCva = cva({
+    base: 'relative flex flex-col gap-4 border-b border-neutral-300',
+}) %}
+
+{% set buttonCva = cva({
+    base: 'flex items-center justify-between gap-2 cursor-pointer',
+}) %}
+
+{% set cva = cva({
+    base: 'grid transition-[grid-template-rows]',
+    variants: {
+        isExpanded: {
+            false: 'grid-rows-[0fr] mb-0',
+            true: 'grid-rows-[1fr] mb-4',
+        },
+    },
+}) %}
+
+<div
+    class="{{ wrapperCva.apply({}, wrapperClass) }}"
+    {{ stimulus_controller('collapse', {
+        defaultValue: isExpanded,
+    }) }}
+    data-bindable
+>
+    <button
+        type="button"
+        class="{{ buttonCva.apply({}, attributes.render('class')) }}"
+        {{ attributes.without('class') }}
+        {{ stimulus_action('collapse', 'toggle', 'click') }}
+    >
+        {%- block trigger -%}{% endblock -%}
+
+        <twig:Icon
+            data-collapse-target="indicator"
+            name="caret-down"
+            class="w-6 h-6 transition-[rotate] duration-100 cursor-pointer"
+        />
+    </button>
+
+    <div
+        {{ stimulus_target('collapse', 'content') }}
+        class="{{ cva.apply({ isExpanded }, containerClass) }}"
+    >
+        <div class="overflow-hidden w-full">
+            {%- block content -%}{% endblock -%}
+        </div>
+    </div>
+</div>
+

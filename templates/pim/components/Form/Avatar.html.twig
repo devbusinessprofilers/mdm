@@ -1,0 +1,62 @@
+{% set wrapperCva = cva({
+    base: 'rounded-full overflow-hidden aspect-square flex items-center justify-center w-18 h-18 lg:w-20 lg:h-20',
+    variants: {
+        inverted: {
+            true: 'bg-neutral-100',
+            false: 'bg-primary-4',
+        },
+    },
+}) %}
+
+<div
+    class="flex flex-col gap-1 items-center {{ class }}"
+    {{ attributes }}
+    {% if not disabled %}
+        {{ stimulus_controller('avatar', {'initials': initials}) }}
+    {% endif %}
+>
+    <div class="hidden">
+        <img
+            class="w-full h-full rounded-full text-center text-primary-3 text-[2rem] object-cover leading-18 lg:leading-20"
+            data-avatar-target="pictureTemplate"
+            src=""
+            alt=""
+        />
+    </div>
+    <div
+        class="{{ wrapperCva.apply({'inverted': inverted}) }}"
+        data-avatar-target="avatarWrapper"
+    >
+        {% if pictureUrl is empty %}
+            <twig:Icon name="user" class="w-70/100 h-70/100 text-primary-3"/>
+        {% else %}
+            <img
+                class="w-full h-full rounded-full text-center text-primary-3 text-[2rem] object-cover leading-18 lg:leading-20"
+                {# @todo: remove asset to resolve URL #}
+                src="{{ asset(pictureUrl) }}"
+                alt="{{ initials }}"
+            />
+        {% endif %}
+    </div>
+    <input
+        id="{{ id }}"
+        name="{{ name }}"
+        accept="{{ accept }}"
+        type="file"
+        {% if disabled %}
+            disabled
+        {% else %}
+            data-avatar-target="inputFile"
+            data-action="change->avatar#onFileChange"
+        {% endif %}
+        class="hidden"
+    >
+    <twig:Button
+        data-action="click->avatar#onClick"
+        variant="outline"
+        icon="pencil"
+        size="sm"
+        type="button"
+        disabled="{{ disabled }}"
+    />
+</div>

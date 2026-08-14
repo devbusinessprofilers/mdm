@@ -1,61 +1,125 @@
+{#
+    Coquille du back-office MDM : barre supérieure (composants du portail) +
+    zone de contenu défilante. Reprise du vrai front, branchée sur les routes et
+    l'utilisateur réels via `EnteteExtension` (fonctions `entete_menu`,
+    `entete_utilisateur`, `entete_administration`).
+
+    Les pages remplissent `{% block contenu %}` ; une page qui a besoin d'un rail
+    de navigation latéral surcharge `{% block rail %}`.
+
+    TinyMCE (composant `Form:Wysiwyg`) n'est pas chargé ici : son injection
+    (sans script inline, interdit par la policy) est traitée avec l'éditeur de
+    fiche, seul écran qui l'utilise.
+#}
 {% extends 'base.html.twig' %}
 
-{# Coquille des écrans MDM : la navigation reprend la structure de la maquette
-   front (Accueil, Référentiel déroulant, Qualité, Médias, Imports & exports,
-   Administration), mappée sur les routes réelles du back. Règle de la
-   maquette conservée : un lien n'existe que s'il a une destination — les
-   écrans sans équivalent (Synchronisation, Plateaux repas) ne sont pas
-   affichés. Les menus déroulants sont des <details> natifs, sans JavaScript ;
-   le style viendra du front. #}
+{# Le vrai front porte son propre en-tête : on neutralise la barre provisoire de base. #}
+{% block navbar %}{% endblock %}
+{# Les messages flash sont rendus dans la zone de contenu, pas en tête de body. #}
+{% block flashes %}{% endblock %}
 
-{% block navigation %}
-    <a href="{{ path('app_mdm_tableau_de_bord') }}" class="brand">MDM Business Profilers</a>
-    <a class="nav-link" href="{{ path('app_mdm_tableau_de_bord') }}">Accueil</a>
-    <a class="nav-link" href="{{ path('app_mdm_espace_travail') }}">Mon espace de travail</a>
-    <details class="nav-link">
-        <summary>Référentiel</summary>
-        <div>
-            <a class="nav-link" href="{{ path('app_mdm_referentiel_general') }}">Toutes les fiches</a>
-            <a class="nav-link" href="{{ path('app_mdm_lieux') }}">Lieux</a>
-            <a class="nav-link" href="{{ path('app_mdm_referentiel_gamme', {gamme: 'restaurants'}) }}">Restaurants</a>
-            <a class="nav-link" href="{{ path('app_mdm_referentiel_gamme', {gamme: 'activites'}) }}">Activités</a>
-            <a class="nav-link" href="{{ path('app_mdm_referentiel_gamme', {gamme: 'services'}) }}">Services événementiels</a>
-            {% if is_granted('ROLE_BP_EDITOR') %}
-                <a class="nav-link" href="{{ path('app_mdm_creation_fiche') }}">Nouvelle fiche</a>
-            {% endif %}
-        </div>
-    </details>
-    {% if is_granted('ROLE_BP_EDITOR') %}
-        {% set anomalies_ouvertes = qualite_badge() %}
-        <a class="nav-link" href="{{ path('app_mdm_qualite') }}">
-            Qualité{% if anomalies_ouvertes > 0 %} <span class="badge badge-warning" title="Anomalies médias ouvertes (doublons et incohérences DAM)">{{ anomalies_ouvertes }}</span>{% endif %}
-        </a>
-        <a class="nav-link" href="{{ path('app_mdm_medias') }}">Médias</a>
-        {% if is_granted('ROLE_BP_VALIDATOR') %}
-            <a class="nav-link" href="{{ path('app_mdm_outils') }}">Outils</a>
-        {% endif %}
-        {% if is_granted('ROLE_ADMIN') %}
-            <details class="nav-link">
-                <summary>Administration</summary>
-                <div>
-                    <a class="nav-link" href="{{ path('app_pim_admin') }}">Sommaire</a>
-                    <a class="nav-link" href="{{ path('app_dashboard_index') }}">Statistiques détaillées</a>
-                    <a class="nav-link" href="{{ path('app_dashboard_traitements_en_echec') }}">Traitements en échec</a>
-                    <a class="nav-link" href="{{ path('app_pim_relance_completude_index') }}">Relances de complétude</a>
-                    <a class="nav-link" href="{{ path('app_pim_lov_index') }}">Listes de valeurs</a>
-                    <a class="nav-link" href="{{ path('app_pim_site_diffusion_index') }}">Sites de diffusion</a>
-                    <a class="nav-link" href="{{ path('app_parametre_index') }}">Paramètres</a>
-                    {% if is_granted('ROLE_SUPER_ADMIN') %}
-                        <a class="nav-link" href="{{ path('app_pim_completeness_index') }}">Complétude</a>
-                        <a class="nav-link" href="{{ path('app_account_admin_index') }}">Collaborateurs</a>
-                        <a class="nav-link" href="{{ path('app_account_user_admin_index') }}">Utilisateurs</a>
-                    {% endif %}
+{% set entete_menu = entete_menu() %}
+{% set entete_utilisateur = entete_utilisateur() %}
+
+{% block body_class %}antialiased{% endblock %}
+
+{% block stylesheets %}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&family=Ubuntu+Sans:wght@400;500;700;800&display=swap">
+{% endblock %}
+
+{% block body %}
+    <div class="relative flex flex-col h-screen overflow-hidden
+                bg-[linear-gradient(180deg,var(--color-primary-5)_0%,var(--color-neutral-100)_100%)]">
+
+        <header class="shrink-0 flex gap-2 xs:gap-8 items-center justify-between px-6 py-4 sm:px-8
+                       bg-neutral-100 shadow-(--shadow) z-2 max-h-(--navbar-height)">
+            <div class="flex items-center gap-8 min-w-0">
+                <twig:Logo class="w-[186px] shrink-0" />
+                <twig:Header:Menu items="{{ entete_menu }}"
+                                  class="hidden 2xl:block [&_a]:whitespace-nowrap [&_ul]:gap-6" />
+            </div>
+
+            <div class="hidden 2xl:flex items-center gap-6 shrink-0">
+                {# Recherche globale — conservée depuis l'ancien en-tête. #}
+                <a href="{{ path('app_pim_global_search') }}"
+                   class="flex items-center gap-2 px-2 py-1.5 rounded-xs hover:bg-primary-4"
+                   title="Recherche globale">
+                    <twig:Icon name="magnifying-glass" aria-hidden="true" class="w-5 h-5 text-primary" />
+                </a>
+
+                <div class="group/profil relative">
+                    <twig:Header:Profil user="{{ entete_utilisateur }}"
+                                        currentRoute="{{ app.request.attributes.get('_route') }}"
+                                        route="app_mdm_espace_travail"
+                                        class="group-hover/profil:after:w-full
+                                               group-focus-within/profil:after:w-full" />
+
+                    <div class="absolute right-0 top-full z-10 hidden pt-3
+                                group-hover/profil:block group-focus-within/profil:block">
+                        <div class="w-[264px] flex flex-col rounded-sm bg-neutral-100 shadow-(--shadow)
+                                    inset-ring-1 inset-ring-neutral-200 overflow-hidden">
+
+                            <div class="flex flex-col gap-0.5 px-4 py-3 bg-primary-5 border-b border-neutral-200">
+                                <twig:Typography variant="body-sm" bold ellipsis>{{ entete_utilisateur.fullName }}</twig:Typography>
+                                <twig:Typography variant="body-xs" textColor="neutral-500" ellipsis>{{ entete_utilisateur.job }}</twig:Typography>
+                            </div>
+
+                            {% set administration = entete_administration() %}
+                            {% if administration is not empty %}
+                                <div class="flex flex-col gap-1 p-2">
+                                    <twig:Typography variant="body-xs" bold textColor="neutral-500"
+                                                     class="px-2 pt-1 pb-0.5 tracking-[0.8px] uppercase">Administration</twig:Typography>
+
+                                    {% for entree in administration %}
+                                        <a href="{{ path(entree.2) }}"
+                                           class="flex items-center gap-2 px-2 py-1.5 rounded-xs hover:bg-primary-4">
+                                            <twig:Icon name="{{ entree.1 }}" aria-hidden="true"
+                                                       class="shrink-0 w-4 h-4 text-primary" />
+                                            <twig:Typography variant="body-sm" bold textColor="primary-3"
+                                                             ellipsis class="min-w-0">{{ entree.0 }}</twig:Typography>
+                                        </a>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+
+                            <div class="flex flex-col p-2 border-t border-neutral-200">
+                                <a href="{{ path('app_mdm_espace_travail') }}"
+                                   class="flex items-center gap-2 px-2 py-1.5 rounded-xs hover:bg-primary-4">
+                                    <twig:Icon name="user" aria-hidden="true" class="shrink-0 w-4 h-4 text-primary" />
+                                    <twig:Typography variant="body-sm" bold textColor="primary-3">Mon espace de travail</twig:Typography>
+                                </a>
+                                <div class="px-2 py-1.5">{{ form(logout_form()) }}</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </details>
-        {% endif %}
-        {% set header_search_form_view = global_search_form() %}
-        {{ form(header_search_form_view) }}
-    {% endif %}
-    {% set logout_form_view = logout_form() %}
-    {{ form(logout_form_view) }}
+            </div>
+
+            <twig:Header:Menu:BurgerMenu items="{{ entete_menu }}" class="2xl:hidden" />
+        </header>
+
+        <div class="mdm-main flex flex-1 min-h-0" {% block main_attributs %}{% endblock %}>
+            {% block rail %}{% endblock %}
+
+            <div class="flex flex-col flex-1 min-w-0 min-h-0 overflow-y-auto">
+                {% block flashes_contenu %}
+                    {% for type, messages in app.flashes %}
+                        {% for message in messages %}
+                            <div class="mx-6 mt-4">
+                                <twig:Alert icon="{{ type == 'success' ? 'check-circle' : (type in ['error', 'danger'] ? 'cross-circle' : 'info-circle') }}">
+                                    {{- message -}}
+                                </twig:Alert>
+                            </div>
+                        {% endfor %}
+                    {% endfor %}
+                {% endblock %}
+
+                {% block contenu %}{% endblock %}
+            </div>
+        </div>
+
+    </div>
 {% endblock %}

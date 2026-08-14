@@ -1,0 +1,29 @@
+{% set cva = cva({
+    base: 'flex-1 flex flex-col gap-6',
+}) %}
+
+<div {{ attributes.without('class') }} class="{{ cva.apply({}, attributes.render('class')) }}">
+    <ul class="flex flex-col gap-4 lg:gap-6">
+        {% for reminder in items %}
+            <li><twig:Review:Reminder reminder="{{ reminder }}" /></li>
+        {% endfor %}
+    </ul>
+
+    <twig:Pagination
+        total="{{ totalPages }}"
+        current="{{ currentPage }}"
+        targetAttributes="{{ {
+            'data-action': 'click->live#action',
+            'data-live-action-param': 'changePage',
+            'data-live-page-param': 'page',
+        } }}"
+        previousAttributes="{{ {
+            'data-action': 'click->live#action',
+            'data-live-action-param': 'previousPage',
+        } }}"
+        nextAttributes="{{ {
+            'data-action': 'click->live#action',
+            'data-live-action-param': 'nextPage',
+        } }}"
+    />
+</div>

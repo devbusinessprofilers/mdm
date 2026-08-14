@@ -1,0 +1,27 @@
+<div class="{{ attributes.render('class') }}">
+    <label for="{{ id }}" class="flex gap-2 items-center cursor-pointer">
+        <input
+            id="{{ id }}"
+            name="{{ name }}"
+            type="radio"
+            class="peer hidden"
+            value="{{ value|default(1) }}"
+            {% if checked %}checked{% endif %}
+            {% if disabled %}disabled{% endif %}
+            {% for key, value in inputAttributes %}
+                {{ key }}="{{ value }}"
+            {% endfor %}
+            {{ attributes.without('class') }}
+        />
+        <div class="w-5 min-w-5 h-5 min-h-5 rounded-full relative
+            before:absolute before:top-0 before:left-0 before:w-full before:h-full before:box-border before:border before:rounded-full before:border-primary
+            peer-checked:after:absolute peer-checked:after:top-0 peer-checked:after:left-0 peer-checked:after:bg-primary peer-checked:after:w-full peer-checked:after:h-full peer-checked:after:rounded-full peer-checked:after:scale-50
+            peer-disabled:before:border-neutral-300
+            peer-checked:peer-disabled:after:bg-neutral-300"
+        >
+        </div>
+        <twig:Typography variant="button">
+            {{ block(outerBlocks.content) }}
+        </twig:Typography>
+    </label>
+</div>

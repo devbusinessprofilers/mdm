@@ -1,0 +1,7 @@
+<div{{ attributes.without('class') }} class="rounded-full overflow-hidden bg-primary-4 aspect-square flex items-center justify-center {{ attributes.render('class') }}">
+    {% if pictureUrl is not empty %}
+        <img class="w-full rounded-full text-center" src="{{ pictureUrl }}" alt="{{ pictureText|default('X') }}" />
+    {% else %}
+        <twig:Icon name="{{ icon }}" class="text-primary-3 max-w-80/100 max-h-80/100" />
+    {% endif %}
+</div>

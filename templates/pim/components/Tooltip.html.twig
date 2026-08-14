@@ -1,0 +1,28 @@
+<div
+    {{ stimulus_controller('tooltip', {'placement': placement}) }}
+    {{ stimulus_action('tooltip', 'open', 'mouseenter')|stimulus_action('tooltip', 'close', 'mouseleave') }}
+    {{ attributes.without('class') }}
+    class="relative cursor-pointer ml-1 w-[22px] h-[22px] {{ attributes.render('class') }}"
+>
+    <twig:Icon
+        name="{{ icon }}"
+        data-tooltip-target="trigger"
+    />
+    <div
+        class="hidden z-256 w-max max-w-77"
+        data-tooltip-target="tooltip"
+    >
+        <div
+            data-popper-content
+            class="bg-neutral-100 rounded-[16px] border border-1 border-neutral-900 px-4 py-2 w-full h-max overflow-auto"
+        >
+            {% block content %}{% endblock %}
+        </div>
+        {# IMPORTANT: position and transform for narrow is configured in portal.css to keep lisibility of CSS (due to tailwind) #}
+        <div
+            data-popper-arrow
+            data-tooltip-target="arrow"
+            class="absolute w-4 h-4 before:absolute before:w-4 before:h-4 before:bg-neutral-100 before:border-t before:border-r before:border-neutral-900"
+        ></div>
+    </div>
+</div>

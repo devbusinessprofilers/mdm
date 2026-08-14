@@ -1,59 +1,70 @@
-{% extends 'base.html.twig' %}
+{% extends 'mdm/base.html.twig' %}
 
 {% block title %}Nouvelle fiche{% endblock %}
 
-{% block body %}
-<main class="page">
-    <a class="back-link" href="{{ path('app_mdm_referentiel_general') }}">← Retour aux fiches</a>
-    <header class="page-header">
-        <div class="page-header-copy">
-            <p class="page-kicker">Catalogue</p>
-            <h1>Nouvelle fiche</h1>
-            <p class="page-description">Renseignez les informations principales : la fiche sera pré-remplie depuis l’annuaire des entreprises, puis vous pourrez compléter le formulaire détaillé.</p>
-        </div>
-    </header>
+{% block contenu %}
+<main class="flex flex-col h-full min-h-0 overflow-y-auto scrollbar px-6 py-5 gap-5">
 
-    <div data-controller="fiche-creation">
-        {{ form_start(form, {attr: {class: 'crud-form'}}) }}
+    <div class="shrink-0 flex flex-col gap-1">
+        <a href="{{ path('app_mdm_referentiel_general') }}" class="hover:underline w-fit">
+            <twig:Typography variant="body-sm" textColor="primary-3" bold element="span">← Retour aux fiches</twig:Typography>
+        </a>
+        <twig:Typography variant="body-xs" textColor="neutral-500" bold class="uppercase tracking-[0.8px]">Catalogue</twig:Typography>
+        <twig:Typography variant="heading-2" element="h1" bold>Nouvelle fiche</twig:Typography>
+        <twig:Typography variant="body-sm" textColor="neutral-500" class="max-w-[720px]">
+            Renseignez les informations principales : la fiche sera pré-remplie depuis l'annuaire des entreprises, puis vous pourrez compléter le formulaire détaillé.
+        </twig:Typography>
+    </div>
+
+    <div data-controller="fiche-creation" class="flex flex-col gap-5">
+        {{ form_start(form) }}
             {% if duplicates is not empty %}
-                <section class="card">
-                    <h2 class="card-title">⚠ Doublons potentiels</h2>
-                    <p class="page-description">Des fiches similaires existent déjà. Vérifiez qu'il ne s'agit pas de la même avant de créer.</p>
-                    <div class="table-shell"><div class="table-scroll"><table class="data-table">
-                        <thead><tr><th>Code</th><th>Libellé</th><th>Gamme</th><th>Ville</th><th>Statut</th><th>Correspondances</th></tr></thead>
-                        <tbody>
-                        {% for candidate in duplicates %}
-                            <tr>
-                                <td>{{ candidate.code }}</td>
-                                <td>
-                                    {% if candidate.url %}<a href="{{ candidate.url }}">{{ candidate.label ?? 'Sans libellé' }}</a>
-                                    {% else %}{{ candidate.label ?? 'Sans libellé' }}{% endif %}
-                                </td>
-                                <td>{{ candidate.type.value }}</td>
-                                <td>{{ candidate.ville ?? '—' }}</td>
-                                <td>{{ candidate.status.value }}</td>
-                                <td>
-                                    {% for reason in candidate.reasons %}
-                                        <span class="badge badge-info">{{ {'nom': 'nom similaire', 'adresse': 'même adresse', 'siret': 'même SIRET'}[reason] ?? reason }}</span>
-                                    {% endfor %}
-                                </td>
-                            </tr>
-                        {% endfor %}
-                        </tbody>
-                    </table></div></div>
+                <section class="flex flex-col gap-3 p-6 rounded-[20px] bg-old-gold-pastel inset-ring-1 inset-ring-old-gold">
+                    <twig:Typography variant="heading-3" element="h2" bold>⚠ Doublons potentiels</twig:Typography>
+                    <twig:Typography variant="body-sm" textColor="neutral-500">Des fiches similaires existent déjà. Vérifiez qu'il ne s'agit pas de la même avant de créer.</twig:Typography>
+                    <div class="overflow-x-auto rounded-md inset-ring-1 inset-ring-neutral-200 bg-neutral-100">
+                        <table class="w-full border-collapse">
+                            <thead class="bg-primary-5"><tr class="text-left h-10 border-b border-neutral-200">
+                                {% for col in ['Code', 'Libellé', 'Gamme', 'Ville', 'Statut', 'Correspondances'] %}<th class="px-3"><twig:Typography variant="body-xs" textColor="neutral-500" bold>{{ col }}</twig:Typography></th>{% endfor %}
+                            </tr></thead>
+                            <tbody>
+                            {% for candidate in duplicates %}
+                                <tr class="h-11 border-t border-neutral-200 first:border-t-0">
+                                    <td class="px-3"><twig:Typography variant="body-sm">{{ candidate.code }}</twig:Typography></td>
+                                    <td class="px-3">
+                                        {% if candidate.url %}<a href="{{ candidate.url }}" class="hover:underline"><twig:Typography variant="body-sm" textColor="primary-3" bold element="span">{{ candidate.label ?? 'Sans libellé' }}</twig:Typography></a>
+                                        {% else %}<twig:Typography variant="body-sm">{{ candidate.label ?? 'Sans libellé' }}</twig:Typography>{% endif %}
+                                    </td>
+                                    <td class="px-3"><twig:Typography variant="body-sm">{{ candidate.type.value }}</twig:Typography></td>
+                                    <td class="px-3"><twig:Typography variant="body-sm">{{ candidate.ville ?? '—' }}</twig:Typography></td>
+                                    <td class="px-3"><twig:Typography variant="body-sm">{{ candidate.status.value }}</twig:Typography></td>
+                                    <td class="px-3">
+                                        <div class="flex flex-wrap gap-1">
+                                            {% for reason in candidate.reasons %}
+                                                <twig:Tag label="{{ {'nom': 'nom similaire', 'adresse': 'même adresse', 'siret': 'même SIRET'}[reason] ?? reason }}" variant="primary-3" size="sm" />
+                                            {% endfor %}
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                     {{ form_row(form.creerQuandMeme) }}
                 </section>
             {% else %}
                 {% do form.creerQuandMeme.setRendered %}
             {% endif %}
 
-            <section class="card">
-                <h2 class="card-title">Gamme</h2>
+            {% set carte = 'flex flex-col gap-4 p-6 rounded-[20px] bg-neutral-100 shadow-(--shadow)' %}
+
+            <section class="{{ carte }}">
+                <twig:Typography variant="heading-3" element="h2" bold>Gamme</twig:Typography>
                 {{ form_row(form.type) }}
             </section>
 
-            <section class="card">
-                <h2 class="card-title">Identité et localisation</h2>
+            <section class="{{ carte }}">
+                <twig:Typography variant="heading-3" element="h2" bold>Identité et localisation</twig:Typography>
                 {{ form_row(form.label) }}
                 {% set prefill_help = 'Optionnel : pré-rempli automatiquement depuis l’annuaire des entreprises si laissé vide.' %}
                 {% for field in ['ruePostale', 'codePostal', 'ville', 'pays', 'countryCode', 'latitude', 'longitude'] %}
@@ -67,42 +78,44 @@
                 </div>
             </section>
 
-            <section class="card">
-                <h2 class="card-title">Classification</h2>
-                <p class="page-description" data-fiche-creation-target="section" data-types="" hidden>Choisissez d’abord une gamme.</p>
-                <div hidden data-fiche-creation-target="section" data-types="lieu">
+            <section class="{{ carte }}">
+                <twig:Typography variant="heading-3" element="h2" bold>Classification</twig:Typography>
+                <p class="page-description" data-fiche-creation-target="section" data-types="" hidden>
+                    <twig:Typography variant="body-sm" textColor="neutral-500" element="span">Choisissez d'abord une gamme.</twig:Typography>
+                </p>
+                <div hidden data-fiche-creation-target="section" data-types="lieu" class="flex flex-col gap-4">
                     {{ form_row(form.lieuTypologie) }}
                     {{ form_row(form.lieuThematique) }}
                     {{ form_row(form.lieuAmbiance) }}
                 </div>
-                <div hidden data-fiche-creation-target="section" data-types="restaurant">
+                <div hidden data-fiche-creation-target="section" data-types="restaurant" class="flex flex-col gap-4">
                     {{ form_row(form.typeRestaurant) }}
                 </div>
-                <div hidden data-fiche-creation-target="section" data-types="activite">
+                <div hidden data-fiche-creation-target="section" data-types="activite" class="flex flex-col gap-4">
                     {{ form_row(form.thematiqueActivite) }}
                 </div>
-                <div hidden data-fiche-creation-target="section" data-types="service_evenementiel">
+                <div hidden data-fiche-creation-target="section" data-types="service_evenementiel" class="flex flex-col gap-4">
                     {{ form_row(form.typePrestataire) }}
                 </div>
             </section>
 
-            <section class="card">
-                <h2 class="card-title">Statut et référencement</h2>
+            <section class="{{ carte }}">
+                <twig:Typography variant="heading-3" element="h2" bold>Statut et référencement</twig:Typography>
                 {{ form_row(form.businessPremium) }}
             </section>
 
-            <section class="card">
-                <h2 class="card-title">Visibilité</h2>
+            <section class="{{ carte }}">
+                <twig:Typography variant="heading-3" element="h2" bold>Visibilité</twig:Typography>
                 {{ form_row(form.sitePremium) }}
                 {{ form_row(form.sitesDiffusion) }}
             </section>
 
-            <section class="card">
-                <h2 class="card-title">Collaborateur</h2>
+            <section class="{{ carte }}">
+                <twig:Typography variant="heading-3" element="h2" bold>Collaborateur</twig:Typography>
                 {{ form_row(form.contactRepli) }}
                 {{ form_row(form.collaborateurExistant) }}
-                <fieldset>
-                    <legend>… ou créer un nouveau collaborateur</legend>
+                <fieldset class="flex flex-col gap-4 border border-neutral-200 rounded-md p-4">
+                    <legend><twig:Typography variant="body-sm" bold element="span">… ou créer un nouveau collaborateur</twig:Typography></legend>
                     {{ form_row(form.collabPrenom) }}
                     {{ form_row(form.collabNom) }}
                     {{ form_row(form.collabEmail) }}
@@ -110,13 +123,13 @@
                 </fieldset>
             </section>
 
-            <section class="card">
-                <h2 class="card-title">Accès extranet</h2>
+            <section class="{{ carte }}">
+                <twig:Typography variant="heading-3" element="h2" bold>Accès extranet</twig:Typography>
                 {{ form_row(form.envoyerAcces) }}
                 {{ form_row(form.trameEmail) }}
             </section>
 
-            {{ form_row(form.submit) }}
+            <div>{{ form_row(form.submit) }}</div>
         {{ form_end(form) }}
     </div>
 </main>

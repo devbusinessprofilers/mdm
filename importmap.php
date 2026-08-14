@@ -56,4 +56,31 @@ return [
         'version' => '2.6.2',
         'type' => 'css',
     ],
+    'chart.js' => [
+        'version' => '4.5.1',
+    ],
+    '@kurkle/color' => [
+        'version' => '0.3.4',
+    ],
+    '@symfony/ux-live-component' => [
+        'path' => './vendor/symfony/ux-live-component/assets/dist/live_controller.js',
+    ],
+    'intl-messageformat' => [
+        'version' => '10.7.18',
+    ],
+    'tslib' => [
+        'version' => '2.8.1',
+    ],
+    '@formatjs/fast-memoize' => [
+        'version' => '2.2.7',
+    ],
+    '@formatjs/icu-messageformat-parser' => [
+        'version' => '2.11.4',
+    ],
+    '@formatjs/icu-skeleton-parser' => [
+        'version' => '1.8.16',
+    ],
+    '@symfony/ux-translator' => [
+        'path' => './vendor/symfony/ux-translator/assets/dist/translator_controller.js',
+    ],
 ];

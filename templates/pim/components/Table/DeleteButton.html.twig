@@ -1,0 +1,23 @@
+<div>
+    <twig:Icon
+        name="bin"
+        class="cursor-pointer w-6 h-6"
+        data-controller="modal-trigger-button"
+        data-action="click->modal-trigger-button#open"
+        data-modal-trigger-button-modal-identifier-value="{{ this.modalIdentifier() }}"
+    />
+    <twig:Modal identifier="{{ this.modalIdentifier() }}">
+        <div class="w-auto h-auto flex flex-col gap-4 max-w-[688px]">
+            <twig:Typography variant="heading-2" bold center>{{ 'page.sheet.mealTray.product.list.confirmDelete.title'|trans }}</twig:Typography>
+            <twig:Typography variant="body" center>{{ 'page.sheet.mealTray.product.list.confirmDelete.info'|trans }}</twig:Typography>
+            <div class="flex gap-2 mt-4 justify-center">
+                <twig:Button variant="outline" data-action="click->modal#close">{{ 'global.cancel'|trans }}</twig:Button>
+                <form action="{{ path }}" method="POST">
+                    <twig:Button variant="primary" type="submit">{{ 'global.confirmDelete'|trans }}</twig:Button>
+                    <input type="hidden" name="_method" value="DELETE" />
+                    <input type="hidden" name="_token" value="{{ csrfToken }}" />
+                </form>
+            </div>
+        </div>
+    </twig:Modal>
+</div>
