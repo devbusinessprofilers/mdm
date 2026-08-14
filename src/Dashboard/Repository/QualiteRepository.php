@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Dashboard\Repository;
 
+use App\Pim\Service\ReferentielGeographiqueFrancais;
 use Doctrine\DBAL\Connection;
 use Symfony\Component\Uid\Ulid;
 
@@ -89,13 +90,14 @@ final readonly class QualiteRepository
      * $avecProposition sépare les écarts arbitrables en un clic (la BAN
      * propose autre chose) de ceux sans résultat fiable (correction manuelle).
      *
-     * @return list<array{fiche_id: string, code: int, type: string, label: ?string, adresse: string, proposition: ?string, score: ?float, quand: ?string}>
+     * @return list<array{fiche_id: string, code: int, type: string, label: ?string, adresse: string, source: string, proposition: ?string, score: ?float, quand: ?string}>
      */
     public function suggestionsAdresse(int $limit = 20, ?bool $avecProposition = null): array
     {
         $rows = $this->connection->fetchAllAssociative(
             'SELECT f.id, f.code, f.type, f.label,
                 loc.rue_postale, loc.code_postal, loc.ville,
+                loc.country_code, loc.pays,
                 loc.ban_proposition, loc.ban_score, loc.ban_verifie_le
              FROM pim_fiche f
              INNER JOIN pim_localisation loc ON loc.id = f.localisation_id
@@ -130,6 +132,10 @@ final readonly class QualiteRepository
                 'type' => (string) $row['type'],
                 'label' => null === $row['label'] ? null : (string) $row['label'],
                 'adresse' => trim(sprintf('%s, %s %s', $row['rue_postale'] ?? '—', $row['code_postal'] ?? '', $row['ville'] ?? '')),
+                'source' => 'FR' === $row['country_code']
+                    || (null !== $row['pays'] && 'france' === ReferentielGeographiqueFrancais::cle((string) $row['pays']))
+                    ? 'BAN'
+                    : 'Geoapify',
                 'proposition' => $proposition,
                 'score' => null === $row['ban_score'] ? null : (float) $row['ban_score'],
                 'quand' => null === $row['ban_verifie_le'] ? null : (string) $row['ban_verifie_le'],

@@ -10,7 +10,7 @@ use App\Pim\Message\IndexFiche;
 use App\Pim\Message\VerifierAdresseFiche;
 use App\Pim\Repository\FicheRepository;
 use App\Pim\Service\FicheSearchIndexer;
-use App\Pim\Service\LocalisationBanVerifier;
+use App\Pim\Service\GeocodeurAdresses;
 use App\Shared\Outbox\OutboxPublisherInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Uid\Ulid;
@@ -23,6 +23,7 @@ final readonly class IndexFicheHandler
         private FicheSearchIndexer $indexer,
         private MarketplaceSyncScheduler $marketplaceScheduler,
         private OutboxPublisherInterface $outbox,
+        private GeocodeurAdresses $geocodeurs,
     ) {
     }
 
@@ -30,14 +31,12 @@ final readonly class IndexFicheHandler
     {
         $fiche = $this->repository->find(Ulid::fromString($message->ficheId));
         if ($fiche instanceof Fiche) {
-            // Adresse française créée ou modifiée depuis le dernier passage
-            // BAN (empreintes différentes) : vérification au fil de l'eau.
+            // Adresse créée ou modifiée depuis la dernière vérification
+            // (empreintes différentes) et couverte par un géocodeur configuré
+            // (BAN France, Geoapify étranger) : vérification au fil de l'eau.
             // Enfilé avant index(), dont le flush persiste aussi l'outbox.
             $localisation = $fiche->localisation();
-            if (null !== $localisation
-                && LocalisationBanVerifier::estFrancaise($localisation)
-                && null !== $localisation->addressFingerprint()
-                && $localisation->addressFingerprint() !== $localisation->banFingerprint()) {
+            if (null !== $localisation && $this->geocodeurs->estVerifiable($localisation)) {
                 $this->outbox->enqueue(new VerifierAdresseFiche($fiche->idString()));
             }
             $this->indexer->index($fiche);

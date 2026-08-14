@@ -1,7 +1,8 @@
 # Normalisation et vérification des adresses
 
-_Mis en place le 2026-08-13. Deux niveaux : un référentiel statique appliqué
-partout, et une vérification contre l'API Adresse (BAN) à la demande._
+_Mis en place le 2026-08-13. Trois niveaux : un référentiel statique appliqué
+partout, une vérification contre l'API Adresse (BAN) pour la France, et
+depuis le 2026-08-14 une vérification Geoapify pour l'étranger._
 
 ## Référentiel géographique français (statique, sans API)
 
@@ -102,11 +103,38 @@ Le stock existant se (re)peuple au fil des modifications ; pour alimenter
 l'écran Qualité immédiatement, rejouer `app:localisation:verifier
 --appliquer` (renseigne `ban_proposition`/`ban_ecart` sur tout le stock).
 
-## Hors périmètre (décisions du 2026-08-13)
+## Étranger : Geoapify (depuis le 2026-08-14)
 
-- **Étranger** (~4 900 fiches, sites BPmeetings) : Nominatim/Photon (OSM)
-  envisageable plus tard, même architecture de commande.
+Les ~4 800 adresses hors de France (code ISO systématiquement renseigné :
+DE, IT, ES, BE…) sont vérifiées par **Geoapify** (géocodage mondial sur
+données OpenStreetMap) avec exactement les mêmes règles — paniers,
+enrichissements sûrs, trace `ban_*`, écarts arbitrables en un clic. Le
+routage est porté par `GeocodeurAdresses` : la BAN pour la France, Geoapify
+sinon (source affichée dans le bloc et /qualite).
+
+- **Config** : `GEOAPIFY_API_KEY` (`.env.local`, vide = étranger désactivé,
+  la France continue), `GEOAPIFY_API_ENDPOINT` (défaut api.geoapify.com).
+  Voir `docs/SECRETS.md`.
+- **Client** (`GeoapifyClient`) : une adresse → endpoint simple ; un lot →
+  job batch asynchrone (1 000 max, ~0,5 crédit/adresse), **un job par pays**
+  (filtre `countrycode`, garde anti-homonymes : un résultat hors du pays
+  demandé vaut « aucun résultat fiable »). `result_type` aligné sur les
+  niveaux BAN (`building`/`amenity` → `housenumber`).
+- **Crédits** : plan gratuit 3 000/jour — la reprise du stock étranger
+  (~4 800 adresses en batch ≈ 2 400 crédits) tient en un jour :
+  `app:localisation:verifier --appliquer --fournisseur=geoapify`.
+  `--fournisseur=ban|geoapify|tous` borne la dépense ; le rapport CSV porte
+  une colonne fournisseur.
+- **Attribution** (obligation du plan gratuit) : « © Geoapify — données
+  © OpenStreetMap contributors » affichée sous le bloc et le tableau
+  Qualité.
+
+## Écartés
+
 - **Google Geocoding** : non retenu (coût récurrent + obligation d'afficher
-  les résultats sur Google Maps) tant que BAN couvre la France.
+  les résultats sur Google Maps).
+- **Nominatim/Photon auto-hébergés** : possibles plus tard derrière
+  `GeocodeurEtrangerInterface` sans toucher la chaîne, si le volume ou la
+  dépendance externe le justifie.
 - **recherche-entreprises.api.gouv.fr** : sert l'enrichissement légal par
   SIREN (bloc administratif), pas la normalisation postale.

@@ -306,7 +306,7 @@ final readonly class FicheEditeurEcran
         if (null !== $localisation && $localisation->banEcart()) {
             $proposition = $localisation->banProposition();
             $lignes[] = [
-                'source' => 'BAN',
+                'source' => LocalisationBanVerifier::estFrancaise($localisation) ? 'BAN' : 'Geoapify',
                 'label' => 'Adresse',
                 'actuel' => trim(sprintf(
                     '%s %s %s',

@@ -8,6 +8,8 @@ use App\Etl\Service\MarketplaceSyncScheduler;
 use App\Pim\Entity\Fiche;
 use App\Pim\Repository\FicheRepository;
 use App\Pim\Service\BanClientInterface;
+use App\Pim\Service\GeocodeurAdresses;
+use App\Pim\Service\GeocodeurEtrangerInterface;
 use App\Pim\Service\LocalisationBanVerifier;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -19,25 +21,30 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
 /**
- * Vérification en masse des adresses françaises contre l'API Adresse (BAN) :
+ * Vérification en masse des adresses contre leur géocodeur — la BAN pour la
+ * France, Geoapify pour l'étranger :
  *
  *  - par défaut, RAPPORT seul — quatre paniers (conformes, enrichissables,
  *    corrections proposées, douteuses) exportés en CSV dans var/tmp ;
  *  - --appliquer : écrit uniquement le sûr et non destructif (logique
  *    partagée LocalisationBanVerifier) au-dessus de --seuil, et trace le
- *    passage (score, empreinte, proposition, écart).
+ *    passage (score, empreinte, proposition, écart) ;
+ *  - --fournisseur=ban|geoapify|tous : borne la vérification à un fournisseur
+ *    (utile pour piloter la dépense de crédits Geoapify).
  *
  * La vérification au fil de l'eau (message VerifierAdresseFiche déclenché à
  * chaque changement d'adresse) suit exactement les mêmes règles. Aucune
  * transition de workflow ; les fiches modifiées repartent vers la
  * marketplace par la sync habituelle. Gros volume : APP_DEBUG=0.
  */
-#[AsCommand(name: 'app:localisation:verifier', description: 'Vérifie les adresses françaises contre l\'API Adresse (BAN), rapport puis application prudente.')]
+#[AsCommand(name: 'app:localisation:verifier', description: 'Vérifie les adresses contre la BAN (France) et Geoapify (étranger), rapport puis application prudente.')]
 final class VerifierLocalisationsCommand extends Command
 {
     public function __construct(
         private readonly FicheRepository $fiches,
         private readonly BanClientInterface $ban,
+        private readonly GeocodeurEtrangerInterface $etranger,
+        private readonly GeocodeurAdresses $geocodeurs,
         private readonly MarketplaceSyncScheduler $marketplaceScheduler,
         private readonly EntityManagerInterface $entityManager,
         #[Autowire('%kernel.project_dir%')] private readonly string $projectDir,
@@ -48,18 +55,36 @@ final class VerifierLocalisationsCommand extends Command
     protected function configure(): void
     {
         $this->addOption('appliquer', null, InputOption::VALUE_NONE, 'Écrit les enrichissements sûrs (GPS et champs vides, recasage) au-dessus du seuil.')
-            ->addOption('seuil', null, InputOption::VALUE_REQUIRED, 'Score BAN minimal pour appliquer.', (string) LocalisationBanVerifier::SEUIL_DEFAUT)
+            ->addOption('seuil', null, InputOption::VALUE_REQUIRED, 'Score minimal pour appliquer.', (string) LocalisationBanVerifier::SEUIL_DEFAUT)
             ->addOption('code', null, InputOption::VALUE_REQUIRED, 'Code d\'une fiche précise.')
-            ->addOption('batch-size', null, InputOption::VALUE_REQUIRED, 'Taille des lots envoyés à la BAN (max 1000).', '1000');
+            ->addOption('fournisseur', null, InputOption::VALUE_REQUIRED, 'ban (France), geoapify (étranger) ou tous.', 'tous')
+            ->addOption('batch-size', null, InputOption::VALUE_REQUIRED, 'Taille des lots envoyés aux géocodeurs (max 1000).', '1000');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
-        if (!$this->ban->isConfigured()) {
-            $io->error('BAN_API_ENDPOINT n\'est pas configurée : rien ne sera vérifié.');
+        $fournisseur = (string) $input->getOption('fournisseur');
+        if (!in_array($fournisseur, ['ban', 'geoapify', 'tous'], true)) {
+            $io->error('--fournisseur accepte ban, geoapify ou tous.');
 
             return Command::FAILURE;
+        }
+        $avecBan = 'geoapify' !== $fournisseur;
+        $avecEtranger = 'ban' !== $fournisseur;
+        if ($avecBan && !$this->ban->isConfigured()) {
+            $io->error('BAN_API_ENDPOINT n\'est pas configurée : rien ne sera vérifié côté France.');
+
+            return Command::FAILURE;
+        }
+        if ($avecEtranger && !$this->etranger->isConfigured()) {
+            if ('geoapify' === $fournisseur) {
+                $io->error('GEOAPIFY_API_KEY n\'est pas configurée : rien ne sera vérifié côté étranger.');
+
+                return Command::FAILURE;
+            }
+            $io->warning('GEOAPIFY_API_KEY absente : les adresses étrangères sont ignorées.');
+            $avecEtranger = false;
         }
         $appliquer = (bool) $input->getOption('appliquer');
         $seuil = max(0.0, min(1.0, (float) $input->getOption('seuil')));
@@ -73,22 +98,28 @@ final class VerifierLocalisationsCommand extends Command
         $after = null;
         do {
             $fiches = $this->fiches->findWithLocalisationAfter($after, $batch);
-            $lot = [];
+            $lots = ['ban' => [], 'geoapify' => []];
             $parId = [];
             foreach ($fiches as $fiche) {
                 $after = $fiche->idString();
                 if (null !== $code && $fiche->code() !== $code) {
                     continue;
                 }
-                $ligne = LocalisationBanVerifier::ligne($fiche);
-                if (null === $ligne) {
+                $localisation = $fiche->localisation();
+                $ligne = $this->geocodeurs->ligne($fiche);
+                if (null === $localisation || null === $ligne) {
+                    continue;
+                }
+                $etrangere = !LocalisationBanVerifier::estFrancaise($localisation);
+                if ($etrangere ? !$avecEtranger : !$avecBan) {
                     continue;
                 }
                 $parId[$ligne['id']] = $fiche;
-                $lot[] = $ligne;
+                $lots[$etrangere ? 'geoapify' : 'ban'][] = $ligne;
             }
-            if ([] !== $lot) {
-                $resultats = $this->ban->verifierLot($lot);
+            if ([] !== $parId) {
+                $resultats = ([] === $lots['ban'] ? [] : $this->ban->verifierLot($lots['ban']))
+                    + ([] === $lots['geoapify'] ? [] : $this->etranger->verifierLot($lots['geoapify']));
                 foreach ($parId as $id => $fiche) {
                     $this->classer($fiche, $resultats[$id] ?? null, $seuil, $appliquer, $stats, $rapport);
                 }
@@ -113,7 +144,7 @@ final class VerifierLocalisationsCommand extends Command
     /**
      * @param array{score: ?float, label: ?string, name: ?string, codePostal: ?string, ville: ?string, latitude: ?string, longitude: ?string, type: ?string}|null $resultat
      * @param array<string, int>                                                                                                                   $stats
-     * @param list<array{panier: string, code: int, adresse: string, ban: string, score: string}>                                                  $rapport
+     * @param list<array{panier: string, fournisseur: string, code: int, adresse: string, ban: string, score: string}>                             $rapport
      */
     private function classer(Fiche $fiche, ?array $resultat, float $seuil, bool $appliquer, array &$stats, array &$rapport): void
     {
@@ -127,6 +158,7 @@ final class VerifierLocalisationsCommand extends Command
         if ('conforme' !== $panier) {
             $rapport[] = [
                 'panier' => 'correction' === $panier ? 'correction' : ('enrichissable' === $panier ? 'enrichissable' : 'douteuse'),
+                'fournisseur' => LocalisationBanVerifier::estFrancaise($localisation) ? 'ban' : 'geoapify',
                 'code' => $fiche->code(),
                 'adresse' => trim(sprintf('%s, %s %s', $localisation->ruePostale() ?? '—', $localisation->codePostal() ?? '', $localisation->ville() ?? '')),
                 'ban' => $resultat['label'] ?? '',
@@ -150,7 +182,7 @@ final class VerifierLocalisationsCommand extends Command
         }
     }
 
-    /** @param list<array{panier: string, code: int, adresse: string, ban: string, score: string}> $rapport */
+    /** @param list<array{panier: string, fournisseur: string, code: int, adresse: string, ban: string, score: string}> $rapport */
     private function exporterRapport(array $rapport): string
     {
         $dossier = $this->projectDir.'/var/tmp';
@@ -162,7 +194,7 @@ final class VerifierLocalisationsCommand extends Command
         if (false === $handle) {
             throw new \RuntimeException(sprintf('Impossible d\'écrire le rapport %s.', $fichier));
         }
-        fputcsv($handle, ['panier', 'code fiche', 'adresse PIM', 'adresse BAN', 'score'], escape: '\\');
+        fputcsv($handle, ['panier', 'fournisseur', 'code fiche', 'adresse PIM', 'adresse proposée', 'score'], escape: '\\');
         foreach ($rapport as $ligne) {
             fputcsv($handle, array_values($ligne), escape: '\\');
         }

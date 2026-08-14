@@ -136,6 +136,9 @@
                 {% if suggestions_attente.lignes is not empty and not is_granted('ROLE_BP_VALIDATOR') %}
                     <p class="page-description">L'arbitrage des suggestions est réservé aux validateurs.</p>
                 {% endif %}
+                {% if suggestions_attente.lignes|filter(l => l.source == 'Geoapify')|length > 0 %}
+                    <p class="page-description"><small>Adresse vérifiée par Geoapify — données © OpenStreetMap contributors.</small></p>
+                {% endif %}
             {% endif %}
 
             {% if 'medias' in section.blocs and medias %}

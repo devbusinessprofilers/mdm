@@ -35,6 +35,8 @@ parameters:
     env(COMPLETENESS_REMINDER_ENABLED): '1'
     env(RECHERCHE_ENTREPRISES_ENDPOINT): 'https://recherche-entreprises.api.gouv.fr'
     env(BAN_API_ENDPOINT): 'https://api-adresse.data.gouv.fr'
+    env(GEOAPIFY_API_ENDPOINT): 'https://api.geoapify.com'
+    env(GEOAPIFY_API_KEY): ''
     env(MARKETPLACE_SYNC_API_URL): ''
     env(MARKETPLACE_SYNC_API_LOGIN): ''
     env(MARKETPLACE_SYNC_API_PASSWORD): ''
@@ -147,6 +149,15 @@ services:
     App\Pim\Service\BanApiClient:
         arguments:
             $endpoint: '%env(BAN_API_ENDPOINT)%'
+
+    # Vérification des adresses étrangères (Geoapify, données OpenStreetMap).
+    # Clé absente = vérification étrangère désactivée, la France continue.
+    App\Pim\Service\GeocodeurEtrangerInterface: '@App\Pim\Service\GeoapifyClient'
+
+    App\Pim\Service\GeoapifyClient:
+        arguments:
+            $endpoint: '%env(GEOAPIFY_API_ENDPOINT)%'
+            $apiKey: '%env(GEOAPIFY_API_KEY)%'
 
     App\Shared\Service\OvhS3ObjectStorage:
         factory: ['App\Shared\Service\OvhS3ObjectStorage', 'create']

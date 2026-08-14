@@ -94,11 +94,12 @@
                    {% if adresses_filtre == 'sans' %}aria-current="page"{% endif %}>Aucun résultat fiable ({{ adresses_comptes.sans }})</a>
             </nav>
             <div class="table-shell"><div class="table-scroll"><table class="data-table">
-                <thead><tr><th>Fiche</th><th>Adresse saisie</th><th>Proposition BAN</th><th>Score</th><th>Vérifiée le</th>{% if is_granted('ROLE_BP_VALIDATOR') %}<th></th><th></th>{% endif %}<th></th></tr></thead>
+                <thead><tr><th>Fiche</th><th>Source</th><th>Adresse saisie</th><th>Proposition</th><th>Score</th><th>Vérifiée le</th>{% if is_granted('ROLE_BP_VALIDATOR') %}<th></th><th></th>{% endif %}<th></th></tr></thead>
                 <tbody>
                 {% for ligne in suggestions_adresse %}
                     <tr>
                         <td>{{ ligne.label ?? 'Sans libellé' }} <small>({{ ligne.code }})</small></td>
+                        <td>{{ ligne.source }}</td>
                         <td>{{ ligne.adresse }}</td>
                         <td>{{ ligne.proposition ?? 'Aucun résultat fiable' }}</td>
                         <td>{{ ligne.score is null ? '—' : (ligne.score * 100)|round ~ ' %' }}</td>
@@ -116,10 +117,11 @@
                         </td>
                     </tr>
                 {% else %}
-                    <tr><td class="empty-state" colspan="{{ is_granted('ROLE_BP_VALIDATOR') ? 8 : 6 }}">Aucun écart d'adresse relevé par la BAN.</td></tr>
+                    <tr><td class="empty-state" colspan="{{ is_granted('ROLE_BP_VALIDATOR') ? 9 : 7 }}">Aucun écart d'adresse relevé par la BAN.</td></tr>
                 {% endfor %}
                 </tbody>
             </table></div></div>
+            <p class="page-description"><small>Adresses étrangères vérifiées par Geoapify — données © OpenStreetMap contributors.</small></p>
         </section>
         <section class="card" aria-label="Doublons d'adresse">
             <h2>Fiches partageant la même adresse</h2>

@@ -37,6 +37,10 @@ Les secrets ne sont **jamais** commités : `html/.env` (suivi) liste toutes les 
 ### GOOGLE_TRANSLATE_API_KEY
 - Console Google Cloud → Credentials → créer une nouvelle clé API (restreinte à l'API Translation), déployer, supprimer l'ancienne.
 
+### GEOAPIFY_API_KEY
+- Compte myprojects.geoapify.com → projet → API key. Vérification des adresses étrangères (géocodage OSM) ; vide = vérification étrangère désactivée, la BAN (France) continue sans clé.
+- Plan gratuit : 3 000 crédits/jour, attribution « © Geoapify / OpenStreetMap contributors » affichée sur les écrans concernés. Rotation libre : créer une nouvelle clé sur le projet, déployer, supprimer l'ancienne.
+
 ### METRICS_TOKEN
 - Générer comme APP_SECRET. Utilisé en Bearer par l'outil de scrape de `/metrics`. Rotation libre : mettre à jour l'app puis le scraper.
 
