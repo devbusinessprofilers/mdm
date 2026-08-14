@@ -85,6 +85,14 @@
         <section class="card" aria-label="Suggestions d'adresse">
             <h2>Suggestions d'adresse (vérification BAN)</h2>
             <p class="page-description">Adresses dont la Base Adresse Nationale propose autre chose ou ne trouve pas d'équivalent fiable — Accepter applique la proposition, Ignorer garde la saisie, la fiche reste modifiable via « Ouvrir ».</p>
+            <nav class="toolbar" aria-label="Filtre des suggestions d'adresse">
+                <a class="btn btn-small {{ adresses_filtre == 'avec' ? '' : 'btn-secondary' }}"
+                   href="{{ path('app_mdm_qualite', {onglet: 'conflits', adresses: 'avec'}) }}"
+                   {% if adresses_filtre == 'avec' %}aria-current="page"{% endif %}>Avec proposition ({{ adresses_comptes.avec }})</a>
+                <a class="btn btn-small {{ adresses_filtre == 'sans' ? '' : 'btn-secondary' }}"
+                   href="{{ path('app_mdm_qualite', {onglet: 'conflits', adresses: 'sans'}) }}"
+                   {% if adresses_filtre == 'sans' %}aria-current="page"{% endif %}>Aucun résultat fiable ({{ adresses_comptes.sans }})</a>
+            </nav>
             <div class="table-shell"><div class="table-scroll"><table class="data-table">
                 <thead><tr><th>Fiche</th><th>Adresse saisie</th><th>Proposition BAN</th><th>Score</th><th>Vérifiée le</th>{% if is_granted('ROLE_BP_VALIDATOR') %}<th></th><th></th>{% endif %}<th></th></tr></thead>
                 <tbody>

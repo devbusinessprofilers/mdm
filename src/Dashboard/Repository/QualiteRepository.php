@@ -86,10 +86,12 @@ final readonly class QualiteRepository
     /**
      * Écarts relevés par la vérification BAN (score douteux ou CP/ville
      * proposés différents) : le bloc « Suggestions d'adresse » des conflits.
+     * $avecProposition sépare les écarts arbitrables en un clic (la BAN
+     * propose autre chose) de ceux sans résultat fiable (correction manuelle).
      *
      * @return list<array{fiche_id: string, code: int, type: string, label: ?string, adresse: string, proposition: ?string, score: ?float, quand: ?string}>
      */
-    public function suggestionsAdresse(int $limit = 20): array
+    public function suggestionsAdresse(int $limit = 20, ?bool $avecProposition = null): array
     {
         $rows = $this->connection->fetchAllAssociative(
             'SELECT f.id, f.code, f.type, f.label,
@@ -97,7 +99,12 @@ final readonly class QualiteRepository
                 loc.ban_proposition, loc.ban_score, loc.ban_verifie_le
              FROM pim_fiche f
              INNER JOIN pim_localisation loc ON loc.id = f.localisation_id
-             WHERE loc.ban_ecart = 1
+             WHERE loc.ban_ecart = 1'
+            .match ($avecProposition) {
+                true => ' AND loc.ban_proposition IS NOT NULL',
+                false => ' AND loc.ban_proposition IS NULL',
+                null => '',
+            }.'
              ORDER BY loc.ban_score IS NULL DESC, loc.ban_score ASC
              LIMIT '.$limit,
         );
@@ -128,6 +135,27 @@ final readonly class QualiteRepository
                 'quand' => null === $row['ban_verifie_le'] ? null : (string) $row['ban_verifie_le'],
             ];
         }, $rows);
+    }
+
+    /**
+     * Effectifs des deux filtres du bloc « Suggestions d'adresse ».
+     *
+     * @return array{avec: int, sans: int}
+     */
+    public function comptesSuggestionsAdresse(): array
+    {
+        $row = $this->connection->fetchAssociative(
+            'SELECT COALESCE(SUM(loc.ban_proposition IS NOT NULL), 0) AS avec,
+                COALESCE(SUM(loc.ban_proposition IS NULL), 0) AS sans
+             FROM pim_fiche f
+             INNER JOIN pim_localisation loc ON loc.id = f.localisation_id
+             WHERE loc.ban_ecart = 1',
+        );
+
+        return [
+            'avec' => (int) ($row['avec'] ?? 0),
+            'sans' => (int) ($row['sans'] ?? 0),
+        ];
     }
 
     /** @return list<array{fiches: list<array{id: string, label: ?string}>, ville: ?string}> Adresses partagées par plusieurs fiches. */

@@ -26,16 +26,18 @@ final readonly class AdresseSuggestionFormFactory
     /**
      * @param string  $decision 'accepter' ou 'ignorer'
      * @param ?string $retour   'qualite' pour revenir à l'écran Qualité après la décision
+     * @param ?string $filtre   filtre « adresses » actif sur l'écran Qualité, conservé au retour
      *
      * @return FormInterface<mixed>
      */
-    public function action(string $ficheId, string $decision, ?string $retour = null): FormInterface
+    public function action(string $ficheId, string $decision, ?string $retour = null, ?string $filtre = null): FormInterface
     {
         return $this->forms->createNamed('adresse_'.$decision.'_'.$ficheId, ActionType::class, null, [
             'action' => $this->urls->generate('app_mdm_fiche_adresse_suggestion', array_filter([
                 'id' => $ficheId,
                 'decision' => $decision,
                 'retour' => $retour,
+                'adresses' => $filtre,
             ])),
             'button_label' => 'accepter' === $decision ? 'Accepter' : 'Ignorer',
             'csrf_token_id' => 'adresse-'.$decision.'-'.$ficheId,

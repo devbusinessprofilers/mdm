@@ -33,6 +33,10 @@ final class QualiteController extends AbstractController
         if (!array_key_exists($onglet, self::ONGLETS)) {
             $onglet = 'miroir';
         }
+        // Deux files distinctes : les écarts arbitrables en un clic (la BAN
+        // propose autre chose) et les adresses sans résultat fiable, à
+        // corriger à la main dans la fiche.
+        $filtreAdresses = 'sans' === $request->query->get('adresses') ? 'sans' : 'avec';
 
         return $this->render('dashboard/qualite.html.twig', [
             'onglets' => self::ONGLETS,
@@ -40,15 +44,17 @@ final class QualiteController extends AbstractController
             'sante' => 'miroir' === $onglet ? $qualite->santeParGamme() : [],
             'suggestions' => 'conflits' === $onglet ? $qualite->suggestionsEnAttente() : [],
             // Mêmes décisions un clic que le bloc « Suggestions en attente »
-            // de la fiche, avec retour sur cet écran après le POST.
+            // de la fiche, avec retour sur cet écran (filtre conservé).
             'suggestions_adresse' => 'conflits' === $onglet
                 ? array_map(static fn (array $ligne): array => $ligne + [
                     'accepter' => null === $ligne['proposition']
                         ? null
-                        : $adresseForms->action($ligne['fiche_id'], 'accepter', 'qualite')->createView(),
-                    'ignorer' => $adresseForms->action($ligne['fiche_id'], 'ignorer', 'qualite')->createView(),
-                ], $qualite->suggestionsAdresse())
+                        : $adresseForms->action($ligne['fiche_id'], 'accepter', 'qualite', $filtreAdresses)->createView(),
+                    'ignorer' => $adresseForms->action($ligne['fiche_id'], 'ignorer', 'qualite', $filtreAdresses)->createView(),
+                ], $qualite->suggestionsAdresse(20, 'avec' === $filtreAdresses))
                 : [],
+            'adresses_filtre' => $filtreAdresses,
+            'adresses_comptes' => 'conflits' === $onglet ? $qualite->comptesSuggestionsAdresse() : ['avec' => 0, 'sans' => 0],
             'doublons_adresse' => 'conflits' === $onglet ? $qualite->doublonsAdresse() : [],
             'formes' => 'formes' === $onglet ? $qualite->ecartsDeForme() : null,
             'relances' => 'notifs' === $onglet ? $qualite->relances() : [],

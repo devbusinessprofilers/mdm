@@ -37,8 +37,12 @@ final class FicheAdresseSuggestionController extends AbstractController
         FicheEditeurEcran $ecran,
     ): RedirectResponse {
         $this->denyAccessUnlessGranted('ROLE_BP_VALIDATOR');
+        $filtre = $request->query->get('adresses');
         $retour = new RedirectResponse('qualite' === $request->query->get('retour')
-            ? $this->generateUrl('app_mdm_qualite', ['onglet' => 'conflits'])
+            ? $this->generateUrl('app_mdm_qualite', array_filter([
+                'onglet' => 'conflits',
+                'adresses' => in_array($filtre, ['avec', 'sans'], true) ? $filtre : null,
+            ]))
             : $ecran->urlSection(
                 $fiche->type(),
                 $fiche->idString(),

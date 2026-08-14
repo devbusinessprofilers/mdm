@@ -185,13 +185,30 @@ final class FicheAdresseSuggestionTest extends WebTestCase
         self::assertSelectorTextContains('body', 'Queyrac');
 
         $this->client->submit($crawler->selectButton('Ignorer')->form());
-        self::assertResponseRedirects('/qualite?onglet=conflits');
+        self::assertResponseRedirects('/qualite?onglet=conflits&adresses=avec');
         $this->client->followRedirect();
         self::assertSelectorTextContains('body', 'Aucun écart d\'adresse relevé par la BAN.');
     }
 
-    /** @param array{label: ?string, name: ?string, type: ?string, codePostal: ?string, ville: ?string, latitude: ?string, longitude: ?string} $proposition */
-    private function lieuAvecEcart(array $proposition): Lieu
+    public function testLeFiltreSepareLesEcartsAvecEtSansProposition(): void
+    {
+        // Aucun résultat fiable : pas de proposition, arbitrage manuel.
+        $this->lieuAvecEcart(null);
+
+        $this->client->request('GET', '/qualite', ['onglet' => 'conflits']);
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('body', 'Avec proposition (0)');
+        self::assertSelectorTextContains('body', 'Aucun résultat fiable (1)');
+        self::assertSelectorTextNotContains('body', 'Abbaye des écarts');
+
+        $this->client->request('GET', '/qualite', ['onglet' => 'conflits', 'adresses' => 'sans']);
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('body', 'Abbaye des écarts');
+        self::assertSelectorNotExists('form[name^="adresse_accepter_"]', 'Rien à accepter sans proposition.');
+    }
+
+    /** @param array{label: ?string, name: ?string, type: ?string, codePostal: ?string, ville: ?string, latitude: ?string, longitude: ?string}|null $proposition null = écart sans résultat fiable */
+    private function lieuAvecEcart(?array $proposition): Lieu
     {
         $user = new User('adresse@example.test', ['ROLE_BP_VALIDATOR']);
         $user->setPassword('not-used-by-login-user');
@@ -207,7 +224,7 @@ final class FicheAdresseSuggestionTest extends WebTestCase
         $lieu->changeLocalisation($localisation);
         $lieu->fiche()->publishForImport();
         // Trace laissée par la vérification continue : écart à arbitrer.
-        $localisation->recordBanVerification(0.91, $proposition, true);
+        $localisation->recordBanVerification(null === $proposition ? null : 0.91, $proposition, true);
         $this->entityManager->persist($lieu);
         $this->entityManager->flush();
         $this->client->loginUser($user);
