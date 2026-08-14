@@ -203,6 +203,27 @@
         </div>
     </div>
 
+    {# Bandeau des filtres actifs : un badge par valeur, sa croix retire ce seul
+       filtre (URL sur la route courante → la gamme imposée est préservée). #}
+    {% if filtres_actifs is not empty %}
+        {% set params_courants = app.request.attributes.get('_route_params') %}
+        <div class="shrink-0 flex flex-wrap items-center gap-2">
+            {% for badge in filtres_actifs %}
+                <span class="flex items-center gap-1.5 pl-2.5 pr-1.5 py-[5px] rounded-full bg-primary-4">
+                    <twig:Typography variant="body-xs" textColor="neutral-500">{{ badge.cle }}</twig:Typography>
+                    <twig:Typography variant="body-sm" textColor="primary-3" bold>{{ badge.valeur }}</twig:Typography>
+                    <a href="{{ path(app.request.attributes.get('_route'), badge.filtre is empty ? params_courants : params_courants|merge({ f: badge.filtre })) }}"
+                       class="inline-flex shrink-0" aria-label="Retirer le filtre {{ badge.cle }} : {{ badge.valeur }}">
+                        <twig:Icon name="cross" class="w-3 h-3 text-primary-3" />
+                    </a>
+                </span>
+            {% endfor %}
+            <a href="{{ path(app.request.attributes.get('_route'), params_courants) }}">
+                <twig:Typography variant="body-sm" textColor="neutral-500" bold>Tout effacer</twig:Typography>
+            </a>
+        </div>
+    {% endif %}
+
     {# Actions de masse + tableau, dans le formulaire de sélection #}
     {{ form_start(form_selection) }}
         <div class="shrink-0 flex flex-wrap items-center gap-3 p-3 rounded-[14px] bg-neutral-100 shadow-(--shadow)">

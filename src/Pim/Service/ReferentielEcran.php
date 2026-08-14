@@ -11,6 +11,7 @@ use App\Pim\Form\ReferentielFiltresType;
 use App\Pim\Form\ReferentielSelectionType;
 use App\Pim\Form\SavedViewType;
 use App\Pim\ReadModel\FicheCursor;
+use App\Pim\ReadModel\ReferentielVue;
 use App\Account\Repository\UserRepository;
 use App\Pim\Repository\SavedViewRepository;
 use App\Pim\Repository\SiteDiffusionRepository;
@@ -97,6 +98,7 @@ final readonly class ReferentielEcran
         return [
             'vue' => $vue,
             'filtres' => $filtres,
+            'filtres_actifs' => $this->filtresActifs($filtres, $vue, $gammeImposee),
             'form_filtres' => $formFiltres->createView(),
             'form_selection' => $formSelection->createView(),
             'form_vue' => $formVue->createView(),
@@ -108,6 +110,125 @@ final readonly class ReferentielEcran
                 'f' => ['contributeurs' => [$userId]],
             ]),
         ];
+    }
+
+    /**
+     * Libellés des facettes à paliers fixes, miroir de ReferentielFiltresType —
+     * utilisés pour nommer les badges de filtres actifs.
+     */
+    private const LIBELLES = [
+        'gammes' => ['cle' => 'Gamme', 'valeurs' => [
+            'lieu' => 'Lieux', 'restaurant' => 'Restaurants', 'activite' => 'Activités', 'service_evenementiel' => 'Prestataires de services',
+        ]],
+        'statuts' => ['cle' => 'Statut', 'valeurs' => [
+            'en_cours' => 'En cours', 'en_attente_validation' => 'En attente de validation',
+            'validee' => 'Validée', 'publiee' => 'Publiée', 'archivee' => 'Archivée',
+        ]],
+        'completudes' => ['cle' => 'Complétude', 'valeurs' => [
+            'complet' => 'Complet (≥ 75 %)', 'publiable' => 'Publiable (60 – 74 %)', 'insuffisant' => 'Insuffisant (< 60 %)',
+        ]],
+        'canaux' => ['cle' => 'Diffusion', 'valeurs' => [
+            'c20' => 'Sur 20 canaux et plus', 'c5' => 'De 5 à 19 canaux', 'c1' => 'De 1 à 4 canaux', 'c0' => 'Aucun canal',
+        ]],
+        'dates' => ['cle' => 'Dates', 'valeurs' => [
+            'creees_semaine' => 'Créées cette semaine', 'modifiees_jour' => "Modifiées aujourd'hui", 'sans_modif_6m' => 'Sans modification depuis 6 mois',
+        ]],
+    ];
+
+    /** Facettes booléennes : libellé porté par le badge, la clé étant retirée d'un bloc. */
+    private const LIBELLES_BOOLEENS = [
+        'ia' => 'Valeurs IA à arbitrer',
+        'repli' => 'Contact de repli',
+        'premium' => 'Adhérent Business Premium',
+    ];
+
+    /**
+     * Un badge par valeur de filtre active. `filtre` est le jeu de filtres
+     * restant une fois cette seule valeur retirée : le gabarit en dérive l'URL
+     * sur la route courante, ce qui préserve la gamme imposée. Nourrit le
+     * bandeau « filtres actifs ».
+     *
+     * @return list<array{cle: string, valeur: string, filtre: array<string, mixed>}>
+     */
+    private function filtresActifs(ReferentielFiltres $filtres, ReferentielVue $vue, ?TypeFiche $gammeImposee): array
+    {
+        $base = $filtres->toArray();
+        // Sur une page de gamme, la gamme est forcée par la route, pas par `f` :
+        // ni badge ni valeur `f` à son sujet.
+        if (null !== $gammeImposee) {
+            unset($base['gammes']);
+        }
+        $badges = [];
+
+        if (isset($base['q'])) {
+            $badges[] = $this->badge('Recherche', (string) $base['q'], $this->sansCle($base, 'q'));
+        }
+
+        // Facettes multi-valeurs : libellés statiques (enums, paliers) puis dynamiques (BDD).
+        $mapsDynamiques = [
+            'pays' => ['cle' => 'Pays', 'valeurs' => array_flip($vue->paysChoices)],
+            'contributeurs' => ['cle' => 'Contributeur', 'valeurs' => array_flip($vue->contributeursChoices)],
+            'valeurs' => ['cle' => 'Catégorie', 'valeurs' => array_flip($vue->valeursChoices)],
+        ];
+        foreach (self::LIBELLES + $mapsDynamiques as $cle => $definition) {
+            foreach ($base[$cle] ?? [] as $valeur) {
+                $badges[] = $this->badge(
+                    $definition['cle'],
+                    (string) ($definition['valeurs'][$valeur] ?? $valeur),
+                    $this->sansValeur($base, $cle, $valeur),
+                );
+            }
+        }
+
+        foreach (self::LIBELLES_BOOLEENS as $cle => $libelle) {
+            if (isset($base[$cle])) {
+                $badges[] = $this->badge('Filtre', $libelle, $this->sansCle($base, $cle));
+            }
+        }
+
+        return $badges;
+    }
+
+    /**
+     * @param array<string, mixed> $filtreReduit
+     *
+     * @return array{cle: string, valeur: string, filtre: array<string, mixed>}
+     */
+    private function badge(string $cle, string $valeur, array $filtreReduit): array
+    {
+        return ['cle' => $cle, 'valeur' => $valeur, 'filtre' => $filtreReduit];
+    }
+
+    /**
+     * @param array<string, mixed> $base
+     *
+     * @return array<string, mixed>
+     */
+    private function sansCle(array $base, string $cle): array
+    {
+        unset($base[$cle]);
+
+        return $base;
+    }
+
+    /**
+     * @param array<string, mixed> $base
+     *
+     * @return array<string, mixed>
+     */
+    private function sansValeur(array $base, string $cle, mixed $valeur): array
+    {
+        $restant = array_values(array_filter(
+            is_array($base[$cle] ?? null) ? $base[$cle] : [],
+            static fn (mixed $v): bool => $v !== $valeur,
+        ));
+        if ([] === $restant) {
+            unset($base[$cle]);
+        } else {
+            $base[$cle] = $restant;
+        }
+
+        return $base;
     }
 
     /** @return FormInterface<mixed> */
