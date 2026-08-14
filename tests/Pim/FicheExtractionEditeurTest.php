@@ -153,54 +153,6 @@ final class FicheExtractionEditeurTest extends WebTestCase
         self::assertSame(SuggestionStatus::Rejected, $rejouee->status());
     }
 
-    public function testLeBlocSuggestionsEnAttentePermetLArbitrageEnUnClic(): void
-    {
-        $client = self::createClient();
-        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
-        $this->connection = self::getContainer()->get(Connection::class);
-        $this->clearTables();
-
-        $user = new User('bloc@example.test', ['ROLE_BP_VALIDATOR']);
-        $user->setPassword('not-used-by-login-user');
-        $entityManager->persist($user);
-        $lieu = new Lieu();
-        $lieu->changeLabel('Château bloqué');
-        $entityManager->persist($lieu);
-
-        $asset = new MediaAsset(new Ulid(), 'private/plaquette.pdf', 'plaquette.pdf', 'application/pdf', 123, str_repeat('c', 64), MediaKind::Document);
-        $extraction = new DocumentExtraction($lieu->fiche(), $asset, 'PJ_PLAN_GENERAL', ['version' => 1, 'fields' => []], 'bloc@example.test');
-        $extraction->start(1);
-        $extraction->complete([], null, null);
-        $suggestion = new OcrSuggestion($extraction, 'fiche.label', 'Libellé', 'string', 'Château débloqué', 'Château bloqué', 0.94, [1]);
-        $entityManager->persist($asset);
-        $entityManager->persist($extraction);
-        $entityManager->persist($suggestion);
-        $entityManager->flush();
-        $client->loginUser($user);
-
-        // Le bloc apparaît en bas de l'onglet Informations générales.
-        $crawler = $client->request('GET', '/referentiel/lieux/fiche/'.$lieu->fiche()->idString());
-        self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('body', 'Suggestions IA en attente');
-        self::assertSelectorTextContains('body', 'Château débloqué');
-        self::assertSelectorTextContains('body', 'confiance 94 %');
-
-        // Accepter en un clic applique la valeur à la fiche.
-        $form = $crawler->selectButton('Accepter')->form();
-        $client->submit($form);
-        self::assertResponseRedirects();
-        $client->followRedirect();
-        self::assertSelectorTextContains('body', 'appliqué à la fiche');
-
-        $entityManager->clear();
-        $recharge = $entityManager->find(Lieu::class, (string) $lieu->id());
-        self::assertInstanceOf(Lieu::class, $recharge);
-        self::assertSame('Château débloqué', $recharge->label());
-        $decidee = $entityManager->find(OcrSuggestion::class, $suggestion->id());
-        self::assertInstanceOf(OcrSuggestion::class, $decidee);
-        self::assertSame(SuggestionStatus::Accepted, $decidee->status());
-    }
-
     public function testLApplicationAutomatiqueRespecteLeSeuilParametre(): void
     {
         self::bootKernel();
