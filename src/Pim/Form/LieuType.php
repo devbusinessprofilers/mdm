@@ -51,6 +51,8 @@ final class LieuType extends AbstractType
                 'required' => false,
                 'disabled' => $partenaireGereParSf,
                 'help' => $partenaireGereParSf ? 'Géré par Salesforce.' : null,
+                // Chrome « autorité » : seul champ réellement piloté par Salesforce (défaut MDM ailleurs).
+                'label_attr' => $partenaireGereParSf ? ['data-autorite' => \App\Pim\Enum\Autorite::Salesforce->value] : [],
                 'getter' => static fn (Lieu $lieu): bool => $lieu->fiche()->partenaireBp(),
                 'setter' => static function (Lieu &$lieu, mixed $value): void { $lieu->fiche()->changePartenaireBp((bool) $value); },
             ])

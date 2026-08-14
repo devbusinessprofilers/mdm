@@ -63,6 +63,8 @@ final class ServiceEvenementielType extends AbstractType
                 "required" => false,
                 "disabled" => $partenaireGereParSf,
                 "help" => $partenaireGereParSf ? "Géré par Salesforce." : null,
+                // Chrome « autorité » : seul champ réellement piloté par Salesforce (défaut MDM ailleurs).
+                "label_attr" => $partenaireGereParSf ? ["data-autorite" => \App\Pim\Enum\Autorite::Salesforce->value] : [],
                 "getter" => static fn (ServiceEvenementiel $service): bool => $service->fiche()->partenaireBp(),
                 "setter" => static function (ServiceEvenementiel &$service, mixed $value): void { $service->fiche()->changePartenaireBp((bool) $value); },
             ])

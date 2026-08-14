@@ -1,0 +1,46 @@
+{#
+    Surcouche du thème de formulaire réservée à l'éditeur de fiche. Appliquée par
+    {% form_theme %} sur le seul formulaire de la fiche : le thème global fournit
+    tous les autres blocs, celui-ci ne redéfinit que le libellé pour y greffer le
+    chrome « autorité » — une pastille de couleur à gauche du libellé et un badge
+    nommant l'autorité à droite (qui fait foi sur le champ).
+
+    Défaut MDM ; un champ réellement piloté par Salesforce porte
+    label_attr['data-autorite'] = 'Salesforce' (cf. App\Pim\Enum\Autorite). Les
+    groupes (sous-formulaires composés) gardent un libellé nu — la pastille n'a
+    de sens que sur un champ terminal.
+
+    Les classes de couleur sont écrites en toutes lettres : Tailwind ne scanne
+    pas le PHP et n'émettrait pas des classes construites dynamiquement.
+#}
+{%- block form_label -%}
+    {%- if label is not same as(false) -%}
+        {%- if label is empty -%}
+            {%- set label = name|humanize -%}
+        {%- endif -%}
+        {%- set libelle -%}
+            <twig:Typography variant="button" bold>
+                {{- translation_domain is same as(false) ? label : label|trans({}, translation_domain) -}}
+                {%- if required %} *{% endif -%}
+            </twig:Typography>
+        {%- endset -%}
+        <label for="{{ id }}"{% if disabled %} class="cursor-not-allowed"{% endif %}>
+            {%- if compound|default(false) -%}
+                {{- libelle -}}
+            {%- else -%}
+                {%- set autorite = label_attr['data-autorite']|default('MDM') -%}
+                {%- set pastille = { 'MDM': 'bg-primary', 'Salesforce': 'bg-primary-3', 'Prestataire': 'bg-peach' }[autorite]|default('bg-primary') -%}
+                {%- set fond = { 'MDM': 'bg-primary-4', 'Salesforce': 'bg-neutral-200', 'Prestataire': 'bg-error-pastel' }[autorite]|default('bg-primary-4') -%}
+                {%- set texte = { 'MDM': 'text-primary-3!', 'Salesforce': 'text-neutral-500!', 'Prestataire': 'text-neutral-500!' }[autorite]|default('text-primary-3!') -%}
+                <span class="flex items-center gap-2">
+                    <span class="w-2 h-2 shrink-0 rounded-full {{ pastille }}"></span>
+                    {{- libelle -}}
+                    <span class="flex-1"></span>
+                    <span class="shrink-0 px-2 py-0.5 rounded-full {{ fond }}">
+                        <twig:Typography variant="body-xs" bold class="{{ texte }}">{{ autorite }}</twig:Typography>
+                    </span>
+                </span>
+            {%- endif -%}
+        </label>
+    {%- endif -%}
+{%- endblock -%}

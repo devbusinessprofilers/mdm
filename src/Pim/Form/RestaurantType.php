@@ -60,6 +60,8 @@ final class RestaurantType extends AbstractType
                 'required' => false,
                 'disabled' => $partenaireGereParSf,
                 'help' => $partenaireGereParSf ? 'Géré par Salesforce.' : null,
+                // Chrome « autorité » : seul champ réellement piloté par Salesforce (défaut MDM ailleurs).
+                'label_attr' => $partenaireGereParSf ? ['data-autorite' => \App\Pim\Enum\Autorite::Salesforce->value] : [],
                 'getter' => static fn (Restaurant $restaurant): bool => $restaurant->fiche()->partenaireBp(),
                 'setter' => static function (Restaurant &$restaurant, mixed $value): void { $restaurant->fiche()->changePartenaireBp((bool) $value); },
             ])
