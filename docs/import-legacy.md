@@ -62,7 +62,7 @@ Options communes des imports de fiches : `--file`, `--dry-run`, `--limit`, `--fr
 | Gamme | `Lieu.generaleGammeLibelle` | + filtre de périmètre |
 | Classification (★…/Palace) | `generaleTypologie` | ★★→`GENERALE_TYPOLOGIE_1` … ★★★★★→`_4`, Palace→`_5` |
 | Type de lieux (JSON) | `generaleTypologie` | libellés du catalogue + alias : Kartings→`_21`, Résidence/Appart'hotel→`_13`, Salle / Bureau→`_38`, Lieu avec incentive intégré→`_40` ; « Avec Hébergements » → `chambreHebergement(true)` ; inconnu → `_40` + warning |
-| Thématique (JSON) | `taCadreEnv` / `taThematique` | Mer/Au vert/Campagne/Montagne/Lac/Centre Ville → cadre env ; Bien-être/Golf/Eco-responsable/RSE/Gastronomique/Oenotourisme/Châteaux → thématique ; « Pas de Thème », « Ile », « Esat » ignorés |
+| Thématique (JSON) | `taCadreEnv` / `taThematique` / `esat` / `demarcheRse` | Mer/Au vert/Campagne/Montagne/Lac/Centre Ville → cadre env ; Bien-être/Golf/Eco-responsable/Gastronomique/Oenotourisme/Châteaux → thématique ; « Esat » → case `esat`, « RSE » → case `demarcheRse` (repris 2026-08-14) ; « Pas de Thème », « Ile » ignorés |
 | Nombre de chambres / twin / single / capacité | `chambreNbTotal/NbTotalTwin/NbTotalSingle/CapaciteTotale` | `0`/vide → null ; total > 0 → `chambreHebergement(true)` |
 | Nombre / capacités / surface salles agrégées | `salleReunion{NbTotal, CapaciteMaxCocktail, CapaciteMaxTheatre, SurfaceMaxReunion, Exist}` | `Exist` = nb > 0 |
 | Pays…Ville, Latitude/Longitude | `Localisation` | code pays ISO-2 déduit (table statique, inconnu → warning) ; GPS invalide → warning, formaté 7 décimales |

@@ -49,9 +49,22 @@ final class LegacyLovMapperTest extends TestCase
 
     public function testThemesSplitBetweenCadreEnvAndThematiques(): void
     {
-        $result = $this->mapper->themes('["Mer","Au vert","Eco-responsable","RSE","Châteaux","Pas de Thème","Ile"]');
+        $result = $this->mapper->themes('["Mer","Au vert","Eco-responsable","Châteaux","Pas de Thème","Ile"]');
         self::assertSame(['TA_CADRE_ENV_1', 'TA_CADRE_ENV_2'], $result['cadreEnv']);
         self::assertSame(['TA_THEMATIQUE_3', 'TA_THEMATIQUE_7'], $result['thematiques']);
+        self::assertFalse($result['esat']);
+        self::assertFalse($result['rse']);
+        self::assertSame([], $result['warnings']);
+    }
+
+    public function testEsatAndRseThemesBecomeDedicatedCheckboxes(): void
+    {
+        $result = $this->mapper->themes('["Esat","RSE","Mer"]');
+        self::assertTrue($result['esat']);
+        self::assertTrue($result['rse']);
+        // Ni « Esat » ni « RSE » ne restent des thèmes de liste, et aucun warning.
+        self::assertSame(['TA_CADRE_ENV_1'], $result['cadreEnv']);
+        self::assertSame([], $result['thematiques']);
         self::assertSame([], $result['warnings']);
     }
 

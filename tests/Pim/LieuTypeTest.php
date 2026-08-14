@@ -34,7 +34,7 @@ final class LieuTypeTest extends KernelTestCase
         $form->submit([
             'label' => 'Lieu Bible',
             'accessibiliteDescription' => ['descGeneralePointInteret' => 'Musée à proximité'],
-            'rse' => ['rseDescGenerale' => 'Engagement complet'],
+            'rse' => ['rseDescGenerale' => 'Engagement complet', 'demarcheRse' => '1', 'esat' => '1'],
             'administratif' => ['infoLegaleNom' => 'Société Bible'],
             'tarification' => ['seminaireJourneeJourneeEtude' => '125.50'],
         ]);
@@ -42,6 +42,8 @@ final class LieuTypeTest extends KernelTestCase
         self::assertTrue($form->isValid(), (string) $form->getErrors(true));
         self::assertSame('Musée à proximité', $lieu->descGeneralePointInteret());
         self::assertSame('Engagement complet', $lieu->rseDescGenerale());
+        self::assertTrue($lieu->demarcheRse());
+        self::assertTrue($lieu->esat());
         self::assertSame('Société Bible', $lieu->administratif()->infoLegaleNom());
         self::assertSame('125.50', $lieu->tarification()->seminaireJourneeJourneeEtude());
     }

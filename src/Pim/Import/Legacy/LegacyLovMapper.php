@@ -34,7 +34,6 @@ final class LegacyLovMapper
         'golf' => 'TA_THEMATIQUE_2',
         'eco-responsable' => 'TA_THEMATIQUE_3',
         'eco responsable' => 'TA_THEMATIQUE_3',
-        'rse' => 'TA_THEMATIQUE_3',
         'gastronomique' => 'TA_THEMATIQUE_4',
         'oenotourisme' => 'TA_THEMATIQUE_5',
         'ski' => 'TA_THEMATIQUE_6',
@@ -43,7 +42,7 @@ final class LegacyLovMapper
         'comme a la maison' => 'TA_THEMATIQUE_8',
     ];
 
-    private const IGNORED_THEMES = ['pas de theme', 'ile', 'esat'];
+    private const IGNORED_THEMES = ['pas de theme', 'ile'];
 
     private const CLASSIFICATION = [
         '★★' => 'GENERALE_TYPOLOGIE_1',
@@ -116,15 +115,26 @@ final class LegacyLovMapper
     }
 
     /**
-     * @return array{cadreEnv: list<string>, thematiques: list<string>, warnings: list<string>}
+     * @return array{cadreEnv: list<string>, thematiques: list<string>, esat: bool, rse: bool, warnings: list<string>}
      */
     public function themes(string $thematiqueJson): array
     {
         $cadreEnv = [];
         $thematiques = [];
         $warnings = [];
+        $esat = false;
+        $rse = false;
         foreach ($this->decodeJsonList($thematiqueJson, $warnings, 'thematique_json_invalide') as $label) {
             $normalized = self::normalize($label);
+            // « Esat » et « RSE » sont repris en cases à cocher dédiées, pas en thème.
+            if ('esat' === $normalized) {
+                $esat = true;
+                continue;
+            }
+            if ('rse' === $normalized) {
+                $rse = true;
+                continue;
+            }
             if (in_array($normalized, self::IGNORED_THEMES, true)) {
                 continue;
             }
@@ -141,7 +151,7 @@ final class LegacyLovMapper
         LieuLovCatalog::assertValidMany('TA_CADRE_ENV', $cadreEnv);
         LieuLovCatalog::assertValidMany('TA_THEMATIQUE', $thematiques);
 
-        return ['cadreEnv' => $cadreEnv, 'thematiques' => $thematiques, 'warnings' => $warnings];
+        return ['cadreEnv' => $cadreEnv, 'thematiques' => $thematiques, 'esat' => $esat, 'rse' => $rse, 'warnings' => $warnings];
     }
 
     public function countryCode(string $pays): ?string

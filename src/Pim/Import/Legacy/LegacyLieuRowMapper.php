@@ -78,6 +78,12 @@ final readonly class LegacyLieuRowMapper
         if ([] !== $themes['thematiques']) {
             $lieu->changeTaThematique($themes['thematiques']);
         }
+        if ($themes['esat']) {
+            $lieu->changeEsat(true);
+        }
+        if ($themes['rse']) {
+            $lieu->changeDemarcheRse(true);
+        }
 
         $this->chambres($lieu, $row, $typologies['hebergement']);
         $this->sallesAgregees($lieu, $row);

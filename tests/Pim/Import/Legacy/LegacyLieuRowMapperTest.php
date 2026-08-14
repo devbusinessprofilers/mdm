@@ -46,7 +46,7 @@ final class LegacyLieuRowMapperTest extends TestCase
             'Nom Français' => 'Le Café de Paris',
             'Gamme' => 'Hôtel',
             'Classification' => '★★★★',
-            'Thématique' => '["Mer"]',
+            'Thématique' => '["Mer","Esat","RSE"]',
             'Nombre de chambres' => '19',
             'dont nombre de chambres twin' => '5',
             'Nombre de chambres single' => '0',
@@ -108,6 +108,8 @@ final class LegacyLieuRowMapperTest extends TestCase
         self::assertSame(['BIEN_ETRE_2'], $lieu->bienEtre());
         self::assertSame(['TECHNIQUE_REUNION_1'], $lieu->techniqueReunion());
         self::assertTrue($lieu->pmrAcces());
+        self::assertTrue($lieu->esat());
+        self::assertTrue($lieu->demarcheRse());
         self::assertSame('55', $lieu->tarification()->seminaireJourneeJourneeEtude());
 
         $localisation = $lieu->fiche()->localisation();

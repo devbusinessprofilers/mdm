@@ -230,8 +230,8 @@ l'abandon.
 | Référentiel | Disparues | Remarque |
 |---|---|---|
 | Types de lieu | Lieu avec incentive intégré · Avec Hébergements · Restaurant · Résidence / Appart'hotel · Salle / Bureau | « Avec Hébergements » = critère (bloc hébergement) ; « Restaurant » = type de fiche à part ; cousins possibles : « Appartement / Loft », « Salle sèche / de réception » |
-| Thèmes | **Île** · Esat · RSE | Esat existe en typologie (« Lieu ESAT »), RSE ≈ « Eco Responsable » ; Île n'a aucun équivalent |
-| Équipements | **Court de tennis** · **Parcours de golf** · Fibre Optique · Accès PMR | tennis/golf absents de toutes les listes (« Golf » = thématique, « Golfs » = typologie) ; Fibre ≈ « Connexion internet filaire » ; Accès PMR = champ dédié `pmr` |
+| Thèmes | **Île** | Esat → case à cocher `esat`, RSE → case à cocher `demarche_rse` du lieu (repris 2026-08-14, PIM + marketplace) ; Île n'a aucun équivalent |
+| Équipements | **Court de tennis** · **Parcours de golf** | Fibre Optique → « Connexion internet filaire », Accès PMR → champ dédié `pmr` du lieu (repris 2026-08-14 ; la marketplace consomme désormais `data.pmr`) ; tennis/golf absents de toutes les listes (« Golf » = thématique, « Golfs » = typologie) |
 | Types d'activité | **Insolites** | seul « Atypique / Insolite » existe, en ambiance de lieu |
 | Objectifs | **Animer** · **Intégration** | les 8 autres ont des équivalents élargis |
 

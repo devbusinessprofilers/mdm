@@ -248,6 +248,8 @@ final readonly class MarketplaceFichePayloadBuilder
                 'servicesRestauration' => $lieu->serviceRestauration(),
             ],
             'rse' => $lieu->rseDescGenerale(),
+            'esat' => $lieu->esat(),
+            'demarcheRse' => $lieu->demarcheRse(),
             'achatResponsable' => $lieu->achatResponsable(),
             'impactEnvironnemental' => $lieu->impactEnv(),
             'impactSocial' => $lieu->impactSocial(),

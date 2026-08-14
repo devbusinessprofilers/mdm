@@ -30,7 +30,7 @@ final class LieuMappingTest extends KernelTestCase
         $mediaMetadata = $entityManager->getClassMetadata(MediaAsset::class);
 
         // Les champs communs, les LOV, les champs répétables et les fichiers ne sont plus dans la table large.
-        self::assertCount(62, $lieuMetadata->getFieldNames());
+        self::assertCount(64, $lieuMetadata->getFieldNames());
         foreach (['completenessGlobal', 'completenessMarketplace', 'completenessThematicSites', 'completenessSalesforce', 'completenessProviderPortal', 'completenessCalculatedAt', 'completenessRevision'] as $field) {
             self::assertTrue($lieuMetadata->hasField($field));
         }

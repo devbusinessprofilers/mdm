@@ -241,6 +241,14 @@ class Lieu
     #[ORM\Column(name: 'rse_desc_generale', type: Types::TEXT, nullable: true)]
     private ?string $rseDescGenerale = null;
 
+    // Engagement ESAT / STPA — case à cocher (reprise du thème legacy « Esat »)
+    #[ORM\Column(name: 'esat', options: ['default' => false])]
+    private bool $esat = false;
+
+    // Démarche RSE — case à cocher (reprise du thème legacy « RSE »)
+    #[ORM\Column(name: 'demarche_rse', options: ['default' => false])]
+    private bool $demarcheRse = false;
+
     // Impact environnemental (Bible row 84)
 
     // Impact social (Bible row 85)
@@ -1035,6 +1043,28 @@ class Lieu
     public function changeRseDescGenerale(?string $value): void
     {
         $this->rseDescGenerale = self::normalizeNullableString($value);
+        $this->touch();
+    }
+
+    public function esat(): bool
+    {
+        return $this->esat;
+    }
+
+    public function changeEsat(bool $value): void
+    {
+        $this->esat = $value;
+        $this->touch();
+    }
+
+    public function demarcheRse(): bool
+    {
+        return $this->demarcheRse;
+    }
+
+    public function changeDemarcheRse(bool $value): void
+    {
+        $this->demarcheRse = $value;
         $this->touch();
     }
 
