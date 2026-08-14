@@ -95,7 +95,7 @@ final class LegacyLieuRowMapperTest extends TestCase
 
         $lieu = $mapped->lieu;
         self::assertSame('Le Café de Paris', $lieu->fiche()->label());
-        self::assertSame(['GENERALE_TYPOLOGIE_3'], $lieu->generaleTypologie());
+        self::assertSame(['GENERALE_TYPOLOGIE_3', 'GENERALE_TYPOLOGIE_11'], $lieu->generaleTypologie());
         self::assertSame(['TA_CADRE_ENV_1'], $lieu->taCadreEnv());
         self::assertSame(19, $lieu->chambreNbTotal());
         self::assertTrue($lieu->chambreHebergement());
@@ -108,7 +108,6 @@ final class LegacyLieuRowMapperTest extends TestCase
         self::assertSame(['BIEN_ETRE_2'], $lieu->bienEtre());
         self::assertSame(['TECHNIQUE_REUNION_1'], $lieu->techniqueReunion());
         self::assertTrue($lieu->pmrAcces());
-        self::assertTrue($lieu->esat());
         self::assertTrue($lieu->demarcheRse());
         self::assertSame('55', $lieu->tarification()->seminaireJourneeJourneeEtude());
 

@@ -106,7 +106,6 @@ final class LieuFormCatalog
     {
         return [
             'demarcheRse' => ['label' => 'Démarche RSE'],
-            'esat' => ['label' => 'Établissement ESAT / STPA'],
             'rseDescGenerale' => ['label' => 'Descriptif complet des engagements RSE', 'type' => TextareaType::class],
             'achatResponsable' => self::choice('ACHAT_RESPONSABLE', 'Achats responsables', true),
             'impactEnv' => self::choice('IMPACT_ENV', 'Impact environnemental', true),

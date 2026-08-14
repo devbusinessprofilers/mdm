@@ -126,7 +126,7 @@ final class LegacyLovMapper
         $rse = false;
         foreach ($this->decodeJsonList($thematiqueJson, $warnings, 'thematique_json_invalide') as $label) {
             $normalized = self::normalize($label);
-            // « Esat » et « RSE » sont repris en cases à cocher dédiées, pas en thème.
+            // « Esat » → typologie « Lieu ESAT » ; « RSE » → case à cocher dédiée. Pas des thèmes.
             if ('esat' === $normalized) {
                 $esat = true;
                 continue;

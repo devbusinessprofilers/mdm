@@ -57,12 +57,13 @@ final class LegacyLovMapperTest extends TestCase
         self::assertSame([], $result['warnings']);
     }
 
-    public function testEsatAndRseThemesBecomeDedicatedCheckboxes(): void
+    public function testEsatAndRseThemesAreFlaggedApartFromThemes(): void
     {
+        // « Esat » → typologie « Lieu ESAT » (appliquée par le row mapper),
+        // « RSE » → case demarche_rse : aucun ne reste un thème de liste.
         $result = $this->mapper->themes('["Esat","RSE","Mer"]');
         self::assertTrue($result['esat']);
         self::assertTrue($result['rse']);
-        // Ni « Esat » ni « RSE » ne restent des thèmes de liste, et aucun warning.
         self::assertSame(['TA_CADRE_ENV_1'], $result['cadreEnv']);
         self::assertSame([], $result['thematiques']);
         self::assertSame([], $result['warnings']);

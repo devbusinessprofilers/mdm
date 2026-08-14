@@ -78,8 +78,9 @@ final readonly class LegacyLieuRowMapper
         if ([] !== $themes['thematiques']) {
             $lieu->changeTaThematique($themes['thematiques']);
         }
-        if ($themes['esat']) {
-            $lieu->changeEsat(true);
+        // Thème legacy « Esat » → typologie « Lieu ESAT » (GENERALE_TYPOLOGIE_11).
+        if ($themes['esat'] && !in_array('GENERALE_TYPOLOGIE_11', $lieu->generaleTypologie(), true)) {
+            $lieu->changeGeneraleTypologie([...$lieu->generaleTypologie(), 'GENERALE_TYPOLOGIE_11']);
         }
         if ($themes['rse']) {
             $lieu->changeDemarcheRse(true);
