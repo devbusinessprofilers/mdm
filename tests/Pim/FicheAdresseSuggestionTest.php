@@ -81,6 +81,13 @@ final class FicheAdresseSuggestionTest extends WebTestCase
         self::assertSame(0, (int) $ligne['ban_ecart']);
         self::assertNull($ligne['ban_proposition']);
         self::assertSame('publiee', $this->connection->fetchOne('SELECT status FROM pim_fiche'), 'Pas de transition de workflow pour un validateur.');
+        // L'acceptation est auditée même sans entité de gamme chargée : la
+        // révision se rattache à la fiche via son association localisation.
+        self::assertSame(
+            1,
+            (int) $this->connection->fetchOne("SELECT COUNT(*) FROM audit_revision WHERE source = 'ban'"),
+            'La correction d\'adresse apparaît dans l\'historique de la fiche.',
+        );
     }
 
     public function testAccepterUneCommuneSeuleNEcrasePasLaRue(): void

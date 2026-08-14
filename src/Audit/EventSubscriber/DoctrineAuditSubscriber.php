@@ -143,6 +143,21 @@ final readonly class DoctrineAuditSubscriber
                 $restaurants[] = $entity;
             }
         }
+        // Certains chemins (arbitrage d'adresse, vérification au fil de
+        // l'eau) mutent la Localisation sans jamais charger l'entité de
+        // gamme : la fiche elle-même porte l'association et suffit à
+        // rattacher la révision.
+        $fiches = array_values(
+            array_filter(
+                $uow->getIdentityMap()[Fiche::class] ?? [],
+                static fn (object $entity): bool => $entity instanceof Fiche,
+            ),
+        );
+        foreach ($operations['create'] as $entity) {
+            if ($entity instanceof Fiche) {
+                $fiches[] = $entity;
+            }
+        }
         /** @var array<string, AuditRevision> $revisions */
         $revisions = [];
         $auditContext = $this->context->current();
@@ -161,6 +176,7 @@ final readonly class DoctrineAuditSubscriber
                     $activites,
                     $services,
                     $restaurants,
+                    $fiches,
                 );
                 if (null === $fiche) {
                     continue;
@@ -306,6 +322,7 @@ final readonly class DoctrineAuditSubscriber
                     $activites,
                     $services,
                     $restaurants,
+                    $fiches,
                 );
                 if (null === $fiche) {
                     continue;
@@ -381,6 +398,7 @@ final readonly class DoctrineAuditSubscriber
      * @param list<Activite> $activites
      * @param list<ServiceEvenementiel> $services
      * @param list<Restaurant> $restaurants
+     * @param list<Fiche> $fiches
      */
     private function resolveFiche(
         object $entity,
@@ -388,6 +406,7 @@ final readonly class DoctrineAuditSubscriber
         array $activites,
         array $services,
         array $restaurants,
+        array $fiches,
     ): ?Fiche {
         if (
             $entity instanceof Lieu
@@ -460,6 +479,16 @@ final readonly class DoctrineAuditSubscriber
                     && $restaurant->localisation() === $entity)
             ) {
                 return $restaurant->fiche();
+            }
+        }
+        // Localisation mutée sans entité de gamme chargée (arbitrage
+        // d'adresse, vérification au fil de l'eau) : la fiche porte
+        // directement l'association.
+        if ($entity instanceof Localisation) {
+            foreach ($fiches as $candidate) {
+                if ($candidate->localisation() === $entity) {
+                    return $candidate;
+                }
             }
         }
 
