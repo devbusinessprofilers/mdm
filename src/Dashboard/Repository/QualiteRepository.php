@@ -105,7 +105,7 @@ final readonly class QualiteRepository
                 false => ' AND loc.ban_proposition IS NULL',
                 null => '',
             }.'
-             ORDER BY loc.ban_score IS NULL DESC, loc.ban_score ASC
+             ORDER BY loc.ban_score IS NULL, loc.ban_score DESC
              LIMIT '.$limit,
         );
 
