@@ -99,7 +99,7 @@
                 {{ form_end(form, {render_rest: false}) }}
             {% endif %}
 
-            {% if 'suggestions_attente' in section.blocs and suggestions_attente is not null and suggestions_attente.lignes is not empty %}
+            {% if 'suggestions_attente' in section.blocs and suggestions_attente is not null %}
                 <h3>Suggestions en attente</h3>
                 <p class="page-description">
                     Corrections et enrichissements proposés par les vérifications automatiques, à arbitrer — Accepter les applique immédiatement à la fiche.
@@ -126,10 +126,12 @@
                                     <td>{{ form(ligne.ignorer) }}</td>
                                 {% endif %}
                             </tr>
+                        {% else %}
+                            <tr><td class="empty-state" colspan="{{ is_granted('ROLE_BP_VALIDATOR') ? 6 : 4 }}">Aucune suggestion en attente sur cette fiche.</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>
-                {% if not is_granted('ROLE_BP_VALIDATOR') %}
+                {% if suggestions_attente.lignes is not empty and not is_granted('ROLE_BP_VALIDATOR') %}
                     <p class="page-description">L'arbitrage des suggestions est réservé aux validateurs.</p>
                 {% endif %}
             {% endif %}

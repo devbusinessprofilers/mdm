@@ -123,6 +123,8 @@ final class FicheAdresseSuggestionTest extends WebTestCase
         self::assertResponseRedirects();
         $this->client->followRedirect();
         self::assertSelectorTextContains('body', 'la saisie actuelle est conservée');
+        // Le bloc reste visible sans suggestion, avec son état vide.
+        self::assertSelectorTextContains('body', 'Aucune suggestion en attente sur cette fiche.');
 
         $ligne = $this->connection->fetchAssociative(
             'SELECT ville, ban_ecart, ban_proposition, ban_score FROM pim_localisation LIMIT 1',
