@@ -85,8 +85,9 @@ final class LieuMappingTest extends KernelTestCase
         self::assertCount(25, $entityManager->getClassMetadata(LieuTarification::class)->getFieldNames());
 
         // Nine source fields, three normalized/indexed fields, the BAN
-        // verification trace (score + date), id and timestamps.
-        self::assertCount(17, $localisationMetadata->getFieldNames());
+        // verification trace (score, date, fingerprint, proposition, écart),
+        // id and timestamps.
+        self::assertCount(20, $localisationMetadata->getFieldNames());
         foreach (['pays', 'countryCode', 'region', 'departement', 'ruePostale', 'codePostal', 'ville', 'villeNormalisee', 'addressFingerprint', 'arrondissement', 'latitude', 'longitude'] as $field) {
             self::assertTrue($localisationMetadata->hasField($field));
         }

@@ -83,6 +83,53 @@ final readonly class QualiteRepository
         ], $rows);
     }
 
+    /**
+     * Écarts relevés par la vérification BAN (score douteux ou CP/ville
+     * proposés différents) : le bloc « Suggestions d'adresse » des conflits.
+     *
+     * @return list<array{fiche_id: string, code: int, type: string, label: ?string, adresse: string, proposition: ?string, score: ?float, quand: ?string}>
+     */
+    public function suggestionsAdresse(int $limit = 20): array
+    {
+        $rows = $this->connection->fetchAllAssociative(
+            'SELECT f.id, f.code, f.type, f.label,
+                loc.rue_postale, loc.code_postal, loc.ville,
+                loc.ban_proposition, loc.ban_score, loc.ban_verifie_le
+             FROM pim_fiche f
+             INNER JOIN pim_localisation loc ON loc.id = f.localisation_id
+             WHERE loc.ban_ecart = 1
+             ORDER BY loc.ban_score IS NULL DESC, loc.ban_score ASC
+             LIMIT '.$limit,
+        );
+
+        return array_map(static function (array $row): array {
+            $proposition = null;
+            if (null !== $row['ban_proposition']) {
+                $decoded = json_decode((string) $row['ban_proposition'], true);
+                if (is_array($decoded)) {
+                    $proposition = trim(sprintf(
+                        '%s %s %s',
+                        $decoded['label'] ?? '',
+                        $decoded['codePostal'] ?? '',
+                        '' !== (string) ($decoded['label'] ?? '') ? '' : ($decoded['ville'] ?? ''),
+                    ));
+                    $proposition = '' === $proposition ? null : $proposition;
+                }
+            }
+
+            return [
+                'fiche_id' => (string) Ulid::fromBinary((string) $row['id']),
+                'code' => (int) $row['code'],
+                'type' => (string) $row['type'],
+                'label' => null === $row['label'] ? null : (string) $row['label'],
+                'adresse' => trim(sprintf('%s, %s %s', $row['rue_postale'] ?? '—', $row['code_postal'] ?? '', $row['ville'] ?? '')),
+                'proposition' => $proposition,
+                'score' => null === $row['ban_score'] ? null : (float) $row['ban_score'],
+                'quand' => null === $row['ban_verifie_le'] ? null : (string) $row['ban_verifie_le'],
+            ];
+        }, $rows);
+    }
+
     /** @return list<array{fiches: list<array{id: string, label: ?string}>, ville: ?string}> Adresses partagées par plusieurs fiches. */
     public function doublonsAdresse(int $limit = 10): array
     {

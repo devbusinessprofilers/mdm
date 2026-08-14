@@ -61,6 +61,36 @@ Exécuté sur `mdm_reel` le 2026-08-13 : 21 711 vérifiées — 7 936 conformes,
 **4 769 GPS remplis**, 302 corrections proposées, 8 704 douteuses. Le
 stock français sans GPS est passé de ~8 300 à 3 549.
 
+## Vérification continue (au fil de l'eau)
+
+Depuis le 2026-08-14, chaque création ou modification d'adresse française
+déclenche automatiquement une vérification BAN, sans commande à lancer :
+
+- **Déclenchement** : `IndexFicheHandler` (point de convergence de toutes
+  les mutations) compare `address_fingerprint` à `ban_fingerprint` — l'empreinte
+  de l'adresse au moment de la dernière vérification. Si elles diffèrent (ou
+  jamais vérifiée), il enfile `VerifierAdresseFiche` via l'outbox.
+- **Handler** (`VerifierAdresseFicheHandler`) : lot BAN d'une ligne, mêmes
+  règles que la commande batch (logique partagée dans
+  `LocalisationBanVerifier`) : enrichissements sûrs appliqués (GPS manquants,
+  CP/ville vides, recasage accents), trace posée, re-index si modifié. Aucune
+  transition de workflow. L'empreinte est capturée **après** enrichissement,
+  donc pas de boucle vérification → index → vérification.
+- **Trace** sur `pim_localisation` : `ban_score`, `ban_verifie_le`,
+  `ban_fingerprint`, et en cas d'écart `ban_proposition` (JSON : label BAN,
+  CP, ville, GPS) + `ban_ecart` (booléen indexé). Ces colonnes sont exclues
+  de l'audit JSON (`DoctrineAuditSubscriber::IGNORED_FIELDS` — le binaire
+  de l'empreinte n'est pas sérialisable).
+- **Arbitrage humain** : les écarts (`ban_ecart = 1`) remontent dans
+  `/qualite` → onglet « Conflits à arbitrer » → tableau « Suggestions
+  d'adresse (vérification BAN) », avec adresse actuelle, proposition BAN,
+  score, et lien vers la section « Localisation & accès » de la fiche.
+  Rien n'est écrit automatiquement sur une adresse divergente.
+
+Le stock existant se (re)peuple au fil des modifications ; pour alimenter
+l'écran Qualité immédiatement, rejouer `app:localisation:verifier
+--appliquer` (renseigne `ban_proposition`/`ban_ecart` sur tout le stock).
+
 ## Hors périmètre (décisions du 2026-08-13)
 
 - **Étranger** (~4 900 fiches, sites BPmeetings) : Nominatim/Photon (OSM)

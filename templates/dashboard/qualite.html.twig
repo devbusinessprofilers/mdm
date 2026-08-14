@@ -82,6 +82,33 @@
                 </tbody>
             </table></div></div>
         </section>
+        <section class="card" aria-label="Suggestions d'adresse">
+            <h2>Suggestions d'adresse (vérification BAN)</h2>
+            <p class="page-description">Adresses dont la Base Adresse Nationale propose autre chose ou ne trouve pas d'équivalent fiable — à arbitrer dans la fiche, section « Localisation & accès ».</p>
+            <div class="table-shell"><div class="table-scroll"><table class="data-table">
+                <thead><tr><th>Fiche</th><th>Adresse saisie</th><th>Proposition BAN</th><th>Score</th><th>Vérifiée le</th><th></th></tr></thead>
+                <tbody>
+                {% for ligne in suggestions_adresse %}
+                    <tr>
+                        <td>{{ ligne.label ?? 'Sans libellé' }} <small>({{ ligne.code }})</small></td>
+                        <td>{{ ligne.adresse }}</td>
+                        <td>{{ ligne.proposition ?? 'Aucun résultat fiable' }}</td>
+                        <td>{{ ligne.score is null ? '—' : (ligne.score * 100)|round ~ ' %' }}</td>
+                        <td>{% if ligne.quand %}<time datetime="{{ ligne.quand|date('c') }}">{{ ligne.quand|date('d/m/Y H:i') }}</time>{% else %}—{% endif %}</td>
+                        <td>
+                            {% if ligne.type == 'lieu' %}
+                                <a class="text-link" href="{{ path('app_mdm_fiche_lieu', {id: ligne.fiche_id, section: 1}) }}">Arbitrer</a>
+                            {% else %}
+                                <a class="text-link" href="{{ path('app_mdm_fiche_gamme', {gamme: ligne.type == 'restaurant' ? 'restaurants' : (ligne.type == 'activite' ? 'activites' : 'services'), id: ligne.fiche_id, section: 1}) }}">Arbitrer</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr><td class="empty-state" colspan="6">Aucun écart d'adresse relevé par la BAN.</td></tr>
+                {% endfor %}
+                </tbody>
+            </table></div></div>
+        </section>
         <section class="card" aria-label="Doublons d'adresse">
             <h2>Fiches partageant la même adresse</h2>
             {% for groupe in doublons_adresse %}

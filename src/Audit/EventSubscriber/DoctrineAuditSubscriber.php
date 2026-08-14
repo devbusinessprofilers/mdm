@@ -41,6 +41,13 @@ final readonly class DoctrineAuditSubscriber
         'version',
         'villeNormalisee',
         'addressFingerprint',
+        // Trace technique de la vérification BAN : l'empreinte est binaire
+        // (illisible en JSON d'audit) et le reste n'est pas une saisie.
+        'banFingerprint',
+        'banProposition',
+        'banScore',
+        'banVerifieLe',
+        'banEcart',
         'completenessGlobal',
         'completenessMarketplace',
         'completenessThematicSites',

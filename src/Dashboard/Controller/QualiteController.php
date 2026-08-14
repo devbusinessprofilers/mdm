@@ -38,6 +38,7 @@ final class QualiteController extends AbstractController
             'onglet_actif' => $onglet,
             'sante' => 'miroir' === $onglet ? $qualite->santeParGamme() : [],
             'suggestions' => 'conflits' === $onglet ? $qualite->suggestionsEnAttente() : [],
+            'suggestions_adresse' => 'conflits' === $onglet ? $qualite->suggestionsAdresse() : [],
             'doublons_adresse' => 'conflits' === $onglet ? $qualite->doublonsAdresse() : [],
             'formes' => 'formes' === $onglet ? $qualite->ecartsDeForme() : null,
             'relances' => 'notifs' === $onglet ? $qualite->relances() : [],

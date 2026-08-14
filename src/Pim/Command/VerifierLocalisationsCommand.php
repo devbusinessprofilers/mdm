@@ -6,10 +6,9 @@ namespace App\Pim\Command;
 
 use App\Etl\Service\MarketplaceSyncScheduler;
 use App\Pim\Entity\Fiche;
-use App\Pim\Entity\Localisation;
 use App\Pim\Repository\FicheRepository;
 use App\Pim\Service\BanClientInterface;
-use App\Pim\Service\ReferentielGeographiqueFrancais;
+use App\Pim\Service\LocalisationBanVerifier;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -20,24 +19,22 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
 /**
- * Vérification des adresses françaises contre l'API Adresse (BAN) :
+ * Vérification en masse des adresses françaises contre l'API Adresse (BAN) :
  *
  *  - par défaut, RAPPORT seul — quatre paniers (conformes, enrichissables,
  *    corrections proposées, douteuses) exportés en CSV dans var/tmp ;
- *  - --appliquer : écrit uniquement le sûr et non destructif (GPS
- *    manquants, code postal ou ville vides, recasage d'une ville identique
- *    aux accents près) au-dessus de --seuil, et trace le passage
- *    (ban_score, ban_verifie_le). Une rue ou une ville réellement
- *    différente n'est JAMAIS remplacée : elle reste dans le rapport.
+ *  - --appliquer : écrit uniquement le sûr et non destructif (logique
+ *    partagée LocalisationBanVerifier) au-dessus de --seuil, et trace le
+ *    passage (score, empreinte, proposition, écart).
  *
- * Aucune transition de workflow ; les fiches modifiées repartent vers la
+ * La vérification au fil de l'eau (message VerifierAdresseFiche déclenché à
+ * chaque changement d'adresse) suit exactement les mêmes règles. Aucune
+ * transition de workflow ; les fiches modifiées repartent vers la
  * marketplace par la sync habituelle. Gros volume : APP_DEBUG=0.
  */
 #[AsCommand(name: 'app:localisation:verifier', description: 'Vérifie les adresses françaises contre l\'API Adresse (BAN), rapport puis application prudente.')]
 final class VerifierLocalisationsCommand extends Command
 {
-    private const SCORE_DOUTEUX = 0.4;
-
     public function __construct(
         private readonly FicheRepository $fiches,
         private readonly BanClientInterface $ban,
@@ -51,7 +48,7 @@ final class VerifierLocalisationsCommand extends Command
     protected function configure(): void
     {
         $this->addOption('appliquer', null, InputOption::VALUE_NONE, 'Écrit les enrichissements sûrs (GPS et champs vides, recasage) au-dessus du seuil.')
-            ->addOption('seuil', null, InputOption::VALUE_REQUIRED, 'Score BAN minimal pour appliquer.', '0.85')
+            ->addOption('seuil', null, InputOption::VALUE_REQUIRED, 'Score BAN minimal pour appliquer.', (string) LocalisationBanVerifier::SEUIL_DEFAUT)
             ->addOption('code', null, InputOption::VALUE_REQUIRED, 'Code d\'une fiche précise.')
             ->addOption('batch-size', null, InputOption::VALUE_REQUIRED, 'Taille des lots envoyés à la BAN (max 1000).', '1000');
     }
@@ -83,21 +80,12 @@ final class VerifierLocalisationsCommand extends Command
                 if (null !== $code && $fiche->code() !== $code) {
                     continue;
                 }
-                $localisation = $fiche->localisation();
-                if (null === $localisation || !self::estFrancaise($localisation)) {
+                $ligne = LocalisationBanVerifier::ligne($fiche);
+                if (null === $ligne) {
                     continue;
                 }
-                if (null === $localisation->ruePostale() && null === $localisation->ville()) {
-                    continue;
-                }
-                $id = (string) $fiche->code();
-                $parId[$id] = $fiche;
-                $lot[] = [
-                    'id' => $id,
-                    'adresse' => trim(sprintf('%s %s', $localisation->ruePostale() ?? '', $localisation->ville() ?? '')),
-                    'codePostal' => $localisation->codePostal() ?? '',
-                    'ville' => $localisation->ville() ?? '',
-                ];
+                $parId[$ligne['id']] = $fiche;
+                $lot[] = $ligne;
             }
             if ([] !== $lot) {
                 $resultats = $this->ban->verifierLot($lot);
@@ -134,78 +122,28 @@ final class VerifierLocalisationsCommand extends Command
         if (null === $localisation) {
             return;
         }
+        $panier = LocalisationBanVerifier::panier($localisation, $resultat, $seuil);
         $score = $resultat['score'] ?? null;
-        $adresse = trim(sprintf('%s, %s %s', $localisation->ruePostale() ?? '—', $localisation->codePostal() ?? '', $localisation->ville() ?? ''));
-        $ligne = static fn (string $panier) => [
-            'panier' => $panier,
-            'code' => $fiche->code(),
-            'adresse' => $adresse,
-            'ban' => $resultat['label'] ?? '',
-            'score' => null === $score ? '' : number_format($score, 2),
-        ];
-        if (null === $resultat || null === $score || $score < self::SCORE_DOUTEUX) {
-            ++$stats['douteuses'];
-            $rapport[] = $ligne('douteuse');
-            $this->tracer($fiche, $localisation, $score, $appliquer, false, $stats);
-
-            return;
+        if ('conforme' !== $panier) {
+            $rapport[] = [
+                'panier' => 'correction' === $panier ? 'correction' : ('enrichissable' === $panier ? 'enrichissable' : 'douteuse'),
+                'code' => $fiche->code(),
+                'adresse' => trim(sprintf('%s, %s %s', $localisation->ruePostale() ?? '—', $localisation->codePostal() ?? '', $localisation->ville() ?? '')),
+                'ban' => $resultat['label'] ?? '',
+                'score' => null === $score ? '' : number_format($score, 2),
+            ];
         }
-        $cpConcorde = null === $resultat['codePostal'] || null === $localisation->codePostal()
-            || $resultat['codePostal'] === $localisation->codePostal();
-        $villeConcorde = null === $resultat['ville'] || null === $localisation->ville()
-            || ReferentielGeographiqueFrancais::cle($resultat['ville']) === ReferentielGeographiqueFrancais::cle($localisation->ville());
-        if ($score < $seuil || !$cpConcorde || !$villeConcorde) {
-            ++$stats[$score >= $seuil ? 'corrections proposées' : 'douteuses'];
-            $rapport[] = $ligne($score >= $seuil ? 'correction' : 'douteuse');
-            $this->tracer($fiche, $localisation, $score, $appliquer, false, $stats);
-
-            return;
-        }
-        // Conforme : enrichissements sûrs seulement.
-        $modifie = false;
-        if ($appliquer) {
-            if (null === $localisation->latitude() && null !== $resultat['latitude'] && null !== $resultat['longitude']) {
-                try {
-                    $localisation->changeLatitude($resultat['latitude']);
-                    $localisation->changeLongitude($resultat['longitude']);
-                    $modifie = true;
-                } catch (\InvalidArgumentException) {
-                    // Coordonnée BAN inattendue : on n'écrit rien.
-                }
-            }
-            if (null === $localisation->codePostal() && null !== $resultat['codePostal']) {
-                $localisation->changeCodePostal($resultat['codePostal']);
-                $modifie = true;
-            }
-            if (null === $localisation->ville() && null !== $resultat['ville']) {
-                $localisation->changeVille($resultat['ville']);
-                $modifie = true;
-            }
-            // Recasage : même ville aux accents/casse près, orthographe BAN.
-            if (null !== $localisation->ville() && null !== $resultat['ville']
-                && $localisation->ville() !== $resultat['ville']
-                && ReferentielGeographiqueFrancais::cle($localisation->ville()) === ReferentielGeographiqueFrancais::cle($resultat['ville'])) {
-                $localisation->changeVille($resultat['ville']);
-                $modifie = true;
-            }
-        }
-        $seraitEnrichie = null === $localisation->latitude() && null !== $resultat['latitude'];
-        if ($modifie || (!$appliquer && $seraitEnrichie)) {
-            ++$stats['enrichissables'];
-            $rapport[] = $ligne('enrichissable');
-        } else {
-            ++$stats['conformes'];
-        }
-        $this->tracer($fiche, $localisation, $score, $appliquer, $modifie, $stats);
-    }
-
-    /** @param array<string, int> $stats */
-    private function tracer(Fiche $fiche, Localisation $localisation, ?float $score, bool $appliquer, bool $modifie, array &$stats): void
-    {
+        $stats[match ($panier) {
+            'conforme' => 'conformes',
+            'enrichissable' => 'enrichissables',
+            'correction' => 'corrections proposées',
+            default => 'douteuses',
+        }]++;
         if (!$appliquer) {
             return;
         }
-        $localisation->recordBanVerification($score);
+        $modifie = LocalisationBanVerifier::appliquerEnrichissements($localisation, $resultat, $seuil);
+        LocalisationBanVerifier::tracer($localisation, $resultat, $seuil);
         if ($modifie) {
             ++$stats['fiches modifiées'];
             $this->marketplaceScheduler->schedule($fiche);
@@ -231,11 +169,5 @@ final class VerifierLocalisationsCommand extends Command
         fclose($handle);
 
         return $fichier;
-    }
-
-    private static function estFrancaise(Localisation $localisation): bool
-    {
-        return 'FR' === $localisation->countryCode()
-            || (null !== $localisation->pays() && 'france' === ReferentielGeographiqueFrancais::cle($localisation->pays()));
     }
 }

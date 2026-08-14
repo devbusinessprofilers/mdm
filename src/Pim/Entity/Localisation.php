@@ -16,6 +16,7 @@ use Symfony\Component\Uid\Ulid;
 #[ORM\Index(name: 'IDX_PIM_LOCALISATION_FINGERPRINT', columns: ['address_fingerprint'])]
 #[ORM\Index(name: 'IDX_PIM_LOCALISATION_POSTAL', columns: ['country_code', 'code_postal', 'id'])]
 #[ORM\Index(name: 'IDX_PIM_LOCALISATION_CITY', columns: ['country_code', 'ville_normalisee', 'id'])]
+#[ORM\Index(name: 'IDX_PIM_LOCALISATION_BAN_ECART', columns: ['ban_ecart'])]
 #[ORM\HasLifecycleCallbacks]
 class Localisation
 {
@@ -67,6 +68,18 @@ class Localisation
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $banVerifieLe = null;
+
+    /** Empreinte d'adresse au moment de la vérification : différente de addressFingerprint = à revérifier. */
+    #[ORM\Column(type: Types::BINARY, length: 32, nullable: true)]
+    private ?string $banFingerprint = null;
+
+    /** @var array{label?: ?string, codePostal?: ?string, ville?: ?string, latitude?: ?string, longitude?: ?string}|null Proposition BAN quand elle diverge. */
+    #[ORM\Column(type: Types::JSON, nullable: true)]
+    private ?array $banProposition = null;
+
+    /** Écart à arbitrer (score douteux ou CP/ville proposés différents) — précalculé pour l'écran Qualité. */
+    #[ORM\Column(options: ['default' => false])]
+    private bool $banEcart = false;
 
     public function __construct()
     {
@@ -238,11 +251,36 @@ class Localisation
         return $this->banVerifieLe;
     }
 
-    /** Trace de vérification API Adresse (BAN) — donnée technique, pas de touch(). */
-    public function recordBanVerification(?float $score): void
+    public function banFingerprint(): ?string
+    {
+        return $this->banFingerprint;
+    }
+
+    /** @return array{label?: ?string, codePostal?: ?string, ville?: ?string, latitude?: ?string, longitude?: ?string}|null */
+    public function banProposition(): ?array
+    {
+        return $this->banProposition;
+    }
+
+    public function banEcart(): bool
+    {
+        return $this->banEcart;
+    }
+
+    /**
+     * Trace de vérification API Adresse (BAN) — donnée technique, pas de
+     * touch(). L'empreinte capturée permet de ne revérifier que les adresses
+     * modifiées depuis le dernier passage.
+     *
+     * @param array{label?: ?string, codePostal?: ?string, ville?: ?string, latitude?: ?string, longitude?: ?string}|null $proposition
+     */
+    public function recordBanVerification(?float $score, ?array $proposition = null, bool $ecart = false): void
     {
         $this->banScore = $score;
         $this->banVerifieLe = new \DateTimeImmutable();
+        $this->banFingerprint = $this->addressFingerprint;
+        $this->banProposition = $proposition;
+        $this->banEcart = $ecart;
     }
 
     public function villeNormalisee(): ?string
