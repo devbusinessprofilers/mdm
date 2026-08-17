@@ -26,22 +26,67 @@
 {% set statuts_erreur = ['echoue', 'termine_avec_erreurs', 'failed', 'en_erreur'] %}
 {% set famille_icones = { 'import': 'upload-simple', 'ocr': 'ai', 'traduction': 'list', 'media': 'images' } %}
 
-{# ------------------------------------------------- Rail : journal et familles #}
+{% set a_venir = 'Fonction à venir — en développement' %}
+
+{# ------------------------------------------------- Rail : les outils, puis les familles du journal #}
 {% block rail %}
     <nav class="flex flex-col shrink-0 box-border w-[328px] pl-5 pr-3 py-4 gap-4 overflow-hidden"
-         aria-label="Familles du journal des traitements">
+         aria-label="Outils et familles du journal">
         <div class="flex flex-col gap-1">
             <twig:Typography variant="body" bold class="pl-2 pr-4">Outils</twig:Typography>
             <div class="flex flex-col">
+                {# Mise à jour massive : pas de back → grisée. #}
+                <span title="{{ a_venir }}" aria-disabled="true"
+                      class="flex items-center gap-2 box-border px-4 py-2 rounded-xs overflow-hidden opacity-60 cursor-not-allowed">
+                    <twig:Icon name="pencil" aria-hidden="true" class="shrink-0 self-center w-4 h-4 mx-1 text-neutral-400" />
+                    <twig:Typography variant="body" bold ellipsis textColor="neutral-500" class="flex-1 min-w-0">Mise à jour massive</twig:Typography>
+                    <twig:Typography variant="body-xs" bold textColor="neutral-500"
+                                     class="shrink-0 px-[7px] py-0.5 rounded-lg bg-neutral-200">À venir</twig:Typography>
+                </span>
+
                 <a href="{{ path('app_mdm_outils') }}"
                    class="group/onglet flex items-center gap-2 box-border px-4 py-2 rounded-xs overflow-hidden cursor-pointer
                           hover:bg-primary-4 aria-[current=page]:bg-linear-(--primary-gradient) aria-[current=page]:hover:bg-none"
                    {{ famille is null ? 'aria-current="page"' : '' }}>
-                    <twig:Icon name="clipboard" aria-hidden="true"
+                    <twig:Icon name="spinner" aria-hidden="true"
                                class="shrink-0 self-center w-4 h-4 mx-1 text-primary group-aria-[current=page]/onglet:text-neutral-100" />
                     <twig:Typography variant="body" bold ellipsis textColor="primary-3"
-                                     class="flex-1 min-w-0 group-aria-[current=page]/onglet:text-neutral-100!">Journal complet</twig:Typography>
+                                     class="flex-1 min-w-0 group-aria-[current=page]/onglet:text-neutral-100!">Journal des traitements</twig:Typography>
+                    <twig:Typography variant="body-xs" bold textColor="neutral-500"
+                                     class="shrink-0 px-[7px] py-0.5 rounded-lg bg-neutral-200
+                                            group-aria-[current=page]/onglet:bg-neutral-100
+                                            group-aria-[current=page]/onglet:text-primary-3!">{{ lignes|length }}</twig:Typography>
                 </a>
+
+                {# Campagnes IA : pas de back → grisée. #}
+                <span title="{{ a_venir }}" aria-disabled="true"
+                      class="flex items-center gap-2 box-border px-4 py-2 rounded-xs overflow-hidden opacity-60 cursor-not-allowed">
+                    <twig:Icon name="rocket" aria-hidden="true" class="shrink-0 self-center w-4 h-4 mx-1 text-neutral-400" />
+                    <twig:Typography variant="body" bold ellipsis textColor="neutral-500" class="flex-1 min-w-0">Campagnes IA</twig:Typography>
+                    <twig:Typography variant="body-xs" bold textColor="neutral-500"
+                                     class="shrink-0 px-[7px] py-0.5 rounded-lg bg-neutral-200">À venir</twig:Typography>
+                </span>
+
+                {# Imports & exports : le module d'import de fiches est réel, réservé aux admins. #}
+                {% if is_granted('ROLE_ADMIN') %}
+                    <a href="{{ path('app_etl_import_index') }}"
+                       class="group/onglet flex items-center gap-2 box-border px-4 py-2 rounded-xs overflow-hidden cursor-pointer hover:bg-primary-4">
+                        <twig:Icon name="upload-simple" aria-hidden="true" class="shrink-0 self-center w-4 h-4 mx-1 text-primary" />
+                        <twig:Typography variant="body" bold ellipsis textColor="primary-3" class="flex-1 min-w-0">Imports & exports</twig:Typography>
+                    </a>
+                {% else %}
+                    <span title="Réservé aux administrateurs" aria-disabled="true"
+                          class="flex items-center gap-2 box-border px-4 py-2 rounded-xs overflow-hidden opacity-60 cursor-not-allowed">
+                        <twig:Icon name="upload-simple" aria-hidden="true" class="shrink-0 self-center w-4 h-4 mx-1 text-neutral-400" />
+                        <twig:Typography variant="body" bold ellipsis textColor="neutral-500" class="flex-1 min-w-0">Imports & exports</twig:Typography>
+                    </span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="flex flex-col gap-1">
+            <twig:Typography variant="body" bold class="pl-2 pr-4">Familles du journal</twig:Typography>
+            <div class="flex flex-col">
                 {% for cle, libelle in familles %}
                     <a href="{{ path('app_mdm_outils', { famille: cle }) }}"
                        class="group/onglet flex items-center gap-2 box-border px-4 py-2 rounded-xs overflow-hidden cursor-pointer
