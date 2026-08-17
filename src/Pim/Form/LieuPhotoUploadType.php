@@ -19,7 +19,9 @@ final class LieuPhotoUploadType extends AbstractType
             'label' => 'Déposez vos images ici',
             'multiple' => true,
             'mapped' => false,
-            'attr' => ['accept' => 'image/jpeg,image/png,image/webp', 'data-lieu-media-target' => 'input', 'data-action' => 'change->lieu-media#upload'],
+            // Input masqué : le libellé de la zone de dépôt et la tuile
+            // « Ajouter un média » ouvrent le sélecteur, l'envoi part au change.
+            'attr' => ['accept' => 'image/jpeg,image/png,image/webp', 'class' => 'sr-only', 'data-lieu-media-target' => 'input', 'data-action' => 'change->lieu-media#upload'],
         ]);
     }
 

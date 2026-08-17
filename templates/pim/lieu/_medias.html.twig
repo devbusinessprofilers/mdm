@@ -135,9 +135,23 @@
                 <span class="inline-flex"><twig:Tag label="{{ documents|length }}" variant="neutral" size="sm" /></span>
             </div>
             <twig:Typography variant="body-sm" textColor="neutral-500">Les originaux restent privés. Une copie publique n’est créée qu’après validation des droits et traitement par le worker.</twig:Typography>
-            {{ form_start(document_upload_form, {attr: {class: 'crud-form'}}) }}
-                {{ form_widget(document_upload_form) }}
-            {{ form_end(document_upload_form) }}
+
+            {# Le dépôt vit dans sa modale, ouverte par la tuile « Ajouter un document ». #}
+            <twig:Modal identifier="document-ajout">
+                <div class="flex flex-col gap-4 w-[min(560px,80vw)]">
+                    <twig:Typography variant="heading-3" bold>Ajouter un document</twig:Typography>
+                    <twig:Typography variant="body-sm" textColor="neutral-500">
+                        PDF, JPEG ou PNG. Les originaux restent privés tant que les droits ne sont pas validés.
+                    </twig:Typography>
+                    {{ form_start(document_upload_form, {attr: {class: 'flex flex-col gap-3'}}) }}
+                        {{ form_widget(document_upload_form) }}
+                    {{ form_end(document_upload_form) }}
+                    <div class="flex justify-end">
+                        <twig:Modal:TriggerButton variant="text" size="sm" modalIdentifier="document-ajout"
+                                                  data-action="modal-trigger-button#close">Fermer</twig:Modal:TriggerButton>
+                    </div>
+                </div>
+            </twig:Modal>
             {# Même système que les photos : une tuile par document, le clic
                ouvre ses paramètres en modale. #}
             <div class="flex flex-row flex-wrap gap-4 py-4">
@@ -158,7 +172,16 @@
                         }}
                     </twig:Typography>
                 </button>
-            {% else %}<p class="empty-state">Aucun document.</p>{% endfor %}
+            {% endfor %}
+                <button type="button"
+                        data-controller="modal-trigger-button"
+                        data-modal-trigger-button-modal-identifier-value="document-ajout"
+                        data-action="modal-trigger-button#open"
+                        class="w-[152px] h-[104px] shrink-0 flex flex-col items-center justify-center gap-1.5
+                               rounded-xs cursor-pointer bg-neutral-100 inset-ring-1 inset-ring-primary">
+                    <twig:Icon name="plus" class="w-[22px] h-[22px] text-primary" />
+                    <twig:Typography variant="body-sm" textColor="primary-3" bold>Ajouter un document</twig:Typography>
+                </button>
             </div>
 
             {% for document in documents %}
