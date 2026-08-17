@@ -75,6 +75,13 @@ final class EcransPhase6Test extends WebTestCase
         self::assertSelectorTextContains('h1', 'Santé des données');
         self::assertSelectorTextContains('body', 'Gouvernance des données');
         self::assertSelectorTextContains('table', 'Lieux');
+
+        // Le recalcul des snapshots part vers les workers et confirme.
+        $client->submit($crawler->selectButton('Recalculer les statistiques')->form());
+        self::assertResponseRedirects('/qualite');
+        $client->followRedirect();
+        self::assertSelectorTextContains('body', 'Recalcul lancé');
+        $crawler = $client->request('GET', '/qualite');
         foreach (['conflits', 'formes', 'notifs', 'decisions'] as $onglet) {
             $client->request('GET', '/qualite', ['onglet' => $onglet]);
             self::assertResponseIsSuccessful();

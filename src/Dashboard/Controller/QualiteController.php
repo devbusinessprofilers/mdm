@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 namespace App\Dashboard\Controller;
 
+use App\Dashboard\Message\ComputeDashboardStats;
+use App\Dashboard\Message\ComputeFieldFillRates;
 use App\Dashboard\Repository\QualiteRepository;
 use App\Pim\Form\AdresseSuggestionFormFactory;
+use App\Shared\Form\ActionType;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Routing\Attribute\Route;
 
 /**
@@ -61,6 +65,33 @@ final class QualiteController extends AbstractController
             'formes' => 'formes' === $onglet ? $qualite->ecartsDeForme() : null,
             'relances' => 'notifs' === $onglet ? $qualite->relances() : [],
             'decisions' => 'decisions' === $onglet ? $qualite->decisions() : [],
+            'form_recalcul' => 'miroir' === $onglet
+                ? $this->createForm(ActionType::class, null, [
+                    'action' => $this->generateUrl('app_mdm_qualite_recalculer'),
+                    'button_label' => 'Recalculer les statistiques',
+                    'button_attr' => ['data-variant' => 'outline', 'data-size' => 'sm', 'data-full' => '0'],
+                    'csrf_token_id' => 'qualite-recalcul',
+                ])->createView()
+                : null,
         ]);
+    }
+
+    #[Route('/qualite/recalculer', name: 'app_mdm_qualite_recalculer', methods: ['POST'])]
+    public function recalculer(Request $request, MessageBusInterface $bus): Response
+    {
+        $form = $this->createForm(ActionType::class, null, [
+            'button_label' => 'Recalculer les statistiques',
+            'csrf_token_id' => 'qualite-recalcul',
+        ]);
+        $form->handleRequest($request);
+        if ($form->isSubmitted() && $form->isValid()) {
+            // Les mêmes messages que les passages planifiés (15 min / 04:30) —
+            // traités par les workers, le temps d'un rechargement.
+            $bus->dispatch(new ComputeDashboardStats());
+            $bus->dispatch(new ComputeFieldFillRates());
+            $this->addFlash('success', 'Recalcul lancé — les indicateurs se rafraîchissent d\'ici quelques instants.');
+        }
+
+        return $this->redirectToRoute('app_mdm_qualite');
     }
 }
