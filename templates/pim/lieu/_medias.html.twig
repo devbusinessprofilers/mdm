@@ -138,28 +138,27 @@
             {{ form_start(document_upload_form, {attr: {class: 'crud-form'}}) }}
                 {{ form_widget(document_upload_form) }}
             {{ form_end(document_upload_form) }}
-            {# Une ligne par document ; les paramètres s'ouvrent en modale. #}
-            <div class="flex flex-col divide-y divide-neutral-200 rounded-md inset-ring-1 inset-ring-neutral-200">
+            {# Même système que les photos : une tuile par document, le clic
+               ouvre ses paramètres en modale. #}
+            <div class="flex flex-row flex-wrap gap-4 py-4">
             {% for document in documents %}
                 <button type="button" title="Modifier les paramètres du document"
                         data-controller="modal-trigger-button"
                         data-modal-trigger-button-modal-identifier-value="document-{{ document.view.id }}"
                         data-action="modal-trigger-button#open"
-                        class="flex items-center gap-3 px-4 py-3 text-left cursor-pointer hover:bg-primary-5">
-                    <twig:Icon name="file-pdf" class="w-5 h-5 shrink-0 text-primary-3" />
-                    <span class="flex-1 min-w-0 flex flex-col">
-                        <twig:Typography variant="body-sm" bold ellipsis>{{ document.view.title ?: document.view.filename }}</twig:Typography>
-                        <twig:Typography variant="body-xs" textColor="neutral-500">
-                            {{ document.view.mimeType }} ·
-                            {{ document.view.sizeBytes
-                                ? (document.view.sizeBytes / 1024 / 1024)|number_format(2, ',', ' ') ~ ' Mo'
-                                : 'fichier introuvable'
-                            }}
-                        </twig:Typography>
-                    </span>
-                    <span class="inline-flex shrink-0"><twig:Tag label="{{ document.view.access }} · {{ document.view.publicationStatus }}" variant="neutral" size="sm" /></span>
+                        class="relative w-[152px] h-[104px] shrink-0 box-border flex flex-col items-center justify-center gap-1.5
+                               px-2 rounded-xs overflow-hidden cursor-pointer bg-primary-5 inset-ring-1 inset-ring-neutral-300
+                               hover:inset-ring-primary">
+                    <twig:Icon name="file-pdf" class="w-7 h-7 shrink-0 text-primary-3" />
+                    <twig:Typography variant="body-xs" bold center class="w-full truncate">{{ document.view.title ?: document.view.filename }}</twig:Typography>
+                    <twig:Typography variant="body-xs" textColor="neutral-500" center class="w-full truncate">
+                        {{ document.view.sizeBytes
+                            ? (document.view.sizeBytes / 1024 / 1024)|number_format(2, ',', ' ') ~ ' Mo'
+                            : 'fichier introuvable'
+                        }}
+                    </twig:Typography>
                 </button>
-            {% else %}<p class="empty-state px-4 py-3">Aucun document.</p>{% endfor %}
+            {% else %}<p class="empty-state">Aucun document.</p>{% endfor %}
             </div>
 
             {% for document in documents %}
