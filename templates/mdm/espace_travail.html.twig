@@ -96,7 +96,7 @@
     </li>
 {% endmacro %}
 
-{% macro compteur(couleur, libelle, valeur, note, href) %}
+{% macro compteur(couleur, libelle, valeur, note, href = null) %}
     <li class="card flex flex-col gap-2 px-[22px] py-5 rounded-[20px] bg-neutral-100 shadow-(--shadow)">
         <div class="flex items-center gap-2.5 min-w-0">
             <span class="shrink-0 w-2.5 h-2.5 rounded-lg {{ couleur }}" aria-hidden="true"></span>
@@ -105,7 +105,9 @@
         <twig:Typography variant="heading-2" class="stat-value font-[700]!">{{ valeur }}</twig:Typography>
         <div class="flex items-center justify-between gap-3">
             <twig:Typography variant="body-sm" textColor="neutral-400" class="flex-1 min-w-0">{{ note }}</twig:Typography>
-            <a href="{{ href }}" class="shrink-0 text-[0.75rem] leading-5 font-[900] text-primary hover:underline">Ouvrir</a>
+            {% if href %}
+                <a href="{{ href }}" class="shrink-0 text-[0.75rem] leading-5 font-[900] text-primary hover:underline">Ouvrir</a>
+            {% endif %}
         </div>
     </li>
 {% endmacro %}
@@ -115,9 +117,9 @@
              overflow-y-auto scrollbar">
 
     {% set sous_titres = {
-        'supply': 'Vos fiches assignées, vos priorités et votre activité.',
-        'admin': 'Vue administrateur · intégrité du référentiel et arbitrages.',
-        'cp': 'Vue chef de projet · consultation. Les modifications se font par l\'équipe Supply.',
+        'editeur': 'Vos fiches assignées, vos priorités et votre activité.',
+        'validateur': 'La file de validation, les arbitrages et vos fiches.',
+        'admin': 'Intégrité du référentiel et outils d\'administration.',
     } %}
     <div class="flex items-end justify-between gap-7 flex-wrap">
         <div class="flex flex-col gap-1 min-w-0">
@@ -125,24 +127,30 @@
                              class="sm:text-[1.625rem]! sm:leading-[2.125rem]! font-[700]!">
                 {{- app.user ? 'Bonjour ' ~ app.user.userIdentifier : 'Mon espace de travail' -}}
             </twig:Typography>
-            <twig:Typography variant="body" element="p" textColor="neutral-500">{{ sous_titres[role] }}</twig:Typography>
+            <twig:Typography variant="body" element="p" textColor="neutral-500">{{ sous_titres[vue] }}</twig:Typography>
         </div>
 
-        {# Sélecteur de rôle : chaque vue est rendue par le serveur, comme la maquette. #}
-        <div class="flex items-center gap-2.5 shrink-0">
-            <twig:Typography variant="body" textColor="neutral-500">Rôle&nbsp;:</twig:Typography>
-            {% for cle, libelle in roles %}
-                {% set retenu = cle == role %}
-                <a href="{{ path('app_mdm_espace_travail', { role: cle }) }}"
-                   class="inline-flex items-center box-border h-10 px-4 rounded-lg whitespace-nowrap
-                          focus-visible:outline-2 focus-visible:outline-primary-3 focus-visible:outline-offset-2
-                          {{ retenu ? 'bg-primary-3' : 'bg-neutral-100 inset-ring-1 inset-ring-neutral-300 hover:bg-primary-4' }}"
-                   {{ retenu ? 'aria-current="true"' : '' }}>
-                    <twig:Typography variant="body" bold
-                                     textColor="{{ retenu ? 'neutral-100' : 'neutral-900' }}">{{ libelle }}</twig:Typography>
-                </a>
-            {% endfor %}
-        </div>
+        {#
+            Sélecteur de vue : les rôles du CDC (Éditeur, Validateur,
+            Administrateur), limités à ceux que le rôle courant couvre.
+            Chaque vue est rendue par le serveur, comme la maquette.
+        #}
+        {% if vues_autorisees|length > 1 %}
+            <div class="flex items-center gap-2.5 shrink-0">
+                <twig:Typography variant="body" textColor="neutral-500">Vue&nbsp;:</twig:Typography>
+                {% for cle, libelle in vues_autorisees %}
+                    {% set retenu = cle == vue %}
+                    <a href="{{ path('app_mdm_espace_travail', { vue: cle }) }}"
+                       class="inline-flex items-center box-border h-10 px-4 rounded-lg whitespace-nowrap
+                              focus-visible:outline-2 focus-visible:outline-primary-3 focus-visible:outline-offset-2
+                              {{ retenu ? 'bg-primary-3' : 'bg-neutral-100 inset-ring-1 inset-ring-neutral-300 hover:bg-primary-4' }}"
+                       {{ retenu ? 'aria-current="true"' : '' }}>
+                        <twig:Typography variant="body" bold
+                                         textColor="{{ retenu ? 'neutral-100' : 'neutral-900' }}">{{ libelle }}</twig:Typography>
+                    </a>
+                {% endfor %}
+            </div>
+        {% endif %}
     </div>
 
     {#
@@ -151,17 +159,20 @@
         Classes card-grid/card/stat-value conservées : hooks des tests.
     #}
     <ul class="card-grid grid grid-cols-1 min-[900px]:grid-cols-2 min-[1366px]:grid-cols-4 gap-4 m-0 p-0 list-none">
-        {% if role == 'admin' %}
+        {% if vue == 'admin' %}
             {{ _self.compteur('bg-error', 'Anomalies ouvertes', integrite.anomalies,
                 'conflits et écarts de forme à arbitrer', path('app_mdm_qualite', { onglet: 'conflits' })) }}
             {{ _self.compteur_grise('bg-old-gold', 'Écarts Salesforce', 'le miroir champ à champ arrive avec l\'intégration') }}
             {{ _self.compteur_grise('bg-primary', 'Champs en attente', 'créés, non encore diffusés') }}
             {{ _self.compteur_grise('bg-primary-3', 'Comptes à revoir', 'prestataires et internes inactifs') }}
-        {% elseif role == 'cp' %}
-            {{ _self.compteur_grise('bg-primary', 'Fiches consultées', 'sur les 7 derniers jours') }}
-            {{ _self.compteur_grise('bg-primary-3', 'Mes favoris', 'lieux et traiteurs récurrents') }}
-            {{ _self.compteur_grise('bg-old-gold', 'Demandes en cours', 'événements à sourcer') }}
-            {{ _self.compteur_grise('bg-peach', 'Fiches signalées', 'informations à corriger') }}
+        {% elseif vue == 'validateur' %}
+            {{ _self.compteur('bg-old-gold', 'En attente de validation', file_validation.total,
+                'toutes fiches confondues', url_file_validation) }}
+            {{ _self.compteur('bg-primary-3', 'Suggestions à arbitrer', anomalies,
+                'valeurs IA et adresses', path('app_mdm_qualite', { onglet: 'conflits' })) }}
+            {{ _self.compteur('bg-primary', 'Mes fiches assignées', compteurs.assignees,
+                'dont ' ~ compteurs.assignees_faibles ~ ' sous 50 % de complétude', url_mes_fiches) }}
+            {{ _self.compteur('bg-success', 'Mes validations', activite.validees, 'sur les 7 derniers jours') }}
         {% else %}
             {{ _self.compteur('bg-primary', 'Mes fiches assignées', compteurs.assignees,
                 'dont ' ~ compteurs.assignees_faibles ~ ' sous 50 % de complétude', url_mes_fiches) }}
@@ -174,7 +185,7 @@
 
     <div class="flex flex-col min-[1366px]:flex-row items-stretch min-[1366px]:items-start gap-4">
 
-        {% if role == 'admin' %}
+        {% if vue == 'admin' %}
         {# ---- Vue administrateur : l'intégrité du référentiel, règles réelles. ---- #}
         {% set severite_tons = { 'Bloquante': 'urgent', 'Majeure': 'proche', 'Mineure': 'neutre' } %}
         <section class="flex flex-col flex-1 min-w-0 gap-3.5 px-[26px] py-6 rounded-[20px]
@@ -218,17 +229,63 @@
                 </tbody>
             </table>
         </section>
-        {% elseif role == 'cp' %}
-        {# ---- Vue chef de projet : consultation, mécanismes à venir. ---- #}
-        <section title="{{ a_venir }}" class="flex flex-col flex-1 min-w-0 gap-3.5 px-[26px] py-6 rounded-[20px]
-                        bg-neutral-100 shadow-(--shadow) opacity-60">
+        {% elseif vue == 'validateur' %}
+        {# ---- Vue validateur : la file de validation globale, les plus anciennes en premier. ---- #}
+        <section class="flex flex-col flex-1 min-w-0 gap-3.5 px-[26px] py-6 rounded-[20px]
+                        bg-neutral-100 shadow-(--shadow)">
             <div class="flex items-baseline justify-between gap-4">
-                <twig:Typography variant="heading-3" element="h2" class="font-[700]!">Vos fiches récentes</twig:Typography>
-                <span class="inline-flex shrink-0"><twig:Tag label="À venir" variant="neutral" size="sm" /></span>
+                <twig:Typography variant="heading-3" element="h2" class="font-[700]!">File de validation</twig:Typography>
+                <twig:Typography variant="body-sm" textColor="neutral-500">Les plus anciennes soumissions en premier</twig:Typography>
             </div>
-            <twig:Typography variant="body" textColor="neutral-500" class="text-pretty">L'historique de
-                consultation, les favoris et les signalements arriveront avec le rôle Chef de projet. En
-                attendant, la recherche du référentiel reste ouverte en lecture.</twig:Typography>
+            {% if file_validation.lignes is not empty %}
+                <table class="w-full table-fixed border-separate border-spacing-0">
+                    <thead>
+                        <tr>
+                            {{ _self.entete('Fiche', 'w-[330px] pl-4 rounded-l-xs') }}
+                            {{ _self.entete('Gamme', 'w-[150px]') }}
+                            {{ _self.entete('Complétude', 'w-[130px]') }}
+                            {{ _self.entete('En attente depuis', 'w-auto') }}
+                            {{ _self.entete('Action', 'w-[100px] pr-4 rounded-r-xs text-right') }}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ligne in file_validation.lignes %}
+                            {% set ton = ligne.completeness is null or ligne.completeness < 50
+                                ? 'urgent' : (ligne.completeness < 75 ? 'proche' : 'neutre') %}
+                            <tr>
+                                <td class="box-border h-12 pl-4 pr-3 border-b border-neutral-200 truncate">
+                                    <twig:Typography variant="body" bold>{{ ligne.label ?? 'Sans libellé' }}</twig:Typography>
+                                    <twig:Typography variant="body-xs" textColor="neutral-500"> · {{ ligne.code }}</twig:Typography>
+                                </td>
+                                <td class="box-border h-12 pr-3 border-b border-neutral-200">
+                                    <span class="flex items-center gap-2 min-w-0 h-12 overflow-hidden">
+                                        <span class="shrink-0 w-2 h-2 rounded-lg {{ gamme_teintes[ligne.type] ?? 'bg-neutral-400' }}"
+                                              aria-hidden="true"></span>
+                                        <twig:Typography variant="body" ellipsis class="min-w-0">{{ gamme_libelles[ligne.type] ?? ligne.type }}</twig:Typography>
+                                    </span>
+                                </td>
+                                <td class="box-border h-12 pr-3 border-b border-neutral-200">
+                                    <span class="inline-block px-2.5 py-1 rounded-lg whitespace-nowrap {{ echeances[ton] }}">
+                                        <twig:Typography variant="body-xs" bold textColor="controlled">
+                                            {{- ligne.completeness is null ? 'À renseigner' : ligne.completeness ~ ' %' -}}
+                                        </twig:Typography>
+                                    </span>
+                                </td>
+                                <td class="box-border h-12 pr-3 border-b border-neutral-200 truncate">
+                                    <twig:Typography variant="body" textColor="neutral-500">{{ ligne.depuis|date('d/m/Y') }}</twig:Typography>
+                                </td>
+                                <td class="box-border h-12 pr-4 border-b border-neutral-200 text-right">
+                                    {% if ligne.url %}
+                                        <a href="{{ ligne.url }}" class="block text-[0.75rem] leading-5 font-[900] text-primary text-right hover:underline">Ouvrir</a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <twig:Typography variant="body-sm" textColor="neutral-500">Aucune fiche en attente de validation — la file est vide.</twig:Typography>
+            {% endif %}
         </section>
         {% else %}
         <section class="flex flex-col flex-1 min-w-0 gap-3.5 px-[26px] py-6 rounded-[20px]
@@ -297,19 +354,16 @@
                 <ul class="flex flex-wrap gap-2.5 m-0 p-0 list-none">
                     {% set pilule = 'inline-block px-4 py-2.5 rounded-lg bg-primary-4 text-[0.75rem] leading-5 font-[900] text-primary-3 hover:bg-primary hover:text-neutral-100' %}
                     {% set pilule_grise = 'inline-block px-4 py-2.5 rounded-lg bg-neutral-200 text-[0.75rem] leading-5 font-[900] text-neutral-500 opacity-60 cursor-not-allowed' %}
-                    {% if role == 'admin' %}
-                        {% if is_granted('ROLE_ADMIN') %}
-                            <li><a href="{{ path('app_pim_lov_index') }}" class="{{ pilule }}">Gérer les listes de valeurs</a></li>
-                            <li><a href="{{ path('app_parametre_index') }}" class="{{ pilule }}">Paramètres applicatifs</a></li>
-                            <li><a href="{{ path('app_pim_relance_completude_index') }}" class="{{ pilule }}">Relances complétude</a></li>
-                        {% endif %}
+                    {% if vue == 'admin' %}
+                        <li><a href="{{ path('app_pim_lov_index') }}" class="{{ pilule }}">Gérer les listes de valeurs</a></li>
+                        <li><a href="{{ path('app_parametre_index') }}" class="{{ pilule }}">Paramètres applicatifs</a></li>
+                        <li><a href="{{ path('app_pim_relance_completude_index') }}" class="{{ pilule }}">Relances complétude</a></li>
                         <li><a href="{{ path('app_mdm_outils') }}" class="{{ pilule }}">Journal des traitements</a></li>
                         <li><span title="{{ a_venir }}" class="{{ pilule_grise }}">Rôles &amp; droits</span></li>
-                    {% elseif role == 'cp' %}
-                        <li><a href="{{ path('app_mdm_referentiel_general') }}" class="{{ pilule }}">Rechercher un lieu</a></li>
-                        <li><span title="{{ a_venir }}" class="{{ pilule_grise }}">Mes favoris</span></li>
-                        <li><span title="{{ a_venir }}" class="{{ pilule_grise }}">Signaler une erreur</span></li>
-                        <li><span title="{{ a_venir }}" class="{{ pilule_grise }}">Ouvrir dans Salesforce</span></li>
+                    {% elseif vue == 'validateur' %}
+                        <li><a href="{{ url_file_validation }}" class="{{ pilule }}">File de validation complète</a></li>
+                        <li><a href="{{ path('app_mdm_qualite', { onglet: 'conflits' }) }}" class="{{ pilule }}">Arbitrer les suggestions</a></li>
+                        <li><a href="{{ url_mes_fiches }}" class="{{ pilule }}">Mes fiches</a></li>
                     {% else %}
                         <li><a href="{{ path('app_mdm_creation_fiche') }}" class="{{ pilule }}">Créer une fiche</a></li>
                         <li><a href="{{ url_mes_fiches }}" class="{{ pilule }}">Mes fiches</a></li>

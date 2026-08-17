@@ -109,6 +109,48 @@ final readonly class EspaceTravailRepository
         return $priorites;
     }
 
+    /**
+     * La file de validation globale : toutes les fiches soumises, les plus
+     * anciennes en premier — la vue Validateur de l'espace de travail.
+     *
+     * @return array{total: int, lignes: list<array{id: string, type: string, code: int,
+     *     label: ?string, completeness: ?int, depuis: string}>}
+     */
+    public function fileValidation(int $limit = 7): array
+    {
+        $total = (int) $this->connection->fetchOne(
+            "SELECT COUNT(*) FROM pim_fiche WHERE status = 'en_attente_validation'",
+        );
+        $rows = $this->connection->fetchAllAssociative(
+            sprintf(
+                <<<'SQL'
+                SELECT f.id, f.type, f.code, f.label, f.updated_at, %1$s AS completeness
+                FROM pim_fiche f
+                %2$s
+                WHERE f.status = 'en_attente_validation'
+                ORDER BY f.updated_at ASC
+                LIMIT %3$d
+                SQL,
+                self::COMPLETENESS,
+                self::JOINS,
+                max(1, $limit),
+            ),
+        );
+        $lignes = [];
+        foreach ($rows as $row) {
+            $lignes[] = [
+                'id' => (string) Ulid::fromBinary((string) $row['id']),
+                'type' => (string) $row['type'],
+                'code' => (int) $row['code'],
+                'label' => null === $row['label'] ? null : (string) $row['label'],
+                'completeness' => null === $row['completeness'] ? null : (int) $row['completeness'],
+                'depuis' => (string) $row['updated_at'],
+            ];
+        }
+
+        return ['total' => $total, 'lignes' => $lignes];
+    }
+
     /** @return array{creees: int, modifiees: int, validees: int, publiees: int} Mon activité depuis la date donnée. */
     public function activite(string $userId, \DateTimeImmutable $depuis): array
     {

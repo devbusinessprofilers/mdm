@@ -13,20 +13,25 @@ use App\Pim\Repository\SavedViewRepository;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
 /**
- * Assemble l'espace de travail : la vue Supply (mes fiches, mes priorités,
- * mon activité) et la vue Administrateur (intégrité du référentiel, comptée
- * sur les mêmes règles que les écrans Qualité et Médias). La vue Chef de
- * projet attend ses mécanismes (consultations, favoris, signalements).
+ * Assemble l'espace de travail. Les vues suivent les rôles du CDC : Éditeur
+ * (mes fiches, mes priorités), Validateur (la file de validation globale et
+ * les arbitrages) et Administrateur (intégrité du référentiel). Chaque vue
+ * n'est proposée qu'aux rôles qui la couvrent — voir EspaceTravailController.
  */
 final readonly class EspaceTravailEcran
 {
-    public const ROLE_PAR_DEFAUT = 'supply';
-
-    /** @var array<string, string> */
-    public const ROLES = [
-        'supply' => 'Supply',
+    /** Vue par rôle CDC ; l'ordre va du plus courant au plus large. */
+    public const VUES = [
+        'editeur' => 'Éditeur',
+        'validateur' => 'Validateur',
         'admin' => 'Administrateur',
-        'cp' => 'Chef de projet',
+    ];
+
+    /** Rôle de sécurité exigé par chaque vue. */
+    public const ROLE_PAR_VUE = [
+        'editeur' => 'ROLE_BP_EDITOR',
+        'validateur' => 'ROLE_BP_VALIDATOR',
+        'admin' => 'ROLE_ADMIN',
     ];
 
     public function __construct(
@@ -39,33 +44,29 @@ final readonly class EspaceTravailEcran
     ) {
     }
 
-    /** @return array<string, mixed> Variables du gabarit mdm/espace_travail.html.twig. */
-    public function variables(string $userId, string $role = self::ROLE_PAR_DEFAUT): array
+    /**
+     * @param list<string> $vuesAutorisees Clés de self::VUES couvertes par le rôle courant.
+     *
+     * @return array<string, mixed> Variables du gabarit mdm/espace_travail.html.twig.
+     */
+    public function variables(string $userId, string $vue, array $vuesAutorisees): array
     {
         $priorites = [];
         foreach ($this->repository->priorites($userId) as $priorite) {
-            $type = TypeFiche::tryFrom($priorite['type']);
-            $priorites[] = $priorite + ['url' => match ($type) {
-                TypeFiche::Lieu => $this->urls->generate('app_mdm_fiche_lieu', ['id' => $priorite['id']]),
-                TypeFiche::Restaurant, TypeFiche::Activite, TypeFiche::ServiceEvenementiel => $this->urls->generate('app_mdm_fiche_gamme', [
-                    'gamme' => FicheEditeurEcran::slug($type),
-                    'id' => $priorite['id'],
-                ]),
-                default => null,
-            }];
+            $priorites[] = $priorite + ['url' => $this->urlFiche($priorite['type'], $priorite['id'])];
         }
         $vuesEnregistrees = [];
-        foreach ($this->vues->findVisiblesPour($userId) as $vue) {
+        foreach ($this->vues->findVisiblesPour($userId) as $vueEnregistree) {
             $vuesEnregistrees[] = [
-                'vue' => $vue,
-                'url' => $this->urls->generate('app_mdm_referentiel_general', ['f' => $vue->filters()]),
+                'vue' => $vueEnregistree,
+                'url' => $this->urls->generate('app_mdm_referentiel_general', ['f' => $vueEnregistree->filters()]),
             ];
         }
         $badges = $this->qualite->badges();
 
         return [
-            'role' => $role,
-            'roles' => self::ROLES,
+            'vue' => $vue,
+            'vues_autorisees' => array_intersect_key(self::VUES, array_flip($vuesAutorisees)),
             'compteurs' => $this->repository->compteurs($userId),
             'priorites' => $priorites,
             'activite' => $this->repository->activite($userId, new \DateTimeImmutable('-7 days')),
@@ -76,11 +77,39 @@ final readonly class EspaceTravailEcran
             'url_en_attente' => $this->urls->generate('app_mdm_referentiel_general', [
                 'f' => ['contributeurs' => [$userId], 'statuts' => ['en_attente_validation']],
             ]),
+            'url_file_validation' => $this->urls->generate('app_mdm_referentiel_general', [
+                'f' => ['statuts' => ['en_attente_validation']],
+            ]),
             // Le rail « Contrôle » : les anomalies à arbitrer, comptées comme
             // sur l'écran Qualité.
             'anomalies' => $badges['conflits'],
-            'integrite' => 'admin' === $role ? $this->integrite($badges) : null,
+            'file_validation' => 'validateur' === $vue ? $this->fileValidation() : null,
+            'integrite' => 'admin' === $vue ? $this->integrite($badges) : null,
         ];
+    }
+
+    /** @return array<string, mixed> La file de validation globale, fiches liées. */
+    private function fileValidation(): array
+    {
+        $file = $this->repository->fileValidation();
+        foreach ($file['lignes'] as &$ligne) {
+            $ligne['url'] = $this->urlFiche($ligne['type'], $ligne['id']);
+        }
+        unset($ligne);
+
+        return $file;
+    }
+
+    private function urlFiche(string $type, string $id): ?string
+    {
+        return match (TypeFiche::tryFrom($type)) {
+            TypeFiche::Lieu => $this->urls->generate('app_mdm_fiche_lieu', ['id' => $id]),
+            TypeFiche::Restaurant, TypeFiche::Activite, TypeFiche::ServiceEvenementiel => $this->urls->generate('app_mdm_fiche_gamme', [
+                'gamme' => FicheEditeurEcran::slug(TypeFiche::from($type)),
+                'id' => $id,
+            ]),
+            default => null,
+        };
     }
 
     /**

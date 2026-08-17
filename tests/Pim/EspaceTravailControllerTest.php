@@ -65,19 +65,31 @@ final class EspaceTravailControllerTest extends WebTestCase
         $entityManager->flush();
         $client->loginUser($user);
 
+        // Un validateur arrive sur la vue Validateur : la file de validation
+        // globale, les plus anciennes soumissions en premier.
         $crawler = $client->request('GET', '/espace-de-travail');
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'Bonjour');
+        $texte = $crawler->text(null, true);
+        self::assertStringContainsString('File de validation', $texte);
+        self::assertSelectorTextContains('table', 'Manoir en attente');
+        self::assertSelectorTextNotContains('table', 'Château prioritaire');
+        $cartes = $crawler->filter('.card-grid .card .stat-value');
+        self::assertSame(4, $cartes->count());
+        self::assertSame('1', trim($cartes->eq(0)->text()), 'La file de validation compte toutes les fiches soumises.');
+        self::assertSame('2', trim($cartes->eq(2)->text()), 'Mes fiches assignées restent visibles au validateur.');
+        // La vue Administrateur n'est pas proposée à un validateur.
+        self::assertStringNotContainsString('Administrateur', $texte);
 
+        // La vue Éditeur : mes fiches, mes priorités, cartes maquette grisées.
+        $crawler = $client->request('GET', '/espace-de-travail', ['vue' => 'editeur']);
+        self::assertResponseIsSuccessful();
         $texte = $crawler->text(null, true);
         self::assertStringContainsString('dont 2 sous 50 % de complétude', $texte);
         self::assertSelectorTextContains('table', 'Château prioritaire');
         self::assertSelectorTextContains('table', 'Manoir en attente');
         self::assertSelectorTextNotContains('table', 'Domaine des autres');
         self::assertStringContainsString('Ouvrir', $texte);
-
-        // Les compteurs réels : assignées et en attente de validation. Les deux
-        // cartes maquette sans back (contributions, campagnes IA) sont grisées.
         $cartes = $crawler->filter('.card-grid .card .stat-value');
         self::assertSame(2, $cartes->count());
         self::assertSame('2', trim($cartes->eq(0)->text()));
@@ -85,6 +97,11 @@ final class EspaceTravailControllerTest extends WebTestCase
         self::assertStringContainsString('Contributions prestataires', $texte);
         self::assertStringContainsString('Campagnes IA en cours', $texte);
         self::assertStringContainsString('À venir', $texte);
+
+        // Une vue hors périmètre retombe sur la plus large du rôle.
+        $crawler = $client->request('GET', '/espace-de-travail', ['vue' => 'admin']);
+        self::assertResponseIsSuccessful();
+        self::assertStringContainsString('File de validation', $crawler->text(null, true));
     }
 
     private function clearTables(): void
