@@ -427,7 +427,7 @@
                 <table class="w-full border-collapse">
                     <thead class="sticky top-0 z-1 bg-primary-5">
                         <tr class="h-[42px] group-data-[densite=compacte]/tableau:h-9 border-b border-neutral-200 text-left">
-                            <th class="pl-4 pr-3 w-[46px]">
+                            <th class="pl-4 pr-4 w-[50px] max-w-[50px] box-border">
                                 <button type="button" role="checkbox" aria-checked="false"
                                         class="group/tete block cursor-pointer"
                                         data-liste-target="caseTete" data-action="liste#basculerTout">
@@ -460,7 +460,7 @@
                         <tr class="h-[54px] group-data-[densite=compacte]/tableau:h-10 border-t border-neutral-200 first:border-t-0 align-middle"
                             data-liste-target="ligne">
 
-                            <td class="pl-4 pr-3 w-[46px]">
+                            <td class="pl-4 pr-4 w-[50px] max-w-[50px] box-border">
                                 {% if cases[loop.index0] is defined %}
                                     <label class="inline-flex cursor-pointer">
                                         {{ form_widget(cases[loop.index0], { label: false, attr: {
