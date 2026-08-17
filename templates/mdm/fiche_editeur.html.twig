@@ -132,12 +132,23 @@
                     <twig:Typography variant="body-sm" textColor="neutral-500" element="span">{{ entete.reference }} · v{{ entete.version }} · {{ statut_libelles[entete.statut] ?? entete.statut }} · Complété à {{ entete.completude }} %</twig:Typography>
                 </p>
             </div>
-            <div class="flex flex-wrap items-center gap-2 shrink-0">
+            <div class="flex flex-wrap items-center justify-end gap-2 shrink-0 [&_form]:contents">
                 {# Ouvre la modale d'extraction (le flux OCR réel), comme la maquette. #}
                 <twig:Modal:TriggerButton variant="outline" size="sm" icon="upload-simple"
                                           modalIdentifier="extraction">Extraire d'un document</twig:Modal:TriggerButton>
                 <twig:Button variant="outline" size="sm" asLink href="{{ liens.traductions }}">Traductions</twig:Button>
                 <twig:Button variant="outline" size="sm" asLink href="{{ liens.historique }}">Historique</twig:Button>
+
+                {# Workflow d'états + suppression : mêmes gabarits, même rangée.
+                   Le refus (motif obligatoire) vit sous l'en-tête, pas ici. #}
+                {% for nom, action in actions|filter((a, n) => n != 'reject') %}
+                    {% set attribut = {'submit': 'FICHE_SUBMIT', 'validate': 'FICHE_VALIDATE', 'publish': 'FICHE_PUBLISH', 'archive': 'FICHE_ARCHIVE'}[nom] %}
+                    {% if is_granted(attribut, fiche) %}{{ form(action) }}{% endif %}
+                {% endfor %}
+                {% if is_granted('FICHE_DELETE', fiche) %}
+                    {# Suppression définitive de la fiche (confirmation demandée). #}
+                    <span class="danger-form contents [&_button]:bg-error! [&_button]:border-error! [&_button_span]:text-neutral-100!">{{ form(action_suppression) }}</span>
+                {% endif %}
             </div>
         </div>
 
@@ -148,14 +159,13 @@
 
         {% include 'dam/_fiche_alerts.html.twig' %}
 
-        {# Workflow d'états #}
-        <div class="flex flex-wrap items-center gap-2">
-            {% for nom, action in actions %}
-                {% set attribut = {'submit': 'FICHE_SUBMIT', 'validate': 'FICHE_VALIDATE', 'reject': 'FICHE_VALIDATE', 'publish': 'FICHE_PUBLISH', 'archive': 'FICHE_ARCHIVE'}[nom] %}
-                {% if is_granted(attribut, fiche) %}{{ form(action) }}{% endif %}
-            {% endfor %}
-            {% if is_granted('FICHE_DELETE', fiche) %}<div class="danger-form [&_button]:bg-error! [&_button_span]:text-neutral-100!">{{ form(action_suppression) }}</div>{% endif %}
-        </div>
+        {# Refus avec motif : réservé aux validateurs quand la fiche est en attente. #}
+        {% if actions.reject is defined and is_granted('FICHE_VALIDATE', fiche) %}
+            <details class="rounded-md bg-neutral-100 shadow-(--shadow) px-4 py-3">
+                <summary class="cursor-pointer"><twig:Typography variant="body-sm" bold element="span">Refuser la fiche (motif obligatoire)</twig:Typography></summary>
+                <div class="pt-3 max-w-[560px]">{{ form(actions.reject) }}</div>
+            </details>
+        {% endif %}
     </div>
 
     <span data-fiche-onglets-haut></span>

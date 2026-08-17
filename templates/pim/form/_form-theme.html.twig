@@ -155,14 +155,17 @@
     {#- `name` et `id` sont indispensables : Symfony détecte un bouton d'action
         cliqué (SubmitButton::isClicked) par la présence de son `name` dans la
         requête. Sans lui, les boutons nommés (« Créer quand même », etc.) ne
-        déclenchent plus rien. -#}
+        déclenchent plus rien.
+        Apparence pilotable par le champ : attr `data-variant`, `data-size`,
+        `data-full` (défauts inchangés : primary, pleine largeur). -#}
     <twig:Button
-        variant="primary"
+        variant="{{ attr['data-variant']|default('primary') }}"
+        size="{{ attr['data-size']|default('lg') }}"
         type="{{ type|default('button') }}"
         name="{{ full_name }}"
         id="{{ id }}"
         :disabled="disabled"
-        full
+        :full="attr['data-full']|default(true) == true"
     >{{ button_label }}</twig:Button>
 {%- endblock -%}
 

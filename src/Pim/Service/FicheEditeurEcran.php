@@ -49,6 +49,9 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
  */
 final readonly class FicheEditeurEcran
 {
+    /** Boutons d'en-tête : même gabarit que les liens Extraire/Traductions/Historique. */
+    private const BOUTON_SOBRE = ['data-variant' => 'outline', 'data-size' => 'sm', 'data-full' => '0'];
+
     private const PREFIXES = [
         'lieu' => 'LIE',
         'restaurant' => 'RES',
@@ -247,18 +250,18 @@ final readonly class FicheEditeurEcran
                 'historique' => $this->routes->historyUrl($type, $id),
             ],
             'actions' => array_filter([
-                'submit' => 'en_cours' === $statut ? $this->actions->action($domaine, $id, 'submit', 'Soumettre à validation')->createView() : null,
-                'validate' => 'en_attente_validation' === $statut ? $this->actions->action($domaine, $id, 'validate', 'Valider')->createView() : null,
+                'submit' => 'en_cours' === $statut ? $this->actions->action($domaine, $id, 'submit', 'Soumettre à validation', buttonAttr: self::BOUTON_SOBRE)->createView() : null,
+                'validate' => 'en_attente_validation' === $statut ? $this->actions->action($domaine, $id, 'validate', 'Valider', buttonAttr: self::BOUTON_SOBRE)->createView() : null,
                 'reject' => 'en_attente_validation' === $statut ? $this->actions->reject($domaine, $id)->createView() : null,
-                'publish' => 'validee' === $statut ? $this->actions->action($domaine, $id, 'publish', 'Publier')->createView() : null,
-                'archive' => 'publiee' === $statut ? $this->actions->action($domaine, $id, 'archive', 'Archiver')->createView() : null,
+                'publish' => 'validee' === $statut ? $this->actions->action($domaine, $id, 'publish', 'Publier', buttonAttr: self::BOUTON_SOBRE)->createView() : null,
+                'archive' => 'publiee' === $statut ? $this->actions->action($domaine, $id, 'archive', 'Archiver', buttonAttr: self::BOUTON_SOBRE)->createView() : null,
             ]),
             'action_suppression' => $this->actions->action($domaine, $id, 'delete', 'Supprimer', true, match ($type) {
                 TypeFiche::Lieu => 'Supprimer ce lieu ?',
                 TypeFiche::Activite => 'Supprimer cette activité ?',
                 TypeFiche::Restaurant => 'Supprimer ce restaurant ?',
                 default => 'Supprimer ce service ?',
-            })->createView(),
+            }, self::BOUTON_SOBRE)->createView(),
             // Tous les blocs sont calculés quel que soit l'onglet actif : les
             // onglets basculent côté client sans recharger, le gabarit rend
             // chaque bloc dans le volet de sa section.

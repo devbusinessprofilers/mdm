@@ -109,7 +109,10 @@
                     {% for type, messages in app.flashes %}
                         {% for message in messages %}
                             <div class="mx-6 mt-4">
-                                <twig:Alert icon="{{ type == 'success' ? 'check-circle' : (type in ['error', 'danger'] ? 'cross-circle' : 'info-circle') }}">
+                                {# Le ton suit le type : rouge pour l'erreur, ocre pour l'avertissement. #}
+                                <twig:Alert icon="{{ type == 'success' ? 'check-circle' : (type in ['error', 'danger'] ? 'cross-circle' : (type == 'warning' ? 'warning' : 'info-circle')) }}"
+                                            role="{{ type in ['error', 'danger', 'warning'] ? 'alert' : 'status' }}"
+                                            class="{{ type in ['error', 'danger'] ? 'bg-error!' : (type == 'warning' ? 'bg-old-gold!' : '') }}">
                                     {{- message -}}
                                 </twig:Alert>
                             </div>

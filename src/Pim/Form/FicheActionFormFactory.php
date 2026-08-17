@@ -20,11 +20,13 @@ final readonly class FicheActionFormFactory
     ) {}
 
     /** @return FormInterface<mixed> */
-    public function action(string $domain, string $id, string $name, string $label, bool $confirmDelete = false, string $confirmMessage = 'Supprimer cette fiche ?'): FormInterface
+    /** @param array<string, string> $buttonAttr Attributs du bouton (data-variant/data-size/data-full pour le thème). */
+    public function action(string $domain, string $id, string $name, string $label, bool $confirmDelete = false, string $confirmMessage = 'Supprimer cette fiche ?', array $buttonAttr = []): FormInterface
     {
         $options = [
             'action' => $this->urls->generate('app_pim_'.$domain.'_'.$name, ['id' => $id]),
             'button_label' => $label,
+            'button_attr' => $buttonAttr,
             'csrf_token_id' => $name.'-'.$domain.'-'.$id,
         ];
         if ($confirmDelete) {
