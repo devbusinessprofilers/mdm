@@ -61,7 +61,7 @@ Options communes des imports de fiches : `--file`, `--dry-run`, `--limit`, `--fr
 | Nom Français | `Fiche.label` | obligatoire, tronqué 255 |
 | Gamme | `Lieu.generaleGammeLibelle` | + filtre de périmètre |
 | Classification (★…/Palace) | `generaleTypologie` | ★★→`GENERALE_TYPOLOGIE_1` … ★★★★★→`_4`, Palace→`_5` |
-| Type de lieux (JSON) | `generaleTypologie` | libellés du catalogue + alias : Kartings→`_21`, Résidence/Appart'hotel→`_13`, Salle / Bureau→`_38`, Lieu avec incentive intégré→`_40` ; « Avec Hébergements » → `chambreHebergement(true)` ; inconnu → `_40` + warning |
+| Type de lieux (JSON) | `generaleTypologie` | libellés du catalogue + alias Kartings→`_21` ; Résidence/Appart'hôtel→`_42`, Salle / Bureau→`_43`, Lieu avec incentive intégré→`_41` (valeurs dédiées créées le 2026-08-17) ; « Avec Hébergements » → `chambreHebergement(true)` ; « Restaurant » (gamme à part) et inconnu → `_40` + warning |
 | Thématique (JSON) | `taCadreEnv` / `taThematique` / `generaleTypologie` / `demarcheRse` | Mer/Au vert/Campagne/Montagne/Lac/Centre Ville → cadre env ; Bien-être/Golf/Eco-responsable/Gastronomique/Oenotourisme/Châteaux → thématique ; « Esat » → typologie « Lieu ESAT » (`GENERALE_TYPOLOGIE_11`), « RSE » → case `demarcheRse` (repris 2026-08-14) ; « Pas de Thème », « Ile » ignorés |
 | Nombre de chambres / twin / single / capacité | `chambreNbTotal/NbTotalTwin/NbTotalSingle/CapaciteTotale` | `0`/vide → null ; total > 0 → `chambreHebergement(true)` |
 | Nombre / capacités / surface salles agrégées | `salleReunion{NbTotal, CapaciteMaxCocktail, CapaciteMaxTheatre, SurfaceMaxReunion, Exist}` | `Exist` = nb > 0 |
@@ -72,7 +72,7 @@ Options communes des imports de fiches : `--file`, `--dry-run`, `--limit`, `--fr
 | Description générale | `descGenerale` | **tronqué 1 000** + warning (limite « Bible » ; texte intégral récupérable via bp-dump) |
 | Hébergement | `chambreDescGenerale` | tronqué 1 000 + warning |
 | Salles de séminaires | `salleReunionDescSalleSeminaire` | non tronqué (TEXT) |
-| Loisirs 1-8 (+ Court de tennis, Parcours de golf) | `loisirInterne` | liste dédupliquée |
+| Loisirs 1-8 | `loisirInterne` | liste dédupliquée ; « Court de tennis » / « Parcours de golf » abandonnés le 2026-08-17 (plus injectés) |
 | Les plus 1-5 | `atout1..5` | **tronqué 35** + warning |
 | Journée d'étude / Séminaire résidentiel | `tarification().seminaireJourneeJourneeEtude` / `seminaireNuiteeResidentiel` | `0`/vide → non renseigné |
 | Wifi, Fibre, Clim salles | `techniqueReunion` | `TECHNIQUE_REUNION_1/_2/_10` |
@@ -97,7 +97,7 @@ importées.
 | Id syspad | `Fiche.code` + pivot | idem Lieu |
 | Publié / non publié | statut fiche | idem Lieu |
 | Nom Français | `Fiche.label` | tronqué 255 |
-| Type d'activités (JSON, multi) | `thematiques` (**multi**) | tous les types mappables sont conservés : Sportives→`TA_SPORTIVE_LUDIQUE`, Sensations Fortes & Sports Mécaniques / Aériennes→`TA_SENSATION_SPORT_MECA`, Nautiques→`TA_NAUTIQUE_AQUATIQUE`, Culinaires & Oenologiques→`TA_CULINAIRE_OENOLOGIQUE`, Créatives…→`TA_CREATIVE_ARTISTIQUE_MUSICALE`, Culturelles & Découvertes→`TA_CULTURELLE_REFLEXION_DECOUVERTE`, Nature / RSE→`TA_NATURE_RSE`, Détentes→`TA_BIEN_ETRE_DETENTE`, Digitales High Tech→`TA_DIGITAL_HIGH_TECH` ; **« Insolites » sans équivalent** → warning |
+| Type d'activités (JSON, multi) | `thematiques` (**multi**) | tous les types mappables sont conservés : Sportives→`TA_SPORTIVE_LUDIQUE`, Sensations Fortes & Sports Mécaniques / Aériennes→`TA_SENSATION_SPORT_MECA`, Nautiques→`TA_NAUTIQUE_AQUATIQUE`, Culinaires & Oenologiques→`TA_CULINAIRE_OENOLOGIQUE`, Créatives…→`TA_CREATIVE_ARTISTIQUE_MUSICALE`, Culturelles & Découvertes→`TA_CULTURELLE_REFLEXION_DECOUVERTE`, Nature / RSE→`TA_NATURE_RSE`, Détentes→`TA_BIEN_ETRE_DETENTE`, Digitales High Tech→`TA_DIGITAL_HIGH_TECH`, Insolites→`TA_INSOLITE` (valeur dédiée créée le 2026-08-17) |
 | — | `sousThematiques` (multi, LOV `SOUS_THEMATIQUE_ACTIVITE`, 64 valeurs Bible) | **aucune donnée legacy** : à renseigner à la main dans l'admin (cases affichées selon les thématiques cochées) |
 | Objectifs de l'activité (texte multiligne) | `objectifs` | Cohésion d'équipe/Fédérer/Intégration→`OBJECTIF_SEMINAIRE_1`, Communiquer→`_2`, Motiver→`_3`, Sensibiliser→`_5`, Récompenser/Fidéliser→`_6`, Animer/Challenger/Stimuler→`_8` ; libellé inconnu → warning |
 | Description générale | `descriptionGenerale` | non tronqué |

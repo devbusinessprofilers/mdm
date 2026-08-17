@@ -41,6 +41,7 @@ final class ActiviteLovCatalog
             'TA_NATURE_RSE' => 'Nature & RSE',
             'TA_BIEN_ETRE_DETENTE' => 'Bien-être & Détente',
             'TA_DIGITAL_HIGH_TECH' => 'Digital & High-Tech',
+            'TA_INSOLITE' => 'Insolites',
         ],
         // Sous-thématiques (Bible, onglet LOV) : un attribut par thématique
         // — code `{THEMATIQUE}_SS` — comme les listes des lieux ; le code de

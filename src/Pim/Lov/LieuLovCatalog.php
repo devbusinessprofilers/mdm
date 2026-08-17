@@ -48,6 +48,9 @@ final class LieuLovCatalog
             'GENERALE_TYPOLOGIE_37' => 'Cabaret',
             'GENERALE_TYPOLOGIE_38' => 'Salle de réception',
             'GENERALE_TYPOLOGIE_39' => 'Salle sèche',
+            'GENERALE_TYPOLOGIE_41' => 'Lieu avec incentive intégré',
+            'GENERALE_TYPOLOGIE_42' => 'Résidence / Appart\'hôtel',
+            'GENERALE_TYPOLOGIE_43' => 'Salle / Bureau',
             'GENERALE_TYPOLOGIE_40' => 'Autres Types de Lieux',
         ],
         'GENERALE_CHAINES_GROUPE_HOT' => [

@@ -25,6 +25,7 @@ final class ImportSchemaCoverageTest extends KernelTestCase
         \App\Pim\Entity\Lieu\Lieu::class => [
             'changeGeneraleGamme',      // colonne de repli dépréciée
             'changeDispoJourOuverture', // colonne de repli dépréciée
+            'changeDemarcheRse',        // déduit du thème « RSE » par le row mapper legacy, pas une colonne CSV
         ],
     ];
 

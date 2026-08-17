@@ -23,7 +23,7 @@ final class LegacyActiviteLovMapper
         'rse' => 'TA_NATURE_RSE',
         'detentes' => 'TA_BIEN_ETRE_DETENTE',
         'digitales, high tech' => 'TA_DIGITAL_HIGH_TECH',
-        // « Insolites » n'a pas d'équivalent dans le catalogue.
+        'insolites' => 'TA_INSOLITE',
     ];
 
     /** Libellé objectif normalisé → code OBJECTIF_SEMINAIRE. */

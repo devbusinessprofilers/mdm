@@ -218,22 +218,46 @@ Conséquences assumées :
   dictionnaire PIM** (`/admin/listes-de-valeurs`) — c'est désormais l'unique
   porte d'entrée.
 
-## Valeurs sans équivalent — audit du 2026-08-12, à arbitrer avec le métier
+## Valeurs sans équivalent — audit du 2026-08-12, arbitré avec le métier le 2026-08-17
 
-Rien ne bloque techniquement : ajouter une valeur dans l'admin PIM
-(`/admin/listes-de-valeurs`) suffit, la sync et la projection sont
-automatiques. Pour chaque ligne : créer la valeur dans le PIM, ou acter
-l'abandon.
+Rien ne bloque techniquement : ajouter une valeur dans le catalogue PIM
+suffit, la sync et la projection sont automatiques. Arbitrage rendu le
+2026-08-17 : quatre valeurs **créées** dans le dictionnaire, le reste
+**abandonné**.
 
-### Valeurs legacy purgées sans équivalent au dictionnaire
+### Valeurs créées le 2026-08-17 (PIM + projection marketplace)
 
-| Référentiel | Disparues | Remarque |
+Ajoutées aux catalogues statiques **et** au registre runtime
+`pim_attribute_value` (migration `Version20260817100000`, identifiants
+stables via `LieuLovCatalog::valueId` / `ActiviteLovCatalog::valueId`), puis
+poussées vers la marketplace par `app:marketplace:sync --lov` (projection
+`bp_type_lieu` / `bp_type_activite` par `pim_code`).
+
+| Référentiel | Valeur créée | Code | Reprise legacy |
+|---|---|---|---|
+| Type de lieu | Lieu avec incentive intégré | `GENERALE_TYPOLOGIE_41` | 280 fiches (repli sur « Autres » supprimé) |
+| Type de lieu | Résidence / Appart'hôtel | `GENERALE_TYPOLOGIE_42` | 203 fiches (repli sur « Appartement / Loft » supprimé) |
+| Type de lieu | Salle / Bureau | `GENERALE_TYPOLOGIE_43` | 3 739 fiches (repli sur « Salle de réception » supprimé) |
+| Thématique d'activité | Insolites | `TA_INSOLITE` | 490 fiches gamme activité (« Idée ») ; l'import legacy les mappait vers rien |
+
+Les trois alias `TYPOLOGIE_ALIASES` correspondants ont été retirés du
+`LegacyLovMapper` : le lookup par libellé du catalogue résout désormais ces
+labels vers leurs codes dédiés.
+
+### Valeurs abandonnées le 2026-08-17 (aucun code — déjà géré proprement)
+
+| Référentiel | Abandonnée | Traitement en place |
 |---|---|---|
-| Types de lieu | Lieu avec incentive intégré · Avec Hébergements · Restaurant · Résidence / Appart'hotel · Salle / Bureau | « Avec Hébergements » = critère (bloc hébergement) ; « Restaurant » = type de fiche à part ; cousins possibles : « Appartement / Loft », « Salle sèche / de réception » |
-| Thèmes | **Île** | Esat → typologie existante « Lieu ESAT » (`GENERALE_TYPOLOGIE_11`), RSE → case à cocher `demarche_rse` du lieu (repris 2026-08-14, PIM + marketplace) ; Île n'a aucun équivalent |
-| Équipements | **Court de tennis** · **Parcours de golf** | Fibre Optique → « Connexion internet filaire », Accès PMR → champ dédié `pmr` du lieu (repris 2026-08-14 ; la marketplace consomme désormais `data.pmr`) ; tennis/golf absents de toutes les listes (« Golf » = thématique, « Golfs » = typologie) |
-| Types d'activité | **Insolites** | seul « Atypique / Insolite » existe, en ambiance de lieu |
-| Objectifs | **Animer** · **Intégration** | les 8 autres ont des équivalents élargis |
+| Type de lieu | Avec Hébergements | déjà consommé comme **flag `hebergement`** (bloc hébergement), jamais une typologie |
+| Type de lieu | Restaurant | n'apparaît pas comme type de lieu dans le CSV (gamme de fiche à part) |
+| Thème | **Île** | déjà dans `IGNORED_THEMES` du `LegacyLovMapper` |
+| Équipement | **Court de tennis** · **Parcours de golf** | injection en loisirs internes **retirée** du `LegacyLieuRowMapper` (la marketplace les droppait déjà — référentiel loisirs fermé) |
+| Objectif | **Animer** · **Intégration** | déjà repliés sur des objectifs existants (`OBJECTIF_SEMINAIRE_8` / `_1`) par le mapper activité |
+
+Rappel Esat/RSE/Fibre/PMR (repris 2026-08-14) : Esat → typologie « Lieu
+ESAT » (`GENERALE_TYPOLOGIE_11`), RSE → case `demarche_rse`, Fibre optique →
+« Connexion internet filaire », Accès PMR → champ dédié `pmr` du lieu
+(marketplace : `data.pmr`).
 
 ### Types de prestataire — résolu le 2026-08-13 (fausse alerte)
 
@@ -404,9 +428,9 @@ marketplace continue de les résoudre en rôles à la réception.
 
 ## Points ouverts
 
-- Arbitrage métier des valeurs sans équivalent ci-dessus (types de
-  prestataire résolus le 2026-08-13 : restent Île, tennis/golf, Insolites,
-  Animer, Intégration et les cousins approximatifs).
+- Arbitrage des valeurs sans équivalent **clos le 2026-08-17** : 4 valeurs
+  créées (incentive, résidence, salle/bureau, Insolites), le reste abandonné
+  (voir la section dédiée). Types de prestataire résolus le 2026-08-13.
 - Sous-prestations `TYPE_PRESTATAIRE` du CDC à implémenter dans le PIM
   (Photographe, Imprimeur, PLV / Signalétique…) pour retrouver la
   granularité des anciens types de prestataire.

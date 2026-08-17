@@ -70,6 +70,20 @@ final class LegacyActiviteRowMapperTest extends TestCase
         self::assertNotNull($mapped->photosJson);
     }
 
+    public function testInsolitesActivityTypeIsMapped(): void
+    {
+        $mapped = $this->mapper->map($this->row([
+            'Id syspad' => '4250',
+            'Nom Français' => 'Expérience insolite',
+            'Gamme' => 'Idée',
+            "Type d'activités" => '["Insolites"]',
+            'Ville' => 'Paris',
+        ]));
+
+        self::assertSame(['TA_INSOLITE'], $mapped->activite->thematiques());
+        self::assertNotContains('type_activite_non_mappe', $mapped->warnings);
+    }
+
     public function testFixedActivityAndZeroValues(): void
     {
         $mapped = $this->mapper->map($this->row([
@@ -77,7 +91,7 @@ final class LegacyActiviteRowMapperTest extends TestCase
             'Publié / non publié' => 'false',
             'Nom Français' => 'Atelier cuisine',
             'Gamme' => 'Idée',
-            "Type d'activités" => '["Insolites"]',
+            "Type d'activités" => '["Type d\'activité inconnu du catalogue"]',
             'Temps minimum' => '0:00',
             'Tarifs activité à partir de' => '0',
             'Nombre participants minimum activité' => '0',

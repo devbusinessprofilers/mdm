@@ -14,8 +14,9 @@ final class LieuLovCatalogTest extends TestCase
         $typologies = LieuLovCatalog::choicesFor('GENERALE_TYPOLOGIE');
         $statuses = LieuLovCatalog::choicesFor('MICE_STATUT');
 
-        self::assertCount(40, $typologies);
+        self::assertCount(43, $typologies);
         self::assertSame('Hôtel 2 étoiles', $typologies['GENERALE_TYPOLOGIE_1']);
+        self::assertSame('Salle / Bureau', $typologies['GENERALE_TYPOLOGIE_43']);
         self::assertSame('Autres Types de Lieux', $typologies['GENERALE_TYPOLOGIE_40']);
         self::assertSame('Premium', $statuses['MICE_STATUT_4']);
     }

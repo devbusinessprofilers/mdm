@@ -15,9 +15,6 @@ final class LegacyLovMapper
     /** Alias explicites : libellé legacy normalisé → code typologie. */
     private const TYPOLOGIE_ALIASES = [
         'circuits automobiles / kartings' => 'GENERALE_TYPOLOGIE_21',
-        "residence / appart'hotel" => 'GENERALE_TYPOLOGIE_13',
-        'lieu avec incentive integre' => 'GENERALE_TYPOLOGIE_40',
-        'salle / bureau' => 'GENERALE_TYPOLOGIE_38',
     ];
 
     private const CADRE_ENV = [

@@ -167,12 +167,6 @@ final readonly class LegacyLieuRowMapper
                 $values[] = $value;
             }
         }
-        if ('true' === $row->cell('Court de tennis')) {
-            $values[] = 'Court de tennis';
-        }
-        if ('true' === $row->cell('Parcours de golf')) {
-            $values[] = 'Parcours de golf';
-        }
         if ([] !== $values) {
             $lieu->changeLoisirInterne(array_values(array_unique($values)));
         }

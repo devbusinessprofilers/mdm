@@ -104,7 +104,7 @@ final class LegacyLieuRowMapperTest extends TestCase
         self::assertTrue($lieu->salleReunionExist());
         self::assertSame('Une description courte.', $lieu->descGenerale());
         self::assertSame('Vue océan', $lieu->atout1());
-        self::assertSame(['Surf', 'Court de tennis'], $lieu->loisirInterne());
+        self::assertSame(['Surf'], $lieu->loisirInterne());
         self::assertSame(['BIEN_ETRE_2'], $lieu->bienEtre());
         self::assertSame(['TECHNIQUE_REUNION_1'], $lieu->techniqueReunion());
         self::assertTrue($lieu->pmrAcces());

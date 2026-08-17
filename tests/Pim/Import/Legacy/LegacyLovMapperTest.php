@@ -33,9 +33,11 @@ final class LegacyLovMapperTest extends TestCase
             'Châteaux / Domaines',
             'Circuits Automobiles / Kartings',
             'Résidence / Appart’hotel',
+            'Salle / Bureau',
+            'Lieu avec incentive intégré',
             'Avec Hébergements',
         ], JSON_THROW_ON_ERROR));
-        self::assertSame(['GENERALE_TYPOLOGIE_6', 'GENERALE_TYPOLOGIE_21', 'GENERALE_TYPOLOGIE_13'], $result['codes']);
+        self::assertSame(['GENERALE_TYPOLOGIE_6', 'GENERALE_TYPOLOGIE_21', 'GENERALE_TYPOLOGIE_42', 'GENERALE_TYPOLOGIE_43', 'GENERALE_TYPOLOGIE_41'], $result['codes']);
         self::assertTrue($result['hebergement']);
         self::assertSame([], $result['warnings']);
     }
