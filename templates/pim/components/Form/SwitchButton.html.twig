@@ -20,7 +20,7 @@
             class="peer hidden"
             {% if checked %}checked{% endif %}
             {% if disabled %}disabled{% endif %}
-            value="1"
+            value="{{ value }}"
             {% for key, value in inputAttributes %}
                 {{ key }}="{{ value }}"
             {% endfor %}

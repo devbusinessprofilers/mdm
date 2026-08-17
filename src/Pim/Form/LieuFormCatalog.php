@@ -33,7 +33,7 @@ final class LieuFormCatalog
 
         return [
             'dispoLieuPrivatisable' => ['label' => 'Lieu privatisable'],
-            'joursOuverture' => self::choice('DISPO_JOUR_OUVERTURE', "Jours d'ouverture", true),
+            'joursOuverture' => self::choice('DISPO_JOUR_OUVERTURE', "Jours d'ouverture", true, etendu: true),
             'dispoHeureOuvertureHeure' => $hour + ['label' => "Heure d'ouverture"],
             'dispoHeureOuvertureMinutes' => $minute + ['label' => "Minutes d'ouverture"],
             'dispoHeureFermetureHeure' => $hour + ['label' => 'Heure de fermeture'],

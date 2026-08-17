@@ -173,6 +173,8 @@
                                 {{ _self.collection(widget, widget.vars.label ?? champ) }}
                             {% elseif 'puces' in s.blocs %}
                                 {% include 'mdm/fiche/_puces.html.twig' with { widget: widget } only %}
+                            {% elseif 'disponibilites' in s.blocs and champ == 'disponibilites' %}
+                                {% include 'mdm/fiche/_disponibilites.html.twig' with { widget: widget } only %}
                             {% else %}
                                 {{ form_row(widget) }}
                             {% endif %}
@@ -187,9 +189,14 @@
 
     {# ---------------- Volets des blocs (formulaires propres, hors formulaire principal) #}
     {% for i, s in sections %}
-        {% if s.blocs|filter(b => b != 'puces')|length > 0 %}
+        {% if s.blocs|filter(b => b not in ['puces', 'disponibilites'])|length > 0 %}
             {{ _self.volet_ouvre(i, i == section_index) }}
                 {% if s.champs is empty %}{{ _self.volet_titre(s.titre, onglets[i].completude) }}{% endif %}
+
+                {# ---- Formules de visibilité (maquette pure, désactivé) ---- #}
+                {% if 'formules' in s.blocs %}
+                    {% include 'mdm/fiche/_formules.html.twig' %}
+                {% endif %}
 
                 {# ---- Suggestions en attente (BAN, IA…) ---- #}
                 {% if 'suggestions_attente' in s.blocs and suggestions_attente is not null %}

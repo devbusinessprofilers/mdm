@@ -13,6 +13,9 @@ class SwitchButton
 
     public bool $checked = false;
 
+    /** Valeur soumise — « 1 » pour un booléen, la valeur du choix sinon. */
+    public string $value = '1';
+
     public bool $disabled = false;
 
     public bool $inverted = false;

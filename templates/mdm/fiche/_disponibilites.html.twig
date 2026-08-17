@@ -1,0 +1,35 @@
+{#
+    Disponibilités — maquette mdm/fiche/_disponibilites, sur les vrais champs :
+    interrupteur par jour (les choix réels de DISPO_JOUR_OUVERTURE, soumis par
+    de vrais inputs), heures d'ouverture/fermeture globales (le modèle porte un
+    créneau unique, pas un créneau par jour — écart assumé avec la maquette),
+    « Lieu privatisable » en tête.
+
+    Variables : `widget` — le sous-formulaire composé `disponibilites`.
+#}
+<div class="flex flex-col gap-8">
+    {{ form_row(widget.dispoLieuPrivatisable) }}
+
+    <div class="flex flex-col gap-4">
+        <twig:Typography variant="subtitle" bold>Horaires</twig:Typography>
+
+        <div class="flex flex-row gap-x-6 gap-y-3 items-center flex-wrap">
+            {% for jour in widget.joursOuverture %}
+                <label class="flex flex-row items-center gap-2 shrink-0 cursor-pointer" for="{{ jour.vars.id }}">
+                    <twig:Form:SwitchButton id="{{ jour.vars.id }}" name="{{ jour.vars.full_name }}"
+                                            value="{{ jour.vars.value }}" :checked="jour.vars.checked" class="shrink-0" />
+                    <twig:Typography variant="input" element="span"
+                                     class="text-[0.875rem]! leading-[1.375rem]! whitespace-nowrap">{{ jour.vars.label }}</twig:Typography>
+                </label>
+            {% endfor %}
+        </div>
+        {% do widget.joursOuverture.setRendered %}
+
+        <div class="flex flex-row flex-wrap gap-6 items-start">
+            <div class="w-44">{{ form_row(widget.dispoHeureOuvertureHeure) }}</div>
+            <div class="w-44">{{ form_row(widget.dispoHeureOuvertureMinutes) }}</div>
+            <div class="w-44">{{ form_row(widget.dispoHeureFermetureHeure) }}</div>
+            <div class="w-44">{{ form_row(widget.dispoHeureFermetureMinutes) }}</div>
+        </div>
+    </div>
+</div>

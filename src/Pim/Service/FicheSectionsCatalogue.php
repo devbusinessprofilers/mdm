@@ -138,7 +138,16 @@ final class FicheSectionsCatalogue
                 'titre' => 'Disponibilités & fermetures',
                 'champs' => ['disponibilites', 'periodesFermeture'],
                 'proprietes' => ['periodesFermeture', ...array_keys(LieuFormCatalog::availability())],
-                'blocs' => [],
+                // Interrupteurs par jour + heures (partial mdm/fiche/_disponibilites).
+                'blocs' => ['disponibilites'],
+            ],
+            [
+                // Maquette pure (« rien ne se perd ») : formules de visibilité
+                // sans entité back — rendues désactivées avec infobulle.
+                'titre' => 'Booster ma visibilité',
+                'champs' => [],
+                'proprietes' => [],
+                'blocs' => ['formules'],
             ],
             [
                 'titre' => 'Collaborateurs',

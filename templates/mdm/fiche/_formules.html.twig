@@ -1,0 +1,82 @@
+{#
+    « Booster ma visibilité » — maquette mdm/fiche/_formules, PUREMENT maquette :
+    aucune entité back ne porte les formules de référencement ni les actions
+    marketing. Règle « rien ne se perd » : tout est repris visuellement mais
+    désactivé, avec l'infobulle « Fonction à venir ». Le contenu des quatre
+    paliers n'est pas arbitré côté design — la maquette répète le même.
+#}
+{% set formule = {
+    tier: 'Pack Découverte',
+    level: 'Niveau gratuit',
+    valeur: 0,
+    lignes: [
+        'Référencement sur le site businessprofilers.com',
+        '1 communication newsletter groupée',
+    ],
+} %}
+
+<div class="flex flex-col gap-6" title="Fonction à venir — en développement">
+    <div class="flex flex-col gap-1">
+        <twig:Typography variant="subtitle" bold>Gérer sa visibilité</twig:Typography>
+        <twig:Typography variant="body-sm" textColor="neutral-500">Quatre formules de référencement. Une seule active à la fois — à venir, sans entité back aujourd'hui.</twig:Typography>
+    </div>
+
+    <div class="flex flex-row flex-wrap gap-6 opacity-70">
+        {% for rang in 0..3 %}
+            {% set active = rang == 1 %}
+            <div class="flex-1 basis-56 min-w-0 box-border flex flex-col items-center gap-5 p-6 rounded-sm
+                        {{ active ? 'bg-primary-5 inset-ring-2 inset-ring-primary' : 'bg-neutral-100 inset-ring-1 inset-ring-neutral-300' }}">
+                <div class="flex flex-col items-center gap-1 w-full">
+                    <twig:Typography variant="body" bold center>{{ formule.tier }}</twig:Typography>
+                    <twig:Typography variant="body-sm" textColor="neutral-500" center>{{ formule.level }}</twig:Typography>
+                    <span class="w-10 h-0.5 mt-2 rounded-full bg-primary-4"></span>
+                </div>
+
+                {# Anneau de progression : rayon 44, trait 12, périmètre 276,46. #}
+                <div class="relative w-28 h-28 shrink-0 flex items-center justify-center">
+                    <svg width="112" height="112" viewBox="0 0 112 112" aria-hidden="true">
+                        <circle cx="56" cy="56" r="44" fill="none" stroke="var(--color-neutral-200)" stroke-width="12"></circle>
+                        <circle cx="56" cy="56" r="44" fill="none"
+                                stroke="var(--color-primary)" stroke-width="12" stroke-linecap="round"
+                                stroke-dasharray="276.46"
+                                stroke-dashoffset="{{ 276.46 * (1 - formule.valeur / 100) }}"
+                                transform="rotate(-90 56 56)"></circle>
+                    </svg>
+                    <span class="absolute inset-0 flex items-center justify-center">
+                        <twig:Typography variant="heading-3" bold>{{ formule.valeur }}%</twig:Typography>
+                    </span>
+                </div>
+
+                <div class="flex flex-col gap-2 w-full">
+                    {% for ligne in formule.lignes %}
+                        <div class="flex flex-row items-start gap-2">
+                            <twig:Icon name="check" class="w-4 h-4 shrink-0 mt-0.5 text-primary" />
+                            <twig:Typography variant="body-sm" class="flex-1 min-w-0 text-pretty">{{ ligne }}</twig:Typography>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <twig:Button variant="{{ active ? 'primary' : 'outline' }}" size="md" full disabled
+                             class="mt-auto">{{ active ? 'Sélectionné' : 'Sélectionner' }}</twig:Button>
+            </div>
+        {% endfor %}
+    </div>
+
+    <div class="flex flex-col gap-1 mt-4">
+        <twig:Typography variant="subtitle" bold>Actions marketing à la carte</twig:Typography>
+        <twig:Typography variant="body-sm" textColor="neutral-500">Achats ponctuels, indépendants de la formule — à venir.</twig:Typography>
+    </div>
+
+    <div class="flex flex-row flex-wrap gap-4 opacity-70">
+        {% for rang in 0..3 %}
+            <div class="flex-1 basis-72 min-w-0 box-border flex items-center gap-4 px-5 py-4 rounded-xs
+                        bg-neutral-100 inset-ring-1 inset-ring-neutral-300">
+                <span class="w-10 h-10 shrink-0 flex items-center justify-center rounded-full bg-primary-4">
+                    <twig:Icon name="linkedin" class="w-6 h-6 text-primary-3" />
+                </span>
+                <twig:Typography variant="body-sm" bold class="flex-1 min-w-0">1 publication Linkedin</twig:Typography>
+                <twig:Button variant="outline" size="sm" disabled class="shrink-0">Sélectionner</twig:Button>
+            </div>
+        {% endfor %}
+    </div>
+</div>
