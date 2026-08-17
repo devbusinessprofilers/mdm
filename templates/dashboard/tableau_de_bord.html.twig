@@ -26,9 +26,9 @@
 } %}
 {% set croisement_pays = countryRows is defined and countryRows is not empty and countryRows[0].completeness is defined
     ? countryRows|slice(0, 6) : [] %}
-{# Lignes = pays (le sens du back), colonnes = les 4 gammes + Total.
-   `typeLabels` n'existe pas tant qu'aucun snapshot n'a été calculé. #}
-{% set grille_croisement = 'grid grid-cols-[minmax(132px,1.5fr)_repeat(' ~ (typeLabels|default([])|length + 1) ~ ',minmax(84px,1fr))] gap-1.5' %}
+{# Lignes = pays (le sens du back), colonnes = les 5 gammes + Total.
+   Classe écrite EN LITTÉRAL : Tailwind ne compile pas une classe concaténée. #}
+{% set grille_croisement = 'grid grid-cols-[minmax(132px,1.5fr)_repeat(6,minmax(84px,1fr))] gap-1.5' %}
 {% set grille_activite = 'grid grid-cols-[minmax(150px,1.6fr)_minmax(64px,0.7fr)_minmax(72px,0.8fr)_minmax(72px,0.8fr)_minmax(72px,0.8fr)_minmax(150px,1.7fr)] gap-3' %}
 
 {% set files_total = files|reduce((somme, f) => somme + f.volume, 0) %}
