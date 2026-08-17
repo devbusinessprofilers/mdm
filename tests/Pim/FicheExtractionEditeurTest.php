@@ -132,9 +132,9 @@ final class FicheExtractionEditeurTest extends WebTestCase
         $crawler = $client->request('GET', '/referentiel/lieux/fiche/'.$lieu->fiche()->idString(), ['section' => 15]);
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('body', 'Valider les valeurs lues');
-        self::assertSelectorTextContains('table', 'Libellé');
-        self::assertSelectorTextContains('table', 'p. 2');
-        self::assertSelectorTextContains('table', '90 %');
+        self::assertSelectorTextContains('body', 'Valeur lue (corrigible)');
+        self::assertSelectorTextContains('body', 'p. 2');
+        self::assertSelectorTextContains('body', '90 %');
 
         $form = $crawler->selectButton('Appliquer les décisions')->form();
         $reject = $form['ocr_review['.$suggestion->id().'][reject]'];

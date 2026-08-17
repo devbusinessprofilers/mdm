@@ -66,7 +66,7 @@ final class FicheGammeController extends AbstractController
                     return $this->redirectToRoute('app_mdm_fiche_gamme', ['gamme' => $gamme, 'id' => $id, 'section' => $section]);
                 }
             } elseif ($ecran->soumettreSection($request, $entite, $form)) {
-                $this->addFlash('success', 'Section enregistrée.');
+                $this->addFlash('success', 'Fiche enregistrée.');
 
                 return $this->redirectToRoute('app_mdm_fiche_gamme', ['gamme' => $gamme, 'id' => $id, 'section' => $section]);
             }

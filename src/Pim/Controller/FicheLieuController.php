@@ -54,7 +54,7 @@ final class FicheLieuController extends AbstractController
                     return $this->redirectToRoute('app_mdm_fiche_lieu', ['id' => $id, 'section' => $section]);
                 }
             } elseif ($ecran->soumettreSection($request, $lieu, $form)) {
-                $this->addFlash('success', 'Section enregistrée.');
+                $this->addFlash('success', 'Fiche enregistrée.');
 
                 return $this->redirectToRoute('app_mdm_fiche_lieu', ['id' => $id, 'section' => $section]);
             }

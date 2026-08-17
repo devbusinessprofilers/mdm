@@ -95,7 +95,7 @@ final class FicheGammeEditeurTest extends WebTestCase
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('main', 'Documents existants');
         $crawler = $client->request('GET', '/referentiel/restaurants/fiche/'.$restaurant->id());
-        $form = $crawler->selectButton('Enregistrer la section')->form();
+        $form = $crawler->filter('[data-float-submit-target="button"]')->form();
         $values = $form->getPhpValues();
         $values['restaurant']['label'] = 'Bistrot renommé';
         // Soumission partielle stricte : seul le libellé voyage.

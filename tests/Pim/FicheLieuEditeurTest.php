@@ -74,13 +74,13 @@ final class FicheLieuEditeurTest extends WebTestCase
 
         // Soumission partielle de la section 0 : seul le label voyage,
         // le site web (hors requête) doit rester intact.
-        $form = $crawler->selectButton('Enregistrer la section')->form();
+        $form = $crawler->filter('[data-float-submit-target="button"]')->form();
         $values = $form->getPhpValues();
         $values['lieu']['label'] = 'Château renommé par section';
         $client->request($form->getMethod(), $form->getUri(), $values);
         self::assertResponseRedirects();
         $client->followRedirect();
-        self::assertSelectorTextContains('body', 'Section enregistrée.');
+        self::assertSelectorTextContains('body', 'Fiche enregistrée.');
 
         $entityManager->clear();
         $recharge = $entityManager->find(Lieu::class, $id);

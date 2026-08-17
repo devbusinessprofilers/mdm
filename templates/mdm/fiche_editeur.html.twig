@@ -1,11 +1,15 @@
 {% extends 'mdm/base.html.twig' %}
 
 {#
-    Éditeur de fiche par sections, toutes gammes — habillé au langage visuel du
-    front (rail des sections avec complétude, carte de section, en-tête avec
-    workflow), piloté par les vrais formulaires et données. Toutes les fonctions
-    sont conservées : édition par section, workflow d'états, suggestions BAN,
-    collaborateurs, sites de diffusion, Salesforce, extraction OCR, historique.
+    Éditeur de fiche, toutes gammes — toutes les sections sont rendues dans la
+    page, dans UN SEUL formulaire : les onglets du rail basculent les volets
+    côté client (contrôleur `fiche-onglets`) sans recharger, les saisies des
+    autres onglets sont conservées, et la barre épinglée « Enregistrer »
+    (FloatSubmit, comme la maquette) soumet le tout. Les blocs à formulaires
+    propres (suggestions, médias, collaborateurs, sites, Salesforce, OCR,
+    historique) vivent dans des volets séparés, HORS du formulaire principal.
+
+    Sans JavaScript, les entrées du rail restent des liens `?section=N`.
 #}
 
 {% set statut_libelles = {
@@ -46,24 +50,45 @@
     </fieldset>
 {% endmacro %}
 
-{# Une entrée du rail : icône + libellé + pastille de complétude. #}
+{# Une entrée du rail : l'état actif est porté par aria-current (piloté par le
+   contrôleur `fiche-onglets` — les styles suivent via les variantes de groupe). #}
 {% macro rail_entree(onglet) %}
     <li>
         <a href="{{ onglet.url }}" {% if onglet.actif %}aria-current="page"{% endif %}
-           class="group flex items-center gap-2 px-3 py-2 rounded-xs {{ onglet.actif ? 'bg-linear-(--primary-gradient)' : 'hover:bg-primary-4' }}">
+           data-fiche-onglets-target="entree" data-action="fiche-onglets#activer"
+           data-fiche-onglets-volet-param="{{ onglet.index }}"
+           class="group/entree flex items-center gap-2 px-3 py-2 rounded-xs hover:bg-primary-4
+                  aria-[current=page]:bg-linear-(--primary-gradient) aria-[current=page]:hover:bg-none">
             <twig:Icon name="{{ onglet.icone }}" aria-hidden="true"
-                       class="shrink-0 w-4 h-4 {{ onglet.actif ? 'text-neutral-100' : 'text-primary' }}" />
-            <twig:Typography variant="body-sm" bold ellipsis
-                             textColor="{{ onglet.actif ? 'neutral-100' : 'primary-3' }}"
-                             class="flex-1 min-w-0">{{ onglet.titre }}</twig:Typography>
+                       class="shrink-0 w-4 h-4 text-primary group-aria-[current=page]/entree:text-neutral-100" />
+            <twig:Typography variant="body-sm" bold ellipsis textColor="primary-3"
+                             class="flex-1 min-w-0 group-aria-[current=page]/entree:text-neutral-100!">{{ onglet.titre }}</twig:Typography>
             {% if onglet.completude is not null %}
-                <twig:Typography variant="body-xs" bold
-                                 textColor="{{ onglet.actif ? 'neutral-100' : 'neutral-500' }}"
-                                 class="shrink-0 px-[7px] py-0.5 rounded-lg {{ onglet.actif ? 'bg-neutral-100/20' : 'bg-neutral-200' }}">{{ onglet.completude }} %</twig:Typography>
+                <twig:Typography variant="body-xs" bold textColor="neutral-500"
+                                 class="shrink-0 px-[7px] py-0.5 rounded-lg bg-neutral-200
+                                        group-aria-[current=page]/entree:bg-neutral-100/20 group-aria-[current=page]/entree:text-neutral-100!">{{ onglet.completude }} %</twig:Typography>
             {% endif %}
         </a>
     </li>
 {% endmacro %}
+
+{# Volet d'une section : visible seulement quand son onglet est actif. #}
+{% macro volet_ouvre(i, actif) %}
+    <section data-fiche-onglets-target="volet" data-volet="{{ i }}" {{ actif ? '' : 'hidden' }}
+             class="shrink-0 flex flex-col gap-6 p-8 rounded-[24px] bg-neutral-100 shadow-(--shadow)">
+{% endmacro %}
+
+{% macro volet_titre(titre, completude) %}
+    <div class="flex items-baseline gap-3">
+        <twig:Typography variant="heading-3" element="h2" bold class="grow">{{ titre }}</twig:Typography>
+        {% if completude is not null %}
+            <twig:Typography variant="body-sm" textColor="neutral-500">{{ completude }} % complété</twig:Typography>
+        {% endif %}
+    </div>
+{% endmacro %}
+
+{# Le contrôleur des onglets couvre le rail et les volets. #}
+{% block main_attributs %}data-controller="fiche-onglets"{% endblock %}
 
 {# ------------------------------------------------------------------ Rail des sections #}
 {% block rail %}
@@ -90,7 +115,7 @@
 
 {# ------------------------------------------------------------------ Contenu #}
 {% block contenu %}
-<main class="flex flex-col h-full min-h-0 overflow-y-auto scrollbar px-6 py-5 gap-5">
+<main class="flex flex-col h-full min-h-0 overflow-y-auto scrollbar px-6 pt-5 gap-5">
 
     {# En-tête de fiche #}
     <div class="shrink-0 flex flex-col gap-3">
@@ -131,295 +156,307 @@
         </div>
     </div>
 
-    {# Carte de section #}
-    <section class="shrink-0 flex flex-col gap-6 p-8 rounded-[24px] bg-neutral-100 shadow-(--shadow)">
-        <div class="flex items-baseline gap-3">
-            <twig:Typography variant="heading-3" element="h2" bold class="grow">{{ section.titre }}</twig:Typography>
-            {% if onglets[section_index].completude is not null %}
-                <twig:Typography variant="body-sm" textColor="neutral-500">{{ onglets[section_index].completude }} % complété</twig:Typography>
-            {% endif %}
-        </div>
+    <span data-fiche-onglets-haut></span>
 
-        {% if section.champs is not empty %}
-            {# Chrome « autorité » par champ : ce thème ne s'applique qu'ici (le thème global reste en place pour tous les autres écrans). #}
-            {% form_theme form 'pim/form/_form-theme-fiche.html.twig' %}
-            {{ form_start(form) }}
-                <div class="flex flex-col gap-5">
-                    {% for champ in section.champs %}
-                        {% set widget = attribute(form, champ) %}
-                        {% if widget.vars.prototype is defined %}
-                            {{ _self.collection(widget, widget.vars.label ?? champ) }}
-                        {% elseif 'puces' in section.blocs %}
-                            {% include 'mdm/fiche/_puces.html.twig' with { widget: widget } only %}
-                        {% else %}
-                            {{ form_row(widget) }}
-                        {% endif %}
-                    {% endfor %}
-                    {{ form_widget(form._token) }}
-                    <div>{{ form_widget(form.submit, {label: 'Enregistrer la section'}) }}</div>
-                </div>
-            {{ form_end(form, {render_rest: false}) }}
-        {% endif %}
-
-        {# ---- Suggestions en attente (BAN, IA…) ---- #}
-        {% if 'suggestions_attente' in section.blocs and suggestions_attente is not null %}
-            <div class="flex flex-col gap-3 pt-4 border-t border-neutral-200">
-                <twig:Typography variant="heading-3" element="h3" bold>Suggestions en attente</twig:Typography>
-                <twig:Typography variant="body-sm" textColor="neutral-500">
-                    Corrections et enrichissements proposés par les vérifications automatiques, à arbitrer — Accepter les applique immédiatement à la fiche.
-                </twig:Typography>
-                <div class="overflow-x-auto rounded-md inset-ring-1 inset-ring-neutral-200">
-                    <table class="w-full border-collapse">
-                        <thead class="bg-primary-5">
-                            <tr class="text-left h-10 border-b border-neutral-200">
-                                {% for col in ['Source', 'Champ', 'Valeur actuelle', 'Proposition', 'Confiance'] %}
-                                    <th class="px-3"><twig:Typography variant="body-xs" textColor="neutral-500" bold>{{ col }}</twig:Typography></th>
-                                {% endfor %}
-                                {% if is_granted('ROLE_BP_VALIDATOR') %}<th class="px-3"></th><th class="px-3"></th>{% endif %}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for ligne in suggestions_attente.lignes %}
-                                <tr class="h-12 border-t border-neutral-200 first:border-t-0">
-                                    <td class="px-3"><twig:Tag label="{{ ligne.source }}" variant="neutral" size="sm" /></td>
-                                    <th scope="row" class="px-3 text-left"><twig:Typography variant="body-sm" bold>{{ ligne.label }}</twig:Typography></th>
-                                    <td class="px-3"><twig:Typography variant="body-sm" textColor="neutral-500">{{ ligne.actuel != '' ? ligne.actuel : '—' }}</twig:Typography></td>
-                                    <td class="px-3"><twig:Typography variant="body-sm">{{ ligne.valeur }}</twig:Typography></td>
-                                    <td class="px-3"><twig:Typography variant="body-sm">{% if ligne.confiance is not null %}{{ ligne.confiance }} %{% else %}—{% endif %}</twig:Typography></td>
-                                    {% if is_granted('ROLE_BP_VALIDATOR') %}
-                                        <td class="px-3">{% if ligne.accepter is not null %}{{ form(ligne.accepter) }}{% endif %}</td>
-                                        <td class="px-3">{{ form(ligne.ignorer) }}</td>
-                                    {% endif %}
-                                </tr>
+    {# ---------------- Volets de champs : un seul formulaire pour toutes les sections #}
+    {# Chrome « autorité » par champ : ce thème ne s'applique qu'ici. #}
+    {% form_theme form 'pim/form/_form-theme-fiche.html.twig' %}
+    {{ form_start(form, { attr: { id: 'form-fiche', class: 'contents' } }) }}
+        {% for i, s in sections %}
+            {% if s.champs is not empty %}
+                {{ _self.volet_ouvre(i, i == section_index) }}
+                    {{ _self.volet_titre(s.titre, onglets[i].completude) }}
+                    <div class="flex flex-col gap-5">
+                        {% for champ in s.champs %}
+                            {% set widget = attribute(form, champ) %}
+                            {% if widget.vars.prototype is defined %}
+                                {{ _self.collection(widget, widget.vars.label ?? champ) }}
+                            {% elseif 'puces' in s.blocs %}
+                                {% include 'mdm/fiche/_puces.html.twig' with { widget: widget } only %}
                             {% else %}
-                                <tr><td class="p-6 text-center" colspan="{{ is_granted('ROLE_BP_VALIDATOR') ? 7 : 5 }}"><twig:Typography variant="body-sm" textColor="neutral-500">Aucune suggestion en attente sur cette fiche.</twig:Typography></td></tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                {% if suggestions_attente.lignes is not empty and not is_granted('ROLE_BP_VALIDATOR') %}
-                    <twig:Typography variant="body-sm" textColor="neutral-500">L'arbitrage des suggestions est réservé aux validateurs.</twig:Typography>
-                {% endif %}
-                {% if suggestions_attente.lignes|filter(l => l.source == 'Geoapify')|length > 0 %}
-                    <twig:Typography variant="body-xs" textColor="neutral-500">Adresse vérifiée par Geoapify — données © OpenStreetMap contributors.</twig:Typography>
-                {% endif %}
-            </div>
-        {% endif %}
-
-        {# ---- Médias ---- #}
-        {% if 'medias' in section.blocs and medias %}
-            <div class="pt-4 border-t border-neutral-200">
-                {% if medias.gamme == 'lieu' %}
-                    {% include 'pim/lieu/_medias.html.twig' with medias.vars %}
-                {% else %}
-                    {% include 'pim/_documents_gamme.html.twig' with medias.vars %}
-                {% endif %}
-            </div>
-        {% endif %}
-
-        {# ---- Collaborateurs ---- #}
-        {% if 'collaborateurs' in section.blocs %}
-            {% set peut_gerer = is_granted('FICHE_MANAGE_AFFILIATIONS', fiche) %}
-            <div class="flex flex-col gap-3 pt-4 border-t border-neutral-200">
-                <div class="overflow-x-auto rounded-md inset-ring-1 inset-ring-neutral-200">
-                    <table class="w-full border-collapse">
-                        <thead class="bg-primary-5">
-                            <tr class="text-left h-10 border-b border-neutral-200">
-                                {% for col in ['Nom', 'Email', 'Téléphone', 'Rôle · drapeaux'] %}
-                                    <th class="px-3"><twig:Typography variant="body-xs" textColor="neutral-500" bold>{{ col }}</twig:Typography></th>
-                                {% endfor %}
-                                {% if peut_gerer %}<th class="px-3"></th>{% endif %}
-                            </tr>
-                        </thead>
-                        <tbody>
-                        {% for ligne in affiliations %}
-                            {% set affiliation = ligne.affiliation %}
-                            <tr class="h-12 border-t border-neutral-200 first:border-t-0">
-                                <td class="px-3"><twig:Typography variant="body-sm" bold>{{ affiliation.collaborateur.firstName }} {{ affiliation.collaborateur.lastName }}</twig:Typography></td>
-                                <td class="px-3"><twig:Typography variant="body-sm">{{ affiliation.collaborateur.email }}</twig:Typography></td>
-                                <td class="px-3"><twig:Typography variant="body-sm" textColor="neutral-500">{{ affiliation.collaborateur.phone ?? '—' }}</twig:Typography></td>
-                                <td class="px-3">
-                                    {% if peut_gerer %}
-                                        {{ form(ligne.edition) }}
-                                    {% else %}
-                                        <div class="flex flex-wrap items-center gap-1">
-                                            <twig:Tag label="{{ affiliation.role.value }}" variant="neutral" size="sm" />
-                                            {% if affiliation.receivesRequests %}<twig:Tag label="contact principal" variant="primary-3" size="sm" />{% endif %}
-                                            {% if affiliation.repli %}<twig:Tag label="repli" variant="old-gold" size="sm" />{% endif %}
-                                        </div>
-                                    {% endif %}
-                                </td>
-                                {% if peut_gerer %}<td class="px-3">{{ form(ligne.suppression) }}</td>{% endif %}
-                            </tr>
-                        {% else %}
-                            <tr><td class="p-6 text-center" colspan="{{ peut_gerer ? 5 : 4 }}"><twig:Typography variant="body-sm" textColor="neutral-500">Aucun collaborateur affilié.</twig:Typography></td></tr>
+                                {{ form_row(widget) }}
+                            {% endif %}
                         {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                {% if peut_gerer and form_invitation %}
-                    <twig:Typography variant="heading-3" element="h3" bold>Inviter un collaborateur</twig:Typography>
-                    <twig:Typography variant="body-sm" textColor="neutral-500">L'email est la clé : une adresse déjà connue rattache le collaborateur existant. La marketplace crée le compte et envoie le mail d'accès.</twig:Typography>
-                    {{ form(form_invitation) }}
-                {% else %}
-                    <twig:Typography variant="body-sm" textColor="neutral-500">La gestion des collaborateurs est réservée aux validateurs.</twig:Typography>
-                {% endif %}
-            </div>
-        {% endif %}
-
-        {# ---- Sites de diffusion ---- #}
-        {% if 'sites' in section.blocs %}
-            <div class="flex flex-col gap-3 pt-4 border-t border-neutral-200">
-                <twig:Typography variant="heading-3" element="h3" bold>Sites de diffusion</twig:Typography>
-                <twig:Typography variant="body-sm" textColor="neutral-500">Les sites obligatoires restent cochés ; les sites payants sont signalés.</twig:Typography>
-                {{ form(form_sites) }}
-            </div>
-        {% endif %}
-
-        {# ---- Salesforce (lecture seule) ---- #}
-        {% if 'salesforce' in section.blocs %}
-            <div class="flex flex-col gap-3 pt-4 border-t border-neutral-200">
-                <twig:Typography variant="heading-3" element="h3" bold>Données Salesforce</twig:Typography>
-                {% if salesforce %}
-                    <twig:Typography variant="body-sm" textColor="neutral-500">
-                        Lecture seule — rafraîchies chaque nuit depuis Salesforce et diffusées sur la marketplace.
-                        Dernier rafraîchissement : {{ salesforce.refreshedAt|date('d/m/Y H:i') }}.
-                    </twig:Typography>
-                    <div class="overflow-x-auto rounded-md inset-ring-1 inset-ring-neutral-200">
-                        <table class="w-full border-collapse">
-                            <tbody>
-                                {% for libelle, valeur in {
-                                    'Note RSE globale': salesforce.noteGlobale,
-                                    'RSE — Achats responsables': salesforce.noteAchatsResponsables,
-                                    'RSE — Impact environnemental': salesforce.noteImpactEnvironnemental,
-                                    'RSE — Impact social': salesforce.noteImpactSocial,
-                                    'RSE — Mobilité': salesforce.noteMobilite,
-                                    'RSE — Labels et démarche qualité': salesforce.noteLabelsEtDemarcheQualite,
-                                    'Évaluation client': salesforce.evaluationClient,
-                                    'Procédure judiciaire': salesforce.procedureJudiciaire,
-                                } %}
-                                    <tr class="h-10 border-t border-neutral-200 first:border-t-0">
-                                        <th scope="row" class="px-3 text-left w-1/2"><twig:Typography variant="body-sm" bold>{{ libelle }}</twig:Typography></th>
-                                        <td class="px-3"><twig:Typography variant="body-sm">{{ valeur ?? '—' }}</twig:Typography></td>
-                                    </tr>
-                                {% endfor %}
-                                <tr class="h-10 border-t border-neutral-200">
-                                    <th scope="row" class="px-3 text-left"><twig:Typography variant="body-sm" bold>Contrats avec comptes</twig:Typography></th>
-                                    <td class="px-3"><twig:Typography variant="body-sm">{{ salesforce.contratsComptes is not empty ? salesforce.contratsComptes|join(', ') : '—' }}</twig:Typography></td>
-                                </tr>
-                            </tbody>
-                        </table>
                     </div>
-                    <twig:Typography variant="body-sm" textColor="neutral-500">Le statut « Partenaire BP » de cette fiche est également piloté par Salesforce.</twig:Typography>
-                {% else %}
-                    <twig:Typography variant="body-sm" textColor="neutral-500">Fiche inconnue de Salesforce : aucune donnée RSE, évaluation ou statut partenaire n'en est reçue.</twig:Typography>
-                {% endif %}
-            </div>
-        {% endif %}
+                </section>
+            {% endif %}
+        {% endfor %}
+        {{ form_widget(form._token) }}
+        {% do form.submit.setRendered %}
+    {{ form_end(form, {render_rest: false}) }}
 
-        {# ---- Extraction OCR ---- #}
-        {% if 'suggestions' in section.blocs %}
-            <div class="flex flex-col gap-3 pt-4 border-t border-neutral-200">
-                <twig:Typography variant="heading-3" element="h3" bold>Extraire d'un document</twig:Typography>
-                {% if not extraction.active %}
-                    <twig:Typography variant="body-sm" textColor="neutral-500">L'extraction de documents n'est pas activée sur cet environnement.</twig:Typography>
-                {% elseif extraction.en_cours %}
-                    {% set en_cours = extraction.en_cours %}
-                    <div class="flex flex-col gap-1 p-4 rounded-md bg-primary-5">
-                        <div class="flex items-center gap-2">
-                            <twig:Typography variant="body" bold element="span">{{ en_cours.document.originalFilename }}</twig:Typography>
-                            <twig:Tag label="{{ extraction_statuts[en_cours.status.value] ?? en_cours.status.value }}" variant="primary-3" size="sm" />
-                            {% if en_cours.pageCount %}<twig:Typography variant="body-sm" textColor="neutral-500">{{ en_cours.pageCount }} page{{ en_cours.pageCount > 1 ? 's' : '' }}</twig:Typography>{% endif %}
-                        </div>
+    {# ---------------- Volets des blocs (formulaires propres, hors formulaire principal) #}
+    {% for i, s in sections %}
+        {% if s.blocs|filter(b => b != 'puces')|length > 0 %}
+            {{ _self.volet_ouvre(i, i == section_index) }}
+                {% if s.champs is empty %}{{ _self.volet_titre(s.titre, onglets[i].completude) }}{% endif %}
+
+                {# ---- Suggestions en attente (BAN, IA…) ---- #}
+                {% if 'suggestions_attente' in s.blocs and suggestions_attente is not null %}
+                    <div class="flex flex-col gap-3">
+                        <twig:Typography variant="heading-3" element="h3" bold>Suggestions en attente</twig:Typography>
                         <twig:Typography variant="body-sm" textColor="neutral-500">
-                            Déposé par {{ en_cours.createdBy }} le {{ en_cours.createdAt|date('d/m/Y à H:i') }}.
-                            La lecture peut prendre plusieurs minutes — vous pouvez continuer à travailler.
+                            Corrections et enrichissements proposés par les vérifications automatiques, à arbitrer — Accepter les applique immédiatement à la fiche.
                         </twig:Typography>
+                        <div class="overflow-x-auto rounded-md inset-ring-1 inset-ring-neutral-200">
+                            <table class="w-full border-collapse">
+                                <thead class="bg-primary-5">
+                                    <tr class="text-left h-10 border-b border-neutral-200">
+                                        {% for col in ['Source', 'Champ', 'Valeur actuelle', 'Proposition', 'Confiance'] %}
+                                            <th class="px-3"><twig:Typography variant="body-xs" textColor="neutral-500" bold>{{ col }}</twig:Typography></th>
+                                        {% endfor %}
+                                        {% if is_granted('ROLE_BP_VALIDATOR') %}<th class="px-3"></th><th class="px-3"></th>{% endif %}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for ligne in suggestions_attente.lignes %}
+                                        <tr class="h-12 border-t border-neutral-200 first:border-t-0">
+                                            <td class="px-3"><span class="inline-flex"><twig:Tag label="{{ ligne.source }}" variant="neutral" size="sm" /></span></td>
+                                            <th scope="row" class="px-3 text-left"><twig:Typography variant="body-sm" bold>{{ ligne.label }}</twig:Typography></th>
+                                            <td class="px-3"><twig:Typography variant="body-sm" textColor="neutral-500">{{ ligne.actuel != '' ? ligne.actuel : '—' }}</twig:Typography></td>
+                                            <td class="px-3"><twig:Typography variant="body-sm">{{ ligne.valeur }}</twig:Typography></td>
+                                            <td class="px-3"><twig:Typography variant="body-sm">{% if ligne.confiance is not null %}{{ ligne.confiance }} %{% else %}—{% endif %}</twig:Typography></td>
+                                            {% if is_granted('ROLE_BP_VALIDATOR') %}
+                                                <td class="px-3">{% if ligne.accepter is not null %}{{ form(ligne.accepter) }}{% endif %}</td>
+                                                <td class="px-3">{{ form(ligne.ignorer) }}</td>
+                                            {% endif %}
+                                        </tr>
+                                    {% else %}
+                                        <tr><td class="p-6 text-center" colspan="{{ is_granted('ROLE_BP_VALIDATOR') ? 7 : 5 }}"><twig:Typography variant="body-sm" textColor="neutral-500">Aucune suggestion en attente sur cette fiche.</twig:Typography></td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% if suggestions_attente.lignes is not empty and not is_granted('ROLE_BP_VALIDATOR') %}
+                            <twig:Typography variant="body-sm" textColor="neutral-500">L'arbitrage des suggestions est réservé aux validateurs.</twig:Typography>
+                        {% endif %}
+                        {% if suggestions_attente.lignes|filter(l => l.source == 'Geoapify')|length > 0 %}
+                            <twig:Typography variant="body-xs" textColor="neutral-500">Adresse vérifiée par Geoapify — données © OpenStreetMap contributors.</twig:Typography>
+                        {% endif %}
                     </div>
-                    <twig:Typography variant="body-sm" textColor="neutral-500">Vous pourrez déposer un autre document quand cette lecture sera terminée.</twig:Typography>
-                    <twig:Button variant="outline" size="sm" asLink href="{{ onglets[section_index].url }}">Actualiser</twig:Button>
-                {% elseif extraction.form_depot and is_granted('FICHE_EDIT', fiche) %}
-                    <twig:Typography variant="body-sm" textColor="neutral-500">
-                        Déposez une plaquette, un devis ou un plan (PDF). L'IA en lit les valeurs et vous les propose — rien n'est écrit sans votre accord, champ par champ.
-                    </twig:Typography>
-                    {{ form(extraction.form_depot) }}
                 {% endif %}
 
-                {% if extraction.active and extraction.a_revoir %}
-                    <twig:Typography variant="heading-3" element="h3" bold>Valider les valeurs lues</twig:Typography>
-                    <twig:Typography variant="body-sm" textColor="neutral-500">
-                        {{ extraction.a_revoir.document.originalFilename }} ·
-                        {{ extraction.a_revoir.suggestions|filter(s => s.isPending)|length }} valeur(s) à arbitrer. Le document reste attaché à la fiche.
-                    </twig:Typography>
-                    {% if is_granted('ROLE_BP_VALIDATOR') %}
-                        {% set form_revue = extraction.form_revue %}
-                        {{ form_start(form_revue) }}
-                            {{ form_widget(form_revue.fiche_version) }}
-                            {{ form_widget(form_revue._token) }}
+                {# ---- Médias ---- #}
+                {% if 'medias' in s.blocs and medias %}
+                    <div>
+                        {% if medias.gamme == 'lieu' %}
+                            {% include 'pim/lieu/_medias.html.twig' with medias.vars %}
+                        {% else %}
+                            {% include 'pim/_documents_gamme.html.twig' with medias.vars %}
+                        {% endif %}
+                    </div>
+                {% endif %}
+
+                {# ---- Collaborateurs ---- #}
+                {% if 'collaborateurs' in s.blocs %}
+                    {% set peut_gerer = is_granted('FICHE_MANAGE_AFFILIATIONS', fiche) %}
+                    <div class="flex flex-col gap-3">
+                        <div class="overflow-x-auto rounded-md inset-ring-1 inset-ring-neutral-200">
+                            <table class="w-full border-collapse">
+                                <thead class="bg-primary-5">
+                                    <tr class="text-left h-10 border-b border-neutral-200">
+                                        {% for col in ['Nom', 'Email', 'Téléphone', 'Rôle · drapeaux'] %}
+                                            <th class="px-3"><twig:Typography variant="body-xs" textColor="neutral-500" bold>{{ col }}</twig:Typography></th>
+                                        {% endfor %}
+                                        {% if peut_gerer %}<th class="px-3"></th>{% endif %}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                {% for ligne in affiliations %}
+                                    {% set affiliation = ligne.affiliation %}
+                                    <tr class="h-12 border-t border-neutral-200 first:border-t-0">
+                                        <td class="px-3"><twig:Typography variant="body-sm" bold>{{ affiliation.collaborateur.firstName }} {{ affiliation.collaborateur.lastName }}</twig:Typography></td>
+                                        <td class="px-3"><twig:Typography variant="body-sm">{{ affiliation.collaborateur.email }}</twig:Typography></td>
+                                        <td class="px-3"><twig:Typography variant="body-sm" textColor="neutral-500">{{ affiliation.collaborateur.phone ?? '—' }}</twig:Typography></td>
+                                        <td class="px-3">
+                                            {% if peut_gerer %}
+                                                {{ form(ligne.edition) }}
+                                            {% else %}
+                                                <div class="flex flex-wrap items-center gap-1">
+                                                    <twig:Tag label="{{ affiliation.role.value }}" variant="neutral" size="sm" />
+                                                    {% if affiliation.receivesRequests %}<twig:Tag label="contact principal" variant="primary-3" size="sm" />{% endif %}
+                                                    {% if affiliation.repli %}<twig:Tag label="repli" variant="old-gold" size="sm" />{% endif %}
+                                                </div>
+                                            {% endif %}
+                                        </td>
+                                        {% if peut_gerer %}<td class="px-3">{{ form(ligne.suppression) }}</td>{% endif %}
+                                    </tr>
+                                {% else %}
+                                    <tr><td class="p-6 text-center" colspan="{{ peut_gerer ? 5 : 4 }}"><twig:Typography variant="body-sm" textColor="neutral-500">Aucun collaborateur affilié.</twig:Typography></td></tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% if peut_gerer and form_invitation %}
+                            <twig:Typography variant="heading-3" element="h3" bold>Inviter un collaborateur</twig:Typography>
+                            <twig:Typography variant="body-sm" textColor="neutral-500">L'email est la clé : une adresse déjà connue rattache le collaborateur existant. La marketplace crée le compte et envoie le mail d'accès.</twig:Typography>
+                            {{ form(form_invitation) }}
+                        {% else %}
+                            <twig:Typography variant="body-sm" textColor="neutral-500">La gestion des collaborateurs est réservée aux validateurs.</twig:Typography>
+                        {% endif %}
+                    </div>
+                {% endif %}
+
+                {# ---- Sites de diffusion ---- #}
+                {% if 'sites' in s.blocs %}
+                    <div class="flex flex-col gap-3">
+                        <twig:Typography variant="heading-3" element="h3" bold>Sites de diffusion</twig:Typography>
+                        <twig:Typography variant="body-sm" textColor="neutral-500">Les sites obligatoires restent cochés ; les sites payants sont signalés.</twig:Typography>
+                        {{ form(form_sites) }}
+                    </div>
+                {% endif %}
+
+                {# ---- Salesforce (lecture seule) ---- #}
+                {% if 'salesforce' in s.blocs %}
+                    <div class="flex flex-col gap-3 pt-4 border-t border-neutral-200 first:pt-0 first:border-t-0">
+                        <twig:Typography variant="heading-3" element="h3" bold>Données Salesforce</twig:Typography>
+                        {% if salesforce %}
+                            <twig:Typography variant="body-sm" textColor="neutral-500">
+                                Lecture seule — rafraîchies chaque nuit depuis Salesforce et diffusées sur la marketplace.
+                                Dernier rafraîchissement : {{ salesforce.refreshedAt|date('d/m/Y H:i') }}.
+                            </twig:Typography>
                             <div class="overflow-x-auto rounded-md inset-ring-1 inset-ring-neutral-200">
                                 <table class="w-full border-collapse">
-                                    <thead class="bg-primary-5">
-                                        <tr class="text-left h-10 border-b border-neutral-200">
-                                            {% for col in ['Champ', 'Valeur actuelle', 'Valeur lue (corrigible)', 'Confiance', 'Pages', 'Décision'] %}
-                                                <th class="px-3"><twig:Typography variant="body-xs" textColor="neutral-500" bold>{{ col }}</twig:Typography></th>
-                                            {% endfor %}
-                                        </tr>
-                                    </thead>
                                     <tbody>
-                                    {% for suggestion in extraction.a_revoir.suggestions|filter(s => s.isPending) %}
-                                        {% set ligne = attribute(form_revue, suggestion.id) %}
-                                        <tr class="border-t border-neutral-200 first:border-t-0">
-                                            <td class="px-3 py-2"><twig:Typography variant="body-sm" bold>{{ suggestion.label }}</twig:Typography><twig:Typography variant="body-xs" textColor="neutral-500">{{ suggestion.fieldPath }}</twig:Typography></td>
-                                            <td class="px-3 py-2"><twig:Typography variant="body-sm">{{ suggestion.observedValue is iterable ? suggestion.observedValue|json_encode : (suggestion.observedValue ?? 'Champ vide') }}</twig:Typography></td>
-                                            <td class="px-3 py-2">{{ form_widget(ligne.value) }}</td>
-                                            <td class="px-3 py-2"><twig:Typography variant="body-sm">{{ suggestion.confidence is null ? '—' : (suggestion.confidence * 100)|number_format(0) ~ ' %' }}</twig:Typography></td>
-                                            <td class="px-3 py-2"><twig:Typography variant="body-sm">{{ suggestion.pageReferences|map(p => 'p. ' ~ p)|join(', ') ?: '—' }}</twig:Typography></td>
-                                            <td class="px-3 py-2"><div class="flex items-center gap-3">{{ form_row(ligne.accept) }}{{ form_row(ligne.reject) }}</div></td>
+                                        {% for libelle, valeur in {
+                                            'Note RSE globale': salesforce.noteGlobale,
+                                            'RSE — Achats responsables': salesforce.noteAchatsResponsables,
+                                            'RSE — Impact environnemental': salesforce.noteImpactEnvironnemental,
+                                            'RSE — Impact social': salesforce.noteImpactSocial,
+                                            'RSE — Mobilité': salesforce.noteMobilite,
+                                            'RSE — Labels et démarche qualité': salesforce.noteLabelsEtDemarcheQualite,
+                                            'Évaluation client': salesforce.evaluationClient,
+                                            'Procédure judiciaire': salesforce.procedureJudiciaire,
+                                        } %}
+                                            <tr class="h-10 border-t border-neutral-200 first:border-t-0">
+                                                <th scope="row" class="px-3 text-left w-1/2"><twig:Typography variant="body-sm" bold>{{ libelle }}</twig:Typography></th>
+                                                <td class="px-3"><twig:Typography variant="body-sm">{{ valeur ?? '—' }}</twig:Typography></td>
+                                            </tr>
+                                        {% endfor %}
+                                        <tr class="h-10 border-t border-neutral-200">
+                                            <th scope="row" class="px-3 text-left"><twig:Typography variant="body-sm" bold>Contrats avec comptes</twig:Typography></th>
+                                            <td class="px-3"><twig:Typography variant="body-sm">{{ salesforce.contratsComptes is not empty ? salesforce.contratsComptes|join(', ') : '—' }}</twig:Typography></td>
                                         </tr>
-                                    {% endfor %}
                                     </tbody>
                                 </table>
                             </div>
-                            <div class="pt-3">{{ form_row(form_revue.save, {label: 'Appliquer les décisions'}) }}</div>
-                        {{ form_end(form_revue, {render_rest: false}) }}
-                    {% else %}
-                        <twig:Typography variant="body-sm" textColor="neutral-500">La validation des valeurs lues est réservée aux validateurs.</twig:Typography>
-                    {% endif %}
+                            <twig:Typography variant="body-sm" textColor="neutral-500">Le statut « Partenaire BP » de cette fiche est également piloté par Salesforce.</twig:Typography>
+                        {% else %}
+                            <twig:Typography variant="body-sm" textColor="neutral-500">Fiche inconnue de Salesforce : aucune donnée RSE, évaluation ou statut partenaire n'en est reçue.</twig:Typography>
+                        {% endif %}
+                    </div>
                 {% endif %}
 
-                <twig:Typography variant="heading-3" element="h3" bold>Extractions de la fiche</twig:Typography>
-                {% if extractions is not empty %}
-                    <ul class="flex flex-col gap-1">
-                        {% for ligne_extraction in extractions %}
-                            <li class="flex items-center gap-2">
-                                <a href="{{ path('app_ocr_show', {id: fiche.idString, extractionId: ligne_extraction.id}) }}" class="hover:underline"><twig:Typography variant="body-sm" textColor="primary-3" bold element="span">{{ ligne_extraction.document.originalFilename }}</twig:Typography></a>
-                                <twig:Typography variant="body-sm" textColor="neutral-500">· {{ extraction_statuts[ligne_extraction.status.value] ?? ligne_extraction.status.value }} · {{ ligne_extraction.suggestionCount|default('—') }} valeur(s)</twig:Typography>
-                            </li>
-                        {% endfor %}
-                    </ul>
-                {% else %}
-                    <twig:Typography variant="body-sm" textColor="neutral-500">Aucune extraction pour cette fiche.</twig:Typography>
-                {% endif %}
-                <a href="{{ liens.ocr_admin }}" class="hover:underline"><twig:Typography variant="body-sm" textColor="primary-3" bold element="span">Écran complet des extractions</twig:Typography></a>
-            </div>
-        {% endif %}
+                {# ---- Extraction OCR ---- #}
+                {% if 'suggestions' in s.blocs %}
+                    <div class="flex flex-col gap-3">
+                        <twig:Typography variant="heading-3" element="h3" bold>Extraire d'un document</twig:Typography>
+                        {% if not extraction.active %}
+                            <twig:Typography variant="body-sm" textColor="neutral-500">L'extraction de documents n'est pas activée sur cet environnement.</twig:Typography>
+                        {% elseif extraction.en_cours %}
+                            {% set en_cours = extraction.en_cours %}
+                            <div class="flex flex-col gap-1 p-4 rounded-md bg-primary-5">
+                                <div class="flex items-center gap-2">
+                                    <twig:Typography variant="body" bold element="span">{{ en_cours.document.originalFilename }}</twig:Typography>
+                                    <twig:Tag label="{{ extraction_statuts[en_cours.status.value] ?? en_cours.status.value }}" variant="primary-3" size="sm" />
+                                    {% if en_cours.pageCount %}<twig:Typography variant="body-sm" textColor="neutral-500">{{ en_cours.pageCount }} page{{ en_cours.pageCount > 1 ? 's' : '' }}</twig:Typography>{% endif %}
+                                </div>
+                                <twig:Typography variant="body-sm" textColor="neutral-500">
+                                    Déposé par {{ en_cours.createdBy }} le {{ en_cours.createdAt|date('d/m/Y à H:i') }}.
+                                    La lecture peut prendre plusieurs minutes — vous pouvez continuer à travailler.
+                                </twig:Typography>
+                            </div>
+                            <twig:Typography variant="body-sm" textColor="neutral-500">Vous pourrez déposer un autre document quand cette lecture sera terminée.</twig:Typography>
+                            <twig:Button variant="outline" size="sm" asLink href="{{ onglets[i].url }}">Actualiser</twig:Button>
+                        {% elseif extraction.form_depot and is_granted('FICHE_EDIT', fiche) %}
+                            <twig:Typography variant="body-sm" textColor="neutral-500">
+                                Déposez une plaquette, un devis ou un plan (PDF). L'IA en lit les valeurs et vous les propose — rien n'est écrit sans votre accord, champ par champ.
+                            </twig:Typography>
+                            {{ form(extraction.form_depot) }}
+                        {% endif %}
 
-        {# ---- Historique ---- #}
-        {% if 'historique' in section.blocs %}
-            <div class="flex flex-col gap-3 pt-4 border-t border-neutral-200">
-                <twig:Typography variant="heading-3" element="h3" bold>Dernières modifications</twig:Typography>
-                {% if historique is not empty %}
-                    <ul class="flex flex-col gap-1">
-                        {% for revision in historique %}
-                            <li><twig:Typography variant="body-sm">{{ revision.createdAt|date('d/m/Y H:i') }} · {{ revision.action }} · {{ revision.actor }} <span class="text-neutral-500">({{ revision.source }})</span></twig:Typography></li>
-                        {% endfor %}
-                    </ul>
-                {% else %}
-                    <twig:Typography variant="body-sm" textColor="neutral-500">Aucune modification enregistrée.</twig:Typography>
+                        {% if extraction.active and extraction.a_revoir %}
+                            <twig:Typography variant="heading-3" element="h3" bold>Valider les valeurs lues</twig:Typography>
+                            <twig:Typography variant="body-sm" textColor="neutral-500">
+                                {{ extraction.a_revoir.document.originalFilename }} ·
+                                {{ extraction.a_revoir.suggestions|filter(s => s.isPending)|length }} valeur(s) à arbitrer. Le document reste attaché à la fiche.
+                            </twig:Typography>
+                            {% if is_granted('ROLE_BP_VALIDATOR') %}
+                                {% set form_revue = extraction.form_revue %}
+                                {{ form_start(form_revue) }}
+                                    {{ form_widget(form_revue.fiche_version) }}
+                                    {{ form_widget(form_revue._token) }}
+                                    <div class="overflow-x-auto rounded-md inset-ring-1 inset-ring-neutral-200">
+                                        <table class="w-full border-collapse">
+                                            <thead class="bg-primary-5">
+                                                <tr class="text-left h-10 border-b border-neutral-200">
+                                                    {% for col in ['Champ', 'Valeur actuelle', 'Valeur lue (corrigible)', 'Confiance', 'Pages', 'Décision'] %}
+                                                        <th class="px-3"><twig:Typography variant="body-xs" textColor="neutral-500" bold>{{ col }}</twig:Typography></th>
+                                                    {% endfor %}
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                            {% for suggestion in extraction.a_revoir.suggestions|filter(s => s.isPending) %}
+                                                {% set ligne = attribute(form_revue, suggestion.id) %}
+                                                <tr class="border-t border-neutral-200 first:border-t-0">
+                                                    <td class="px-3 py-2"><twig:Typography variant="body-sm" bold>{{ suggestion.label }}</twig:Typography><twig:Typography variant="body-xs" textColor="neutral-500">{{ suggestion.fieldPath }}</twig:Typography></td>
+                                                    <td class="px-3 py-2"><twig:Typography variant="body-sm">{{ suggestion.observedValue is iterable ? suggestion.observedValue|json_encode : (suggestion.observedValue ?? 'Champ vide') }}</twig:Typography></td>
+                                                    <td class="px-3 py-2">{{ form_widget(ligne.value) }}</td>
+                                                    <td class="px-3 py-2"><twig:Typography variant="body-sm">{{ suggestion.confidence is null ? '—' : (suggestion.confidence * 100)|number_format(0) ~ ' %' }}</twig:Typography></td>
+                                                    <td class="px-3 py-2"><twig:Typography variant="body-sm">{{ suggestion.pageReferences|map(p => 'p. ' ~ p)|join(', ') ?: '—' }}</twig:Typography></td>
+                                                    <td class="px-3 py-2"><div class="flex items-center gap-3">{{ form_row(ligne.accept) }}{{ form_row(ligne.reject) }}</div></td>
+                                                </tr>
+                                            {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="pt-3">{{ form_row(form_revue.save, {label: 'Appliquer les décisions'}) }}</div>
+                                {{ form_end(form_revue, {render_rest: false}) }}
+                            {% else %}
+                                <twig:Typography variant="body-sm" textColor="neutral-500">La validation des valeurs lues est réservée aux validateurs.</twig:Typography>
+                            {% endif %}
+                        {% endif %}
+
+                        <twig:Typography variant="heading-3" element="h3" bold>Extractions de la fiche</twig:Typography>
+                        {% if extractions is not empty %}
+                            <ul class="flex flex-col gap-1">
+                                {% for ligne_extraction in extractions %}
+                                    <li class="flex items-center gap-2">
+                                        <a href="{{ path('app_ocr_show', {id: fiche.idString, extractionId: ligne_extraction.id}) }}" class="hover:underline"><twig:Typography variant="body-sm" textColor="primary-3" bold element="span">{{ ligne_extraction.document.originalFilename }}</twig:Typography></a>
+                                        <twig:Typography variant="body-sm" textColor="neutral-500">· {{ extraction_statuts[ligne_extraction.status.value] ?? ligne_extraction.status.value }} · {{ ligne_extraction.suggestionCount|default('—') }} valeur(s)</twig:Typography>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <twig:Typography variant="body-sm" textColor="neutral-500">Aucune extraction pour cette fiche.</twig:Typography>
+                        {% endif %}
+                        <a href="{{ liens.ocr_admin }}" class="hover:underline"><twig:Typography variant="body-sm" textColor="primary-3" bold element="span">Écran complet des extractions</twig:Typography></a>
+                    </div>
                 {% endif %}
-                <twig:Button variant="outline" size="sm" asLink href="{{ liens.historique }}">Historique complet et restauration</twig:Button>
-            </div>
+
+                {# ---- Historique ---- #}
+                {% if 'historique' in s.blocs %}
+                    <div class="flex flex-col gap-3 pt-4 border-t border-neutral-200 first:pt-0 first:border-t-0">
+                        <twig:Typography variant="heading-3" element="h3" bold>Dernières modifications</twig:Typography>
+                        {% if historique is not empty %}
+                            <ul class="flex flex-col gap-1">
+                                {% for revision in historique %}
+                                    <li><twig:Typography variant="body-sm">{{ revision.createdAt|date('d/m/Y H:i') }} · {{ revision.action }} · {{ revision.actor }} <span class="text-neutral-500">({{ revision.source }})</span></twig:Typography></li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <twig:Typography variant="body-sm" textColor="neutral-500">Aucune modification enregistrée.</twig:Typography>
+                        {% endif %}
+                        <twig:Button variant="outline" size="sm" asLink href="{{ liens.historique }}">Historique complet et restauration</twig:Button>
+                    </div>
+                {% endif %}
+            </section>
         {% endif %}
-    </section>
+    {% endfor %}
+
+    {# Barre épinglée : enregistre TOUTES les sections (formulaire principal). #}
+    {% if is_granted('FICHE_EDIT', fiche) %}
+        <twig:Form:FloatSubmit formId="form-fiche" label="Enregistrer" class="shrink-0" />
+    {% endif %}
 </main>
 {% endblock %}

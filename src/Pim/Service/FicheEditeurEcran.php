@@ -229,6 +229,7 @@ final readonly class FicheEditeurEcran
 
         return [
             'onglets' => $onglets,
+            'sections' => $sections,
             'section' => $section,
             'section_index' => $index,
             'entete' => [
@@ -258,37 +259,26 @@ final readonly class FicheEditeurEcran
                 TypeFiche::Restaurant => 'Supprimer ce restaurant ?',
                 default => 'Supprimer ce service ?',
             })->createView(),
-            'medias' => in_array('medias', $section['blocs'], true) ? $this->medias($entite, $form) : null,
-            'affiliations' => in_array('collaborateurs', $section['blocs'], true)
-                ? array_map(
-                    static fn (array $ligne): array => [
-                        'affiliation' => $ligne['affiliation'],
-                        'edition' => $ligne['edition']->createView(),
-                        'suppression' => $ligne['suppression']->createView(),
-                    ],
-                    $this->collaborateurs->formsAffiliations($fiche, $this->affiliations->findBy(['fiche' => $fiche->id()])),
-                )
-                : [],
-            'form_invitation' => in_array('collaborateurs', $section['blocs'], true)
-                ? $this->collaborateurs->formInvitation($fiche)->createView()
-                : null,
-            'extractions' => in_array('suggestions', $section['blocs'], true)
-                ? $this->extractions->history($fiche)
-                : [],
-            'extraction' => in_array('suggestions', $section['blocs'], true)
-                ? $this->extractionVars($fiche)
-                : null,
-            'historique' => in_array('historique', $section['blocs'], true)
-                ? $this->revisions->history($id, null, 10)
-                : [],
-            // Données Salesforce en lecture seule (refresh quotidien) ; null =
-            // bloc hors section, false = fiche inconnue de Salesforce.
-            'salesforce' => in_array('salesforce', $section['blocs'], true)
-                ? ($this->salesforce->forFiche($fiche->id()) ?? false)
-                : null,
-            'suggestions_attente' => in_array('suggestions_attente', $section['blocs'], true)
-                ? $this->suggestionsAttenteVars($fiche)
-                : null,
+            // Tous les blocs sont calculés quel que soit l'onglet actif : les
+            // onglets basculent côté client sans recharger, le gabarit rend
+            // chaque bloc dans le volet de sa section.
+            'medias' => $this->medias($entite, $form),
+            'affiliations' => array_map(
+                static fn (array $ligne): array => [
+                    'affiliation' => $ligne['affiliation'],
+                    'edition' => $ligne['edition']->createView(),
+                    'suppression' => $ligne['suppression']->createView(),
+                ],
+                $this->collaborateurs->formsAffiliations($fiche, $this->affiliations->findBy(['fiche' => $fiche->id()])),
+            ),
+            'form_invitation' => $this->collaborateurs->formInvitation($fiche)->createView(),
+            'extractions' => $this->extractions->history($fiche),
+            'extraction' => $this->extractionVars($fiche),
+            'historique' => $this->revisions->history($id, null, 10),
+            // Données Salesforce en lecture seule (refresh quotidien) ;
+            // false = fiche inconnue de Salesforce.
+            'salesforce' => $this->salesforce->forFiche($fiche->id()) ?? false,
+            'suggestions_attente' => $this->suggestionsAttenteVars($fiche),
         ];
     }
 
