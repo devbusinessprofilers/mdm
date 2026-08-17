@@ -1,0 +1,17 @@
+{% extends 'mdm/base.html.twig' %}
+
+{#
+    Coquille des écrans périphériques (admin, audit, OCR, traductions, LOV…) :
+    aucune maquette front n'existe pour eux — ils restent volontairement
+    simples, servis dans la zone de contenu du portail. Leur vocabulaire de
+    classes hérité (page, card, badge, btn…) est traduit aux couleurs du PIM
+    par la couche `.page-simple` de `assets/styles/app.css`.
+
+    Une page migrée remplit `{% block corps %}`.
+#}
+
+{% block contenu %}
+<div class="page-simple flex flex-col flex-1 min-h-0 overflow-y-auto scrollbar px-8 py-6">
+    {% block corps %}{% endblock %}
+</div>
+{% endblock %}

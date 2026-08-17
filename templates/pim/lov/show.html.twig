@@ -1,6 +1,6 @@
-{% extends 'base.html.twig' %}
+{% extends 'mdm/simple.html.twig' %}
 {% block title %}{{ attribute.label }}{% endblock %}
-{% block body %}
+{% block corps %}
 <main class="page">
     <a class="back-link" href="{{ path('app_pim_lov_index') }}">← Retour aux LOV</a>
     <header class="page-header"><div><p class="page-kicker"><code>{{ attribute.code }}</code></p><h1>{{ attribute.label }}</h1></div><a class="btn" href="{{ path('app_pim_lov_new', {code: attribute.code}) }}">Ajouter une valeur</a></header>

@@ -1,6 +1,6 @@
-{% extends 'base.html.twig' %}
+{% extends 'mdm/simple.html.twig' %}
 {% block title %}{{ site ? 'Modifier un site de diffusion' : 'Ajouter un site de diffusion' }}{% endblock %}
-{% block body %}
+{% block corps %}
 <main class="page">
     <a class="back-link" href="{{ path('app_pim_site_diffusion_index') }}">← Retour aux sites de diffusion</a>
     <header class="page-header">

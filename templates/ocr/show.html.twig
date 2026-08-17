@@ -1,6 +1,6 @@
-{% extends 'base.html.twig' %}
+{% extends 'mdm/simple.html.twig' %}
 {% block title %}Détail extraction OCR{% endblock %}
-{% block body %}
+{% block corps %}
 <main class="page-shell">
     <header class="page-header"><div><p class="page-kicker">OCR / {{ extraction.status.value }}</p><h1>{{ extraction.document.originalFilename }}</h1><p>{{ category_label }} · {{ fiche.label }} · {{ extraction.pageCount ?? '—' }} page(s) · {{ extraction.createdBy }}</p></div><a class="button secondary" href="{{ path('app_ocr_index', {id: fiche.idString}) }}">Retour à l’historique</a></header>
     {% if extraction.errorMessage %}<section class="card"><p class="flash flash-error">{{ extraction.errorMessage }}</p>{% if is_granted('ROLE_BP_VALIDATOR') and extraction.status.value == 'failed' %}{{ form(retry_form) }}{% endif %}</section>{% endif %}

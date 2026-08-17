@@ -1,8 +1,8 @@
-{% extends 'base.html.twig' %}
+{% extends 'mdm/simple.html.twig' %}
 
 {% block title %}Traductions de {{ fiche.label ?? fiche.code }}{% endblock %}
 
-{% block body %}
+{% block corps %}
 <main class="page">
     {# L'éditeur MDM est la vue unique d'une fiche. #}
     {% set retour_fiche = fiche.type.value == 'lieu'

@@ -17,7 +17,7 @@
     'activite': 'Activités', 'service_evenementiel': 'Services',
 } %}
 {% set onglet_actions = {
-    'miroir': [['Arbitrer les conflits', 'ok-circle']],
+    'miroir': [],
     'conflits': [['Arbitrer en masse', 'ok-circle']],
     'formes': [['Normaliser en masse', 'list']],
     'notifs': [['Renvoyer les relances', 'paper-plane']],
@@ -85,7 +85,11 @@
         </div>
         <div class="flex items-center gap-2.5 shrink-0">
             {# Recalcul réel des snapshots (mêmes messages que les passages planifiés). #}
-            {% if form_recalcul %}{{ form(form_recalcul) }}{% endif %}
+            {% if form_recalcul %}
+                {{ form(form_recalcul) }}
+                <twig:Button variant="outline" size="sm" icon="ok-circle" asLink
+                             href="{{ path('app_mdm_qualite', { onglet: 'conflits' }) }}">Arbitrer les conflits</twig:Button>
+            {% endif %}
             {# Actions de la maquette sans back : visibles mais désactivées. #}
             {% for action in onglet_actions[onglet_actif]|default([]) %}
                 <span title="Fonction à venir — en développement" class="inline-flex">

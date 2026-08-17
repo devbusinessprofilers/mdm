@@ -1,8 +1,8 @@
-{% extends 'base.html.twig' %}
+{% extends 'mdm/simple.html.twig' %}
 
 {% block title %}Historique de {{ restaurant.label }}{% endblock %}
 
-{% block body %}
+{% block corps %}
 <main class="page">
     <a class="back-link" href="{{ path('app_mdm_fiche_gamme', {gamme: 'restaurants', id: restaurant.id}) }}">
         ← Retour au restaurant

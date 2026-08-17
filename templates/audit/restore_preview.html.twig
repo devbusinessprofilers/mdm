@@ -1,8 +1,8 @@
-{% extends 'base.html.twig' %}
+{% extends 'mdm/simple.html.twig' %}
 
 {% block title %}Restaurer la révision du {{ revision.createdAt|date('d/m/Y H:i:s') }}{% endblock %}
 
-{% block body %}
+{% block corps %}
 <main class="page">
     <a class="back-link" href="{{ history_url }}">← Retour à l’historique</a>
 

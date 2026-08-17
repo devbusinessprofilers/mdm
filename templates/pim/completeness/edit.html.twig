@@ -1,6 +1,6 @@
-{% extends 'base.html.twig' %}
+{% extends 'mdm/simple.html.twig' %}
 {% block title %}Modifier {{ configuration.fieldCode }}{% endblock %}
-{% block body %}<main class="page page-narrow">
+{% block corps %}<main class="page page-narrow">
     <a class="back-link" href="{{ path('app_pim_completeness_index', {type: configuration.ficheType.value}) }}">← Retour à la complétude</a>
     <header class="page-header"><div><p class="page-kicker">{{ configuration.ficheType.value|replace({'_': ' '}) }}</p><h1>{{ configuration.label }}</h1><code>{{ configuration.fieldCode }}</code></div></header>
     <section class="card"><dl class="definition-list"><dt>Chemin métier</dt><dd>{{ definition.path }}</dd><dt>Condition</dt><dd>{{ definition.conditionLabel ?? 'Toujours applicable' }}</dd><dt>Cible de l’entité</dt><dd>{{ definition.defaultTargetLength ?? 'Non définie' }}</dd></dl></section>
