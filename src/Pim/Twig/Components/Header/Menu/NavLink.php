@@ -60,7 +60,8 @@ final class NavLink
             return;
         }
 
-        $this->iconColor = TypographyTextColorEnum::tryFrom($iconColor) ?? TypographyTextColorEnum::PRIMARY;
+        // PHP 8.5 déprécie tryFrom(null) : garde explicite.
+        $this->iconColor = (null !== $iconColor ? TypographyTextColorEnum::tryFrom($iconColor) : null) ?? TypographyTextColorEnum::PRIMARY;
     }
 
     private function initLabel(): void

@@ -31,6 +31,7 @@ class TextInput
     public function mount(?string $rightIcon = null, ?string $iconColor = null): void
     {
         $this->rightIcon = $this->disabled ? 'lock' : $rightIcon;
-        $this->iconColor = $this->disabled ? TypographyTextColorEnum::CONTROLLED : (TypographyTextColorEnum::tryFrom($iconColor) ?? TypographyTextColorEnum::DARK);
+        // PHP 8.5 déprécie tryFrom(null) : garde explicite.
+        $this->iconColor = $this->disabled ? TypographyTextColorEnum::CONTROLLED : ((null !== $iconColor ? TypographyTextColorEnum::tryFrom($iconColor) : null) ?? TypographyTextColorEnum::DARK);
     }
 }

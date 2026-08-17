@@ -49,7 +49,8 @@ final class NavLink
             return;
         }
 
-        $this->iconColor = TypographyTextColorEnum::tryFrom($iconColor) ?? TypographyTextColorEnum::PRIMARY;
+        // PHP 8.5 déprécie tryFrom(null) : garde explicite.
+        $this->iconColor = (null !== $iconColor ? TypographyTextColorEnum::tryFrom($iconColor) : null) ?? TypographyTextColorEnum::PRIMARY;
     }
 
     private function initSize(ButtonSizeEnum|string|null $size): void
@@ -60,6 +61,6 @@ final class NavLink
             return;
         }
 
-        $this->size = ButtonSizeEnum::tryFrom($size) ?? ButtonSizeEnum::MEDIUM;
+        $this->size = (null !== $size ? ButtonSizeEnum::tryFrom($size) : null) ?? ButtonSizeEnum::MEDIUM;
     }
 }

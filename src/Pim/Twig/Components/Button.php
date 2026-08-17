@@ -30,9 +30,10 @@ class Button
         ?string $iconSize = null,
         ?string $iconColor = null,
     ): void {
-        $this->variant = ButtonVariantEnum::tryFrom($variant) ?? ButtonVariantEnum::PRIMARY;
-        $this->size = ButtonSizeEnum::tryFrom($size) ?? ButtonSizeEnum::LARGE;
-        $this->iconSize = ButtonIconSizeEnum::tryFrom($iconSize) ?? ButtonIconSizeEnum::MEDIUM;
+        // PHP 8.5 déprécie tryFrom(null) : garde explicite.
+        $this->variant = (null !== $variant ? ButtonVariantEnum::tryFrom($variant) : null) ?? ButtonVariantEnum::PRIMARY;
+        $this->size = (null !== $size ? ButtonSizeEnum::tryFrom($size) : null) ?? ButtonSizeEnum::LARGE;
+        $this->iconSize = (null !== $iconSize ? ButtonIconSizeEnum::tryFrom($iconSize) : null) ?? ButtonIconSizeEnum::MEDIUM;
 
         $this->initTextColor($textColor);
         $this->initIconColor($iconColor, $textColor);
@@ -40,7 +41,7 @@ class Button
 
     protected function initTextColor(?string $textColor): void
     {
-        $textColor = TypographyTextColorEnum::tryFrom($textColor);
+        $textColor = null !== $textColor ? TypographyTextColorEnum::tryFrom($textColor) : null;
         if (null !== $textColor) {
             $this->textColor = $textColor;
 
@@ -52,14 +53,14 @@ class Button
 
     protected function initIconColor(?string $iconColor, ?string $textColor): void
     {
-        $iconColor = TypographyTextColorEnum::tryFrom($iconColor);
+        $iconColor = null !== $iconColor ? TypographyTextColorEnum::tryFrom($iconColor) : null;
         if (null !== $iconColor) {
             $this->iconColor = $iconColor;
 
             return;
         }
 
-        $textColor = TypographyTextColorEnum::tryFrom($textColor);
+        $textColor = null !== $textColor ? TypographyTextColorEnum::tryFrom($textColor) : null;
         if (null !== $textColor) {
             $this->iconColor = $textColor;
 

@@ -27,7 +27,8 @@ final class Typography
 
     public function mount(?string $variant = null, ?string $textColor = null): void
     {
-        $this->variant = TypographyVariantEnum::tryFrom($variant) ?? TypographyVariantEnum::BODY_MEDIUM;
-        $this->textColor = TypographyTextColorEnum::tryFrom($textColor) ?? TypographyTextColorEnum::DARK;
+        // PHP 8.5 déprécie tryFrom(null) : garde explicite.
+        $this->variant = (null !== $variant ? TypographyVariantEnum::tryFrom($variant) : null) ?? TypographyVariantEnum::BODY_MEDIUM;
+        $this->textColor = (null !== $textColor ? TypographyTextColorEnum::tryFrom($textColor) : null) ?? TypographyTextColorEnum::DARK;
     }
 }

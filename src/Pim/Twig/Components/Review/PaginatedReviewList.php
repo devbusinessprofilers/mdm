@@ -39,7 +39,8 @@ class PaginatedReviewList
         $this->initLivePagination($page, $itemsPerPage, $totalItems);
         $this->initChoices();
         $this->items = $this->fetch();
-        $this->currentType = SheetTypeEnum::tryFrom($currentType)?->name;
+        // PHP 8.5 déprécie tryFrom(null) : garde explicite.
+        $this->currentType = null !== $currentType ? SheetTypeEnum::tryFrom($currentType)?->name : null;
     }
 
     #[LiveAction]
