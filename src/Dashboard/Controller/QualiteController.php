@@ -41,6 +41,7 @@ final class QualiteController extends AbstractController
         return $this->render('dashboard/qualite.html.twig', [
             'onglets' => self::ONGLETS,
             'onglet_actif' => $onglet,
+            'badges' => $qualite->badges(),
             'sante' => 'miroir' === $onglet ? $qualite->santeParGamme() : [],
             'suggestions' => 'conflits' === $onglet ? $qualite->suggestionsEnAttente() : [],
             // Mêmes décisions un clic que le bloc « Suggestions en attente »

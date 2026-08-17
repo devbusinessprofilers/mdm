@@ -62,6 +62,29 @@ final readonly class QualiteRepository
     }
 
     /** @return list<array{fiche_id: string, label: ?string, field: string, valeur: ?string, confiance: ?float, quand: string}> */
+    /**
+     * Pastilles du rail : le volume en attente de chaque onglet.
+     *
+     * @return array{conflits: int, formes: int, notifs: int, decisions: int}
+     */
+    public function badges(): array
+    {
+        $formes = $this->ecartsDeForme();
+
+        return [
+            'conflits' => (int) $this->connection->fetchOne(
+                "SELECT (SELECT COUNT(*) FROM ocr_suggestion WHERE status = 'pending')
+                    + (SELECT COUNT(*) FROM pim_localisation WHERE ban_ecart = 1)",
+            ),
+            'formes' => $formes['sans_pays'] + $formes['sans_gps'] + $formes['sans_libelle'],
+            'notifs' => (int) $this->connection->fetchOne('SELECT COUNT(*) FROM pim_fiche_relance'),
+            'decisions' => (int) $this->connection->fetchOne(
+                "SELECT (SELECT COUNT(*) FROM ocr_suggestion WHERE status IN ('accepted', 'rejected'))
+                    + (SELECT COUNT(*) FROM audit_revision WHERE action = 'restore')",
+            ),
+        ];
+    }
+
     public function suggestionsEnAttente(int $limit = 20): array
     {
         $rows = $this->connection->fetchAllAssociative(

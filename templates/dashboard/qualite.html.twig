@@ -1,8 +1,14 @@
 {% extends 'mdm/base.html.twig' %}
 
-{# Écran « Qualité » — 5 onglets, habillé au langage front, branché sur
-   l'existant. Santé par gamme/canal, conflits IA + adresses BAN, écarts de
-   forme, notifications, décisions d'arbitrage. #}
+{#
+    Écran « Qualité » — châssis maquette (rail d'onglets badgés + règle
+    « Qui fait foi » persistante), contenus réels par onglet : santé par
+    gamme/canal, conflits IA + adresses BAN/Geoapify, écarts de forme,
+    notifications, décisions d'arbitrage.
+
+    Écart assumé : pas de bloc « santé » à score global pondéré (aucun agrégat
+    back) — la complétude par gamme et canal, réelle, tient ce rôle.
+#}
 
 {% block title %}Qualité · {{ onglets[onglet_actif] }}{% endblock %}
 
@@ -10,30 +16,72 @@
     'lieu': 'Lieux', 'restaurant': 'Restaurants',
     'activite': 'Activités', 'service_evenementiel': 'Services',
 } %}
+{% set onglet_meta = {
+    'miroir': { icone: 'shield-check', sousTitre: 'La complétude mesurée par gamme et par canal de diffusion.' },
+    'conflits': { icone: 'warning', sousTitre: 'Valeurs IA et écarts d\'adresse à arbitrer — Accepter applique, Ignorer garde la saisie.' },
+    'formes': { icone: 'list', sousTitre: 'Les écarts de forme à normaliser : pays, GPS, libellés.' },
+    'notifs': { icone: 'paper-plane', sousTitre: 'Les relances de complétude envoyées aux contributeurs.' },
+    'decisions': { icone: 'check-circle', sousTitre: 'La trace des arbitrages : qui a tranché, quoi, quand.' },
+} %}
+
+{# ------------------------------------------------- Rail des onglets #}
+{% block rail %}
+    <nav class="flex flex-col shrink-0 box-border w-[328px] pl-5 pr-3 py-4 gap-4 overflow-hidden"
+         aria-label="Onglets de la gouvernance des données">
+        <div class="flex flex-col gap-1">
+            <twig:Typography variant="body" bold class="pl-2 pr-4">Gouvernance des données</twig:Typography>
+            <div class="flex flex-col">
+                {% for cle, libelle in onglets %}
+                    <a href="{{ path('app_mdm_qualite', { onglet: cle }) }}"
+                       class="group/onglet flex items-center gap-2 box-border px-4 py-2
+                              rounded-xs overflow-hidden cursor-pointer
+                              hover:bg-primary-4 aria-[current=page]:bg-linear-(--primary-gradient) aria-[current=page]:hover:bg-none"
+                       {{ onglet_actif == cle ? 'aria-current="page"' : '' }}>
+                        <twig:Icon name="{{ onglet_meta[cle].icone }}" aria-hidden="true"
+                                   class="shrink-0 self-center w-4 h-4 mx-1 text-primary
+                                          group-aria-[current=page]/onglet:text-neutral-100" />
+                        <twig:Typography variant="body" bold ellipsis textColor="primary-3"
+                                         class="flex-1 min-w-0
+                                                group-aria-[current=page]/onglet:text-neutral-100!">{{ libelle }}</twig:Typography>
+                        {% if badges[cle] is defined %}
+                            <twig:Typography variant="body-xs" bold textColor="neutral-500"
+                                             class="shrink-0 px-[7px] py-0.5 rounded-lg bg-neutral-200
+                                                    group-aria-[current=page]/onglet:bg-neutral-100
+                                                    group-aria-[current=page]/onglet:text-primary-3!">{{ badges[cle] }}</twig:Typography>
+                        {% endif %}
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+
+        <span class="flex-1"></span>
+
+        {# « Qui fait foi » : la règle qui rend les cinq onglets lisibles. #}
+        <div class="shrink-0 flex flex-col gap-1.5 mr-1 p-3.5 rounded-[12px] bg-primary-4">
+            <twig:Typography variant="body-sm" bold textColor="primary-3">Qui fait foi</twig:Typography>
+            <twig:Typography variant="body-sm" textColor="neutral-500" class="text-pretty">Salesforce sur la raison
+                sociale, le SIRET et la facturation · le MDM sur les descriptions, capacités et taxonomies · le
+                portail BP sur les horaires, contacts et médias.</twig:Typography>
+        </div>
+    </nav>
+{% endblock %}
 
 {% block contenu %}
-<main class="flex flex-col h-full min-h-0 overflow-y-auto scrollbar px-6 py-5 gap-5">
+<main class="flex flex-col h-full min-h-0 overflow-y-auto scrollbar">
 
-    <div class="shrink-0 flex items-start justify-between gap-4">
-        <div class="flex flex-col gap-1 max-w-[720px]">
-            <twig:Typography variant="body-xs" textColor="neutral-500" bold class="uppercase tracking-[0.8px]">Qualité</twig:Typography>
-            <twig:Typography variant="heading-2" element="h1" bold>Gouvernance des données</twig:Typography>
-            <twig:Typography variant="body-sm" textColor="neutral-500">
-                Une donnée est saine quand toutes les sources portent la même valeur. Le comparatif Salesforce / MDM / portail arrivera avec l'intégration Salesforce ; en attendant, cet écran suit ce que le référentiel sait déjà mesurer.
-            </twig:Typography>
+    <div class="shrink-0 flex items-end justify-between gap-6 px-10 pt-[22px] pb-4">
+        <div class="flex flex-col gap-1 min-w-0 max-w-[720px]">
+            <twig:Typography variant="heading-2" element="h1"
+                             class="sm:text-[1.625rem]! sm:leading-[2.125rem]! font-[700]!">{{ onglets[onglet_actif] }}</twig:Typography>
+            <twig:Typography variant="body" element="p" textColor="neutral-500"
+                             class="text-pretty">{{ onglet_meta[onglet_actif].sousTitre }}</twig:Typography>
         </div>
         {% if is_granted('ROLE_SUPER_ADMIN') %}
             <twig:Button variant="outline" size="sm" asLink href="{{ path('app_pim_completeness_index') }}">Configuration de la complétude</twig:Button>
         {% endif %}
     </div>
 
-    <nav class="shrink-0 flex flex-wrap items-center gap-2" aria-label="Onglets de la qualité">
-        {% for cle, libelle in onglets %}
-            <twig:Button variant="{{ onglet_actif == cle ? 'primary' : 'outline' }}" size="sm" asLink
-                         href="{{ path('app_mdm_qualite', {onglet: cle}) }}">{{ libelle }}</twig:Button>
-        {% endfor %}
-    </nav>
-
+    <div class="flex-1 min-h-0 flex flex-col gap-4 px-10 pb-8">
     {% if onglet_actif == 'miroir' %}
         <section class="shrink-0 flex flex-col gap-3 p-6 rounded-[20px] bg-neutral-100 shadow-(--shadow)" aria-label="Santé des données">
             <twig:Typography variant="heading-3" element="h2" bold>Complétude par gamme et par canal</twig:Typography>
@@ -205,5 +253,6 @@
             </div>
         </section>
     {% endif %}
+    </div>
 </main>
 {% endblock %}

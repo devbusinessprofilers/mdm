@@ -69,7 +69,9 @@ final class EcransPhase6Test extends WebTestCase
         // /qualite : les cinq onglets rendent, la santé liste les gammes.
         $crawler = $client->request('GET', '/qualite');
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('h1', 'Gouvernance des données');
+        // Le h1 porte l'onglet actif ; « Gouvernance des données » titre le rail.
+        self::assertSelectorTextContains('h1', 'Santé des données');
+        self::assertSelectorTextContains('body', 'Gouvernance des données');
         self::assertSelectorTextContains('table', 'Lieux');
         foreach (['conflits', 'formes', 'notifs', 'decisions'] as $onglet) {
             $client->request('GET', '/qualite', ['onglet' => $onglet]);
