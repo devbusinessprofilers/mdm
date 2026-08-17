@@ -12,6 +12,7 @@ use App\Pim\Repository\FicheRepository;
 use App\Pim\Service\EditionRapideEcran;
 use App\Pim\Service\ReferentielListeProvider;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Form\SubmitButton;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -58,14 +59,16 @@ final class EditionRapideController extends AbstractController
             $voisines = $provider->voisines($filtres, $id);
             $ecran->enregistrer($fiche, $localisation, $data);
             $this->addFlash('success', 'Fiche mise à jour.');
-            if (null !== $voisines['suivante']) {
-                return $this->redirectToRoute('app_mdm_edition_rapide', [
-                    'id' => $voisines['suivante'],
-                    'f' => $request->query->all('f'),
-                ]);
-            }
+            // « Enregistrer et passer à la suivante » avance dans le filtre ;
+            // « Enregistrer » recharge la même fiche — la réponse doit rester
+            // dans la turbo-frame de la modale (jamais vers la liste).
+            $boutonSuivante = $form->get('enregistrerSuivante');
+            $versSuivante = $boutonSuivante instanceof SubmitButton && $boutonSuivante->isClicked();
 
-            return $this->redirectToRoute('app_mdm_referentiel_general', ['f' => $request->query->all('f')]);
+            return $this->redirectToRoute('app_mdm_edition_rapide', [
+                'id' => $versSuivante && null !== $voisines['suivante'] ? $voisines['suivante'] : $id,
+                'f' => $request->query->all('f'),
+            ]);
         }
 
         // 422 : Turbo Drive ignore une réponse 200 à un POST de formulaire.

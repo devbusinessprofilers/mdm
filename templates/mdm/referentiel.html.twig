@@ -31,6 +31,10 @@
 {% set route_courante = app.request.attributes.get('_route') %}
 {% set params_courants = app.request.attributes.get('_route_params') %}
 
+{# Cases « pavé » de la maquette sur les vrais champs des deux formulaires. #}
+{% form_theme form_filtres 'pim/form/_form-theme-referentiel.html.twig' %}
+{% form_theme form_selection 'pim/form/_form-theme-referentiel.html.twig' %}
+
 {% block title %}{{ gamme_imposee ? 'Référentiel · ' ~ (gamme_titres[gamme_imposee.value] ?? gamme_imposee.value) : 'Référentiel' }}{% endblock %}
 
 {# Tons de statut de la maquette : fond pâle, texte marine. #}
@@ -80,8 +84,8 @@
     </a>
 {% endmacro %}
 
-{# Le contrôleur Stimulus `liste` : rail, menus, bandeau et sélection. #}
-{% block main_attributs %}data-controller="liste"{% endblock %}
+{# `liste` : rail, menus, bandeau, sélection ; `edition-rapide` : la modale. #}
+{% block main_attributs %}data-controller="liste edition-rapide"{% endblock %}
 
 {# ------------------------------------------------------- Rail : filtres à facettes #}
 {% block rail %}
@@ -128,6 +132,10 @@
                     </button>
                 </div>
             </div>
+            <twig:Typography variant="body-xs" textColor="neutral-500">
+                {{- filtres.actifs }} filtre{{ filtres.actifs == 1 ? '' : 's' }} actif{{ filtres.actifs == 1 ? '' : 's' }}
+                · {{ vue.total|number_format(0, ',', ' ') }} résultat{{ vue.total == 1 ? '' : 's' -}}
+            </twig:Typography>
         </div>
 
         <div class="flex-1 min-h-0 overflow-y-auto flex flex-col gap-1 px-3 pt-2 pb-5 scrollbar">
@@ -204,16 +212,18 @@
 
     {# ------------------------------------------------------- Barre d'outils #}
     <div class="shrink-0 flex items-center gap-3.5 px-[30px] pt-4 pb-3">
-        {# Recherche : vrai champ `f[q]`, rattaché au formulaire de filtres du rail. #}
-        <div class="flex-1 min-w-[220px] max-w-[460px]">
+        {# Recherche : vrai champ `f[q]`, rattaché au formulaire de filtres du rail.
+           Le fond vit sur l'enveloppe : un fond opaque sur l'input masquerait la loupe. #}
+        <div class="flex-1 min-w-[220px] max-w-[460px] h-[38px] rounded-full overflow-hidden
+                    inset-ring-1 inset-ring-neutral-200 [&>div]:h-full [&>div]:bg-neutral-100!">
             <twig:Form:TextInput
                 id="recherche-referentiel"
                 name="f[q]"
                 value="{{ filtres.q }}"
                 leftIcon="magnifying-glass"
                 placeholder="nom · ville · identifiant"
-                class="rounded-full! h-[38px] inset-ring-1 inset-ring-neutral-200 bg-neutral-100!"
-                :inputAttributes="{ type: 'search', form: 'form-filtres' }"
+                class="border-0! rounded-full! h-full!"
+                :inputAttributes="{ form: 'form-filtres' }"
             />
         </div>
 
@@ -221,7 +231,7 @@
         <div class="relative shrink-0">
             <twig:Button variant="text" size="md" icon="layout"
                          class="bg-neutral-100! inset-ring-1 inset-ring-neutral-200 h-[38px]! rounded-full!"
-                         data-action="liste#basculerPicker" aria-haspopup="true" aria-expanded="false">Vues</twig:Button>
+                         data-action="liste#basculerPicker" aria-haspopup="true" aria-expanded="false">{{ vue_courante }}</twig:Button>
             <div data-liste-target="picker" hidden
                  class="absolute left-0 top-[44px] z-8 w-[380px] p-1.5 rounded-[14px] bg-neutral-100
                         shadow-[0_16px_40px_rgba(3,74,94,0.22)] flex flex-col gap-px">
@@ -435,11 +445,13 @@
 
                             <td class="pl-4 w-[34px]">
                                 {% if cases[loop.index0] is defined %}
-                                    {{ form_widget(cases[loop.index0], { label: false, attr: {
-                                        'data-liste-target': 'case',
-                                        'data-action': 'change->liste#basculerLigne',
-                                        'aria-label': 'Sélectionner ' ~ (ligne.label ?? ligne.code),
-                                    } }) }}
+                                    <label class="inline-flex cursor-pointer">
+                                        {{ form_widget(cases[loop.index0], { label: false, attr: {
+                                            'data-liste-target': 'case',
+                                            'data-action': 'change->liste#basculerLigne',
+                                            'aria-label': 'Sélectionner ' ~ (ligne.label ?? ligne.code),
+                                        } }) }}
+                                    </label>
                                 {% endif %}
                             </td>
 
@@ -536,9 +548,11 @@
 
                             <td class="pr-4" style="width: 104px">
                                 <div class="flex items-center justify-end gap-1">
+                                    {# Sans JavaScript, le crayon ouvre la page plein écran (repli). #}
                                     <a href="{{ urls[ligne.id].edition_rapide }}" title="Édition rapide"
+                                       data-action="edition-rapide#ouvrir"
                                        class="w-7 h-7 shrink-0 flex items-center justify-center rounded-full
-                                              bg-primary-4 text-primary-3">
+                                              bg-primary-4 text-primary-3 cursor-pointer">
                                         <span class="sr-only">Édition rapide de {{ ligne.label ?? ligne.code }}</span>
                                         <twig:Icon name="pencil" class="w-3.5 h-3.5" />
                                     </a>
@@ -613,6 +627,19 @@
         </div>
     </div>
     {{ form_end(form_selection) }}
+
+    {# ------------------------------------------- Modale d'édition rapide #}
+    <div class="fixed inset-0 z-40 flex items-start justify-center pt-[60px] px-6 pb-6 bg-background-transparency"
+         data-edition-rapide-target="modale" hidden>
+        <div class="w-[min(1240px,calc(100vw-48px))] max-h-[calc(100vh-100px)] flex flex-col min-h-0">
+            <turbo-frame id="edition-rapide" data-edition-rapide-target="cadre"
+                         class="block flex-1 min-h-0 overflow-y-auto scrollbar rounded-3xl">
+                <div class="p-10 rounded-3xl bg-neutral-100 flex items-center justify-center">
+                    <twig:Typography variant="body-sm" textColor="neutral-500">Chargement…</twig:Typography>
+                </div>
+            </turbo-frame>
+        </div>
+    </div>
 
     {# ------------------------------------------------- Gestion des vues #}
     <div class="fixed inset-0 z-30 flex items-start justify-center pt-[120px] bg-background-transparency"

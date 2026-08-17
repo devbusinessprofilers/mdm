@@ -1,0 +1,27 @@
+{#
+    Cases de l'écran référentiel, à la forme de la maquette « Liste des
+    fiches » : pavé de 18 px très arrondi (radius-xs = 8 px), anneau neutre,
+    coche blanche sur fond primary une fois coché. L'input reste le vrai champ
+    soumis (`selection[ids][]`, facettes `f[...]`) — seul le rendu change.
+
+    L'input et son pavé sont frères : l'appelant les enveloppe d'un `<label>`
+    (la facette du rail, la cellule du tableau) pour la zone cliquable.
+#}
+{%- block checkbox_widget -%}
+    <input
+        type="checkbox"
+        id="{{ id }}"
+        name="{{ full_name }}"
+        value="{{ value|default('1') }}"
+        {% if checked %}checked{% endif %}
+        {% if disabled %}disabled{% endif %}
+        class="peer sr-only"
+        {% for cle, valeur in attr %}{{ cle }}="{{ valeur }}" {% endfor %}
+    >
+    <span aria-hidden="true"
+          class="shrink-0 w-[18px] h-[18px] box-border flex items-center justify-center rounded-xs
+                 bg-neutral-100 inset-ring-1 inset-ring-neutral-400
+                 peer-checked:bg-primary peer-checked:inset-ring-0 peer-checked:display-children">
+        <twig:Icon name="check" class="w-[13px] h-[13px] text-neutral-100 hidden" />
+    </span>
+{%- endblock -%}

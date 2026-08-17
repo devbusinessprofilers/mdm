@@ -99,6 +99,9 @@ final readonly class EditionRapideEcran
                 : [],
         ]);
         $builder->add('enregistrer', SubmitType::class, ['label' => 'Enregistrer']);
+        // Second bouton de la maquette : enregistrer puis passer à la
+        // fiche suivante du filtre courant.
+        $builder->add('enregistrerSuivante', SubmitType::class, ['label' => 'Enregistrer et passer à la suivante']);
 
         return $builder->getForm();
     }

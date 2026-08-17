@@ -1,64 +1,148 @@
 {% extends 'mdm/base.html.twig' %}
 
-{# Page d'édition rapide : le front en fera une modale au-dessus de la liste,
-   le fonctionnement (formulaire, navigation, avertissements) est déjà là. #}
+{#
+    Édition rapide d'une fiche — contenu de la modale de la maquette
+    « Liste des fiches », porté par une turbo-frame : ouvert depuis la liste,
+    il s'affiche par-dessus elle ; ouvert directement, il occupe la page
+    (repli sans JavaScript). Enregistrer recharge la fiche dans la frame,
+    « Enregistrer et passer à la suivante » avance dans le filtre courant.
+
+    Écarts assumés avec la maquette : pas de panneaux flottants de suggestions
+    d'adresse (le bloc « Suggestions en attente » vit dans l'éditeur complet),
+    pas de jauge de complétude en tête (portée par la liste), le nom ne
+    s'édite pas ici.
+#}
+
+{% set gamme_libelles = {
+    'lieu': 'Lieu', 'restaurant': 'Restaurant', 'activite': 'Activité',
+    'service_evenementiel': 'Service', 'traiteur': 'Plateau repas',
+} %}
+{% set statut_libelles = {
+    'en_cours': 'En cours', 'en_attente_validation': 'En attente',
+    'validee': 'Validée', 'publiee': 'Publiée', 'archivee': 'Archivée',
+} %}
 
 {% block title %}Édition rapide · {{ fiche.label ?? fiche.code }}{% endblock %}
 
-{% set statut_libelles = {
-    'en_cours': 'En cours',
-    'en_attente_validation': 'En attente',
-    'validee': 'Validée',
-    'publiee': 'Publiée',
-    'archivee': 'Archivée',
-} %}
+{% macro ton_statut(statut) %}
+    {%- if 'publiee' == statut -%}success-pastel
+    {%- elseif 'validee' == statut -%}primary-3
+    {%- elseif 'en_attente_validation' == statut -%}old-gold
+    {%- elseif 'en_cours' == statut -%}peach
+    {%- else -%}neutral
+    {%- endif -%}
+{% endmacro %}
+
+{% macro tete_section(nom) %}
+    <div class="flex items-center gap-2 pb-1">
+        <span class="uppercase tracking-[0.8px]">
+            <twig:Typography variant="body-xs" textColor="neutral-500" bold>{{ nom }}</twig:Typography>
+        </span>
+        <span class="flex-1 h-px bg-neutral-200"></span>
+    </div>
+{% endmacro %}
 
 {% block contenu %}
-<main class="page">
-    <header class="page-header">
-        <div class="page-header-copy">
-            <p class="page-kicker">Édition rapide</p>
-            <h1>{{ fiche.label ?? 'Sans libellé' }}</h1>
-            <p class="page-description">
-                {{ fiche.type.value|upper|slice(0, 3) }}-{{ '%06d'|format(fiche.code) }} · v{{ fiche.version }}
-                · <span class="badge badge-info">{{ statut_libelles[fiche.status.value] ?? fiche.status.value }}</span>
-            </p>
+<div class="flex-1 min-h-0 flex items-start justify-center px-6 py-5 overflow-y-auto scrollbar">
+    <turbo-frame id="edition-rapide" class="block w-full max-w-[1240px]">
+        <div class="flex flex-col overflow-hidden rounded-3xl bg-neutral-100 shadow-[0_24px_60px_rgba(3,74,94,0.28)]">
+
+            {# ------------------------------------------------------- En-tête #}
+            <div class="shrink-0 flex items-center gap-4 px-[26px] pt-[22px] pb-4 border-b border-neutral-200">
+                <div class="flex-1 min-w-0 flex flex-col gap-1">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <twig:Typography variant="heading-3" element="h1" bold ellipsis>{{ fiche.label ?? 'Sans libellé' }}</twig:Typography>
+                        <twig:Tag label="{{ gamme_libelles[fiche.type.value] ?? fiche.type.value }}" variant="neutral" size="sm" />
+                        <twig:Tag label="{{ statut_libelles[fiche.status.value] ?? fiche.status.value }}"
+                                  variant="{{ _self.ton_statut(fiche.status.value) }}" size="sm" />
+                    </div>
+                    <twig:Typography variant="body-xs" textColor="neutral-500">
+                        {{ fiche.type.value|upper|slice(0, 3) }}-{{ '%06d'|format(fiche.code) }} · v{{ fiche.version }} · Édition rapide
+                    </twig:Typography>
+                </div>
+
+                {# Navigation entre fiches du filtre : les liens restent dans la frame. #}
+                <div class="flex items-center gap-1.5 shrink-0">
+                    {% if voisines.precedente %}
+                        <a href="{{ path('app_mdm_edition_rapide', {id: voisines.precedente} + parametres_filtre) }}"
+                           title="Fiche précédente"
+                           class="w-8 h-8 shrink-0 flex items-center justify-center rounded-full bg-primary-4 text-primary-3">
+                            <span class="sr-only">Fiche précédente</span>
+                            <twig:Icon name="caret-left" class="w-[15px] h-[15px]" />
+                        </a>
+                    {% endif %}
+                    {% if voisines.suivante %}
+                        <a href="{{ path('app_mdm_edition_rapide', {id: voisines.suivante} + parametres_filtre) }}"
+                           title="Fiche suivante"
+                           class="w-8 h-8 shrink-0 flex items-center justify-center rounded-full bg-primary-4 text-primary-3">
+                            <span class="sr-only">Fiche suivante</span>
+                            <twig:Icon name="caret-right" class="w-[15px] h-[15px]" />
+                        </a>
+                    {% endif %}
+                    {# Fermer : navigation pleine page vers la liste (referme la modale). #}
+                    <a href="{{ path('app_mdm_referentiel_general', parametres_filtre) }}" data-turbo-frame="_top"
+                       title="Fermer"
+                       class="w-8 h-8 shrink-0 flex items-center justify-center rounded-full bg-neutral-200 text-neutral-500">
+                        <span class="sr-only">Fermer et revenir à la liste</span>
+                        <twig:Icon name="cross" class="w-[15px] h-[15px]" />
+                    </a>
+                </div>
+            </div>
+
+            {# ------------------------------------------------------- Corps #}
+            {{ form_start(form, { attr: { class: 'contents' } }) }}
+                <div class="flex-1 min-h-0 overflow-y-auto scrollbar px-[26px] py-5 flex flex-col gap-5">
+                    {% if adresses_partagees > 0 %}
+                        <twig:Alert icon="warning" role="status">
+                            Cette adresse est déjà utilisée par {{ adresses_partagees }} autre{{ adresses_partagees == 1 ? '' : 's' }} fiche{{ adresses_partagees == 1 ? '' : 's' }}. La sauvegarde reste autorisée.
+                        </twig:Alert>
+                    {% endif %}
+
+                    <div class="grid grid-cols-1 min-[1100px]:grid-cols-2 gap-x-8 gap-y-5 items-start">
+                        <div class="flex flex-col gap-3">
+                            {{ _self.tete_section('Identité & localisation') }}
+                            {{ form_row(form.localisation) }}
+                        </div>
+
+                        <div class="flex flex-col gap-5">
+                            <div class="flex flex-col gap-3">
+                                {{ _self.tete_section('Statut & référencement') }}
+                                {{ form_row(form.businessPremium) }}
+                            </div>
+
+                            <div class="flex flex-col gap-3">
+                                {{ _self.tete_section('Classification') }}
+                                {% for champ in form %}
+                                    {% if champ.vars.name starts with 'classification_' %}
+                                        {{ form_row(champ) }}
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+
+                            <div class="flex flex-col gap-3">
+                                {{ _self.tete_section('Visibilité') }}
+                                <twig:Typography variant="body-xs" textColor="neutral-500">
+                                    Les sites obligatoires restent cochés ; les sites payants sont signalés.
+                                </twig:Typography>
+                                <div class="max-h-[260px] overflow-y-auto scrollbar">{{ form_row(form.sites) }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {# ------------------------------------------------------- Pied #}
+                <div class="shrink-0 flex items-center gap-3 px-[26px] py-4 border-t border-neutral-200 bg-neutral-100">
+                    <a href="{{ path('app_mdm_referentiel_general', parametres_filtre) }}" data-turbo-frame="_top">
+                        <twig:Typography variant="body-sm" textColor="neutral-500" bold>Annuler</twig:Typography>
+                    </a>
+                    <span class="flex-1"></span>
+                    <span class="flex items-center gap-2 [&_button]:whitespace-nowrap [&_button]:w-auto!">
+                        {{ form_widget(form.enregistrer) }}
+                        {{ form_widget(form.enregistrerSuivante) }}
+                    </span>
+                </div>
+            {{ form_end(form) }}
         </div>
-        <a class="btn btn-secondary" href="{{ path('app_mdm_referentiel_general', parametres_filtre) }}">Retour à la liste</a>
-    </header>
-
-    {% if adresses_partagees > 0 %}
-        <div class="alert alert-warning" role="status">
-            Cette adresse est déjà utilisée par {{ adresses_partagees }} autre{{ adresses_partagees == 1 ? '' : 's' }} fiche{{ adresses_partagees == 1 ? '' : 's' }}. La sauvegarde reste autorisée.
-        </div>
-    {% endif %}
-
-    <section class="card">
-        {{ form_start(form) }}
-            <h2>Adresse</h2>
-            {{ form_row(form.localisation) }}
-            <h2>Statut et référencement</h2>
-            {{ form_row(form.businessPremium) }}
-            {% for champ in form %}
-                {% if champ.vars.name starts with 'classification_' %}
-                    <h2>{{ champ.vars.label }}</h2>
-                    {{ form_row(champ) }}
-                {% endif %}
-            {% endfor %}
-            <h2>Sites de diffusion</h2>
-            <p class="page-description">Les sites obligatoires restent cochés ; les sites payants sont signalés.</p>
-            {{ form_row(form.sites) }}
-            {{ form_row(form.enregistrer) }}
-        {{ form_end(form) }}
-    </section>
-
-    <nav class="pagination" aria-label="Navigation entre fiches">
-        {% if voisines.precedente %}
-            <a class="btn btn-secondary btn-small" href="{{ path('app_mdm_edition_rapide', {id: voisines.precedente} + parametres_filtre) }}">← Fiche précédente</a>
-        {% endif %}
-        {% if voisines.suivante %}
-            <a class="btn btn-secondary btn-small" href="{{ path('app_mdm_edition_rapide', {id: voisines.suivante} + parametres_filtre) }}">Fiche suivante →</a>
-        {% endif %}
-    </nav>
-</main>
+    </turbo-frame>
+</div>
 {% endblock %}

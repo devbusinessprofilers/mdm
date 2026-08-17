@@ -85,7 +85,14 @@ final readonly class ReferentielEcran
             'action' => $this->urls->generate('app_mdm_referentiel_vue_enregistrer', $parametresFiltre),
         ]);
         $vuesEnregistrees = [];
+        // Nom porté par le sélecteur : la vue enregistrée dont les filtres
+        // sont exactement ceux de l'écran, sinon un libellé d'état.
+        $filtresCourants = $filtres->toArray();
+        $vueCourante = null;
         foreach ($this->vues->findVisiblesPour($userId) as $enregistree) {
+            if (null === $vueCourante && $enregistree->filters() == $filtresCourants) {
+                $vueCourante = $enregistree->name();
+            }
             $vuesEnregistrees[] = [
                 'vue' => $enregistree,
                 'url' => $this->urls->generate('app_mdm_referentiel_general', ['f' => $enregistree->filters()]),
@@ -94,6 +101,7 @@ final readonly class ReferentielEcran
                     : null,
             ];
         }
+        $vueCourante ??= [] === $filtresCourants ? 'Toutes les fiches' : 'Vue personnalisée';
 
         return [
             'vue' => $vue,
@@ -104,6 +112,7 @@ final readonly class ReferentielEcran
             'form_selection' => $formSelection->createView(),
             'form_vue' => $formVue->createView(),
             'vues_enregistrees' => $vuesEnregistrees,
+            'vue_courante' => $vueCourante,
             'gamme_imposee' => $gammeImposee,
             'parametres_filtre' => $parametresFiltre,
             'urls' => $urls,
