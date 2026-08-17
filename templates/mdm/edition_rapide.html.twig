@@ -79,9 +79,10 @@
                             <twig:Icon name="caret-right" class="w-[15px] h-[15px]" />
                         </a>
                     {% endif %}
-                    {# Fermer : navigation pleine page vers la liste (referme la modale). #}
+                    {# En modale, le contrôleur `edition-rapide` intercepte et referme
+                       sans navigation ; en page pleine, le lien revient à la liste. #}
                     <a href="{{ path('app_mdm_referentiel_general', parametres_filtre) }}" data-turbo-frame="_top"
-                       title="Fermer"
+                       data-action="edition-rapide#fermer" title="Fermer"
                        class="w-8 h-8 shrink-0 flex items-center justify-center rounded-full bg-neutral-200 text-neutral-500">
                         <span class="sr-only">Fermer et revenir à la liste</span>
                         <twig:Icon name="cross" class="w-[15px] h-[15px]" />
@@ -122,9 +123,9 @@
                             <div class="flex flex-col gap-3">
                                 {{ _self.tete_section('Visibilité') }}
                                 <twig:Typography variant="body-xs" textColor="neutral-500">
-                                    Les sites obligatoires restent cochés ; les sites payants sont signalés.
+                                    Les sites obligatoires restent appliqués ; les sites payants sont signalés.
                                 </twig:Typography>
-                                <div class="max-h-[260px] overflow-y-auto scrollbar">{{ form_row(form.sites) }}</div>
+                                {{ form_row(form.sites) }}
                             </div>
                         </div>
                     </div>
@@ -132,7 +133,8 @@
 
                 {# ------------------------------------------------------- Pied #}
                 <div class="shrink-0 flex items-center gap-3 px-[26px] py-4 border-t border-neutral-200 bg-neutral-100">
-                    <a href="{{ path('app_mdm_referentiel_general', parametres_filtre) }}" data-turbo-frame="_top">
+                    <a href="{{ path('app_mdm_referentiel_general', parametres_filtre) }}" data-turbo-frame="_top"
+                       data-action="edition-rapide#fermer">
                         <twig:Typography variant="body-sm" textColor="neutral-500" bold>Annuler</twig:Typography>
                     </a>
                     <span class="flex-1"></span>

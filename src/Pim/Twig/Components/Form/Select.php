@@ -28,6 +28,9 @@ class Select
 
     public bool $withIndicator = true;
 
+    /** Un select simple non requis porte une option vide (« rien de choisi »). */
+    public bool $required = false;
+
     public bool $prototype = false;
 
     public array $selectAttributes = [];

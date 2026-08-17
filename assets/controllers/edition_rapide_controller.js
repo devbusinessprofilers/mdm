@@ -7,7 +7,8 @@ import { Controller } from '@hotwired/stimulus';
  * la coquille recouvre la liste et une turbo-frame y charge la vraie page
  * d'édition rapide — formulaire Symfony, enregistrement et navigation entre
  * fiches compris. Le crayon reste un lien : sans JavaScript, il ouvre la
- * page en plein écran.
+ * page en plein écran, et les boutons Fermer/Annuler de la frame naviguent
+ * vers la liste (le contrôleur les intercepte quand la modale est là).
  */
 export default class extends Controller {
     static targets = ['modale', 'cadre'];
@@ -31,14 +32,11 @@ export default class extends Controller {
         this.modaleTarget.hidden = false;
     }
 
-    /*
-     * La liste sous la modale peut être périmée après un enregistrement :
-     * la fermeture recharge la page en conservant filtres et curseur.
-     */
-    fermer() {
+    /* Ferme sans recharger : la liste reste telle quelle sous la modale. */
+    fermer(evenement) {
+        evenement?.preventDefault();
         this.modaleTarget.hidden = true;
         this.cadreTarget.removeAttribute('src');
         this.cadreTarget.innerHTML = '';
-        window.location.reload();
     }
 }

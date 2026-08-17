@@ -228,7 +228,8 @@ final class ReferentielControllerTest extends WebTestCase
 
         $crawler = $client->request('GET', '/referentiel');
         self::assertResponseIsSuccessful();
-        $form = $crawler->selectButton('Assigner un contributeur')->form();
+        // Le bloc « Attribuer » du menu : un seul bouton Valider (action `attribuer`).
+        $form = $crawler->filter('button[name="selection[action]"][value="attribuer"]')->form();
         $form['selection[contributeur]'] = $user->id();
         $values = $form->getPhpValues();
         $values['selection']['ids'] = [$ficheId];
@@ -283,7 +284,7 @@ final class ReferentielControllerTest extends WebTestCase
         $crawler = $client->request('GET', '/referentiel');
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('body', 'Attribuer la visibilité');
-        $form = $crawler->selectButton('Attribuer la visibilité')->form();
+        $form = $crawler->filter('button[name="selection[action]"][value="attribuer"]')->form();
         $values = $form->getPhpValues();
         $values['selection']['ids'] = [$ficheId, $dejaServie->fiche()->idString()];
         $values['selection']['sites'] = [(string) $marketplace->id(), (string) $portail->id()];
@@ -308,7 +309,7 @@ final class ReferentielControllerTest extends WebTestCase
         $client->request($form->getMethod(), $form->getUri(), $values);
         self::assertResponseRedirects();
         $client->followRedirect();
-        self::assertSelectorTextContains('body', 'Choisissez au moins un site de diffusion à attribuer.');
+        self::assertSelectorTextContains('body', 'Choisissez un contributeur à assigner ou des sites à attribuer.');
     }
 
     public function testLaRechercheTolereLesMotsSousLaTailleDIndexation(): void

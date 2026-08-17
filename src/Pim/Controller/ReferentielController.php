@@ -142,6 +142,41 @@ final class ReferentielController extends AbstractController
 
             return $retour;
         }
+        // « Valider » du bloc Attribuer : applique contributeur et/ou
+        // visibilité selon les champs remplis.
+        if ('attribuer' === $action) {
+            $sousActions = [];
+            if (null !== ($data['contributeur'] ?? null)) {
+                $sousActions[] = 'contributeur';
+            }
+            if ([] !== $data['sites']) {
+                $sousActions[] = 'visibilite';
+            }
+            if ([] === $sousActions) {
+                $this->addFlash('warning', 'Choisissez un contributeur à assigner ou des sites à attribuer.');
+
+                return $retour;
+            }
+            $totaux = ['appliquees' => 0, 'ignorees' => 0];
+            try {
+                foreach ($sousActions as $sousAction) {
+                    $resultat = $actionneur->appliquer($sousAction, $ids, $actor->id(), $data['contributeur'] ?? null, $data['sites']);
+                    $totaux['appliquees'] += $resultat['appliquees'];
+                    $totaux['ignorees'] += $resultat['ignorees'];
+                }
+            } catch (\DomainException $exception) {
+                $this->addFlash('warning', $exception->getMessage());
+
+                return $retour;
+            }
+            $this->addFlash('success', sprintf(
+                'Attribution : %d élément(s) traité(s), %d ignoré(s) (état, droits ou doublon).',
+                $totaux['appliquees'],
+                $totaux['ignorees'],
+            ));
+
+            return $retour;
+        }
         try {
             $resultat = $actionneur->appliquer($action, $ids, $actor->id(), $data['contributeur'] ?? null, $data['sites']);
         } catch (\DomainException $exception) {

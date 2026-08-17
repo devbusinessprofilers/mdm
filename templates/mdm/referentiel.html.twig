@@ -382,20 +382,33 @@
                                     </span>
                                 </div>
 
-                                {# Sous-champs réels de l'action, révélés dans le menu. #}
-                                {% if 'contributeur' == action.code %}
-                                    <div class="px-3 pb-2.5">{{ form_widget(form_selection.contributeur) }}</div>
-                                {% elseif 'visibilite' == action.code %}
-                                    {% if form_selection.sites.children is not empty %}
-                                        <div class="max-h-[180px] overflow-y-auto scrollbar px-3 pb-2.5 flex flex-col gap-1">
-                                            {{ form_widget(form_selection.sites) }}
-                                        </div>
-                                    {% else %}
-                                        {% do form_selection.sites.setRendered %}
-                                    {% endif %}
-                                {% endif %}
                             </div>
                         {% endfor %}
+
+                        {# Bloc « Attribuer » : deux selects, un seul Valider —
+                           séparé des autres options du menu. #}
+                        <div class="flex flex-col gap-2.5 mt-1 pt-2.5 px-3 pb-2.5 border-t border-neutral-200" data-ligne-action>
+                            <div class="flex items-center gap-2">
+                                <twig:Icon name="user" class="w-[15px] h-[15px] shrink-0 text-primary-3" />
+                                <twig:Typography variant="body-sm" bold class="flex-1 min-w-0 whitespace-nowrap">Assigner un contributeur</twig:Typography>
+                            </div>
+                            {{ form_widget(form_selection.contributeur) }}
+
+                            <div class="flex items-center gap-2">
+                                <twig:Icon name="eye" class="w-[15px] h-[15px] shrink-0 text-primary-3" />
+                                <twig:Typography variant="body-sm" bold class="flex-1 min-w-0 whitespace-nowrap">Attribuer la visibilité</twig:Typography>
+                            </div>
+                            {{ form_widget(form_selection.sites) }}
+
+                            <div class="flex items-center justify-end gap-2 pt-0.5">
+                                <span data-plafond-tag hidden>
+                                    <twig:Tag label="Plafond 5 000" variant="neutral" size="sm" class="bg-neutral-100!" />
+                                </span>
+                                <twig:Button variant="primary" size="sm" type="submit"
+                                             name="selection[action]" value="attribuer"
+                                             data-plafond="5000">Valider</twig:Button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

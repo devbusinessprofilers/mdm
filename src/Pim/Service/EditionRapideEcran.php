@@ -68,11 +68,12 @@ final readonly class EditionRapideEcran
                 'data' => $fiche->businessPremium(),
             ]);
         foreach ($this->attributsClassification($fiche->type()) as $attribut) {
+            // Selects multiples (composant du portail), pas des listes de cases.
             $builder->add('classification_'.$attribut['code'], ChoiceType::class, [
                 'label' => $attribut['label'],
                 'required' => false,
                 'multiple' => true,
-                'expanded' => true,
+                'expanded' => false,
                 'choices' => $attribut['choices'],
                 'data' => $fiche->valueIdsFor($attribut['code']),
             ]);
@@ -81,7 +82,8 @@ final readonly class EditionRapideEcran
         $choixSites = [];
         foreach ($this->sites->findActifsOrdonnes() as $site) {
             $mention = $site->obligatoire() ? ' (obligatoire)' : ($site->payant() ? ' (payant)' : '');
-            $choixSites[$site->groupe()][$site->label().$mention] = $site->id();
+            // Liste plate : le composant Select du portail ne rend pas les groupes.
+            $choixSites[$site->label().$mention] = $site->id();
             if ($site->obligatoire()) {
                 $obligatoires[] = $site->id();
             }
@@ -91,12 +93,9 @@ final readonly class EditionRapideEcran
             'label' => 'Sites de diffusion',
             'required' => false,
             'multiple' => true,
-            'expanded' => true,
+            'expanded' => false,
             'choices' => $choixSites,
             'data' => $selection,
-            'choice_attr' => static fn (int $id): array => in_array($id, $obligatoires, true)
-                ? ['disabled' => 'disabled']
-                : [],
         ]);
         $builder->add('enregistrer', SubmitType::class, ['label' => 'Enregistrer']);
         // Second bouton de la maquette : enregistrer puis passer à la

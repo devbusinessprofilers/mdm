@@ -79,6 +79,11 @@
             {{ attrKey }}="{{ attrValue }}"
         {% endfor %}
     >
+        {# Sans option vide, un select simple soumet sa première option par
+           défaut — « rien de choisi » doit rester possible s'il n'est pas requis. #}
+        {% if not multiple and not required %}
+            <option value="" {% if selectedValues is empty %}selected{% endif %}></option>
+        {% endif %}
         {% for choice in choices %}
             <option
                 value="{{ choice.value }}"

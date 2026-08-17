@@ -79,7 +79,8 @@ final readonly class ReferentielEcran
             'action' => $this->urls->generate('app_mdm_referentiel_actions', $parametresFiltre),
             'ids_choices' => $idsPage,
             'contributeurs' => $this->utilisateurs->findActifs(),
-            'sites_choices' => $this->sites->choicesGroupees(),
+            // Liste plate : le composant Select du portail ne rend pas les groupes.
+            'sites_choices' => array_merge([], ...array_values($this->sites->choicesGroupees())),
         ]);
         $formVue = $this->forms->createNamed('vue', SavedViewType::class, null, [
             'action' => $this->urls->generate('app_mdm_referentiel_vue_enregistrer', $parametresFiltre),
@@ -145,11 +146,12 @@ final readonly class ReferentielEcran
                 $action('publier', 'Publier', 'paper-plane'),
                 $action('archiver', 'Archiver', 'bin'),
             ],
+            // Contributeur et visibilité ne sont pas des lignes du menu : ils
+            // forment le bloc « Attribuer » (deux selects + un bouton Valider),
+            // séparé des autres options.
             'secondaires' => [
                 $action('exporter', 'Exporter CSV', 'clipboard'),
                 $action('acces', 'Envoyer les accès extranet', 'lock'),
-                $action('contributeur', 'Assigner un contributeur', 'user'),
-                $action('visibilite', 'Attribuer la visibilité', 'eye'),
             ],
         ];
     }
@@ -298,7 +300,7 @@ final readonly class ReferentielEcran
         return $this->forms->createNamed('selection', ReferentielSelectionType::class, null, [
             'ids_choices' => $choices,
             'contributeurs' => $this->utilisateurs->findActifs(),
-            'sites_choices' => $this->sites->choicesGroupees(),
+            'sites_choices' => array_merge([], ...array_values($this->sites->choicesGroupees())),
         ]);
     }
 }

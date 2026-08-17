@@ -46,6 +46,9 @@ final class ReferentielSelectionType extends AbstractType
                     'Envoyer les accès extranet' => 'acces',
                     'Assigner un contributeur' => 'contributeur',
                     'Attribuer la visibilité' => 'visibilite',
+                    // Bouton « Valider » du menu : applique contributeur et/ou
+                    // visibilité selon les champs remplis.
+                    'Attribuer (contributeur et visibilité)' => 'attribuer',
                 ],
             ])
             ->add('contributeur', EntityType::class, [
@@ -60,7 +63,7 @@ final class ReferentielSelectionType extends AbstractType
                 'label' => 'Sites de diffusion',
                 'required' => false,
                 'multiple' => true,
-                'expanded' => true,
+                'expanded' => false,
                 'choices' => $options['sites_choices'],
             ]);
         // Pas de bouton unique « Appliquer » : chaque bouton du bandeau soumet
