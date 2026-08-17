@@ -1,40 +1,82 @@
 {% extends 'mdm/base.html.twig' %}
 
-{# Écran « Outils » : journal unifié des traitements (imports, extractions,
-   traductions, médias), habillé au langage front. #}
+{#
+    Écran « Outils » — châssis maquette : le rail porte le journal et ses
+    familles (les vraies destinations sont les filtres du journal, le détail
+    de chaque ligne renvoyant vers l'écran concerné), le contenu reste le
+    journal unifié des traitements.
+#}
 
 {% block title %}Outils · Journal des traitements{% endblock %}
 
 {% set famille_libelles = familles %}
 {% set statuts_erreur = ['echoue', 'termine_avec_erreurs', 'failed', 'en_erreur'] %}
+{% set famille_icones = { 'import': 'upload-simple', 'ocr': 'ai', 'traduction': 'list', 'media': 'images' } %}
 
-{% block contenu %}
-<main class="flex flex-col h-full min-h-0 overflow-y-auto scrollbar px-6 py-5 gap-5">
-
-    <div class="shrink-0 flex items-start justify-between gap-4">
-        <div class="flex flex-col gap-1 max-w-[720px]">
-            <twig:Typography variant="body-xs" textColor="neutral-500" bold class="uppercase tracking-[0.8px]">Outils</twig:Typography>
-            <twig:Typography variant="heading-2" element="h1" bold>Journal des traitements</twig:Typography>
-            <div class="flex items-center gap-2 flex-wrap">
-                <twig:Typography variant="body-sm" textColor="neutral-500">Imports, extractions, traductions et médias, du plus récent au plus ancien.</twig:Typography>
-                {% if outbox_en_attente > 0 %}
-                    <twig:Tag label="{{ outbox_en_attente }} message(s) en attente dans l'outbox" variant="old-gold" size="sm" />
-                {% endif %}
+{# ------------------------------------------------- Rail : journal et familles #}
+{% block rail %}
+    <nav class="flex flex-col shrink-0 box-border w-[328px] pl-5 pr-3 py-4 gap-4 overflow-hidden"
+         aria-label="Familles du journal des traitements">
+        <div class="flex flex-col gap-1">
+            <twig:Typography variant="body" bold class="pl-2 pr-4">Outils</twig:Typography>
+            <div class="flex flex-col">
+                <a href="{{ path('app_mdm_outils') }}"
+                   class="group/onglet flex items-center gap-2 box-border px-4 py-2 rounded-xs overflow-hidden cursor-pointer
+                          hover:bg-primary-4 aria-[current=page]:bg-linear-(--primary-gradient) aria-[current=page]:hover:bg-none"
+                   {{ famille is null ? 'aria-current="page"' : '' }}>
+                    <twig:Icon name="clipboard" aria-hidden="true"
+                               class="shrink-0 self-center w-4 h-4 mx-1 text-primary group-aria-[current=page]/onglet:text-neutral-100" />
+                    <twig:Typography variant="body" bold ellipsis textColor="primary-3"
+                                     class="flex-1 min-w-0 group-aria-[current=page]/onglet:text-neutral-100!">Journal complet</twig:Typography>
+                </a>
+                {% for cle, libelle in familles %}
+                    <a href="{{ path('app_mdm_outils', { famille: cle }) }}"
+                       class="group/onglet flex items-center gap-2 box-border px-4 py-2 rounded-xs overflow-hidden cursor-pointer
+                              hover:bg-primary-4 aria-[current=page]:bg-linear-(--primary-gradient) aria-[current=page]:hover:bg-none"
+                       {{ famille == cle ? 'aria-current="page"' : '' }}>
+                        <twig:Icon name="{{ famille_icones[cle]|default('clipboard') }}" aria-hidden="true"
+                                   class="shrink-0 self-center w-4 h-4 mx-1 text-primary group-aria-[current=page]/onglet:text-neutral-100" />
+                        <twig:Typography variant="body" bold ellipsis textColor="primary-3"
+                                         class="flex-1 min-w-0 group-aria-[current=page]/onglet:text-neutral-100!">{{ libelle }}</twig:Typography>
+                    </a>
+                {% endfor %}
             </div>
         </div>
-        {% if is_granted('ROLE_ADMIN') %}
-            <twig:Button variant="primary" size="md" icon="upload-simple" asLink href="{{ path('app_etl_import_index') }}">Importer un fichier</twig:Button>
+
+        <span class="flex-1"></span>
+
+        {% if outbox_en_attente > 0 %}
+            <div class="shrink-0 flex flex-col gap-1.5 mr-1 p-3.5 rounded-[12px] bg-primary-4">
+                <twig:Typography variant="body-sm" bold textColor="primary-3">Outbox</twig:Typography>
+                <twig:Typography variant="body-sm" textColor="neutral-500" class="text-pretty">
+                    {{- outbox_en_attente }} message{{ outbox_en_attente > 1 ? 's' : '' }} en attente de départ vers la marketplace.
+                </twig:Typography>
+            </div>
         {% endif %}
+    </nav>
+{% endblock %}
+
+{% block contenu %}
+<main class="flex flex-col h-full min-h-0 overflow-y-auto scrollbar">
+
+    <div class="shrink-0 flex items-end justify-between gap-6 px-10 pt-[22px] pb-4">
+        <div class="flex flex-col gap-1 min-w-0 max-w-[720px]">
+            <twig:Typography variant="heading-2" element="h1"
+                             class="sm:text-[1.625rem]! sm:leading-[2.125rem]! font-[700]!">
+                {{- famille ? famille_libelles[famille] : 'Journal des traitements' -}}
+            </twig:Typography>
+            <twig:Typography variant="body" element="p" textColor="neutral-500">Imports, extractions, traductions et médias, du plus récent au plus ancien.</twig:Typography>
+        </div>
+        <div class="flex items-center gap-2.5 shrink-0">
+            <twig:Button variant="{{ erreurs ? 'primary' : 'outline' }}" size="sm" asLink
+                         href="{{ path('app_mdm_outils', { erreurs: erreurs ? null : 1, famille: famille }) }}">En échec seulement</twig:Button>
+            {% if is_granted('ROLE_ADMIN') %}
+                <twig:Button variant="primary" size="md" icon="upload-simple" asLink href="{{ path('app_etl_import_index') }}">Importer un fichier</twig:Button>
+            {% endif %}
+        </div>
     </div>
 
-    <nav class="shrink-0 flex flex-wrap items-center gap-2" aria-label="Filtre du journal">
-        <twig:Button variant="{{ famille is null and not erreurs ? 'primary' : 'outline' }}" size="sm" asLink href="{{ path('app_mdm_outils') }}">Tout</twig:Button>
-        {% for cle, libelle in familles %}
-            <twig:Button variant="{{ famille == cle ? 'primary' : 'outline' }}" size="sm" asLink href="{{ path('app_mdm_outils', {famille: cle}) }}">{{ libelle }}</twig:Button>
-        {% endfor %}
-        <twig:Button variant="{{ erreurs ? 'primary' : 'outline' }}" size="sm" asLink href="{{ path('app_mdm_outils', {erreurs: 1, famille: famille}) }}">En échec seulement</twig:Button>
-    </nav>
-
+    <div class="flex-1 min-h-0 flex flex-col gap-4 px-10 pb-8">
     <section class="shrink-0 flex flex-col p-6 rounded-[20px] bg-neutral-100 shadow-(--shadow)">
         <div class="overflow-x-auto rounded-md inset-ring-1 inset-ring-neutral-200">
             <table class="w-full border-collapse">
@@ -62,5 +104,6 @@
             </table>
         </div>
     </section>
+    </div>
 </main>
 {% endblock %}

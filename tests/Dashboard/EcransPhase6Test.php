@@ -60,7 +60,9 @@ final class EcransPhase6Test extends WebTestCase
         // /medias : bibliothèque (contenu DAM réutilisé) puis onglets propres.
         $client->request('GET', '/medias');
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('h1', 'Médias');
+        // Le h1 porte l'onglet actif ; « Médias » titre le rail.
+        self::assertSelectorTextContains('h1', 'Bibliothèque');
+        self::assertSelectorTextContains('body', 'Médias');
         foreach (['doublons', 'droits', 'sync', 'formats', 'import', 'ia', 'meta'] as $onglet) {
             $client->request('GET', '/medias', ['onglet' => $onglet]);
             self::assertResponseIsSuccessful();
