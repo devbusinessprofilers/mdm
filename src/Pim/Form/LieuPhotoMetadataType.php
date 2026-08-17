@@ -38,7 +38,7 @@ final class LieuPhotoMetadataType extends AbstractType
             ->add('crop_width', IntegerType::class, ['label' => 'Largeur', 'required' => false, 'attr' => ['min' => 1]])
             ->add('crop_height', IntegerType::class, ['label' => 'Hauteur', 'required' => false, 'attr' => ['min' => 1]])
             ->add('rotation', ChoiceType::class, ['label' => 'Rotation', 'choices' => ['0°' => 0, '90°' => 90, '180°' => 180, '270°' => 270]])
-            ->add('save', SubmitType::class, ['label' => 'Enregistrer la photo', 'attr' => ['class' => 'btn']]);
+            ->add('save', SubmitType::class, ['label' => 'Enregistrer', 'attr' => ['class' => 'btn']]);
     }
 
     public function configureOptions(OptionsResolver $resolver): void

@@ -62,7 +62,7 @@ final class LieuDocumentUploadType extends AbstractType
             ])
             ->add('source', TextType::class, ['required' => false])
             ->add('submit', SubmitType::class, [
-                'label' => 'Ajouter les documents',
+                'label' => 'Déposer les documents',
             ]);
     }
 

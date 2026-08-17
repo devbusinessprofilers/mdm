@@ -29,14 +29,24 @@
             <div class="lieu-media-progress" hidden data-lieu-media-target="progress"><span data-lieu-media-target="progressBar"></span></div>
             <p class="form-error" hidden data-lieu-media-target="error"></p>
 
-            {# Galerie de vignettes de la maquette : les vraies photos, la première
-               est la principale, la tuile « Ajouter » ouvre le sélecteur de fichiers. #}
-            {% if photos is not empty %}
-                <div class="flex flex-row flex-wrap gap-4 py-4">
+            {#
+                Galerie maquette : les vignettes sont les éléments réels — on les
+                réordonne au glisser-déposer, et UN CLIC ouvre les paramètres de
+                la photo en modale. La tuile « Ajouter » ouvre le sélecteur.
+            #}
+            {% if photos is empty %}
+                <p class="empty-state">Aucune photo n’a encore été ajoutée.</p>
+            {% else %}
+                <div class="flex flex-row flex-wrap gap-4 py-4" data-lieu-media-target="list">
                     {% for photo in photos %}
-                        <div class="relative w-[152px] h-[104px] shrink-0 flex items-center justify-center rounded-xs
-                                    overflow-hidden bg-primary-5 inset-ring-1
-                                    {{ loop.first ? 'inset-ring-primary' : 'inset-ring-neutral-300' }}">
+                        <button type="button" title="Modifier les paramètres de la photo"
+                                data-lieu-media-target="item" data-id="{{ photo.resource.id }}" draggable="true"
+                                data-controller="modal-trigger-button"
+                                data-modal-trigger-button-modal-identifier-value="photo-{{ photo.resource.id }}"
+                                data-action="modal-trigger-button#open dragstart->lieu-media#dragstart dragover->lieu-media#dragoverItem drop->lieu-media#dropItem"
+                                class="relative w-[152px] h-[104px] shrink-0 flex items-center justify-center rounded-xs
+                                       overflow-hidden cursor-pointer bg-primary-5 inset-ring-1
+                                       {{ loop.first ? 'inset-ring-primary' : 'inset-ring-neutral-300' }}">
                             {% if loop.first %}
                                 <span class="absolute top-2 left-2 z-1 px-2 py-0.5 rounded-full bg-primary">
                                     <twig:Typography variant="body-xs" textColor="neutral-100" bold>Photo principale</twig:Typography>
@@ -44,11 +54,17 @@
                             {% endif %}
                             {% if photo.thumbnail_url %}
                                 <img src="{{ photo.thumbnail_url }}" alt="{{ photo.resource.legende ?: photo.asset.originalFilename }}"
-                                     class="w-full h-full object-cover" loading="lazy">
+                                     class="w-full h-full object-cover pointer-events-none" loading="lazy">
                             {% else %}
                                 <twig:Icon name="images" class="w-7 h-7 text-neutral-400" />
                             {% endif %}
-                        </div>
+                            {% if photo.asset and photo.asset.errorMessage %}
+                                <span class="absolute bottom-2 right-2 z-1 w-[18px] h-[18px] flex items-center justify-center rounded-full bg-error"
+                                      title="{{ photo.asset.errorMessage }}">
+                                    <twig:Icon name="warning" class="w-3 h-3 text-neutral-100" />
+                                </span>
+                            {% endif %}
+                        </button>
                     {% endfor %}
                     <label for="{{ media_upload_form.photos.vars.id }}"
                            class="w-[152px] h-[104px] shrink-0 flex flex-col items-center justify-center gap-1.5
@@ -57,25 +73,28 @@
                         <twig:Typography variant="body-sm" textColor="primary-3" bold>Ajouter un média</twig:Typography>
                     </label>
                 </div>
-            {% endif %}
 
-            {% if photos is empty %}
-                <p class="empty-state">Aucune photo n’a encore été ajoutée.</p>
-            {% else %}
-                <div class="lieu-photo-grid" data-lieu-media-target="list">
-                    {% for photo in photos %}
-                        <article class="lieu-photo-card lieu-photo-editor" data-lieu-media-target="item" data-id="{{ photo.resource.id }}" draggable="true" data-action="dragstart->lieu-media#dragstart dragover->lieu-media#dragoverItem drop->lieu-media#dropItem">
-                            {% if photo.thumbnail_url %}<img src="{{ photo.thumbnail_url }}" alt="{{ photo.resource.legende ?: photo.asset.originalFilename }}" class="lieu-photo-image" loading="lazy">{% else %}<div class="lieu-photo-unavailable">Traitement en cours</div>{% endif %}
-                            <div class="lieu-photo-status"><span class="badge">{{ photo.asset ? photo.asset.status.value : 'introuvable' }}</span>{% if photo.asset and photo.asset.errorMessage %}<span title="{{ photo.asset.errorMessage }}">Erreur de traitement</span>{% endif %}</div>
-                            {{ form_start(photo.metadata_form, {attr: {'data-action': 'submit->lieu-media#save', 'data-url': photo.metadata_form.vars.action}}) }}
+                {# Paramètres de chaque photo : une modale par vignette. #}
+                {% for photo in photos %}
+                    <twig:Modal identifier="photo-{{ photo.resource.id }}">
+                        <div class="flex flex-col gap-4 w-[min(560px,80vw)]">
+                            <div class="flex items-center gap-3">
+                                <twig:Typography variant="heading-3" bold class="grow">Paramètres de la photo</twig:Typography>
+                                <span class="inline-flex"><twig:Tag label="{{ photo.asset ? photo.asset.status.value : 'introuvable' }}" variant="neutral" size="sm" /></span>
+                            </div>
+                            {% if photo.thumbnail_url %}
+                                <img src="{{ photo.thumbnail_url }}" alt="{{ photo.resource.legende ?: photo.asset.originalFilename }}"
+                                     class="w-full max-h-[240px] object-cover rounded-xs" loading="lazy">
+                            {% endif %}
+                            {{ form_start(photo.metadata_form, {attr: {'data-action': 'submit->lieu-media#save', 'data-url': photo.metadata_form.vars.action, class: 'flex flex-col gap-3'}}) }}
                                 {{ form_row(photo.metadata_form.usage) }}
                                 {{ form_row(photo.metadata_form.legende) }}
                                 {{ form_row(photo.metadata_form.source) }}
                                 {{ form_row(photo.metadata_form.keywords) }}
                                 {{ form_row(photo.metadata_form.rights_expires_at) }}
                                 {{ form_row(photo.metadata_form.salle_id) }}
-                                <details><summary>Recadrage et rotation</summary>
-                                    <div class="lieu-crop-fields">
+                                <details><summary><twig:Typography variant="body-sm" bold element="span">Recadrage et rotation</twig:Typography></summary>
+                                    <div class="lieu-crop-fields flex flex-col gap-3 pt-3">
                                         {{ form_row(photo.metadata_form.crop_x) }}
                                         {{ form_row(photo.metadata_form.crop_y) }}
                                         {{ form_row(photo.metadata_form.crop_width) }}
@@ -85,17 +104,21 @@
                                 </details>
                                 {{ form_widget(photo.metadata_form.save) }}
                             {{ form_end(photo.metadata_form) }}
-                            <div class="lieu-photo-actions">
-                                <button type="button" data-action="lieu-media#moveUp">Monter</button><button type="button" data-action="lieu-media#moveDown">Descendre</button>
-                                <button type="button" data-action="lieu-media#retry" data-url="{{ path('app_pim_lieu_photo_retry', {id: lieu.id, resourceId: photo.resource.id}) }}">Relancer</button>
+                            <div class="flex flex-wrap items-center gap-3 pt-2 border-t border-neutral-200">
+                                <button type="button" data-action="lieu-media#retry" data-url="{{ path('app_pim_lieu_photo_retry', {id: lieu.id, resourceId: photo.resource.id}) }}"
+                                        class="cursor-pointer"><twig:Typography variant="body-sm" textColor="primary-3" bold element="span">Relancer le traitement</twig:Typography></button>
                                 {{ form_start(photo.replace_form, {attr: {class: 'button-label'}}) }}
                                     {{ form_widget(photo.replace_form.photo, {attr: {'data-url': photo.replace_form.vars.action}}) }}
                                 {{ form_end(photo.replace_form) }}
-                                <button type="button" class="danger" data-action="lieu-media#remove" data-url="{{ path('app_pim_lieu_photo_delete', {id: lieu.id, resourceId: photo.resource.id}) }}">Supprimer</button>
+                                <span class="flex-1"></span>
+                                <button type="button" data-action="lieu-media#remove" data-url="{{ path('app_pim_lieu_photo_delete', {id: lieu.id, resourceId: photo.resource.id}) }}"
+                                        class="cursor-pointer"><twig:Typography variant="body-sm" textColor="error" bold element="span">Supprimer la photo</twig:Typography></button>
+                                <twig:Modal:TriggerButton variant="text" size="sm" modalIdentifier="photo-{{ photo.resource.id }}"
+                                                          data-action="modal-trigger-button#close">Fermer</twig:Modal:TriggerButton>
                             </div>
-                        </article>
-                    {% endfor %}
-                </div>
+                        </div>
+                    </twig:Modal>
+                {% endfor %}
             {% endif %}
         </section>
     {% else %}
@@ -115,42 +138,64 @@
             {{ form_start(document_upload_form, {attr: {class: 'crud-form'}}) }}
                 {{ form_widget(document_upload_form) }}
             {{ form_end(document_upload_form) }}
+            {# Une ligne par document ; les paramètres s'ouvrent en modale. #}
+            <div class="flex flex-col divide-y divide-neutral-200 rounded-md inset-ring-1 inset-ring-neutral-200">
             {% for document in documents %}
-                <article class="lieu-photo-card">
-                    <p>
-                        <strong>{{ document.view.title ?: document.view.filename }}</strong>
-                        <span class="badge">
-                            {{ document.view.access }} · {{ document.view.publicationStatus }}
-                        </span>
-                    </p>
-                    <p>
-                        {{ document.view.mimeType }} ·
-                        {{ document.view.sizeBytes
-                            ? (document.view.sizeBytes / 1024 / 1024)|number_format(2, ',', ' ') ~ ' Mo'
-                            : 'fichier introuvable'
-                        }}
-                    </p>
-                    {{ form_start(document.metadata_form, {attr: {class: 'crud-form'}}) }}
-                        {{ form_widget(document.metadata_form) }}
-                    {{ form_end(document.metadata_form) }}
-                    {{ form_start(document.replace_form) }}{{ form_widget(document.replace_form) }}{{ form_end(document.replace_form) }}
-                    {% if document.view.access != 'private' or is_granted('ROLE_BP_VALIDATOR') %}
-                        <p>
-                            <a href="{{ path('app_pim_lieu_document_download', {
-                                id: lieu.id,
-                                resourceId: document.view.id
-                            }) }}">Télécharger l’original</a>
-                            {% if document.view.publicUrl %}
-                                · <a href="{{ document.view.publicUrl }}">Copie publique</a>
+                <button type="button" title="Modifier les paramètres du document"
+                        data-controller="modal-trigger-button"
+                        data-modal-trigger-button-modal-identifier-value="document-{{ document.view.id }}"
+                        data-action="modal-trigger-button#open"
+                        class="flex items-center gap-3 px-4 py-3 text-left cursor-pointer hover:bg-primary-5">
+                    <twig:Icon name="file-pdf" class="w-5 h-5 shrink-0 text-primary-3" />
+                    <span class="flex-1 min-w-0 flex flex-col">
+                        <twig:Typography variant="body-sm" bold ellipsis>{{ document.view.title ?: document.view.filename }}</twig:Typography>
+                        <twig:Typography variant="body-xs" textColor="neutral-500">
+                            {{ document.view.mimeType }} ·
+                            {{ document.view.sizeBytes
+                                ? (document.view.sizeBytes / 1024 / 1024)|number_format(2, ',', ' ') ~ ' Mo'
+                                : 'fichier introuvable'
+                            }}
+                        </twig:Typography>
+                    </span>
+                    <span class="inline-flex shrink-0"><twig:Tag label="{{ document.view.access }} · {{ document.view.publicationStatus }}" variant="neutral" size="sm" /></span>
+                </button>
+            {% else %}<p class="empty-state px-4 py-3">Aucun document.</p>{% endfor %}
+            </div>
+
+            {% for document in documents %}
+                <twig:Modal identifier="document-{{ document.view.id }}">
+                    <div class="flex flex-col gap-4 w-[min(560px,80vw)]">
+                        <div class="flex items-center gap-3">
+                            <twig:Typography variant="heading-3" bold class="grow" ellipsis>{{ document.view.title ?: document.view.filename }}</twig:Typography>
+                            <span class="inline-flex shrink-0"><twig:Tag label="{{ document.view.access }} · {{ document.view.publicationStatus }}" variant="neutral" size="sm" /></span>
+                        </div>
+                        {{ form_start(document.metadata_form, {attr: {class: 'flex flex-col gap-3'}}) }}
+                            {{ form_widget(document.metadata_form) }}
+                        {{ form_end(document.metadata_form) }}
+                        {{ form_start(document.replace_form) }}{{ form_widget(document.replace_form) }}{{ form_end(document.replace_form) }}
+                        {% if document.view.access != 'private' or is_granted('ROLE_BP_VALIDATOR') %}
+                            <p>
+                                <a href="{{ path('app_pim_lieu_document_download', {
+                                    id: lieu.id,
+                                    resourceId: document.view.id
+                                }) }}" class="hover:underline"><twig:Typography variant="body-sm" textColor="primary-3" bold element="span">Télécharger l’original</twig:Typography></a>
+                                {% if document.view.publicUrl %}
+                                    · <a href="{{ document.view.publicUrl }}" class="hover:underline"><twig:Typography variant="body-sm" textColor="primary-3" bold element="span">Copie publique</twig:Typography></a>
+                                {% endif %}
+                            </p>
+                        {% endif %}
+                        <div class="flex flex-wrap items-center gap-3 pt-2 border-t border-neutral-200">
+                            {% if is_granted('ROLE_BP_VALIDATOR') and document.view.access == 'publishable' %}
+                                {{ form(document.publication_form) }}
                             {% endif %}
-                        </p>
-                    {% endif %}
-                    {% if is_granted('ROLE_BP_VALIDATOR') and document.view.access == 'publishable' %}
-                        {{ form(document.publication_form) }}
-                    {% endif %}
-                    {{ form(document.delete_form) }}
-                </article>
-            {% else %}<p class="empty-state">Aucun document.</p>{% endfor %}
+                            <span class="flex-1"></span>
+                            <span class="[&_button]:bg-error! [&_button_span]:text-neutral-100!">{{ form(document.delete_form) }}</span>
+                            <twig:Modal:TriggerButton variant="text" size="sm" modalIdentifier="document-{{ document.view.id }}"
+                                                      data-action="modal-trigger-button#close">Fermer</twig:Modal:TriggerButton>
+                        </div>
+                    </div>
+                </twig:Modal>
+            {% endfor %}
         </section>
     {% else %}
         <section class="card"><h2>Documents</h2><p>Enregistrez d’abord le lieu pour déposer des documents.</p></section>
