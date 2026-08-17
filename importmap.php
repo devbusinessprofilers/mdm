@@ -83,4 +83,7 @@ return [
     '@symfony/ux-translator' => [
         'path' => './vendor/symfony/ux-translator/assets/dist/translator_controller.js',
     ],
+    '@popperjs/core' => [
+        'version' => '2.11.8',
+    ],
 ];
