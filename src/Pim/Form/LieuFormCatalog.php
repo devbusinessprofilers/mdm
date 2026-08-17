@@ -93,12 +93,13 @@ final class LieuFormCatalog
     /** @return array<string, array<string, mixed>> */
     public static function equipmentAndServices(): array
     {
+        // Étendus (cases) : la section les rend en puces cochables (maquette).
         return [
-            'equipements' => self::choice('EQUIPEMENTS', 'Équipements', true),
-            'services' => self::choice('SERVICES', 'Services', true),
-            'techniqueReunion' => self::choice('TECHNIQUE_REUNION', 'Technique et réunion', true),
-            'installation' => self::choice('INSTALLATION', 'Installations', true),
-            'bienEtre' => self::choice('BIEN_ETRE', 'Bien-être', true),
+            'equipements' => self::choice('EQUIPEMENTS', 'Équipements', true, etendu: true),
+            'services' => self::choice('SERVICES', 'Services', true, etendu: true),
+            'techniqueReunion' => self::choice('TECHNIQUE_REUNION', 'Technique et réunion', true, etendu: true),
+            'installation' => self::choice('INSTALLATION', 'Installations', true, etendu: true),
+            'bienEtre' => self::choice('BIEN_ETRE', 'Bien-être', true, etendu: true),
         ];
     }
 
@@ -245,7 +246,7 @@ final class LieuFormCatalog
     }
 
     /** @return array<string, mixed> */
-    private static function choice(string $code, string $label, bool $multiple = false): array
+    private static function choice(string $code, string $label, bool $multiple = false, bool $etendu = false): array
     {
         return [
             'label' => $label,
@@ -253,6 +254,7 @@ final class LieuFormCatalog
             'options' => [
                 'choices' => array_flip(LieuLovCatalog::choicesFor($code)),
                 'multiple' => $multiple,
+                'expanded' => $etendu,
                 'placeholder' => $multiple ? null : 'Non renseigné',
             ],
         ];

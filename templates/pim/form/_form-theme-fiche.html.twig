@@ -13,6 +13,31 @@
     Les classes de couleur sont écrites en toutes lettres : Tailwind ne scanne
     pas le PHP et n'émettrait pas des classes construites dynamiquement.
 #}
+{#- Case « puce » (opt-in `attr['data-puce']`) : l'input nu, masqué —
+    le libellé-pilule qui l'enveloppe porte tout le rendu (mdm/fiche/_puces). -#}
+{%- block checkbox_widget -%}
+    {%- if attr['data-puce']|default(false) -%}
+        <input
+            type="checkbox"
+            id="{{ id }}"
+            name="{{ full_name }}"
+            value="{{ value|default('1') }}"
+            {% if checked %}checked{% endif %}
+            {% if disabled %}disabled{% endif %}
+            class="sr-only"
+        >
+    {%- else -%}
+        <twig:Form:Checkbox
+            id="{{ id }}"
+            name="{{ full_name }}"
+            value="{{ value|default('1') }}"
+            :checked="checked"
+            :disabled="disabled"
+            :inputAttributes="attr"
+        />
+    {%- endif -%}
+{%- endblock -%}
+
 {%- block form_label -%}
     {%- if label is not same as(false) -%}
         {%- if label is empty -%}

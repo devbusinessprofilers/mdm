@@ -149,6 +149,8 @@
                         {% set widget = attribute(form, champ) %}
                         {% if widget.vars.prototype is defined %}
                             {{ _self.collection(widget, widget.vars.label ?? champ) }}
+                        {% elseif 'puces' in section.blocs %}
+                            {% include 'mdm/fiche/_puces.html.twig' with { widget: widget } only %}
                         {% else %}
                             {{ form_row(widget) }}
                         {% endif %}

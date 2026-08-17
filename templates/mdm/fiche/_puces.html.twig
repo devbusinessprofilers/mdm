@@ -1,0 +1,37 @@
+{#
+    Groupes de puces — section « Services & équipements » (maquette
+    mdm/fiche/_puces). Chaque groupe est un vrai champ de formulaire
+    (ChoiceType multiple étendu) : la puce est un libellé qui enveloppe la
+    case réelle (`data-puce` → input seul, thème de la fiche), l'état coché
+    porte le fond primary. Le décompte est rendu côté serveur.
+
+    Variables : `widget` — le sous-formulaire composé (un enfant par groupe).
+#}
+{% for groupe in widget %}
+    {% set total = groupe.children|length %}
+    {% set cochees = groupe.vars.data|default([])|length %}
+    <div class="flex flex-col gap-4">
+        <div class="flex flex-row items-center gap-2 flex-wrap">
+            <span class="w-2 h-2 shrink-0 rounded-full bg-primary"></span>
+            <twig:Typography variant="input" element="span"
+                             class="text-[0.875rem]! leading-[1.375rem]!">{{ groupe.vars.label ?? groupe.vars.name }}</twig:Typography>
+            <span class="shrink-0 px-2 py-0.5 rounded-full bg-primary-4">
+                <twig:Typography variant="body-xs" bold class="text-primary-3!">MDM</twig:Typography>
+            </span>
+            <span class="flex-1"></span>
+            <twig:Typography variant="body-sm" textColor="neutral-500">{{ cochees }} sur {{ total }} sélectionné{{ total > 1 ? 's' : '' }}</twig:Typography>
+        </div>
+
+        <div class="flex flex-row flex-wrap gap-2.5">
+            {% for case in groupe %}
+                <label class="group/puce h-12 box-border shrink-0 flex items-center px-4 py-2 rounded-lg
+                              cursor-pointer bg-neutral-100 inset-ring-1 inset-ring-neutral-300
+                              has-checked:bg-primary has-checked:inset-ring-0">
+                    {{ form_widget(case, { attr: { 'data-puce': true } }) }}
+                    <twig:Typography variant="body-sm" bold class="whitespace-nowrap
+                                     group-has-checked/puce:text-neutral-100!">{{ case.vars.label }}</twig:Typography>
+                </label>
+            {% endfor %}
+        </div>
+    </div>
+{% endfor %}

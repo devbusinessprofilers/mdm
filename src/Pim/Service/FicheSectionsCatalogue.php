@@ -101,7 +101,8 @@ final class FicheSectionsCatalogue
                 'titre' => 'Services & équipements',
                 'champs' => ['equipementsServices'],
                 'proprietes' => array_keys(LieuFormCatalog::equipmentAndServices()),
-                'blocs' => [],
+                // Rendu en groupes de puces cochables (partial mdm/fiche/_puces).
+                'blocs' => ['puces'],
             ],
             [
                 'titre' => 'Engagements RSE',
