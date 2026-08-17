@@ -149,6 +149,18 @@
             <twig:Typography variant="body" bold class="pl-2 pr-4">Médias — DAM</twig:Typography>
             <div class="flex flex-col">
                 {% for cle, libelle in onglets %}
+                    {% if cle in onglets_desactives %}
+                        <span title="{{ a_venir }}"
+                              class="flex items-center gap-2 box-border px-4 py-2 rounded-xs overflow-hidden
+                                     opacity-60 cursor-not-allowed" aria-disabled="true">
+                            <twig:Icon name="{{ onglet_meta[cle].icone }}" aria-hidden="true"
+                                       class="shrink-0 self-center w-4 h-4 mx-1 text-neutral-400" />
+                            <twig:Typography variant="body" bold ellipsis textColor="neutral-500"
+                                             class="flex-1 min-w-0">{{ libelle }}</twig:Typography>
+                            <twig:Typography variant="body-xs" bold textColor="neutral-500"
+                                             class="shrink-0 px-[7px] py-0.5 rounded-lg bg-neutral-200">À venir</twig:Typography>
+                        </span>
+                    {% else %}
                     <a href="{{ path('app_mdm_medias', { onglet: cle }) }}"
                        class="group/onglet flex items-center gap-2 box-border px-4 py-2
                               rounded-xs overflow-hidden cursor-pointer
@@ -167,6 +179,7 @@
                                                     group-aria-[current=page]/onglet:text-primary-3!">{{ rail_badges[cle] }}</twig:Typography>
                         {% endif %}
                     </a>
+                    {% endif %}
                 {% endfor %}
             </div>
         </div>
@@ -202,11 +215,6 @@
             {% if onglet_actif == 'biblio' %}
                 <span title="{{ a_venir }}" class="inline-flex"><twig:Button variant="outline" size="md" disabled icon="upload-simple" class="opacity-60 [&>:first-child]:size-5">Importer des médias</twig:Button></span>
                 <span title="{{ a_venir }}" class="inline-flex"><twig:Button variant="primary" size="md" disabled icon="rocket" class="opacity-60 [&>:first-child]:size-5">Classer par lot</twig:Button></span>
-            {% elseif onglet_actif == 'import' %}
-                <twig:Button variant="outline" size="md" asLink href="{{ path('app_mdm_referentiel_general') }}">Ouvrir une fiche</twig:Button>
-                {% if is_granted('ROLE_ADMIN') %}
-                    <twig:Button variant="primary" size="md" asLink href="{{ path('app_etl_import_index') }}">Import de fiches</twig:Button>
-                {% endif %}
             {% elseif onglet_actif == 'droits' %}
                 <span title="{{ a_venir }}" class="inline-flex"><twig:Button variant="primary" size="md" disabled icon="lock" class="opacity-60 [&>:first-child]:size-5">Déclarer par lot</twig:Button></span>
             {% elseif onglet_actif == 'doublons' %}
@@ -321,6 +329,34 @@
             <twig:Typography variant="body" textColor="neutral-500" class="text-pretty">Le tableau des flux
                 (volumes, dernier passage, état par canal) arrivera avec la synchronisation planifiée. Le scan
                 des anomalies ci-dessous est, lui, opérationnel.</twig:Typography>
+        </div>
+    {% endif %}
+
+    {# ------------------------------------------------- Tableau maquette « Droits d'usage » : les régimes réels #}
+    {% if onglet_actif == 'droits' and regimes is not empty %}
+        {% set regimes_lignes = [
+            ['Libres — sans échéance', regimes.unlimited, 'bg-success-pastel', 'diffusable partout, sans limite de durée'],
+            ['Valides', regimes.valid, 'bg-primary-4', 'diffusable jusqu\'à l\'échéance déclarée'],
+            ['À échéance sous 30 jours', regimes.expiring, 'bg-peach-pastel', 'diffusable, revalidation à prévoir'],
+            ['Expirés', regimes.expired, 'bg-error-pastel', 'diffusion à suspendre jusqu\'à revalidation'],
+            ['Sans droits déclarés', regimes.not_granted, 'bg-neutral-200', 'bloqué à la diffusion jusqu\'à déclaration'],
+        ] %}
+        <div class="shrink-0 flex flex-col rounded-sm overflow-hidden bg-neutral-100 shadow-(--shadow)">
+            {{ _self.entete([['Droit d\'usage'], ['Médias', 'text-right'], ['Part du stock'], ['Ce qu\'il autorise']], grille) }}
+            <div class="flex flex-col">
+                {% for regime in regimes_lignes %}
+                    <div role="row" class="{{ grille }} w-full min-h-[56px] py-2 box-border hover:bg-primary-5
+                                           {{ loop.first ? '' : 'border-t border-neutral-200' }}">
+                        {{ _self.jeton(regime.0, regime.2) }}
+                        {{ _self.txt(regime.1|number_format(0, ',', ' '), gras = true, aligne = 'text-right') }}
+                        {{ _self.barre_cellule(regimes_total > 0 ? ((regime.1 / regimes_total) * 100)|round : 0) }}
+                        {{ _self.phrase_cellule(regime.3) }}
+                    </div>
+                {% endfor %}
+            </div>
+            <div class="shrink-0 flex items-center h-[50px] px-4 border-t border-neutral-200">
+                <twig:Typography variant="body-sm" textColor="neutral-500">5 régimes de droits · {{ regimes.not_granted|number_format(0, ',', ' ') }} média{{ regimes.not_granted > 1 ? 's' : '' }} bloqué{{ regimes.not_granted > 1 ? 's' : '' }}</twig:Typography>
+            </div>
         </div>
     {% endif %}
 
@@ -545,93 +581,49 @@
     {% endif %}
 
     {# ------------------------------------------------- Onglets descriptifs : le réel, tableau maquette #}
-    {% if onglet_actif == 'import' %}
-        <div class="shrink-0 flex flex-col rounded-sm overflow-hidden bg-neutral-100 shadow-(--shadow)">
-            {{ _self.entete([['Outil'], ['Ce qu\'il fait'], ['Mode'], ['', 'text-right']], grille) }}
-            <div class="flex flex-col">
-                {% for outil in [
-                    ['Dépôt de photos et documents', 'Depuis la galerie de la fiche ; les variantes sont générées automatiquement.', 'Non destructif'],
-                    ['Recadrage', 'Ratios libres ou imposés par canal, sur la photo de la fiche.', 'Non destructif'],
-                    ['Rotation', 'Par quarts de tour, depuis la galerie.', 'Non destructif'],
-                    ['Remplacement', 'Un nouveau fichier remplace l\'ancien, l\'historique de la fiche le trace.', 'Non destructif'],
-                ] %}
-                    <div role="row" class="{{ grille }} w-full min-h-[56px] py-2 box-border hover:bg-primary-5
-                                           {{ loop.first ? '' : 'border-t border-neutral-200' }}">
-                        {{ _self.txt(outil.0, gras = true) }}
-                        {{ _self.phrase_cellule(outil.1) }}
-                        {{ _self.jeton(outil.2, 'bg-success-pastel') }}
-                        {{ _self.lien_cellule('Ouvrir une fiche', path('app_mdm_referentiel_general')) }}
-                    </div>
-                {% endfor %}
-            </div>
-            <div class="shrink-0 flex items-center h-[50px] px-4 border-t border-neutral-200">
-                <twig:Typography variant="body-sm" textColor="neutral-500">4 outils · l'original est conservé, chaque retouche régénère les variantes</twig:Typography>
-            </div>
+    {% if onglet_actif == 'meta' %}
+        {# Carte maquette : les métadonnées d'un média, toutes réelles côté fiche. #}
+        <div class="shrink-0 flex flex-row gap-4 flex-wrap">
+            <a href="{{ path('app_mdm_referentiel_general') }}"
+               class="{{ carte }} flex-1 basis-80 min-w-0 text-left cursor-pointer hover:bg-primary-5">
+                {{ _self.carte_contenu('note', 'Métadonnées d\'un média', '6 champs', false,
+                    'Nature · usage · légende · mots-clés · droits d\'usage · échéance. Tous portés par la ressource et saisis sur la fiche — les mots-clés sont indexés : une recherche « terrasse été » retrouve les visuels tagués ainsi.',
+                    'Ouvrir une fiche') }}
+            </a>
         </div>
-        <div title="{{ a_venir }}" class="shrink-0 {{ carte }} opacity-60">
-            <div class="flex items-center gap-3">
-                <twig:Icon name="upload-simple" aria-hidden="true" class="shrink-0 w-6 h-6 text-neutral-400" />
-                <twig:Typography variant="subtitle" class="flex-1 min-w-0 text-[1.125rem]! leading-[1.625rem]! font-[700]!">Glisser-déposer en masse</twig:Typography>
-                <span class="inline-flex shrink-0"><twig:Tag label="À venir" variant="neutral" size="sm" /></span>
-            </div>
-            <twig:Typography variant="body" textColor="neutral-500" class="text-pretty">Déposer des fichiers
-                directement dans la bibliothèque, hors de toute fiche, avec classement automatique à l'import.</twig:Typography>
-        </div>
-    {% elseif onglet_actif == 'ia' %}
+
+        {# Le tableau maquette des types de fichiers : le réel, le reste grisé. #}
         <div class="shrink-0 flex flex-col rounded-sm overflow-hidden bg-neutral-100 shadow-(--shadow)">
-            {{ _self.entete([['Traitement'], ['Ce qu\'il fait'], ['Déclenchement'], ['', 'text-right']], grille) }}
+            {{ _self.entete([['Type'], ['Extensions'], ['Médias', 'text-right'], ['Ce que le DAM en fait']], grille) }}
             <div class="flex flex-col">
                 <div role="row" class="{{ grille }} w-full min-h-[56px] py-2 box-border hover:bg-primary-5">
-                    {{ _self.txt('Détection de doublons', gras = true) }}
-                    {{ _self.phrase_cellule('Empreinte perceptuelle : les images identiques ou proches sont signalées, même renommées.') }}
-                    {{ _self.jeton('À l\'import', 'bg-primary-4') }}
-                    {{ _self.lien_cellule('Ouvrir les doublons', path('app_mdm_medias', { onglet: 'doublons' })) }}
+                    {{ _self.txt('Image', gras = true) }}
+                    {{ _self.txt('JPEG · PNG · WebP', discret = true) }}
+                    {{ _self.txt(stats.images|number_format(0, ',', ' '), gras = true, aligne = 'text-right') }}
+                    {{ _self.phrase_cellule('Recadrage, rotation, variantes par canal servies par le CDN') }}
                 </div>
                 <div role="row" class="{{ grille }} w-full min-h-[56px] py-2 box-border hover:bg-primary-5 border-t border-neutral-200">
-                    {{ _self.txt('Extraction de texte (OCR)', gras = true) }}
-                    {{ _self.phrase_cellule('Le contenu d\'un document est extrait pour pré-remplir la fiche, avec validation humaine.') }}
-                    {{ _self.jeton('Depuis la fiche', 'bg-primary-4') }}
-                    {{ _self.lien_cellule('Ouvrir une fiche', path('app_mdm_referentiel_general')) }}
+                    {{ _self.txt('PDF', gras = true) }}
+                    {{ _self.txt('PDF', discret = true) }}
+                    {{ _self.txt(stats.documents|number_format(0, ',', ' '), gras = true, aligne = 'text-right') }}
+                    {{ _self.phrase_cellule('Extraction du contenu (OCR), publication sur le stockage public') }}
                 </div>
                 {% for futur in [
-                    ['Classification par type', 'Reconnaître le sujet d\'une image (façade, chambre, salle) pour la classer.'],
-                    ['Tagging des métadonnées', 'Proposer tags et mots-clés à l\'import, à valider en lot.'],
+                    ['Vidéo', 'MP4 · MOV', 'Vignette extraite, transcodage web'],
+                    ['Présentation', 'PPT · PPTX', 'Vignette, extraction du texte'],
+                    ['Tableur', 'XLS · XLSX', 'Extraction des tableaux tarifaires'],
                 ] %}
                     <div role="row" title="{{ a_venir }}"
                          class="{{ grille }} w-full min-h-[56px] py-2 box-border border-t border-neutral-200 opacity-60">
                         {{ _self.txt(futur.0, gras = true) }}
-                        {{ _self.phrase_cellule(futur.1) }}
-                        {{ _self.jeton('À venir', 'bg-neutral-200') }}
-                        <span></span>
+                        {{ _self.txt(futur.1, discret = true) }}
+                        {{ _self.jeton('À venir', 'bg-neutral-200', aligne = 'text-right') }}
+                        {{ _self.phrase_cellule(futur.2) }}
                     </div>
                 {% endfor %}
             </div>
             <div class="shrink-0 flex items-center h-[50px] px-4 border-t border-neutral-200">
-                <twig:Typography variant="body-sm" textColor="neutral-500">2 traitements actifs · aucune écriture sans validation humaine</twig:Typography>
-            </div>
-        </div>
-    {% elseif onglet_actif == 'meta' %}
-        <div class="shrink-0 flex flex-col rounded-sm overflow-hidden bg-neutral-100 shadow-(--shadow)">
-            {{ _self.entete([['Métadonnée'], ['Ce qu\'elle porte'], ['Où la saisir']], grille) }}
-            <div class="flex flex-col">
-                {% for champ in [
-                    ['Nature', 'Photo, document ou vidéo — décide de ce que le DAM sait en faire.', 'À l\'import'],
-                    ['Usage', 'Le rôle du média sur la fiche : principale, galerie, plan, brochure…', 'Sur la fiche'],
-                    ['Légende', 'Le texte affiché avec le média sur les canaux.', 'Sur la fiche'],
-                    ['Mots-clés', 'Indexés pour la recherche : « terrasse été » retrouve les visuels tagués ainsi.', 'Sur la fiche'],
-                    ['Droits d\'usage', 'Accordés par qui, jusqu\'à quand — conditionnent la diffusion.', 'Sur la fiche'],
-                    ['Publication', 'Pour les documents : la mise à disposition sur le stockage public.', 'Sur la fiche'],
-                ] %}
-                    <div role="row" class="{{ grille }} w-full min-h-[56px] py-2 box-border hover:bg-primary-5
-                                           {{ loop.first ? '' : 'border-t border-neutral-200' }}">
-                        {{ _self.txt(champ.0, gras = true) }}
-                        {{ _self.phrase_cellule(champ.1) }}
-                        {{ _self.jeton(champ.2, 'bg-primary-4') }}
-                    </div>
-                {% endfor %}
-            </div>
-            <div class="shrink-0 flex items-center h-[50px] px-4 border-t border-neutral-200">
-                <twig:Typography variant="body-sm" textColor="neutral-500">6 métadonnées par média · toutes indexées pour la recherche</twig:Typography>
+                <twig:Typography variant="body-sm" textColor="neutral-500">2 types pris en charge · {{ (stats.images + stats.documents)|number_format(0, ',', ' ') }} médias</twig:Typography>
             </div>
         </div>
     {% elseif onglet_actif == 'formats' %}

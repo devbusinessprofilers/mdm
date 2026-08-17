@@ -39,6 +39,9 @@ final class MediasController extends AbstractController
         'sync' => 'Synchronisation PIM',
     ];
 
+    /** Onglets sans mécanisme back : grisés dans le rail, non navigables. */
+    public const ONGLETS_DESACTIVES = ['import', 'ia'];
+
     /** Filtre du provider affiché par défaut quand on ouvre l'onglet. */
     private const FILTRE_PAR_DEFAUT = [
         'biblio' => DamDashboardProvider::FILTER_IMAGES,
@@ -77,7 +80,7 @@ final class MediasController extends AbstractController
             // porte le filtre : l'onglet actif s'en déduit.
             $onglet = self::ONGLET_PAR_FILTRE[$filtre];
         }
-        if (!array_key_exists($onglet, self::ONGLETS)) {
+        if (!array_key_exists($onglet, self::ONGLETS) || \in_array($onglet, self::ONGLETS_DESACTIVES, true)) {
             $onglet = 'biblio';
         }
         // Les stats alimentent les badges du rail sur tous les onglets ; les
@@ -98,6 +101,7 @@ final class MediasController extends AbstractController
 
         return $this->render('dam/medias.html.twig', [
             'onglets' => self::ONGLETS,
+            'onglets_desactives' => self::ONGLETS_DESACTIVES,
             'onglet_actif' => $onglet,
             'vue' => $vue,
             'stockage' => 'biblio' === $onglet ? $assets->storageStats() : null,
