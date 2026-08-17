@@ -1,96 +1,173 @@
 {% extends 'mdm/base.html.twig' %}
 
-{# Mon espace de travail — vue personnelle (fiches assignées, priorités,
-   activité), habillée au langage front. Version volontairement resserrée ; la
-   version riche viendra plus tard. #}
+{#
+    Mon espace de travail — gabarit maquette (compteurs à pastille, priorités
+    en tableau teinté, raccourcis en pilules, activité au fil vertical), sur
+    les données réelles de l'utilisateur connecté.
 
-{% block title %}Mon espace de travail{% endblock %}
+    Écarts assumés : le sélecteur de rôle (Supply/Manager/Admin) n'a pas de
+    back → désactivé + infobulle ; pas de motif/échéance en donnée → la
+    colonne Complétude porte le ton (urgent < 50 %, proche < 75 %).
+    Conservé hors maquette : « Mes vues enregistrées ».
+#}
 
 {% set statut_libelles = {
-    'en_cours': 'En cours', 'en_attente_validation': 'En attente',
+    'en_cours': 'En cours', 'en_attente_validation': 'En attente de validation',
     'validee': 'Validée', 'publiee': 'Publiée', 'archivee': 'Archivée',
 } %}
 {% set gamme_libelles = {
     'lieu': 'Lieu', 'restaurant': 'Restaurant', 'activite': 'Activité', 'service_evenementiel': 'Service',
 } %}
+{% set gamme_teintes = {
+    'lieu': 'bg-primary', 'restaurant': 'bg-peach', 'activite': 'bg-success', 'service_evenementiel': 'bg-primary-3',
+} %}
+{% set echeances = {
+    'urgent': 'bg-error-pastel text-error',
+    'proche': 'bg-old-gold-pastel text-neutral-900',
+    'neutre': 'bg-neutral-200 text-neutral-900',
+} %}
+
+{% block title %}Mon espace de travail{% endblock %}
+
+{% macro entete(libelle, classe) %}
+    <th scope="col" class="box-border h-10 p-0 bg-primary-5 text-left whitespace-nowrap {{ classe }}">
+        <twig:Typography variant="body-sm" bold textColor="neutral-500">{{ libelle }}</twig:Typography>
+    </th>
+{% endmacro %}
+
+{% macro compteur(couleur, libelle, valeur, note, href) %}
+    <li class="card flex flex-col gap-2 px-[22px] py-5 rounded-[20px] bg-neutral-100 shadow-(--shadow)">
+        <div class="flex items-center gap-2.5 min-w-0">
+            <span class="shrink-0 w-2.5 h-2.5 rounded-lg {{ couleur }}" aria-hidden="true"></span>
+            <twig:Typography variant="body" bold ellipsis class="flex-1 min-w-0">{{ libelle }}</twig:Typography>
+        </div>
+        <twig:Typography variant="heading-2" class="stat-value font-[700]!">{{ valeur }}</twig:Typography>
+        <div class="flex items-center justify-between gap-3">
+            <twig:Typography variant="body-sm" textColor="neutral-400" class="flex-1 min-w-0">{{ note }}</twig:Typography>
+            <a href="{{ href }}" class="shrink-0 text-[0.75rem] leading-5 font-[900] text-primary hover:underline">Ouvrir</a>
+        </div>
+    </li>
+{% endmacro %}
 
 {% block contenu %}
-<main class="flex flex-col h-full min-h-0 overflow-y-auto scrollbar px-6 py-5 gap-5">
+<main class="flex flex-col flex-1 min-h-0 gap-5 px-4 pt-5 pb-6 sm:px-8 sm:pt-7 sm:pb-8
+             overflow-y-auto scrollbar">
 
-    <div class="shrink-0 flex items-start justify-between gap-4">
-        <div class="flex flex-col gap-1">
-            <twig:Typography variant="body-xs" textColor="neutral-500" bold class="uppercase tracking-[0.8px]">Espace de travail</twig:Typography>
-            <twig:Typography variant="heading-2" element="h1" bold>Mon espace de travail</twig:Typography>
-            <twig:Typography variant="body-sm" textColor="neutral-500">Vos fiches assignées, vos priorités et votre activité.</twig:Typography>
+    <div class="flex items-end justify-between gap-7 flex-wrap">
+        <div class="flex flex-col gap-1 min-w-0">
+            <twig:Typography variant="heading-2" element="h1"
+                             class="sm:text-[1.625rem]! sm:leading-[2.125rem]! font-[700]!">
+                {{- app.user ? 'Bonjour ' ~ app.user.userIdentifier : 'Mon espace de travail' -}}
+            </twig:Typography>
+            <twig:Typography variant="body" element="p" textColor="neutral-500">Vos fiches assignées, vos priorités et votre activité.</twig:Typography>
         </div>
-        <twig:Button variant="primary" size="md" icon="plus-circle" asLink href="{{ path('app_mdm_creation_fiche') }}">Nouvelle fiche</twig:Button>
+
+        {# Sélecteur de rôle de la maquette : pas de back → désactivé. #}
+        <div class="flex items-center gap-2.5 shrink-0 opacity-60" title="Fonction à venir — en développement">
+            <twig:Typography variant="body" textColor="neutral-500">Rôle&nbsp;:</twig:Typography>
+            {% for libelle in ['Supply', 'Manager', 'Admin'] %}
+                <span class="inline-flex items-center box-border h-10 px-4 rounded-lg whitespace-nowrap
+                             {{ loop.first ? 'bg-primary-3' : 'bg-neutral-100 inset-ring-1 inset-ring-neutral-300' }}">
+                    <twig:Typography variant="body" bold
+                                     textColor="{{ loop.first ? 'neutral-100' : 'neutral-900' }}">{{ libelle }}</twig:Typography>
+                </span>
+            {% endfor %}
+        </div>
     </div>
 
     {# Classes card-grid/card/stat-value conservées : hooks des tests de compteurs. #}
-    <section class="card-grid shrink-0 grid grid-cols-1 md:grid-cols-3 gap-3">
-        <article class="card flex flex-col gap-1 p-5 rounded-[16px] bg-neutral-100 shadow-(--shadow)">
-            <twig:Typography variant="body-sm" bold>Mes fiches assignées</twig:Typography>
-            <twig:Typography variant="heading-1" bold class="stat-value">{{ compteurs.assignees }}</twig:Typography>
-            <twig:Typography variant="body-xs" textColor="neutral-500">dont {{ compteurs.assignees_faibles }} sous 50 % de complétude</twig:Typography>
-            <a href="{{ url_mes_fiches }}" class="hover:underline w-fit mt-1"><twig:Typography variant="body-sm" textColor="primary-3" bold element="span">Voir mes fiches</twig:Typography></a>
-        </article>
-        <article class="card flex flex-col gap-1 p-5 rounded-[16px] bg-neutral-100 shadow-(--shadow)">
-            <twig:Typography variant="body-sm" bold>En attente de validation</twig:Typography>
-            <twig:Typography variant="heading-1" bold class="stat-value">{{ compteurs.en_attente }}</twig:Typography>
-            <twig:Typography variant="body-xs" textColor="neutral-500">parmi mes fiches assignées</twig:Typography>
-        </article>
-        <article class="card flex flex-col gap-1 p-5 rounded-[16px] bg-neutral-100 shadow-(--shadow)">
-            <twig:Typography variant="body-sm" bold>Suggestions IA à arbitrer</twig:Typography>
-            <twig:Typography variant="heading-1" bold class="stat-value">{{ compteurs.ia }}</twig:Typography>
-            <twig:Typography variant="body-xs" textColor="neutral-500">fiches assignées portant des valeurs en attente</twig:Typography>
-        </article>
-    </section>
+    <ul class="card-grid grid grid-cols-1 min-[900px]:grid-cols-2 min-[1366px]:grid-cols-4 gap-4 m-0 p-0 list-none">
+        {{ _self.compteur('bg-primary', 'Mes fiches assignées', compteurs.assignees,
+            'dont ' ~ compteurs.assignees_faibles ~ ' sous 50 % de complétude', url_mes_fiches) }}
+        {{ _self.compteur('bg-old-gold', 'Fiches à compléter', compteurs.assignees_faibles,
+            'complétude sous 50 %', url_mes_fiches) }}
+        {{ _self.compteur('bg-peach', 'En attente de validation', compteurs.en_attente,
+            'parmi mes fiches assignées', url_mes_fiches) }}
+        {{ _self.compteur('bg-primary-3', 'Suggestions à arbitrer', compteurs.ia,
+            'valeurs IA en attente sur mes fiches', path('app_mdm_qualite', { onglet: 'conflits' })) }}
+    </ul>
 
-    <div class="flex flex-col xl:flex-row gap-5">
-        <section class="flex-1 min-w-0 flex flex-col gap-3 p-6 rounded-[20px] bg-neutral-100 shadow-(--shadow)">
-            <twig:Typography variant="heading-3" element="h2" bold>Mes priorités</twig:Typography>
-            <twig:Typography variant="body-sm" textColor="neutral-500">Les fiches assignées les moins complètes en premier.</twig:Typography>
+    <div class="flex flex-col min-[1366px]:flex-row items-stretch min-[1366px]:items-start gap-4">
+
+        <section class="flex flex-col flex-1 min-w-0 gap-3.5 px-[26px] py-6 rounded-[20px]
+                        bg-neutral-100 shadow-(--shadow)">
+            <div class="flex items-baseline justify-between gap-4">
+                <twig:Typography variant="heading-3" element="h2" class="font-[700]!">Mes priorités</twig:Typography>
+                <twig:Typography variant="body-sm" textColor="neutral-500">Les moins complètes en premier</twig:Typography>
+            </div>
+
             {% if priorites is not empty %}
-                <div class="overflow-x-auto rounded-md inset-ring-1 inset-ring-neutral-200">
-                    <table class="w-full border-collapse">
-                        <thead class="bg-primary-5"><tr class="text-left h-10 border-b border-neutral-200">
-                            {% for col in ['Code', 'Nom', 'Gamme', 'Statut', 'Complétude', ''] %}<th class="px-3"><twig:Typography variant="body-xs" textColor="neutral-500" bold>{{ col }}</twig:Typography></th>{% endfor %}
-                        </tr></thead>
-                        <tbody>
+                <table class="w-full table-fixed border-separate border-spacing-0">
+                    <thead>
+                        <tr>
+                            {{ _self.entete('Fiche', 'w-[330px] pl-4 rounded-l-xs') }}
+                            {{ _self.entete('Gamme', 'w-[150px]') }}
+                            {{ _self.entete('Statut', 'w-auto') }}
+                            {{ _self.entete('Complétude', 'w-[130px]') }}
+                            {{ _self.entete('Action', 'w-[100px] pr-4 rounded-r-xs text-right') }}
+                        </tr>
+                    </thead>
+                    <tbody>
                         {% for priorite in priorites %}
-                            <tr class="h-11 border-t border-neutral-200 first:border-t-0">
-                                <td class="px-3"><twig:Typography variant="body-sm">{{ priorite.code }}</twig:Typography></td>
-                                <td class="px-3"><twig:Typography variant="body-sm" bold>{{ priorite.label ?? 'Sans libellé' }}</twig:Typography></td>
-                                <td class="px-3"><twig:Tag label="{{ gamme_libelles[priorite.type] ?? priorite.type }}" variant="neutral" size="sm" /></td>
-                                <td class="px-3"><twig:Tag label="{{ statut_libelles[priorite.status] ?? priorite.status }}" variant="primary-3" size="sm" /></td>
-                                <td class="px-3"><twig:Typography variant="body-sm">{{ priorite.completeness is null ? '—' : priorite.completeness ~ ' %' }}</twig:Typography></td>
-                                <td class="px-3">{% if priorite.url %}<a href="{{ priorite.url }}" class="hover:underline"><twig:Typography variant="body-sm" textColor="primary-3" bold element="span">Ouvrir</twig:Typography></a>{% endif %}</td>
+                            {% set ton = priorite.completeness is null or priorite.completeness < 50
+                                ? 'urgent' : (priorite.completeness < 75 ? 'proche' : 'neutre') %}
+                            <tr>
+                                <td class="box-border h-12 pl-4 pr-3 border-b border-neutral-200 truncate">
+                                    <twig:Typography variant="body" bold>{{ priorite.label ?? 'Sans libellé' }}</twig:Typography>
+                                    <twig:Typography variant="body-xs" textColor="neutral-500"> · {{ priorite.code }}</twig:Typography>
+                                </td>
+                                <td class="box-border h-12 pr-3 border-b border-neutral-200">
+                                    <span class="flex items-center gap-2 min-w-0 h-12 overflow-hidden">
+                                        <span class="shrink-0 w-2 h-2 rounded-lg {{ gamme_teintes[priorite.type] ?? 'bg-neutral-400' }}"
+                                              aria-hidden="true"></span>
+                                        <twig:Typography variant="body" ellipsis class="min-w-0">{{ gamme_libelles[priorite.type] ?? priorite.type }}</twig:Typography>
+                                    </span>
+                                </td>
+                                <td class="box-border h-12 pr-3 border-b border-neutral-200 truncate">
+                                    <twig:Typography variant="body" textColor="neutral-500">{{ statut_libelles[priorite.status] ?? priorite.status }}</twig:Typography>
+                                </td>
+                                <td class="box-border h-12 pr-3 border-b border-neutral-200">
+                                    <span class="inline-block px-2.5 py-1 rounded-lg whitespace-nowrap {{ echeances[ton] }}">
+                                        <twig:Typography variant="body-xs" bold textColor="controlled">
+                                            {{- priorite.completeness is null ? 'À renseigner' : priorite.completeness ~ ' %' -}}
+                                        </twig:Typography>
+                                    </span>
+                                </td>
+                                <td class="box-border h-12 pr-4 border-b border-neutral-200 text-right">
+                                    {% if priorite.url %}
+                                        <a href="{{ priorite.url }}" class="block text-[0.75rem] leading-5 font-[900] text-primary text-right hover:underline">Ouvrir</a>
+                                    {% endif %}
+                                </td>
                             </tr>
                         {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+                    </tbody>
+                </table>
             {% else %}
                 <twig:Typography variant="body-sm" textColor="neutral-500">Aucune fiche ne vous est assignée pour l'instant.</twig:Typography>
             {% endif %}
         </section>
 
-        <aside class="w-full xl:w-[320px] shrink-0 flex flex-col gap-5">
-            <section class="flex flex-col gap-2 p-5 rounded-[16px] bg-neutral-100 shadow-(--shadow)">
-                <twig:Typography variant="heading-3" element="h2" bold>Raccourcis</twig:Typography>
-                <ul class="flex flex-col gap-1">
-                    <li><a href="{{ path('app_mdm_creation_fiche') }}" class="hover:underline"><twig:Typography variant="body-sm" textColor="primary-3" bold element="span">Créer une fiche</twig:Typography></a></li>
-                    <li><a href="{{ url_mes_fiches }}" class="hover:underline"><twig:Typography variant="body-sm" textColor="primary-3" bold element="span">Mes fiches dans le référentiel</twig:Typography></a></li>
+        <div class="flex flex-col shrink-0 gap-4 w-full min-[1366px]:w-[360px] min-[1600px]:w-[440px]">
+            <section class="flex flex-col gap-3.5 px-[26px] py-6 rounded-[20px]
+                            bg-neutral-100 shadow-(--shadow)">
+                <twig:Typography variant="heading-3" element="h2" class="font-[700]!">Raccourcis</twig:Typography>
+                <ul class="flex flex-wrap gap-2.5 m-0 p-0 list-none">
+                    <li><a href="{{ path('app_mdm_creation_fiche') }}"
+                           class="inline-block px-4 py-2.5 rounded-lg bg-primary-4 text-[0.75rem] leading-5 font-[900] text-primary-3 hover:bg-primary hover:text-neutral-100">Créer une fiche</a></li>
+                    <li><a href="{{ url_mes_fiches }}"
+                           class="inline-block px-4 py-2.5 rounded-lg bg-primary-4 text-[0.75rem] leading-5 font-[900] text-primary-3 hover:bg-primary hover:text-neutral-100">Mes fiches</a></li>
                     {% if is_granted('ROLE_ADMIN') %}
-                        <li><a href="{{ path('app_etl_import_index') }}" class="hover:underline"><twig:Typography variant="body-sm" textColor="primary-3" bold element="span">Importer des fiches</twig:Typography></a></li>
+                        <li><a href="{{ path('app_etl_import_index') }}"
+                               class="inline-block px-4 py-2.5 rounded-lg bg-primary-4 text-[0.75rem] leading-5 font-[900] text-primary-3 hover:bg-primary hover:text-neutral-100">Importer des fiches</a></li>
                     {% endif %}
                 </ul>
             </section>
 
-            <section class="flex flex-col gap-2 p-5 rounded-[16px] bg-neutral-100 shadow-(--shadow)">
-                <twig:Typography variant="heading-3" element="h2" bold>Mes vues enregistrées</twig:Typography>
+            {# Conservé hors maquette : les vues enregistrées de l'utilisateur. #}
+            <section class="flex flex-col gap-2 px-[26px] py-6 rounded-[20px] bg-neutral-100 shadow-(--shadow)">
+                <twig:Typography variant="heading-3" element="h2" class="font-[700]!">Mes vues enregistrées</twig:Typography>
                 {% if vues_enregistrees is not empty %}
-                    <ul class="flex flex-col gap-1">
+                    <ul class="flex flex-col gap-1 m-0 p-0 list-none">
                         {% for entree in vues_enregistrees %}
                             <li class="flex items-center gap-2 flex-wrap">
                                 <a href="{{ entree.url }}" class="hover:underline"><twig:Typography variant="body-sm" textColor="primary-3" bold element="span">{{ entree.vue.name }}</twig:Typography></a>
@@ -103,16 +180,23 @@
                 {% endif %}
             </section>
 
-            <section class="flex flex-col gap-2 p-5 rounded-[16px] bg-neutral-100 shadow-(--shadow)">
-                <twig:Typography variant="heading-3" element="h2" bold>Mon activité (7 jours)</twig:Typography>
-                <ul class="flex flex-col gap-1">
-                    <li><twig:Typography variant="body-sm">{{ activite.creees }} fiche{{ activite.creees == 1 ? '' : 's' }} créée{{ activite.creees == 1 ? '' : 's' }}</twig:Typography></li>
-                    <li><twig:Typography variant="body-sm">{{ activite.modifiees }} modification{{ activite.modifiees == 1 ? '' : 's' }}</twig:Typography></li>
-                    <li><twig:Typography variant="body-sm">{{ activite.validees }} validation{{ activite.validees == 1 ? '' : 's' }}</twig:Typography></li>
-                    <li><twig:Typography variant="body-sm">{{ activite.publiees }} publication{{ activite.publiees == 1 ? '' : 's' }}</twig:Typography></li>
+            <section class="flex flex-col gap-4 px-[26px] py-6 rounded-[20px] bg-neutral-100 shadow-(--shadow)">
+                <twig:Typography variant="heading-3" element="h2" class="font-[700]!">Mon activité (7 jours)</twig:Typography>
+                <ul class="flex flex-col gap-4 m-0 p-0 list-none">
+                    {% for evenement in [
+                        activite.creees ~ ' fiche' ~ (activite.creees == 1 ? '' : 's') ~ ' créée' ~ (activite.creees == 1 ? '' : 's'),
+                        activite.modifiees ~ ' modification' ~ (activite.modifiees == 1 ? '' : 's'),
+                        activite.validees ~ ' validation' ~ (activite.validees == 1 ? '' : 's'),
+                        activite.publiees ~ ' publication' ~ (activite.publiees == 1 ? '' : 's'),
+                    ] %}
+                        <li class="flex items-start gap-3">
+                            <span class="shrink-0 self-stretch w-[3px] rounded-[3px] bg-primary-4" aria-hidden="true"></span>
+                            <twig:Typography variant="body">{{ evenement }}</twig:Typography>
+                        </li>
+                    {% endfor %}
                 </ul>
             </section>
-        </aside>
+        </div>
     </div>
 </main>
 {% endblock %}

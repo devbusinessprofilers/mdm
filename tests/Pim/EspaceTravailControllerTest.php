@@ -67,7 +67,7 @@ final class EspaceTravailControllerTest extends WebTestCase
 
         $crawler = $client->request('GET', '/espace-de-travail');
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('h1', 'Mon espace de travail');
+        self::assertSelectorTextContains('h1', 'Bonjour');
 
         $texte = $crawler->text(null, true);
         self::assertStringContainsString('dont 2 sous 50 % de complétude', $texte);
