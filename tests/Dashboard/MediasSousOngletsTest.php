@@ -47,25 +47,31 @@ final class MediasSousOngletsTest extends WebTestCase
         $em->flush();
         $client->loginUser($user);
 
-        $crawler = $client->request('GET', '/medias', ['onglet' => 'droits']);
-        self::assertResponseIsSuccessful();
-        $cartes = $crawler->filter('a[data-carte-anomalie]');
-        self::assertSame(9, $cartes->count(), 'Les neuf cartes d\'anomalies doivent être présentes.');
+        // Chaque onglet à file expose ses pastilles ; chacune navigue sur
+        // /medias?filter=… et devient active à l'arrivée.
+        $attendues = ['biblio' => 2, 'droits' => 5, 'doublons' => 1, 'sync' => 3];
 
-        foreach ($cartes as $carte) {
-            if (!$carte instanceof \DOMElement) {
-                self::fail('Chaque carte doit être un élément DOM.');
+        foreach ($attendues as $onglet => $nombre) {
+            $crawler = $client->request('GET', '/medias', ['onglet' => $onglet]);
+            self::assertResponseIsSuccessful();
+            $pastilles = $crawler->filter('a[data-file]');
+            self::assertSame($nombre, $pastilles->count(), sprintf('L\'onglet « %s » doit afficher %d files.', $onglet, $nombre));
+
+            foreach ($pastilles as $pastille) {
+                if (!$pastille instanceof \DOMElement) {
+                    self::fail('Chaque pastille doit être un élément DOM.');
+                }
+                $href = (string) $pastille->getAttribute('href');
+                $cle = (string) $pastille->getAttribute('data-file');
+                self::assertStringContainsString('/medias?filter=', $href, 'Les pastilles doivent rester sur /medias avec un paramètre filter.');
+                $suivant = $client->request('GET', $href);
+                self::assertResponseIsSuccessful($href);
+                self::assertSame(
+                    $cle,
+                    $suivant->filter('a[data-file-active]')->attr('data-file'),
+                    sprintf('La file « %s » doit devenir active après le clic.', $cle),
+                );
             }
-            $href = (string) $carte->getAttribute('href');
-            $cle = (string) $carte->getAttribute('data-carte-anomalie');
-            self::assertStringContainsString('/medias?filter=', $href, 'Les cartes doivent rester sur /medias avec un paramètre filter.');
-            $suivant = $client->request('GET', $href);
-            self::assertResponseIsSuccessful($href);
-            self::assertSame(
-                $cle,
-                $suivant->filter('a[data-carte-active]')->attr('data-carte-anomalie'),
-                sprintf('La carte « %s » doit devenir active après le clic.', $cle),
-            );
         }
     }
 }

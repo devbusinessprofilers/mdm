@@ -1,44 +1,152 @@
 {% extends 'mdm/base.html.twig' %}
 
 {#
-    Écran « Médias » — châssis maquette (rail d'onglets + règle de diffusion
-    persistante). Les onglets adossés à des données réutilisent le contenu de
-    supervision DAM (partial inchangé) ; les autres décrivent ce que le back
-    sait faire aujourd'hui.
+    Écran « Médias » — le DAM au châssis maquette : rail d'onglets à badges,
+    en-tête avec actions, indicateurs, santé, cartes, barre de filtres,
+    tableau en grille et pied. Chaque onglet garde ses mécanismes back
+    (arbitrage des doublons, validation des droits, relance des traitements) ;
+    ce que la maquette promet sans couverture back est grisé « À venir ».
 #}
 
-{% macro indicateur(icone, fond, libelle, valeur, note) %}
-    <div class="flex items-center box-border gap-3 px-5 py-4 rounded-md bg-neutral-100 shadow-(--shadow) flex-1 basis-56 min-w-0">
-        <span class="shrink-0 w-10 h-10 flex items-center justify-center rounded-full {{ fond }}">
-            <twig:Icon name="{{ icone }}" aria-hidden="true" class="w-5 h-5 text-primary-3" />
+{% set a_venir = 'Fonction à venir — en développement' %}
+{% set carte = 'flex flex-col box-border gap-3 px-[26px] py-6 rounded-md bg-neutral-100 shadow-(--shadow)' %}
+{% set grille = 'grid gap-4 items-center px-4 grid-cols-[repeat(auto-fit,minmax(0,1fr))]' %}
+{% set pill_active = 'bg-linear-(--primary-gradient)' %}
+{% set pill_repos = 'bg-primary-5 hover:bg-primary-4' %}
+
+{# ------------------------------------------------- Macros de cellules #}
+{% macro nombre(valeur) %}{{ valeur|number_format(0, ',', ' ') }}{% endmacro %}
+
+{% macro poids(octets) %}
+    {%- if octets >= 1099511627776 %}{{ (octets / 1099511627776)|round(2)|replace({'.': ','}) }} To
+    {%- elseif octets >= 1073741824 %}{{ (octets / 1073741824)|round(1)|replace({'.': ','}) }} Go
+    {%- elseif octets >= 1048576 %}{{ (octets / 1048576)|round(1)|replace({'.': ','}) }} Mo
+    {%- else %}{{ (octets / 1024)|round }} Ko
+    {%- endif %}
+{%- endmacro %}
+
+{% macro txt(texte, gras = false, discret = false, aligne = 'text-left', teinte = '') %}
+    <span class="min-w-0 {{ aligne }}">
+        <twig:Typography variant="body-sm" bold="{{ gras }}" ellipsis
+                         textColor="{{ teinte ?: (discret ? 'neutral-500' : 'neutral-900') }}">{{ texte }}</twig:Typography>
+    </span>
+{% endmacro %}
+
+{% macro duo(texte, note) %}
+    <span class="flex flex-col min-w-0">
+        <twig:Typography variant="body-sm" bold ellipsis>{{ texte }}</twig:Typography>
+        <twig:Typography variant="body-xs" textColor="neutral-400" ellipsis>{{ note }}</twig:Typography>
+    </span>
+{% endmacro %}
+
+{% macro jeton(texte, fond, aligne = 'text-left') %}
+    <span class="min-w-0 {{ 'text-right' == aligne ? 'flex justify-end' : '' }}">
+        <span class="inline-flex w-fit max-w-full px-[9px] py-[3px] rounded-lg {{ fond }}">
+            <twig:Typography variant="body-xs" bold ellipsis
+                             textColor="{{ 'bg-neutral-200' == fond ? 'neutral-500' : 'primary-3' }}">{{ texte }}</twig:Typography>
         </span>
-        <div class="flex flex-col gap-px min-w-0">
-            <twig:Typography variant="body-sm" textColor="neutral-500" ellipsis>{{ libelle }}</twig:Typography>
-            <twig:Typography variant="subtitle" class="font-[700]!">{{ valeur }}</twig:Typography>
-            <twig:Typography variant="body-xs" textColor="neutral-400">{{ note }}</twig:Typography>
-        </div>
+    </span>
+{% endmacro %}
+
+{% macro lien_cellule(texte, url) %}
+    <span class="flex items-center justify-end min-w-0">
+        {% if url %}
+            <a href="{{ url }}" class="flex items-center gap-1.5 rounded-xs hover:underline decoration-primary-3">
+                <twig:Typography variant="body-sm" bold textColor="primary-3">{{ texte }}</twig:Typography>
+                <twig:Icon name="arrow-right" aria-hidden="true" class="shrink-0 w-3 h-3 text-primary" />
+            </a>
+        {% else %}
+            <twig:Typography variant="body-sm" textColor="neutral-400">—</twig:Typography>
+        {% endif %}
+    </span>
+{% endmacro %}
+
+{% macro phrase_cellule(texte, teinte = 'neutral-500') %}
+    <span class="min-w-0">
+        <twig:Typography variant="body-sm" textColor="{{ teinte }}" class="text-pretty">{{ texte }}</twig:Typography>
+    </span>
+{% endmacro %}
+
+{% macro barre_cellule(part) %}
+    <span class="flex items-center gap-2.5 min-w-0">
+        <span class="flex-1 min-w-0 h-1.5 rounded-lg bg-neutral-200 overflow-hidden">
+            <span class="block h-full rounded-lg bg-linear-(--primary-gradient)" style="width: {{ part }}%"></span>
+        </span>
+        <twig:Typography variant="body-xs" bold textColor="neutral-500"
+                         class="w-[34px] shrink-0 text-right">{{ part }} %</twig:Typography>
+    </span>
+{% endmacro %}
+
+{% macro entete(colonnes, grille) %}
+    <div class="{{ grille }} h-9 shrink-0 bg-primary-5 border-b border-neutral-200" role="row">
+        {% for colonne in colonnes %}
+            <span class="min-w-0 truncate {{ colonne.1|default('text-left') }}" role="columnheader">
+                <twig:Typography variant="body-xs" bold textColor="neutral-500"
+                                 class="tracking-[0.3px] uppercase">{{ colonne.0 }}</twig:Typography>
+            </span>
+        {% endfor %}
     </div>
 {% endmacro %}
 
-{% block title %}Médias · {{ onglets[onglet_actif] }}{% endblock %}
+{% macro indicateur(libelle, valeur, note, icone, fond) %}
+    <div class="flex flex-col flex-1 basis-48 min-w-0 box-border gap-1.5 px-5 py-4
+                rounded-sm bg-neutral-100 shadow-(--shadow)">
+        <div class="flex items-center gap-2">
+            <span class="flex items-center justify-center shrink-0 w-7 h-7 rounded-lg {{ fond }}">
+                <twig:Icon name="{{ icone }}" aria-hidden="true" class="w-4 h-4 text-primary-3" />
+            </span>
+            <twig:Typography variant="body-xs" bold textColor="neutral-500" ellipsis
+                             class="min-w-0 tracking-[0.3px] uppercase">{{ libelle }}</twig:Typography>
+        </div>
+        <twig:Typography variant="subtitle" class="font-[700]!">{{ valeur }}</twig:Typography>
+        <twig:Typography variant="body-sm" textColor="neutral-500">{{ note }}</twig:Typography>
+    </div>
+{% endmacro %}
+
+{% macro carte_contenu(icone, titre, valeur, alerte, texte, lien) %}
+    <div class="flex items-center gap-3">
+        <twig:Icon name="{{ icone }}" aria-hidden="true"
+                   class="shrink-0 w-6 h-6 {{ alerte ? 'text-error' : 'text-primary' }}" />
+        <twig:Typography variant="subtitle" ellipsis
+                         class="flex-1 min-w-0 text-[1.125rem]! leading-[1.625rem]! font-[700]!">{{ titre }}</twig:Typography>
+        <span class="inline-flex shrink-0"><twig:Tag label="{{ valeur }}" size="sm"
+                  variant="{{ alerte ? 'error' : 'success-pastel' }}" class="whitespace-nowrap" /></span>
+    </div>
+    <twig:Typography variant="body" textColor="neutral-500" class="text-pretty">{{ texte }}</twig:Typography>
+    <div class="flex items-center gap-2">
+        <twig:Typography variant="body-sm" bold textColor="primary-3">{{ lien }}</twig:Typography>
+        <twig:Icon name="arrow-right" aria-hidden="true" class="shrink-0 w-3 h-3 text-primary" />
+    </div>
+{% endmacro %}
+
+{% block title %}{{ onglets[onglet_actif] }} · Médias{% endblock %}
 
 {% set onglet_meta = {
-    'biblio': { icone: 'images', sousTitre: 'Le catalogue des images et documents du référentiel.' },
-    'import': { icone: 'upload-simple', sousTitre: 'Le dépôt et la retouche se font sur la fiche.' },
-    'ia': { icone: 'ai', sousTitre: 'Détection des doublons visuels par empreinte perceptuelle.' },
-    'meta': { icone: 'list', sousTitre: 'Nature, usage, légende, mots-clés, droits — saisis sur la fiche.' },
-    'formats': { icone: 'desktop', sousTitre: 'Les variantes générées, servies par le CDN public.' },
-    'droits': { icone: 'shield-check', sousTitre: 'Les droits d\'usage : manquants, expirants, expirés.' },
-    'doublons': { icone: 'cube', sousTitre: 'Les images identiques ou quasi identiques du catalogue.' },
-    'sync': { icone: 'arrow-clockwise', sousTitre: 'Les anomalies de synchronisation avec le PIM.' },
+    'biblio': { icone: 'images', sousTitre: 'Un média appartient à une fiche, porte un droit d\'usage et se décline par canal — les trois conditionnent sa diffusion.' },
+    'import': { icone: 'upload-simple', sousTitre: 'Le dépôt et la retouche se font sur la fiche : les variantes sont régénérées à chaque dépôt, l\'original est conservé.' },
+    'ia': { icone: 'rocket', sousTitre: 'Ce que la chaîne automatique déduit d\'un média : ses doublons visuels aujourd\'hui, son contenu demain.' },
+    'meta': { icone: 'note', sousTitre: 'Chaque ressource porte sa nature, son usage, sa légende, ses mots-clés et ses droits — saisis sur la fiche.' },
+    'formats': { icone: 'layout', sousTitre: 'Les variantes générées à l\'import, servies par le CDN public. Un canal demande un format, pas un fichier.' },
+    'droits': { icone: 'lock', sousTitre: 'Un média sans droits déclarés ne part sur aucun canal tiers, même si la fiche est publiée.' },
+    'doublons': { icone: 'warning', sousTitre: 'La détection compare les images elles-mêmes, pas les noms de fichier — un visuel réimporté sous un autre nom est repéré.' },
+    'sync': { icone: 'spinner', sousTitre: 'Le DAM détient les fichiers, le PIM les rattache aux fiches. Les anomalies entre les deux se traitent ici.' },
 } %}
+
+{# Badges réels du rail : seulement là où une donnée back existe. #}
+{% set rail_badges = stats is defined ? {
+    'biblio': _self.nombre(stats.images + stats.documents),
+    'formats': variantes|length,
+    'droits': _self.nombre(stats.rights_missing),
+    'doublons': stats.duplicates,
+    'sync': stats.orphans + stats.missing_renditions + stats.failed,
+} : {} %}
 
 {# ------------------------------------------------- Rail des onglets #}
 {% block rail %}
     <nav class="flex flex-col shrink-0 box-border w-[328px] pl-5 pr-3 py-4 gap-4 overflow-y-auto scrollbar"
-         aria-label="Onglets du DAM">
+         aria-label="Onglets de la bibliothèque de médias">
         <div class="flex flex-col gap-1">
-            <twig:Typography variant="body" bold class="pl-2 pr-4">Médias</twig:Typography>
+            <twig:Typography variant="body" bold class="pl-2 pr-4">Médias — DAM</twig:Typography>
             <div class="flex flex-col">
                 {% for cle, libelle in onglets %}
                     <a href="{{ path('app_mdm_medias', { onglet: cle }) }}"
@@ -52,6 +160,12 @@
                         <twig:Typography variant="body" bold ellipsis textColor="primary-3"
                                          class="flex-1 min-w-0
                                                 group-aria-[current=page]/onglet:text-neutral-100!">{{ libelle }}</twig:Typography>
+                        {% if rail_badges[cle] is defined %}
+                            <twig:Typography variant="body-xs" bold textColor="neutral-500"
+                                             class="shrink-0 px-[7px] py-0.5 rounded-lg bg-neutral-200
+                                                    group-aria-[current=page]/onglet:bg-neutral-100
+                                                    group-aria-[current=page]/onglet:text-primary-3!">{{ rail_badges[cle] }}</twig:Typography>
+                        {% endif %}
                     </a>
                 {% endfor %}
             </div>
@@ -59,101 +173,510 @@
 
         <span class="flex-1"></span>
 
-        {# La règle de diffusion, sous les yeux sur tous les onglets. #}
+        {# La règle de diffusion conditionne les huit onglets : elle reste sous les yeux. #}
         <div class="shrink-0 flex flex-col gap-1.5 mr-1 p-3.5 rounded-[12px] bg-primary-4">
             <twig:Typography variant="body-sm" bold textColor="primary-3">Règle de diffusion</twig:Typography>
-            <twig:Typography variant="body-sm" textColor="neutral-500" class="text-pretty">Un média est un actif
-                porteur d'un droit d'usage : sans droits déclarés, il ne part sur aucun canal tiers, même si la
-                fiche est publiée.</twig:Typography>
+            <twig:Typography variant="body-sm" textColor="neutral-500" class="text-pretty">Un média sans droits
+                déclarés ne part sur aucun canal tiers, même si la fiche est publiée.
+                {%- if stats is defined and stats.rights_missing > 0 %} {{ stats.rights_missing|number_format(0, ',', ' ') }} média{{ stats.rights_missing > 1 ? 's sont' : ' est' }} dans ce cas.{% endif %}</twig:Typography>
         </div>
     </nav>
 {% endblock %}
 
 {% block contenu %}
-<main class="flex flex-col h-full min-h-0 overflow-y-auto scrollbar">
+<main class="flex flex-col h-full min-h-0">
 
+    {# ------------------------------------------------- En-tête et actions #}
     <div class="shrink-0 flex items-end justify-between gap-6 px-10 pt-[22px] pb-4">
-        <div class="flex flex-col gap-1 min-w-0 max-w-[720px]">
+        <div class="flex flex-col gap-1 min-w-0 max-w-[760px]">
             <twig:Typography variant="heading-2" element="h1"
                              class="sm:text-[1.625rem]! sm:leading-[2.125rem]! font-[700]!">{{ onglets[onglet_actif] }}</twig:Typography>
             <twig:Typography variant="body" element="p" textColor="neutral-500"
                              class="text-pretty">{{ onglet_meta[onglet_actif].sousTitre }}</twig:Typography>
         </div>
-        {% if is_granted('ROLE_ADMIN') %}
-            <twig:Button variant="outline" size="sm" asLink href="{{ path('app_dam_dashboard') }}">Supervision classique</twig:Button>
-        {% endif %}
+
+        <div class="flex items-center gap-2.5 shrink-0 flex-wrap justify-end">
+            {% if is_granted('ROLE_ADMIN') %}
+                <twig:Button variant="outline" size="md" asLink href="{{ path('app_dam_dashboard') }}">Supervision classique</twig:Button>
+            {% endif %}
+            {% if onglet_actif == 'biblio' %}
+                <span title="{{ a_venir }}" class="inline-flex"><twig:Button variant="outline" size="md" disabled icon="upload-simple" class="opacity-60 [&>:first-child]:size-5">Importer des médias</twig:Button></span>
+                <span title="{{ a_venir }}" class="inline-flex"><twig:Button variant="primary" size="md" disabled icon="rocket" class="opacity-60 [&>:first-child]:size-5">Classer par lot</twig:Button></span>
+            {% elseif onglet_actif == 'import' %}
+                <twig:Button variant="outline" size="md" asLink href="{{ path('app_mdm_referentiel_general') }}">Ouvrir une fiche</twig:Button>
+                {% if is_granted('ROLE_ADMIN') %}
+                    <twig:Button variant="primary" size="md" asLink href="{{ path('app_etl_import_index') }}">Import de fiches</twig:Button>
+                {% endif %}
+            {% elseif onglet_actif == 'droits' %}
+                <span title="{{ a_venir }}" class="inline-flex"><twig:Button variant="primary" size="md" disabled icon="lock" class="opacity-60 [&>:first-child]:size-5">Déclarer par lot</twig:Button></span>
+            {% elseif onglet_actif == 'doublons' %}
+                <span title="{{ a_venir }}" class="inline-flex"><twig:Button variant="primary" size="md" disabled icon="rocket" class="opacity-60 [&>:first-child]:size-5">Dédoublonner</twig:Button></span>
+            {% elseif onglet_actif == 'sync' %}
+                <twig:Button variant="outline" size="md" asLink href="{{ path('app_mdm_outils') }}">Voir le journal</twig:Button>
+                {% if scan_form %}<div class="[&_form]:contents [&_button]:w-auto!">{{ form(scan_form) }}</div>{% endif %}
+            {% endif %}
+        </div>
     </div>
 
-    <div class="flex-1 min-h-0 flex flex-col gap-4 px-10 pb-8">
+    <div class="flex-1 min-h-0 flex flex-col gap-4 px-10 pb-8 overflow-y-auto scrollbar">
 
-        {# ---- Indicateurs maquette : comptes réels quand les stats sont
-             chargées ; le stockage vit sur le tableau de bord. ---- #}
-        {% if vue and stats is defined %}
-            <div class="shrink-0 flex flex-row gap-4 flex-wrap">
-                {{ _self.indicateur('images', 'bg-neutral-200', 'Médias', stats.images + stats.documents, 'images et documents') }}
-                {{ _self.indicateur('lock', 'bg-error-pastel', 'Sans droits déclarés', stats.rights_missing, 'non diffusables') }}
-                {{ _self.indicateur('warning', 'bg-peach-pastel', 'Doublons probables', stats.duplicates, 'à dédoublonner') }}
-                {{ _self.indicateur('arrow-clockwise', 'bg-peach-pastel', 'Traitements en échec', stats.failed, 'rejouables') }}
-            </div>
-        {% endif %}
-
-    {% if onglet_actif == 'sync' and scan_form %}
-        <div class="shrink-0">{{ form(scan_form) }}</div>
+    {# ------------------------------------------------- Indicateurs (bibliothèque) #}
+    {% if onglet_actif == 'biblio' and stats is defined %}
+        <div class="shrink-0 flex flex-row gap-3.5 flex-wrap">
+            {{ _self.indicateur('Médias', _self.nombre(stats.images + stats.documents), 'images et documents', 'images', 'bg-neutral-200') }}
+            {{ _self.indicateur('Stockage', _self.poids(stockage.octets), _self.nombre(stockage.nb) ~ ' fichiers actifs', 'upload-simple', 'bg-peach-pastel') }}
+            {{ _self.indicateur('Sans droits déclarés', _self.nombre(stats.rights_missing), 'non diffusables', 'lock', 'bg-error-pastel') }}
+            {{ _self.indicateur('Doublons probables', _self.nombre(stats.duplicates), 'à dédoublonner', 'warning', 'bg-peach-pastel') }}
+        </div>
     {% endif %}
 
-    {% if vue %}
-        {% set ecran_route = 'app_mdm_medias' %}
-        {% include 'dam/_dashboard_contenu.html.twig' %}
-    {% elseif onglet_actif == 'formats' %}
-        <section class="shrink-0 flex flex-col gap-3 p-6 rounded-[20px] bg-neutral-100 shadow-(--shadow)" aria-label="Formats et variantes">
-            <twig:Typography variant="heading-3" element="h2" bold>Variantes générées</twig:Typography>
-            <twig:Typography variant="body-sm" textColor="neutral-500">Chaque image traitée est déclinée dans ces formats, servis par le CDN public.</twig:Typography>
-            <div class="overflow-x-auto rounded-md inset-ring-1 inset-ring-neutral-200">
-                <table class="w-full border-collapse">
-                    <thead class="bg-primary-5"><tr class="text-left h-10 border-b border-neutral-200">
-                        {% for col in ['Variante', 'Dimensions cibles', 'Fichiers générés', 'Volume'] %}<th class="px-3"><twig:Typography variant="body-xs" textColor="neutral-500" bold>{{ col }}</twig:Typography></th>{% endfor %}
-                    </tr></thead>
-                    <tbody>
-                    {% for nom, taille in variantes %}
-                        {% set stat = formats|filter(f => f.name == nom)|first %}
-                        <tr class="h-11 border-t border-neutral-200 first:border-t-0">
-                            <td class="px-3"><twig:Typography variant="body-sm" bold>{{ nom }}</twig:Typography></td>
-                            <td class="px-3"><twig:Typography variant="body-sm">{{ taille.width }} × {{ taille.height }}</twig:Typography></td>
-                            <td class="px-3"><twig:Typography variant="body-sm">{{ stat ? stat.nb : 0 }}</twig:Typography></td>
-                            <td class="px-3"><twig:Typography variant="body-sm">{{ stat ? (stat.octets / 1048576)|round(1) ~ ' Mo' : '—' }}</twig:Typography></td>
-                        </tr>
+    {# ------------------------------------------------- Santé (droits) : répartition réelle #}
+    {% if onglet_actif == 'droits' and regimes is not empty %}
+        {% set regimes_total = regimes.not_granted + regimes.unlimited + regimes.valid + regimes.expiring + regimes.expired %}
+        {% set diffusables = regimes.unlimited + regimes.valid + regimes.expiring %}
+        {% set axes = [
+            ['Libres — sans échéance', regimes.unlimited, 'bg-success-pastel'],
+            ['Valides', regimes.valid, 'bg-primary-4'],
+            ['À échéance sous 30 jours', regimes.expiring, 'bg-peach-pastel'],
+            ['Expirés', regimes.expired, 'bg-error-pastel'],
+            ['Sans droits déclarés', regimes.not_granted, 'bg-neutral-200'],
+        ] %}
+        <div class="shrink-0 flex flex-row gap-4 items-stretch">
+            <div class="{{ carte }} w-[400px] shrink-0 gap-4!">
+                <twig:Typography variant="body" bold>Répartition des droits</twig:Typography>
+                <div class="flex items-end gap-3.5">
+                    <twig:Typography variant="heading-1" element="p"
+                                     class="shrink-0 whitespace-nowrap sm:text-[3.25rem]! sm:leading-[3.625rem]! font-[700]!">
+                        {{- regimes_total > 0 ? ((diffusables / regimes_total) * 100)|round : 0 }} %</twig:Typography>
+                    <twig:Typography variant="body-sm" textColor="neutral-500" class="pb-1.5 text-pretty">
+                        {{- regimes_total|number_format(0, ',', ' ') }} photos · {{ diffusables|number_format(0, ',', ' ') }} diffusables sur canaux tiers</twig:Typography>
+                </div>
+                <div class="flex flex-col gap-2.5">
+                    {% for axe in axes %}
+                        {% set part = regimes_total > 0 ? ((axe.1 / regimes_total) * 100)|round : 0 %}
+                        <div class="flex flex-col gap-1">
+                            <div class="flex items-baseline justify-between gap-3">
+                                <twig:Typography variant="body-sm" bold class="min-w-0">{{ axe.0 }}</twig:Typography>
+                                <div class="flex items-baseline gap-2 shrink-0">
+                                    <twig:Typography variant="body" bold textColor="primary-3">{{ part }} %</twig:Typography>
+                                    <twig:Typography variant="body-sm" textColor="neutral-500">{{ axe.1|number_format(0, ',', ' ') }} photos</twig:Typography>
+                                </div>
+                            </div>
+                            <div class="w-full h-1 rounded-lg bg-neutral-200 overflow-hidden">
+                                {# Le fond est celui du régime de droits : une répartition, pas un score. #}
+                                <div class="h-full rounded-lg {{ axe.2 }}" style="width: {{ part }}%"></div>
+                            </div>
+                        </div>
                     {% endfor %}
-                    </tbody>
-                </table>
+                </div>
             </div>
-        </section>
-    {% elseif onglet_actif == 'import' %}
-        <section class="shrink-0 flex flex-col gap-3 p-6 rounded-[20px] bg-neutral-100 shadow-(--shadow)">
-            <twig:Typography variant="heading-3" element="h2" bold>Import & retouche</twig:Typography>
-            <twig:Typography variant="body-sm" textColor="neutral-500">
-                Le dépôt des photos et documents se fait sur la fiche (galerie, recadrage, rotation, remplacement) : les variantes sont générées automatiquement au dépôt. L'import en masse passe par l'import de fiches.
+
+            {# Historisation des consentements : pas de back → grisée. #}
+            <div title="{{ a_venir }}" class="{{ carte }} flex-1 min-w-0 gap-4! opacity-60">
+                <div class="flex items-center gap-3">
+                    <twig:Typography variant="body" bold class="flex-1 min-w-0">Consentements historisés</twig:Typography>
+                    <span class="inline-flex shrink-0"><twig:Tag label="À venir" variant="neutral" size="sm" /></span>
+                </div>
+                <twig:Typography variant="body-sm" textColor="neutral-500" class="text-pretty">Chaque cession de
+                    droits sera conservée avec sa preuve — cession signée ou accord par email — et sa date,
+                    pour un historique opposable.</twig:Typography>
+            </div>
+        </div>
+    {% endif %}
+
+    {# ------------------------------------------------- Cartes par onglet #}
+    {% if onglet_actif == 'droits' and stats is defined %}
+        <div class="shrink-0 flex flex-row gap-4 flex-wrap">
+            <a href="{{ path('app_mdm_medias', { filter: 'rights_missing' }) }}"
+               class="{{ carte }} flex-1 basis-80 min-w-0 text-left cursor-pointer hover:bg-primary-5">
+                {{ _self.carte_contenu('lock', _self.nombre(stats.rights_missing) ~ ' médias bloqués', _self.nombre(stats.rights_missing), stats.rights_missing > 0,
+                    'Sans droits déclarés, ils ne partent sur aucun canal tiers. La validation se fait média par média depuis la file ci-dessous.',
+                    'Ouvrir la file') }}
+            </a>
+            <a href="{{ path('app_mdm_medias', { filter: 'rights_expiring' }) }}"
+               class="{{ carte }} flex-1 basis-80 min-w-0 text-left cursor-pointer hover:bg-primary-5">
+                {{ _self.carte_contenu('calendar', 'Échéances sous 30 jours', _self.nombre(stats.rights_expiring), stats.rights_expiring > 0,
+                    'Les droits arrivent à terme : revalider ou révoquer avant que la diffusion ne soit suspendue.',
+                    'Ouvrir la file') }}
+            </a>
+        </div>
+    {% elseif onglet_actif == 'doublons' %}
+        <div title="{{ a_venir }}" class="shrink-0 {{ carte }} opacity-60">
+            <div class="flex items-center gap-3">
+                <twig:Icon name="rocket" aria-hidden="true" class="shrink-0 w-6 h-6 text-neutral-400" />
+                <twig:Typography variant="subtitle" class="flex-1 min-w-0 text-[1.125rem]! leading-[1.625rem]! font-[700]!">Dédoublonnage par lot</twig:Typography>
+                <span class="inline-flex shrink-0"><twig:Tag label="À venir" variant="neutral" size="sm" /></span>
+            </div>
+            <twig:Typography variant="body" textColor="neutral-500" class="text-pretty">Traiter tous les groupes
+                en une passe et mesurer le stockage libéré. Aujourd'hui, chaque doublon s'arbitre à la main
+                dans la file ci-dessous.</twig:Typography>
+        </div>
+    {% elseif onglet_actif == 'sync' %}
+        <div title="{{ a_venir }}" class="shrink-0 {{ carte }} opacity-60">
+            <div class="flex items-center gap-3">
+                <twig:Icon name="ok-circle" aria-hidden="true" class="shrink-0 w-6 h-6 text-neutral-400" />
+                <twig:Typography variant="subtitle" class="flex-1 min-w-0 text-[1.125rem]! leading-[1.625rem]! font-[700]!">Miroir DAM ↔ PIM</twig:Typography>
+                <span class="inline-flex shrink-0"><twig:Tag label="À venir" variant="neutral" size="sm" /></span>
+            </div>
+            <twig:Typography variant="body" textColor="neutral-500" class="text-pretty">Le tableau des flux
+                (volumes, dernier passage, état par canal) arrivera avec la synchronisation planifiée. Le scan
+                des anomalies ci-dessous est, lui, opérationnel.</twig:Typography>
+        </div>
+    {% endif %}
+
+    {# ------------------------------------------------- Files et filtres #}
+    {% set files_par_onglet = {
+        'biblio': { 'images': 'Images', 'documents': 'Autres médias' },
+        'droits': { 'rights_missing': 'Sans droits', 'rights_expiring': 'À J-30', 'rights_expired': 'Expirés', 'published_rights': 'Publiées · droits invalides', 'published_no_photo': 'Publiées sans photo' },
+        'doublons': { 'duplicates': 'Doublons détectés' },
+        'sync': { 'orphans': 'Ressources orphelines', 'missing_renditions': 'Variantes manquantes', 'failed': 'Traitements en échec' },
+    } %}
+    {% set files = files_par_onglet[onglet_actif]|default({}) %}
+
+    {% if files is not empty and stats is defined %}
+        <div class="shrink-0 flex items-center gap-3.5 flex-wrap px-5 py-3 rounded-sm bg-neutral-100 shadow-(--shadow)">
+            <twig:Typography variant="subtitle" class="shrink-0 text-[0.9375rem]! leading-[1.375rem]! font-[700]!">
+                {{- total|number_format(0, ',', ' ') }} {{ onglet_actif == 'biblio' ? 'médias' : 'résultat' ~ (total > 1 ? 's' : '') -}}
             </twig:Typography>
-            <div class="flex flex-wrap items-center gap-2">
-                <twig:Button variant="outline" size="sm" asLink href="{{ path('app_mdm_referentiel_general') }}">Ouvrir une fiche</twig:Button>
-                {% if is_granted('ROLE_ADMIN') %}
-                    <twig:Button variant="outline" size="sm" asLink href="{{ path('app_etl_import_index') }}">Import de fiches</twig:Button>
+            <span class="w-px h-4 shrink-0 bg-neutral-200"></span>
+            <div class="flex items-center gap-2 flex-wrap flex-1 min-w-0" aria-label="Files de l'onglet">
+                {% for cle, libelle in files %}
+                    <a href="{{ path('app_mdm_medias', { filter: cle }) }}"
+                       data-file="{{ cle }}"{{ filter == cle ? ' data-file-active' : '' }}
+                       class="px-3 py-1 rounded-lg {{ filter == cle ? pill_active : pill_repos }}">
+                        <twig:Typography variant="body-sm" bold
+                                         textColor="{{ filter == cle ? 'neutral-100' : 'primary-3' }}">{{ libelle }} ({{ attribute(stats, cle)|number_format(0, ',', ' ') }})</twig:Typography>
+                    </a>
+                {% endfor %}
+            </div>
+            {% if filter not in ['images', 'documents', 'failed', 'orphans', 'missing_renditions'] %}
+                <div class="flex items-center gap-2 flex-wrap shrink-0" aria-label="Filtrer par type de fiche">
+                    <a href="{{ path('app_mdm_medias', { filter: filter }) }}"
+                       class="px-3 py-1 rounded-lg {{ type is null ? pill_active : pill_repos }}">
+                        <twig:Typography variant="body-sm" bold textColor="{{ type is null ? 'neutral-100' : 'primary-3' }}">Tous</twig:Typography>
+                    </a>
+                    {% for candidate in types %}
+                        <a href="{{ path('app_mdm_medias', { filter: filter, type: candidate.value }) }}"
+                           class="px-3 py-1 rounded-lg {{ type == candidate.value ? pill_active : pill_repos }}">
+                            <twig:Typography variant="body-sm" bold textColor="{{ type == candidate.value ? 'neutral-100' : 'primary-3' }}">{{ candidate.value|replace({'_': ' '})|capitalize }}</twig:Typography>
+                        </a>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            {% if onglet_actif == 'biblio' %}
+                <span title="{{ a_venir }}" class="shrink-0 opacity-60">
+                    <twig:Typography variant="body-sm" bold textColor="primary-3">Import le plus récent</twig:Typography>
+                </span>
+            {% endif %}
+        </div>
+    {% endif %}
+
+    {# ------------------------------------------------- Tableau par onglet #}
+    {% if onglet_actif in ['biblio', 'droits', 'doublons', 'sync'] and items is defined %}
+        {% set statut_jetons = {
+            'processed': ['Traité', 'bg-success-pastel'],
+            'failed': ['En échec', 'bg-error-pastel'],
+            'processing': ['En traitement', 'bg-primary-4'],
+            'uploaded': ['Déposé', 'bg-primary-4'],
+        } %}
+        <div class="shrink-0 flex flex-col rounded-sm overflow-hidden bg-neutral-100 shadow-(--shadow)">
+
+            {% if onglet_actif == 'biblio' %}
+                {{ _self.entete([['Média'], ['Fiche'], ['Type'], ['Poids', 'text-right'], ['Statut'], ['', 'text-right']], grille) }}
+                <div class="flex flex-col">
+                    {% for item in items %}
+                        <div role="row" class="{{ grille }} w-full min-h-[56px] py-2 box-border hover:bg-primary-5
+                                               {{ loop.first ? '' : 'border-t border-neutral-200' }}">
+                            {{ _self.duo(item.asset.originalFilename, item.asset.kind.value == 'image' ? 'Image' : 'Document') }}
+                            {{ _self.txt(item.fiche_label ?: 'Aucune fiche', discret = true) }}
+                            {{ _self.txt(item.asset.mimeType, discret = true) }}
+                            {{ _self.txt(_self.poids(item.asset.sizeBytes), gras = true, aligne = 'text-right') }}
+                            {% set jeton = statut_jetons[item.asset.status.value]|default([item.asset.status.value, 'bg-neutral-200']) %}
+                            {{ _self.jeton(jeton.0, jeton.1) }}
+                            {{ _self.lien_cellule('Ouvrir la fiche', item.fiche_url) }}
+                        </div>
+                    {% endfor %}
+                </div>
+
+            {% elseif onglet_actif == 'droits' %}
+                {% if filter == 'published_no_photo' %}
+                    {{ _self.entete([['Fiche'], ['Problème'], ['', 'text-right']], grille) }}
+                    <div class="flex flex-col">
+                        {% for item in items %}
+                            <div role="row" class="{{ grille }} w-full min-h-[56px] py-2 box-border hover:bg-primary-5
+                                                   {{ loop.first ? '' : 'border-t border-neutral-200' }}">
+                                {{ _self.duo(item.fiche_label, item.fiche_type ? item.fiche_type|replace({'_': ' '})|capitalize : '') }}
+                                {{ _self.phrase_cellule('Cette fiche publiée n\'a aucune photo rattachée.', 'error') }}
+                                {{ _self.lien_cellule('Ouvrir la fiche', item.fiche_url) }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    {{ _self.entete([['Média'], ['Fiche'], ['Source'], ['Échéance', 'text-right'], ['', 'text-right']], grille) }}
+                    <div class="flex flex-col">
+                        {% for item in items %}
+                            <div role="row" class="{{ grille }} w-full min-h-[56px] py-2 box-border hover:bg-primary-5
+                                                   {{ loop.first ? '' : 'border-t border-neutral-200' }}">
+                                {{ _self.duo(item.resource.legende ?: (item.asset ? item.asset.originalFilename : item.resource.usage),
+                                    item.resource.keywords ?: '') }}
+                                {{ _self.txt(item.fiche_label ?: '—', discret = true) }}
+                                {{ _self.txt(item.resource.source ?: 'Non renseignée', discret = true) }}
+                                {{ _self.txt(item.resource.rightsExpiresAt ? item.resource.rightsExpiresAt|date('d/m/Y') : 'sans limite',
+                                    gras = true, aligne = 'text-right',
+                                    teinte = filter == 'rights_expired' or (filter == 'published_rights' and not item.resource.rightsGranted) ? 'error' : '') }}
+                                <span class="flex items-center justify-end gap-2 min-w-0 flex-wrap [&_form]:contents [&_button]:w-auto!">
+                                    {% if is_granted('ROLE_BP_VALIDATOR') and item.rights_form is defined %}
+                                        {{ form(item.rights_form) }}
+                                    {% elseif item.fiche_url %}
+                                        <a href="{{ item.fiche_url }}" class="flex items-center gap-1.5 hover:underline decoration-primary-3"
+                                           title="Corrigez l'échéance dans la fiche avant de valider les droits.">
+                                            <twig:Typography variant="body-sm" bold textColor="primary-3">Corriger sur la fiche</twig:Typography>
+                                            <twig:Icon name="arrow-right" aria-hidden="true" class="shrink-0 w-3 h-3 text-primary" />
+                                        </a>
+                                    {% endif %}
+                                </span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+            {% elseif onglet_actif == 'doublons' %}
+                {{ _self.entete([['Média'], ['Doublon de'], ['Similarité'], ['Décision proposée'], ['Actions', 'text-right']], grille) }}
+                <div class="flex flex-col">
+                    {% for item in items %}
+                        {% set exact = item.alert.kind.value == 'exact' %}
+                        <div role="row" class="{{ grille }} w-full min-h-[56px] py-2 box-border hover:bg-primary-5
+                                               {{ loop.first ? '' : 'border-t border-neutral-200' }}">
+                            <span class="flex flex-col min-w-0">
+                                <twig:Typography variant="body-sm" bold ellipsis>{{ item.asset.originalFilename }}</twig:Typography>
+                                {% if item.fiche_url %}
+                                    <a href="{{ item.fiche_url }}" class="hover:underline decoration-primary-3 min-w-0">
+                                        <twig:Typography variant="body-xs" bold textColor="primary-3" ellipsis>{{ item.fiche_label }}</twig:Typography>
+                                    </a>
+                                {% else %}
+                                    <twig:Typography variant="body-xs" textColor="neutral-400" ellipsis>Aucune fiche</twig:Typography>
+                                {% endif %}
+                            </span>
+                            <span class="flex flex-col min-w-0">
+                                <twig:Typography variant="body-sm" bold ellipsis>{{ item.reference.originalFilename }}</twig:Typography>
+                                {% if item.reference_fiche and item.reference_fiche.fiche_url %}
+                                    <a href="{{ item.reference_fiche.fiche_url }}" class="hover:underline decoration-primary-3 min-w-0">
+                                        <twig:Typography variant="body-xs" bold textColor="primary-3" ellipsis>{{ item.reference_fiche.fiche_label }}</twig:Typography>
+                                    </a>
+                                {% else %}
+                                    <twig:Typography variant="body-xs" textColor="neutral-400" ellipsis>Fiche d'origine indisponible</twig:Typography>
+                                {% endif %}
+                            </span>
+                            {{ _self.duo(exact ? 'Exacte' : 'Visuellement proche',
+                                item.alert.distance is not null ? 'distance ' ~ item.alert.distance : 'somme de contrôle identique') }}
+                            {{ _self.jeton(exact ? 'Supprimer la copie' : 'Vérifier à la main', exact ? 'bg-success-pastel' : 'bg-peach-pastel') }}
+                            <span class="flex items-center justify-end gap-2 min-w-0 flex-wrap [&_form]:contents [&_button]:w-auto!">
+                                {% if is_granted('ROLE_BP_VALIDATOR') %}
+                                    {{ form(item.accept_form) }}
+                                    {{ form(item.delete_form) }}
+                                {% else %}
+                                    <twig:Typography variant="body-sm" textColor="neutral-400">Arbitrage validateur</twig:Typography>
+                                {% endif %}
+                            </span>
+                        </div>
+                    {% endfor %}
+                </div>
+
+            {% elseif onglet_actif == 'sync' %}
+                {% if filter == 'failed' %}
+                    {{ _self.entete([['Média'], ['Erreur'], ['Déposé le'], ['', 'text-right']], grille) }}
+                    <div class="flex flex-col">
+                        {% for item in items %}
+                            <div role="row" class="{{ grille }} w-full min-h-[56px] py-2 box-border hover:bg-primary-5
+                                                   {{ loop.first ? '' : 'border-t border-neutral-200' }}">
+                                {{ _self.duo(item.asset.originalFilename, item.asset.mimeType) }}
+                                {{ _self.phrase_cellule(item.asset.errorMessage ?: 'Le traitement DAM a échoué.', 'error') }}
+                                {{ _self.txt(item.asset.createdAt|date('d/m/Y H:i'), discret = true) }}
+                                <span class="flex items-center justify-end min-w-0 [&_form]:contents [&_button]:w-auto!">
+                                    {{ form(item.retry_form) }}
+                                </span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    {{ _self.entete([['Fiche'], ['Référence média'], ['Anomalie'], ['Détectée le'], ['', 'text-right']], grille) }}
+                    <div class="flex flex-col">
+                        {% for item in items %}
+                            <div role="row" class="{{ grille }} w-full min-h-[56px] py-2 box-border hover:bg-primary-5
+                                                   {{ loop.first ? '' : 'border-t border-neutral-200' }}">
+                                {{ _self.duo(item.fiche_label, item.fiche_type ? item.fiche_type|replace({'_': ' '})|capitalize : '') }}
+                                {{ _self.txt(item.resource.damAssetId, discret = true) }}
+                                {{ _self.phrase_cellule(filter == 'orphans'
+                                    ? 'Le média associé est introuvable ou supprimé dans le DAM.'
+                                    : 'Le média est marqué « traité » mais des variantes d\'image manquent.', 'error') }}
+                                {{ _self.txt(item.anomaly.detectedAt|date('d/m/Y H:i'), discret = true) }}
+                                {{ _self.lien_cellule('Ouvrir la fiche', item.fiche_url) }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endif %}
+
+            {% if items is empty %}
+                <div class="flex items-center gap-3 px-4 min-h-[56px]">
+                    <twig:Icon name="ok-circle" aria-hidden="true" class="shrink-0 w-5 h-5 text-success" />
+                    <twig:Typography variant="body-sm" textColor="neutral-500">
+                        {{- onglet_actif == 'biblio' ? 'Aucun média dans cette catégorie.' : 'Aucune anomalie dans cette file.' -}}
+                    </twig:Typography>
+                </div>
+            {% endif %}
+
+            {# Pied : le réel affiché, et la navigation de page. #}
+            <div class="shrink-0 flex items-center gap-3 h-[50px] px-4 border-t border-neutral-200">
+                <twig:Typography variant="body-sm" textColor="neutral-500">
+                    {{- items|length }} affiché{{ items|length > 1 ? 's' : '' }} sur {{ total|number_format(0, ',', ' ') }} · page {{ page }} / {{ max(pages, 1) -}}
+                </twig:Typography>
+                <span class="flex-1"></span>
+                {% if page > 1 %}
+                    <twig:Button variant="text" size="sm" asLink class="inset-ring-1 inset-ring-neutral-200 rounded-full!"
+                                 href="{{ path('app_mdm_medias', { filter: filter, type: type, page: page - 1 }) }}">Précédent</twig:Button>
+                {% endif %}
+                {% if page < pages %}
+                    <twig:Button variant="text" size="sm" asLink class="inset-ring-1 inset-ring-neutral-200 rounded-full!"
+                                 href="{{ path('app_mdm_medias', { filter: filter, type: type, page: page + 1 }) }}">Suivant</twig:Button>
                 {% endif %}
             </div>
-        </section>
+        </div>
+    {% endif %}
+
+    {# ------------------------------------------------- Onglets descriptifs : le réel, tableau maquette #}
+    {% if onglet_actif == 'import' %}
+        <div class="shrink-0 flex flex-col rounded-sm overflow-hidden bg-neutral-100 shadow-(--shadow)">
+            {{ _self.entete([['Outil'], ['Ce qu\'il fait'], ['Mode'], ['', 'text-right']], grille) }}
+            <div class="flex flex-col">
+                {% for outil in [
+                    ['Dépôt de photos et documents', 'Depuis la galerie de la fiche ; les variantes sont générées automatiquement.', 'Non destructif'],
+                    ['Recadrage', 'Ratios libres ou imposés par canal, sur la photo de la fiche.', 'Non destructif'],
+                    ['Rotation', 'Par quarts de tour, depuis la galerie.', 'Non destructif'],
+                    ['Remplacement', 'Un nouveau fichier remplace l\'ancien, l\'historique de la fiche le trace.', 'Non destructif'],
+                ] %}
+                    <div role="row" class="{{ grille }} w-full min-h-[56px] py-2 box-border hover:bg-primary-5
+                                           {{ loop.first ? '' : 'border-t border-neutral-200' }}">
+                        {{ _self.txt(outil.0, gras = true) }}
+                        {{ _self.phrase_cellule(outil.1) }}
+                        {{ _self.jeton(outil.2, 'bg-success-pastel') }}
+                        {{ _self.lien_cellule('Ouvrir une fiche', path('app_mdm_referentiel_general')) }}
+                    </div>
+                {% endfor %}
+            </div>
+            <div class="shrink-0 flex items-center h-[50px] px-4 border-t border-neutral-200">
+                <twig:Typography variant="body-sm" textColor="neutral-500">4 outils · l'original est conservé, chaque retouche régénère les variantes</twig:Typography>
+            </div>
+        </div>
+        <div title="{{ a_venir }}" class="shrink-0 {{ carte }} opacity-60">
+            <div class="flex items-center gap-3">
+                <twig:Icon name="upload-simple" aria-hidden="true" class="shrink-0 w-6 h-6 text-neutral-400" />
+                <twig:Typography variant="subtitle" class="flex-1 min-w-0 text-[1.125rem]! leading-[1.625rem]! font-[700]!">Glisser-déposer en masse</twig:Typography>
+                <span class="inline-flex shrink-0"><twig:Tag label="À venir" variant="neutral" size="sm" /></span>
+            </div>
+            <twig:Typography variant="body" textColor="neutral-500" class="text-pretty">Déposer des fichiers
+                directement dans la bibliothèque, hors de toute fiche, avec classement automatique à l'import.</twig:Typography>
+        </div>
     {% elseif onglet_actif == 'ia' %}
-        <section class="shrink-0 flex flex-col gap-3 p-6 rounded-[20px] bg-neutral-100 shadow-(--shadow)">
-            <twig:Typography variant="heading-3" element="h2" bold>Reconnaissance IA</twig:Typography>
-            <twig:Typography variant="body-sm" textColor="neutral-500">
-                Le back détecte aujourd'hui les doublons visuels par empreinte perceptuelle (onglet Doublons). La reconnaissance du contenu à l'import (sujets, qualité, conformité) n'est pas encore branchée — écran à compléter avec le mécanisme.
-            </twig:Typography>
-        </section>
+        <div class="shrink-0 flex flex-col rounded-sm overflow-hidden bg-neutral-100 shadow-(--shadow)">
+            {{ _self.entete([['Traitement'], ['Ce qu\'il fait'], ['Déclenchement'], ['', 'text-right']], grille) }}
+            <div class="flex flex-col">
+                <div role="row" class="{{ grille }} w-full min-h-[56px] py-2 box-border hover:bg-primary-5">
+                    {{ _self.txt('Détection de doublons', gras = true) }}
+                    {{ _self.phrase_cellule('Empreinte perceptuelle : les images identiques ou proches sont signalées, même renommées.') }}
+                    {{ _self.jeton('À l\'import', 'bg-primary-4') }}
+                    {{ _self.lien_cellule('Ouvrir les doublons', path('app_mdm_medias', { onglet: 'doublons' })) }}
+                </div>
+                <div role="row" class="{{ grille }} w-full min-h-[56px] py-2 box-border hover:bg-primary-5 border-t border-neutral-200">
+                    {{ _self.txt('Extraction de texte (OCR)', gras = true) }}
+                    {{ _self.phrase_cellule('Le contenu d\'un document est extrait pour pré-remplir la fiche, avec validation humaine.') }}
+                    {{ _self.jeton('Depuis la fiche', 'bg-primary-4') }}
+                    {{ _self.lien_cellule('Ouvrir une fiche', path('app_mdm_referentiel_general')) }}
+                </div>
+                {% for futur in [
+                    ['Classification par type', 'Reconnaître le sujet d\'une image (façade, chambre, salle) pour la classer.'],
+                    ['Tagging des métadonnées', 'Proposer tags et mots-clés à l\'import, à valider en lot.'],
+                ] %}
+                    <div role="row" title="{{ a_venir }}"
+                         class="{{ grille }} w-full min-h-[56px] py-2 box-border border-t border-neutral-200 opacity-60">
+                        {{ _self.txt(futur.0, gras = true) }}
+                        {{ _self.phrase_cellule(futur.1) }}
+                        {{ _self.jeton('À venir', 'bg-neutral-200') }}
+                        <span></span>
+                    </div>
+                {% endfor %}
+            </div>
+            <div class="shrink-0 flex items-center h-[50px] px-4 border-t border-neutral-200">
+                <twig:Typography variant="body-sm" textColor="neutral-500">2 traitements actifs · aucune écriture sans validation humaine</twig:Typography>
+            </div>
+        </div>
     {% elseif onglet_actif == 'meta' %}
-        <section class="shrink-0 flex flex-col gap-3 p-6 rounded-[20px] bg-neutral-100 shadow-(--shadow)">
-            <twig:Typography variant="heading-3" element="h2" bold>Métadonnées & types</twig:Typography>
-            <twig:Typography variant="body-sm" textColor="neutral-500">
-                Chaque ressource porte sa nature (photo, document, vidéo), son usage, sa légende, ses mots-clés, son recadrage et ses droits (accordés par qui, jusqu'à quand). Les documents ont en plus un statut de publication vers le stockage public. La saisie se fait sur la fiche, dans la gestion des médias.
-            </twig:Typography>
-        </section>
+        <div class="shrink-0 flex flex-col rounded-sm overflow-hidden bg-neutral-100 shadow-(--shadow)">
+            {{ _self.entete([['Métadonnée'], ['Ce qu\'elle porte'], ['Où la saisir']], grille) }}
+            <div class="flex flex-col">
+                {% for champ in [
+                    ['Nature', 'Photo, document ou vidéo — décide de ce que le DAM sait en faire.', 'À l\'import'],
+                    ['Usage', 'Le rôle du média sur la fiche : principale, galerie, plan, brochure…', 'Sur la fiche'],
+                    ['Légende', 'Le texte affiché avec le média sur les canaux.', 'Sur la fiche'],
+                    ['Mots-clés', 'Indexés pour la recherche : « terrasse été » retrouve les visuels tagués ainsi.', 'Sur la fiche'],
+                    ['Droits d\'usage', 'Accordés par qui, jusqu\'à quand — conditionnent la diffusion.', 'Sur la fiche'],
+                    ['Publication', 'Pour les documents : la mise à disposition sur le stockage public.', 'Sur la fiche'],
+                ] %}
+                    <div role="row" class="{{ grille }} w-full min-h-[56px] py-2 box-border hover:bg-primary-5
+                                           {{ loop.first ? '' : 'border-t border-neutral-200' }}">
+                        {{ _self.txt(champ.0, gras = true) }}
+                        {{ _self.phrase_cellule(champ.1) }}
+                        {{ _self.jeton(champ.2, 'bg-primary-4') }}
+                    </div>
+                {% endfor %}
+            </div>
+            <div class="shrink-0 flex items-center h-[50px] px-4 border-t border-neutral-200">
+                <twig:Typography variant="body-sm" textColor="neutral-500">6 métadonnées par média · toutes indexées pour la recherche</twig:Typography>
+            </div>
+        </div>
+    {% elseif onglet_actif == 'formats' %}
+        {% if manquantes > 0 %}
+            <div class="shrink-0 flex flex-row gap-4 flex-wrap">
+                <a href="{{ path('app_mdm_medias', { filter: 'missing_renditions' }) }}"
+                   class="{{ carte }} flex-1 basis-80 min-w-0 text-left cursor-pointer hover:bg-primary-5">
+                    {{ _self.carte_contenu('warning', _self.nombre(manquantes) ~ ' déclinaisons manquantes', _self.nombre(manquantes), true,
+                        'Des médias traités n\'ont pas toutes leurs variantes : les canaux qui les demandent restent bloqués.',
+                        'Voir les anomalies') }}
+                </a>
+            </div>
+        {% endif %}
+        <div class="shrink-0 flex flex-col rounded-sm overflow-hidden bg-neutral-100 shadow-(--shadow)">
+            {{ _self.entete([['Format'], ['Dimensions cibles'], ['Fichiers générés', 'text-right'], ['Volume', 'text-right']], grille) }}
+            <div class="flex flex-col">
+                {% for nom, taille in variantes %}
+                    {% set stat = formats|filter(f => f.name == nom)|first %}
+                    <div role="row" class="{{ grille }} w-full min-h-[56px] py-2 box-border hover:bg-primary-5
+                                           {{ loop.first ? '' : 'border-t border-neutral-200' }}">
+                        {{ _self.txt(nom|capitalize, gras = true) }}
+                        {{ _self.txt(taille.width ~ ' × ' ~ taille.height, discret = true) }}
+                        {{ _self.txt(stat ? _self.nombre(stat.nb) : '0', gras = true, aligne = 'text-right') }}
+                        {{ _self.txt(stat ? _self.poids(stat.octets) : '—', gras = true, aligne = 'text-right') }}
+                    </div>
+                {% endfor %}
+            </div>
+            <div class="shrink-0 flex items-center h-[50px] px-4 border-t border-neutral-200">
+                <twig:Typography variant="body-sm" textColor="neutral-500">{{ variantes|length }} formats par image · servis par le CDN public avec cache long</twig:Typography>
+            </div>
+        </div>
+    {% endif %}
+
+    {# ------------------------------------------------- Barre du bas (bibliothèque) #}
+    {% if onglet_actif == 'biblio' %}
+        <div class="shrink-0 flex items-center gap-4 flex-wrap px-6 py-4 rounded-sm bg-primary-4 inset-ring-1 inset-ring-primary">
+            <twig:Icon name="info-circle" aria-hidden="true" class="shrink-0 w-5 h-5 text-primary" />
+            <twig:Typography variant="body-sm" textColor="neutral-500" class="flex-1 min-w-[280px] text-pretty">
+                Chaque image traitée existe en {{ variantes|length }} déclinaisons, servies par le CDN public.
+                Les médias sans droits déclarés sont exclus de toute diffusion.</twig:Typography>
+            <div class="flex items-center gap-2 shrink-0">
+                <span title="{{ a_venir }}" class="inline-flex"><twig:Button variant="outline" size="sm" disabled class="opacity-60">Choisir la déclinaison</twig:Button></span>
+                <span title="{{ a_venir }}" class="inline-flex"><twig:Button variant="primary" size="sm" disabled class="opacity-60">Télécharger</twig:Button></span>
+            </div>
+        </div>
     {% endif %}
     </div>
 </main>

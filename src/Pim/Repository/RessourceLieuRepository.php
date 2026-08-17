@@ -185,6 +185,17 @@ final class RessourceLieuRepository extends ServiceEntityRepository
                     '+%d days',
                     $this->parametres->int('dam.delai_alerte_droits_jours'),
                 )));
+        } elseif (RightsValidityStatus::Unlimited === $status) {
+            $builder->where('resource.rightsGranted = true')
+                ->andWhere('resource.rightsExpiresAt IS NULL');
+        } elseif (RightsValidityStatus::Valid === $status) {
+            // Au-delà de la fenêtre d'alerte : valides sans être « à échéance ».
+            $builder->where('resource.rightsGranted = true')
+                ->andWhere('resource.rightsExpiresAt > :limitDate')
+                ->setParameter('limitDate', $today->modify(sprintf(
+                    '+%d days',
+                    $this->parametres->int('dam.delai_alerte_droits_jours'),
+                )));
         } else {
             throw new \InvalidArgumentException('Statut de droits non pris en charge par le dashboard.');
         }

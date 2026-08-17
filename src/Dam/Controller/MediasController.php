@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace App\Dam\Controller;
 
+use App\Dam\Enum\DamAnomalyType;
+use App\Dam\Enum\RightsValidityStatus;
 use App\Dam\Message\ScanDamAnomalies;
+use App\Dam\Repository\DamAnomalyRepository;
 use App\Dam\Repository\MediaAssetRepository;
 use App\Dam\Service\DamDashboardProvider;
 use App\Dam\Service\ImageVariantRegistry;
+use App\Pim\Repository\RessourceLieuRepository;
 use App\Shared\Form\ActionType;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -63,6 +67,8 @@ final class MediasController extends AbstractController
         Request $request,
         DamDashboardProvider $provider,
         MediaAssetRepository $assets,
+        RessourceLieuRepository $resources,
+        DamAnomalyRepository $anomalies,
     ): Response {
         $filtre = $request->query->getString('filter');
         $onglet = $request->query->getString('onglet');
@@ -74,19 +80,29 @@ final class MediasController extends AbstractController
         if (!array_key_exists($onglet, self::ONGLETS)) {
             $onglet = 'biblio';
         }
-        $vue = null;
-        if (isset(self::FILTRE_PAR_DEFAUT[$onglet])) {
-            $vue = $provider->page(
-                '' !== $filtre ? $filtre : self::FILTRE_PAR_DEFAUT[$onglet],
-                $request->query->getString('type') ?: null,
-                $request->query->getInt('page', 1),
-            );
+        // Les stats alimentent les badges du rail sur tous les onglets ; les
+        // items ne sont parcourus que par les onglets qui ont une file.
+        $vue = $provider->page(
+            '' !== $filtre ? $filtre : (self::FILTRE_PAR_DEFAUT[$onglet] ?? DamDashboardProvider::FILTER_IMAGES),
+            $request->query->getString('type') ?: null,
+            $request->query->getInt('page', 1),
+        );
+
+        // Répartition réelle des régimes de droits — le bloc santé de l'onglet.
+        $regimes = [];
+        if ('droits' === $onglet) {
+            foreach (RightsValidityStatus::cases() as $status) {
+                $regimes[$status->value] = $resources->countByRightsStatus($status);
+            }
         }
 
         return $this->render('dam/medias.html.twig', [
             'onglets' => self::ONGLETS,
             'onglet_actif' => $onglet,
             'vue' => $vue,
+            'stockage' => 'biblio' === $onglet ? $assets->storageStats() : null,
+            'regimes' => $regimes,
+            'manquantes' => 'formats' === $onglet ? $anomalies->countOpen(DamAnomalyType::MissingRenditions) : 0,
             'formats' => 'formats' === $onglet ? $assets->renditionStats() : [],
             'variantes' => ImageVariantRegistry::all(),
             'scan_form' => 'sync' === $onglet

@@ -169,6 +169,23 @@ final class MediaAssetRepository extends ServiceEntityRepository
             ->getSingleScalarResult();
     }
 
+    /**
+     * Nombre et poids cumulé des médias actifs — l'indicateur « Stockage ».
+     *
+     * @return array{nb: int, octets: int}
+     */
+    public function storageStats(): array
+    {
+        $row = $this->createQueryBuilder('media')
+            ->select('COUNT(media.id) AS nb', 'COALESCE(SUM(media.sizeBytes), 0) AS octets')
+            ->where('media.status NOT IN (:deleted)')
+            ->setParameter('deleted', [MediaStatus::Deleting, MediaStatus::Deleted])
+            ->getQuery()
+            ->getSingleResult();
+
+        return ['nb' => (int) $row['nb'], 'octets' => (int) $row['octets']];
+    }
+
     public function countActiveByKind(MediaKind $kind): int
     {
         return (int) $this->createQueryBuilder('media')
