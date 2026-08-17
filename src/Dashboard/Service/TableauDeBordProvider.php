@@ -110,11 +110,12 @@ final readonly class TableauDeBordProvider
             ],
             [
                 'id' => 'ia',
-                'libelle' => 'Valeurs IA à arbitrer',
-                'detail' => 'Suggestions d\'extraction en attente',
+                'libelle' => 'Suggestions à arbitrer',
+                'detail' => 'Valeurs IA, BAN et Geoapify en attente',
                 'volume' => $comptes['ia'],
                 'severite' => $this->severite('ia', $comptes['ia']),
-                'url' => $this->urls->generate('app_mdm_referentiel_general', ['f' => ['ia' => '1']]),
+                // L'onglet Conflits de Qualité porte les deux flux (IA + adresses).
+                'url' => $this->urls->generate('app_mdm_qualite', ['onglet' => 'conflits']),
             ],
             [
                 'id' => 'repli',

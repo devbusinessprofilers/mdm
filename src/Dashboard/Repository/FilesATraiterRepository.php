@@ -36,11 +36,17 @@ final readonly class FilesATraiterRepository
                     + (SELECT COUNT(*) FROM etl_fiche_marketplace WHERE status = 'failed')
                     + (SELECT COUNT(*) FROM outbox_message WHERE status = 'failed')",
             ),
+            // Tout ce qui attend un arbitrage humain : suggestions IA (OCR)
+            // ET écarts d'adresse (BAN / Geoapify).
             'ia' => (int) $this->connection->fetchOne(
-                'SELECT COUNT(DISTINCT ext.fiche_id)
-                 FROM ocr_document_extraction ext
-                 INNER JOIN ocr_suggestion sug ON sug.extraction_id = ext.id
-                 WHERE sug.status = \'pending\'',
+                "SELECT COUNT(*) FROM pim_fiche f
+                 WHERE EXISTS (
+                        SELECT 1 FROM ocr_document_extraction ext
+                        INNER JOIN ocr_suggestion sug ON sug.extraction_id = ext.id
+                        WHERE ext.fiche_id = f.id AND sug.status = 'pending')
+                    OR EXISTS (
+                        SELECT 1 FROM pim_localisation loc
+                        WHERE loc.id = f.localisation_id AND loc.ban_ecart = 1)",
             ),
             'repli' => (int) $this->connection->fetchOne(
                 'SELECT COUNT(DISTINCT fiche_id) FROM pim_fiche_affiliation WHERE repli = 1',

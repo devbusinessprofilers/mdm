@@ -26,7 +26,9 @@
 } %}
 {% set croisement_pays = countryRows is defined and countryRows is not empty and countryRows[0].completeness is defined
     ? countryRows|slice(0, 6) : [] %}
-{% set grille_croisement = 'grid grid-cols-[minmax(132px,1.5fr)_repeat(' ~ (croisement_pays|length + 1) ~ ',minmax(70px,1fr))] gap-1.5' %}
+{# Lignes = pays (le sens du back), colonnes = les 4 gammes + Total.
+   `typeLabels` n'existe pas tant qu'aucun snapshot n'a été calculé. #}
+{% set grille_croisement = 'grid grid-cols-[minmax(132px,1.5fr)_repeat(' ~ (typeLabels|default([])|length + 1) ~ ',minmax(84px,1fr))] gap-1.5' %}
 {% set grille_activite = 'grid grid-cols-[minmax(150px,1.6fr)_minmax(64px,0.7fr)_minmax(72px,0.8fr)_minmax(72px,0.8fr)_minmax(72px,0.8fr)_minmax(150px,1.7fr)] gap-3' %}
 
 {% set files_total = files|reduce((somme, f) => somme + f.volume, 0) %}
@@ -174,6 +176,8 @@
         </div>
     {% else %}
         <div class="flex flex-row gap-3.5">
+            {# Files de la maquette sans compteur back : visibles mais désactivées. #}
+            {{ _self.fileAVenir('identification-card', 'Demandes de référencement', 'Candidatures prestataires à instruire') }}
             {% for file in files %}
                 {% set chaude = 'critique' == file.severite %}
                 {% set tiede = 'attention' == file.severite %}
@@ -203,9 +207,26 @@
                         {% if accessible %}<twig:Icon name="arrow-right" aria-hidden="true" class="shrink-0 w-3 h-3 text-primary" />{% endif %}
                     </div>
                 </a>
+                {% if 'repli' == file.id %}
+                    {{ _self.fileAVenir('lock', 'Accès à transmettre', 'Accès extranet non envoyés') }}
+                {% endif %}
             {% endfor %}
         </div>
     {% endif %}
+{% endmacro %}
+
+{# Carte de file sans donnée back : grisée, avec l'infobulle « à venir ». #}
+{% macro fileAVenir(icone, libelle, detail) %}
+    <div title="Fonction à venir — en développement"
+         class="flex flex-col flex-1 min-w-0 items-stretch gap-1.5 box-border px-5 py-[18px]
+                rounded-[20px] text-left bg-neutral-100 shadow-(--shadow) opacity-60">
+        <div class="flex items-center justify-between gap-2">
+            <twig:Icon name="{{ icone }}" aria-hidden="true" class="shrink-0 w-5 h-5 text-neutral-400" />
+        </div>
+        <twig:Typography variant="heading-2" textColor="neutral-400" class="font-[700]!">—</twig:Typography>
+        <twig:Typography variant="body-sm" bold textColor="neutral-500" class="text-pretty">{{ libelle }}</twig:Typography>
+        <twig:Typography variant="body-xs" textColor="neutral-400">{{ detail }}</twig:Typography>
+    </div>
 {% endmacro %}
 
 
@@ -290,47 +311,30 @@
                 {% else %}
                     <div class="rounded-sm overflow-hidden inset-ring-1 inset-ring-neutral-200">
                         <div class="{{ grille_croisement }} {{ entete_table }}" role="row">
-                            {{ _self.colonne('Gamme', 'text-left') }}
-                            {% for ligne in croisement_pays %}
-                                {{ _self.colonne(ligne.pays, 'text-center') }}
+                            {{ _self.colonne('Pays', 'text-left') }}
+                            {% for typeValue, label in c.typeLabels %}
+                                {{ _self.colonne(label, 'text-center') }}
                             {% endfor %}
                             {{ _self.colonne('Total', 'text-center') }}
                         </div>
 
-                        {% for typeValue, label in c.typeLabels %}
+                        {% for ligne in croisement_pays %}
                             <div class="{{ grille_croisement }} h-11 px-4 {{ loop.first ? '' : 'border-t border-neutral-200' }}" role="row">
-                                <twig:Typography variant="body-sm" bold ellipsis class="min-w-0 self-center">{{ label }}</twig:Typography>
-                                {% set total_type = 0 %}
-                                {% for ligne in croisement_pays %}
+                                <twig:Typography variant="body-sm" bold ellipsis class="min-w-0 self-center">{{ ligne.pays }}</twig:Typography>
+                                {% for typeValue, label in c.typeLabels %}
                                     {% if c.croisement == 'completude' %}
                                         {{ _self.cellulePct(ligne.completeness[typeValue] ?? null, paliers) }}
                                     {% else %}
-                                        {% set valeur = ligne.published[typeValue] ?? 0 %}
-                                        {% set total_type = total_type + valeur %}
-                                        {{ _self.celluleNombre(valeur) }}
+                                        {{ _self.celluleNombre(ligne.published[typeValue] ?? 0) }}
                                     {% endif %}
                                 {% endfor %}
-                                {% if c.croisement == 'completude' %}
-                                    {{ _self.celluleTexte('—', paliers['total']) }}
-                                {% else %}
-                                    {{ _self.celluleTexte(total_type, paliers['total']) }}
-                                {% endif %}
+                                {{ _self.celluleTexte(ligne.total, paliers['total']) }}
                             </div>
                         {% endfor %}
-
-                        <div class="{{ grille_croisement }} h-11 px-4 border-t border-neutral-200 bg-primary-5" role="row">
-                            <twig:Typography variant="body-sm" bold textColor="primary-3" class="self-center">Total</twig:Typography>
-                            {% set grand_total = 0 %}
-                            {% for ligne in croisement_pays %}
-                                {% set grand_total = grand_total + ligne.total %}
-                                {{ _self.celluleTexte(ligne.total, paliers['total']) }}
-                            {% endfor %}
-                            {{ _self.celluleTexte(grand_total, paliers['grand'], true) }}
-                        </div>
                     </div>
                     <div class="flex items-center gap-2.5">
                         <twig:Icon name="info-circle" aria-hidden="true" class="shrink-0 w-3.5 h-3.5 text-neutral-400" />
-                        <twig:Typography variant="body-xs" textColor="neutral-400">Pays les plus représentés du référentiel ; complétude moyenne ou fiches publiées selon la bascule.</twig:Typography>
+                        <twig:Typography variant="body-xs" textColor="neutral-400">Les 6 pays les plus représentés ; complétude moyenne ou fiches publiées par gamme selon la bascule.</twig:Typography>
                     </div>
                 {% endif %}
             </div>
