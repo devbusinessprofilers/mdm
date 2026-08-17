@@ -117,11 +117,12 @@
             Stimulus et de l'URL, que tom-select transforme côté JS. -#}
         {{- parent() -}}
     {%- else -%}
-        {#- Un select multiple soumet un tableau : son `name` doit porter `[]`,
-            sinon la valeur arrive en scalaire et la contrainte de choix échoue. -#}
+        {#- Un select multiple soumet un tableau : son `name` doit porter `[]` —
+            que Symfony fournit déjà sur un ChoiceType multiple replié, d'où le
+            garde contre le doublon `[][]`. -#}
         <twig:Form:Select
             id="{{ id }}"
-            name="{{ full_name }}{{ multiple ? '[]' : '' }}"
+            name="{{ full_name }}{{ multiple and not (full_name ends with '[]') ? '[]' : '' }}"
             :choices="choices"
             :value="value"
             :multiple="multiple"
