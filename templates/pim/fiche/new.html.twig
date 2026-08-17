@@ -16,8 +16,23 @@
         </twig:Typography>
     </div>
 
-    <div data-controller="fiche-creation" class="flex flex-col gap-5">
-        {{ form_start(form) }}
+    <div data-controller="fiche-creation" class="relative flex flex-col gap-5">
+        {# Voile de création (maquette) : posé à la soumission, le temps que le
+           serveur crée la fiche et redirige. Écart : pas de fil d'étapes — la
+           création est synchrone. #}
+        <div class="absolute inset-0 z-6 grid place-items-center bg-neutral-200/55"
+             data-fiche-creation-target="voile" hidden role="status" aria-live="polite">
+            <div class="w-[min(420px,calc(100vw-48px))] box-border flex flex-col items-center gap-3.5
+                        px-[34px] py-7 rounded-[20px] bg-neutral-100 shadow-[0_8px_24px_rgba(51,38,174,0.16)]">
+                <twig:Icon name="spinner" class="w-[34px] h-[34px] text-primary animate-spin" />
+                <twig:Typography variant="heading-3" bold>Création de la fiche</twig:Typography>
+                <twig:Typography variant="body-sm" textColor="neutral-500" center class="text-pretty">
+                    Pré-remplissage et contrôle des doublons en cours — vous serez redirigé vers la fiche.
+                </twig:Typography>
+            </div>
+        </div>
+
+        {{ form_start(form, { attr: { 'data-action': 'submit->fiche-creation#patienter' } }) }}
             {% if duplicates is not empty %}
                 <section class="flex flex-col gap-3 p-6 rounded-[20px] bg-old-gold-pastel inset-ring-1 inset-ring-old-gold">
                     <twig:Typography variant="heading-3" element="h2" bold>⚠ Doublons potentiels</twig:Typography>

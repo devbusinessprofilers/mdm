@@ -7,7 +7,14 @@ import { Controller } from '@hotwired/stimulus';
  * rester cohérents avec la neutralisation côté serveur.
  */
 export default class extends Controller {
-    static targets = ['type', 'section'];
+    static targets = ['type', 'section', 'voile'];
+
+    /* Voile de la maquette : posé au départ du POST de création. */
+    patienter() {
+        if (this.hasVoileTarget) {
+            this.voileTarget.hidden = false;
+        }
+    }
 
     connect() {
         this.refresh();
