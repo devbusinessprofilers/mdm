@@ -49,7 +49,7 @@ final class MediasSousOngletsTest extends WebTestCase
 
         $crawler = $client->request('GET', '/medias', ['onglet' => 'droits']);
         self::assertResponseIsSuccessful();
-        $cartes = $crawler->filter('.dam-stats a.dam-stat');
+        $cartes = $crawler->filter('a[data-carte-anomalie]');
         self::assertSame(9, $cartes->count(), 'Les neuf cartes d\'anomalies doivent être présentes.');
 
         foreach ($cartes as $carte) {
@@ -57,14 +57,14 @@ final class MediasSousOngletsTest extends WebTestCase
                 self::fail('Chaque carte doit être un élément DOM.');
             }
             $href = (string) $carte->getAttribute('href');
+            $cle = (string) $carte->getAttribute('data-carte-anomalie');
             self::assertStringContainsString('/medias?filter=', $href, 'Les cartes doivent rester sur /medias avec un paramètre filter.');
-            $libelle = trim((string) $carte->getElementsByTagName('span')->item(0)?->textContent);
             $suivant = $client->request('GET', $href);
             self::assertResponseIsSuccessful($href);
             self::assertSame(
-                $libelle,
-                trim($suivant->filter('.dam-stat-active span')->text('')),
-                sprintf('La carte « %s » doit devenir active après le clic.', $libelle),
+                $cle,
+                $suivant->filter('a[data-carte-active]')->attr('data-carte-anomalie'),
+                sprintf('La carte « %s » doit devenir active après le clic.', $cle),
             );
         }
     }

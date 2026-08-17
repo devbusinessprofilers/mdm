@@ -1,156 +1,232 @@
-{% set ecran_route = ecran_route|default('app_dam_dashboard') %}
-    {% set media_tab = filter == 'images' or filter == 'documents' %}
-    <nav class="dam-type-filters dam-tabs" aria-label="Sections du DAM">
-        <a class="btn {{ media_tab ? 'btn-secondary' : '' }}" href="{{ path(ecran_route) }}">Anomalies</a>
-        <a class="btn {{ filter == 'images' ? '' : 'btn-secondary' }}" href="{{ path(ecran_route, {filter: 'images'}) }}">Images ({{ stats.images }})</a>
-        <a class="btn {{ filter == 'documents' ? '' : 'btn-secondary' }}" href="{{ path(ecran_route, {filter: 'documents'}) }}">Autres médias ({{ stats.documents }})</a>
-    </nav>
+{#
+    Contenu du DAM (écran Médias et supervision admin) — châssis maquette :
+    cartes d'anomalies cliquables, barre filtres/résultat, liste des médias en
+    cartes à vignette, pied de pagination. Toutes les fonctions du back sont
+    conservées : arbitrage des doublons, validation des droits, relance des
+    traitements, navigation par type de fiche.
 
-    {% if not media_tab %}
-    <section class="dam-stats" aria-label="Anomalies DAM">
-        {% set cards = {
-            duplicates: ['Doublons', stats.duplicates],
-            rights_missing: ['Droits non validés', stats.rights_missing],
-            rights_expiring: ['Droits à J-30', stats.rights_expiring],
-            rights_expired: ['Droits expirés', stats.rights_expired],
-            failed: ['Traitements en échec', stats.failed],
-            published_no_photo: ['Publiées sans photo', stats.published_no_photo],
-            published_rights: ['Droits invalides (publiées)', stats.published_rights],
-            orphans: ['Ressources orphelines', stats.orphans],
-            missing_renditions: ['Variantes manquantes', stats.missing_renditions]
-        } %}
-        {% for key, card in cards %}
-            <a class="card dam-stat {{ filter == key ? 'dam-stat-active' : '' }}" href="{{ path(ecran_route, {filter: key, type: type}) }}">
-                <span>{{ card[0] }}</span><strong>{{ card[1] }}</strong>
+    Variables : celles de DamDashboardProvider::page() (stats, items, filter,
+    type, types, total, page, pages) + `ecran_route`.
+#}
+{% set ecran_route = ecran_route|default('app_dam_dashboard') %}
+{% set media_tab = filter == 'images' or filter == 'documents' %}
+{% set cartes_anomalies = {
+    duplicates: ['Doublons', 'cube', 'Images identiques ou visuellement proches, à arbitrer.'],
+    rights_missing: ['Droits non validés', 'lock', 'Sans droits déclarés, le média ne part sur aucun canal.'],
+    rights_expiring: ['Droits à J-30', 'calendar', 'Les droits arrivent à échéance sous trente jours.'],
+    rights_expired: ['Droits expirés', 'warning', 'L\'échéance est passée : diffusion à suspendre.'],
+    failed: ['Traitements en échec', 'arrow-clockwise', 'La chaîne de traitement s\'est arrêtée — relançable.'],
+    published_no_photo: ['Publiées sans photo', 'images', 'Des fiches publiées n\'ont aucune photo rattachée.'],
+    published_rights: ['Droits invalides (publiées)', 'shield-check', 'Des fiches publiées portent des droits absents ou expirés.'],
+    orphans: ['Ressources orphelines', 'magnifying-glass', 'La ressource pointe un média introuvable dans le DAM.'],
+    missing_renditions: ['Variantes manquantes', 'desktop', 'Le média est traité mais des déclinaisons manquent.'],
+} %}
+
+{# ------------------------------------------------- Cartes d'anomalies #}
+{% if not media_tab %}
+    <div class="shrink-0 flex flex-row gap-4 flex-wrap" aria-label="Anomalies DAM">
+        {% for cle, carte in cartes_anomalies %}
+            {% set valeur = attribute(stats, cle) %}
+            <a href="{{ path(ecran_route, { filter: cle, type: type }) }}"
+               data-carte-anomalie="{{ cle }}"{{ filter == cle ? ' data-carte-active' : '' }}
+               class="flex flex-col box-border gap-2 px-5 py-4 rounded-md bg-neutral-100 shadow-(--shadow)
+                      flex-1 basis-64 min-w-0 text-left hover:bg-primary-5
+                      {{ filter == cle ? 'inset-ring-2 inset-ring-primary' : '' }}">
+                <div class="flex items-center gap-3">
+                    <twig:Icon name="{{ carte.1 }}" aria-hidden="true"
+                               class="shrink-0 w-5 h-5 {{ valeur > 0 ? 'text-error' : 'text-primary' }}" />
+                    <twig:Typography variant="body-sm" bold ellipsis class="flex-1 min-w-0">{{ carte.0 }}</twig:Typography>
+                    <span class="inline-flex shrink-0"><twig:Tag label="{{ valeur }}" size="sm"
+                              variant="{{ valeur > 0 ? 'error' : 'success-pastel' }}" class="whitespace-nowrap" /></span>
+                </div>
+                <twig:Typography variant="body-xs" textColor="neutral-500" class="text-pretty">{{ carte.2 }}</twig:Typography>
             </a>
         {% endfor %}
-    </section>
-    {% endif %}
+    </div>
+{% endif %}
 
-    <section class="card dam-toolbar">
-        {% if filter not in ['failed', 'orphans', 'missing_renditions'] and not media_tab %}
-            <nav class="dam-type-filters" aria-label="Filtrer par type de fiche">
-                <a class="btn {{ type is null ? '' : 'btn-secondary' }}" href="{{ path(ecran_route, {filter: filter}) }}">Tous</a>
-                {% for candidate in types %}
-                    <a class="btn {{ type == candidate.value ? '' : 'btn-secondary' }}" href="{{ path(ecran_route, {filter: filter, type: candidate.value}) }}">{{ candidate.value|replace({'_': ' '})|capitalize }}</a>
-                {% endfor %}
-            </nav>
+{# ------------------------------------------------- Filtres et résultat #}
+{% set filtre_libelles = {
+    'images': 'Images', 'documents': 'Autres médias',
+    'duplicates': 'Doublons', 'rights_missing': 'Droits non validés', 'rights_expiring': 'Droits à J-30',
+    'rights_expired': 'Droits expirés', 'failed': 'Traitements en échec', 'published_no_photo': 'Publiées sans photo',
+    'published_rights': 'Droits invalides (publiées)', 'orphans': 'Ressources orphelines', 'missing_renditions': 'Variantes manquantes',
+} %}
+<div class="shrink-0 flex items-center gap-3.5 flex-wrap px-5 py-3 rounded-sm bg-neutral-100 shadow-(--shadow)">
+    <twig:Typography variant="subtitle" class="shrink-0 text-[0.9375rem]! leading-[1.375rem]! font-[700]!">
+        {{- total }} résultat{{ total > 1 ? 's' : '' -}}
+    </twig:Typography>
+    <span class="w-px h-4 shrink-0 bg-neutral-200"></span>
+    <span class="flex items-center gap-1.5 shrink-0 px-3 py-1 rounded-lg bg-primary-5">
+        <twig:Typography variant="body-sm" textColor="neutral-500">File</twig:Typography>
+        <twig:Typography variant="body-sm" bold textColor="primary-3">{{ filtre_libelles[filter] ?? filter }}</twig:Typography>
+    </span>
+    <div class="flex items-center gap-2 flex-wrap flex-1 min-w-0" aria-label="Sections du DAM">
+        <a href="{{ path(ecran_route) }}"
+           class="px-3 py-1 rounded-lg {{ not media_tab ? 'bg-linear-(--primary-gradient)' : 'bg-primary-5 hover:bg-primary-4' }}">
+            <twig:Typography variant="body-sm" bold textColor="{{ not media_tab ? 'neutral-100' : 'primary-3' }}">Anomalies</twig:Typography>
+        </a>
+        <a href="{{ path(ecran_route, { filter: 'images' }) }}"
+           class="px-3 py-1 rounded-lg {{ filter == 'images' ? 'bg-linear-(--primary-gradient)' : 'bg-primary-5 hover:bg-primary-4' }}">
+            <twig:Typography variant="body-sm" bold textColor="{{ filter == 'images' ? 'neutral-100' : 'primary-3' }}">Images ({{ stats.images }})</twig:Typography>
+        </a>
+        <a href="{{ path(ecran_route, { filter: 'documents' }) }}"
+           class="px-3 py-1 rounded-lg {{ filter == 'documents' ? 'bg-linear-(--primary-gradient)' : 'bg-primary-5 hover:bg-primary-4' }}">
+            <twig:Typography variant="body-sm" bold textColor="{{ filter == 'documents' ? 'neutral-100' : 'primary-3' }}">Autres médias ({{ stats.documents }})</twig:Typography>
+        </a>
+    </div>
+    {% if filter not in ['failed', 'orphans', 'missing_renditions'] and not media_tab %}
+        <div class="flex items-center gap-2 flex-wrap shrink-0" aria-label="Filtrer par type de fiche">
+            <a href="{{ path(ecran_route, { filter: filter }) }}"
+               class="px-3 py-1 rounded-lg {{ type is null ? 'bg-linear-(--primary-gradient)' : 'bg-primary-5 hover:bg-primary-4' }}">
+                <twig:Typography variant="body-sm" bold textColor="{{ type is null ? 'neutral-100' : 'primary-3' }}">Tous</twig:Typography>
+            </a>
+            {% for candidate in types %}
+                <a href="{{ path(ecran_route, { filter: filter, type: candidate.value }) }}"
+                   class="px-3 py-1 rounded-lg {{ type == candidate.value ? 'bg-linear-(--primary-gradient)' : 'bg-primary-5 hover:bg-primary-4' }}">
+                    <twig:Typography variant="body-sm" bold textColor="{{ type == candidate.value ? 'neutral-100' : 'primary-3' }}">{{ candidate.value|replace({'_': ' '})|capitalize }}</twig:Typography>
+                </a>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>
+
+{# ------------------------------------------------- Liste des médias #}
+{% macro vignette(url, alt) %}
+    <span class="shrink-0 w-[152px] h-[104px] box-border flex items-center justify-center rounded-xs
+                 overflow-hidden bg-primary-5 inset-ring-1 inset-ring-neutral-300">
+        {% if url %}
+            <img src="{{ url }}" alt="{{ alt }}" class="w-full h-full object-cover" loading="lazy">
+        {% else %}
+            <twig:Icon name="images" class="w-7 h-7 text-neutral-400" />
         {% endif %}
-        <span>{{ total }} résultat{{ total > 1 ? 's' : '' }}</span>
-    </section>
+    </span>
+{% endmacro %}
 
-    {% if media_tab %}
-    <section class="dam-anomaly-list" aria-label="{{ filter == 'images' ? 'Médias image' : 'Médias hors image' }}">
-        {% for item in items %}
-            <article class="card dam-anomaly">
-                <div class="dam-media-preview">
-                    {% if item.thumbnail %}<img src="{{ item.thumbnail }}" alt="{{ item.asset.originalFilename }}" loading="lazy">{% else %}<span>Aucun aperçu</span>{% endif %}
-                </div>
-                <div class="dam-anomaly-content">
-                    <div class="section-heading">
-                        <div>
-                            <span class="badge badge-neutral">{{ item.asset.kind.value == 'image' ? 'Image' : 'Document' }}</span>
-                            <h2>{{ item.asset.originalFilename }}</h2>
-                        </div>
-                        {% if item.fiche_url %}<a class="btn btn-secondary" href="{{ item.fiche_url }}">Ouvrir {{ item.fiche_label }}</a>{% endif %}
-                    </div>
-                    <p>
-                        {{ item.asset.mimeType }} · {{ (item.asset.sizeBytes / 1024)|round }} Ko
-                        · <span class="badge {{ item.asset.status.value == 'failed' ? 'badge-danger' : 'badge-info' }}">{{ item.asset.status.value }}</span>
-                        · déposé le <time datetime="{{ item.asset.createdAt|date('c') }}">{{ item.asset.createdAt|date('d/m/Y H:i') }}</time>
-                    </p>
-                    {% if item.fiche_type %}
-                        <p>Rattaché à <span class="badge badge-neutral">{{ item.fiche_type|replace({'_': ' '}) }}</span> {{ item.fiche_label }}</p>
+<div class="shrink-0 flex flex-col gap-3" aria-label="{{ media_tab ? 'Médias' : 'Anomalies' }}">
+    {% for item in items %}
+        <article class="flex items-start gap-5 box-border px-[26px] py-5 rounded-md bg-neutral-100 shadow-(--shadow)">
+            {{ _self.vignette(item.thumbnail, media_tab
+                ? item.asset.originalFilename
+                : (item.resource and item.resource.legende ? item.resource.legende : (item.asset ? item.asset.originalFilename : 'Média'))) }}
+
+            <div class="flex flex-col flex-1 min-w-0 gap-2">
+                <div class="flex items-center gap-2.5 flex-wrap">
+                    {% if media_tab %}
+                        <span class="inline-flex"><twig:Tag label="{{ item.asset.kind.value == 'image' ? 'Image' : 'Document' }}" variant="neutral" size="sm" /></span>
+                        <twig:Typography variant="body" bold ellipsis class="min-w-0">{{ item.asset.originalFilename }}</twig:Typography>
+                        <span class="inline-flex"><twig:Tag label="{{ item.asset.status.value }}"
+                                  variant="{{ item.asset.status.value == 'failed' ? 'error' : 'primary-3' }}" size="sm" /></span>
                     {% else %}
-                        <p>Rattaché à aucune fiche.</p>
+                        <span class="inline-flex"><twig:Tag label="{{ item.fiche_type ? item.fiche_type|replace({'_': ' '}) : 'sans fiche' }}" variant="neutral" size="sm" /></span>
+                        <twig:Typography variant="body" bold ellipsis class="min-w-0">
+                            {{- item.resource ? (item.resource.legende ?: (item.asset ? item.asset.originalFilename : item.resource.usage)) : (item.asset ? item.asset.originalFilename : item.fiche_label) -}}
+                        </twig:Typography>
+                    {% endif %}
+                    <span class="flex-1"></span>
+                    {% if item.fiche_url %}
+                        <twig:Button variant="outline" size="sm" asLink href="{{ item.fiche_url }}" class="shrink-0">Ouvrir {{ item.fiche_label }}</twig:Button>
                     {% endif %}
                 </div>
-            </article>
-        {% else %}
-            <div class="card empty-state">Aucun média dans cette catégorie.</div>
-        {% endfor %}
-    </section>
-    {% else %}
-    <section class="dam-anomaly-list">
-        {% for item in items %}
-            <article class="card dam-anomaly">
-                <div class="dam-media-preview">
-                    {% if item.thumbnail %}<img src="{{ item.thumbnail }}" alt="{{ item.resource and item.resource.legende ? item.resource.legende : (item.asset ? item.asset.originalFilename : 'Média') }}" loading="lazy">{% else %}<span>Aucun aperçu</span>{% endif %}
-                </div>
-                <div class="dam-anomaly-content">
-                    <div class="section-heading">
-                        <div>
-                            <span class="badge badge-neutral">{{ item.fiche_type ? item.fiche_type|replace({'_': ' '}) : '(sans fiche)' }}</span>
-                            <h2>{{ item.resource ? (item.resource.legende ?: (item.asset ? item.asset.originalFilename : item.resource.usage)) : (item.asset ? item.asset.originalFilename : item.fiche_label) }}</h2>
+
+                {% if media_tab %}
+                    <twig:Typography variant="body-sm" textColor="neutral-500">
+                        {{ item.asset.mimeType }} · {{ (item.asset.sizeBytes / 1024)|round }} Ko
+                        · déposé le {{ item.asset.createdAt|date('d/m/Y H:i') }}
+                        · {{ item.fiche_type ? 'rattaché à ' ~ (item.fiche_label ?? item.fiche_type) : 'rattaché à aucune fiche' }}
+                    </twig:Typography>
+                {% elseif filter == 'duplicates' %}
+                    <twig:Typography variant="body-sm" bold>
+                        {{- item.alert.kind.value == 'exact' ? 'Doublon exact' : 'Image visuellement proche' -}}
+                        {%- if item.alert.distance is not null %} · distance {{ item.alert.distance }}{% endif -%}
+                    </twig:Typography>
+                    <div class="flex items-center gap-3 px-3 py-2.5 rounded-xs bg-primary-5">
+                        {% if item.reference_thumbnail %}
+                            <img src="{{ item.reference_thumbnail }}" alt="Média de référence" loading="lazy"
+                                 class="shrink-0 w-[76px] h-[52px] rounded-xxs object-cover">
+                        {% endif %}
+                        <div class="flex flex-col gap-0.5 min-w-0">
+                            <twig:Typography variant="body-sm">Média existant : <strong>{{ item.reference.originalFilename }}</strong></twig:Typography>
+                            {% if item.reference_fiche %}
+                                <twig:Typography variant="body-xs" textColor="neutral-500" element="span">
+                                    Déjà présent sur {{ item.reference_fiche.fiche_type|replace({'_': ' '}) }} ·
+                                    {% if item.reference_fiche.fiche_url %}
+                                        <a href="{{ item.reference_fiche.fiche_url }}" class="font-[900] text-primary-3 hover:underline">{{ item.reference_fiche.fiche_label }}</a>
+                                    {% else %}
+                                        <strong>{{ item.reference_fiche.fiche_label }}</strong>
+                                    {% endif %}
+                                </twig:Typography>
+                            {% else %}
+                                <twig:Typography variant="body-xs" textColor="neutral-500">La fiche d’origine n’est plus disponible.</twig:Typography>
+                            {% endif %}
                         </div>
-                        {% if item.fiche_url %}<a class="btn btn-secondary" href="{{ item.fiche_url }}">Ouvrir {{ item.fiche_label }}</a>{% endif %}
                     </div>
-
-                    {% if filter == 'duplicates' %}
-                        <p><strong>{{ item.alert.kind.value == 'exact' ? 'Doublon exact' : 'Image visuellement proche' }}</strong>{% if item.alert.distance is not null %} · distance {{ item.alert.distance }}{% endif %}</p>
-                        <div class="dam-duplicate-reference">
-                            {% if item.reference_thumbnail %}<img src="{{ item.reference_thumbnail }}" alt="Média de référence" loading="lazy">{% endif %}
-                            <div class="dam-duplicate-reference-copy">
-                                <span>Média existant : <strong>{{ item.reference.originalFilename }}</strong></span>
-                                {% if item.reference_fiche %}
-                                    <span class="dam-duplicate-fiche">
-                                        Déjà présent sur
-                                        <span class="badge badge-neutral">{{ item.reference_fiche.fiche_type|replace({'_': ' '}) }}</span>
-                                        {% if item.reference_fiche.fiche_url %}
-                                            <a class="text-link" href="{{ item.reference_fiche.fiche_url }}">{{ item.reference_fiche.fiche_label }}</a>
-                                        {% else %}
-                                            <strong>{{ item.reference_fiche.fiche_label }}</strong>
-                                        {% endif %}
-                                    </span>
-                                {% else %}
-                                    <span>La fiche d’origine n’est plus disponible.</span>
-                                {% endif %}
-                            </div>
+                    {% if is_granted('ROLE_BP_VALIDATOR') %}
+                        <div class="flex items-center gap-2 flex-wrap [&_form]:contents [&_button]:w-auto!">
+                            {{ form_start(item.accept_form) }}{{ form_widget(item.accept_form) }}{{ form_end(item.accept_form) }}
+                            {{ form_start(item.delete_form) }}{{ form_widget(item.delete_form) }}{{ form_end(item.delete_form) }}
                         </div>
-                        {% if is_granted('ROLE_BP_VALIDATOR') %}
-                            <div class="dam-actions">
-                                {{ form_start(item.accept_form) }}{{ form_widget(item.accept_form) }}{{ form_end(item.accept_form) }}
-                                {{ form_start(item.delete_form) }}{{ form_widget(item.delete_form) }}{{ form_end(item.delete_form) }}
-                            </div>
-                        {% endif %}
-                    {% elseif filter starts with 'rights_' %}
-                        <p>Source : {{ item.resource.source ?: 'Non renseignée' }} · Échéance : <strong>{{ item.resource.rightsExpiresAt ? item.resource.rightsExpiresAt|date('d/m/Y') : 'sans limite' }}</strong></p>
-                        {% if item.resource.keywords %}<p>Mots-clés : {{ item.resource.keywords }}</p>{% endif %}
-                        {% if is_granted('ROLE_BP_VALIDATOR') and item.rights_form is defined %}
-                            {{ form_start(item.rights_form) }}{{ form_widget(item.rights_form) }}{{ form_end(item.rights_form) }}
-                        {% elseif not item.resource.rightsGranted and item.resource.rightsExpiresAt %}
-                            <p class="text-danger">Corrigez l’échéance dans la fiche avant de valider les droits.</p>
-                        {% endif %}
-                    {% elseif filter == 'failed' %}
-                        <p class="text-danger">{{ item.asset.errorMessage ?: 'Le traitement DAM a échoué.' }}</p>
-                        {{ form_start(item.retry_form) }}{{ form_widget(item.retry_form) }}{{ form_end(item.retry_form) }}
-                    {% elseif filter == 'published_no_photo' %}
-                        <p class="text-danger">Cette fiche publiée n’a aucune photo rattachée.</p>
-                    {% elseif filter == 'published_rights' %}
-                        <p class="text-danger">
-                            {% if not item.resource.rightsGranted %}Les droits d’utilisation de cette photo n’ont pas été validés.{% else %}Les droits d’utilisation de cette photo ont expiré le {{ item.resource.rightsExpiresAt|date('d/m/Y') }}.{% endif %}
-                            La fiche est publiée.
-                        </p>
-                        <p>Source : {{ item.resource.source ?: 'Non renseignée' }} · Échéance : <strong>{{ item.resource.rightsExpiresAt ? item.resource.rightsExpiresAt|date('d/m/Y') : 'sans limite' }}</strong></p>
-                    {% elseif filter == 'orphans' %}
-                        <p class="text-danger">Le média associé (référence <code>{{ item.resource.damAssetId }}</code>) est introuvable ou supprimé dans le DAM.</p>
-                        <p>Détectée le <time datetime="{{ item.anomaly.detectedAt|date('c') }}">{{ item.anomaly.detectedAt|date('d/m/Y H:i') }}</time>.</p>
-                    {% elseif filter == 'missing_renditions' %}
-                        <p class="text-danger">Le média est marqué « traité » mais certaines variantes d’image manquent.</p>
-                        <p>Détectée le <time datetime="{{ item.anomaly.detectedAt|date('c') }}">{{ item.anomaly.detectedAt|date('d/m/Y H:i') }}</time>.</p>
                     {% endif %}
-                </div>
-            </article>
-        {% else %}
-            <div class="card empty-state">Aucune anomalie pour ce filtre.</div>
-        {% endfor %}
-    </section>
-    {% endif %}
+                {% elseif filter starts with 'rights_' %}
+                    <twig:Typography variant="body-sm" textColor="neutral-500">
+                        Source : {{ item.resource.source ?: 'Non renseignée' }} ·
+                        Échéance : <strong>{{ item.resource.rightsExpiresAt ? item.resource.rightsExpiresAt|date('d/m/Y') : 'sans limite' }}</strong>
+                        {%- if item.resource.keywords %} · Mots-clés : {{ item.resource.keywords }}{% endif %}
+                    </twig:Typography>
+                    {% if is_granted('ROLE_BP_VALIDATOR') and item.rights_form is defined %}
+                        <div class="[&_form]:flex [&_form]:flex-wrap [&_form]:items-end [&_form]:gap-3 [&_button]:w-auto!">
+                            {{ form_start(item.rights_form) }}{{ form_widget(item.rights_form) }}{{ form_end(item.rights_form) }}
+                        </div>
+                    {% elseif not item.resource.rightsGranted and item.resource.rightsExpiresAt %}
+                        <twig:Typography variant="body-sm" textColor="error">Corrigez l’échéance dans la fiche avant de valider les droits.</twig:Typography>
+                    {% endif %}
+                {% elseif filter == 'failed' %}
+                    <twig:Typography variant="body-sm" textColor="error">{{ item.asset.errorMessage ?: 'Le traitement DAM a échoué.' }}</twig:Typography>
+                    <div class="[&_form]:contents [&_button]:w-auto!">
+                        {{ form_start(item.retry_form) }}{{ form_widget(item.retry_form) }}{{ form_end(item.retry_form) }}
+                    </div>
+                {% elseif filter == 'published_no_photo' %}
+                    <twig:Typography variant="body-sm" textColor="error">Cette fiche publiée n’a aucune photo rattachée.</twig:Typography>
+                {% elseif filter == 'published_rights' %}
+                    <twig:Typography variant="body-sm" textColor="error">
+                        {% if not item.resource.rightsGranted %}Les droits d’utilisation de cette photo n’ont pas été validés.{% else %}Les droits d’utilisation de cette photo ont expiré le {{ item.resource.rightsExpiresAt|date('d/m/Y') }}.{% endif %}
+                        La fiche est publiée.
+                    </twig:Typography>
+                    <twig:Typography variant="body-sm" textColor="neutral-500">
+                        Source : {{ item.resource.source ?: 'Non renseignée' }} ·
+                        Échéance : <strong>{{ item.resource.rightsExpiresAt ? item.resource.rightsExpiresAt|date('d/m/Y') : 'sans limite' }}</strong>
+                    </twig:Typography>
+                {% elseif filter == 'orphans' %}
+                    <twig:Typography variant="body-sm" textColor="error">Le média associé (référence {{ item.resource.damAssetId }}) est introuvable ou supprimé dans le DAM.</twig:Typography>
+                    <twig:Typography variant="body-sm" textColor="neutral-500">Détectée le {{ item.anomaly.detectedAt|date('d/m/Y H:i') }}.</twig:Typography>
+                {% elseif filter == 'missing_renditions' %}
+                    <twig:Typography variant="body-sm" textColor="error">Le média est marqué « traité » mais certaines variantes d’image manquent.</twig:Typography>
+                    <twig:Typography variant="body-sm" textColor="neutral-500">Détectée le {{ item.anomaly.detectedAt|date('d/m/Y H:i') }}.</twig:Typography>
+                {% endif %}
+            </div>
+        </article>
+    {% else %}
+        <div class="flex items-center gap-3 px-[26px] py-6 rounded-md bg-neutral-100 shadow-(--shadow)">
+            <twig:Icon name="ok-circle" aria-hidden="true" class="shrink-0 w-6 h-6 text-success" />
+            <twig:Typography variant="body-sm" textColor="neutral-500">
+                {{- media_tab ? 'Aucun média dans cette catégorie.' : 'Aucune anomalie pour ce filtre.' -}}
+            </twig:Typography>
+        </div>
+    {% endfor %}
 
-    {% if pages > 1 %}
-        <nav class="pagination" aria-label="Pagination DAM">
-            {% if page > 1 %}<a class="btn btn-secondary" href="{{ path(ecran_route, {filter: filter, type: type, page: page - 1}) }}">Précédent</a>{% endif %}
-            <span>Page {{ page }} sur {{ pages }}</span>
-            {% if page < pages %}<a class="btn btn-secondary" href="{{ path(ecran_route, {filter: filter, type: type, page: page + 1}) }}">Suivant</a>{% endif %}
-        </nav>
-    {% endif %}
+    {# ------------------------------------------------- Pied de pagination #}
+    <div class="flex items-center gap-3 px-1 pt-1">
+        <twig:Typography variant="body-sm" textColor="neutral-500">
+            {{- items|length }} élément{{ items|length > 1 ? 's' : '' }} affiché{{ items|length > 1 ? 's' : '' }} · page {{ page }} sur {{ max(pages, 1) -}}
+        </twig:Typography>
+        <span class="flex-1"></span>
+        {% if page > 1 %}
+            <twig:Button variant="text" size="sm" asLink class="bg-neutral-100! inset-ring-1 inset-ring-neutral-200 rounded-full!"
+                         href="{{ path(ecran_route, { filter: filter, type: type, page: page - 1 }) }}">Précédent</twig:Button>
+        {% endif %}
+        {% if page < pages %}
+            <twig:Button variant="text" size="sm" asLink class="bg-neutral-100! inset-ring-1 inset-ring-neutral-200 rounded-full!"
+                         href="{{ path(ecran_route, { filter: filter, type: type, page: page + 1 }) }}">Suivant</twig:Button>
+        {% endif %}
+    </div>
+</div>
