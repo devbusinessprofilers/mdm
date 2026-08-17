@@ -134,13 +134,15 @@
 {%- block checkbox_widget -%}
     {#- `value` porte « 1 » pour une case booléenne, ou la valeur du choix pour
         une case issue d'un ChoiceType « expanded » — indispensable pour que la
-        bonne valeur soit soumise. -#}
+        bonne valeur soit soumise. `attr` est relayé sur l'input (cibles et
+        actions Stimulus des cases de sélection, notamment). -#}
     <twig:Form:Checkbox
         id="{{ id }}"
         name="{{ full_name }}"
         value="{{ value|default('1') }}"
         :checked="checked"
         :disabled="disabled"
+        :inputAttributes="attr"
     />
 {%- endblock -%}
 

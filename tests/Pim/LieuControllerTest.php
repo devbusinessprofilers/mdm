@@ -112,13 +112,13 @@ final class LieuControllerTest extends WebTestCase
         // La recherche vit désormais sur la liste MDM : plein-texte + facettes.
         $client->request('GET', '/referentiel/lieux', ['f' => ['q' => 'pal pari', 'statuts' => ['publiee']]]);
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('body', '1 fiche dans le filtre courant');
+        self::assertSelectorTextContains('body', '1 dans le filtre');
         self::assertSelectorTextContains('table', $paris->label() ?? '');
         self::assertSelectorTextNotContains('table', 'Palais Lumière Lyon');
 
         $client->request('GET', '/referentiel/lieux', ['f' => ['q' => 'palais']]);
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('body', '2 fiches dans le filtre courant');
+        self::assertSelectorTextContains('body', '2 dans le filtre');
 
         $client->request('GET', '/referentiel/lieux', ['f' => ['q' => 'introuvable']]);
         self::assertResponseIsSuccessful();

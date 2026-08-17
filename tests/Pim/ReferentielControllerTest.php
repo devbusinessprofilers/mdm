@@ -88,7 +88,7 @@ final class ReferentielControllerTest extends WebTestCase
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('table', 'Château publié');
         self::assertSelectorTextNotContains('table', 'Château en cours');
-        self::assertStringContainsString('2 fiches dans le filtre courant', $crawler->text(null, true));
+        self::assertStringContainsString('2 dans le filtre', $crawler->text(null, true));
 
         // Intersection entre groupes : statut publiée + gamme restaurant.
         $client->request('GET', '/referentiel', ['f' => ['statuts' => ['publiee'], 'gammes' => ['restaurant']]]);
@@ -123,8 +123,8 @@ final class ReferentielControllerTest extends WebTestCase
 
         $crawler = $client->request('GET', '/referentiel');
         self::assertResponseIsSuccessful();
-        $form = $crawler->selectButton('Appliquer')->form();
-        $form['selection[action]'] = 'valider';
+        // Le bouton du bandeau porte l'action : « Valider » pose selection[action].
+        $form = $crawler->selectButton('Valider')->form();
         $values = $form->getPhpValues();
         $values['selection']['ids'] = [$ficheId];
         $client->request($form->getMethod(), $form->getUri(), $values);
@@ -176,8 +176,7 @@ final class ReferentielControllerTest extends WebTestCase
 
         $crawler = $client->request('GET', '/referentiel');
         self::assertResponseIsSuccessful();
-        $form = $crawler->selectButton('Appliquer')->form();
-        $form['selection[action]'] = 'acces';
+        $form = $crawler->selectButton('Envoyer les accès extranet')->form();
         $values = $form->getPhpValues();
         $values['selection']['ids'] = $ids;
         $client->request($form->getMethod(), $form->getUri(), $values);
@@ -229,8 +228,7 @@ final class ReferentielControllerTest extends WebTestCase
 
         $crawler = $client->request('GET', '/referentiel');
         self::assertResponseIsSuccessful();
-        $form = $crawler->selectButton('Appliquer')->form();
-        $form['selection[action]'] = 'contributeur';
+        $form = $crawler->selectButton('Assigner un contributeur')->form();
         $form['selection[contributeur]'] = $user->id();
         $values = $form->getPhpValues();
         $values['selection']['ids'] = [$ficheId];
@@ -285,8 +283,7 @@ final class ReferentielControllerTest extends WebTestCase
         $crawler = $client->request('GET', '/referentiel');
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('body', 'Attribuer la visibilité');
-        $form = $crawler->selectButton('Appliquer')->form();
-        $form['selection[action]'] = 'visibilite';
+        $form = $crawler->selectButton('Attribuer la visibilité')->form();
         $values = $form->getPhpValues();
         $values['selection']['ids'] = [$ficheId, $dejaServie->fiche()->idString()];
         $values['selection']['sites'] = [(string) $marketplace->id(), (string) $portail->id()];

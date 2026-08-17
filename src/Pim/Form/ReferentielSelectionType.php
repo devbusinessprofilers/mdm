@@ -9,7 +9,6 @@ use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
-use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
@@ -63,8 +62,9 @@ final class ReferentielSelectionType extends AbstractType
                 'multiple' => true,
                 'expanded' => true,
                 'choices' => $options['sites_choices'],
-            ])
-            ->add('appliquer', SubmitType::class, ['label' => 'Appliquer']);
+            ]);
+        // Pas de bouton unique « Appliquer » : chaque bouton du bandeau soumet
+        // le formulaire en posant `selection[action]` (valeur du ChoiceType).
     }
 
     public function configureOptions(OptionsResolver $resolver): void

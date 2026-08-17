@@ -124,13 +124,14 @@ final readonly class ReferentielListeProvider
         $lignes = [];
         foreach ($rows as $row) {
             $binaire = (string) $row['id'];
+            $status = StatutFiche::from((string) $row['status']);
             $lignes[] = new ReferentielLigne(
                 id: (string) Ulid::fromBinary($binaire),
                 type: TypeFiche::from((string) $row['type']),
                 code: (int) $row['code'],
                 label: null === $row['label'] ? null : (string) $row['label'],
                 ville: null === $row['ville'] ? null : (string) $row['ville'],
-                status: StatutFiche::from((string) $row['status']),
+                status: $status,
                 completeness: null === $row['completeness'] ? null : (int) $row['completeness'],
                 canaux: (int) $row['canaux'],
                 updatedAt: new \DateTimeImmutable((string) $row['updated_at']),
@@ -138,6 +139,12 @@ final readonly class ReferentielListeProvider
                 contributeur: null === ($row['contributeur'] ?? null) ? null : (string) $row['contributeur'],
                 vignette: isset($vignettes[$binaire]) ? $this->publicUrl->url($vignettes[$binaire]) : null,
                 marqueIa: isset($marques[$binaire]),
+                typologie: null === ($row['typologie'] ?? null) ? null : (string) $row['typologie'],
+                pays: null === ($row['pays'] ?? null) ? null : (string) $row['pays'],
+                // Pas de drapeau « actif » en donnée : une fiche archivée est
+                // la seule éteinte du point de vue du référentiel.
+                actif: StatutFiche::Archivee !== $status,
+                premium: (bool) ($row['premium'] ?? false),
             );
         }
 

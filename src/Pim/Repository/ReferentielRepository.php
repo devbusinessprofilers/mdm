@@ -32,6 +32,21 @@ final readonly class ReferentielRepository
         END
         SQL;
 
+    /**
+     * Première valeur de classification « typologie » de la fiche (colonne
+     * Type de la liste) : l'attribut porteur dépend de la gamme.
+     */
+    private const TYPOLOGIE = <<<'SQL'
+        (SELECT av.label
+           FROM pim_fiche_attribute_value fav
+          INNER JOIN pim_attribute_value av ON av.id = fav.value_id
+          INNER JOIN pim_attribute_definition ad ON ad.id = av.attribute_id
+          WHERE fav.fiche_id = f.id
+            AND ad.code IN ('GENERALE_TYPOLOGIE', 'TYPE_RESTAURANT', 'THEMATIQUE_ACTIVITE', 'TYPE_PRESTATAIRE')
+          ORDER BY av.position ASC, av.id ASC
+          LIMIT 1)
+        SQL;
+
     private const IA_EXISTS = <<<'SQL'
         EXISTS (
             SELECT 1 FROM ocr_document_extraction ext
@@ -280,6 +295,9 @@ final readonly class ReferentielRepository
                     %s AS completeness,
                     COALESCE(sd.nb, 0) AS canaux,
                     au.email AS contributeur,
+                    loc.pays AS pays,
+                    f.business_premium AS premium,
+                    %s AS typologie,
                     f.updated_at
                 FROM pim_fiche f
                 %s
@@ -288,6 +306,7 @@ final readonly class ReferentielRepository
                 LIMIT %d
                 SQL,
                 self::COMPLETENESS,
+                self::TYPOLOGIE,
                 $joins,
                 implode("\n  AND ", $conditions),
                 $limit + 1,
@@ -334,6 +353,9 @@ final readonly class ReferentielRepository
                     %s AS completeness,
                     (SELECT COUNT(*) FROM pim_fiche_site_diffusion psd WHERE psd.fiche_id = f.id) AS canaux,
                     au.email AS contributeur,
+                    loc.pays AS pays,
+                    f.business_premium AS premium,
+                    %s AS typologie,
                     f.updated_at
                 FROM pim_fiche f
                 LEFT JOIN pim_localisation loc ON loc.id = f.localisation_id
@@ -346,6 +368,7 @@ final readonly class ReferentielRepository
                 ORDER BY f.updated_at DESC, f.id DESC
                 SQL,
                 self::COMPLETENESS,
+                self::TYPOLOGIE,
             ),
             ['ids' => $ids],
             ['ids' => ArrayParameterType::BINARY],

@@ -24,6 +24,10 @@ final readonly class ReferentielLigne
         public ?string $contributeur,
         public ?string $vignette,
         public bool $marqueIa,
+        public ?string $typologie,
+        public ?string $pays,
+        public bool $actif,
+        public bool $premium,
     ) {
     }
 }

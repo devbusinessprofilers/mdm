@@ -97,6 +97,7 @@ final readonly class ReferentielEcran
 
         return [
             'vue' => $vue,
+            'actions' => self::actions(),
             'filtres' => $filtres,
             'filtres_actifs' => $this->filtresActifs($filtres, $vue, $gammeImposee),
             'form_filtres' => $formFiltres->createView(),
@@ -109,6 +110,38 @@ final readonly class ReferentielEcran
             'url_mes_fiches' => $this->urls->generate('app_mdm_referentiel_general', [
                 'f' => ['contributeurs' => [$userId]],
             ]),
+        ];
+    }
+
+    /**
+     * Structure des actions groupées du bandeau de sélection, dérivée de
+     * ReferentielActionGroupee : boutons principaux et menu « Plus d'actions ».
+     * Seule « Envoyer les accès extranet » est irréversible (décision produit).
+     *
+     * @return array{principales: list<array<string, mixed>>, secondaires: list<array<string, mixed>>}
+     */
+    public static function actions(): array
+    {
+        $action = static fn (string $code, string $label, string $icone): array => [
+            'code' => $code,
+            'label' => $label,
+            'icone' => $icone,
+            'plafond' => ReferentielActionGroupee::plafond($code),
+            'irreversible' => 'acces' === $code,
+        ];
+
+        return [
+            'principales' => [
+                $action('valider', 'Valider', 'check-circle'),
+                $action('publier', 'Publier', 'paper-plane'),
+                $action('archiver', 'Archiver', 'bin'),
+            ],
+            'secondaires' => [
+                $action('exporter', 'Exporter CSV', 'clipboard'),
+                $action('acces', 'Envoyer les accès extranet', 'lock'),
+                $action('contributeur', 'Assigner un contributeur', 'user'),
+                $action('visibilite', 'Attribuer la visibilité', 'eye'),
+            ],
         ];
     }
 

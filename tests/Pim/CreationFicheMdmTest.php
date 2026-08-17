@@ -93,7 +93,7 @@ final class CreationFicheMdmTest extends WebTestCase
         $client->request('GET', '/referentiel', ['f' => ['repli' => '1']]);
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('table', 'Lieu MDM avec repli');
-        self::assertSelectorTextContains('body', '1 fiche dans le filtre courant');
+        self::assertSelectorTextContains('body', '1 dans le filtre');
     }
 
     private function clearTables(): void

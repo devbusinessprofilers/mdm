@@ -10,3 +10,6 @@ password:
         lower: 1 minuscule
         special: 1 caractère spécial
         number: 1 chiffre
+
+select:
+    no_options: Aucune option disponible

@@ -7,10 +7,15 @@ import { Controller } from '@hotwired/stimulus';
  * seul prédicat, et les recalculer ici les ferait diverger. Le contrôleur ne
  * garde que ce qui est purement local — les panneaux, la sélection de lignes
  * et le repli du rail.
+ *
+ * Écart avec la maquette : la sélection vit dans les vraies cases
+ * `selection[ids][]` du formulaire Symfony (cibles `case`), pas dans des
+ * boutons aria-checked — c'est ce que le POST des actions groupées soumet.
  */
 export default class extends Controller {
     static targets = ['panneau', 'replie', 'ouvert', 'picker', 'plus', 'vues',
-        'bandeau', 'vueFiltres', 'vueActions', 'compteSelection', 'ligne', 'caseTete'];
+        'bandeau', 'vueFiltres', 'vueActions', 'compteSelection', 'ligne',
+        'caseTete', 'case', 'tout'];
 
     connect() {
         this.surTouche = (evenement) => {
@@ -43,6 +48,12 @@ export default class extends Controller {
             }
         };
         document.addEventListener('click', this.surClic);
+
+        // Cases restaurées par le navigateur (retour arrière) : resynchroniser.
+        if (this.hasBandeauTarget) {
+            this.caseTargets.forEach((c) => this.peindreLigne(c));
+            this.majBandeau();
+        }
     }
 
     disconnect() {
@@ -80,30 +91,47 @@ export default class extends Controller {
         this.pickerTarget.hidden = true;
     }
 
-    /*
-     * Une facette cochée ici ne recalcule rien : c'est le serveur qui tient le
-     * prédicat. Le clic marque l'intention, le rechargement viendra du jour où
-     * les filtres seront dans l'URL.
-     */
-    basculerFacette(evenement) {
-        const facette = evenement.currentTarget;
-        facette.setAttribute('aria-checked', this.coche(facette) ? 'false' : 'true');
+    /* Copie l'URL courante — elle porte tout l'état du filtre (`f`). */
+    copierLien(evenement) {
+        const bouton = evenement.currentTarget;
+        navigator.clipboard?.writeText(window.location.href).then(() => {
+            bouton.setAttribute('title', 'Lien copié');
+        });
     }
 
+    /* La case d'une ligne a changé (vrai input soumis au POST). */
     basculerLigne(evenement) {
-        const bouton = evenement.currentTarget;
-        const cochee = !this.coche(bouton);
-
-        bouton.setAttribute('aria-checked', cochee ? 'true' : 'false');
-        bouton.closest('[data-liste-target="ligne"]').classList.toggle('bg-primary-4', cochee);
-
+        this.peindreLigne(evenement.currentTarget);
         this.majBandeau();
+    }
+
+    /* Case de tête : coche tout, ou décoche tout si tout l'était déjà. */
+    basculerTout() {
+        const cocher = !this.caseTargets.every((c) => c.checked);
+
+        this.caseTargets.forEach((c) => {
+            c.checked = cocher;
+            this.peindreLigne(c);
+        });
+        this.majBandeau();
+    }
+
+    peindreLigne(caseLigne) {
+        caseLigne.closest('[data-liste-target="ligne"]')
+            ?.classList.toggle('bg-primary-4', caseLigne.checked);
     }
 
     /* Le bandeau passe en mode sélection dès qu'une ligne est cochée. */
     majBandeau() {
-        const cochees = this.ligneTargets.filter((l) => l.classList.contains('bg-primary-4'));
-        const enSelection = cochees.length > 0;
+        const cochees = this.caseTargets.filter((c) => c.checked).length;
+        const toutLeFiltre = this.hasToutTarget && this.toutTarget.checked;
+        const enSelection = cochees > 0 || toutLeFiltre;
+
+        if (this.hasCaseTeteTarget) {
+            this.caseTeteTarget.setAttribute('aria-checked',
+                0 === cochees ? 'false'
+                    : (cochees === this.caseTargets.length ? 'true' : 'mixed'));
+        }
 
         this.bandeauTarget.classList.toggle('bg-primary-4', enSelection);
         this.bandeauTarget.classList.toggle('inset-ring-primary', enSelection);
@@ -115,18 +143,34 @@ export default class extends Controller {
         this.vueActionsTarget.classList.toggle('flex', enSelection);
         this.vueActionsTarget.classList.toggle('hidden', !enSelection);
 
-        if (enSelection) {
-            /*
-             * Le total vient d'un attribut, pas d'un découpage du libellé : les
-             * milliers y sont séparés par une espace fine, « 15 906 » se serait
-             * lu « 15 ».
-             */
-            const total = this.bandeauTarget.dataset.total.replace(/\s*fiches?$/, '');
-            this.compteSelectionTarget.textContent = cochees.length + ' sélectionnées sur ' + total;
+        if (!enSelection) {
+            return;
         }
-    }
 
-    coche(element) {
-        return 'true' === element.getAttribute('aria-checked');
+        /*
+         * Le total vient d'un attribut, pas d'un découpage du libellé : les
+         * milliers y sont séparés par une espace fine, « 15 906 » se serait
+         * lu « 15 ».
+         */
+        const totalAffiche = this.bandeauTarget.dataset.total || '0';
+        const total = parseInt(totalAffiche.replace(/\s/g, ''), 10) || 0;
+        const effectif = toutLeFiltre ? total : cochees;
+        this.compteSelectionTarget.textContent = toutLeFiltre
+            ? 'Tout le filtre — ' + totalAffiche + ' fiches'
+            : cochees + ' sélectionnée' + (cochees > 1 ? 's' : '') + ' sur ' + totalAffiche;
+
+        /*
+         * Passé son plafond, une action se désactive et son étiquette
+         * « Plafond N » apparaît — une grande sélection n'est pas une petite
+         * en plus gros.
+         */
+        this.element.querySelectorAll('[data-plafond]').forEach((bouton) => {
+            const depasse = effectif > parseInt(bouton.dataset.plafond, 10);
+            bouton.disabled = depasse;
+            const etiquette = bouton.closest('[data-ligne-action]')?.querySelector('[data-plafond-tag]');
+            if (etiquette) {
+                etiquette.hidden = !depasse;
+            }
+        });
     }
 }

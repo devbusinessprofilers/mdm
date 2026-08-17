@@ -1,12 +1,18 @@
 {% extends 'mdm/base.html.twig' %}
 
 {#
-    Référentiel / liste des fiches — habillé au langage visuel du front
-    (rail à facettes, carte-table dense, Tags, barres de complétude, toolbar
-    d'actions de masse), piloté par les vraies données et formulaires du back.
-    Toutes les fonctions sont conservées : filtres à facettes comptées,
-    sélection + actions de masse, vues enregistrées, édition rapide, pagination
-    par curseur.
+    Référentiel / liste des fiches — gabarit repris de la maquette
+    « Liste des fiches » (test-integration), branché sur les vraies données :
+    facettes comptées, badges de filtres retirables, bandeau à deux vues
+    (filtres ↔ sélection) avec actions groupées, tableau dense, vues
+    enregistrées, pagination par curseur.
+
+    Écarts assumés avec la maquette :
+    - le tableau reste un vrai `<table>` (hooks de tests, accessibilité) avec
+      les largeurs/couleurs de la maquette ;
+    - la sélection vit dans les vraies cases `selection[ids][]` du formulaire ;
+    - la pagination est par curseur (pas de numéros de page) ;
+    - l'édition rapide ouvre sa page (la modale viendra avec son sous-bloc).
 #}
 
 {% set gamme_titres = {
@@ -21,14 +27,18 @@
     'en_cours': 'En cours', 'en_attente_validation': 'En attente',
     'validee': 'Validée', 'publiee': 'Publiée', 'archivee': 'Archivée',
 } %}
+{% set compacte = 'compacte' == app.request.query.get('densite') %}
+{% set route_courante = app.request.attributes.get('_route') %}
+{% set params_courants = app.request.attributes.get('_route_params') %}
 
 {% block title %}{{ gamme_imposee ? 'Référentiel · ' ~ (gamme_titres[gamme_imposee.value] ?? gamme_imposee.value) : 'Référentiel' }}{% endblock %}
 
-{# Ton de Tag par statut réel. #}
+{# Tons de statut de la maquette : fond pâle, texte marine. #}
 {% macro ton_statut(statut) %}
-    {%- if 'publiee' == statut -%}success
+    {%- if 'publiee' == statut -%}success-pastel
     {%- elseif 'validee' == statut -%}primary-3
     {%- elseif 'en_attente_validation' == statut -%}old-gold
+    {%- elseif 'en_cours' == statut -%}peach
     {%- else -%}neutral
     {%- endif -%}
 {% endmacro %}
@@ -36,115 +46,150 @@
 {# Une facette : case (vraie, soumise) + libellé + compteur. #}
 {% macro facette(case, compte, libelle = null) %}
     <label for="{{ case.vars.id }}"
-           class="group flex items-center gap-2 px-2 py-1.5 rounded-xs cursor-pointer hover:bg-primary-4">
+           class="group flex items-center gap-2.5 w-full p-1.5 rounded-xs cursor-pointer
+                  hover:bg-primary-4 has-checked:bg-primary-4">
         {{ form_widget(case) }}
-        <twig:Typography variant="body-sm" class="flex-1 min-w-0">{{ libelle ?? case.vars.label }}</twig:Typography>
+        <twig:Typography variant="body-sm" class="flex-1 min-w-0 truncate
+                         group-has-checked:font-black group-has-checked:text-primary-3">{{ libelle ?? case.vars.label }}</twig:Typography>
         <twig:Typography variant="body-xs" textColor="neutral-500" class="shrink-0">{{ compte }}</twig:Typography>
     </label>
 {% endmacro %}
 
-{# Fonction du front pas encore adossée au back : bouton visible mais inactif,
-   avec une infobulle « à venir » (garde-fou « rien ne se perd », côté front). #}
-{% macro bouton_a_venir(icone, label) %}
-    <span title="Fonction à venir — en développement" class="inline-flex">
-        <twig:Button variant="outline" size="sm" icon="{{ icone }}" disabled>{{ label }}</twig:Button>
-    </span>
+{# Tête de groupe de facettes : libellé haute-casse + filet. #}
+{% macro tete_groupe(nom) %}
+    <div class="flex items-center gap-2 px-1.5 pb-1.5">
+        <span class="uppercase tracking-[0.8px]">
+            <twig:Typography variant="body-xs" textColor="neutral-500" bold>{{ nom }}</twig:Typography>
+        </span>
+        <span class="flex-1 h-px bg-neutral-200"></span>
+    </div>
 {% endmacro %}
 
-{# Le contrôleur Stimulus `liste` porte le repli du rail et (Phase 2) les menus. #}
+{% macro cellule(valeur, largeur, compacte) %}
+    <td class="pr-2.5 box-border truncate" style="width: {{ largeur }}px; max-width: {{ largeur }}px">
+        <twig:Typography variant="{{ compacte ? 'body-sm' : 'body' }}">{{ valeur }}</twig:Typography>
+    </td>
+{% endmacro %}
+
+{% macro densite(libelle, actif, valeur, route, params) %}
+    <a href="{{ path(route, params|merge({ densite: valeur })) }}"
+       class="h-[30px] px-3 box-border flex items-center rounded-full whitespace-nowrap
+              {{ actif ? 'bg-linear-(--primary-gradient)' : '' }}">
+        <twig:Typography variant="body-sm" textColor="{{ actif ? 'neutral-100' : 'neutral-500' }}"
+                         bold="{{ actif }}">{{ libelle }}</twig:Typography>
+    </a>
+{% endmacro %}
+
+{# Le contrôleur Stimulus `liste` : rail, menus, bandeau et sélection. #}
 {% block main_attributs %}data-controller="liste"{% endblock %}
 
-{# ------------------------------------------------------------------ Rail : filtres à facettes, repliable #}
+{# ------------------------------------------------------- Rail : filtres à facettes #}
 {% block rail %}
-<div data-liste-target="panneau" class="shrink-0 flex flex-col w-[284px] transition-[width] overflow-hidden">
+<div data-liste-target="panneau"
+     class="shrink-0 flex flex-col w-[284px] transition-[width] overflow-hidden
+            bg-neutral-100 border-r border-neutral-200">
 
     {# État replié : bouton de déploiement + compteur de filtres actifs. #}
-    <div data-liste-target="replie" class="hidden flex-col items-center gap-3 pt-4">
-        <button type="button" data-action="liste#basculerPanneau" aria-label="Déplier les filtres"
-                class="w-[34px] h-[34px] flex items-center justify-center rounded-full bg-primary-5 hover:bg-primary-4">
-            <twig:Icon name="caret-right" class="w-4 h-4 text-primary-3" />
+    <div data-liste-target="replie" class="hidden flex-1 flex-col items-center gap-3.5 py-4">
+        <button type="button" data-action="liste#basculerPanneau" title="Déplier les filtres"
+                class="w-[34px] h-[34px] shrink-0 flex items-center justify-center rounded-full
+                       bg-primary-4 text-primary-3 cursor-pointer">
+            <span class="sr-only">Déplier les filtres</span>
+            <twig:Icon name="caret-right" class="w-[15px] h-[15px]" />
         </button>
-        {% if filtres.actifs > 0 %}<twig:Tag label="{{ filtres.actifs }}" variant="primary-3" size="sm" />{% endif %}
+        <twig:Tag label="{{ filtres.actifs }}" variant="neutral" size="sm" class="bg-neutral-100! border-primary!" />
+        <span class="[writing-mode:vertical-rl] uppercase tracking-[0.8px] whitespace-nowrap">
+            <twig:Typography variant="body-xs" textColor="neutral-500" bold>Filtres actifs</twig:Typography>
+        </span>
     </div>
 
     {# État ouvert : le formulaire de filtres à facettes. #}
-    <nav data-liste-target="ouvert" class="flex flex-col w-full box-border pl-5 pr-3 py-4 gap-4 overflow-y-auto scrollbar"
-         aria-label="Filtres du référentiel">
-    {{ form_start(form_filtres) }}
-        <div class="flex items-center justify-between px-1">
-            <div class="flex items-center gap-2">
-                <twig:Typography variant="body-sm" bold>Filtres</twig:Typography>
-                {% if filtres.actifs > 0 %}
-                    <twig:Tag label="{{ filtres.actifs }}" variant="primary-3" size="sm" />
-                {% endif %}
-            </div>
-            <div class="flex items-center gap-2">
-                {% if filtres.actifs > 0 %}
-                    <a href="{{ path('app_mdm_referentiel_general') }}">
-                        <twig:Typography variant="body-xs" textColor="primary-3" bold>Tout effacer</twig:Typography>
-                    </a>
-                {% endif %}
-                <button type="button" data-action="liste#basculerPanneau" aria-label="Replier les filtres"
-                        class="w-7 h-7 flex items-center justify-center rounded-full hover:bg-primary-4">
-                    <twig:Icon name="caret-left" class="w-4 h-4 text-primary-3" />
-                </button>
+    <nav data-liste-target="ouvert" class="flex flex-1 min-h-0 flex-col" aria-label="Filtres du référentiel">
+    {{ form_start(form_filtres, { attr: { id: 'form-filtres', class: 'contents' } }) }}
+        <div class="shrink-0 flex flex-col gap-2 px-4 pt-4 pb-3 border-b border-neutral-200">
+            <div class="flex items-center justify-between gap-2.5">
+                <div class="flex items-center gap-2">
+                    <twig:Typography variant="body-sm" bold>Filtres</twig:Typography>
+                    {% if filtres.actifs > 0 %}
+                        <twig:Tag label="{{ filtres.actifs }}" variant="primary-3" size="sm" />
+                    {% endif %}
+                </div>
+                <div class="flex items-center gap-2">
+                    {% if filtres.actifs > 0 %}
+                        <a href="{{ path(route_courante, params_courants) }}">
+                            <twig:Typography variant="body-xs" textColor="primary-3" bold>Tout effacer</twig:Typography>
+                        </a>
+                    {% endif %}
+                    <button type="button" data-action="liste#basculerPanneau" title="Replier les filtres"
+                            class="w-[26px] h-[26px] shrink-0 flex items-center justify-center rounded-full
+                                   bg-primary-4 text-primary-3 cursor-pointer">
+                        <span class="sr-only">Replier les filtres</span>
+                        <twig:Icon name="caret-left" class="w-[15px] h-[15px]" />
+                    </button>
+                </div>
             </div>
         </div>
 
-        <div>{{ form_row(form_filtres.q) }}</div>
+        <div class="flex-1 min-h-0 overflow-y-auto flex flex-col gap-1 px-3 pt-2 pb-5 scrollbar">
+            {# La recherche est rendue dans la barre d'outils (rattachée par `form=`). #}
+            {% do form_filtres.q.setRendered %}
 
-        {% for groupe in ['gammes', 'statuts', 'completudes', 'canaux', 'pays', 'dates'] %}
-            {% set champ = attribute(form_filtres, groupe) %}
-            {% if champ.children is not empty %}
-                <div class="flex flex-col gap-1.5">
-                    <twig:Typography variant="body-xs" textColor="neutral-500" bold>{{ champ.vars.label }}</twig:Typography>
-                    {% for case in champ %}
-                        {{ _self.facette(case, vue.comptes[groupe][case.vars.value] ?? 0) }}
+            {% for groupe in ['gammes', 'statuts', 'completudes', 'canaux', 'pays', 'dates'] %}
+                {% set champ = attribute(form_filtres, groupe) %}
+                {% if champ.children is not empty %}
+                    <div class="flex flex-col gap-0.5 pt-2 pb-2.5">
+                        {{ _self.tete_groupe(champ.vars.label) }}
+                        {% for case in champ %}
+                            {{ _self.facette(case, vue.comptes[groupe][case.vars.value] ?? 0) }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endfor %}
+
+            {% if form_filtres.contributeurs.children is not empty %}
+                <div class="flex flex-col gap-0.5 pt-2 pb-2.5">
+                    <div class="flex items-center gap-2 px-1.5 pb-1.5">
+                        <span class="uppercase tracking-[0.8px]">
+                            <twig:Typography variant="body-xs" textColor="neutral-500" bold>Contributeur</twig:Typography>
+                        </span>
+                        <span class="flex-1 h-px bg-neutral-200"></span>
+                        <a href="{{ url_mes_fiches }}"><twig:Typography variant="body-xs" textColor="primary-3" bold>Mes fiches</twig:Typography></a>
+                    </div>
+                    {% for case in form_filtres.contributeurs %}
+                        {{ _self.facette(case, vue.comptes.contributeurs[case.vars.value] ?? 0) }}
                     {% endfor %}
                 </div>
+            {% else %}
+                {% do form_filtres.contributeurs.setRendered %}
             {% endif %}
-        {% endfor %}
 
-        {% if form_filtres.contributeurs.children is not empty %}
-            <div class="flex flex-col gap-1.5">
-                <div class="flex items-center justify-between">
-                    <twig:Typography variant="body-xs" textColor="neutral-500" bold>Contributeur</twig:Typography>
-                    <a href="{{ url_mes_fiches }}"><twig:Typography variant="body-xs" textColor="primary-3" bold>Mes fiches</twig:Typography></a>
+            <div class="flex flex-col gap-0.5 pt-2 pb-2.5">
+                {{ _self.tete_groupe('Files de travail') }}
+                {{ _self.facette(form_filtres.ia, vue.comptes.ia['1'] ?? 0, 'Valeurs IA à arbitrer') }}
+                {{ _self.facette(form_filtres.repli, vue.comptes.repli['1'] ?? 0, 'Contact de repli') }}
+            </div>
+
+            <div class="flex flex-col gap-0.5 pt-2 pb-2.5">
+                {{ _self.tete_groupe('Attributs') }}
+                {{ _self.facette(form_filtres.premium, vue.comptes.premium['1'] ?? 0, 'Adhérent Business Premium') }}
+            </div>
+
+            {% if form_filtres.valeurs.children is not empty %}
+                <div class="flex flex-col gap-0.5 pt-2 pb-2.5">
+                    {{ _self.tete_groupe('Catégorie et thématiques') }}
+                    {% for case in form_filtres.valeurs %}
+                        {{ _self.facette(case, vue.comptes.valeurs[case.vars.value] ?? 0) }}
+                    {% endfor %}
                 </div>
-                {% for case in form_filtres.contributeurs %}
-                    {{ _self.facette(case, vue.comptes.contributeurs[case.vars.value] ?? 0) }}
-                {% endfor %}
+            {% else %}
+                {% do form_filtres.valeurs.setRendered %}
+            {% endif %}
+
+            <div class="pt-1 px-1.5">
+                <twig:Button variant="primary" size="sm" type="submit" full>Filtrer</twig:Button>
             </div>
-        {% else %}
-            {% do form_filtres.contributeurs.setRendered %}
-        {% endif %}
-
-        <div class="flex flex-col gap-1.5">
-            <twig:Typography variant="body-xs" textColor="neutral-500" bold>Files de travail</twig:Typography>
-            {{ _self.facette(form_filtres.ia, vue.comptes.ia['1'] ?? 0, 'Valeurs IA à arbitrer') }}
-            {{ _self.facette(form_filtres.repli, vue.comptes.repli['1'] ?? 0, 'Contact de repli') }}
+            {% do form_filtres.filtrer.setRendered %}
         </div>
-
-        <div class="flex flex-col gap-1.5">
-            <twig:Typography variant="body-xs" textColor="neutral-500" bold>Attributs</twig:Typography>
-            {{ _self.facette(form_filtres.premium, vue.comptes.premium['1'] ?? 0, 'Adhérent Business Premium') }}
-        </div>
-
-        {% if form_filtres.valeurs.children is not empty %}
-            <div class="flex flex-col gap-1.5">
-                <twig:Typography variant="body-xs" textColor="neutral-500" bold>Catégorie et thématiques</twig:Typography>
-                {% for case in form_filtres.valeurs %}
-                    {{ _self.facette(case, vue.comptes.valeurs[case.vars.value] ?? 0) }}
-                {% endfor %}
-            </div>
-        {% else %}
-            {% do form_filtres.valeurs.setRendered %}
-        {% endif %}
-
-        <div class="pt-1">
-            <twig:Button variant="primary" size="sm" type="submit">Filtrer</twig:Button>
-        </div>
-        {% do form_filtres.filtrer.setRendered %}
     {{ form_end(form_filtres) }}
     </nav>
 </div>
@@ -152,194 +197,469 @@
 
 {# ------------------------------------------------------------------ Contenu #}
 {% block contenu %}
-<div class="flex flex-col h-full min-h-0 px-6 py-5 gap-4">
-    {# Cibles du contrôleur `liste` non encore branchées (menu « Plus d'actions », gérer les vues). #}
-    <span data-liste-target="plus" hidden></span>
-    <span data-liste-target="vues" hidden></span>
+<div class="flex flex-col flex-1 min-h-0">
+    {# Cible du contrôleur `liste` : la modale « Gérer les vues » est en fin de gabarit. #}
 
-    {# En-tête + barre d'outils #}
-    <div class="shrink-0 flex items-start justify-between gap-4">
-        <div class="flex flex-col gap-1">
-            <twig:Typography variant="body-xs" textColor="neutral-500" bold class="uppercase tracking-[0.8px]">Référentiel</twig:Typography>
-            <twig:Typography variant="heading-2" element="h1" bold>
-                {{ gamme_imposee ? (gamme_titres[gamme_imposee.value] ?? gamme_imposee.value) : 'Toutes les fiches' }}
-            </twig:Typography>
-            <twig:Typography variant="body-sm" textColor="neutral-500">
-                {{ vue.total }} fiche{{ vue.total == 1 ? '' : 's' }} dans le filtre courant · {{ vue.totalReferentiel }} au total.
-            </twig:Typography>
+    <h1 class="sr-only">{{ gamme_imposee ? (gamme_titres[gamme_imposee.value] ?? gamme_imposee.value) : 'Toutes les fiches' }}</h1>
+
+    {# ------------------------------------------------------- Barre d'outils #}
+    <div class="shrink-0 flex items-center gap-3.5 px-[30px] pt-4 pb-3">
+        {# Recherche : vrai champ `f[q]`, rattaché au formulaire de filtres du rail. #}
+        <div class="flex-1 min-w-[220px] max-w-[460px]">
+            <twig:Form:TextInput
+                id="recherche-referentiel"
+                name="f[q]"
+                value="{{ filtres.q }}"
+                leftIcon="magnifying-glass"
+                placeholder="nom · ville · identifiant"
+                class="rounded-full! h-[38px] inset-ring-1 inset-ring-neutral-200 bg-neutral-100!"
+                :inputAttributes="{ type: 'search', form: 'form-filtres' }"
+            />
         </div>
 
-        <div class="flex flex-wrap items-center justify-end gap-2 shrink-0">
-            {# Sélecteur de vues enregistrées (donnée réelle), en menu déroulant. #}
-            <div class="relative">
-                <twig:Button variant="outline" size="sm" icon="layout" data-action="liste#basculerPicker"
-                             aria-haspopup="true" aria-expanded="false">Vues</twig:Button>
-                <div data-liste-target="picker" hidden
-                     class="absolute right-0 top-full mt-1 z-10 w-[320px] flex flex-col gap-1 p-3 rounded-md bg-neutral-100 shadow-(--shadow) inset-ring-1 inset-ring-neutral-200">
-                    {% for entree in vues_enregistrees %}
-                        <div class="flex items-center justify-between gap-2 px-2 py-1.5 rounded-xs hover:bg-primary-4">
-                            <a href="{{ entree.url }}" class="min-w-0"><twig:Typography variant="body-sm" bold textColor="primary-3" ellipsis>{{ entree.vue.name }}</twig:Typography></a>
-                            <div class="flex items-center gap-1 shrink-0">
-                                <twig:Typography variant="body-xs" textColor="neutral-500">{{ entree.vue.shared ? 'Partagée' : 'Perso' }}</twig:Typography>
-                                {% if entree.suppression %}<span class="[&_button]:p-0!">{{ form(entree.suppression) }}</span>{% endif %}
+        {# ------------------------------------- Vues enregistrées (sélecteur) #}
+        <div class="relative shrink-0">
+            <twig:Button variant="text" size="md" icon="layout"
+                         class="bg-neutral-100! inset-ring-1 inset-ring-neutral-200 h-[38px]! rounded-full!"
+                         data-action="liste#basculerPicker" aria-haspopup="true" aria-expanded="false">Vues</twig:Button>
+            <div data-liste-target="picker" hidden
+                 class="absolute left-0 top-[44px] z-8 w-[380px] p-1.5 rounded-[14px] bg-neutral-100
+                        shadow-[0_16px_40px_rgba(3,74,94,0.22)] flex flex-col gap-px">
+                {% for entree in vues_enregistrees %}
+                    <a href="{{ entree.url }}"
+                       class="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xs cursor-pointer hover:bg-primary-4">
+                        <twig:Icon name="layout" class="w-[15px] h-[15px] shrink-0 text-primary" />
+                        <span class="flex-1 min-w-0 truncate">
+                            <twig:Typography variant="body-sm">{{ entree.vue.name }}</twig:Typography>
+                        </span>
+                        <twig:Typography variant="body-xs" textColor="neutral-500" class="shrink-0">{{ entree.vue.shared ? 'Partagée' : 'Perso' }}</twig:Typography>
+                    </a>
+                {% else %}
+                    <twig:Typography variant="body-sm" textColor="neutral-500" class="px-3 py-2">Aucune vue enregistrée.</twig:Typography>
+                {% endfor %}
+                <button type="button" class="flex items-center gap-2 w-full px-3 py-2.5 border-t border-neutral-200 cursor-pointer"
+                        data-action="liste#basculerVues">
+                    <twig:Icon name="dots-three" class="w-3.5 h-3.5 shrink-0 text-primary-3" />
+                    <twig:Typography variant="body-sm" textColor="primary-3" bold>Gérer les vues</twig:Typography>
+                </button>
+            </div>
+        </div>
+
+        <twig:Button variant="text" size="md" icon="note" title="Copier le lien de cette liste"
+                     class="bg-neutral-100! inset-ring-1 inset-ring-neutral-200 h-[38px]! rounded-full!"
+                     data-action="liste#copierLien">Copier le lien</twig:Button>
+
+        <span class="flex-1"></span>
+
+        {# ------------------------------------------------------------ Densité #}
+        <div class="shrink-0 flex items-center gap-0.5 p-[3px] rounded-full bg-neutral-100
+                    inset-ring-1 inset-ring-neutral-200">
+            {{ _self.densite('Normale', not compacte, 'nominal', route_courante, params_courants|merge(parametres_filtre)) }}
+            {{ _self.densite('Compacte', compacte, 'compacte', route_courante, params_courants|merge(parametres_filtre)) }}
+        </div>
+
+        {# Fonction du front pas encore adossée au back → visible mais inactive. #}
+        <span title="Fonction à venir — en développement" class="inline-flex shrink-0">
+            <twig:Button variant="text" size="md" icon="eye" disabled
+                         class="bg-neutral-100! inset-ring-1 inset-ring-neutral-200 h-[38px]! rounded-full!">Colonnes</twig:Button>
+        </span>
+
+        {% if is_granted('ROLE_BP_EDITOR') %}
+            <twig:Button variant="primary" size="md" icon="plus-circle" asLink
+                         href="{{ path('app_mdm_creation_fiche') }}"
+                         class="h-[38px]! rounded-full!">Créer une fiche</twig:Button>
+        {% endif %}
+    </div>
+
+    {# Sélection + actions de masse + tableau : un seul formulaire. #}
+    {{ form_start(form_selection, { attr: { class: 'flex flex-col flex-1 min-h-0' } }) }}
+    {% do form_selection.action.setRendered %}
+
+    {# ------------------------------------------- Bandeau : filtres ou sélection #}
+    <div class="shrink-0 min-h-14 mx-[30px] mb-2.5 px-[18px] py-2 box-border flex items-center rounded-[14px]
+                bg-neutral-100 inset-ring-1 inset-ring-neutral-200"
+         data-liste-target="bandeau" data-total="{{ vue.total|number_format(0, ',', ' ') }}">
+
+        {# -- Filtres actifs -- #}
+        <div class="flex items-center gap-2.5 w-full min-w-0" data-liste-target="vueFiltres">
+            <twig:Typography variant="subtitle" element="span" bold class="shrink-0">{{ vue.total|number_format(0, ',', ' ') }}</twig:Typography>
+            <span class="shrink-0 w-px h-5 bg-neutral-200"></span>
+            <div class="flex-1 min-w-0 flex items-center gap-2 flex-wrap overflow-hidden">
+                {% for badge in filtres_actifs %}
+                    <span class="shrink-0 flex items-center gap-1.5 pl-2.5 pr-2 py-[5px] rounded-full bg-primary-4">
+                        <twig:Typography variant="body-xs" textColor="neutral-500">{{ badge.cle }}</twig:Typography>
+                        <twig:Typography variant="body-sm" textColor="primary-3" bold>{{ badge.valeur }}</twig:Typography>
+                        <a href="{{ path(route_courante, badge.filtre is empty ? params_courants : params_courants|merge({ f: badge.filtre })) }}"
+                           class="inline-flex shrink-0" aria-label="Retirer le filtre {{ badge.cle }} : {{ badge.valeur }}">
+                            <twig:Icon name="cross" class="w-3 h-3 text-primary-3 cursor-pointer" />
+                        </a>
+                    </span>
+                {% endfor %}
+                {% if filtres_actifs is empty %}
+                    <twig:Typography variant="body-sm" textColor="neutral-500">Aucun filtre actif — les {{ vue.totalReferentiel|number_format(0, ',', ' ') }} fiches du référentiel.</twig:Typography>
+                {% else %}
+                    <a href="{{ path(route_courante, params_courants) }}" class="shrink-0">
+                        <twig:Typography variant="body-sm" textColor="neutral-500" bold>Tout effacer</twig:Typography>
+                    </a>
+                {% endif %}
+            </div>
+            <twig:Typography variant="body-sm" textColor="primary-3" bold class="shrink-0">Tri : dernière modification</twig:Typography>
+        </div>
+
+        {# -- Actions groupées -- #}
+        <div class="hidden items-center gap-2.5 w-full min-w-0" data-liste-target="vueActions">
+            <twig:Typography variant="subtitle" element="span" textColor="primary-3" bold
+                             class="shrink-0" data-liste-target="compteSelection"></twig:Typography>
+
+            <label for="{{ form_selection.tout.vars.id }}" class="shrink-0 flex items-center gap-2 cursor-pointer">
+                {{ form_widget(form_selection.tout, { attr: { 'data-liste-target': 'tout', 'data-action': 'change->liste#majBandeau' } }) }}
+                <twig:Typography variant="body-sm">Tout le résultat filtré ({{ vue.total|number_format(0, ',', ' ') }})</twig:Typography>
+            </label>
+
+            <span class="flex-1"></span>
+
+            <div class="flex items-center gap-2 shrink-0">
+                {% for action in actions.principales %}
+                    {#
+                        Une grande sélection n'est pas une petite en plus gros :
+                        passé son plafond, l'action est désactivée (contrôleur
+                        `liste`, re-vérifié côté serveur).
+                    #}
+                    <twig:Button variant="text" size="sm" icon="{{ action.icone }}" type="submit"
+                                 name="selection[action]" value="{{ action.code }}"
+                                 data-plafond="{{ action.plafond }}"
+                                 class="bg-neutral-100! inset-ring-1 inset-ring-neutral-200 h-8! rounded-full!">{{ action.label }}</twig:Button>
+                {% endfor %}
+
+                <div class="relative shrink-0">
+                    <twig:Button variant="text" size="sm" icon="caret-down" type="button"
+                                 class="bg-neutral-100! inset-ring-1 inset-ring-neutral-200 h-8! rounded-full! flex-row-reverse"
+                                 data-action="liste#basculerPlus" aria-expanded="false">Plus d'actions</twig:Button>
+
+                    <div class="absolute right-0 top-[38px] z-8 w-[360px] p-1.5 rounded-[14px] bg-neutral-100
+                                shadow-[0_16px_40px_rgba(3,74,94,0.22)] flex flex-col gap-px"
+                         data-liste-target="plus" hidden>
+                        {% for action in actions.secondaires %}
+                            <div class="flex flex-col w-full rounded-xs" data-ligne-action>
+                                <div class="flex items-center gap-2 w-full px-3 py-2.5">
+                                    <twig:Icon name="{{ action.icone }}" class="w-[15px] h-[15px] shrink-0 text-primary-3" />
+                                    {% if action.irreversible %}
+                                        {# Confirmation explicite : l'envoi des accès ne se rattrape pas. #}
+                                        <twig:Button variant="text" size="sm" type="submit"
+                                                     name="selection[action]" value="{{ action.code }}"
+                                                     data-plafond="{{ action.plafond }}"
+                                                     data-controller="confirm"
+                                                     data-confirm-message-value="Envoyer les accès extranet est irréversible : chaque collaborateur des fiches sélectionnées recevra un email. Continuer ?"
+                                                     data-action="confirm#submit"
+                                                     class="flex-1 min-w-0 justify-start! px-0! whitespace-nowrap font-black">{{ action.label }}</twig:Button>
+                                    {% else %}
+                                        <twig:Button variant="text" size="sm" type="submit"
+                                                     name="selection[action]" value="{{ action.code }}"
+                                                     data-plafond="{{ action.plafond }}"
+                                                     class="flex-1 min-w-0 justify-start! px-0! whitespace-nowrap font-black">{{ action.label }}</twig:Button>
+                                    {% endif %}
+                                    {#
+                                        Deux faits indépendants, deux emplacements :
+                                        l'irréversibilité appartient à l'action et
+                                        survit au plafond de volume.
+                                    #}
+                                    {% if action.irreversible %}
+                                        <twig:Tag label="Irréversible" variant="peach" size="sm" />
+                                    {% endif %}
+                                    <span data-plafond-tag hidden>
+                                        <twig:Tag label="Plafond {{ action.plafond|number_format(0, ',', ' ') }}"
+                                                  variant="neutral" size="sm" class="bg-neutral-100!" />
+                                    </span>
+                                </div>
+
+                                {# Sous-champs réels de l'action, révélés dans le menu. #}
+                                {% if 'contributeur' == action.code %}
+                                    <div class="px-3 pb-2.5">{{ form_widget(form_selection.contributeur) }}</div>
+                                {% elseif 'visibilite' == action.code %}
+                                    {% if form_selection.sites.children is not empty %}
+                                        <div class="max-h-[180px] overflow-y-auto scrollbar px-3 pb-2.5 flex flex-col gap-1">
+                                            {{ form_widget(form_selection.sites) }}
+                                        </div>
+                                    {% else %}
+                                        {% do form_selection.sites.setRendered %}
+                                    {% endif %}
+                                {% endif %}
                             </div>
-                        </div>
-                    {% else %}
-                        <twig:Typography variant="body-sm" textColor="neutral-500" class="px-2 py-1">Aucune vue enregistrée.</twig:Typography>
-                    {% endfor %}
-                    <div class="pt-2 mt-1 border-t border-neutral-200 [&_form]:flex [&_form]:items-center [&_form]:gap-2">{{ form(form_vue) }}</div>
+                        {% endfor %}
+                    </div>
                 </div>
             </div>
-
-            {# Fonctions du front pas encore adossées au back → visibles mais désactivées. #}
-            {{ _self.bouton_a_venir('list', 'Trier') }}
-            {{ _self.bouton_a_venir('eye', 'Colonnes') }}
-            {{ _self.bouton_a_venir('paper-plane', 'Copier le lien') }}
-
-            {% if is_granted('ROLE_BP_EDITOR') %}
-                <twig:Button variant="primary" size="md" icon="plus-circle" asLink
-                             href="{{ path('app_mdm_creation_fiche') }}">Créer une fiche</twig:Button>
-            {% endif %}
         </div>
     </div>
 
-    {# Bandeau des filtres actifs : un badge par valeur, sa croix retire ce seul
-       filtre (URL sur la route courante → la gamme imposée est préservée). #}
-    {% if filtres_actifs is not empty %}
-        {% set params_courants = app.request.attributes.get('_route_params') %}
-        <div class="shrink-0 flex flex-wrap items-center gap-2">
-            {% for badge in filtres_actifs %}
-                <span class="flex items-center gap-1.5 pl-2.5 pr-1.5 py-[5px] rounded-full bg-primary-4">
-                    <twig:Typography variant="body-xs" textColor="neutral-500">{{ badge.cle }}</twig:Typography>
-                    <twig:Typography variant="body-sm" textColor="primary-3" bold>{{ badge.valeur }}</twig:Typography>
-                    <a href="{{ path(app.request.attributes.get('_route'), badge.filtre is empty ? params_courants : params_courants|merge({ f: badge.filtre })) }}"
-                       class="inline-flex shrink-0" aria-label="Retirer le filtre {{ badge.cle }} : {{ badge.valeur }}">
-                        <twig:Icon name="cross" class="w-3 h-3 text-primary-3" />
-                    </a>
-                </span>
-            {% endfor %}
-            <a href="{{ path(app.request.attributes.get('_route'), params_courants) }}">
-                <twig:Typography variant="body-sm" textColor="neutral-500" bold>Tout effacer</twig:Typography>
-            </a>
-        </div>
-    {% endif %}
-
-    {# Actions de masse + tableau, dans le formulaire de sélection #}
-    {{ form_start(form_selection) }}
-        <div class="shrink-0 flex flex-wrap items-center gap-3 p-3 rounded-[14px] bg-neutral-100 shadow-(--shadow)">
-            <twig:Typography variant="body-sm" bold class="shrink-0">Action groupée</twig:Typography>
-            <div class="min-w-[220px]">{{ form_widget(form_selection.action) }}</div>
-            <div class="min-w-[200px]">{{ form_widget(form_selection.contributeur) }}</div>
-            {{ form_widget(form_selection.appliquer) }}
-            <label for="{{ form_selection.tout.vars.id }}" class="flex items-center gap-2 cursor-pointer">
-                {{ form_widget(form_selection.tout) }}
-                <twig:Typography variant="body-sm">Tout le résultat filtré ({{ vue.total }})</twig:Typography>
-            </label>
-        </div>
-
-        {% if form_selection.sites.children is not empty %}
-            <details class="shrink-0 mt-2 px-3">
-                <summary class="cursor-pointer">
-                    <twig:Typography variant="body-sm" textColor="primary-3" bold element="span">Sites de diffusion — pour « Attribuer la visibilité » (ajout seul)</twig:Typography>
-                </summary>
-                <div class="pt-2">{{ form_widget(form_selection.sites) }}</div>
-            </details>
-        {% else %}
-            {% do form_selection.sites.setRendered %}
-        {% endif %}
-
-        {% set cases = form_selection.ids.children %}
-        <div class="flex-1 min-h-0 flex flex-col mt-3 overflow-hidden rounded-[18px] bg-neutral-100 shadow-(--shadow)">
+    {# ------------------------------------------------------------- Tableau #}
+    <div class="flex-1 min-h-0 flex flex-col px-[30px] pb-4">
+        <div class="flex-1 min-h-0 flex flex-col overflow-hidden rounded-[20px] bg-neutral-100 shadow-(--shadow)">
             <div class="flex-1 min-h-0 overflow-auto scrollbar">
+                {% set cases = form_selection.ids.children %}
                 <table class="w-full border-collapse">
                     <thead class="sticky top-0 z-1 bg-primary-5">
-                        <tr class="h-[42px] border-b border-neutral-200 text-left">
-                            {% for col in ['', 'Nom', 'Gamme', 'Statut', 'Complétude', 'Canaux', 'Contributeur', 'Modification', 'Actions'] %}
-                                <th class="px-4 whitespace-nowrap">
-                                    <twig:Typography variant="body-xs" textColor="neutral-500" bold class="uppercase tracking-[0.3px] text-[10px]!">{{ col }}</twig:Typography>
+                        <tr class="{{ compacte ? 'h-9' : 'h-[42px]' }} border-b border-neutral-200 text-left">
+                            <th class="pl-4 w-[34px]">
+                                <button type="button" role="checkbox" aria-checked="false"
+                                        class="group/tete block cursor-pointer"
+                                        data-liste-target="caseTete" data-action="liste#basculerTout">
+                                    <span class="sr-only">Tout sélectionner sur la page</span>
+                                    <span class="w-[18px] h-[18px] box-border flex items-center justify-center rounded-xs
+                                                 bg-neutral-100 inset-ring-1 inset-ring-neutral-400
+                                                 group-aria-checked/tete:bg-primary group-aria-checked/tete:inset-ring-0
+                                                 group-aria-[checked=mixed]/tete:bg-primary group-aria-[checked=mixed]/tete:inset-ring-0">
+                                        <twig:Icon name="check" class="w-[13px] h-[13px] text-neutral-100 hidden group-aria-checked/tete:block" />
+                                        <span class="w-[9px] h-0.5 rounded-[1px] bg-neutral-100 hidden group-aria-[checked=mixed]/tete:block"></span>
+                                    </span>
+                                </button>
+                            </th>
+                            {% for col in [
+                                { label: 'Fiche', al: 'left' }, { label: 'Gamme', al: 'left' },
+                                { label: 'Type', al: 'left' }, { label: 'Pays', al: 'left' },
+                                { label: 'Statut', al: 'left' }, { label: 'Complétude', al: 'left' },
+                                { label: 'Canaux', al: 'right' }, { label: 'Actif', al: 'center' },
+                                { label: 'Premium', al: 'center' }, { label: 'Modification', al: 'left' },
+                                { label: 'Actions', al: 'right' },
+                            ] %}
+                                <th class="pr-2.5 whitespace-nowrap uppercase tracking-[0.3px] text-{{ col.al }}">
+                                    <twig:Typography variant="body-xs" textColor="neutral-500" bold class="text-[10px]!">{{ col.label }}</twig:Typography>
                                 </th>
                             {% endfor %}
                         </tr>
                     </thead>
                     <tbody>
                     {% for ligne in vue.lignes %}
-                        <tr class="h-[54px] border-t border-neutral-200 hover:bg-primary-5/40 align-middle">
-                            <td class="px-4">
-                                <div class="flex items-center gap-2">
-                                    {% if cases[loop.index0] is defined %}{{ form_widget(cases[loop.index0], {label: false}) }}{% endif %}
-                                    <span class="flex items-center justify-center w-10 h-8 rounded-xxs shrink-0 {{ ligne.vignette ? 'bg-primary-4' : 'bg-primary-5 inset-ring-1 inset-ring-peach' }}">
+                        <tr class="{{ compacte ? 'h-10' : 'h-[54px]' }} border-t border-neutral-200 first:border-t-0 align-middle"
+                            data-liste-target="ligne">
+
+                            <td class="pl-4 w-[34px]">
+                                {% if cases[loop.index0] is defined %}
+                                    {{ form_widget(cases[loop.index0], { label: false, attr: {
+                                        'data-liste-target': 'case',
+                                        'data-action': 'change->liste#basculerLigne',
+                                        'aria-label': 'Sélectionner ' ~ (ligne.label ?? ligne.code),
+                                    } }) }}
+                                {% endif %}
+                            </td>
+
+                            <td class="pr-2.5" style="width: {{ compacte ? 290 : 330 }}px; max-width: {{ compacte ? 290 : 330 }}px">
+                                <div class="flex items-center gap-2.5 min-w-0">
+                                    {#
+                                        Une photo manquante est un champ « vide et
+                                        obligatoire » du socle : l'anneau pêche le porte.
+                                    #}
+                                    <span class="shrink-0 box-border flex items-center justify-center rounded-xxs
+                                                 {{ compacte ? 'w-[30px] h-6' : 'w-10 h-8' }}
+                                                 {{ ligne.vignette ? 'bg-primary-4' : 'bg-primary-5 inset-ring-1 inset-ring-peach' }}">
                                         {% if ligne.vignette %}
-                                            <twig:Icon name="images" class="w-4 h-4 text-primary-3" />
+                                            <twig:Icon name="images" class="{{ compacte ? 'w-[13px] h-[13px]' : 'w-[15px] h-[15px]' }} text-primary-3" />
                                         {% else %}
                                             <span class="block w-[5px] h-[5px] rounded-full bg-peach"></span>
                                         {% endif %}
                                     </span>
+                                    <div class="flex-1 min-w-0 flex flex-col">
+                                        {# Le nom ouvre la fiche : chemin principal vers l'éditeur. #}
+                                        <a href="{{ urls[ligne.id].editeur ?? urls[ligne.id].edition_rapide }}" class="min-w-0 hover:underline">
+                                            <twig:Typography variant="{{ compacte ? 'body-sm' : 'body' }}" bold ellipsis>{{ ligne.label ?? 'Sans libellé' }}</twig:Typography>
+                                        </a>
+                                        <twig:Typography variant="body-xs" textColor="neutral-500" ellipsis>
+                                            {{ ligne.code }}{% if ligne.ville %} · {{ ligne.ville }}{% endif %}
+                                        </twig:Typography>
+                                    </div>
                                 </div>
                             </td>
-                            <td class="px-4 max-w-[320px]">
-                                <a href="{{ urls[ligne.id].editeur ?? urls[ligne.id].edition_rapide }}" class="min-w-0 hover:underline flex items-center gap-1.5">
-                                    <twig:Typography variant="body" bold ellipsis>{{ ligne.label ?? 'Sans libellé' }}</twig:Typography>
-                                    {% if ligne.marqueIa %}<twig:Tag label="IA" variant="primary-3" size="sm" />{% endif %}
-                                </a>
-                                <twig:Typography variant="body-xs" textColor="neutral-500" ellipsis>
-                                    {{ ligne.code }}{% if ligne.ville %} · {{ ligne.ville }}{% endif %}
-                                </twig:Typography>
+
+                            {{ _self.cellule(gamme_libelles[ligne.type.value] ?? ligne.type.value, 106, compacte) }}
+
+                            {# Colonne polymorphe : la typologie, marquée quand des valeurs IA attendent arbitrage. #}
+                            <td class="pr-2.5 box-border" style="width: 168px; max-width: 168px">
+                                <div class="flex items-center gap-1.5 min-w-0">
+                                    {% if ligne.marqueIa %}
+                                        <span class="shrink-0 w-[18px] h-[18px] flex items-center justify-center rounded-xs bg-old-gold"
+                                              title="Valeurs IA à arbitrer">
+                                            <twig:Icon name="rocket" class="w-3 h-3 text-primary-3" />
+                                        </span>
+                                    {% endif %}
+                                    <span class="flex-1 min-w-0 truncate">
+                                        <twig:Typography variant="{{ compacte ? 'body-sm' : 'body' }}"
+                                                         class="{{ ligne.marqueIa ? 'font-black' : '' }}">{{ ligne.typologie ?? '—' }}</twig:Typography>
+                                    </span>
+                                </div>
                             </td>
-                            <td class="px-4"><twig:Tag label="{{ gamme_libelles[ligne.type.value] ?? ligne.type.value }}" variant="neutral" size="sm" /></td>
-                            <td class="px-4"><twig:Tag label="{{ statut_libelles[ligne.status.value] ?? ligne.status.value }}" variant="{{ _self.ton_statut(ligne.status.value) }}" size="sm" /></td>
-                            <td class="px-4">
+
+                            {{ _self.cellule(ligne.pays ?? '—', 82, compacte) }}
+
+                            <td class="pr-2.5" style="width: 130px">
+                                <twig:Tag label="{{ statut_libelles[ligne.status.value] ?? ligne.status.value }}"
+                                          variant="{{ _self.ton_statut(ligne.status.value) }}" size="sm" />
+                            </td>
+
+                            <td class="pr-2.5" style="width: 132px">
                                 {% if ligne.completeness is not null %}
-                                    <div class="flex items-center gap-2 w-[120px]">
-                                        <twig:ProgressBar :value="ligne.completeness" />
-                                        <twig:Typography variant="body-xs" textColor="neutral-500" class="shrink-0">{{ ligne.completeness }} %</twig:Typography>
+                                    <div class="flex items-center gap-2">
+                                        <twig:ProgressBar :value="ligne.completeness" :noGradient="ligne.completeness < 60" class="flex-1 min-w-0" />
+                                        <twig:Typography variant="body-xs" textColor="primary-3" bold
+                                                         class="shrink-0 w-[38px] text-right">{{ ligne.completeness }} %</twig:Typography>
                                     </div>
                                 {% else %}
                                     <twig:Typography variant="body-sm" textColor="neutral-500">—</twig:Typography>
                                 {% endif %}
                             </td>
-                            <td class="px-4"><twig:Typography variant="body-sm">{{ ligne.canaux }}</twig:Typography></td>
-                            <td class="px-4"><twig:Typography variant="body-sm" textColor="neutral-500">{{ ligne.contributeur ?? '—' }}</twig:Typography></td>
-                            <td class="px-4 whitespace-nowrap">
-                                <twig:Typography variant="body-sm">{{ ligne.updatedAt|date('d/m/Y H:i') }}</twig:Typography>
-                                {% if ligne.auteur %}<twig:Typography variant="body-xs" textColor="neutral-500">{{ ligne.auteur }}</twig:Typography>{% endif %}
+
+                            <td class="pr-2.5 text-right" style="width: 92px">
+                                <twig:Typography variant="{{ compacte ? 'body-sm' : 'body' }}" bold
+                                                 textColor="{{ ligne.canaux == 0 ? 'error' : 'neutral-900' }}">{{ ligne.canaux }}</twig:Typography>
                             </td>
-                            <td class="px-4">
-                                <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                                    {% if urls[ligne.id].editeur %}<a href="{{ urls[ligne.id].editeur }}"><twig:Typography variant="body-xs" textColor="primary-3" bold>Fiche</twig:Typography></a>{% endif %}
-                                    <a href="{{ urls[ligne.id].edition_rapide }}"><twig:Typography variant="body-xs" textColor="primary-3" bold>Éd. rapide</twig:Typography></a>
-                                    {% if urls[ligne.id].voir %}<a href="{{ urls[ligne.id].voir }}"><twig:Typography variant="body-xs" textColor="neutral-500">Voir</twig:Typography></a>{% endif %}
+
+                            <td class="text-center" style="width: 52px">
+                                <span class="inline-block w-[9px] h-[9px] rounded-full {{ ligne.actif ? 'bg-success' : 'bg-neutral-300' }}"
+                                      role="img" aria-label="{{ ligne.actif ? 'Fiche active' : 'Fiche archivée' }}"></span>
+                            </td>
+
+                            <td class="text-center" style="width: 58px">
+                                {% if ligne.premium %}
+                                    <twig:Tag label="BP" variant="primary-3" size="sm" />
+                                {% else %}
+                                    <twig:Typography variant="body-xs" textColor="neutral-400">—</twig:Typography>
+                                {% endif %}
+                            </td>
+
+                            <td class="pr-2.5" style="width: 164px">
+                                <div class="flex flex-col min-w-0">
+                                    <twig:Typography variant="body-sm" class="whitespace-nowrap">{{ ligne.updatedAt|date('d/m/Y H:i') }}</twig:Typography>
+                                    {% if ligne.contributeur ?? ligne.auteur %}
+                                        <twig:Typography variant="body-xs" textColor="neutral-500" ellipsis>{{ ligne.contributeur ?? ligne.auteur }}</twig:Typography>
+                                    {% endif %}
+                                </div>
+                            </td>
+
+                            <td class="pr-4" style="width: 104px">
+                                <div class="flex items-center justify-end gap-1">
+                                    <a href="{{ urls[ligne.id].edition_rapide }}" title="Édition rapide"
+                                       class="w-7 h-7 shrink-0 flex items-center justify-center rounded-full
+                                              bg-primary-4 text-primary-3">
+                                        <span class="sr-only">Édition rapide de {{ ligne.label ?? ligne.code }}</span>
+                                        <twig:Icon name="pencil" class="w-3.5 h-3.5" />
+                                    </a>
+                                    {% if urls[ligne.id].editeur %}
+                                        <a href="{{ urls[ligne.id].editeur }}" title="Ouvrir la fiche"
+                                           class="w-7 h-7 shrink-0 flex items-center justify-center rounded-full
+                                                  bg-neutral-200 text-primary-3">
+                                            <span class="sr-only">Ouvrir {{ ligne.label ?? ligne.code }}</span>
+                                            <twig:Icon name="arrow-right" class="w-3.5 h-3.5" />
+                                        </a>
+                                    {% endif %}
+                                    <span title="Fonction à venir — en développement"
+                                          class="w-7 h-7 shrink-0 flex items-center justify-center rounded-full text-neutral-400">
+                                        <twig:Icon name="dots-three" class="w-3.5 h-3.5" />
+                                    </span>
                                 </div>
                             </td>
                         </tr>
                     {% else %}
                         <tr>
-                            <td colspan="9" class="p-10 text-center">
-                                <twig:Typography variant="body" textColor="neutral-500" center>
+                            <td colspan="12" class="p-10">
+                                {#
+                                    Un filtre sans résultat n'est pas un référentiel
+                                    vide : rappel du volume total et retrait proposé.
+                                #}
+                                <div class="flex flex-col items-center justify-center gap-3.5">
+                                    <twig:Icon name="magnifying-glass" class="w-[34px] h-[34px] text-neutral-400" />
+                                    <div class="flex flex-col items-center gap-1.5">
+                                        {% if filtres.actifs > 0 %}
+                                            <twig:Typography variant="heading-3" bold center>Aucune fiche ne correspond à ces filtres.</twig:Typography>
+                                            <twig:Typography variant="body-sm" textColor="neutral-500" center class="max-w-[520px] text-pretty">
+                                                Le référentiel contient {{ vue.totalReferentiel|number_format(0, ',', ' ') }} fiches —
+                                                c'est la combinaison des {{ filtres.actifs }} filtres actifs qui ne renvoie rien.
+                                                Retirez-en un pour élargir.
+                                            </twig:Typography>
+                                        {% else %}
+                                            <twig:Typography variant="heading-3" bold center>Le référentiel est vide.</twig:Typography>
+                                        {% endif %}
+                                    </div>
                                     {% if filtres.actifs > 0 %}
-                                        Aucune fiche ne correspond à ces filtres — le référentiel en compte {{ vue.totalReferentiel }}.
-                                    {% else %}
-                                        Le référentiel est vide.
+                                        <twig:Button variant="outline" size="sm" asLink href="{{ path(route_courante, params_courants) }}">Tout effacer</twig:Button>
                                     {% endif %}
-                                </twig:Typography>
+                                </div>
                             </td>
                         </tr>
                     {% endfor %}
                     </tbody>
                 </table>
             </div>
+
+            {# ----------------------------------------------- Pied : pagination #}
+            <div class="shrink-0 h-[52px] px-4 box-border flex items-center border-t border-neutral-200 bg-neutral-100">
+                <twig:Typography variant="body-sm" textColor="neutral-500">
+                    {{ vue.lignes|length }} fiche{{ vue.lignes|length == 1 ? '' : 's' }} affichée{{ vue.lignes|length == 1 ? '' : 's' }}
+                    · {{ vue.total|number_format(0, ',', ' ') }} dans le filtre
+                    · {{ vue.totalReferentiel|number_format(0, ',', ' ') }} au total
+                </twig:Typography>
+                <span class="flex-1"></span>
+                <div class="flex items-center gap-2">
+                    {% if app.request.query.has('cursor') %}
+                        <twig:Button variant="text" size="sm" asLink
+                                     class="bg-neutral-100! inset-ring-1 inset-ring-neutral-200 rounded-full!"
+                                     href="{{ path(route_courante, params_courants|merge(parametres_filtre)) }}">Retour au début</twig:Button>
+                    {% endif %}
+                    {% if vue.nextCursor %}
+                        <twig:Button variant="text" size="sm" asLink
+                                     class="bg-neutral-100! inset-ring-1 inset-ring-neutral-200 rounded-full!"
+                                     href="{{ path(route_courante, params_courants|merge(parametres_filtre)|merge({cursor: vue.nextCursor})) }}">Page suivante</twig:Button>
+                    {% endif %}
+                </div>
+            </div>
         </div>
+    </div>
     {{ form_end(form_selection) }}
 
-    {# Pagination par curseur #}
-    <div class="shrink-0 flex items-center justify-center gap-3">
-        {% if app.request.query.has('cursor') %}
-            <twig:Button variant="outline" size="sm" asLink
-                         href="{{ path(app.request.attributes.get('_route'), app.request.attributes.get('_route_params')|merge(parametres_filtre)) }}">Retour au début</twig:Button>
-        {% endif %}
-        {% if vue.nextCursor %}
-            <twig:Button variant="outline" size="sm" asLink
-                         href="{{ path(app.request.attributes.get('_route'), app.request.attributes.get('_route_params')|merge(parametres_filtre)|merge({cursor: vue.nextCursor})) }}">Page suivante</twig:Button>
-        {% endif %}
+    {# ------------------------------------------------- Gestion des vues #}
+    <div class="fixed inset-0 z-30 flex items-start justify-center pt-[120px] bg-background-transparency"
+         data-liste-target="vues" hidden>
+        <div class="w-[min(680px,calc(100vw-48px))] max-h-[calc(100vh-200px)] flex flex-col overflow-hidden
+                    rounded-3xl bg-neutral-100 shadow-[0_24px_60px_rgba(3,74,94,0.28)]"
+             role="dialog" aria-modal="true" aria-label="Vues enregistrées">
+
+            <div class="shrink-0 flex items-start justify-between gap-5 px-[26px] pt-[22px] pb-4 border-b border-neutral-200">
+                <div class="flex flex-col gap-[3px] min-w-0">
+                    <twig:Typography variant="heading-3" bold>Vues enregistrées</twig:Typography>
+                    <twig:Typography variant="body-sm" textColor="neutral-500">Une vue retient ses filtres.
+                        Les vues partagées sont visibles par toute l'équipe.</twig:Typography>
+                </div>
+                <button type="button" class="w-8 h-8 shrink-0 flex items-center justify-center rounded-full
+                                             bg-neutral-200 cursor-pointer"
+                        data-action="liste#basculerVues">
+                    <span class="sr-only">Fermer</span>
+                    <twig:Icon name="cross" class="w-[15px] h-[15px] text-neutral-500" />
+                </button>
+            </div>
+
+            <div class="flex-1 min-h-0 max-h-[420px] overflow-y-auto px-4 py-3 scrollbar">
+                {% for entree in vues_enregistrees %}
+                    <div class="flex items-center gap-3 px-2.5 py-2.5 rounded-[10px]">
+                        <twig:Icon name="layout" class="w-[18px] h-[18px] shrink-0 text-primary" />
+                        <div class="flex-1 min-w-0 flex flex-col gap-px">
+                            <a href="{{ entree.url }}" class="min-w-0 hover:underline">
+                                <twig:Typography variant="body" bold class="whitespace-nowrap">{{ entree.vue.name }}</twig:Typography>
+                            </a>
+                        </div>
+                        <twig:Typography variant="body-xs" textColor="neutral-500"
+                                         class="shrink-0 whitespace-nowrap">{{ entree.vue.shared ? 'Partagée' : 'Perso' }}</twig:Typography>
+                        {% if entree.suppression %}
+                            <span class="shrink-0 [&_button]:p-0!">{{ form(entree.suppression) }}</span>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <twig:Typography variant="body-sm" textColor="neutral-500" class="px-2.5 py-2">Aucune vue enregistrée pour l'instant.</twig:Typography>
+                {% endfor %}
+            </div>
+
+            <div class="shrink-0 flex items-center gap-3 px-[26px] py-4 border-t border-neutral-200
+                        [&_form]:flex [&_form]:flex-1 [&_form]:items-center [&_form]:gap-2">
+                {{ form(form_vue) }}
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
