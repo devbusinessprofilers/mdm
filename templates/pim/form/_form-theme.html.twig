@@ -58,6 +58,9 @@
         {#- champs sans composant dédié : rendu Symfony standard -#}
         {{- parent() -}}
     {%- else -%}
+        {%- set attrs_entree = { 'type': type == 'text' ? 'text' : type } -%}
+        {%- if attr.autocomplete is defined -%}{%- set attrs_entree = attrs_entree|merge({ 'autocomplete': attr.autocomplete }) -%}{%- endif -%}
+        {%- if attr.autofocus is defined and attr.autofocus -%}{%- set attrs_entree = attrs_entree|merge({ 'autofocus': 'autofocus' }) -%}{%- endif -%}
         <twig:Form:TextInput
             id="{{ id }}"
             name="{{ full_name }}"
@@ -65,16 +68,21 @@
             :disabled="disabled"
             :readonly="attr.readonly is defined and attr.readonly"
             placeholder="{{ attr.placeholder|default('') }}"
-            :inputAttributes="{ 'type': type == 'text' ? 'text' : type }"
+            :inputAttributes="attrs_entree"
         />
     {%- endif -%}
 {%- endblock -%}
 
 {%- block password_widget -%}
+    {#- `data-with-control` (opt-in via l'attr du champ) affiche la jauge et
+        les règles de robustesse du composant Password du portail. -#}
     <twig:Form:Password
         id="{{ id }}"
         name="{{ full_name }}"
         :disabled="disabled"
+        :withControl="attr['data-with-control'] is defined"
+        placeholder="{{ attr.placeholder|default('') }}"
+        autocomplete="{{ attr.autocomplete|default('') }}"
     />
 {%- endblock -%}
 

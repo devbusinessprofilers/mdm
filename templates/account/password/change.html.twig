@@ -1,15 +1,32 @@
-{% extends 'base.html.twig' %}
+{#
+    Écran connecté sans maquette dédiée : habillé comme le groupe « Connexion
+    & mot de passe » (gabarit « Création du mot de passe »).
+#}
+{% extends 'auth/base.html.twig' %}
+{% form_theme form 'pim/form/_form-theme-auth.html.twig' %}
 
 {% block title %}Changer mon mot de passe{% endblock %}
 
-{% block body %}
-<main class="page page-narrow">
-    <section class="card form-card">
-        <h1>Changer mon mot de passe</h1>
-        {% if obligatoire %}
-            <p>Votre mot de passe a été défini pour vous : choisissez-en un nouveau pour continuer.</p>
-        {% endif %}
-        {{ form(form) }}
-    </section>
-</main>
+{% block panneau %}
+    <div class="flex flex-col items-center self-stretch shrink-0 gap-6">
+        <twig:Badge icon="lock" class="w-16" />
+
+        <div class="flex flex-col items-center self-stretch shrink-0 gap-1">
+            <twig:Typography variant="heading-1" element="h1" center
+                             class="self-stretch font-[700]!">Changer mon mot de passe</twig:Typography>
+            <twig:Typography variant="body-lg" element="p" center class="self-stretch">
+                {%- if obligatoire -%}
+                    Votre mot de passe a été défini pour vous : choisissez-en un nouveau pour continuer.
+                {%- else -%}
+                    Choisissez un nouveau mot de passe pour votre compte.
+                {%- endif -%}
+            </twig:Typography>
+        </div>
+    </div>
+
+    {{ form_start(form, { attr: { class: 'flex flex-col items-stretch self-stretch shrink-0 gap-4' } }) }}
+        {{ form_row(form.password.first) }}
+        {{ form_row(form.password.second) }}
+        {{ form_row(form.submit) }}
+    {{ form_end(form) }}
 {% endblock %}

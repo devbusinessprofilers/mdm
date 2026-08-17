@@ -26,12 +26,18 @@ final class NewPasswordType extends AbstractType
         $builder
             ->add('password', RepeatedType::class, [
                 'type' => PasswordType::class,
+                'invalid_message' => 'Les deux mots de passe doivent être identiques.',
                 'first_options' => [
-                    'label' => 'Mot de passe',
+                    'label' => 'Nouveau mot de passe',
                     'help' => sprintf('Choisissez un mot de passe d’au moins %d caractères.', $longueurMin),
-                    'attr' => ['autocomplete' => 'new-password'],
+                    // `data-with-control` : jauge et règles affichées à la
+                    // frappe (composant Password du portail, opt-in du thème).
+                    'attr' => ['autocomplete' => 'new-password', 'placeholder' => 'Mot de passe', 'data-with-control' => true],
                 ],
-                'second_options' => ['label' => 'Confirmer', 'attr' => ['autocomplete' => 'new-password']],
+                'second_options' => [
+                    'label' => 'Confirmation du nouveau mot de passe',
+                    'attr' => ['autocomplete' => 'new-password', 'placeholder' => 'Confirmation du nouveau mot de passe'],
+                ],
                 'constraints' => [
                     new Assert\Length(min: $longueurMin, max: 4096),
                     new Assert\NotCompromisedPassword(),

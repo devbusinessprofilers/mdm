@@ -34,6 +34,9 @@ security:
             form_login:
                 login_path: app_login
                 check_path: app_login
+                # Parcours en deux temps : l'échec renvoie sur l'écran du mot
+                # de passe, l'e-mail retenu restant affiché.
+                failure_path: app_login_password
                 username_parameter: email
                 password_parameter: password
                 enable_csrf: true
@@ -53,7 +56,8 @@ security:
         - { path: ^/health$, roles: PUBLIC_ACCESS }
         # Protégé par jeton Bearer dans MetricsController (404 sans jeton valide).
         - { path: ^/metrics$, roles: PUBLIC_ACCESS }
-        - { path: ^/connexion$, roles: PUBLIC_ACCESS }
+        # /connexion et ses deux étapes (identifiant, mot-de-passe).
+        - { path: ^/connexion, roles: PUBLIC_ACCESS }
         # Ancien chemin de connexion : simple redirection publique vers /connexion.
         - { path: ^/login$, roles: PUBLIC_ACCESS }
         - { path: ^/logout$, roles: PUBLIC_ACCESS }

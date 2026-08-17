@@ -17,8 +17,8 @@ final class ForgotPasswordType extends AbstractType
     {
         $builder
             ->add('email', EmailType::class, [
-                'label' => 'Adresse email',
-                'attr' => ['autocomplete' => 'email', 'autofocus' => true],
+                'label' => 'Votre email',
+                'attr' => ['placeholder' => 'Votre email', 'autocomplete' => 'email', 'autofocus' => true],
             ])
             ->add('submit', SubmitType::class, ['label' => 'Recevoir un lien']);
     }

@@ -70,7 +70,7 @@ final class InternalUserSecurityIntegrationTest extends WebTestCase
         self::assertResponseIsSuccessful();
 
         $plainPassword = 'New-unique-password-2026-Account!';
-        $client->submit($crawler->selectButton('Enregistrer le mot de passe')->form([
+        $client->submit($crawler->selectButton('Se connecter')->form([
             'new_password[password][first]' => $plainPassword,
             'new_password[password][second]' => $plainPassword,
         ]));

@@ -1,14 +1,23 @@
-{% extends 'base.html.twig' %}
+{# Maquette : S1 · Mot de passe oublié (nœud Figma 74:2380). #}
+{% extends 'auth/base.html.twig' %}
+{% form_theme form 'pim/form/_form-theme-auth.html.twig' %}
 
 {% block title %}Mot de passe oublié{% endblock %}
 
-{% block body %}
-<main class="page page-narrow">
-    <section class="card form-card">
-        <h1>Mot de passe oublié</h1>
-        <p>Indiquez l’adresse email de votre compte interne PIM.</p>
-        {{ form(form) }}
-        <a class="back-link" href="{{ path('app_login') }}">← Retour à la connexion</a>
-    </section>
-</main>
+{% block panneau %}
+    <div class="flex flex-col items-center self-stretch shrink-0 gap-6">
+        <twig:Badge icon="lock" class="w-16" />
+
+        <div class="flex flex-col items-center self-stretch shrink-0 gap-1">
+            <twig:Typography variant="heading-1" element="h1" center
+                             class="self-stretch font-[700]!">Mot de passe oublié</twig:Typography>
+            <twig:Typography variant="body-lg" element="p" center
+                             class="self-stretch">Réinitialisez votre accès</twig:Typography>
+        </div>
+    </div>
+
+    {{ form_start(form, { attr: { class: 'flex flex-col items-stretch self-stretch shrink-0 gap-4' } }) }}
+        {{ form_row(form.email) }}
+        {{ form_row(form.submit) }}
+    {{ form_end(form) }}
 {% endblock %}

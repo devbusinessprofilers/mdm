@@ -58,7 +58,9 @@ final class PasswordResetController extends AbstractController
             throw $this->createNotFoundException('Lien de réinitialisation expiré ou invalide.');
         }
 
-        $form = $this->createForm(NewPasswordType::class, null, ['action' => $request->getUri()]);
+        // Libellé de la maquette « Création du mot de passe » : le mot de passe
+        // posé, l'écran renvoie droit vers la connexion.
+        $form = $this->createForm(NewPasswordType::class, null, ['action' => $request->getUri(), 'button_label' => 'Se connecter']);
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
             /** @var array{password: string} $data */

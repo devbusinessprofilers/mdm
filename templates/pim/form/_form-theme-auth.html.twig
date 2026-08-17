@@ -1,0 +1,43 @@
+{#
+    Thème des écrans « Connexion & mot de passe » (coquille auth/base).
+
+    Appliqué page par page via {% form_theme %} par-dessus le thème global :
+    seuls le rythme et les libellés de la maquette changent — libellé `body`
+    non gras collé au champ (gap-1, astérisque sans espace), bouton primaire
+    large pleine largeur. Les widgets restent ceux du thème global.
+#}
+{%- block form_row -%}
+    <div class="flex flex-col gap-1 self-stretch{% if row_attr.class is defined %} {{ row_attr.class }}{% endif %}">
+        {{- form_label(form) -}}
+        {{- form_errors(form) -}}
+        {{- form_widget(form) -}}
+        {{- form_help(form) -}}
+    </div>
+{%- endblock -%}
+
+{%- block form_label -%}
+    {%- if label is not same as(false) -%}
+        {%- if label is empty -%}
+            {%- set label = name|humanize -%}
+        {%- endif -%}
+        <twig:Typography variant="body" element="label" for="{{ id }}">
+            {{- translation_domain is same as(false) ? label : label|trans({}, translation_domain) -}}
+            {%- if required %}*{% endif -%}
+        </twig:Typography>
+    {%- endif -%}
+{%- endblock -%}
+
+{%- block submit_widget -%}
+    {%- set button_label = label is not same as(false)
+        ? (label is empty ? name|humanize : (translation_domain is same as(false) ? label : label|trans(label_translation_parameters, translation_domain)))
+        : '' -%}
+    <twig:Button
+        variant="primary"
+        size="lg"
+        type="submit"
+        name="{{ full_name }}"
+        id="{{ id }}"
+        :disabled="disabled"
+        full
+    >{{ button_label }}</twig:Button>
+{%- endblock -%}

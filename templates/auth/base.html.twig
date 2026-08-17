@@ -9,7 +9,8 @@
 #}
 {% extends 'base.html.twig' %}
 
-{# Écrans d'authentification : pas de barre de navigation. #}
+{# Écrans d'authentification : pas de barre de navigation. Les messages flash
+   sont rendus dans le panneau (bloc `avis`), pas en tête de body. #}
 {% block navbar %}{% endblock %}
 {% block flashes %}{% endblock %}
 
@@ -41,6 +42,14 @@
                         min-[1280px]:px-[12.956%] min-[1280px]:py-[104px]
                         rounded-md bg-neutral-100 shadow-(--shadow)
                         {% block classe_panneau %}gap-6{% endblock %}">
+                {% block avis %}
+                    {% for type, messages in app.flashes %}
+                        {% for message in messages %}
+                            <twig:Alert icon="{{ type == 'success' ? 'check-circle' : 'cross-circle' }}"
+                                        role="status" class="self-stretch">{{ message }}</twig:Alert>
+                        {% endfor %}
+                    {% endfor %}
+                {% endblock %}
                 {% block panneau %}{% endblock %}
             </div>
         </div>

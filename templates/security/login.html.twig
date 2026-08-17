@@ -1,30 +1,46 @@
+{#
+    Maquette : S1 · Connexion V1 (nœud Figma 36:1455) — première étape du
+    parcours : l'e-mail seul, le mot de passe vient à l'écran suivant.
+#}
 {% extends 'auth/base.html.twig' %}
+{% form_theme email_form 'pim/form/_form-theme-auth.html.twig' %}
 
-{% block title %}Connexion | MDM Business Profilers{% endblock %}
+{% block title %}Identifiez-vous{% endblock %}
 
-{% block classe_panneau %}gap-8{% endblock %}
+{# Seul écran du groupe à espacer ses blocs de 40 px. #}
+{% block classe_panneau %}gap-10{% endblock %}
 
 {% block panneau %}
     <div class="flex flex-col items-center self-stretch shrink-0 gap-6">
         <twig:Badge icon="user" class="w-16" />
 
         <div class="flex flex-col items-center self-stretch shrink-0 gap-1">
-            <twig:Typography variant="heading-1" element="h1" center class="self-stretch font-[700]!">
-                Connexion au MDM
-            </twig:Typography>
+            <twig:Typography variant="heading-1" element="h1" center
+                             class="self-stretch font-[700]!">Identifiez-vous</twig:Typography>
             <twig:Typography variant="body-lg" element="p" center class="self-stretch">
-                Accédez au référentiel PIM et à la médiathèque.
+                Renseignez votre adresse mail professionnel pour vous connecter.
             </twig:Typography>
         </div>
 
-        {% if authentication_error %}
-            <twig:Alert icon="cross-circle" role="alert" class="self-stretch">Identifiants invalides.</twig:Alert>
-        {% endif %}
+        {{ form_start(email_form, { attr: { class: 'flex flex-col items-stretch self-stretch shrink-0 gap-4' } }) }}
+            {{ form_row(email_form.email) }}
+            {{ form_row(email_form.submit) }}
+        {{ form_end(email_form) }}
+    </div>
 
-        <div class="self-stretch">{{ form(login_form) }}</div>
+    <hr class="self-stretch w-full h-px border-0 bg-neutral-200">
 
-        <a href="{{ path('app_account_password_forgot') }}">
-            <twig:Typography variant="body-sm" textColor="primary-3" bold>Mot de passe oublié ?</twig:Typography>
-        </a>
+    <div class="flex flex-col items-start self-stretch shrink-0 gap-8">
+        <div class="flex flex-col items-start self-stretch shrink-0 gap-1">
+            <twig:Typography variant="heading-3" element="h2" center
+                             class="self-stretch font-[700]!">Besoin d’accompagnement ?</twig:Typography>
+            <twig:Typography variant="body" element="p" center
+                             class="self-stretch">Notre équipe est là pour vous aider !</twig:Typography>
+        </div>
+
+        {# La maquette ne définit pas la destination du contact → désactivé. #}
+        <span title="Fonction à venir — en développement" class="self-stretch inline-flex">
+            <twig:Button variant="outline" size="lg" full type="button" disabled>Contactez notre support</twig:Button>
+        </span>
     </div>
 {% endblock %}

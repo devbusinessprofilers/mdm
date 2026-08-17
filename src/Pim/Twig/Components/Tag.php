@@ -19,7 +19,8 @@ class Tag
 
     public function mount(?string $variant = null, ?string $size = null): void
     {
-        $this->variant = TagVariantEnum::tryFrom($variant) ?? TagVariantEnum::PRIMARY;
-        $this->size = TagSizeEnum::tryFrom($size) ?? TagSizeEnum::SMALL;
+        // PHP 8.5 déprécie tryFrom(null) : garde explicite.
+        $this->variant = (null !== $variant ? TagVariantEnum::tryFrom($variant) : null) ?? TagVariantEnum::PRIMARY;
+        $this->size = (null !== $size ? TagSizeEnum::tryFrom($size) : null) ?? TagSizeEnum::SMALL;
     }
 }

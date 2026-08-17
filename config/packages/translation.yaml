@@ -1,5 +1,7 @@
 framework:
-    default_locale: en
+    # L'application est en français : les composants du portail passent leurs
+    # libellés par `|trans` (règles de mot de passe, notamment).
+    default_locale: fr
     translator:
         default_path: '%kernel.project_dir%/translations'
         providers:

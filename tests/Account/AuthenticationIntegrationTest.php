@@ -47,10 +47,10 @@ final class AuthenticationIntegrationTest extends WebTestCase
         self::assertSame($user->id(), $repository->loadUserByIdentifier(' ADMIN@EXAMPLE.COM ')?->id());
 
         $crawler = $client->request('GET', '/connexion');
-        $client->submit($crawler->selectButton('Se connecter')->form([
-            'email' => ' ADMIN@EXAMPLE.COM ',
-            'password' => 'A-secure-password-2026!',
-        ]));
+        $client->submit($crawler->selectButton('Continuer')->form(['email' => ' ADMIN@EXAMPLE.COM ']));
+        self::assertResponseRedirects('/connexion/mot-de-passe');
+        $crawler = $client->followRedirect();
+        $client->submit($crawler->selectButton('Se connecter')->form(['password' => 'A-secure-password-2026!']));
 
         self::assertResponseRedirects('/');
         $client->followRedirect();
@@ -114,10 +114,10 @@ final class AuthenticationIntegrationTest extends WebTestCase
     private function failedLoginMessage(\Symfony\Bundle\FrameworkBundle\KernelBrowser $client, string $email, string $password): string
     {
         $crawler = $client->request('GET', '/connexion');
-        $client->submit($crawler->selectButton('Se connecter')->form([
-            'email' => $email,
-            'password' => $password,
-        ]));
+        $client->submit($crawler->selectButton('Continuer')->form(['email' => $email]));
+        $crawler = $client->followRedirect();
+        $client->submit($crawler->selectButton('Se connecter')->form(['password' => $password]));
+        // L'échec renvoie sur l'écran du mot de passe (failure_path).
         $crawler = $client->followRedirect();
 
         return trim($crawler->filter('[role="alert"]')->text());

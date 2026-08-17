@@ -23,8 +23,9 @@ class StateTag
 
     public function mount(?string $disableVariant = null, ?string $enableVariant = null, ?string $size = null): void
     {
-        $this->disableVariant = TagVariantEnum::tryFrom($disableVariant) ?? TagVariantEnum::NEUTRAL;
-        $this->enableVariant = TagVariantEnum::tryFrom($enableVariant) ?? TagVariantEnum::SUCCESS_PASTEL;
-        $this->size = TagSizeEnum::tryFrom($size) ?? TagSizeEnum::SMALL;
+        // PHP 8.5 déprécie tryFrom(null) : garde explicite.
+        $this->disableVariant = (null !== $disableVariant ? TagVariantEnum::tryFrom($disableVariant) : null) ?? TagVariantEnum::NEUTRAL;
+        $this->enableVariant = (null !== $enableVariant ? TagVariantEnum::tryFrom($enableVariant) : null) ?? TagVariantEnum::SUCCESS_PASTEL;
+        $this->size = (null !== $size ? TagSizeEnum::tryFrom($size) : null) ?? TagSizeEnum::SMALL;
     }
 }
