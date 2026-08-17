@@ -43,6 +43,7 @@ final class QualiteController extends AbstractController
             'onglet_actif' => $onglet,
             'badges' => $qualite->badges(),
             'sante' => 'miroir' === $onglet ? $qualite->santeParGamme() : [],
+            'champs_faibles' => 'miroir' === $onglet ? $qualite->champsFaibles() : [],
             'suggestions' => 'conflits' === $onglet ? $qualite->suggestionsEnAttente() : [],
             // Mêmes décisions un clic que le bloc « Suggestions en attente »
             // de la fiche, avec retour sur cet écran (filtre conservé).

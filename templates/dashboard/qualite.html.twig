@@ -16,6 +16,13 @@
     'lieu': 'Lieux', 'restaurant': 'Restaurants',
     'activite': 'Activités', 'service_evenementiel': 'Services',
 } %}
+{% set onglet_actions = {
+    'miroir': [['Relancer la comparaison', 'arrow-clockwise'], ['Arbitrer les conflits', 'ok-circle']],
+    'conflits': [['Arbitrer en masse', 'ok-circle']],
+    'formes': [['Normaliser en masse', 'list']],
+    'notifs': [['Renvoyer les relances', 'paper-plane']],
+    'decisions': [['Exporter', 'clipboard']],
+} %}
 {% set onglet_meta = {
     'miroir': { icone: 'shield-check', sousTitre: 'La complétude mesurée par gamme et par canal de diffusion.' },
     'conflits': { icone: 'warning', sousTitre: 'Valeurs IA et écarts d\'adresse à arbitrer — Accepter applique, Ignorer garde la saisie.' },
@@ -76,13 +83,94 @@
             <twig:Typography variant="body" element="p" textColor="neutral-500"
                              class="text-pretty">{{ onglet_meta[onglet_actif].sousTitre }}</twig:Typography>
         </div>
-        {% if is_granted('ROLE_SUPER_ADMIN') %}
-            <twig:Button variant="outline" size="sm" asLink href="{{ path('app_pim_completeness_index') }}">Configuration de la complétude</twig:Button>
-        {% endif %}
+        <div class="flex items-center gap-2.5 shrink-0">
+            {# Actions de la maquette sans back : visibles mais désactivées. #}
+            {% for action in onglet_actions[onglet_actif]|default([]) %}
+                <span title="Fonction à venir — en développement" class="inline-flex">
+                    <twig:Button variant="outline" size="sm" icon="{{ action.1 }}" disabled>{{ action.0 }}</twig:Button>
+                </span>
+            {% endfor %}
+            {% if is_granted('ROLE_SUPER_ADMIN') %}
+                <twig:Button variant="outline" size="sm" asLink href="{{ path('app_pim_completeness_index') }}">Configuration de la complétude</twig:Button>
+            {% endif %}
+        </div>
     </div>
 
     <div class="flex-1 min-h-0 flex flex-col gap-4 px-10 pb-8">
     {% if onglet_actif == 'miroir' %}
+        {# ---- Bloc santé maquette, sur données réelles : score pondéré par
+             les volumes de fiches, un axe par canal de diffusion. ---- #}
+        {% set total_fiches = sante|reduce((s, l) => s + l.fiches, 0) %}
+        {% if total_fiches > 0 %}
+            {% set score = (sante|reduce((s, l) => s + l.fiches * (l.global ?? 0), 0) / total_fiches)|round %}
+            {% set palier = score >= 75 ? 'complet' : (score >= 60 ? 'publiable' : 'insuffisant') %}
+            <div class="shrink-0 flex flex-col min-[1200px]:flex-row gap-4 items-stretch">
+                <div class="flex flex-col box-border gap-4 px-[26px] py-6 rounded-md bg-neutral-100 shadow-(--shadow) w-full min-[1200px]:w-[400px] shrink-0">
+                    <twig:Typography variant="body" bold>Santé du référentiel</twig:Typography>
+                    <div class="flex items-end gap-3.5">
+                        <twig:Typography variant="heading-1" element="p"
+                                         class="shrink-0 whitespace-nowrap sm:text-[3.25rem]! sm:leading-[3.625rem]! font-[700]!">{{ score }} %</twig:Typography>
+                        <div class="flex flex-col gap-[3px] pb-1.5">
+                            <span class="w-fit px-[9px] py-[3px] rounded-lg {{ palier == 'complet' ? 'bg-success-pastel' : (palier == 'publiable' ? 'bg-peach-pastel' : 'bg-error-pastel') }}">
+                                <twig:Typography variant="body-xs" bold textColor="primary-3">{{ palier == 'complet' ? 'Complet' : (palier == 'publiable' ? 'Publiable' : 'Insuffisant') }}</twig:Typography>
+                            </span>
+                            <twig:Typography variant="body-sm" textColor="neutral-500">complétude moyenne pondérée sur {{ total_fiches }} fiches</twig:Typography>
+                        </div>
+                    </div>
+                    <div class="w-full h-2 rounded-lg bg-neutral-200 overflow-hidden">
+                        <div class="h-full rounded-lg {{ score >= 60 ? 'bg-linear-(--primary-gradient)' : 'bg-peach' }}"
+                             style="width: {{ score }}%"></div>
+                    </div>
+                    <div class="flex flex-col gap-2.5">
+                        {% for canal, libelle in { 'global': 'Global', 'marketplace': 'Marketplace', 'thematic': 'Sites thématiques', 'salesforce': 'Salesforce', 'portal': 'Portail' } %}
+                            {% set part = (sante|reduce((s, l) => s + l.fiches * (attribute(l, canal) ?? 0), 0) / total_fiches)|round %}
+                            {% set palier_axe = part >= 75 ? 'complet' : (part >= 60 ? 'publiable' : 'insuffisant') %}
+                            <div class="flex flex-col gap-1">
+                                <div class="flex items-baseline justify-between gap-3">
+                                    <twig:Typography variant="body-sm" bold class="min-w-0">{{ libelle }}</twig:Typography>
+                                    <twig:Typography variant="body" bold
+                                                     textColor="{{ palier_axe == 'complet' ? 'success' : (palier_axe == 'publiable' ? 'primary-3' : 'error') }}">{{ part }} %</twig:Typography>
+                                </div>
+                                <div class="w-full h-1 rounded-lg bg-neutral-200 overflow-hidden">
+                                    <div class="h-full rounded-lg {{ palier_axe == 'complet' ? 'bg-success' : (palier_axe == 'publiable' ? 'bg-peach' : 'bg-error') }}"
+                                         style="width: {{ part }}%"></div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="flex flex-col box-border gap-4 px-[26px] py-6 rounded-md bg-neutral-100 shadow-(--shadow) flex-1 min-w-0">
+                    <twig:Typography variant="body" bold>Champs les moins renseignés</twig:Typography>
+                    <div class="flex flex-col gap-0.5">
+                        {% for faible in champs_faibles %}
+                            <div class="flex items-center gap-2.5 px-2.5 py-2 rounded-xs">
+                                <span class="shrink-0 w-1.5 h-1.5 rounded-lg bg-peach" aria-hidden="true"></span>
+                                <twig:Typography variant="body-sm" ellipsis class="flex-1 min-w-0">{{ faible.libelle }}</twig:Typography>
+                                <twig:Typography variant="body-sm" bold textColor="error"
+                                                 class="w-[46px] shrink-0 text-right">{{ faible.part }} %</twig:Typography>
+                                <twig:Typography variant="body-xs" textColor="neutral-400"
+                                                 class="w-24 shrink-0 text-right">{{ faible.poids }}</twig:Typography>
+                            </div>
+                        {% else %}
+                            <twig:Typography variant="body-sm" textColor="neutral-500">Le relevé des champs arrivera au prochain calcul des statistiques.</twig:Typography>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+
+        {# Comparaison inter-sources de la maquette : pas de back → grisée. #}
+        <div title="Fonction à venir — en développement"
+             class="shrink-0 flex items-center gap-3 px-[26px] py-5 rounded-md bg-neutral-100 shadow-(--shadow) opacity-60">
+            <twig:Icon name="warning" aria-hidden="true" class="shrink-0 w-6 h-6 text-neutral-400" />
+            <div class="flex flex-col gap-0.5 flex-1 min-w-0">
+                <twig:Typography variant="subtitle" class="text-[1.125rem]! leading-[1.625rem]! font-[700]!">Comparaison Salesforce / MDM / portail</twig:Typography>
+                <twig:Typography variant="body" textColor="neutral-500">Le miroir champ à champ entre les trois sources arrivera avec l'intégration Salesforce.</twig:Typography>
+            </div>
+            <twig:Tag label="À venir" variant="neutral" size="sm" class="shrink-0" />
+        </div>
+
         <section class="shrink-0 flex flex-col gap-3 p-6 rounded-[20px] bg-neutral-100 shadow-(--shadow)" aria-label="Santé des données">
             <twig:Typography variant="heading-3" element="h2" bold>Complétude par gamme et par canal</twig:Typography>
             <div class="overflow-x-auto rounded-md inset-ring-1 inset-ring-neutral-200">
@@ -112,6 +200,28 @@
             </div>
         </section>
     {% elseif onglet_actif == 'conflits' %}
+        {# ---- Cartes maquette, comptes réels. ---- #}
+        <div class="shrink-0 flex flex-row gap-4 flex-wrap">
+            {% for c in [
+                { icone: 'ai', titre: 'Valeurs IA en attente', valeur: suggestions|length, alerte: suggestions|length > 0, texte: 'Suggestions issues de l\'extraction de documents, à arbitrer champ par champ.' },
+                { icone: 'warning', titre: 'Écarts d\'adresse', valeur: adresses_comptes.avec, alerte: adresses_comptes.avec > 0, texte: 'La BAN ou Geoapify propose une autre adresse — Accepter applique en un clic.' },
+                { icone: 'magnifying-glass', titre: 'Sans résultat fiable', valeur: adresses_comptes.sans, alerte: false, texte: 'Aucune correspondance sûre : à corriger à la main dans la fiche.' },
+                { icone: 'cube', titre: 'Adresses partagées', valeur: doublons_adresse|length, alerte: false, texte: 'Plusieurs fiches déclarent la même adresse — doublons possibles.' },
+            ] %}
+                <div class="flex flex-col box-border gap-3 px-[26px] py-6 rounded-md bg-neutral-100 shadow-(--shadow) flex-1 basis-72 min-w-0">
+                    <div class="flex items-center gap-3">
+                        <twig:Icon name="{{ c.icone }}" aria-hidden="true"
+                                   class="shrink-0 w-6 h-6 {{ c.alerte ? 'text-error' : 'text-primary' }}" />
+                        <twig:Typography variant="subtitle" ellipsis
+                                         class="flex-1 min-w-0 text-[1.125rem]! leading-[1.625rem]! font-[700]!">{{ c.titre }}</twig:Typography>
+                        <span class="inline-flex shrink-0"><twig:Tag label="{{ c.valeur }}" size="sm"
+                                  variant="{{ c.alerte ? 'error' : 'success-pastel' }}" class="whitespace-nowrap" /></span>
+                    </div>
+                    <twig:Typography variant="body" textColor="neutral-500" class="text-pretty">{{ c.texte }}</twig:Typography>
+                </div>
+            {% endfor %}
+        </div>
+
         <section class="shrink-0 flex flex-col gap-3 p-6 rounded-[20px] bg-neutral-100 shadow-(--shadow)" aria-label="Suggestions IA à arbitrer">
             <twig:Typography variant="heading-3" element="h2" bold>Valeurs suggérées par l'IA en attente</twig:Typography>
             <div class="overflow-x-auto rounded-md inset-ring-1 inset-ring-neutral-200">
@@ -196,15 +306,36 @@
             {% endfor %}
         </section>
     {% elseif onglet_actif == 'formes' %}
-        <section class="dam-stats shrink-0 grid grid-cols-1 md:grid-cols-3 gap-3" aria-label="Écarts de forme">
-            {% for libelle, valeur in {'Localisations sans code pays': formes.sans_pays, 'Localisations sans GPS': formes.sans_gps, 'Fiches sans libellé': formes.sans_libelle} %}
-                <a class="dam-stat flex flex-col gap-1 p-4 rounded-[16px] bg-neutral-100 shadow-(--shadow) hover:bg-primary-5" href="{{ path('app_mdm_referentiel_general') }}">
-                    <twig:Typography variant="body-xs" textColor="neutral-500" bold class="uppercase tracking-[0.4px]">{{ libelle }}</twig:Typography>
-                    <twig:Typography variant="heading-3" bold>{{ valeur }}</twig:Typography>
+        <div class="dam-stats shrink-0 flex flex-row gap-4 flex-wrap" aria-label="Écarts de forme">
+            {% for carte in [
+                { libelle: 'Localisations sans code pays', valeur: formes.sans_pays, icone: 'pin', texte: 'Le pays manque : la fiche ne sort dans aucun filtre géographique.' },
+                { libelle: 'Localisations sans GPS', valeur: formes.sans_gps, icone: 'area', texte: 'Sans coordonnées, pas de carte ni de recherche par proximité.' },
+                { libelle: 'Fiches sans libellé', valeur: formes.sans_libelle, icone: 'warning', texte: 'Une fiche sans nom est invisible partout — à compléter en priorité.' },
+            ] %}
+                <a class="dam-stat flex flex-col box-border gap-3 px-[26px] py-6 rounded-md bg-neutral-100 shadow-(--shadow) flex-1 basis-72 min-w-0 hover:bg-primary-5"
+                   href="{{ path('app_mdm_referentiel_general') }}">
+                    <div class="flex items-center gap-3">
+                        <twig:Icon name="{{ carte.icone }}" aria-hidden="true"
+                                   class="shrink-0 w-6 h-6 {{ carte.valeur > 0 ? 'text-error' : 'text-primary' }}" />
+                        <twig:Typography variant="subtitle" ellipsis
+                                         class="flex-1 min-w-0 text-[1.125rem]! leading-[1.625rem]! font-[700]!">{{ carte.libelle }}</twig:Typography>
+                        <span class="inline-flex shrink-0"><twig:Tag label="{{ carte.valeur }}" size="sm"
+                                  variant="{{ carte.valeur > 0 ? 'error' : 'success-pastel' }}" class="whitespace-nowrap" /></span>
+                    </div>
+                    <twig:Typography variant="body" textColor="neutral-500" class="text-pretty">{{ carte.texte }}</twig:Typography>
                 </a>
             {% endfor %}
-        </section>
-        <twig:Typography variant="body-sm" textColor="neutral-500">La liste des normalisations à appliquer (casse, formats, unités) est à définir avec le métier.</twig:Typography>
+        </div>
+        {# Normalisations automatiques de la maquette : pas de back → grisées. #}
+        <div title="Fonction à venir — en développement"
+             class="shrink-0 flex items-center gap-3 px-[26px] py-5 rounded-md bg-neutral-100 shadow-(--shadow) opacity-60">
+            <twig:Icon name="list" aria-hidden="true" class="shrink-0 w-6 h-6 text-neutral-400" />
+            <div class="flex flex-col gap-0.5 flex-1 min-w-0">
+                <twig:Typography variant="subtitle" class="text-[1.125rem]! leading-[1.625rem]! font-[700]!">Normalisations automatiques</twig:Typography>
+                <twig:Typography variant="body" textColor="neutral-500">Casse, formats et unités appliqués en masse — la liste des règles est à définir avec le métier.</twig:Typography>
+            </div>
+            <twig:Tag label="À venir" variant="neutral" size="sm" class="shrink-0" />
+        </div>
     {% elseif onglet_actif == 'notifs' %}
         <section class="shrink-0 flex flex-col gap-3 p-6 rounded-[20px] bg-neutral-100 shadow-(--shadow)" aria-label="Relances de complétude">
             <twig:Typography variant="heading-3" element="h2" bold>Relances de complétude envoyées</twig:Typography>

@@ -7,6 +7,19 @@
     sait faire aujourd'hui.
 #}
 
+{% macro indicateur(icone, fond, libelle, valeur, note) %}
+    <div class="flex items-center box-border gap-3 px-5 py-4 rounded-md bg-neutral-100 shadow-(--shadow) flex-1 basis-56 min-w-0">
+        <span class="shrink-0 w-10 h-10 flex items-center justify-center rounded-full {{ fond }}">
+            <twig:Icon name="{{ icone }}" aria-hidden="true" class="w-5 h-5 text-primary-3" />
+        </span>
+        <div class="flex flex-col gap-px min-w-0">
+            <twig:Typography variant="body-sm" textColor="neutral-500" ellipsis>{{ libelle }}</twig:Typography>
+            <twig:Typography variant="subtitle" class="font-[700]!">{{ valeur }}</twig:Typography>
+            <twig:Typography variant="body-xs" textColor="neutral-400">{{ note }}</twig:Typography>
+        </div>
+    </div>
+{% endmacro %}
+
 {% block title %}Médias · {{ onglets[onglet_actif] }}{% endblock %}
 
 {% set onglet_meta = {
@@ -72,6 +85,17 @@
     </div>
 
     <div class="flex-1 min-h-0 flex flex-col gap-4 px-10 pb-8">
+
+        {# ---- Indicateurs maquette : comptes réels quand les stats sont
+             chargées ; le stockage vit sur le tableau de bord. ---- #}
+        {% if vue and stats is defined %}
+            <div class="shrink-0 flex flex-row gap-4 flex-wrap">
+                {{ _self.indicateur('images', 'bg-neutral-200', 'Médias', stats.images + stats.documents, 'images et documents') }}
+                {{ _self.indicateur('lock', 'bg-error-pastel', 'Sans droits déclarés', stats.rights_missing, 'non diffusables') }}
+                {{ _self.indicateur('warning', 'bg-peach-pastel', 'Doublons probables', stats.duplicates, 'à dédoublonner') }}
+                {{ _self.indicateur('arrow-clockwise', 'bg-peach-pastel', 'Traitements en échec', stats.failed, 'rejouables') }}
+            </div>
+        {% endif %}
 
     {% if onglet_actif == 'sync' and scan_form %}
         <div class="shrink-0">{{ form(scan_form) }}</div>

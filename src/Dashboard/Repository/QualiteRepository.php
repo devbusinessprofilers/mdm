@@ -85,6 +85,37 @@ final readonly class QualiteRepository
         ];
     }
 
+    /**
+     * Champs les moins renseignés, tirés du snapshot field_fill du tableau de
+     * bord — nourrit le volet droit du bloc santé de l'onglet Miroir.
+     *
+     * @return list<array{libelle: string, part: float, poids: string}>
+     */
+    public function champsFaibles(int $limit = 6): array
+    {
+        $payload = $this->connection->fetchOne(
+            "SELECT payload FROM dashboard_snapshot WHERE kind = 'field_fill' ORDER BY computed_at DESC LIMIT 1",
+        );
+        if (!is_string($payload)) {
+            return [];
+        }
+        /** @var array{perType?: array<string, array{worstFields?: list<array{code: string, label?: string, applicable?: int, filled?: int, rate?: float}>}>} $data */
+        $data = (array) json_decode($payload, true);
+        $faibles = [];
+        foreach ($data['perType'] ?? [] as $type => $infos) {
+            foreach ($infos['worstFields'] ?? [] as $field) {
+                $faibles[] = [
+                    'libelle' => ($field['label'] ?? $field['code']).' — '.ucfirst(str_replace('_', ' ', (string) $type)),
+                    'part' => (float) ($field['rate'] ?? 0),
+                    'poids' => ($field['filled'] ?? 0).'/'.($field['applicable'] ?? 0),
+                ];
+            }
+        }
+        usort($faibles, static fn (array $a, array $b): int => $a['part'] <=> $b['part']);
+
+        return array_slice($faibles, 0, $limit);
+    }
+
     public function suggestionsEnAttente(int $limit = 20): array
     {
         $rows = $this->connection->fetchAllAssociative(

@@ -7,6 +7,19 @@
     journal unifié des traitements.
 #}
 
+{% macro indicateur(icone, fond, libelle, valeur, note) %}
+    <div class="flex items-center box-border gap-3 px-5 py-4 rounded-md bg-neutral-100 shadow-(--shadow) flex-1 basis-56 min-w-0">
+        <span class="shrink-0 w-10 h-10 flex items-center justify-center rounded-full {{ fond }}">
+            <twig:Icon name="{{ icone }}" aria-hidden="true" class="w-5 h-5 text-primary-3" />
+        </span>
+        <div class="flex flex-col gap-px min-w-0">
+            <twig:Typography variant="body-sm" textColor="neutral-500" ellipsis>{{ libelle }}</twig:Typography>
+            <twig:Typography variant="subtitle" class="font-[700]!">{{ valeur }}</twig:Typography>
+            <twig:Typography variant="body-xs" textColor="neutral-400">{{ note }}</twig:Typography>
+        </div>
+    </div>
+{% endmacro %}
+
 {% block title %}Outils · Journal des traitements{% endblock %}
 
 {% set famille_libelles = familles %}
@@ -77,6 +90,15 @@
     </div>
 
     <div class="flex-1 min-h-0 flex flex-col gap-4 px-10 pb-8">
+
+        {# ---- Indicateurs maquette, calculés sur le journal courant. ---- #}
+        {% set en_erreur = lignes|filter(l => l.statut in statuts_erreur)|length %}
+        <div class="shrink-0 flex flex-row gap-4 flex-wrap">
+            {{ _self.indicateur('info-circle', 'bg-neutral-200', 'Traitements', lignes|length, 'journal courant') }}
+            {{ _self.indicateur('ok-circle', 'bg-success-pastel', 'Terminés', lignes|length - en_erreur, 'sans erreur bloquante') }}
+            {{ _self.indicateur('warning', 'bg-error-pastel', 'En échec', en_erreur, 'détail ligne à ligne') }}
+            {{ _self.indicateur('spinner', 'bg-primary-4', 'Outbox', outbox_en_attente, 'messages en attente') }}
+        </div>
     <section class="shrink-0 flex flex-col p-6 rounded-[20px] bg-neutral-100 shadow-(--shadow)">
         <div class="overflow-x-auto rounded-md inset-ring-1 inset-ring-neutral-200">
             <table class="w-full border-collapse">
@@ -102,6 +124,11 @@
                 {% endfor %}
                 </tbody>
             </table>
+        </div>
+        <div class="flex items-center h-[42px] px-1 pt-2">
+            <twig:Typography variant="body-sm" textColor="neutral-500">
+                {{- lignes|length }} traitement{{ lignes|length > 1 ? 's' : '' }} affiché{{ lignes|length > 1 ? 's' : '' }} · {{ en_erreur }} en échec
+            </twig:Typography>
         </div>
     </section>
     </div>
