@@ -10,9 +10,14 @@
             data-lieu-media-order-url-value="{{ path('app_pim_lieu_photo_order', {id: lieu.id}) }}"
             data-lieu-media-token-value="{{ media_csrf_token }}"
         >
-            <div class="section-heading">
-                <div><p class="page-kicker">DAM</p><h2>Photos du lieu</h2></div>
-                <span class="badge badge-info">{{ photos|length }}/25</span>
+            <div class="flex items-center gap-3 pb-3">
+                <div class="flex flex-col">
+                    <twig:Typography variant="body-xs" textColor="neutral-500" bold class="uppercase tracking-[0.8px]">DAM</twig:Typography>
+                    <twig:Typography variant="heading-3" element="h2" bold>Photos du lieu</twig:Typography>
+                </div>
+                <span class="inline-flex"><twig:Tag label="{{ photos|length }}/25" variant="primary-3" size="sm" /></span>
+                <span class="flex-1"></span>
+                <twig:Typography variant="body-xs" textColor="neutral-400">25 Mo max · 960 × 480 px · format paysage</twig:Typography>
             </div>
             {{ form_start(media_upload_form) }}
                 <div class="lieu-media-dropzone" data-lieu-media-target="dropzone" data-action="dragover->lieu-media#dragover dragleave->lieu-media#dragleave drop->lieu-media#drop">
@@ -23,6 +28,36 @@
             {{ form_end(media_upload_form) }}
             <div class="lieu-media-progress" hidden data-lieu-media-target="progress"><span data-lieu-media-target="progressBar"></span></div>
             <p class="form-error" hidden data-lieu-media-target="error"></p>
+
+            {# Galerie de vignettes de la maquette : les vraies photos, la première
+               est la principale, la tuile « Ajouter » ouvre le sélecteur de fichiers. #}
+            {% if photos is not empty %}
+                <div class="flex flex-row flex-wrap gap-4 py-4">
+                    {% for photo in photos %}
+                        <div class="relative w-[152px] h-[104px] shrink-0 flex items-center justify-center rounded-xs
+                                    overflow-hidden bg-primary-5 inset-ring-1
+                                    {{ loop.first ? 'inset-ring-primary' : 'inset-ring-neutral-300' }}">
+                            {% if loop.first %}
+                                <span class="absolute top-2 left-2 z-1 px-2 py-0.5 rounded-full bg-primary">
+                                    <twig:Typography variant="body-xs" textColor="neutral-100" bold>Photo principale</twig:Typography>
+                                </span>
+                            {% endif %}
+                            {% if photo.thumbnail_url %}
+                                <img src="{{ photo.thumbnail_url }}" alt="{{ photo.resource.legende ?: photo.asset.originalFilename }}"
+                                     class="w-full h-full object-cover" loading="lazy">
+                            {% else %}
+                                <twig:Icon name="images" class="w-7 h-7 text-neutral-400" />
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                    <label for="{{ media_upload_form.photos.vars.id }}"
+                           class="w-[152px] h-[104px] shrink-0 flex flex-col items-center justify-center gap-1.5
+                                  rounded-xs cursor-pointer bg-neutral-100 inset-ring-1 inset-ring-primary">
+                        <twig:Icon name="plus" class="w-[22px] h-[22px] text-primary" />
+                        <twig:Typography variant="body-sm" textColor="primary-3" bold>Ajouter un média</twig:Typography>
+                    </label>
+                </div>
+            {% endif %}
 
             {% if photos is empty %}
                 <p class="empty-state">Aucune photo n’a encore été ajoutée.</p>
@@ -69,8 +104,14 @@
 
     {% if not creation %}
         <section class="card">
-            <div class="section-heading"><div><p class="page-kicker">DAM</p><h2>Documents</h2></div><span class="badge">{{ documents|length }}</span></div>
-            <p>Les originaux restent privés. Une copie publique n’est créée qu’après validation des droits et traitement par le worker.</p>
+            <div class="flex items-center gap-3 pb-3">
+                <div class="flex flex-col">
+                    <twig:Typography variant="body-xs" textColor="neutral-500" bold class="uppercase tracking-[0.8px]">DAM</twig:Typography>
+                    <twig:Typography variant="heading-3" element="h2" bold>Documents</twig:Typography>
+                </div>
+                <span class="inline-flex"><twig:Tag label="{{ documents|length }}" variant="neutral" size="sm" /></span>
+            </div>
+            <twig:Typography variant="body-sm" textColor="neutral-500">Les originaux restent privés. Une copie publique n’est créée qu’après validation des droits et traitement par le worker.</twig:Typography>
             {{ form_start(document_upload_form, {attr: {class: 'crud-form'}}) }}
                 {{ form_widget(document_upload_form) }}
             {{ form_end(document_upload_form) }}
