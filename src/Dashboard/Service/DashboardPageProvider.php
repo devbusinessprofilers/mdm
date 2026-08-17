@@ -45,7 +45,22 @@ final readonly class DashboardPageProvider
             'storage' => $this->storage($payload['storage'] ?? null),
             'fieldFill' => $this->fieldFill(),
             'sparklines' => $this->sparklines(),
+            // Évolution de la complétude moyenne sur l'historique (30 j) —
+            // nourrit la note « ±N pts » de la zone Santé du tableau de bord.
+            'completudeDelta' => $this->completudeDelta(),
         ];
+    }
+
+    private function completudeDelta(): ?float
+    {
+        $history = $this->snapshots->dailyHistory(self::HISTORY_DAYS);
+        if (count($history) < 2) {
+            return null;
+        }
+        $premier = (float) ($history[0]->payload()['completeness']['avgGlobal'] ?? 0);
+        $dernier = (float) ($history[count($history) - 1]->payload()['completeness']['avgGlobal'] ?? 0);
+
+        return round($dernier - $premier, 1);
     }
 
     /**
@@ -63,11 +78,29 @@ final readonly class DashboardPageProvider
         /** @var array{count: int, bytes: int} $renditions */
         $renditions = $storage['renditions'] ?? ['count' => 0, 'bytes' => 0];
 
+        $totalBytes = (int) ($storage['totalBytes'] ?? 0);
+        $parts = [
+            ['libelle' => 'Images', 'teinte' => 'bg-primary', 'count' => (int) ($byKind['image']['count'] ?? 0), 'bytes' => (int) ($byKind['image']['bytes'] ?? 0)],
+            ['libelle' => 'Documents', 'teinte' => 'bg-primary-3', 'count' => (int) ($byKind['document']['count'] ?? 0), 'bytes' => (int) ($byKind['document']['bytes'] ?? 0)],
+            ['libelle' => 'Variantes générées', 'teinte' => 'bg-peach', 'count' => (int) $renditions['count'], 'bytes' => (int) $renditions['bytes']],
+        ];
+
         return [
-            'total' => $this->formatBytes((int) ($storage['totalBytes'] ?? 0)),
+            'total' => $this->formatBytes($totalBytes),
             'images' => sprintf('%s (%d)', $this->formatBytes($byKind['image']['bytes'] ?? 0), $byKind['image']['count'] ?? 0),
             'documents' => sprintf('%s (%d)', $this->formatBytes($byKind['document']['bytes'] ?? 0), $byKind['document']['count'] ?? 0),
             'renditions' => sprintf('%s (%d)', $this->formatBytes($renditions['bytes']), $renditions['count']),
+            // Barre segmentée de la zone Médias : part de chaque famille dans
+            // le stockage, libellé avec volume lisible.
+            'mediasTotal' => $parts[0]['count'] + $parts[1]['count'],
+            'segments' => array_map(
+                fn (array $part): array => [
+                    'libelle' => sprintf('%s · %s', $part['libelle'], $this->formatBytes($part['bytes'])),
+                    'teinte' => $part['teinte'],
+                    'part' => $totalBytes > 0 ? round(100 * $part['bytes'] / $totalBytes, 1) : 0,
+                ],
+                $parts,
+            ),
         ];
     }
 

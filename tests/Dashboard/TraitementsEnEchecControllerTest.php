@@ -129,12 +129,13 @@ final class TraitementsEnEchecControllerTest extends WebTestCase
         $client->loginUser($this->persistUser('validator-tdb@example.test', ['ROLE_BP_VALIDATOR']));
         $crawler = $client->request('GET', '/');
         self::assertResponseIsSuccessful();
-        self::assertSame(0, $crawler->selectLink('Traiter')->count());
+        // Les cartes de file sont les liens ; celle des échecs (route admin)
+        // n'est cliquable que pour les admins.
+        self::assertSame(0, $crawler->filter('a[href="/admin/traitements-en-echec"]')->count());
 
         $client->loginUser($this->persistUser('admin-tdb@example.test', ['ROLE_ADMIN']));
         $crawler = $client->request('GET', '/');
         self::assertResponseIsSuccessful();
-        self::assertGreaterThan(0, $crawler->selectLink('Traiter')->count());
         self::assertGreaterThan(0, $crawler->filter('a[href="/admin/traitements-en-echec"]')->count());
     }
 

@@ -1,205 +1,534 @@
 {% extends 'mdm/base.html.twig' %}
 
-{# Tableau de bord MDM — page d'accueil, habillée au langage front. Files et
-   activité comptées en direct ; santé, croisement pays × typologies, champs
-   faibles et stockage viennent du snapshot. #}
+{#
+    Tableau de bord — gabarit maquette (4 zones + rail qui suit le défilement,
+    contrôleur `tableau-de-bord`), branché sur les données réelles : files
+    comptées en direct, santé/croisement/champs faibles/stockage issus des
+    snapshots, activité par période.
+
+    Écarts assumés (fonctions maquette sans back → désactivées, jamais omises) :
+    filtres Pays/Typologie de l'en-tête, bloc « Disposition » du rail, deltas
+    des indicateurs d'équipe. La file « Accès » de la maquette n'a pas de
+    compteur back (5 files sur 6).
+    Conservé hors maquette : boutons admin (Statistiques détaillées, DAM),
+    colonne Publiées de l'activité, temps moyen de validation et compteurs de
+    la semaine (encart de la zone Santé).
+#}
+
+{% set carte = 'flex flex-col box-border gap-4 px-6 py-[22px] rounded-[20px] bg-neutral-100 shadow-(--shadow)' %}
+{% set entete_table = 'items-center h-9 px-4 bg-primary-5 border-b border-neutral-200' %}
+{% set paliers = {
+    'complet': 'bg-success-pastel',
+    'publiable': 'bg-peach-pastel',
+    'insuffisant': 'bg-error-pastel',
+    'total': 'bg-primary-4',
+    'grand': 'bg-linear-(--primary-gradient)',
+} %}
+{% set croisement_pays = countryRows is defined and countryRows is not empty and countryRows[0].completeness is defined
+    ? countryRows|slice(0, 6) : [] %}
+{% set grille_croisement = 'grid grid-cols-[minmax(132px,1.5fr)_repeat(' ~ (croisement_pays|length + 1) ~ ',minmax(70px,1fr))] gap-1.5' %}
+{% set grille_activite = 'grid grid-cols-[minmax(150px,1.6fr)_minmax(64px,0.7fr)_minmax(72px,0.8fr)_minmax(72px,0.8fr)_minmax(72px,0.8fr)_minmax(150px,1.7fr)] gap-3' %}
+
+{% set files_total = files|reduce((somme, f) => somme + f.volume, 0) %}
+{% set activite_total = activite.parActeur|reduce((somme, r) => somme + r.creees + r.modifiees + r.validees + r.publiees, 0) %}
+
+{% set zones = [
+    { cle: 'files', titre: 'À traiter', sousTitre: 'Les files de travail du jour', icone: 'clipboard', badge: files_total },
+    { cle: 'sante', titre: 'Santé du référentiel', sousTitre: 'Volumes, complétude et croisements', icone: 'shield-check', badge: snapshot ? fiches.total : '—' },
+    { cle: 'activite', titre: 'Activité des équipes', sousTitre: 'Sur ' ~ activite.libelle|lower, icone: 'users', badge: activite_total },
+    { cle: 'medias', titre: 'Médias & stockage', sousTitre: 'Catalogue et consommation', icone: 'images', badge: snapshot and storage ? storage.mediasTotal : '—' },
+] %}
 
 {% block title %}Tableau de bord{% endblock %}
 
-{% macro carte_indic(libelle, valeur) %}
-    <div class="flex flex-col gap-1 p-4 rounded-[16px] bg-neutral-100 shadow-(--shadow)">
-        <twig:Typography variant="body-xs" textColor="neutral-500" bold class="uppercase tracking-[0.4px]">{{ libelle }}</twig:Typography>
-        <twig:Typography variant="heading-3" bold>{{ valeur }}</twig:Typography>
-    </div>
-{% endmacro %}
+{% block main_attributs %}data-controller="tableau-de-bord"{% endblock %}
 
-{% block contenu %}
-<main class="flex flex-col h-full min-h-0 overflow-y-auto scrollbar px-6 py-5 gap-5">
-
-    <div class="shrink-0 flex items-start justify-between gap-4">
+{# ------------------------------------------------------------------ Rail des zones #}
+{% block rail %}
+    <nav class="flex flex-col shrink-0 box-border w-[328px] pl-5 pr-3 py-4 gap-4 overflow-hidden"
+         aria-label="Zones du tableau de bord">
         <div class="flex flex-col gap-1">
-            <twig:Typography variant="body-xs" textColor="neutral-500" bold class="uppercase tracking-[0.8px]">MDM</twig:Typography>
-            <twig:Typography variant="heading-2" element="h1" bold>Tableau de bord</twig:Typography>
-            <twig:Typography variant="body-sm" textColor="neutral-500">
-                {% if app.user %}Bonjour {{ app.user.userIdentifier }}. {% endif %}
+            <twig:Typography variant="body" bold class="pl-2 pr-4">Zones du tableau de bord</twig:Typography>
+            <div class="flex flex-col">
+                {% for zone in zones %}
+                    <button type="button" aria-current="{{ loop.first ? 'true' : 'false' }}"
+                            class="group/zone flex items-center gap-2 box-border px-4 py-2
+                                   rounded-xs overflow-hidden cursor-pointer text-left
+                                   hover:bg-primary-4 aria-[current=true]:bg-linear-(--primary-gradient) aria-[current=true]:hover:bg-none"
+                            data-tableau-de-bord-target="entree"
+                            data-action="tableau-de-bord#aller"
+                            data-tableau-de-bord-zone-param="{{ loop.index0 }}">
+                        <twig:Icon name="{{ zone.icone }}" aria-hidden="true"
+                                   class="shrink-0 self-center w-4 h-4 mx-1 text-primary
+                                          group-aria-[current=true]/zone:text-neutral-100" />
+                        <twig:Typography variant="body" bold ellipsis textColor="primary-3"
+                                         class="flex-1 min-w-0
+                                                group-aria-[current=true]/zone:text-neutral-100!">{{ zone.titre }}</twig:Typography>
+                        <twig:Typography variant="body-xs" bold textColor="neutral-500"
+                                         class="shrink-0 px-[7px] py-0.5 rounded-lg bg-neutral-200
+                                                group-aria-[current=true]/zone:bg-neutral-100
+                                                group-aria-[current=true]/zone:text-primary-3!">{{ zone.badge }}</twig:Typography>
+                    </button>
+                {% endfor %}
+            </div>
+        </div>
+
+        <span class="flex-1"></span>
+
+        {# Maquette pure : la disposition personnalisée n'a pas de back. #}
+        <div class="shrink-0 flex flex-col gap-2 mr-1 p-3.5 rounded-[12px] bg-primary-4">
+            <twig:Typography variant="body-sm" bold textColor="primary-3">Disposition</twig:Typography>
+            <twig:Typography variant="body-xs" textColor="neutral-500" class="text-pretty">Disposition personnelle du tableau de bord — à venir.</twig:Typography>
+            <span title="Fonction à venir — en développement" class="inline-flex">
+                <twig:Button variant="outline" size="sm" full disabled>Paramétrer le tableau de bord</twig:Button>
+            </span>
+        </div>
+    </nav>
+{% endblock %}
+
+{# ------------------------------------------------------------------ Contenu #}
+{% block contenu %}
+<main class="flex flex-col flex-1 min-h-0">
+    <div class="shrink-0 flex items-end justify-between gap-6 px-10 pt-[22px] pb-4">
+        <div class="flex flex-col gap-1 min-w-0">
+            <twig:Typography variant="heading-2" element="h1"
+                             class="sm:text-[1.625rem]! sm:leading-[2.125rem]! font-[700]!">
+                {{- app.user ? 'Bonjour ' ~ app.user.userIdentifier : 'Tableau de bord' -}}
+            </twig:Typography>
+            <twig:Typography variant="body" element="p" textColor="neutral-500">
                 Files comptées en direct ;
                 {% if snapshot %}indicateurs du {{ computedAt|date('d/m/Y H:i') }}.{% else %}aucune statistique calculée pour l'instant.{% endif %}
             </twig:Typography>
         </div>
-        {% if is_granted('ROLE_ADMIN') %}
-            <div class="flex flex-wrap items-center gap-2 shrink-0">
+
+        <div class="flex items-center gap-2.5 shrink-0">
+            <div class="flex items-center gap-0.5 p-[3px] rounded-lg bg-neutral-100
+                        inset-ring-1 inset-ring-neutral-200">
+                {% for cle, definition in periodes %}
+                    {% set retenue = activite.periode == cle %}
+                    <a href="{{ path('app_mdm_tableau_de_bord', { periode: cle, croisement: croisement }) }}"
+                       class="flex items-center h-7 px-3 rounded-lg whitespace-nowrap
+                              {{ retenue ? 'bg-linear-(--primary-gradient)' : '' }}"
+                       {{ retenue ? 'aria-current="true"' : '' }}>
+                        <twig:Typography variant="body-sm" bold="{{ retenue }}"
+                                         textColor="{{ retenue ? 'neutral-100' : 'neutral-500' }}">{{ definition.libelle }}</twig:Typography>
+                    </a>
+                {% endfor %}
+            </div>
+
+            {# Filtres décoratifs de la maquette : pas de back → désactivés. #}
+            {{ _self.filtre('Pays', 'Tous') }}
+            {{ _self.filtre('Typologie', 'Toutes') }}
+
+            {% if is_granted('ROLE_ADMIN') %}
                 <twig:Button variant="outline" size="sm" asLink href="{{ path('app_dashboard_index') }}">Statistiques détaillées</twig:Button>
                 <twig:Button variant="outline" size="sm" asLink href="{{ path('app_dam_dashboard') }}">Médias (DAM)</twig:Button>
-            </div>
-        {% endif %}
+            {% endif %}
+        </div>
     </div>
 
-    {# À traiter #}
-    <section class="shrink-0 flex flex-col gap-3 p-6 rounded-[20px] bg-neutral-100 shadow-(--shadow)" aria-label="À traiter">
-        <twig:Typography variant="heading-3" element="h2" bold>À traiter</twig:Typography>
-        <div class="overflow-x-auto rounded-md inset-ring-1 inset-ring-neutral-200">
-            <table class="w-full border-collapse">
-                <thead class="bg-primary-5">
-                    <tr class="text-left h-10 border-b border-neutral-200">
-                        {% for col in ['File', 'Détail', 'Volume', 'Sévérité', ''] %}
-                            <th class="px-3"><twig:Typography variant="body-xs" textColor="neutral-500" bold>{{ col }}</twig:Typography></th>
-                        {% endfor %}
-                    </tr>
-                </thead>
-                <tbody>
-                {% for file in files %}
-                    <tr class="h-12 border-t border-neutral-200 first:border-t-0">
-                        <td class="px-3"><twig:Typography variant="body-sm" bold>{{ file.libelle }}</twig:Typography></td>
-                        <td class="px-3"><twig:Typography variant="body-sm" textColor="neutral-500">{{ file.detail }}</twig:Typography></td>
-                        <td class="px-3"><twig:Typography variant="body" bold>{{ file.volume }}</twig:Typography></td>
-                        <td class="px-3"><twig:Tag label="{{ file.severite }}" variant="{{ file.severite == 'critique' ? 'error' : (file.severite == 'attention' ? 'old-gold' : 'success') }}" size="sm" /></td>
-                        <td class="px-3">{% if is_granted('ROLE_ADMIN') %}<a href="{{ file.url }}" class="hover:underline"><twig:Typography variant="body-sm" textColor="primary-3" bold element="span">Traiter</twig:Typography></a>{% endif %}</td>
-                    </tr>
-                {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </section>
+    <div class="relative flex-1 min-h-0 flex flex-col gap-[18px] px-10 pb-8 overflow-y-auto scrollbar"
+         data-tableau-de-bord-target="contenu">
 
-    {% if snapshot %}
-        <section class="shrink-0 grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3" aria-label="Santé du référentiel">
-            {{ _self.carte_indic('Total de fiches', fiches.total) }}
-            {{ _self.carte_indic('Fiches publiées', fiches.published ~ ' (' ~ fiches.publishedPct ~ ' %)') }}
-            {{ _self.carte_indic('Complétude moyenne', completeness.avgGlobal is null ? '—' : completeness.avgGlobal ~ ' %') }}
-            {{ _self.carte_indic('Temps moyen de validation', validation.label ?? '—') }}
-            {{ _self.carte_indic('Mises à jour cette semaine', thisWeek.updates) }}
-            {{ _self.carte_indic('Nouvelles fiches cette semaine', thisWeek.created) }}
-        </section>
-
-        <section class="shrink-0 flex flex-col gap-3 p-6 rounded-[20px] bg-neutral-100 shadow-(--shadow)" aria-label="Croisement pays et typologies">
-            <div class="flex items-center justify-between gap-3">
-                <twig:Typography variant="heading-3" element="h2" bold>Pays × typologies</twig:Typography>
-                <nav class="flex items-center gap-2" aria-label="Mesure du croisement">
-                    <twig:Button variant="{{ croisement == 'completude' ? 'primary' : 'outline' }}" size="sm" asLink
-                                 href="{{ path('app_mdm_tableau_de_bord', {croisement: 'completude', periode: activite.periode}) }}">Complétude</twig:Button>
-                    <twig:Button variant="{{ croisement == 'publiees' ? 'primary' : 'outline' }}" size="sm" asLink
-                                 href="{{ path('app_mdm_tableau_de_bord', {croisement: 'publiees', periode: activite.periode}) }}">Fiches publiées</twig:Button>
-                </nav>
-            </div>
-            {% if countryRows is empty %}
-                <twig:Typography variant="body-sm" textColor="neutral-500">Le référentiel est vide.</twig:Typography>
-            {% elseif countryRows[0].completeness is not defined %}
-                <twig:Typography variant="body-sm" textColor="neutral-500">
-                    Le croisement apparaîtra au prochain calcul des statistiques.
-                </twig:Typography>
-            {% else %}
-                <div class="overflow-x-auto rounded-md inset-ring-1 inset-ring-neutral-200">
-                    <table class="w-full border-collapse">
-                        <thead class="bg-primary-5">
-                            <tr class="text-left h-10 border-b border-neutral-200">
-                                <th class="px-3"><twig:Typography variant="body-xs" textColor="neutral-500" bold>Pays</twig:Typography></th>
-                                {% for typeValue, label in typeLabels %}<th class="px-3"><twig:Typography variant="body-xs" textColor="neutral-500" bold>{{ label }}</twig:Typography></th>{% endfor %}
-                                <th class="px-3"><twig:Typography variant="body-xs" textColor="neutral-500" bold>Total</twig:Typography></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        {% for row in countryRows|slice(0, 6) %}
-                            <tr class="h-11 border-t border-neutral-200 first:border-t-0">
-                                <td class="px-3"><twig:Typography variant="body-sm">{{ row.pays }}</twig:Typography></td>
-                                {% for typeValue, label in typeLabels %}
-                                    <td class="px-3"><twig:Typography variant="body-sm">
-                                        {% if croisement == 'completude' %}{% set comp = row.completeness[typeValue] ?? null %}{{ comp is null ? '—' : comp ~ ' %' }}
-                                        {% else %}{{ row.published[typeValue] ?? 0 }}{% endif %}
-                                    </twig:Typography></td>
-                                {% endfor %}
-                                <td class="px-3"><twig:Typography variant="body" bold>{{ row.total }}</twig:Typography></td>
-                            </tr>
-                        {% endfor %}
-                        </tbody>
-                    </table>
+        {% for zone in zones %}
+            {# `loop` ne traverse pas le contenu d'un composant : copie locale. #}
+            {% set numero = loop.index %}
+            <div data-tableau-de-bord-target="zone" class="shrink-0 flex flex-col gap-3.5">
+                <div class="flex items-center gap-3">
+                    <span class="flex items-center justify-center shrink-0 w-6 h-6 rounded-lg
+                                 bg-linear-(--primary-gradient)">
+                        <twig:Typography variant="body-xs" bold textColor="neutral-100">{{ numero }}</twig:Typography>
+                    </span>
+                    <twig:Typography variant="subtitle" element="h2"
+                                     class="text-[1.125rem]! leading-[1.625rem]! font-[700]!">{{ zone.titre }}</twig:Typography>
+                    <twig:Typography variant="body-sm" textColor="neutral-500">{{ zone.sousTitre }}</twig:Typography>
+                    <span class="flex-1"></span>
                 </div>
-            {% endif %}
-        </section>
 
-        {% if fieldFill %}
-            <section class="shrink-0 flex flex-col gap-3 p-6 rounded-[20px] bg-neutral-100 shadow-(--shadow)" aria-label="Champs faibles">
-                <twig:Typography variant="heading-3" element="h2" bold>Champs les moins renseignés</twig:Typography>
-                {% for typeValue, data in fieldFill.perType %}
-                    {% if data.worstFields is not empty %}
-                        <twig:Typography variant="body-sm" bold>{{ typeLabels[typeValue] ?? typeValue }}</twig:Typography>
-                        <ul class="flex flex-col gap-1">
-                            {% for field in data.worstFields|slice(0, 5) %}
-                                <li><twig:Typography variant="body-sm" textColor="neutral-500">{{ field.label }} — {{ field.rate }} % ({{ field.filled }}/{{ field.applicable }})</twig:Typography></li>
-                            {% endfor %}
-                        </ul>
-                    {% endif %}
-                {% endfor %}
-            </section>
-        {% endif %}
-
-        {% if storage %}
-            <section class="shrink-0 grid grid-cols-2 xl:grid-cols-4 gap-3" aria-label="Médias et stockage">
-                {{ _self.carte_indic('Stockage total', storage.total) }}
-                {{ _self.carte_indic('Images', storage.images) }}
-                {{ _self.carte_indic('Documents', storage.documents) }}
-                {{ _self.carte_indic('Variantes générées', storage.renditions) }}
-            </section>
-        {% endif %}
-    {% else %}
-        <div class="shrink-0 p-6 rounded-[20px] bg-neutral-100 shadow-(--shadow)">
-            <twig:Typography variant="body-sm" textColor="neutral-500">Les indicateurs apparaîtront après le premier calcul des statistiques.</twig:Typography>
-        </div>
-    {% endif %}
-
-    {# Activité des équipes #}
-    <section class="shrink-0 flex flex-col gap-3 p-6 rounded-[20px] bg-neutral-100 shadow-(--shadow)" aria-label="Activité des équipes">
-        <div class="flex items-center justify-between gap-3 flex-wrap">
-            <twig:Typography variant="heading-3" element="h2" bold>Activité des équipes</twig:Typography>
-            <nav class="flex flex-wrap items-center gap-2" aria-label="Période d'analyse">
-                {% for cle, definition in periodes %}
-                    <twig:Button variant="{{ activite.periode == cle ? 'primary' : 'outline' }}" size="sm" asLink
-                                 href="{{ path('app_mdm_tableau_de_bord', {periode: cle, croisement: croisement}) }}">{{ definition.libelle }}</twig:Button>
-                {% endfor %}
-            </nav>
-        </div>
-        <twig:Typography variant="body-sm" textColor="neutral-500">
-            Sur {{ activite.libelle|lower }} : {{ activite.creees }} fiche{{ activite.creees == 1 ? '' : 's' }} créée{{ activite.creees == 1 ? '' : 's' }}, {{ activite.modifiees }} modification{{ activite.modifiees == 1 ? '' : 's' }}.
-        </twig:Typography>
-        <div class="overflow-x-auto rounded-md inset-ring-1 inset-ring-neutral-200">
-            <table class="w-full border-collapse">
-                <thead class="bg-primary-5">
-                    <tr class="text-left h-10 border-b border-neutral-200">
-                        {% for col in ['Contributeur', 'Créées', 'Modifiées', 'Validées', 'Publiées'] %}
-                            <th class="px-3"><twig:Typography variant="body-xs" textColor="neutral-500" bold>{{ col }}</twig:Typography></th>
-                        {% endfor %}
-                    </tr>
-                </thead>
-                <tbody>
-                {% for row in activite.parActeur %}
-                    <tr class="h-11 border-t border-neutral-200 first:border-t-0">
-                        <td class="px-3"><twig:Typography variant="body-sm">{{ row.actor }}</twig:Typography></td>
-                        <td class="px-3"><twig:Typography variant="body-sm">{{ row.creees }}</twig:Typography></td>
-                        <td class="px-3"><twig:Typography variant="body-sm">{{ row.modifiees }}</twig:Typography></td>
-                        <td class="px-3"><twig:Typography variant="body-sm">{{ row.validees }}</twig:Typography></td>
-                        <td class="px-3"><twig:Typography variant="body-sm">{{ row.publiees }}</twig:Typography></td>
-                    </tr>
-                {% else %}
-                    <tr><td colspan="5" class="p-6 text-center"><twig:Typography variant="body-sm" textColor="neutral-500">Aucune activité sur la période.</twig:Typography></td></tr>
-                {% endfor %}
-                </tbody>
-            </table>
-        </div>
-
-        <twig:Typography variant="heading-3" element="h3" bold>Dernières publications</twig:Typography>
-        <ul class="flex flex-col gap-1">
-            {% for publication in publications %}
-                <li class="flex items-center gap-2 flex-wrap">
-                    {% if publication.url %}
-                        <a href="{{ publication.url }}" class="hover:underline"><twig:Typography variant="body-sm" textColor="primary-3" bold element="span">{{ publication.fiche.label ?? 'Sans libellé' }}</twig:Typography></a>
-                    {% else %}
-                        <twig:Typography variant="body-sm">{{ publication.fiche.label ?? 'Sans libellé' }}</twig:Typography>
-                    {% endif %}
-                    <twig:Typography variant="body-xs" textColor="neutral-500">{{ publication.fiche.type.value }} · publiée le {{ publication.fiche.publishedAt|date('d/m/Y H:i') }}</twig:Typography>
-                </li>
-            {% else %}
-                <li><twig:Typography variant="body-sm" textColor="neutral-500">Aucune fiche publiée pour l'instant.</twig:Typography></li>
-            {% endfor %}
-        </ul>
-    </section>
+                {% if 'files' == zone.cle %}{{ _self.zoneFiles(files, files_total) }}
+                {% elseif 'sante' == zone.cle %}{{ _self.zoneSante(_context, carte, paliers, entete_table, grille_croisement, croisement_pays) }}
+                {% elseif 'activite' == zone.cle %}{{ _self.zoneActivite(_context, carte, entete_table, grille_activite, activite_total) }}
+                {% else %}{{ _self.zoneMedias(_context, carte) }}
+                {% endif %}
+            </div>
+        {% endfor %}
+    </div>
 </main>
 {% endblock %}
+
+
+{# ==================================================================== Zone 1 #}
+{% macro zoneFiles(files, files_total) %}
+    {% if files_total == 0 %}
+        <div class="flex items-center gap-4 px-[30px] py-[26px] rounded-[20px] bg-neutral-100 shadow-(--shadow)">
+            <twig:Icon name="ok-circle" aria-hidden="true" class="shrink-0 w-[34px] h-[34px] text-success" />
+            <div class="flex flex-col flex-1 min-w-0 gap-[3px]">
+                <twig:Typography variant="subtitle" class="text-[1.125rem]! leading-[1.625rem]! font-[700]!">Rien à traiter.</twig:Typography>
+                <twig:Typography variant="body-sm" textColor="neutral-500">Les files sont vides — la santé du référentiel reste consultable ci-dessous.</twig:Typography>
+            </div>
+            <div class="flex flex-row shrink-0 gap-2">
+                {% for file in files %}
+                    <twig:Tag label="{{ file.libelle }}" variant="success-pastel" size="sm" class="shrink-0 whitespace-nowrap" />
+                {% endfor %}
+            </div>
+        </div>
+    {% else %}
+        <div class="flex flex-row gap-3.5">
+            {% for file in files %}
+                {% set chaude = 'critique' == file.severite %}
+                {% set tiede = 'attention' == file.severite %}
+                {% set icone = { 'a_valider': 'clipboard', 'a_publier': 'paper-plane', 'ia': 'ai', 'repli': 'user', 'echecs': 'warning' }[file.id]|default('clipboard') %}
+                {% set accessible = 'echecs' != file.id or is_granted('ROLE_ADMIN') %}
+                <a {% if accessible %}href="{{ file.url }}"{% endif %}
+                   class="flex flex-col flex-1 min-w-0 items-stretch gap-1.5 box-border
+                          px-5 py-[18px] rounded-[20px] text-left {{ accessible ? 'cursor-pointer' : '' }}
+                          {{ chaude
+                             ? 'bg-error-pastel inset-ring-1 inset-ring-error'
+                             : (tiede ? 'bg-peach-pastel inset-ring-1 inset-ring-peach'
+                                      : 'bg-neutral-100 shadow-(--shadow)') }}">
+                    <div class="flex items-center justify-between gap-2">
+                        <twig:Icon name="{{ icone }}" aria-hidden="true"
+                                   class="shrink-0 w-5 h-5 {{ chaude ? 'text-error' : (tiede ? 'text-peach' : 'text-primary-3') }}" />
+                        {% if chaude or tiede %}
+                            <twig:Tag label="{{ chaude ? 'Critique' : 'Attention' }}" variant="error" size="sm"
+                                      class="shrink-0 whitespace-nowrap bg-neutral-100!" />
+                        {% endif %}
+                    </div>
+                    <twig:Typography variant="heading-2"
+                                     textColor="{{ chaude or tiede ? 'error' : 'primary-3' }}"
+                                     class="font-[700]!">{{ file.volume }}</twig:Typography>
+                    <twig:Typography variant="body-sm" bold class="text-pretty">{{ file.libelle }}</twig:Typography>
+                    <div class="flex items-center gap-[5px]">
+                        <twig:Typography variant="body-xs">{{ file.detail }}</twig:Typography>
+                        {% if accessible %}<twig:Icon name="arrow-right" aria-hidden="true" class="shrink-0 w-3 h-3 text-primary" />{% endif %}
+                    </div>
+                </a>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endmacro %}
+
+
+{# ==================================================================== Zone 2 #}
+{% macro zoneSante(c, carte, paliers, entete_table, grille_croisement, croisement_pays) %}
+    {% if not c.snapshot %}
+        <div class="{{ carte }}">
+            <twig:Typography variant="body-sm" textColor="neutral-500">Les indicateurs apparaîtront après le premier calcul des statistiques.</twig:Typography>
+        </div>
+    {% else %}
+        <div class="flex flex-row gap-[18px] items-stretch">
+            <div class="flex flex-col shrink-0 w-[470px] gap-[18px]">
+                <div class="{{ carte }}">
+                    <div class="flex flex-row gap-6">
+                        {{ _self.indicateur('Fiches au référentiel', c.fiches.total,
+                            'dont ' ~ c.fiches.published ~ ' publiées · ' ~ c.fiches.publishedPct ~ ' %') }}
+                        {{ _self.indicateur('Complétude globale', (c.completeness.avgGlobal ?? '—') ~ ' %',
+                            c.completudeDelta is not null
+                                ? (c.completudeDelta >= 0 ? '+' : '') ~ c.completudeDelta ~ ' pts sur 30 jours'
+                                : 'évolution au prochain calcul') }}
+                    </div>
+                    <div class="h-2 rounded-lg bg-neutral-200 overflow-hidden">
+                        <div class="h-full rounded-lg bg-linear-(--primary-gradient)"
+                             style="width: {{ c.completeness.avgGlobal ?? 0 }}%"></div>
+                    </div>
+                    <div class="flex flex-row flex-wrap gap-[18px]">
+                        {{ _self.legende('Complet ≥ 75 %', 'bg-success') }}
+                        {{ _self.legende('Publiable 60-74 %', 'bg-peach') }}
+                        {{ _self.legende('Insuffisant < 60 %', 'bg-error') }}
+                    </div>
+                </div>
+
+                {# Conservé hors maquette : rythme de validation et volumes de la semaine. #}
+                <div class="{{ carte }}">
+                    <div class="flex flex-row gap-6">
+                        {{ _self.indicateur('Validation', c.validation.label ?? '—', 'temps moyen · ' ~ c.validation.sample ~ ' fiches') }}
+                        {{ _self.indicateur('Cette semaine', c.thisWeek.updates, c.thisWeek.created ~ ' nouvelles fiches') }}
+                    </div>
+                </div>
+
+                {% if c.fieldFill %}
+                    {% set faibles = [] %}
+                    {% for typeValue, data in c.fieldFill.perType %}
+                        {% for field in data.worstFields|slice(0, 3) %}
+                            {% set faibles = faibles|merge([{ libelle: field.label ~ ' — ' ~ (c.typeLabels[typeValue] ?? typeValue), taux: field.rate, compte: field.filled ~ '/' ~ field.applicable }]) %}
+                        {% endfor %}
+                    {% endfor %}
+                    <div class="{{ carte }}">
+                        <twig:Typography variant="body-sm" bold>Champs les moins renseignés</twig:Typography>
+                        <div class="flex flex-col gap-0.5">
+                            {% for champ in faibles|sort((a, b) => a.taux <=> b.taux)|slice(0, 6) %}
+                                <div class="flex items-center gap-2.5 px-2.5 py-2 rounded-xs">
+                                    <span class="shrink-0 w-1.5 h-1.5 rounded-lg bg-peach" aria-hidden="true"></span>
+                                    <twig:Typography variant="body-sm" ellipsis class="flex-1 min-w-0">{{ champ.libelle }}</twig:Typography>
+                                    <twig:Typography variant="body-sm" bold textColor="error"
+                                                     class="w-[46px] shrink-0 text-right">{{ champ.taux }} %</twig:Typography>
+                                    <twig:Typography variant="body-xs" textColor="neutral-400"
+                                                     class="w-24 shrink-0 text-right">{{ champ.compte }}</twig:Typography>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="{{ carte }} flex-1 min-w-0">
+                <div class="flex items-center justify-between gap-4">
+                    <div class="flex flex-col gap-0.5 min-w-0">
+                        <twig:Typography variant="body-sm" bold>Croisement pays × typologie</twig:Typography>
+                        <twig:Typography variant="body-sm" textColor="neutral-500">
+                            {{- c.croisement == 'completude' ? 'Complétude moyenne par gamme' : 'Fiches publiées par gamme' -}}
+                        </twig:Typography>
+                    </div>
+                    <div class="flex items-center shrink-0 gap-0.5 p-[3px] rounded-lg bg-neutral-200">
+                        {{ _self.bascule(c, 'completude', 'Complétude') }}
+                        {{ _self.bascule(c, 'publiees', 'Fiches publiées') }}
+                    </div>
+                </div>
+
+                {% if croisement_pays is empty %}
+                    <twig:Typography variant="body-sm" textColor="neutral-500">Le croisement apparaîtra au prochain calcul des statistiques.</twig:Typography>
+                {% else %}
+                    <div class="rounded-sm overflow-hidden inset-ring-1 inset-ring-neutral-200">
+                        <div class="{{ grille_croisement }} {{ entete_table }}" role="row">
+                            {{ _self.colonne('Gamme', 'text-left') }}
+                            {% for ligne in croisement_pays %}
+                                {{ _self.colonne(ligne.pays, 'text-center') }}
+                            {% endfor %}
+                            {{ _self.colonne('Total', 'text-center') }}
+                        </div>
+
+                        {% for typeValue, label in c.typeLabels %}
+                            <div class="{{ grille_croisement }} h-11 px-4 {{ loop.first ? '' : 'border-t border-neutral-200' }}" role="row">
+                                <twig:Typography variant="body-sm" bold ellipsis class="min-w-0 self-center">{{ label }}</twig:Typography>
+                                {% set total_type = 0 %}
+                                {% for ligne in croisement_pays %}
+                                    {% if c.croisement == 'completude' %}
+                                        {{ _self.cellulePct(ligne.completeness[typeValue] ?? null, paliers) }}
+                                    {% else %}
+                                        {% set valeur = ligne.published[typeValue] ?? 0 %}
+                                        {% set total_type = total_type + valeur %}
+                                        {{ _self.celluleNombre(valeur) }}
+                                    {% endif %}
+                                {% endfor %}
+                                {% if c.croisement == 'completude' %}
+                                    {{ _self.celluleTexte('—', paliers['total']) }}
+                                {% else %}
+                                    {{ _self.celluleTexte(total_type, paliers['total']) }}
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+
+                        <div class="{{ grille_croisement }} h-11 px-4 border-t border-neutral-200 bg-primary-5" role="row">
+                            <twig:Typography variant="body-sm" bold textColor="primary-3" class="self-center">Total</twig:Typography>
+                            {% set grand_total = 0 %}
+                            {% for ligne in croisement_pays %}
+                                {% set grand_total = grand_total + ligne.total %}
+                                {{ _self.celluleTexte(ligne.total, paliers['total']) }}
+                            {% endfor %}
+                            {{ _self.celluleTexte(grand_total, paliers['grand'], true) }}
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2.5">
+                        <twig:Icon name="info-circle" aria-hidden="true" class="shrink-0 w-3.5 h-3.5 text-neutral-400" />
+                        <twig:Typography variant="body-xs" textColor="neutral-400">Pays les plus représentés du référentiel ; complétude moyenne ou fiches publiées selon la bascule.</twig:Typography>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+{% endmacro %}
+
+
+{# ==================================================================== Zone 3 #}
+{% macro zoneActivite(c, carte, entete_table, grille_activite, activite_total) %}
+    <div class="flex flex-row gap-[18px] items-stretch">
+        <div class="{{ carte }} flex-1 min-w-0">
+            <div class="flex items-baseline justify-between gap-3">
+                <twig:Typography variant="body-sm" bold>Activité par utilisateur</twig:Typography>
+                <twig:Typography variant="body-sm" bold textColor="primary-3">Sur {{ c.activite.libelle|lower }}</twig:Typography>
+            </div>
+
+            <div class="rounded-sm overflow-hidden inset-ring-1 inset-ring-neutral-200">
+                <div class="{{ grille_activite }} {{ entete_table }}" role="row">
+                    {{ _self.colonne('Utilisateur', 'text-left') }}
+                    {{ _self.colonne('Créées', 'text-right') }}
+                    {{ _self.colonne('Enrichies', 'text-right') }}
+                    {{ _self.colonne('Validées', 'text-right') }}
+                    {{ _self.colonne('Publiées', 'text-right') }}
+                    {{ _self.colonne("Part de l'activité", 'text-left') }}
+                </div>
+
+                {% for ligne in c.activite.parActeur %}
+                    {% set part = activite_total > 0
+                        ? (100 * (ligne.creees + ligne.modifiees + ligne.validees + ligne.publiees) / activite_total)|round : 0 %}
+                    <div role="row"
+                         class="{{ grille_activite }} w-full h-11 px-4 box-border items-center
+                                {{ loop.first ? '' : 'border-t border-neutral-200' }}">
+                        <twig:Typography variant="body-sm" bold ellipsis class="min-w-0">{{ ligne.actor }}</twig:Typography>
+                        <twig:Typography variant="body-sm" textColor="neutral-500" class="text-right">{{ ligne.creees }}</twig:Typography>
+                        <twig:Typography variant="body-sm" bold class="text-right">{{ ligne.modifiees }}</twig:Typography>
+                        <twig:Typography variant="body-sm" textColor="neutral-500" class="text-right">{{ ligne.validees }}</twig:Typography>
+                        <twig:Typography variant="body-sm" textColor="neutral-500" class="text-right">{{ ligne.publiees }}</twig:Typography>
+                        <span class="flex items-center min-w-0 gap-[9px]">
+                            <span class="flex-1 min-w-0 h-1.5 rounded-lg bg-neutral-200 overflow-hidden">
+                                <span class="block h-full rounded-lg bg-linear-(--primary-gradient)"
+                                      style="width: {{ part }}%"></span>
+                            </span>
+                            <twig:Typography variant="body-xs" bold textColor="neutral-500"
+                                             class="w-[34px] shrink-0 text-right">{{ part }} %</twig:Typography>
+                        </span>
+                    </div>
+                {% else %}
+                    <div class="px-4 py-6"><twig:Typography variant="body-sm" textColor="neutral-500">Aucune activité sur la période.</twig:Typography></div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="flex flex-col shrink-0 w-[340px] gap-[18px]">
+            <div class="{{ carte }}">
+                <div class="flex flex-col gap-3.5">
+                    {% for indicateur in [
+                        { icone: 'plus-circle', libelle: 'Fiches créées', valeur: c.activite.creees },
+                        { icone: 'pencil', libelle: 'Fiches enrichies', valeur: c.activite.modifiees },
+                        { icone: 'check-circle', libelle: 'Validées', valeur: c.activite.parActeur|reduce((s, r) => s + r.validees, 0) },
+                        { icone: 'paper-plane', libelle: 'Publiées', valeur: c.activite.parActeur|reduce((s, r) => s + r.publiees, 0) },
+                    ] %}
+                        <div class="flex items-center w-full gap-3 px-3.5 py-3 box-border rounded-[12px] bg-primary-5">
+                            <twig:Icon name="{{ indicateur.icone }}" aria-hidden="true" class="shrink-0 w-5 h-5 text-primary-3" />
+                            <div class="flex flex-col flex-1 min-w-0 gap-px text-left">
+                                <twig:Typography variant="body-sm" textColor="neutral-500">{{ indicateur.libelle }}</twig:Typography>
+                                <twig:Typography variant="subtitle" class="font-[700]!">{{ indicateur.valeur }}</twig:Typography>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="{{ carte }}">
+                <twig:Typography variant="body-sm" bold>Dernières publications</twig:Typography>
+                <div class="flex flex-col gap-0.5">
+                    {% for publication in c.publications %}
+                        <a {% if publication.url %}href="{{ publication.url }}"{% endif %}
+                           class="flex items-center w-full gap-2.5 px-2.5 py-[7px] box-border rounded-xs text-left
+                                  {{ publication.url ? 'cursor-pointer hover:bg-primary-5' : '' }}">
+                            <span class="shrink-0 w-2 h-2 rounded-lg bg-success" aria-hidden="true"></span>
+                            <div class="flex flex-col flex-1 min-w-0 text-left">
+                                <twig:Typography variant="body-sm" bold ellipsis>{{ publication.fiche.label ?? 'Sans libellé' }}</twig:Typography>
+                                <twig:Typography variant="body-xs" textColor="neutral-400">{{ publication.fiche.type.value }}</twig:Typography>
+                            </div>
+                            <twig:Typography variant="body-xs" textColor="neutral-400"
+                                             class="shrink-0 whitespace-nowrap">{{ publication.fiche.publishedAt|date('d/m H:i') }}</twig:Typography>
+                        </a>
+                    {% else %}
+                        <twig:Typography variant="body-sm" textColor="neutral-500">Aucune fiche publiée pour l'instant.</twig:Typography>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endmacro %}
+
+
+{# ==================================================================== Zone 4 #}
+{% macro zoneMedias(c, carte) %}
+    {% if not c.snapshot or not c.storage %}
+        <div class="{{ carte }}">
+            <twig:Typography variant="body-sm" textColor="neutral-500">Le stockage apparaîtra après le premier calcul des statistiques.</twig:Typography>
+        </div>
+    {% else %}
+        <div class="{{ carte }}">
+            <div class="flex flex-row items-center gap-[30px]">
+                <div class="flex items-center shrink-0 gap-3">
+                    <twig:Icon name="images" aria-hidden="true" class="shrink-0 w-[22px] h-[22px] text-primary" />
+                    <span class="flex flex-col gap-px min-w-0 text-left">
+                        <twig:Typography variant="body-sm" textColor="neutral-500">Médias au catalogue</twig:Typography>
+                        <twig:Typography variant="heading-3" class="font-[700]!">{{ c.storage.mediasTotal }}</twig:Typography>
+                    </span>
+                </div>
+
+                <div class="flex flex-col flex-1 min-w-0 gap-[7px]">
+                    <div class="flex items-baseline justify-between gap-3">
+                        <twig:Typography variant="body-sm" bold>Consommation de stockage</twig:Typography>
+                        <twig:Typography variant="body-sm" textColor="neutral-500">{{ c.storage.total }} au total</twig:Typography>
+                    </div>
+                    <div class="flex h-2.5 rounded-lg bg-neutral-200 overflow-hidden">
+                        {% for segment in c.storage.segments %}
+                            <div class="{{ segment.teinte }}" style="width: {{ segment.part }}%"></div>
+                        {% endfor %}
+                    </div>
+                    <div class="flex flex-row flex-wrap gap-[18px]">
+                        {% for segment in c.storage.segments %}
+                            {{ _self.legende(segment.libelle, segment.teinte) }}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+{% endmacro %}
+
+
+{# =================================================================== Communs #}
+{% macro filtre(cle, valeur) %}
+    <span title="Fonction à venir — en développement"
+          class="flex items-center shrink-0 h-[34px] gap-[7px] px-3.5 rounded-lg
+                 bg-neutral-100 inset-ring-1 inset-ring-neutral-200 opacity-70">
+        <twig:Typography variant="body-sm" textColor="neutral-500">{{ cle }}</twig:Typography>
+        <twig:Typography variant="body-sm" bold textColor="primary-3">{{ valeur }}</twig:Typography>
+        <twig:Icon name="caret-down" aria-hidden="true" class="shrink-0 w-3.5 h-3.5 text-neutral-500" />
+    </span>
+{% endmacro %}
+
+{% macro bascule(c, mode, libelle) %}
+    {% set retenu = mode == c.croisement %}
+    <a href="{{ path('app_mdm_tableau_de_bord', { periode: c.activite.periode, croisement: mode }) }}"
+       class="flex items-center h-[26px] px-3 rounded-lg whitespace-nowrap
+              {{ retenu ? 'bg-neutral-100 shadow-[0_1px_3px_rgba(0,0,0,0.10)]' : '' }}"
+       {{ retenu ? 'aria-current="true"' : '' }}>
+        <twig:Typography variant="body-sm" bold="{{ retenu }}"
+                         textColor="{{ retenu ? 'primary-3' : 'neutral-500' }}">{{ libelle }}</twig:Typography>
+    </a>
+{% endmacro %}
+
+{% macro indicateur(libelle, valeur, note) %}
+    <div class="flex flex-col flex-1 min-w-0 items-start gap-[3px] text-left">
+        <twig:Typography variant="body-xs" bold textColor="neutral-500"
+                         class="tracking-[0.4px] uppercase">{{ libelle }}</twig:Typography>
+        <twig:Typography variant="heading-2" class="font-[700]!">{{ valeur }}</twig:Typography>
+        <twig:Typography variant="body-sm" textColor="neutral-500">{{ note }}</twig:Typography>
+    </div>
+{% endmacro %}
+
+{% macro legende(libelle, teinte) %}
+    <div class="flex items-center gap-[7px]">
+        <span class="block shrink-0 w-2.5 h-2.5 rounded-lg {{ teinte }}" aria-hidden="true"></span>
+        <twig:Typography variant="body-xs" textColor="neutral-500">{{ libelle }}</twig:Typography>
+    </div>
+{% endmacro %}
+
+{% macro colonne(libelle, classe) %}
+    <span class="min-w-0 box-border truncate self-center {{ classe }}" role="columnheader">
+        <twig:Typography variant="body-xs" bold textColor="neutral-500"
+                         class="tracking-[0.3px] uppercase">{{ libelle }}</twig:Typography>
+    </span>
+{% endmacro %}
+
+{% macro cellulePct(valeur, paliers) %}
+    {% if valeur is null %}
+        {{ _self.celluleTexte('—', '') }}
+    {% else %}
+        {% set palier = valeur >= 75 ? 'complet' : (valeur >= 60 ? 'publiable' : 'insuffisant') %}
+        {{ _self.celluleTexte(valeur ~ ' %', paliers[palier]) }}
+    {% endif %}
+{% endmacro %}
+
+{% macro celluleNombre(valeur) %}
+    {{ _self.celluleTexte(valeur, '') }}
+{% endmacro %}
+
+{% macro celluleTexte(libelle, fond, inverse = false) %}
+    <span class="flex items-center justify-center min-w-0 h-[30px] box-border self-center rounded-xs {{ fond }}">
+        <twig:Typography variant="body-sm" bold
+                         textColor="{{ inverse ? 'neutral-100' : 'primary-3' }}">{{ libelle }}</twig:Typography>
+    </span>
+{% endmacro %}
