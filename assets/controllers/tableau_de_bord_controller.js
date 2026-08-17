@@ -10,7 +10,7 @@ import { Controller } from '@hotwired/stimulus';
  * serait écrasé par ce même gestionnaire.
  */
 export default class extends Controller {
-    static targets = ['contenu', 'zone', 'entree'];
+    static targets = ['contenu', 'zone', 'entree', 'croisement', 'basculeCroisement'];
 
     connect() {
         this.surDefilement = () => this.suivre();
@@ -20,6 +20,22 @@ export default class extends Controller {
 
     disconnect() {
         this.contenuTarget.removeEventListener('scroll', this.surDefilement);
+    }
+
+    /*
+     * Bascule Complétude / Fiches publiées du croisement : purement locale —
+     * les deux mesures sont rendues, l'attribut choisit la face visible.
+     * L'URL est mise à jour pour que le partage retombe sur la même vue.
+     */
+    basculerCroisement(evenement) {
+        const mode = evenement.params.mode;
+        this.croisementTarget.dataset.croisement = mode;
+        this.basculeCroisementTargets.forEach((bouton) => {
+            bouton.toggleAttribute('data-actif', bouton.dataset.tableauDeBordModeParam === mode);
+        });
+        const url = new URL(window.location.href);
+        url.searchParams.set('croisement', mode);
+        window.history.replaceState({}, '', url);
     }
 
     /* Clic sur une entrée du rail : on amène la zone en haut du contenu. */

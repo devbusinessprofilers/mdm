@@ -292,12 +292,14 @@
                 {% endif %}
             </div>
 
-            <div class="{{ carte }} flex-1 min-w-0">
+            <div class="{{ carte }} group/croisement flex-1 min-w-0"
+                 data-tableau-de-bord-target="croisement" data-croisement="{{ c.croisement }}">
                 <div class="flex items-center justify-between gap-4">
                     <div class="flex flex-col gap-0.5 min-w-0">
                         <twig:Typography variant="body-sm" bold>Croisement pays × typologie</twig:Typography>
                         <twig:Typography variant="body-sm" textColor="neutral-500">
-                            {{- c.croisement == 'completude' ? 'Complétude moyenne par gamme' : 'Fiches publiées par gamme' -}}
+                            <span class="group-data-[croisement=publiees]/croisement:hidden">Complétude moyenne par gamme</span>
+                            <span class="hidden group-data-[croisement=publiees]/croisement:inline">Fiches publiées par gamme</span>
                         </twig:Typography>
                     </div>
                     <div class="flex items-center shrink-0 gap-0.5 p-[3px] rounded-lg bg-neutral-200">
@@ -322,11 +324,7 @@
                             <div class="{{ grille_croisement }} h-11 px-4 {{ loop.first ? '' : 'border-t border-neutral-200' }}" role="row">
                                 <twig:Typography variant="body-sm" bold ellipsis class="min-w-0 self-center">{{ ligne.pays }}</twig:Typography>
                                 {% for typeValue, label in c.typeLabels %}
-                                    {% if c.croisement == 'completude' %}
-                                        {{ _self.cellulePct(ligne.completeness[typeValue] ?? null, paliers) }}
-                                    {% else %}
-                                        {{ _self.celluleNombre(ligne.published[typeValue] ?? 0) }}
-                                    {% endif %}
+                                    {{ _self.celluleDouble(ligne.completeness[typeValue] ?? null, ligne.published[typeValue] ?? 0, paliers) }}
                                 {% endfor %}
                                 {{ _self.celluleTexte(ligne.total, paliers['total']) }}
                             </div>
@@ -483,15 +481,17 @@
     </span>
 {% endmacro %}
 
+{# Bascule locale, sans rechargement — l'URL est mise à jour pour le partage. #}
 {% macro bascule(c, mode, libelle) %}
-    {% set retenu = mode == c.croisement %}
-    <a href="{{ path('app_mdm_tableau_de_bord', { periode: c.activite.periode, croisement: mode }) }}"
-       class="flex items-center h-[26px] px-3 rounded-lg whitespace-nowrap
-              {{ retenu ? 'bg-neutral-100 shadow-[0_1px_3px_rgba(0,0,0,0.10)]' : '' }}"
-       {{ retenu ? 'aria-current="true"' : '' }}>
-        <twig:Typography variant="body-sm" bold="{{ retenu }}"
-                         textColor="{{ retenu ? 'primary-3' : 'neutral-500' }}">{{ libelle }}</twig:Typography>
-    </a>
+    <button type="button" {{ mode == c.croisement ? 'data-actif' : '' }}
+            data-tableau-de-bord-target="basculeCroisement"
+            data-action="tableau-de-bord#basculerCroisement"
+            data-tableau-de-bord-mode-param="{{ mode }}"
+            class="group/bascule flex items-center h-[26px] px-3 rounded-lg whitespace-nowrap cursor-pointer
+                   data-[actif]:bg-neutral-100 data-[actif]:shadow-[0_1px_3px_rgba(0,0,0,0.10)]">
+        <span class="antialiased text-[0.875rem] leading-[1.375rem] font-sans
+                     text-neutral-500 group-data-[actif]/bascule:text-primary-3 group-data-[actif]/bascule:font-[900]">{{ libelle }}</span>
+    </button>
 {% endmacro %}
 
 {% macro indicateur(libelle, valeur, note) %}
@@ -517,17 +517,19 @@
     </span>
 {% endmacro %}
 
-{% macro cellulePct(valeur, paliers) %}
-    {% if valeur is null %}
-        {{ _self.celluleTexte('—', '') }}
-    {% else %}
-        {% set palier = valeur >= 75 ? 'complet' : (valeur >= 60 ? 'publiable' : 'insuffisant') %}
-        {{ _self.celluleTexte(valeur ~ ' %', paliers[palier]) }}
-    {% endif %}
-{% endmacro %}
-
-{% macro celluleNombre(valeur) %}
-    {{ _self.celluleTexte(valeur, '') }}
+{# Les deux mesures rendues ; `data-croisement` de la carte choisit la face. #}
+{% macro celluleDouble(pct, nombre, paliers) %}
+    {% set palier = pct is null ? null : (pct >= 75 ? 'complet' : (pct >= 60 ? 'publiable' : 'insuffisant')) %}
+    <span class="min-w-0 h-[30px] box-border self-center">
+        <span class="flex items-center justify-center w-full h-full rounded-xs {{ palier ? paliers[palier] : '' }}
+                     group-data-[croisement=publiees]/croisement:hidden">
+            <twig:Typography variant="body-sm" bold textColor="primary-3">{{ pct is null ? '—' : pct ~ ' %' }}</twig:Typography>
+        </span>
+        <span class="hidden items-center justify-center w-full h-full rounded-xs
+                     group-data-[croisement=publiees]/croisement:flex">
+            <twig:Typography variant="body-sm" bold textColor="primary-3">{{ nombre }}</twig:Typography>
+        </span>
+    </span>
 {% endmacro %}
 
 {% macro celluleTexte(libelle, fond, inverse = false) %}
