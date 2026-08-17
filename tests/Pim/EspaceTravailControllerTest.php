@@ -76,11 +76,12 @@ final class EspaceTravailControllerTest extends WebTestCase
         self::assertSelectorTextNotContains('table', 'Domaine des autres');
         self::assertStringContainsString('Ouvrir', $texte);
 
-        // Les compteurs : 2 assignées, 1 en attente de validation.
+        // Les compteurs : assignées, à compléter, en attente, suggestions.
         $cartes = $crawler->filter('.card-grid .card .stat-value');
         self::assertSame('2', trim($cartes->eq(0)->text()));
-        self::assertSame('1', trim($cartes->eq(1)->text()));
-        self::assertSame('0', trim($cartes->eq(2)->text()));
+        self::assertSame('2', trim($cartes->eq(1)->text()));
+        self::assertSame('1', trim($cartes->eq(2)->text()));
+        self::assertSame('0', trim($cartes->eq(3)->text()));
     }
 
     private function clearTables(): void
