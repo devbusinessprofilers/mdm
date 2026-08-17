@@ -55,7 +55,7 @@ final class FicheCollaborateursEcranTest extends WebTestCase
         // Invitation depuis la section 13.
         $crawler = $client->request('GET', '/referentiel/lieux/fiche/'.$id.'?section=13');
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('main', 'Inviter un collaborateur');
+        self::assertSelectorTextContains('main', 'Ajouter un collaborateur');
         $form = $crawler->selectButton('Inviter')->form();
         $values = $form->getPhpValues();
         $values['collab_invitation']['email'] = 'camille@exemple.test';
