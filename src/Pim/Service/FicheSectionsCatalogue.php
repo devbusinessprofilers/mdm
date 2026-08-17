@@ -95,7 +95,8 @@ final class FicheSectionsCatalogue
                 'titre' => 'Salles & capacités',
                 'champs' => ['syntheseSalles', 'salles'],
                 'proprietes' => ['salles', ...array_keys(LieuFormCatalog::meetingRooms())],
-                'blocs' => [],
+                // La collection des salles se rend en matrice (mdm/fiche/_capacites).
+                'blocs' => ['capacites'],
             ],
             [
                 'titre' => 'Services & équipements',

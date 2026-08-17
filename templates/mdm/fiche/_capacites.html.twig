@@ -1,0 +1,77 @@
+{#
+    Matrice « Capacités » — maquette mdm/fiche/_capacites, sur la vraie
+    collection `salles` (SalleType) : nom, superficie et 8 configurations,
+    4 équipements en cases, ajout/retrait par le contrôleur form-collection.
+
+    Écarts assumés : pas de poignée de tri ni de vignette photo (pas de donnée
+    back par salle), pas de lien « plan de salle » ; la matrice est toujours en
+    édition — l'éditeur EST le mode édition. Elle défile horizontalement.
+
+    Variables : `widget` — la collection de formulaires `salles`.
+#}
+{% set grille = 'grid grid-cols-[172px_repeat(9,70px)_repeat(4,66px)_40px] gap-[15px] items-center min-w-min' %}
+
+{% macro ligne(item, grille) %}
+    <fieldset data-form-collection-item
+              class="{{ grille }} shrink-0 box-border px-2 py-2 rounded-sm border-0">
+        {{ form_widget(item.nom, { attr: { placeholder: 'Nom de la salle' } }) }}
+        {% for capacite in ['superficie', 'capaciteReunion', 'capaciteU', 'capaciteClasse',
+                            'capaciteTheatre', 'capaciteCabaret', 'capaciteBanquet',
+                            'capaciteCocktail', 'capaciteAuditorium'] %}
+            {{ form_widget(attribute(item, capacite)) }}
+        {% endfor %}
+        {% for equipement in ['lumiereJour', 'accesPmr', 'espaceDansant', 'climatisee'] %}
+            <span class="flex justify-center">{{ form_widget(attribute(item, equipement)) }}</span>
+        {% endfor %}
+        {# La position se gère par l'ordre, pas dans la grille. #}
+        {% do item.position.setRendered %}
+        <button type="button" data-action="form-collection#remove" aria-label="Supprimer la salle"
+                class="flex items-center justify-center shrink-0 w-8 h-8 rounded-full cursor-pointer
+                       text-neutral-900 hover:bg-error-pastel">
+            <twig:Icon name="trash" class="w-[15px] h-4" />
+        </button>
+    </fieldset>
+{% endmacro %}
+
+<fieldset class="flex flex-col gap-4 border-0 p-0 m-0"
+    data-controller="form-collection"
+    data-form-collection-index-value="{{ widget|length }}"
+    data-form-collection-prototype-value="{{ _self.ligne(widget.vars.prototype, grille)|e('html_attr') }}"
+>
+    <div class="flex flex-row items-center gap-6">
+        <legend class="contents"><twig:Typography variant="subtitle" bold element="span">Capacités par salle</twig:Typography></legend>
+        <span class="flex-1"></span>
+        <twig:Button variant="outline" size="sm" icon="plus" type="button"
+                     data-action="form-collection#add" data-remove-label="Retirer">Ajouter une salle</twig:Button>
+    </div>
+
+    {# La matrice fait ~1400 px : elle défile horizontalement plutôt que de se tasser. #}
+    <div class="flex flex-col overflow-x-auto scrollbar pb-2">
+        <div class="{{ grille }} items-end! px-2 pb-3" role="row">
+            <span role="columnheader">
+                <twig:Typography variant="body-sm" bold>Nom de la salle</twig:Typography>
+            </span>
+            {% for colonne in [
+                ['Surface', 'area'], ['Réunion', 'meeting'], ['En U', 'u-meeting'],
+                ['Classe', 'classroom'], ['Théâtre', 'presentation'], ['Cabaret', 'cabaret'],
+                ['Banquet', 'banquet'], ['Cocktail', 'cocktail'], ['Auditorium', 'conference'],
+                ['Lumière du jour', 'sun'], ['Accès PMR', 'wheel-chair'],
+                ['Espace dansant', 'dance'], ['Climatisée', 'wind'],
+            ] %}
+                <span class="flex flex-col items-center gap-2.5" role="columnheader">
+                    <twig:Icon name="{{ colonne.1 }}" class="w-6 h-6 shrink-0 text-neutral-900" />
+                    <twig:Typography variant="body-sm" bold center class="text-pretty">{{ colonne.0 }}</twig:Typography>
+                </span>
+            {% endfor %}
+            <span></span>
+        </div>
+
+        <div class="h-px min-w-min bg-neutral-300"></div>
+
+        <div class="flex flex-col min-w-min divide-y divide-neutral-200" data-form-collection-target="items">
+            {% for item in widget %}
+                {{ _self.ligne(item, grille) }}
+            {% endfor %}
+        </div>
+    </div>
+</fieldset>

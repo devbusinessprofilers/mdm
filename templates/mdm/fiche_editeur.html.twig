@@ -175,6 +175,8 @@
                                 {% include 'mdm/fiche/_puces.html.twig' with { widget: widget } only %}
                             {% elseif 'disponibilites' in s.blocs and champ == 'disponibilites' %}
                                 {% include 'mdm/fiche/_disponibilites.html.twig' with { widget: widget } only %}
+                            {% elseif 'capacites' in s.blocs and champ == 'salles' %}
+                                {% include 'mdm/fiche/_capacites.html.twig' with { widget: widget } only %}
                             {% else %}
                                 {{ form_row(widget) }}
                             {% endif %}
@@ -189,7 +191,7 @@
 
     {# ---------------- Volets des blocs (formulaires propres, hors formulaire principal) #}
     {% for i, s in sections %}
-        {% if s.blocs|filter(b => b not in ['puces', 'disponibilites'])|length > 0 %}
+        {% if s.blocs|filter(b => b not in ['puces', 'disponibilites', 'capacites'])|length > 0 %}
             {{ _self.volet_ouvre(i, i == section_index) }}
                 {% if s.champs is empty %}{{ _self.volet_titre(s.titre, onglets[i].completude) }}{% endif %}
 
