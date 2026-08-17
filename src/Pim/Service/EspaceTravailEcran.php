@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Pim\Service;
 
+use App\Dashboard\Repository\QualiteRepository;
 use App\Pim\Enum\TypeFiche;
 use App\Pim\Repository\EspaceTravailRepository;
 use App\Pim\Repository\SavedViewRepository;
@@ -19,6 +20,7 @@ final readonly class EspaceTravailEcran
     public function __construct(
         private EspaceTravailRepository $repository,
         private SavedViewRepository $vues,
+        private QualiteRepository $qualite,
         private UrlGeneratorInterface $urls,
     ) {
     }
@@ -54,6 +56,12 @@ final readonly class EspaceTravailEcran
             'url_mes_fiches' => $this->urls->generate('app_mdm_referentiel_general', [
                 'f' => ['contributeurs' => [$userId]],
             ]),
+            'url_en_attente' => $this->urls->generate('app_mdm_referentiel_general', [
+                'f' => ['contributeurs' => [$userId], 'statuts' => ['en_attente_validation']],
+            ]),
+            // Le rail « Contrôle » : les anomalies à arbitrer, comptées comme
+            // sur l'écran Qualité.
+            'anomalies' => $this->qualite->badges()['conflits'],
         ];
     }
 }
