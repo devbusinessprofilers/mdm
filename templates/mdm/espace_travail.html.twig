@@ -81,6 +81,21 @@
     </th>
 {% endmacro %}
 
+{% macro compteur_grise(couleur, libelle, note) %}
+    <li title="Fonction à venir — en développement"
+        class="card flex flex-col gap-2 px-[22px] py-5 rounded-[20px] bg-neutral-100 shadow-(--shadow) opacity-60">
+        <div class="flex items-center gap-2.5 min-w-0">
+            <span class="shrink-0 w-2.5 h-2.5 rounded-lg {{ couleur }}" aria-hidden="true"></span>
+            <twig:Typography variant="body" bold ellipsis class="flex-1 min-w-0">{{ libelle }}</twig:Typography>
+        </div>
+        <twig:Typography variant="heading-2" class="font-[700]!">—</twig:Typography>
+        <div class="flex items-center justify-between gap-3">
+            <twig:Typography variant="body-sm" textColor="neutral-400" class="flex-1 min-w-0">{{ note }}</twig:Typography>
+            <span class="inline-flex shrink-0"><twig:Tag label="À venir" variant="neutral" size="sm" /></span>
+        </div>
+    </li>
+{% endmacro %}
+
 {% macro compteur(couleur, libelle, valeur, note, href) %}
     <li class="card flex flex-col gap-2 px-[22px] py-5 rounded-[20px] bg-neutral-100 shadow-(--shadow)">
         <div class="flex items-center gap-2.5 min-w-0">
@@ -99,64 +114,123 @@
 <main class="flex flex-col flex-1 min-h-0 gap-5 px-4 pt-5 pb-6 sm:px-8 sm:pt-7 sm:pb-8
              overflow-y-auto scrollbar">
 
+    {% set sous_titres = {
+        'supply': 'Vos fiches assignées, vos priorités et votre activité.',
+        'admin': 'Vue administrateur · intégrité du référentiel et arbitrages.',
+        'cp': 'Vue chef de projet · consultation. Les modifications se font par l\'équipe Supply.',
+    } %}
     <div class="flex items-end justify-between gap-7 flex-wrap">
         <div class="flex flex-col gap-1 min-w-0">
             <twig:Typography variant="heading-2" element="h1"
                              class="sm:text-[1.625rem]! sm:leading-[2.125rem]! font-[700]!">
                 {{- app.user ? 'Bonjour ' ~ app.user.userIdentifier : 'Mon espace de travail' -}}
             </twig:Typography>
-            <twig:Typography variant="body" element="p" textColor="neutral-500">Vos fiches assignées, vos priorités et votre activité.</twig:Typography>
+            <twig:Typography variant="body" element="p" textColor="neutral-500">{{ sous_titres[role] }}</twig:Typography>
         </div>
 
-        {# Sélecteur de rôle de la maquette : pas de back → désactivé. #}
-        <div class="flex items-center gap-2.5 shrink-0 opacity-60" title="Fonction à venir — en développement">
+        {# Sélecteur de rôle : chaque vue est rendue par le serveur, comme la maquette. #}
+        <div class="flex items-center gap-2.5 shrink-0">
             <twig:Typography variant="body" textColor="neutral-500">Rôle&nbsp;:</twig:Typography>
-            {% for libelle in ['Supply', 'Manager', 'Admin'] %}
-                <span class="inline-flex items-center box-border h-10 px-4 rounded-lg whitespace-nowrap
-                             {{ loop.first ? 'bg-primary-3' : 'bg-neutral-100 inset-ring-1 inset-ring-neutral-300' }}">
+            {% for cle, libelle in roles %}
+                {% set retenu = cle == role %}
+                <a href="{{ path('app_mdm_espace_travail', { role: cle }) }}"
+                   class="inline-flex items-center box-border h-10 px-4 rounded-lg whitespace-nowrap
+                          focus-visible:outline-2 focus-visible:outline-primary-3 focus-visible:outline-offset-2
+                          {{ retenu ? 'bg-primary-3' : 'bg-neutral-100 inset-ring-1 inset-ring-neutral-300 hover:bg-primary-4' }}"
+                   {{ retenu ? 'aria-current="true"' : '' }}>
                     <twig:Typography variant="body" bold
-                                     textColor="{{ loop.first ? 'neutral-100' : 'neutral-900' }}">{{ libelle }}</twig:Typography>
-                </span>
+                                     textColor="{{ retenu ? 'neutral-100' : 'neutral-900' }}">{{ libelle }}</twig:Typography>
+                </a>
             {% endfor %}
         </div>
     </div>
 
     {#
-        Les quatre compteurs de la maquette. Contributions prestataires et
-        Campagnes IA n'ont pas de mécanisme back → grisés « À venir ».
+        Les quatre compteurs de la maquette, par rôle. Les cartes sans
+        mécanisme back sont grisées « À venir ».
         Classes card-grid/card/stat-value conservées : hooks des tests.
     #}
     <ul class="card-grid grid grid-cols-1 min-[900px]:grid-cols-2 min-[1366px]:grid-cols-4 gap-4 m-0 p-0 list-none">
-        {{ _self.compteur('bg-primary', 'Mes fiches assignées', compteurs.assignees,
-            'dont ' ~ compteurs.assignees_faibles ~ ' sous 50 % de complétude', url_mes_fiches) }}
-        {{ _self.compteur('bg-old-gold', 'En attente de validation', compteurs.en_attente,
-            'parmi vos fiches assignées', url_en_attente) }}
-        <li title="{{ a_venir }}" class="card flex flex-col gap-2 px-[22px] py-5 rounded-[20px] bg-neutral-100 shadow-(--shadow) opacity-60">
-            <div class="flex items-center gap-2.5 min-w-0">
-                <span class="shrink-0 w-2.5 h-2.5 rounded-lg bg-peach" aria-hidden="true"></span>
-                <twig:Typography variant="body" bold ellipsis class="flex-1 min-w-0">Contributions prestataires</twig:Typography>
-            </div>
-            <twig:Typography variant="heading-2" class="font-[700]!">—</twig:Typography>
-            <div class="flex items-center justify-between gap-3">
-                <twig:Typography variant="body-sm" textColor="neutral-400" class="flex-1 min-w-0">à arbitrer avant publication</twig:Typography>
-                <span class="inline-flex shrink-0"><twig:Tag label="À venir" variant="neutral" size="sm" /></span>
-            </div>
-        </li>
-        <li title="{{ a_venir }}" class="card flex flex-col gap-2 px-[22px] py-5 rounded-[20px] bg-neutral-100 shadow-(--shadow) opacity-60">
-            <div class="flex items-center gap-2.5 min-w-0">
-                <span class="shrink-0 w-2.5 h-2.5 rounded-lg bg-primary-3" aria-hidden="true"></span>
-                <twig:Typography variant="body" bold ellipsis class="flex-1 min-w-0">Campagnes IA en cours</twig:Typography>
-            </div>
-            <twig:Typography variant="heading-2" class="font-[700]!">—</twig:Typography>
-            <div class="flex items-center justify-between gap-3">
-                <twig:Typography variant="body-sm" textColor="neutral-400" class="flex-1 min-w-0">proposition de champs par lot</twig:Typography>
-                <span class="inline-flex shrink-0"><twig:Tag label="À venir" variant="neutral" size="sm" /></span>
-            </div>
-        </li>
+        {% if role == 'admin' %}
+            {{ _self.compteur('bg-error', 'Anomalies ouvertes', integrite.anomalies,
+                'conflits et écarts de forme à arbitrer', path('app_mdm_qualite', { onglet: 'conflits' })) }}
+            {{ _self.compteur_grise('bg-old-gold', 'Écarts Salesforce', 'le miroir champ à champ arrive avec l\'intégration') }}
+            {{ _self.compteur_grise('bg-primary', 'Champs en attente', 'créés, non encore diffusés') }}
+            {{ _self.compteur_grise('bg-primary-3', 'Comptes à revoir', 'prestataires et internes inactifs') }}
+        {% elseif role == 'cp' %}
+            {{ _self.compteur_grise('bg-primary', 'Fiches consultées', 'sur les 7 derniers jours') }}
+            {{ _self.compteur_grise('bg-primary-3', 'Mes favoris', 'lieux et traiteurs récurrents') }}
+            {{ _self.compteur_grise('bg-old-gold', 'Demandes en cours', 'événements à sourcer') }}
+            {{ _self.compteur_grise('bg-peach', 'Fiches signalées', 'informations à corriger') }}
+        {% else %}
+            {{ _self.compteur('bg-primary', 'Mes fiches assignées', compteurs.assignees,
+                'dont ' ~ compteurs.assignees_faibles ~ ' sous 50 % de complétude', url_mes_fiches) }}
+            {{ _self.compteur('bg-old-gold', 'En attente de validation', compteurs.en_attente,
+                'parmi vos fiches assignées', url_en_attente) }}
+            {{ _self.compteur_grise('bg-peach', 'Contributions prestataires', 'à arbitrer avant publication') }}
+            {{ _self.compteur_grise('bg-primary-3', 'Campagnes IA en cours', 'proposition de champs par lot') }}
+        {% endif %}
     </ul>
 
     <div class="flex flex-col min-[1366px]:flex-row items-stretch min-[1366px]:items-start gap-4">
 
+        {% if role == 'admin' %}
+        {# ---- Vue administrateur : l'intégrité du référentiel, règles réelles. ---- #}
+        {% set severite_tons = { 'Bloquante': 'urgent', 'Majeure': 'proche', 'Mineure': 'neutre' } %}
+        <section class="flex flex-col flex-1 min-w-0 gap-3.5 px-[26px] py-6 rounded-[20px]
+                        bg-neutral-100 shadow-(--shadow)">
+            <div class="flex items-baseline justify-between gap-4">
+                <twig:Typography variant="heading-3" element="h2" class="font-[700]!">Intégrité du référentiel</twig:Typography>
+                <twig:Typography variant="body-sm" textColor="neutral-500">Trié par sévérité puis par volume</twig:Typography>
+            </div>
+            <table class="w-full table-fixed border-separate border-spacing-0">
+                <thead>
+                    <tr>
+                        {{ _self.entete('Règle', 'w-[330px] pl-4 rounded-l-xs') }}
+                        {{ _self.entete('Fiches', 'w-[100px]') }}
+                        {{ _self.entete('Motif', 'w-auto') }}
+                        {{ _self.entete('Sévérité', 'w-[130px]') }}
+                        {{ _self.entete('Action', 'w-[100px] pr-4 rounded-r-xs text-right') }}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ligne in integrite.lignes %}
+                        <tr>
+                            <td class="box-border h-12 pl-4 pr-3 border-b border-neutral-200 truncate">
+                                <twig:Typography variant="body" bold>{{ ligne.regle }}</twig:Typography>
+                            </td>
+                            <td class="box-border h-12 pr-3 border-b border-neutral-200">
+                                <twig:Typography variant="body" bold textColor="{{ ligne.compte > 0 ? 'error' : 'neutral-500' }}">{{ ligne.compte }}</twig:Typography>
+                            </td>
+                            <td class="box-border h-12 pr-3 border-b border-neutral-200 truncate">
+                                <twig:Typography variant="body" textColor="neutral-500">{{ ligne.motif }}</twig:Typography>
+                            </td>
+                            <td class="box-border h-12 pr-3 border-b border-neutral-200">
+                                <span class="inline-block px-2.5 py-1 rounded-lg whitespace-nowrap {{ echeances[severite_tons[ligne.severite]] }}">
+                                    <twig:Typography variant="body-xs" bold textColor="controlled">{{ ligne.severite }}</twig:Typography>
+                                </span>
+                            </td>
+                            <td class="box-border h-12 pr-4 border-b border-neutral-200 text-right">
+                                <a href="{{ ligne.url }}" class="block text-[0.75rem] leading-5 font-[900] text-primary text-right hover:underline">Ouvrir</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+        {% elseif role == 'cp' %}
+        {# ---- Vue chef de projet : consultation, mécanismes à venir. ---- #}
+        <section title="{{ a_venir }}" class="flex flex-col flex-1 min-w-0 gap-3.5 px-[26px] py-6 rounded-[20px]
+                        bg-neutral-100 shadow-(--shadow) opacity-60">
+            <div class="flex items-baseline justify-between gap-4">
+                <twig:Typography variant="heading-3" element="h2" class="font-[700]!">Vos fiches récentes</twig:Typography>
+                <span class="inline-flex shrink-0"><twig:Tag label="À venir" variant="neutral" size="sm" /></span>
+            </div>
+            <twig:Typography variant="body" textColor="neutral-500" class="text-pretty">L'historique de
+                consultation, les favoris et les signalements arriveront avec le rôle Chef de projet. En
+                attendant, la recherche du référentiel reste ouverte en lecture.</twig:Typography>
+        </section>
+        {% else %}
         <section class="flex flex-col flex-1 min-w-0 gap-3.5 px-[26px] py-6 rounded-[20px]
                         bg-neutral-100 shadow-(--shadow)">
             <div class="flex items-baseline justify-between gap-4">
@@ -214,19 +288,34 @@
                 <twig:Typography variant="body-sm" textColor="neutral-500">Aucune fiche ne vous est assignée pour l'instant.</twig:Typography>
             {% endif %}
         </section>
+        {% endif %}
 
         <div class="flex flex-col shrink-0 gap-4 w-full min-[1366px]:w-[360px] min-[1600px]:w-[440px]">
             <section class="flex flex-col gap-3.5 px-[26px] py-6 rounded-[20px]
                             bg-neutral-100 shadow-(--shadow)">
                 <twig:Typography variant="heading-3" element="h2" class="font-[700]!">Raccourcis</twig:Typography>
                 <ul class="flex flex-wrap gap-2.5 m-0 p-0 list-none">
-                    <li><a href="{{ path('app_mdm_creation_fiche') }}"
-                           class="inline-block px-4 py-2.5 rounded-lg bg-primary-4 text-[0.75rem] leading-5 font-[900] text-primary-3 hover:bg-primary hover:text-neutral-100">Créer une fiche</a></li>
-                    <li><a href="{{ url_mes_fiches }}"
-                           class="inline-block px-4 py-2.5 rounded-lg bg-primary-4 text-[0.75rem] leading-5 font-[900] text-primary-3 hover:bg-primary hover:text-neutral-100">Mes fiches</a></li>
-                    {% if is_granted('ROLE_ADMIN') %}
-                        <li><a href="{{ path('app_etl_import_index') }}"
-                               class="inline-block px-4 py-2.5 rounded-lg bg-primary-4 text-[0.75rem] leading-5 font-[900] text-primary-3 hover:bg-primary hover:text-neutral-100">Importer des fiches</a></li>
+                    {% set pilule = 'inline-block px-4 py-2.5 rounded-lg bg-primary-4 text-[0.75rem] leading-5 font-[900] text-primary-3 hover:bg-primary hover:text-neutral-100' %}
+                    {% set pilule_grise = 'inline-block px-4 py-2.5 rounded-lg bg-neutral-200 text-[0.75rem] leading-5 font-[900] text-neutral-500 opacity-60 cursor-not-allowed' %}
+                    {% if role == 'admin' %}
+                        {% if is_granted('ROLE_ADMIN') %}
+                            <li><a href="{{ path('app_pim_lov_index') }}" class="{{ pilule }}">Gérer les listes de valeurs</a></li>
+                            <li><a href="{{ path('app_parametre_index') }}" class="{{ pilule }}">Paramètres applicatifs</a></li>
+                            <li><a href="{{ path('app_pim_relance_completude_index') }}" class="{{ pilule }}">Relances complétude</a></li>
+                        {% endif %}
+                        <li><a href="{{ path('app_mdm_outils') }}" class="{{ pilule }}">Journal des traitements</a></li>
+                        <li><span title="{{ a_venir }}" class="{{ pilule_grise }}">Rôles &amp; droits</span></li>
+                    {% elseif role == 'cp' %}
+                        <li><a href="{{ path('app_mdm_referentiel_general') }}" class="{{ pilule }}">Rechercher un lieu</a></li>
+                        <li><span title="{{ a_venir }}" class="{{ pilule_grise }}">Mes favoris</span></li>
+                        <li><span title="{{ a_venir }}" class="{{ pilule_grise }}">Signaler une erreur</span></li>
+                        <li><span title="{{ a_venir }}" class="{{ pilule_grise }}">Ouvrir dans Salesforce</span></li>
+                    {% else %}
+                        <li><a href="{{ path('app_mdm_creation_fiche') }}" class="{{ pilule }}">Créer une fiche</a></li>
+                        <li><a href="{{ url_mes_fiches }}" class="{{ pilule }}">Mes fiches</a></li>
+                        {% if is_granted('ROLE_ADMIN') %}
+                            <li><a href="{{ path('app_etl_import_index') }}" class="{{ pilule }}">Importer des fiches</a></li>
+                        {% endif %}
                     {% endif %}
                 </ul>
             </section>
