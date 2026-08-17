@@ -220,7 +220,7 @@
                             Corrections et enrichissements proposés par les vérifications automatiques, à arbitrer — Accepter les applique immédiatement à la fiche.
                         </twig:Typography>
                         <div class="overflow-x-auto rounded-md inset-ring-1 inset-ring-neutral-200">
-                            <table class="w-full border-collapse">
+                            <table class="w-full border-collapse" data-suggestions-attente>
                                 <thead class="bg-primary-5">
                                     <tr class="text-left h-10 border-b border-neutral-200">
                                         {% for col in ['Source', 'Champ', 'Valeur actuelle', 'Proposition', 'Confiance'] %}
@@ -263,7 +263,7 @@
                         {% if medias.gamme == 'lieu' %}
                             {% include 'pim/lieu/_medias.html.twig' with medias.vars %}
                         {% else %}
-                            {% include 'pim/_documents_gamme.html.twig' with medias.vars %}
+                            {% include 'pim/_medias_gamme.html.twig' with medias.vars %}
                         {% endif %}
                     </div>
                 {% endif %}
@@ -454,20 +454,46 @@
                     </div>
                 {% endif %}
 
-                {# ---- Historique ---- #}
+                {# ---- Historique : frise des dernières révisions, jeton par action ---- #}
                 {% if 'historique' in s.blocs %}
+                    {% set actions_audit = {
+                        'create': ['Création', 'bg-success-pastel'],
+                        'update': ['Modification', 'bg-primary-4'],
+                        'submission': ['Soumission', 'bg-primary-4'],
+                        'validation': ['Validation', 'bg-success-pastel'],
+                        'publication': ['Publication', 'bg-success-pastel'],
+                        'rejection': ['Refus', 'bg-error-pastel'],
+                        'archive': ['Archivage', 'bg-neutral-200'],
+                        'restore': ['Restauration', 'bg-peach-pastel'],
+                    } %}
                     <div class="flex flex-col gap-3 pt-4 border-t border-neutral-200 first:pt-0 first:border-t-0">
-                        <twig:Typography variant="heading-3" element="h3" bold>Dernières modifications</twig:Typography>
+                        <div class="flex items-baseline justify-between gap-4">
+                            <twig:Typography variant="heading-3" element="h3" bold>Dernières modifications</twig:Typography>
+                            <twig:Typography variant="body-sm" textColor="neutral-500">Les {{ historique|length }} plus récentes</twig:Typography>
+                        </div>
                         {% if historique is not empty %}
-                            <ul class="flex flex-col gap-1">
+                            <ul class="flex flex-col m-0 p-0 list-none rounded-md overflow-hidden inset-ring-1 inset-ring-neutral-200">
                                 {% for revision in historique %}
-                                    <li><twig:Typography variant="body-sm">{{ revision.createdAt|date('d/m/Y H:i') }} · {{ revision.action }} · {{ revision.actor }} <span class="text-neutral-500">({{ revision.source }})</span></twig:Typography></li>
+                                    {% set jeton = actions_audit[revision.action]|default([revision.action|replace({'_': ' '})|capitalize, 'bg-neutral-200']) %}
+                                    <li class="flex items-center gap-3 min-h-12 px-4 py-2 hover:bg-primary-5
+                                               {{ loop.first ? '' : 'border-t border-neutral-200' }}">
+                                        <span class="inline-flex shrink-0 w-[150px]">
+                                            <span class="inline-flex w-fit max-w-full px-[9px] py-[3px] rounded-lg {{ jeton.1 }}">
+                                                <twig:Typography variant="body-xs" bold ellipsis
+                                                                 textColor="{{ jeton.1 == 'bg-neutral-200' ? 'neutral-500' : 'primary-3' }}">{{ jeton.0 }}</twig:Typography>
+                                            </span>
+                                        </span>
+                                        <twig:Typography variant="body-sm" bold ellipsis class="min-w-0">{{ revision.actor }}</twig:Typography>
+                                        <twig:Typography variant="body-xs" textColor="neutral-400" ellipsis class="min-w-0">{{ revision.source }}</twig:Typography>
+                                        <span class="flex-1"></span>
+                                        <twig:Typography variant="body-sm" textColor="neutral-500" class="shrink-0">{{ revision.createdAt|date('d/m/Y H:i') }}</twig:Typography>
+                                    </li>
                                 {% endfor %}
                             </ul>
                         {% else %}
                             <twig:Typography variant="body-sm" textColor="neutral-500">Aucune modification enregistrée.</twig:Typography>
                         {% endif %}
-                        <twig:Button variant="outline" size="sm" asLink href="{{ liens.historique }}">Historique complet et restauration</twig:Button>
+                        <div class="flex"><twig:Button variant="outline" size="sm" asLink href="{{ liens.historique }}">Historique complet et restauration</twig:Button></div>
                     </div>
                 {% endif %}
             </section>

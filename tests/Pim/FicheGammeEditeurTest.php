@@ -90,10 +90,12 @@ final class FicheGammeEditeurTest extends WebTestCase
         self::assertStringStartsWith('RES-', $crawler->filter('.page-description')->first()->text(null, true));
         // L'éditeur est la vue unique : un validateur y voit la suppression.
         self::assertSelectorExists('.danger-form');
-        // Section Médias & menus : les documents existants du DAM sont intégrés.
+        // Section Médias & menus : galerie au design de la fiche Lieu —
+        // photos de la fiche et tuiles de documents.
         $client->request('GET', '/referentiel/restaurants/fiche/'.$restaurant->id().'?section=7');
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('main', 'Documents existants');
+        self::assertSelectorTextContains('main', 'Photos de la fiche');
+        self::assertSelectorTextContains('main', 'Documents');
         $crawler = $client->request('GET', '/referentiel/restaurants/fiche/'.$restaurant->id());
         $form = $crawler->filter('[data-float-submit-target="button"]')->form();
         $values = $form->getPhpValues();

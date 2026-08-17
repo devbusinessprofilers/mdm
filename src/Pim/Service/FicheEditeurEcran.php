@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Pim\Service;
 
 use App\Account\Service\CurrentActorProvider;
+use App\Dam\Repository\MediaAssetRepository;
+use App\Dam\Service\FichePhotoPresenter;
 use App\Audit\Repository\AuditRevisionRepository;
 use App\Etl\Repository\FicheSalesforceRepository;
 use App\Ocr\Form\OcrReviewFormFactory;
@@ -88,6 +90,8 @@ final readonly class FicheEditeurEcran
         private ParametreProviderInterface $parametres,
         private FicheSalesforceRepository $salesforce,
         private AdresseSuggestionFormFactory $adresseSuggestions,
+        private FichePhotoPresenter $fichePhotos,
+        private MediaAssetRepository $mediaAssets,
     ) {
     }
 
@@ -434,10 +438,25 @@ final readonly class FicheEditeurEcran
             default => [$this->serviceVue->form($form, $entite, false), 'app_pim_service_document_download'],
         };
 
+        // Même présentation que le lieu : les vignettes réelles des photos
+        // (déposées par le portail prestataire) et le poids des documents.
+        $assets = [];
+        foreach ($this->mediaAssets->findByStringIds(array_map(
+            static fn (array $d): string => $d['resource']->damAssetId(),
+            $vue['documents'],
+        )) as $asset) {
+            $assets[$asset->id()] = $asset;
+        }
+        $documents = [];
+        foreach ($vue['documents'] as $document) {
+            $documents[] = $document + ['asset' => $assets[$document['resource']->damAssetId()] ?? null];
+        }
+
         return [
             'gamme' => $entite->fiche()->type()->value,
             'vars' => [
-                'documents' => $vue['documents'],
+                'photos' => $this->fichePhotos->photos($entite->fiche()),
+                'documents' => $documents,
                 'entite_id' => (string) $entite->id(),
                 'download_route' => $route,
             ],

@@ -56,14 +56,14 @@ final class FicheAdresseSuggestionTest extends WebTestCase
             'longitude' => '0.05',
         ]);
 
-        // Le bloc apparaît dans Informations générales, même sans OCR actif.
+        // Le bloc vit dans l'onglet Suggestions IA & historique (volets tous rendus).
         $crawler = $this->client->request('GET', '/referentiel/lieux/fiche/'.$lieu->fiche()->idString());
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('body', 'Suggestions en attente');
-        self::assertSelectorTextContains('table', 'BAN');
-        self::assertSelectorTextContains('table', '12 Chemin Imaginaire 49590 Fontevraud-l\'Abbaye');
-        self::assertSelectorTextContains('table', '24 Rue des Tests');
-        self::assertSelectorTextContains('table', '91 %');
+        self::assertSelectorTextContains('[data-suggestions-attente]', 'BAN');
+        self::assertSelectorTextContains('[data-suggestions-attente]', '12 Chemin Imaginaire 49590 Fontevraud-l\'Abbaye');
+        self::assertSelectorTextContains('[data-suggestions-attente]', '24 Rue des Tests');
+        self::assertSelectorTextContains('[data-suggestions-attente]', '91 %');
 
         $this->client->submit($crawler->selectButton('Accepter')->form());
         self::assertResponseRedirects();

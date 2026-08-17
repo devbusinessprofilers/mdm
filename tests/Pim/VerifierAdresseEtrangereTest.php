@@ -123,8 +123,8 @@ final class VerifierAdresseEtrangereTest extends WebTestCase
         // Bloc de la fiche : source Geoapify + attribution OSM.
         $this->client->request('GET', '/referentiel/lieux/fiche/'.$lieu->fiche()->idString());
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('table', 'Geoapify');
-        self::assertSelectorTextContains('table', 'Potsdam');
+        self::assertSelectorTextContains('[data-suggestions-attente]', 'Geoapify');
+        self::assertSelectorTextContains('[data-suggestions-attente]', 'Potsdam');
         self::assertSelectorTextContains('body', 'OpenStreetMap contributors');
 
         // Écran Qualité : même source.

@@ -1,0 +1,151 @@
+{# Médias d'une fiche de gamme (Restaurant, Activité, Service) — même
+   présentation que la fiche Lieu : vignettes de photos, tuiles de documents
+   et paramètres en modale. Les photos sont déposées par le portail
+   prestataire (API) : la galerie les montre, le dépôt back-office arrivera.
+   Variables : photos (FichePhotoPresenter), documents (ViewBuilder de la
+   gamme + asset), entite_id, download_route. #}
+
+<section class="card">
+    <div class="flex items-center gap-3 pb-3">
+        <div class="flex flex-col">
+            <twig:Typography variant="body-xs" textColor="neutral-500" bold class="uppercase tracking-[0.8px]">DAM</twig:Typography>
+            <twig:Typography variant="heading-3" element="h2" bold>Photos de la fiche</twig:Typography>
+        </div>
+        <span class="inline-flex"><twig:Tag label="{{ photos|length }}" variant="primary-3" size="sm" /></span>
+        <span class="flex-1"></span>
+        <twig:Typography variant="body-xs" textColor="neutral-400">déposées par le prestataire via le portail</twig:Typography>
+    </div>
+
+    <div class="flex flex-row flex-wrap gap-4 py-4">
+        {% for photo in photos %}
+            <button type="button" title="Voir la photo"
+                    data-controller="modal-trigger-button"
+                    data-modal-trigger-button-modal-identifier-value="photo-{{ photo.resource.id }}"
+                    data-action="modal-trigger-button#open"
+                    class="relative w-[152px] h-[104px] shrink-0 flex items-center justify-center rounded-xs
+                           overflow-hidden cursor-pointer bg-primary-5 inset-ring-1
+                           {{ loop.first ? 'inset-ring-primary' : 'inset-ring-neutral-300' }}">
+                {% if loop.first %}
+                    <span class="absolute top-2 left-2 z-1 px-2 py-0.5 rounded-full bg-primary">
+                        <twig:Typography variant="body-xs" textColor="neutral-100" bold>Photo principale</twig:Typography>
+                    </span>
+                {% endif %}
+                {% if photo.thumbnail_url %}
+                    <img src="{{ photo.thumbnail_url }}" alt="{{ photo.resource.legende ?: (photo.asset ? photo.asset.originalFilename : 'Photo') }}"
+                         class="w-full h-full object-cover pointer-events-none" loading="lazy">
+                {% else %}
+                    <twig:Icon name="images" class="w-7 h-7 text-neutral-400" />
+                {% endif %}
+            </button>
+        {% else %}
+            <twig:Typography variant="body-sm" textColor="neutral-500">Aucune photo n'a encore été déposée pour cette fiche.</twig:Typography>
+        {% endfor %}
+        <span title="Fonction à venir — le dépôt back-office des photos de gamme arrive ; aujourd'hui le prestataire dépose via le portail"
+              class="w-[152px] h-[104px] shrink-0 flex flex-col items-center justify-center gap-1.5
+                     rounded-xs bg-neutral-100 inset-ring-1 inset-ring-neutral-300 opacity-60 cursor-not-allowed">
+            <twig:Icon name="plus" class="w-[22px] h-[22px] text-neutral-400" />
+            <twig:Typography variant="body-sm" textColor="neutral-500" bold>Ajouter un média</twig:Typography>
+        </span>
+    </div>
+
+    {# La visionneuse de chaque photo : légende, source, mots-clés, droits. #}
+    {% for photo in photos %}
+        <twig:Modal identifier="photo-{{ photo.resource.id }}">
+            <div class="flex flex-col gap-4 w-[min(560px,80vw)]">
+                <div class="flex items-center gap-3">
+                    <twig:Typography variant="heading-3" bold class="grow" ellipsis>
+                        {{- photo.resource.legende ?: (photo.asset ? photo.asset.originalFilename : 'Photo') -}}
+                    </twig:Typography>
+                    <span class="inline-flex shrink-0"><twig:Tag label="{{ photo.asset ? photo.asset.status.value : 'introuvable' }}" variant="neutral" size="sm" /></span>
+                </div>
+                {% if photo.url ?? photo.thumbnail_url %}
+                    <img src="{{ photo.url ?? photo.thumbnail_url }}" alt="{{ photo.resource.legende ?: 'Photo' }}"
+                         class="w-full max-h-[320px] object-cover rounded-xs" loading="lazy">
+                {% endif %}
+                <div class="flex flex-col gap-1.5">
+                    <twig:Typography variant="body-sm"><strong>Source :</strong> {{ photo.resource.source ?: 'Non renseignée' }}</twig:Typography>
+                    <twig:Typography variant="body-sm"><strong>Mots-clés :</strong> {{ photo.resource.keywords ?: '—' }}</twig:Typography>
+                    <twig:Typography variant="body-sm"><strong>Droits :</strong>
+                        {{ photo.resource.rightsGranted ? 'validés' : 'non validés' }}
+                        {%- if photo.resource.rightsExpiresAt %} · échéance {{ photo.resource.rightsExpiresAt|date('d/m/Y') }}{% endif %}</twig:Typography>
+                </div>
+                <div class="flex items-center gap-3 pt-2 border-t border-neutral-200">
+                    <twig:Typography variant="body-sm" textColor="neutral-500" class="flex-1 text-pretty">La retouche
+                        et les métadonnées se gèrent par le prestataire sur le portail.</twig:Typography>
+                    <twig:Modal:TriggerButton variant="text" size="sm" modalIdentifier="photo-{{ photo.resource.id }}"
+                                              data-action="modal-trigger-button#close">Fermer</twig:Modal:TriggerButton>
+                </div>
+            </div>
+        </twig:Modal>
+    {% endfor %}
+</section>
+
+<section class="card">
+    <div class="flex items-center gap-3 pb-3">
+        <div class="flex flex-col">
+            <twig:Typography variant="body-xs" textColor="neutral-500" bold class="uppercase tracking-[0.8px]">DAM</twig:Typography>
+            <twig:Typography variant="heading-3" element="h2" bold>Documents</twig:Typography>
+        </div>
+        <span class="inline-flex"><twig:Tag label="{{ documents|length }}" variant="neutral" size="sm" /></span>
+    </div>
+    <twig:Typography variant="body-sm" textColor="neutral-500">Les originaux restent privés. Une copie publique
+        n'est créée qu'après validation des droits. Le dépôt se fait par les champs de la section
+        (menus, supports commerciaux).</twig:Typography>
+
+    {# Même système que le lieu : une tuile par document, le clic ouvre ses paramètres en modale. #}
+    <div class="flex flex-row flex-wrap gap-4 py-4">
+        {% for document in documents %}
+            <button type="button" title="Modifier les paramètres du document"
+                    data-controller="modal-trigger-button"
+                    data-modal-trigger-button-modal-identifier-value="document-{{ document.resource.id }}"
+                    data-action="modal-trigger-button#open"
+                    class="relative w-[152px] h-[104px] shrink-0 box-border flex flex-col items-center justify-center gap-1.5
+                           px-2 rounded-xs overflow-hidden cursor-pointer bg-primary-5 inset-ring-1 inset-ring-neutral-300
+                           hover:inset-ring-primary">
+                <twig:Icon name="file-pdf" class="w-7 h-7 shrink-0 text-primary-3" />
+                <twig:Typography variant="body-xs" bold center class="w-full truncate">
+                    {{- document.resource.legende ?: (document.asset ? document.asset.originalFilename : 'Document') -}}
+                </twig:Typography>
+                <twig:Typography variant="body-xs" textColor="neutral-500" center class="w-full truncate">
+                    {{ document.asset
+                        ? (document.asset.sizeBytes / 1024 / 1024)|number_format(2, ',', ' ') ~ ' Mo'
+                        : 'fichier introuvable'
+                    }}
+                </twig:Typography>
+            </button>
+        {% else %}
+            <twig:Typography variant="body-sm" textColor="neutral-500">Aucun document sur cette fiche.</twig:Typography>
+        {% endfor %}
+    </div>
+
+    {% for document in documents %}
+        <twig:Modal identifier="document-{{ document.resource.id }}">
+            <div class="flex flex-col gap-4 w-[min(560px,80vw)]">
+                <div class="flex items-center gap-3">
+                    <twig:Typography variant="heading-3" bold class="grow" ellipsis>
+                        {{- document.resource.legende ?: (document.asset ? document.asset.originalFilename : 'Document') -}}
+                    </twig:Typography>
+                    <span class="inline-flex shrink-0"><twig:Tag label="{{ document.resource.publicationStatus ? document.resource.publicationStatus.value : 'privé' }}" variant="neutral" size="sm" /></span>
+                </div>
+                {{ form_start(document.metadata_form, {attr: {class: 'flex flex-col gap-3'}}) }}
+                    {{ form_widget(document.metadata_form) }}
+                {{ form_end(document.metadata_form) }}
+                {{ form_start(document.replace_form) }}{{ form_widget(document.replace_form) }}{{ form_end(document.replace_form) }}
+                <p>
+                    <a href="{{ path(download_route, {id: entite_id, resourceId: document.resource.id}) }}" class="hover:underline">
+                        <twig:Typography variant="body-sm" textColor="primary-3" bold element="span">Télécharger l'original</twig:Typography>
+                    </a>
+                </p>
+                <div class="flex flex-wrap items-center gap-3 pt-2 border-t border-neutral-200">
+                    {% if is_granted('ROLE_BP_VALIDATOR') %}
+                        {{ form(document.publication_form) }}
+                    {% endif %}
+                    <span class="flex-1"></span>
+                    <span class="[&_button]:bg-error! [&_button_span]:text-neutral-100!">{{ form(document.delete_form) }}</span>
+                    <twig:Modal:TriggerButton variant="text" size="sm" modalIdentifier="document-{{ document.resource.id }}"
+                                              data-action="modal-trigger-button#close">Fermer</twig:Modal:TriggerButton>
+                </div>
+            </div>
+        </twig:Modal>
+    {% endfor %}
+</section>
