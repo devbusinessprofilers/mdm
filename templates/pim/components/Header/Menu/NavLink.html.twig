@@ -22,8 +22,9 @@
     {{ attributes.without('class', 'href') }}
 >
     {% if icon %}
-        <twig:Typography textColor="{{ iconColor.value }}" class="w-6 h-6">
-            <twig:Icon name="{{ icon }}" />
+        {# Icône centrée et calibrée : à 1em elle flottait en haut de sa boîte. #}
+        <twig:Typography textColor="{{ iconColor.value }}" class="w-6 h-6 flex items-center justify-center shrink-0">
+            <twig:Icon name="{{ icon }}" class="w-5 h-5" />
         </twig:Typography>
     {% endif %}
     <twig:Typography variant="{{ labelVariant.value }}" bold="{{ isLabelBold }}">{{ label }}</twig:Typography>
