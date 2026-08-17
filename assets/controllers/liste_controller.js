@@ -15,7 +15,7 @@ import { Controller } from '@hotwired/stimulus';
 export default class extends Controller {
     static targets = ['panneau', 'replie', 'ouvert', 'picker', 'plus', 'vues',
         'bandeau', 'vueFiltres', 'vueActions', 'compteSelection', 'ligne',
-        'caseTete', 'case', 'tout'];
+        'caseTete', 'case', 'tout', 'tableau', 'densite'];
 
     connect() {
         this.surTouche = (evenement) => {
@@ -54,6 +54,14 @@ export default class extends Controller {
             this.caseTargets.forEach((c) => this.peindreLigne(c));
             this.majBandeau();
         }
+
+        // La densité choisie survit à la navigation, sans toucher l'URL.
+        if (this.hasTableauTarget) {
+            const memorisee = window.localStorage.getItem('referentiel.densite');
+            if (memorisee) {
+                this.appliquerDensite(memorisee);
+            }
+        }
     }
 
     disconnect() {
@@ -89,6 +97,19 @@ export default class extends Controller {
     basculerVues() {
         this.vuesTarget.hidden = !this.vuesTarget.hidden;
         this.pickerTarget.hidden = true;
+    }
+
+    /* Densité Normale/Compacte : purement locale, diffusée par `data-densite`. */
+    basculerDensite(evenement) {
+        this.appliquerDensite(evenement.params.densite);
+        window.localStorage.setItem('referentiel.densite', evenement.params.densite);
+    }
+
+    appliquerDensite(valeur) {
+        this.tableauTarget.dataset.densite = valeur;
+        this.densiteTargets.forEach((bouton) => {
+            bouton.toggleAttribute('data-actif', bouton.dataset.listeDensiteParam === valeur);
+        });
     }
 
     /* Copie l'URL courante — elle porte tout l'état du filtre (`f`). */

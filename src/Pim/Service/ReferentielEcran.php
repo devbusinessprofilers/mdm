@@ -114,6 +114,8 @@ final readonly class ReferentielEcran
             'form_vue' => $formVue->createView(),
             'vues_enregistrees' => $vuesEnregistrees,
             'vue_courante' => $vueCourante,
+            // Dénominateur de la colonne Diffusion : « n / total des canaux ».
+            'canaux_total' => count($this->sites->findActifsOrdonnes()),
             'gamme_imposee' => $gammeImposee,
             'parametres_filtre' => $parametresFiltre,
             'urls' => $urls,

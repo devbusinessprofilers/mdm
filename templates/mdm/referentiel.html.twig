@@ -27,7 +27,6 @@
     'en_cours': 'En cours', 'en_attente_validation': 'En attente',
     'validee': 'Validée', 'publiee': 'Publiée', 'archivee': 'Archivée',
 } %}
-{% set compacte = 'compacte' == app.request.query.get('densite') %}
 {% set route_courante = app.request.attributes.get('_route') %}
 {% set params_courants = app.request.attributes.get('_route_params') %}
 
@@ -37,11 +36,10 @@
 
 {% block title %}{{ gamme_imposee ? 'Référentiel · ' ~ (gamme_titres[gamme_imposee.value] ?? gamme_imposee.value) : 'Référentiel' }}{% endblock %}
 
-{# Tons de statut de la maquette : fond pâle, texte marine. #}
+{# Tons de statut de la maquette (En attente n'y figure pas → neutre). #}
 {% macro ton_statut(statut) %}
     {%- if 'publiee' == statut -%}success-pastel
     {%- elseif 'validee' == statut -%}primary-3
-    {%- elseif 'en_attente_validation' == statut -%}old-gold
     {%- elseif 'en_cours' == statut -%}peach
     {%- else -%}neutral
     {%- endif -%}
@@ -69,19 +67,21 @@
     </div>
 {% endmacro %}
 
-{% macro cellule(valeur, largeur, compacte) %}
+{% macro cellule(valeur, largeur) %}
     <td class="pr-2.5 box-border truncate" style="width: {{ largeur }}px; max-width: {{ largeur }}px">
-        <twig:Typography variant="{{ compacte ? 'body-sm' : 'body' }}">{{ valeur }}</twig:Typography>
+        <twig:Typography variant="body">{{ valeur }}</twig:Typography>
     </td>
 {% endmacro %}
 
-{% macro densite(libelle, actif, valeur, route, params) %}
-    <a href="{{ path(route, params|merge({ densite: valeur })) }}"
-       class="h-[30px] px-3 box-border flex items-center rounded-full whitespace-nowrap
-              {{ actif ? 'bg-linear-(--primary-gradient)' : '' }}">
-        <twig:Typography variant="body-sm" textColor="{{ actif ? 'neutral-100' : 'neutral-500' }}"
-                         bold="{{ actif }}">{{ libelle }}</twig:Typography>
-    </a>
+{# Pastille de densité : l'état actif est porté par `data-actif` (contrôleur `liste`). #}
+{% macro densite(libelle, actif, valeur) %}
+    <button type="button" data-liste-target="densite" data-action="liste#basculerDensite"
+            data-liste-densite-param="{{ valeur }}" {{ actif ? 'data-actif' : '' }}
+            class="group/densite h-[30px] px-3 box-border flex items-center rounded-full whitespace-nowrap
+                   cursor-pointer data-[actif]:bg-linear-(--primary-gradient)">
+        <span class="antialiased text-[0.875rem] leading-[1.375rem] font-sans
+                     text-neutral-500 group-data-[actif]/densite:text-neutral-100 group-data-[actif]/densite:font-black">{{ libelle }}</span>
+    </button>
 {% endmacro %}
 
 {# `liste` : rail, menus, bandeau, sélection ; `edition-rapide` : la modale. #}
@@ -193,10 +193,12 @@
                 {% do form_filtres.valeurs.setRendered %}
             {% endif %}
 
-            <div class="pt-1 px-1.5">
-                <twig:Button variant="primary" size="sm" type="submit" full>Filtrer</twig:Button>
-            </div>
             {% do form_filtres.filtrer.setRendered %}
+        </div>
+
+        {# Hors de la zone défilante : le bouton reste toujours visible. #}
+        <div class="shrink-0 px-4 py-3 border-t border-neutral-200 bg-neutral-100">
+            <twig:Button variant="primary" size="sm" type="submit" full>Filtrer</twig:Button>
         </div>
     {{ form_end(form_filtres) }}
     </nav>
@@ -261,11 +263,11 @@
 
         <span class="flex-1"></span>
 
-        {# ------------------------------------------------------------ Densité #}
+        {# Densité : bascule purement locale (contrôleur `liste`), sans rechargement. #}
         <div class="shrink-0 flex items-center gap-0.5 p-[3px] rounded-full bg-neutral-100
                     inset-ring-1 inset-ring-neutral-200">
-            {{ _self.densite('Normale', not compacte, 'nominal', route_courante, params_courants|merge(parametres_filtre)) }}
-            {{ _self.densite('Compacte', compacte, 'compacte', route_courante, params_courants|merge(parametres_filtre)) }}
+            {{ _self.densite('Normale', true, 'nominal') }}
+            {{ _self.densite('Compacte', false, 'compacte') }}
         </div>
 
         {# Fonction du front pas encore adossée au back → visible mais inactive. #}
@@ -416,13 +418,15 @@
     </div>
 
     {# ------------------------------------------------------------- Tableau #}
+    {# `data-densite` (contrôleur `liste`) diffuse la densité par le groupe. #}
     <div class="flex-1 min-h-0 flex flex-col px-[30px] pb-4">
-        <div class="flex-1 min-h-0 flex flex-col overflow-hidden rounded-[20px] bg-neutral-100 shadow-(--shadow)">
+        <div class="group/tableau flex-1 min-h-0 flex flex-col overflow-hidden rounded-[20px] bg-neutral-100 shadow-(--shadow)"
+             data-liste-target="tableau" data-densite="nominal">
             <div class="flex-1 min-h-0 overflow-auto scrollbar">
                 {% set cases = form_selection.ids.children %}
                 <table class="w-full border-collapse">
                     <thead class="sticky top-0 z-1 bg-primary-5">
-                        <tr class="{{ compacte ? 'h-9' : 'h-[42px]' }} border-b border-neutral-200 text-left">
+                        <tr class="h-[42px] group-data-[densite=compacte]/tableau:h-9 border-b border-neutral-200 text-left">
                             <th class="pl-4 w-[34px]">
                                 <button type="button" role="checkbox" aria-checked="false"
                                         class="group/tete block cursor-pointer"
@@ -438,12 +442,12 @@
                                 </button>
                             </th>
                             {% for col in [
-                                { label: 'Fiche', al: 'left' }, { label: 'Gamme', al: 'left' },
+                                { label: 'Nom et ville', al: 'left' }, { label: 'Gamme', al: 'left' },
                                 { label: 'Type', al: 'left' }, { label: 'Pays', al: 'left' },
                                 { label: 'Statut', al: 'left' }, { label: 'Complétude', al: 'left' },
-                                { label: 'Canaux', al: 'right' }, { label: 'Actif', al: 'center' },
-                                { label: 'Premium', al: 'center' }, { label: 'Modification', al: 'left' },
-                                { label: 'Actions', al: 'right' },
+                                { label: 'Diffusion', al: 'right' }, { label: 'Actif', al: 'center' },
+                                { label: 'BP', al: 'center' }, { label: 'Dernière modification', al: 'left' },
+                                { label: '', al: 'right' },
                             ] %}
                                 <th class="pr-2.5 whitespace-nowrap uppercase tracking-[0.3px] text-{{ col.al }}">
                                     <twig:Typography variant="body-xs" textColor="neutral-500" bold class="text-[10px]!">{{ col.label }}</twig:Typography>
@@ -453,7 +457,7 @@
                     </thead>
                     <tbody>
                     {% for ligne in vue.lignes %}
-                        <tr class="{{ compacte ? 'h-10' : 'h-[54px]' }} border-t border-neutral-200 first:border-t-0 align-middle"
+                        <tr class="h-[54px] group-data-[densite=compacte]/tableau:h-10 border-t border-neutral-200 first:border-t-0 align-middle"
                             data-liste-target="ligne">
 
                             <td class="pl-4 w-[34px]">
@@ -468,17 +472,17 @@
                                 {% endif %}
                             </td>
 
-                            <td class="pr-2.5" style="width: {{ compacte ? 290 : 330 }}px; max-width: {{ compacte ? 290 : 330 }}px">
+                            <td class="pr-2.5 w-[330px] max-w-[330px] group-data-[densite=compacte]/tableau:w-[290px] group-data-[densite=compacte]/tableau:max-w-[290px]">
                                 <div class="flex items-center gap-2.5 min-w-0">
                                     {#
                                         Une photo manquante est un champ « vide et
                                         obligatoire » du socle : l'anneau pêche le porte.
                                     #}
                                     <span class="shrink-0 box-border flex items-center justify-center rounded-xxs
-                                                 {{ compacte ? 'w-[30px] h-6' : 'w-10 h-8' }}
+                                                 w-10 h-8 group-data-[densite=compacte]/tableau:w-[30px] group-data-[densite=compacte]/tableau:h-6
                                                  {{ ligne.vignette ? 'bg-primary-4' : 'bg-primary-5 inset-ring-1 inset-ring-peach' }}">
                                         {% if ligne.vignette %}
-                                            <twig:Icon name="images" class="{{ compacte ? 'w-[13px] h-[13px]' : 'w-[15px] h-[15px]' }} text-primary-3" />
+                                            <twig:Icon name="images" class="w-[15px] h-[15px] group-data-[densite=compacte]/tableau:w-[13px] group-data-[densite=compacte]/tableau:h-[13px] text-primary-3" />
                                         {% else %}
                                             <span class="block w-[5px] h-[5px] rounded-full bg-peach"></span>
                                         {% endif %}
@@ -486,7 +490,7 @@
                                     <div class="flex-1 min-w-0 flex flex-col">
                                         {# Le nom ouvre la fiche : chemin principal vers l'éditeur. #}
                                         <a href="{{ urls[ligne.id].editeur ?? urls[ligne.id].edition_rapide }}" class="min-w-0 hover:underline">
-                                            <twig:Typography variant="{{ compacte ? 'body-sm' : 'body' }}" bold ellipsis>{{ ligne.label ?? 'Sans libellé' }}</twig:Typography>
+                                            <twig:Typography variant="body" bold ellipsis>{{ ligne.label ?? 'Sans libellé' }}</twig:Typography>
                                         </a>
                                         <twig:Typography variant="body-xs" textColor="neutral-500" ellipsis>
                                             {{ ligne.code }}{% if ligne.ville %} · {{ ligne.ville }}{% endif %}
@@ -495,7 +499,7 @@
                                 </div>
                             </td>
 
-                            {{ _self.cellule(gamme_libelles[ligne.type.value] ?? ligne.type.value, 106, compacte) }}
+                            {{ _self.cellule(gamme_libelles[ligne.type.value] ?? ligne.type.value, 106) }}
 
                             {# Colonne polymorphe : la typologie, marquée quand des valeurs IA attendent arbitrage. #}
                             <td class="pr-2.5 box-border" style="width: 168px; max-width: 168px">
@@ -507,17 +511,20 @@
                                         </span>
                                     {% endif %}
                                     <span class="flex-1 min-w-0 truncate">
-                                        <twig:Typography variant="{{ compacte ? 'body-sm' : 'body' }}"
+                                        <twig:Typography variant="body"
                                                          class="{{ ligne.marqueIa ? 'font-black' : '' }}">{{ ligne.typologie ?? '—' }}</twig:Typography>
                                     </span>
                                 </div>
                             </td>
 
-                            {{ _self.cellule(ligne.pays ?? '—', 82, compacte) }}
+                            {{ _self.cellule(ligne.pays ?? '—', 82) }}
 
                             <td class="pr-2.5" style="width: 130px">
-                                <twig:Tag label="{{ statut_libelles[ligne.status.value] ?? ligne.status.value }}"
-                                          variant="{{ _self.ton_statut(ligne.status.value) }}" size="sm" />
+                                {# `inline-flex` : sans lui, le Tag (div flex) s'étire sur la cellule. #}
+                                <span class="inline-flex">
+                                    <twig:Tag label="{{ statut_libelles[ligne.status.value] ?? ligne.status.value }}"
+                                              variant="{{ _self.ton_statut(ligne.status.value) }}" size="sm" />
+                                </span>
                             </td>
 
                             <td class="pr-2.5" style="width: 132px">
@@ -533,8 +540,8 @@
                             </td>
 
                             <td class="pr-2.5 text-right" style="width: 92px">
-                                <twig:Typography variant="{{ compacte ? 'body-sm' : 'body' }}" bold
-                                                 textColor="{{ ligne.canaux == 0 ? 'error' : 'neutral-900' }}">{{ ligne.canaux }}</twig:Typography>
+                                <twig:Typography variant="body" bold
+                                                 textColor="{{ ligne.canaux == 0 ? 'error' : 'neutral-900' }}">{{ ligne.canaux }} / {{ canaux_total }}</twig:Typography>
                             </td>
 
                             <td class="text-center" style="width: 52px">
@@ -544,7 +551,9 @@
 
                             <td class="text-center" style="width: 58px">
                                 {% if ligne.premium %}
-                                    <twig:Tag label="BP" variant="primary-3" size="sm" />
+                                    <span class="inline-flex">
+                                        <twig:Tag label="BP" variant="primary-3" size="sm" />
+                                    </span>
                                 {% else %}
                                     <twig:Typography variant="body-xs" textColor="neutral-400">—</twig:Typography>
                                 {% endif %}
