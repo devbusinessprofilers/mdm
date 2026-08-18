@@ -516,7 +516,6 @@ final readonly class FicheEditeurEcran
             str_contains($t, 'thématique'), str_contains($t, 'thematique'), str_contains($t, 'ambiance') => 'confetti',
             str_contains($t, 'facturation'), str_contains($t, 'partenariat') => 'list',
             str_contains($t, 'template'), str_contains($t, 'message') => 'paper-plane',
-            str_contains($t, 'prestation') => 'call-bell',
             str_contains($t, 'service'), str_contains($t, 'équipement'), str_contains($t, 'equipement') => 'gear',
             str_contains($t, 'rse'), str_contains($t, 'engagement') => 'plant',
             str_contains($t, 'loisir'), str_contains($t, 'bien-être'), str_contains($t, 'bien-etre') => 'spa',
