@@ -503,6 +503,11 @@ encadré ; « Sites de diffusion », « Données Salesforce » et « Valider les
 valeurs lues » passent de heading-3/body-sm à `subtitle` gras (hiérarchie
 maquette : heading-3 = titre de carte, subtitle = sous-bloc).
 
+`d205810` — cases « porte d'entrée » (retour utilisateur) : « L'établissement
+dispose d'hébergement » / « … de salles de réunion » ouvrent leur bloc en
+pleine largeur sous le titre (liste `cases_en_tete` du gabarit) au lieu de
+rejoindre la pile de cases en pied.
+
 Reste pour la fidélité Lieu : pastilles de droits du tableau collaborateurs,
 onglets Médias (à trancher), habillage des lignes de périodes de fermeture
 (champs nom/dates + corbeille au gabarit maquette).
