@@ -52,7 +52,8 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 final readonly class FicheEditeurEcran
 {
     /** Boutons d'en-tête : même gabarit que les liens Extraire/Traductions/Historique. */
-    private const BOUTON_SOBRE = ['data-variant' => 'outline', 'data-size' => 'sm', 'data-full' => '0'];
+    // md : aligné sur les boutons d'en-tête et de barre d'actions de la fiche.
+    private const BOUTON_SOBRE = ['data-variant' => 'outline', 'data-size' => 'md', 'data-full' => '0'];
 
     private const PREFIXES = [
         'lieu' => 'LIE',

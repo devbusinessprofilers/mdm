@@ -124,13 +124,22 @@
     }
 }
 
-@utility bg-border-hover-* {
+/*
+    ADAPTATION LOCALE — utilities statiques, plus wildcard.
+
+    `@utility bg-border-hover-*` ne consomme pas `--value()` : Tailwind v4 ne
+    génère alors jamais la classe, et le survol des boutons outline restait
+    voilé de blanc (texte blanc sur fond blanc). Une seule variante est
+    utilisée ; la nommer en dur suffit et compile. Le correctif côté portail
+    serait le même — à remonter.
+*/
+@utility bg-border-hover-primary-gradient {
     &:hover::before {
         opacity: 0;
     }
 }
 
-@utility bg-border-focus-* {
+@utility bg-border-focus-primary-gradient {
     &:focus::before {
         opacity: 0;
     }
