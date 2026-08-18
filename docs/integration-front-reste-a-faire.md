@@ -389,6 +389,34 @@ Audit (`audit/*` 5 templates), Admin hub (`pim/admin`, `dashboard/index`), Param
 Complétude (`pim/completeness/*`), Import ETL (`etl/import/*`), Utilisateurs
 (`account/admin/*`, `account/user_admin/*`), DAM détaillé (`dam/dashboard`).
 
+## ✅ Reprise fidélité fiche Lieu — mise en page (2026-08-18, commits `6cb0bce`, `e24bb09`)
+
+L'audit du 2026-08-18 a montré que la page 3 « faite » restait loin de la maquette
+sur la mise en page. Repris sur `fiche_editeur.html.twig` (toutes gammes) :
+- **Grille 2 colonnes** : champs simples en `w-[calc(50%-12px)]`, riches/groupes/
+  collections en pleine largeur — au niveau des volets ET des sous-formulaires
+  (block `form_rows` de `_form-theme-fiche`).
+- **Cartes de section** `p-14 rounded-[32px]` avec compteur de champs terminaux
+  (calculé dans `FicheEditeurEcran::nbChampsTerminaux`) et légende des 3
+  pastilles d'autorité.
+- **En-tête maquette** : h1 + tags, jauge sur la même rangée, boutons md à droite
+  (« Enrichir ce qui manque » désactivé + tooltip — pas de back), page-description
+  en `sr-only` (ancre de tests).
+- **Barre d'actions basse** `h-24 bg-primary-4` : Annuler / « Enregistrer les
+  modifications » (`form=form-fiche`, remplace FloatSubmit — tests recalés sur
+  `button[form="form-fiche"]`) / workflow d'états en primary-3. Suppression et
+  refus restent en haut.
+- **Pied maquette persistant** : Suggestions en attente (libellé générique
+  conservé, lignes maquette `bg-primary-5`, vraies forms Accepter/Ignorer,
+  `data-suggestions-attente` déplacé), **Complétude par canal** branchée sur
+  `completenessByChannel()` (4 canaux réels, pastilles seuils 80/40 — écart
+  assumé : pas de déclinaison FR/EN au back), Historique en frise. Les blocs
+  quittent leurs volets (filtre au rendu, catalogue inchangé — l'onglet
+  « Suggestions IA & historique » ne garde que l'extraction OCR).
+- **Rail maquette** : jamais de défilement (espacements `clamp`), titres de
+  groupes noirs gras, icônes `w-5`, libellés `body`, pastilles `%` arrondies.
+Suite : 557 tests verts. PHPStan : 1 erreur préexistante (l. 455, hors sujet).
+
 ## Transverses
 
 - `composants.html.twig` (vitrine des composants) : reprendre sous une route de dev
