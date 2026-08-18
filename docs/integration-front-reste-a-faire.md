@@ -494,8 +494,18 @@ ouverts, dérivation de l'amplitude globale à la saisie (contrat marketplace
 inchangé, `parJour` additif dans le payload), validation par jour, exclusion
 import (pas de donnée legacy), workers force-recreatés.
 
-Reste pour la fidélité Lieu : lignes de la collection périodes de fermeture,
-pastilles de droits du tableau collaborateurs, onglets Médias (à trancher).
+`1e732a4` — passe typographie (retour utilisateur) : les libellés de champs
+repassent en graisse normale (la maquette utilise la variante `input` sans
+bold ; le `font-[900]` inliné venait du thème global — modifié dans le seul
+`_form-theme-fiche`) ; les collections (« Périodes de fermeture », « Accès »)
+gagnent un vrai titre `subtitle` gras avec « + Ajouter » à droite, sans
+encadré ; « Sites de diffusion », « Données Salesforce » et « Valider les
+valeurs lues » passent de heading-3/body-sm à `subtitle` gras (hiérarchie
+maquette : heading-3 = titre de carte, subtitle = sous-bloc).
+
+Reste pour la fidélité Lieu : pastilles de droits du tableau collaborateurs,
+onglets Médias (à trancher), habillage des lignes de périodes de fermeture
+(champs nom/dates + corbeille au gabarit maquette).
 
 ## Transverses
 
