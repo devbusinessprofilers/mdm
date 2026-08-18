@@ -74,7 +74,7 @@ final class FicheLieuEditeurTest extends WebTestCase
 
         // Soumission partielle de la section 0 : seul le label voyage,
         // le site web (hors requête) doit rester intact.
-        $form = $crawler->filter('[data-float-submit-target="button"]')->form();
+        $form = $crawler->filter('button[form="form-fiche"]')->form();
         $values = $form->getPhpValues();
         $values['lieu']['label'] = 'Château renommé par section';
         $client->request($form->getMethod(), $form->getUri(), $values);

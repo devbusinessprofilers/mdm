@@ -24,6 +24,11 @@
     'queued': 'En file', 'processing': 'Lecture en cours', 'ready': 'À valider',
     'partially_reviewed': 'Partiellement validée', 'reviewed': 'Validée', 'failed': 'En échec',
 } %}
+{% set actions_audit = {
+    'create': 'Création', 'update': 'Modification', 'submission': 'Soumission',
+    'validation': 'Validation', 'publication': 'Publication', 'rejection': 'Refus',
+    'archive': 'Archivage', 'restore': 'Restauration',
+} %}
 
 {% block title %}{{ fiche.label ?? 'Fiche' }} · {{ section.titre }}{% endblock %}
 
@@ -57,16 +62,18 @@
         <a href="{{ onglet.url }}" {% if onglet.actif %}aria-current="page"{% endif %}
            data-fiche-onglets-target="entree" data-action="fiche-onglets#activer"
            data-fiche-onglets-volet-param="{{ onglet.index }}"
-           class="group/entree flex items-center gap-2 px-3 py-2 rounded-xs hover:bg-primary-4
+           class="group/entree flex items-center gap-2 mx-3 px-4 rounded-xs overflow-hidden
+                  py-[clamp(2px,calc(2px+(100vh-640px)*0.0227),12px)]
+                  hover:bg-primary-4
                   aria-[current=page]:bg-linear-(--primary-gradient) aria-[current=page]:hover:bg-none">
             <twig:Icon name="{{ onglet.icone }}" aria-hidden="true"
-                       class="shrink-0 w-4 h-4 text-primary group-aria-[current=page]/entree:text-neutral-100" />
-            <twig:Typography variant="body-sm" bold ellipsis textColor="primary-3"
+                       class="shrink-0 w-5 h-5 text-primary group-aria-[current=page]/entree:text-neutral-100" />
+            <twig:Typography variant="body" bold ellipsis textColor="primary-3"
                              class="flex-1 min-w-0 group-aria-[current=page]/entree:text-neutral-100!">{{ onglet.titre }}</twig:Typography>
             {% if onglet.completude is not null %}
                 <twig:Typography variant="body-xs" bold textColor="neutral-500"
-                                 class="shrink-0 px-[7px] py-0.5 rounded-lg bg-neutral-200
-                                        group-aria-[current=page]/entree:bg-neutral-100/20 group-aria-[current=page]/entree:text-neutral-100!">{{ onglet.completude }} %</twig:Typography>
+                                 class="shrink-0 px-2 py-0.5 rounded-full bg-neutral-200
+                                        group-aria-[current=page]/entree:bg-neutral-100/22 group-aria-[current=page]/entree:text-neutral-100!">{{ onglet.completude }} %</twig:Typography>
             {% endif %}
         </a>
     </li>
@@ -75,86 +82,105 @@
 {# Volet d'une section : visible seulement quand son onglet est actif. #}
 {% macro volet_ouvre(i, actif) %}
     <section data-fiche-onglets-target="volet" data-volet="{{ i }}" {{ actif ? '' : 'hidden' }}
-             class="shrink-0 flex flex-col gap-6 p-8 rounded-[24px] bg-neutral-100 shadow-(--shadow)">
+             class="shrink-0 box-border flex flex-col gap-6 p-14 rounded-[32px] bg-neutral-100 shadow-(--shadow)">
 {% endmacro %}
 
-{% macro volet_titre(titre, completude) %}
-    <div class="flex items-baseline gap-3">
-        <twig:Typography variant="heading-3" element="h2" bold class="grow">{{ titre }}</twig:Typography>
-        {% if completude is not null %}
+{# En-tête de carte maquette : titre, compteur de champs, légende des autorités —
+   la légende explique la pastille et le badge que le thème pose sur chaque champ. #}
+{% macro volet_titre(titre, completude, nb = null, avec_legende = false) %}
+    <div class="flex flex-row items-center gap-6 flex-wrap">
+        <twig:Typography variant="heading-3" element="h2" class="grow font-[700]!">{{ titre }}</twig:Typography>
+        {% if nb %}
+            <twig:Typography variant="heading-3" textColor="neutral-400">{{ nb }}</twig:Typography>
+        {% endif %}
+        {% if avec_legende %}
+            <div class="flex flex-row items-center gap-5 flex-wrap">
+                {{ _self.legende('bg-primary', 'Maîtrisé par le MDM') }}
+                {{ _self.legende('bg-primary-3', 'Lecture seule · Salesforce') }}
+                {{ _self.legende('bg-peach', 'Déclaré par le prestataire') }}
+            </div>
+        {% elseif completude is not null %}
             <twig:Typography variant="body-sm" textColor="neutral-500">{{ completude }} % complété</twig:Typography>
         {% endif %}
     </div>
+{% endmacro %}
+
+{% macro legende(fond, texte) %}
+    <span class="flex items-center gap-2">
+        <span class="w-[9px] h-[9px] shrink-0 rounded-full {{ fond }}"></span>
+        <twig:Typography variant="body-sm" textColor="neutral-500">{{ texte }}</twig:Typography>
+    </span>
 {% endmacro %}
 
 {# Le contrôleur des onglets couvre le rail et les volets. #}
 {% block main_attributs %}data-controller="fiche-onglets"{% endblock %}
 
 {# ------------------------------------------------------------------ Rail des sections #}
+{# Le rail ne défile jamais : les espacements se resserrent quand la fenêtre
+   raccourcit (clamp sur les gaps et le py des entrées, comme la maquette). #}
 {% block rail %}
-{% set onglets_ma_fiche = onglets|filter(o => o.groupe == 'ma_fiche') %}
-{% set onglets_parametres = onglets|filter(o => o.groupe == 'parametres') %}
-<nav class="flex flex-col shrink-0 box-border w-[328px] pl-5 pr-3 py-4 gap-4 overflow-y-auto scrollbar"
+{% set groupes_rail = {
+    'Ma fiche': onglets|filter(o => o.groupe == 'ma_fiche'),
+    'Paramètres': onglets|filter(o => o.groupe == 'parametres'),
+} %}
+<nav class="w-[328px] shrink-0 flex flex-col overflow-hidden bg-neutral-100 border-r border-neutral-200
+            py-[clamp(6px,calc(6px+(100vh-640px)*0.05),28px)]
+            gap-[clamp(6px,calc(6px+(100vh-640px)*0.0455),26px)]"
      aria-label="Sections de la fiche">
-    <div class="flex flex-col gap-1">
-        <twig:Typography variant="body-xs" textColor="neutral-500" bold class="px-2 pb-1 uppercase tracking-[0.8px]">Ma fiche</twig:Typography>
-        <ul class="flex flex-col gap-1">
-            {% for onglet in onglets_ma_fiche %}{{ _self.rail_entree(onglet) }}{% endfor %}
-        </ul>
-    </div>
-    {% if onglets_parametres is not empty %}
-        <div class="flex flex-col gap-1">
-            <twig:Typography variant="body-xs" textColor="neutral-500" bold class="px-2 pb-1 uppercase tracking-[0.8px]">Paramètres</twig:Typography>
-            <ul class="flex flex-col gap-1">
-                {% for onglet in onglets_parametres %}{{ _self.rail_entree(onglet) }}{% endfor %}
-            </ul>
-        </div>
-    {% endif %}
+    {% for titre, groupe in groupes_rail %}
+        {% if groupe is not empty %}
+            <div class="flex flex-col shrink-0 gap-[clamp(2px,calc(2px+(100vh-640px)*0.0136),8px)]">
+                <span class="pl-4 pr-4">
+                    <twig:Typography variant="body-sm" textColor="neutral-900" bold>{{ titre }}</twig:Typography>
+                </span>
+                <ul class="flex flex-col">
+                    {% for onglet in groupe %}{{ _self.rail_entree(onglet) }}{% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+    {% endfor %}
 </nav>
 {% endblock %}
 
 {# ------------------------------------------------------------------ Contenu #}
 {% block contenu %}
-<main class="flex flex-col h-full min-h-0 overflow-y-auto scrollbar px-6 pt-5 gap-5">
+<main class="flex flex-col h-full min-h-0">
+  <div class="flex-1 min-h-0 overflow-y-auto scrollbar flex flex-col gap-6 pl-7 pr-8 pt-8">
 
-    {# En-tête de fiche #}
+    {# En-tête de fiche : identité et jauge à gauche, actions de barre à droite. #}
     <div class="shrink-0 flex flex-col gap-3">
-        <div class="flex items-start justify-between gap-4">
-            <div class="flex flex-col gap-2 min-w-0">
-                <twig:Typography variant="body-xs" textColor="neutral-500" bold class="uppercase tracking-[0.8px]">Fiche</twig:Typography>
-                <div class="flex flex-wrap items-center gap-2">
-                    <twig:Typography variant="heading-2" element="h1" bold>{{ fiche.label ?? 'Sans libellé' }}</twig:Typography>
+        <div class="flex flex-row items-center gap-10 flex-wrap">
+            <div class="flex flex-col gap-1 grow min-w-0">
+                <div class="flex flex-row items-center gap-3 flex-wrap">
+                    {# 26 px / 34 en Ubuntu 700, comme la maquette (le palier sm
+                       de heading-2 pousse à 32/40 et bold donne 900). #}
+                    <twig:Typography variant="heading-2" element="h1"
+                                     class="sm:text-[1.625rem]! sm:leading-[2.125rem]! font-[700]!">{{ fiche.label ?? 'Sans libellé' }}</twig:Typography>
                     <twig:Tag label="{{ statut_libelles[entete.statut] ?? entete.statut }}" variant="{{ statut_variante[entete.statut] ?? 'neutral' }}" size="sm" />
                     <twig:Tag label="{{ entete.reference }} · v{{ entete.version }}" variant="neutral" size="sm" />
                 </div>
-                {# Référence en clair : sert de point d'ancrage (tests) et de repli lisible. #}
-                <p class="page-description">
-                    <twig:Typography variant="body-sm" textColor="neutral-500" element="span">{{ entete.reference }} · v{{ entete.version }} · {{ statut_libelles[entete.statut] ?? entete.statut }} · Complété à {{ entete.completude }} %</twig:Typography>
-                </p>
+                <div class="flex flex-row items-center gap-4">
+                    <twig:Typography variant="body" bold class="shrink-0">Complété à : {{ entete.completude }} %</twig:Typography>
+                    <twig:ProgressBar :value="entete.completude" large class="grow min-w-0" />
+                </div>
+                {# Référence en clair : point d'ancrage des tests, hors mise en page maquette. #}
+                <p class="page-description sr-only">{{ entete.reference }} · v{{ entete.version }} · {{ statut_libelles[entete.statut] ?? entete.statut }} · Complété à {{ entete.completude }} %</p>
             </div>
-            <div class="flex flex-wrap items-center justify-end gap-2 shrink-0 [&_form]:contents">
+            <div class="flex flex-row items-center justify-end gap-2 shrink-0 flex-wrap [&_form]:contents">
+                {# Maquette sans back : l'enrichissement IA global n'existe pas encore. #}
+                <twig:Button variant="primary" size="md" icon="ai" disabled
+                             title="En développement" class="[&>:first-child]:size-5">Enrichir ce qui manque</twig:Button>
                 {# Ouvre la modale d'extraction (le flux OCR réel), comme la maquette. #}
-                <twig:Modal:TriggerButton variant="outline" size="sm" icon="upload-simple"
+                <twig:Modal:TriggerButton variant="outline" size="md" icon="upload-simple"
+                                          class="[&>:first-child]:size-5"
                                           modalIdentifier="extraction">Extraire d'un document</twig:Modal:TriggerButton>
-                <twig:Button variant="outline" size="sm" asLink href="{{ liens.traductions }}">Traductions</twig:Button>
-                <twig:Button variant="outline" size="sm" asLink href="{{ liens.historique }}">Historique</twig:Button>
-
-                {# Workflow d'états + suppression : mêmes gabarits, même rangée.
-                   Le refus (motif obligatoire) vit sous l'en-tête, pas ici. #}
-                {% for nom, action in actions|filter((a, n) => n != 'reject') %}
-                    {% set attribut = {'submit': 'FICHE_SUBMIT', 'validate': 'FICHE_VALIDATE', 'publish': 'FICHE_PUBLISH', 'archive': 'FICHE_ARCHIVE'}[nom] %}
-                    {% if is_granted(attribut, fiche) %}{{ form(action) }}{% endif %}
-                {% endfor %}
+                <twig:Button variant="outline" size="md" asLink href="{{ liens.traductions }}">Traductions</twig:Button>
+                <twig:Button variant="outline" size="md" asLink href="{{ liens.historique }}">Historique</twig:Button>
                 {% if is_granted('FICHE_DELETE', fiche) %}
                     {# Suppression définitive de la fiche (confirmation demandée). #}
                     <span class="danger-form contents [&_button]:bg-error! [&_button]:border-error! [&_button_span]:text-neutral-100!">{{ form(action_suppression) }}</span>
                 {% endif %}
             </div>
-        </div>
-
-        <div class="flex items-center gap-3">
-            <twig:Typography variant="body-sm" bold class="shrink-0">Complété à : {{ entete.completude }} %</twig:Typography>
-            <twig:ProgressBar :value="entete.completude" large class="grow min-w-0" />
         </div>
 
         {% include 'dam/_fiche_alerts.html.twig' %}
@@ -177,20 +203,24 @@
         {% for i, s in sections %}
             {% if s.champs is not empty %}
                 {{ _self.volet_ouvre(i, i == section_index) }}
-                    {{ _self.volet_titre(s.titre, onglets[i].completude) }}
-                    <div class="flex flex-col gap-5">
+                    {{ _self.volet_titre(s.titre, onglets[i].completude, s.proprietes|length, true) }}
+                    {# Grille maquette : champ simple en demi-largeur, riche/groupe/collection en pleine. #}
+                    <div class="flex flex-row flex-wrap gap-x-6 gap-y-5">
                         {% for champ in s.champs %}
                             {% set widget = attribute(form, champ) %}
                             {% if widget.vars.prototype is defined %}
-                                {{ _self.collection(widget, widget.vars.label ?? champ) }}
+                                <div class="w-full">{{ _self.collection(widget, widget.vars.label ?? champ) }}</div>
                             {% elseif 'puces' in s.blocs %}
-                                {% include 'mdm/fiche/_puces.html.twig' with { widget: widget } only %}
+                                <div class="w-full">{% include 'mdm/fiche/_puces.html.twig' with { widget: widget } only %}</div>
                             {% elseif 'disponibilites' in s.blocs and champ == 'disponibilites' %}
-                                {% include 'mdm/fiche/_disponibilites.html.twig' with { widget: widget } only %}
+                                <div class="w-full">{% include 'mdm/fiche/_disponibilites.html.twig' with { widget: widget } only %}</div>
                             {% elseif 'capacites' in s.blocs and champ == 'salles' %}
-                                {% include 'mdm/fiche/_capacites.html.twig' with { widget: widget } only %}
+                                <div class="w-full">{% include 'mdm/fiche/_capacites.html.twig' with { widget: widget } only %}</div>
                             {% else %}
-                                {{ form_row(widget) }}
+                                {% set pleine = widget.vars.compound|default(false)
+                                    or widget.vars.attr['data-wysiwyg']|default(false)
+                                    or 'textarea' in widget.vars.block_prefixes %}
+                                {{ form_row(widget, { row_attr: { class: pleine ? 'w-full' : 'w-[calc(50%-12px)]' } }) }}
                             {% endif %}
                         {% endfor %}
                     </div>
@@ -202,59 +232,16 @@
     {{ form_end(form, {render_rest: false}) }}
 
     {# ---------------- Volets des blocs (formulaires propres, hors formulaire principal) #}
+    {# Suggestions en attente et historique ne font plus volet : ils vivent dans
+       le pied maquette, toujours visible sous les sections. #}
     {% for i, s in sections %}
-        {% if s.blocs|filter(b => b not in ['puces', 'disponibilites', 'capacites'])|length > 0 %}
+        {% if s.blocs|filter(b => b not in ['puces', 'disponibilites', 'capacites', 'suggestions_attente', 'historique'])|length > 0 %}
             {{ _self.volet_ouvre(i, i == section_index) }}
                 {% if s.champs is empty %}{{ _self.volet_titre(s.titre, onglets[i].completude) }}{% endif %}
 
                 {# ---- Formules de visibilité (maquette pure, désactivé) ---- #}
                 {% if 'formules' in s.blocs %}
                     {% include 'mdm/fiche/_formules.html.twig' %}
-                {% endif %}
-
-                {# ---- Suggestions en attente (BAN, IA…) ---- #}
-                {% if 'suggestions_attente' in s.blocs and suggestions_attente is not null %}
-                    <div class="flex flex-col gap-3">
-                        <twig:Typography variant="heading-3" element="h3" bold>Suggestions en attente</twig:Typography>
-                        <twig:Typography variant="body-sm" textColor="neutral-500">
-                            Corrections et enrichissements proposés par les vérifications automatiques, à arbitrer — Accepter les applique immédiatement à la fiche.
-                        </twig:Typography>
-                        <div class="overflow-x-auto rounded-md inset-ring-1 inset-ring-neutral-200">
-                            <table class="w-full border-collapse" data-suggestions-attente>
-                                <thead class="bg-primary-5">
-                                    <tr class="text-left h-10 border-b border-neutral-200">
-                                        {% for col in ['Source', 'Champ', 'Valeur actuelle', 'Proposition', 'Confiance'] %}
-                                            <th class="px-3"><twig:Typography variant="body-xs" textColor="neutral-500" bold>{{ col }}</twig:Typography></th>
-                                        {% endfor %}
-                                        {% if is_granted('ROLE_BP_VALIDATOR') %}<th class="px-3"></th><th class="px-3"></th>{% endif %}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for ligne in suggestions_attente.lignes %}
-                                        <tr class="h-12 border-t border-neutral-200 first:border-t-0">
-                                            <td class="px-3"><span class="inline-flex"><twig:Tag label="{{ ligne.source }}" variant="neutral" size="sm" /></span></td>
-                                            <th scope="row" class="px-3 text-left"><twig:Typography variant="body-sm" bold>{{ ligne.label }}</twig:Typography></th>
-                                            <td class="px-3"><twig:Typography variant="body-sm" textColor="neutral-500">{{ ligne.actuel != '' ? ligne.actuel : '—' }}</twig:Typography></td>
-                                            <td class="px-3"><twig:Typography variant="body-sm">{{ ligne.valeur }}</twig:Typography></td>
-                                            <td class="px-3"><twig:Typography variant="body-sm">{% if ligne.confiance is not null %}{{ ligne.confiance }} %{% else %}—{% endif %}</twig:Typography></td>
-                                            {% if is_granted('ROLE_BP_VALIDATOR') %}
-                                                <td class="px-3">{% if ligne.accepter is not null %}{{ form(ligne.accepter) }}{% endif %}</td>
-                                                <td class="px-3">{{ form(ligne.ignorer) }}</td>
-                                            {% endif %}
-                                        </tr>
-                                    {% else %}
-                                        <tr><td class="p-6 text-center" colspan="{{ is_granted('ROLE_BP_VALIDATOR') ? 7 : 5 }}"><twig:Typography variant="body-sm" textColor="neutral-500">Aucune suggestion en attente sur cette fiche.</twig:Typography></td></tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                        {% if suggestions_attente.lignes is not empty and not is_granted('ROLE_BP_VALIDATOR') %}
-                            <twig:Typography variant="body-sm" textColor="neutral-500">L'arbitrage des suggestions est réservé aux validateurs.</twig:Typography>
-                        {% endif %}
-                        {% if suggestions_attente.lignes|filter(l => l.source == 'Geoapify')|length > 0 %}
-                            <twig:Typography variant="body-xs" textColor="neutral-500">Adresse vérifiée par Geoapify — données © OpenStreetMap contributors.</twig:Typography>
-                        {% endif %}
-                    </div>
                 {% endif %}
 
                 {# ---- Médias ---- #}
@@ -454,51 +441,92 @@
                     </div>
                 {% endif %}
 
-                {# ---- Historique : frise des dernières révisions, jeton par action ---- #}
-                {% if 'historique' in s.blocs %}
-                    {% set actions_audit = {
-                        'create': ['Création', 'bg-success-pastel'],
-                        'update': ['Modification', 'bg-primary-4'],
-                        'submission': ['Soumission', 'bg-primary-4'],
-                        'validation': ['Validation', 'bg-success-pastel'],
-                        'publication': ['Publication', 'bg-success-pastel'],
-                        'rejection': ['Refus', 'bg-error-pastel'],
-                        'archive': ['Archivage', 'bg-neutral-200'],
-                        'restore': ['Restauration', 'bg-peach-pastel'],
-                    } %}
-                    <div class="flex flex-col gap-3 pt-4 border-t border-neutral-200 first:pt-0 first:border-t-0">
-                        <div class="flex items-baseline justify-between gap-4">
-                            <twig:Typography variant="heading-3" element="h3" bold>Dernières modifications</twig:Typography>
-                            <twig:Typography variant="body-sm" textColor="neutral-500">Les {{ historique|length }} plus récentes</twig:Typography>
-                        </div>
-                        {% if historique is not empty %}
-                            <ul class="flex flex-col m-0 p-0 list-none rounded-md overflow-hidden inset-ring-1 inset-ring-neutral-200">
-                                {% for revision in historique %}
-                                    {% set jeton = actions_audit[revision.action]|default([revision.action|replace({'_': ' '})|capitalize, 'bg-neutral-200']) %}
-                                    <li class="flex items-center gap-3 min-h-12 px-4 py-2 hover:bg-primary-5
-                                               {{ loop.first ? '' : 'border-t border-neutral-200' }}">
-                                        <span class="inline-flex shrink-0 w-[150px]">
-                                            <span class="inline-flex w-fit max-w-full px-[9px] py-[3px] rounded-lg {{ jeton.1 }}">
-                                                <twig:Typography variant="body-xs" bold ellipsis
-                                                                 textColor="{{ jeton.1 == 'bg-neutral-200' ? 'neutral-500' : 'primary-3' }}">{{ jeton.0 }}</twig:Typography>
-                                            </span>
-                                        </span>
-                                        <twig:Typography variant="body-sm" bold ellipsis class="min-w-0">{{ revision.actor }}</twig:Typography>
-                                        <twig:Typography variant="body-xs" textColor="neutral-400" ellipsis class="min-w-0">{{ revision.source }}</twig:Typography>
-                                        <span class="flex-1"></span>
-                                        <twig:Typography variant="body-sm" textColor="neutral-500" class="shrink-0">{{ revision.createdAt|date('d/m/Y H:i') }}</twig:Typography>
-                                    </li>
-                                {% endfor %}
-                            </ul>
-                        {% else %}
-                            <twig:Typography variant="body-sm" textColor="neutral-500">Aucune modification enregistrée.</twig:Typography>
-                        {% endif %}
-                        <div class="flex"><twig:Button variant="outline" size="sm" asLink href="{{ liens.historique }}">Historique complet et restauration</twig:Button></div>
-                    </div>
-                {% endif %}
             </section>
         {% endif %}
     {% endfor %}
+
+    {# ---------------- Pied maquette : suggestions, complétude par canal, historique #}
+    <section class="shrink-0 box-border flex flex-col gap-14 p-14 rounded-[32px] bg-neutral-100 shadow-(--shadow)">
+        {# Suggestions en attente (BAN, Geoapify, IA…) — Accepter les applique immédiatement. #}
+        <div class="flex flex-col gap-4" data-suggestions-attente>
+            {# « Suggestions IA en attente » sur la maquette — le bloc réel est
+               générique (BAN, Geoapify, IA demain), le libellé reste neutre. #}
+            <twig:Typography variant="heading-3" element="h2" class="font-[700]!">Suggestions en attente</twig:Typography>
+            {% for ligne in suggestions_attente.lignes|default([]) %}
+                <div class="flex flex-row items-center gap-5 flex-wrap px-5 py-4 rounded-xs bg-primary-5 [&_form]:contents">
+                    <span class="inline-flex"><twig:Tag label="{{ ligne.source }}" variant="neutral" size="sm" /></span>
+                    <twig:Typography variant="body" bold class="min-w-[200px]">{{ ligne.label }}</twig:Typography>
+                    <div class="flex-1 min-w-0 flex flex-col">
+                        <twig:Typography variant="body">{{ ligne.valeur }}</twig:Typography>
+                        {% if ligne.actuel != '' %}
+                            <twig:Typography variant="body-xs" textColor="neutral-500">Actuel : {{ ligne.actuel }}</twig:Typography>
+                        {% endif %}
+                    </div>
+                    <twig:Typography variant="body-sm" textColor="neutral-400">{% if ligne.confiance is not null %}{{ ligne.confiance }} %{% else %}—{% endif %}</twig:Typography>
+                    {% if is_granted('ROLE_BP_VALIDATOR') %}
+                        {% if ligne.accepter is not null %}{{ form(ligne.accepter) }}{% endif %}
+                        {{ form(ligne.ignorer) }}
+                    {% endif %}
+                </div>
+            {% else %}
+                <twig:Typography variant="body-sm" textColor="neutral-500">Aucune suggestion en attente sur cette fiche.</twig:Typography>
+            {% endfor %}
+            {% if suggestions_attente.lignes|default([]) is not empty and not is_granted('ROLE_BP_VALIDATOR') %}
+                <twig:Typography variant="body-sm" textColor="neutral-500">L'arbitrage des suggestions est réservé aux validateurs.</twig:Typography>
+            {% endif %}
+            {% if suggestions_attente.lignes|default([])|filter(l => l.source == 'Geoapify')|length > 0 %}
+                <twig:Typography variant="body-xs" textColor="neutral-500">Adresse vérifiée par Geoapify — données © OpenStreetMap contributors.</twig:Typography>
+            {% endif %}
+        </div>
+
+        <div class="flex flex-row gap-14 flex-wrap">
+            {# Complétude par canal — scores réels par canal (pas de déclinaison FR/EN au back). #}
+            <div class="flex flex-col gap-4 w-[calc(50%-28px)] min-w-[320px]">
+                <twig:Typography variant="heading-3" element="h2" class="font-[700]!">Complétude par canal</twig:Typography>
+                <div class="flex flex-col">
+                    <div class="flex flex-row items-center gap-4 px-3 py-2">
+                        <span class="flex-1"></span>
+                        <span class="w-16 text-center"><twig:Typography variant="body-xs" textColor="neutral-500" bold>Score</twig:Typography></span>
+                    </div>
+                    {% for libelle, valeur in {
+                        'Marketplace': entete.completude_canaux.marketplace,
+                        'Sites thématiques': entete.completude_canaux.thematicSites,
+                        'Salesforce': entete.completude_canaux.salesforce,
+                        'Portail prestataire': entete.completude_canaux.providerPortal,
+                    } %}
+                        <div class="flex flex-row items-center gap-4 px-3 py-2 border-t border-neutral-200">
+                            <twig:Typography variant="body" class="flex-1 min-w-0">{{ libelle }}</twig:Typography>
+                            <span class="w-16 text-center py-1 rounded-full
+                                         {{ valeur >= 80 ? 'bg-success-pastel' : (valeur >= 40 ? 'bg-old-gold-pastel' : 'bg-error-pastel') }}">
+                                <twig:Typography variant="body-sm" bold>{{ valeur }} %</twig:Typography>
+                            </span>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            {# Historique — frise des dernières révisions. #}
+            <div class="flex flex-col gap-4 flex-1 min-w-[320px]">
+                <div class="flex items-baseline justify-between gap-4">
+                    <twig:Typography variant="heading-3" element="h2" class="font-[700]!">Dernières modifications</twig:Typography>
+                    <twig:Typography variant="body-sm" textColor="neutral-500">Les {{ historique|length }} plus récentes</twig:Typography>
+                </div>
+                {% for revision in historique %}
+                    <div class="flex flex-row gap-3">
+                        <span class="w-0.5 shrink-0 rounded-full bg-primary-4" aria-hidden="true"></span>
+                        <div class="flex flex-col min-w-0">
+                            <twig:Typography variant="body" bold>{{ revision.actor }}</twig:Typography>
+                            <twig:Typography variant="body-xs" textColor="neutral-400">{{ revision.createdAt|date('d/m/Y H:i') }} · {{ revision.source }}</twig:Typography>
+                            <twig:Typography variant="body-sm" textColor="neutral-500" class="text-pretty">{{ actions_audit[revision.action]|default(revision.action|replace({'_': ' '})|capitalize) }}</twig:Typography>
+                        </div>
+                    </div>
+                {% else %}
+                    <twig:Typography variant="body-sm" textColor="neutral-500">Aucune modification enregistrée.</twig:Typography>
+                {% endfor %}
+                <div class="flex"><twig:Button variant="outline" size="sm" asLink href="{{ liens.historique }}">Historique complet et restauration</twig:Button></div>
+            </div>
+        </div>
+    </section>
 
     {# ------------------------------------------ Modale d'extraction OCR #}
     <twig:Modal identifier="extraction">
@@ -534,9 +562,26 @@
         </div>
     </twig:Modal>
 
-    {# Barre épinglée : enregistre TOUTES les sections (formulaire principal). #}
-    {% if is_granted('FICHE_EDIT', fiche) %}
-        <twig:Form:FloatSubmit formId="form-fiche" label="Enregistrer" class="shrink-0" />
-    {% endif %}
+    <div class="shrink-0 h-2"></div>
+  </div>
+
+  {# Barre d'actions fixe maquette : Annuler, l'enregistrement de TOUTES les
+     sections (formulaire principal), puis le workflow d'états. Le refus
+     (motif obligatoire) reste sous l'en-tête. #}
+  {% set actions_workflow = actions|filter((a, n) => n != 'reject') %}
+  {% if is_granted('FICHE_EDIT', fiche) or actions_workflow is not empty %}
+      <div class="shrink-0 h-24 flex items-center justify-center gap-4 bg-primary-4 [&_form]:contents">
+          <twig:Button variant="outline" size="lg" asLink href="{{ onglets[section_index].url }}">Annuler</twig:Button>
+          {% if is_granted('FICHE_EDIT', fiche) %}
+              <twig:Button variant="primary" size="lg" type="submit" form="form-fiche">Enregistrer les modifications</twig:Button>
+          {% endif %}
+          {% for nom, action in actions_workflow %}
+              {% set attribut = {'submit': 'FICHE_SUBMIT', 'validate': 'FICHE_VALIDATE', 'publish': 'FICHE_PUBLISH', 'archive': 'FICHE_ARCHIVE'}[nom] %}
+              {% if is_granted(attribut, fiche) %}
+                  <span class="contents [&_button]:bg-primary-3! [&_button]:border-primary-3! [&_button_span]:text-neutral-100!">{{ form(action) }}</span>
+              {% endif %}
+          {% endfor %}
+      </div>
+  {% endif %}
 </main>
 {% endblock %}

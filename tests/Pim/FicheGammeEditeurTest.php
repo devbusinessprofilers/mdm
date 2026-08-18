@@ -97,7 +97,7 @@ final class FicheGammeEditeurTest extends WebTestCase
         self::assertSelectorTextContains('main', 'Photos de la fiche');
         self::assertSelectorTextContains('main', 'Documents');
         $crawler = $client->request('GET', '/referentiel/restaurants/fiche/'.$restaurant->id());
-        $form = $crawler->filter('[data-float-submit-target="button"]')->form();
+        $form = $crawler->filter('button[form="form-fiche"]')->form();
         $values = $form->getPhpValues();
         $values['restaurant']['label'] = 'Bistrot renommé';
         // Soumission partielle stricte : seul le libellé voyage.

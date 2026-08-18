@@ -38,6 +38,23 @@
     {%- endif -%}
 {%- endblock -%}
 
+{#- Sous-formulaires : la grille 2 colonnes de la maquette s'applique à chaque
+    niveau — champ simple en demi-largeur ; riche, collection ou groupe en
+    pleine largeur. Les champs cachés ne prennent pas de place dans le flux. -#}
+{%- block form_rows -%}
+    <div class="flex flex-row flex-wrap gap-x-6 gap-y-5">
+        {%- for child in form -%}
+            {%- if not child.rendered -%}
+                {%- set pleine = child.vars.compound|default(false)
+                    or child.vars.prototype is defined
+                    or child.vars.attr['data-wysiwyg']|default(false)
+                    or 'textarea' in child.vars.block_prefixes -%}
+                {{- form_row(child, { row_attr: { class: pleine ? 'w-full' : 'w-[calc(50%-12px)]' } }) -}}
+            {%- endif -%}
+        {%- endfor -%}
+    </div>
+{%- endblock -%}
+
 {%- block form_label -%}
     {%- if label is not same as(false) -%}
         {%- if label is empty -%}
