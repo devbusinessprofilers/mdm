@@ -461,6 +461,15 @@ d'extraction OCR.
 - Collections titrées (« Salles », « Périodes de fermeture », « Accès ») via
   un paramètre label du helper collection() de LieuType.
 
+`b18fcf0` — chrome des champs : cadenas maquette dans la rangée de libellé des
+champs `data-autorite="Salesforce"` (aujourd'hui partenaireBp piloté SF) ;
+pilule « Suggérer » maquette sous les champs riches, désactivée + infobulle
+(pas de back IA champ par champ — rien ne se perd), via un textarea_widget
+propre à _form-theme-fiche pour ne pas toucher les autres écrans.
+
+Reste pour la fidélité Lieu : lignes de la collection périodes de fermeture,
+pastilles de droits du tableau collaborateurs, onglets Médias (à trancher).
+
 ## Transverses
 
 - `composants.html.twig` (vitrine des composants) : reprendre sous une route de dev
