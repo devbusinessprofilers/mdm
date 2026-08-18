@@ -445,6 +445,22 @@ photo (inertes, « En développement »), lignes `h-[72px]`, « Ajouter une sall
 en pied, bandeau doré « Pré-remplir avec l'IA » branché sur la vraie modale
 d'extraction OCR.
 
+`2665620` — retours utilisateur et suite du plan :
+- **Groupes de premier niveau aplatis** dans la grille de section (noms de
+  soumission inchangés — l'API PATCH externe soumet sur la structure du
+  formulaire, ne PAS déplacer les champs dans les types) : les cases des
+  groupes rejoignent la pile de fin de section — ERP sous Téléphone. Les
+  sections à bloc spécialisé (puces/dispo/capacités) gardent leurs groupes
+  entiers, leurs partials attendent le widget complet.
+- **Badges d'autorité supprimés** sur les champs (demande utilisateur) : la
+  pastille + un `title` au survol suffisent, la légende de carte les décode.
+- **Modale d'extraction** : fil 3 étapes branché sur l'état réel (dépôt /
+  lecture / validation), zone de dépôt maquette (bord tillé, icône, badge PDF)
+  autour du vrai formulaire, spinner animé sur l'état lecture. La revue reste
+  dans l'onglet (décision antérieure conservée).
+- Collections titrées (« Salles », « Périodes de fermeture », « Accès ») via
+  un paramètre label du helper collection() de LieuType.
+
 ## Transverses
 
 - `composants.html.twig` (vitrine des composants) : reprendre sous une route de dev
