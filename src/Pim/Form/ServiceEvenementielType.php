@@ -84,17 +84,13 @@ final class ServiceEvenementielType extends AbstractType
                 ) + [
                     "choices" => array_flip(ServiceLovCatalog::prestations()),
                     "multiple" => true,
-                    "expanded" => true,
-                    "choice_attr" => static fn (): array => [
-                        "data-sous-thematiques-target" => "thematique",
-                        "data-action" => "sous-thematiques#refresh",
-                    ],
+                    // Select multiple (composant Select) — plus de cases filtrées.
+                    "expanded" => false,
                 ],
             );
 
-        // Un champ de sous-prestations par famille, comme les listes des
-        // lieux ; le contrôleur Stimulus sous-thematiques masque les cases
-        // dont la famille n'est pas cochée.
+        // Un select de sous-prestations par famille — tous visibles, la
+        // famille figure dans le libellé.
         foreach (ServiceLovCatalog::sousPrestationAttributes() as $attribute => $famille) {
             $builder->add(
                 ServiceLovCatalog::SOUS_PRESTATION_FIELDS[$attribute],
@@ -118,11 +114,7 @@ final class ServiceEvenementielType extends AbstractType
                         ServiceLovCatalog::sousPrestationsFor($attribute),
                     ),
                     "multiple" => true,
-                    "expanded" => true,
-                    "choice_attr" => static fn (): array => [
-                        "data-sous-thematiques-target" => "sousThematique",
-                        "data-parent" => ServiceLovCatalog::familleOf($attribute),
-                    ],
+                    "expanded" => false,
                 ],
             );
         }
@@ -323,9 +315,6 @@ final class ServiceEvenementielType extends AbstractType
         $resolver->setDefaults([
             "data_class" => ServiceEvenementiel::class,
             "validation_groups" => [ValidationGroups::DRAFT],
-            // Racine du contrôleur Stimulus qui filtre les sous-prestations
-            // par famille cochée.
-            "attr" => ["data-controller" => "sous-thematiques"],
         ]);
     }
 

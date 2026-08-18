@@ -86,7 +86,7 @@ final class ActiviteType extends AbstractType
                         ActiviteLovCatalog::choicesFor('TYPE_EXT_INT'),
                     ),
                     'multiple' => true,
-                    'expanded' => true,
+                    'expanded' => false,
                 ],
             )
             ->add(
@@ -101,17 +101,13 @@ final class ActiviteType extends AbstractType
                         ActiviteLovCatalog::choicesFor('THEMATIQUE_ACTIVITE'),
                     ),
                     'multiple' => true,
-                    'expanded' => true,
-                    'choice_attr' => static fn (): array => [
-                        'data-sous-thematiques-target' => 'thematique',
-                        'data-action' => 'sous-thematiques#refresh',
-                    ],
+                    // Select multiple (composant Select) — plus de cases filtrées.
+                    'expanded' => false,
                 ],
             );
 
-        // Un champ de sous-thématiques par thématique, comme les listes des
-        // lieux ; le contrôleur Stimulus sous-thematiques masque les cases
-        // dont la thématique n'est pas cochée.
+        // Un select de sous-thématiques par thématique — tous visibles, la
+        // thématique figure dans le libellé.
         foreach (ActiviteLovCatalog::sousThematiqueAttributes() as $attribute => $thematique) {
             $b->add(
                 ActiviteLovCatalog::SOUS_THEMATIQUE_FIELDS[$attribute],
@@ -135,11 +131,7 @@ final class ActiviteType extends AbstractType
                         ActiviteLovCatalog::choicesFor($attribute),
                     ),
                     'multiple' => true,
-                    'expanded' => true,
-                    'choice_attr' => static fn (): array => [
-                        'data-sous-thematiques-target' => 'sousThematique',
-                        'data-parent' => ActiviteLovCatalog::thematiqueOf($attribute),
-                    ],
+                    'expanded' => false,
                 ],
             );
         }
@@ -447,7 +439,6 @@ final class ActiviteType extends AbstractType
             'validation_groups' => [ValidationGroups::DRAFT],
             // Racine du contrôleur Stimulus qui filtre les sous-thématiques
             // par thématique cochée (les cibles sont dans ce formulaire).
-            'attr' => ['data-controller' => 'sous-thematiques'],
         ]);
     }
 }
