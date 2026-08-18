@@ -120,6 +120,27 @@
     </span>
 {% endmacro %}
 
+{# Pastille de droit maquette (tableau des collaborateurs) : disque vert coché
+   quand le droit est accordé, cercle gris barré sinon. #}
+{% macro droit_collab(actif, libelle) %}
+    <span class="flex items-center" role="cell">
+        <span class="sr-only">{{ libelle }} : {{ actif ? 'oui' : 'non' }}</span>
+        {% if actif %}
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true" class="shrink-0">
+                <circle cx="10" cy="10" r="9" fill="var(--color-success)"/>
+                <path d="M5.8 10.2l2.6 2.6 5.2-5.2" stroke="#fff" stroke-width="1.8"
+                      stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        {% else %}
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true" class="shrink-0">
+                <circle cx="10" cy="10" r="8.4" stroke="var(--color-neutral-400)" stroke-width="1.2"/>
+                <path d="M7 7l6 6M13 7l-6 6" stroke="var(--color-neutral-400)" stroke-width="1.2"
+                      stroke-linecap="round"/>
+            </svg>
+        {% endif %}
+    </span>
+{% endmacro %}
+
 {# Le contrôleur des onglets couvre le rail et les volets. #}
 {% block main_attributs %}data-controller="fiche-onglets"{% endblock %}
 
@@ -348,68 +369,94 @@
                     </div>
                 {% endif %}
 
-                {# ---- Collaborateurs : tableau + panneau latéral (maquette) ---- #}
+                {# ---- Collaborateurs : grille maquette (pastilles de droits, crayon,
+                       corbeille) + panneau latéral à deux états. Le crayon recharge la
+                       page avec ?collaborateur=<id> : le panneau passe alors en mode
+                       édition avec le vrai formulaire — pas de bascule JS factice. ---- #}
                 {% if 'collaborateurs' in s.blocs %}
                     {% set peut_gerer = is_granted('FICHE_MANAGE_AFFILIATIONS', fiche) %}
+                    {% set collaborateur_edite = peut_gerer ? app.request.query.get('collaborateur') : null %}
+                    {% set ligne_editee = collaborateur_edite
+                        ? (affiliations|filter(l => l.affiliation.idString == collaborateur_edite)|first)
+                        : null %}
+                    {# Classes écrites en toutes lettres : Tailwind ne compile pas
+                       une classe construite par concaténation. #}
+                    {% set grille_collab = peut_gerer
+                        ? 'grid-cols-[84px_96px_84px_minmax(0,1fr)_116px_104px_78px_62px]'
+                        : 'grid-cols-[84px_96px_84px_minmax(0,1fr)_116px_104px_78px]' %}
                     <div class="flex flex-col min-[1100px]:flex-row gap-6 items-start">
                     <div class="flex-1 min-w-0 flex flex-col gap-3">
-                        <div class="overflow-x-auto rounded-md inset-ring-1 inset-ring-neutral-200">
-                            <table class="w-full border-collapse">
-                                <thead class="bg-primary-5">
-                                    <tr class="text-left h-10 border-b border-neutral-200">
-                                        {% for col in ['Nom', 'Email', 'Téléphone', 'Rôle · drapeaux'] %}
-                                            <th class="px-3"><twig:Typography variant="body-xs" textColor="neutral-500" bold>{{ col }}</twig:Typography></th>
-                                        {% endfor %}
-                                        {% if peut_gerer %}<th class="px-3"></th>{% endif %}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                {% for ligne in affiliations %}
-                                    {% set affiliation = ligne.affiliation %}
-                                    <tr class="h-12 border-t border-neutral-200 first:border-t-0">
-                                        <td class="px-3"><twig:Typography variant="body-sm" bold>{{ affiliation.collaborateur.firstName }} {{ affiliation.collaborateur.lastName }}</twig:Typography></td>
-                                        <td class="px-3"><twig:Typography variant="body-sm">{{ affiliation.collaborateur.email }}</twig:Typography></td>
-                                        <td class="px-3"><twig:Typography variant="body-sm" textColor="neutral-500">{{ affiliation.collaborateur.phone ?? '—' }}</twig:Typography></td>
-                                        <td class="px-3">
-                                            {% if peut_gerer %}
-                                                {{ form(ligne.edition) }}
-                                            {% else %}
-                                                <div class="flex flex-wrap items-center gap-1">
-                                                    <twig:Tag label="{{ affiliation.role.value }}" variant="neutral" size="sm" />
-                                                    {% if affiliation.receivesRequests %}<twig:Tag label="contact principal" variant="primary-3" size="sm" />{% endif %}
-                                                    {% if affiliation.repli %}<twig:Tag label="repli" variant="old-gold" size="sm" />{% endif %}
-                                                </div>
-                                            {% endif %}
-                                        </td>
-                                        {% if peut_gerer %}<td class="px-3">{{ form(ligne.suppression) }}</td>{% endif %}
-                                    </tr>
-                                {% else %}
-                                    <tr><td class="p-6 text-center" colspan="{{ peut_gerer ? 5 : 4 }}"><twig:Typography variant="body-sm" textColor="neutral-500">Aucun collaborateur affilié.</twig:Typography></td></tr>
+                        <div class="flex flex-col self-stretch overflow-x-auto">
+                            <div class="grid {{ grille_collab }} gap-1.5 box-border px-3 py-2.5 rounded-xs bg-primary-4 min-w-[720px]" role="row">
+                                {% for colonne in ['Contact principal', 'Nom', 'Prénom', 'Email', 'Téléphone', 'Rôle', 'Repli'] %}
+                                    <span role="columnheader"><twig:Typography variant="body-xs" textColor="primary-3" bold>{{ colonne }}</twig:Typography></span>
                                 {% endfor %}
-                                </tbody>
-                            </table>
+                                {% if peut_gerer %}<span></span>{% endif %}
+                            </div>
+                            {% for ligne in affiliations %}
+                                {% set affiliation = ligne.affiliation %}
+                                <div class="grid {{ grille_collab }} gap-1.5 items-center box-border px-3 py-3.5 min-w-[720px]
+                                            border-b border-neutral-200 {{ affiliation.idString == collaborateur_edite ? 'bg-primary-5' : '' }}" role="row">
+                                    {{ _self.droit_collab(affiliation.receivesRequests, 'Contact principal') }}
+                                    <span class="min-w-0 truncate"><twig:Typography variant="body-sm" bold>{{ affiliation.collaborateur.lastName }}</twig:Typography></span>
+                                    <span class="min-w-0 truncate"><twig:Typography variant="body-sm">{{ affiliation.collaborateur.firstName }}</twig:Typography></span>
+                                    <span class="min-w-0 truncate"><twig:Typography variant="body-sm">{{ affiliation.collaborateur.email }}</twig:Typography></span>
+                                    <span class="whitespace-nowrap"><twig:Typography variant="body-sm">{{ affiliation.collaborateur.phone ?? '—' }}</twig:Typography></span>
+                                    <span class="min-w-0 truncate"><twig:Typography variant="body-sm">{{ affiliation.role.value|capitalize }}</twig:Typography></span>
+                                    {{ _self.droit_collab(affiliation.repli, 'Contact de repli') }}
+                                    {% if peut_gerer %}
+                                        <div class="flex items-center gap-2.5">
+                                            <a href="{{ onglets[i].url }}&collaborateur={{ affiliation.idString }}"
+                                               class="flex shrink-0 cursor-pointer text-neutral-900">
+                                                <span class="sr-only">Modifier {{ affiliation.collaborateur.firstName }} {{ affiliation.collaborateur.lastName }}</span>
+                                                <twig:Icon name="pencil" class="w-[17px] h-[17px]" />
+                                            </a>
+                                            {{ form_start(ligne.suppression, { attr: { class: 'contents' } }) }}
+                                                <button type="submit" class="flex shrink-0 cursor-pointer text-neutral-900 hover:text-error">
+                                                    <span class="sr-only">Retirer {{ affiliation.collaborateur.firstName }} {{ affiliation.collaborateur.lastName }}</span>
+                                                    <twig:Icon name="trash" class="w-[17px] h-[17px]" />
+                                                </button>
+                                                {% do ligne.suppression.submit.setRendered %}
+                                            {{ form_end(ligne.suppression) }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            {% else %}
+                                <div class="px-3 py-6"><twig:Typography variant="body-sm" textColor="neutral-500">Aucun collaborateur affilié.</twig:Typography></div>
+                            {% endfor %}
                         </div>
                         {% if not peut_gerer %}
                             <twig:Typography variant="body-sm" textColor="neutral-500">La gestion des collaborateurs est réservée aux validateurs.</twig:Typography>
                         {% endif %}
                     </div>
 
-                    {# Panneau latéral d'invitation — gabarit maquette _panneau_collaborateur,
-                       porté par le vrai formulaire (l'email est la clé du rattachement). #}
+                    {# Panneau latéral maquette : invitation par défaut, édition du
+                       collaborateur pointé par le crayon (vrais formulaires). #}
                     {% if peut_gerer and form_invitation %}
                         <aside class="w-full min-[1100px]:w-[420px] shrink-0 box-border flex flex-col gap-5 px-8 py-10
                                       rounded-[24px] bg-primary-5"
-                               aria-label="Ajouter un collaborateur">
-                            <div class="flex flex-col items-center gap-2">
-                                <twig:Icon name="plus" class="w-12 h-12 text-primary" />
-                                <twig:Typography variant="subtitle" bold class="mt-2">Ajouter un collaborateur</twig:Typography>
-                                <twig:Typography variant="body-sm" textColor="neutral-500" center class="text-pretty">
-                                    Renseignez l'adresse professionnelle du collaborateur.
-                                    Une adresse déjà connue rattache le collaborateur existant ;
-                                    la marketplace crée le compte et envoie le mail d'accès.
-                                </twig:Typography>
-                            </div>
-                            {{ form(form_invitation) }}
+                               aria-label="Ajouter ou modifier un collaborateur">
+                            {% if ligne_editee %}
+                                <div class="flex flex-col items-center gap-2">
+                                    <twig:Badge icon="user" class="w-24" />
+                                    <twig:Typography variant="subtitle" bold class="mt-2">Modifier {{ ligne_editee.affiliation.collaborateur.firstName }} {{ ligne_editee.affiliation.collaborateur.lastName }}</twig:Typography>
+                                    {# L'email est la clé du rattachement, il ne se corrige pas ici. #}
+                                    <twig:Typography variant="body-sm" textColor="neutral-500" center>{{ ligne_editee.affiliation.collaborateur.email }}</twig:Typography>
+                                </div>
+                                {{ form(ligne_editee.edition) }}
+                                <twig:Button variant="outline" size="sm" full asLink href="{{ onglets[i].url }}">Annuler</twig:Button>
+                            {% else %}
+                                <div class="flex flex-col items-center gap-2">
+                                    <twig:Icon name="plus" class="w-12 h-12 text-primary" />
+                                    <twig:Typography variant="subtitle" bold class="mt-2">Ajouter un collaborateur</twig:Typography>
+                                    <twig:Typography variant="body-sm" textColor="neutral-500" center class="text-pretty">
+                                        Renseignez l'adresse professionnelle du collaborateur.
+                                        Une adresse déjà connue rattache le collaborateur existant ;
+                                        la marketplace crée le compte et envoie le mail d'accès.
+                                    </twig:Typography>
+                                </div>
+                                {{ form(form_invitation) }}
+                            {% endif %}
                         </aside>
                     {% endif %}
                     </div>
