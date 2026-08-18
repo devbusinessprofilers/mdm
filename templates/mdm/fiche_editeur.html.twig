@@ -29,6 +29,9 @@
     'validation': 'Validation', 'publication': 'Publication', 'rejection': 'Refus',
     'archive': 'Archivage', 'restore': 'Restauration',
 } %}
+{# Cases « porte d'entrée » (l'établissement dispose de…) : elles ouvrent leur
+   bloc en pleine largeur au lieu de rejoindre la pile de cases en pied. #}
+{% set cases_en_tete = ['chambreHebergement', 'salleReunionExist'] %}
 
 {% block title %}{{ fiche.label ?? 'Fiche' }} · {{ section.titre }}{% endblock %}
 
@@ -245,6 +248,9 @@
                         {% set widgets_section = 'disponibilites' in s.blocs
                             ? widgets_section|filter(w => w.vars.name not in ['disponibilites', 'periodesFermeture'])
                             : widgets_section %}
+                        {% for widget in widgets_section|filter(w => 'checkbox' in w.vars.block_prefixes and w.vars.name in cases_en_tete) %}
+                            <div class="w-full">{{ form_row(widget) }}</div>
+                        {% endfor %}
                         {% for widget in widgets_section|filter(w => 'checkbox' not in w.vars.block_prefixes) %}
                             {% set champ = widget.vars.name %}
                             {# Les blocs spécialisés passent AVANT la branche collection
@@ -271,7 +277,7 @@
                                 {% endif %}
                             {% endif %}
                         {% endfor %}
-                        {% for lot in widgets_section|filter(w => 'checkbox' in w.vars.block_prefixes)|batch(3) %}
+                        {% for lot in widgets_section|filter(w => 'checkbox' in w.vars.block_prefixes and w.vars.name not in cases_en_tete)|batch(3) %}
                             <div class="w-[calc(50%-12px)] flex flex-col gap-3">
                                 {% for widget in lot %}{{ form_row(widget) }}{% endfor %}
                             </div>
