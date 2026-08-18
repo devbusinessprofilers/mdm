@@ -82,14 +82,20 @@ déclenche automatiquement une vérification BAN, sans commande à lancer :
   voie seule `name`, niveau `type`, CP, ville, GPS) + `ban_ecart` (booléen
   indexé). Ces colonnes sont exclues de l'audit JSON
   (`DoctrineAuditSubscriber::IGNORED_FIELDS` — le binaire de l'empreinte
-  n'est pas sérialisable).
+  n'est pas sérialisable). Les autres changements de `Localisation` sont
+  audités et rattachés à leur fiche même quand la gamme n'est pas chargée
+  en mémoire (repli sur l'identity map, fix du 2026-08-14).
 - **Arbitrage humain en un clic** (`AdresseSuggestionArbitre`), depuis deux
   écrans : le bloc **« Suggestions en attente »** en bas de l'onglet
   Informations générales de la fiche (une ligne source « BAN » avec la
   proposition et le score ; le bloc accueillera d'autres sources — IA — plus
   tard), et `/qualite` → onglet « Conflits à arbitrer » → tableau
-  « Suggestions d'adresse » (mêmes boutons, retour sur place). Réservé aux
-  validateurs (`ROLE_BP_VALIDATOR`), audité en source `ban`.
+  « Suggestions d'adresse » (mêmes boutons, retour sur place). Le tableau
+  est trié par score décroissant (les plus sûres en tête) et propose deux
+  vues via `?adresses=avec|sans` : les écarts **avec** proposition
+  (arbitrables en un clic) et ceux **sans** résultat fiable (à corriger à
+  la main). Réservé aux validateurs (`ROLE_BP_VALIDATOR`), audité en
+  source `ban`.
   - **Accepter** applique la proposition : la rue seulement quand le
     résultat BAN est au niveau rue/numéro (`housenumber`/`street` — jamais
     quand la BAN n'a trouvé qu'une commune), puis CP, ville et GPS. Refusé

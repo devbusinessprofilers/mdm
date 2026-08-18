@@ -47,7 +47,7 @@ Les secrets ne sont **jamais** commités : `html/.env` (suivi) liste toutes les 
 ### Salesforce (SALESFORCE_CLIENT_ID / SALESFORCE_PRIVATE_KEY)
 - Connected App Salesforce en OAuth JWT Bearer : la clé privée RS256 signe l'assertion, Salesforce détient le certificat public. Mêmes credentials que la marketplace (repo `lamp-docker`, `certs/salesforce_{env}.key`) tant que la Connected App est partagée.
 - `SALESFORCE_PRIVATE_KEY` porte le PEM complet (les `\n` littéraux d'une variable mono-ligne sont acceptés) ; `SALESFORCE_USERNAME` est le compte d'intégration (`portail@businessprofilers.fr`), `SALESFORCE_LOGIN_URL` `https://login.salesforce.com` en prod, `https://test.salesforce.com` en sandbox.
-- Rotation : générer un nouveau couple clé/certificat, téléverser le certificat sur la Connected App, déployer la clé privée, vérifier `app:salesforce:refresh-fiches --code=<code>` puis retirer l'ancien certificat.
+- Rotation : générer un nouveau couple clé/certificat, téléverser le certificat sur la Connected App, déployer la clé privée, vérifier `app:salesforce:refresh-fiches --code=<code>` puis retirer l'ancien certificat. Ce refresh tourne aussi en cron quotidien à 3h (Europe/Paris, `src/Schedule.php`) : une clé invalide se voit dès la nuit suivante dans la file `failed`.
 
 ### Credentials MariaDB (dépôt parent `.env` : DB_PASSWORD)
 - Dev uniquement (conteneur non exposé publiquement). Pour changer : mettre à jour le `.env` racine, recréer le volume SQL ou exécuter `ALTER USER` dans le conteneur, mettre à jour `DATABASE_URL` dans `.env.local`.
@@ -56,4 +56,4 @@ Les secrets ne sont **jamais** commités : `html/.env` (suivi) liste toutes les 
 
 1. Révoquer immédiatement le secret côté fournisseur (OVH, Box, Google) **avant** de déployer le remplaçant si possible.
 2. Roter tous les secrets présents dans le même fichier/canal fuité.
-3. Vérifier l'historique git : `gitleaks detect` (les fichiers `.env.local` sont ignorés depuis l'origine du dépôt — aucune fuite historique connue au 2026-08-06).
+3. Vérifier l'historique git : `gitleaks detect` (les fichiers `.env.local` sont ignorés depuis l'origine du dépôt — aucune fuite historique connue au 2026-08-18).

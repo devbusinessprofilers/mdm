@@ -9,12 +9,30 @@ La V1 utilise MariaDB et le transport Doctrine. Les files restent séparées
 | `worker-mail` | `mail` | S |
 | `worker-pim` | `pim` | S |
 | `worker-dam` | `dam` | M |
-| `worker-batch` | `etl`, `enrichment`, `completeness` | M |
+| `worker-batch` | `etl`, `enrichment`, `completeness`, `marketplace` | M |
 
 Les schedules Symfony (`scheduler_dashboard`, `scheduler_default`) ne sont plus
 consommées par un worker permanent : en production Upsun, un cron
 (`crons.scheduler` dans `.platform.app.yaml`) les consomme en one-shot toutes
 les 15 minutes ; en local le service `cron-scheduler` simule ce cron.
+
+## Tâches planifiées
+
+Le schedule par défaut (`src/Schedule.php`, horaires Europe/Paris) déclenche :
+
+| Quand | Message / commande | Exécuté par |
+|---|---|---|
+| Toutes les 15 min | `CheckFailedQueue` (alerte file en échec) | consumer cron |
+| Toutes les heures | `ScanDamAnomalies` (redispatch) | `worker-dam` |
+| Lundi 8h | `RemindIncompleteFiches` — préparation du lot de relances, vérifiable dans `/admin/relances-completude` | `worker-pim` |
+| Lundi 14h | `EnvoyerRelancesPlanifiees` — envoi des lignes restantes si l'envoi automatique est actif | `worker-pim` |
+| Tous les jours 3h | `RefreshFichesSalesforce` — reprise Salesforce → PIM | `worker-batch` (file `etl`) |
+| Tous les jours 4h20 | `app:outbox:purge` | consumer cron |
+| Tous les jours 4h25 | `app:account:purge-expired-tokens` | consumer cron |
+
+Le schedule `dashboard` (`DashboardScheduleProvider`) recalcule ses instantanés
+séparément. Le schedule par défaut est stateful : un déclenchement manqué est
+rattrapé au passage suivant du cron (seul le dernier manqué est rejoué).
 
 ## Prérequis
 
@@ -63,6 +81,11 @@ de l'environnement courant avant de compiler le conteneur Symfony. Son
 conteneur Symfony compilé est ainsi isolé de `var/cache` monté depuis l'hôte :
 un `cache:clear`, une analyse statique ou une compilation d'assets ne peut plus
 invalider les classes d'un worker déjà en cours d'exécution.
+
+Revers de ce cache isolé (et `APP_DEBUG=0`) : après tout changement de
+constructeur de service ou de variable d'env, recréer les workers avec
+`--force-recreate` — sinon l'ancien conteneur compilé reste servi
+(`ArgumentCountError` typique, messages qui s'accumulent en attente).
 
 Le worker `dam` requiert aussi la commande ImageMagick `convert`, installée
 dans l'image PHP, pour produire les variantes WebP.

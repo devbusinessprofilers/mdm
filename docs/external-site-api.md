@@ -75,7 +75,7 @@ champs Bible 346 `TYPE_FORFAIT` et 347 `NOM_PERSONALISE` ne sont pas exposés :
 
 ## Administration des Restaurants
 
-La page `/admin/restaurants` fournit le CRUD, la recherche et le workflow En cours
+La page `/referentiel/restaurants/fiche` fournit le CRUD, la recherche et le workflow En cours
 → En attente de validation → Publiée → Archivée. Les formulaires sont exclusivement
 des FormTypes Symfony rendus avec les helpers Twig ; les collections utilisent
 Stimulus depuis `assets/`, sans formulaire HTML manuel ni script inline.
@@ -85,12 +85,12 @@ champs structurants, les cinq atouts, la localisation, au moins une gare et un
 aéroport, les réponses conditionnelles et une à dix photos DAM avec exactement une
 photo principale. L’autocomplétion et la minicarte sont reportées au passage au
 front. L’historique append-only se consulte sur
-`/admin/restaurants/{ULID}/historique`. La commande
+`/referentiel/restaurants/fiche/{ULID}/historique`. La commande
 `app:restaurants:validate --submission` contrôle les fiches sans les modifier.
 
 ## Administration des Activités
 
-La page `/admin/activites` donne accès à la recherche, au CRUD et au workflow
+La page `/referentiel/activites/fiche` donne accès à la recherche, au CRUD et au workflow
 En cours → En attente de validation → Publiée → Archivée. Une sauvegarde utilise
 le groupe `Draft`; la soumission utilise aussi `Submission` et exige notamment un
 prestataire importé, les champs structurants, une à dix photos traitées et une
@@ -102,13 +102,13 @@ privés par défaut et ne passent jamais dans le générateur de variantes. La L
 prestataire s’importe avec `app:lov:import-prestataires fichier.csv`; le fichier
 UTF-8 doit contenir `code;label`. `--dry-run` contrôle le fichier sans écrire.
 
-Les validateurs ouvrent `/admin/activites/{ULID}/historique` pour consulter l’audit
+Les validateurs ouvrent `/referentiel/activites/fiche/{ULID}/historique` pour consulter l’audit
 append-only par champ, sans restauration. Avant un déploiement, exécuter
 `app:activites:validate` et ajouter `--submission` pour simuler la soumission.
 
 ## Administration des Services événementiels
 
-La page `/admin/services` fournit le CRUD, la recherche et le même workflow que
+La page `/referentiel/services/fiche` fournit le CRUD, la recherche et le même workflow que
 les autres fiches. Le formulaire est un FormType Symfony rendu exclusivement par
 les helpers Twig. La sauvegarde en brouillon accepte une fiche incomplète mais
 valide toute valeur renseignée.
@@ -118,7 +118,7 @@ l’adresse et les coordonnées complètes ; le mode mobile exige au moins un pa
 une région et un département saisis en texte. La fiche doit aussi posséder une à
 dix photos DAM traitées, exactement une photo principale et au moins un support
 commercial traité, titré, sourcé et assorti de droits validés. L’audit se consulte
-sur `/admin/services/{ULID}/historique`. La commande `app:services:validate
+sur `/referentiel/services/fiche/{ULID}/historique`. La commande `app:services:validate
 --submission` effectue le contrôle sans modifier les données.
 
 ## Médias
@@ -212,3 +212,7 @@ métier et `428` précondition `If-Match` absente.
 Le calcul de complétude, les futures entités après Restaurant, l’échange
 des clés avec le site externe, la connexion au site et les synchronisations initiale
 ou incrémentale seront traités lorsque le modèle métier sera complet.
+
+La diffusion des fiches vers la marketplace est un flux distinct de cette API
+(push outbox → PUT upsert JWT) : voir
+[sync-marketplace-referentiel-lov.md](sync-marketplace-referentiel-lov.md).

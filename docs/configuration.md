@@ -19,9 +19,27 @@ Réglages exposés dans `/admin/parametres`, lus via `App\Shared\Service\Paramet
 | `alerte.seuil_file_echec` | Entier | `ALERT_FAILED_QUEUE_THRESHOLD` (5) | Nombre de messages en échec (queue failed Messenger + outbox) à partir duquel une alerte part | `CheckFailedQueueHandler` |
 | `box.ocr_active` | Interrupteur | `BOX_OCR_ENABLED` (0) | Active l'extraction OCR des PDF via Box (dépôt, relecture, application des suggestions). Désactivé, les écrans OCR renvoient 404 et l'éditeur de fiche masque la section | `OcrController`, `FicheEditeurEcran` |
 | `completude.delai_rappel_jours` | Entier | `COMPLETENESS_REMINDER_COOLDOWN_DAYS` (30) | Délai minimum entre deux relances de complétude pour une même fiche | `RemindIncompleteFichesHandler`, `SendFicheCompletenessReminderHandler` |
+| `completude.rappel_auto_actif` | Interrupteur | `COMPLETENESS_REMINDER_ENABLED` (1) | Active la préparation automatique des relances de complétude (lundi 8h). Désactivé, la préparation planifiée ne fait rien ; la préparation manuelle depuis `/admin/relances-completude` reste possible | `EnvoyerRelancesPlanifieesHandler`, `RelanceCompletudeAdminController` |
 | `completude.seuil_rappel` | Entier | `COMPLETENESS_REMINDER_THRESHOLD` (60) | Score de complétude (%) sous lequel une fiche déclenche une relance email. **0 désactive les relances.** | idem |
+| `compte.invitation_validite_heures` | Entier | `ACCOUNT_INVITATION_VALIDITY_HOURS` (24) | Durée de validité des liens d'invitation d'utilisateurs internes | `InternalUserManager`, `InternalUserInvitedHandler` |
+| `compte.max_destinataires_demandes` | Entier | `ACCOUNT_MAX_REQUEST_RECIPIENTS` (3) | Nombre maximal de destinataires d'une demande d'affiliation à une fiche | `FicheAffiliationManager` |
+| `compte.mot_de_passe_longueur_min` | Entier | `ACCOUNT_PASSWORD_MIN_LENGTH` (12) | Longueur minimale des mots de passe (création et réinitialisation) | `NewPasswordType`, `CreateSuperAdminCommand` |
+| `compte.purge_jetons_jours` | Entier | `ACCOUNT_TOKEN_PURGE_DAYS` (30) | Âge à partir duquel les jetons d'invitation/réinitialisation expirés sont purgés (cron quotidien 4h25) | `PurgeAccountTokensCommand` |
+| `compte.reset_validite_heures` | Entier | `ACCOUNT_RESET_VALIDITY_HOURS` (1) | Durée de validité des liens de réinitialisation de mot de passe | `PasswordResetManager` |
+| `dam.delai_alerte_droits_jours` | Entier | `DAM_RIGHTS_ALERT_DAYS` (30) | Fenêtre d'alerte (jours) avant l'expiration des droits d'utilisation des médias | `LieuDocumentPresenter`, mappers API |
+| `dam.document_poids_max_mo` | Entier | `DAM_DOCUMENT_MAX_MB` (10) | Poids maximal d'un document déposé dans le DAM | `DocumentContraintes` |
+| `dam.image_hauteur_min` | Entier | `DAM_IMAGE_MIN_HEIGHT` (480) | Hauteur minimale (px) d'une image acceptée | `FicheImageUploader`, `LieuImageUploader`, formulaires ressources |
+| `dam.image_largeur_min` | Entier | `DAM_IMAGE_MIN_WIDTH` (960) | Largeur minimale (px) d'une image acceptée | idem |
+| `dam.image_poids_max_mo` | Entier | `DAM_IMAGE_MAX_MB` (25) | Poids maximal d'une image déposée | idem |
 | `dam.seuil_distance_phash` | Entier | `DAM_PHASH_DISTANCE_THRESHOLD` (8) | Distance pHash maximale pour signaler deux images comme doublons visuels (plus élevé = plus sensible) | `MediaAnalysisService` |
+| `dam.support_commercial_poids_max_mo` | Entier | `DAM_COMMERCIAL_SUPPORT_MAX_MB` (100) | Poids maximal d'un support commercial | `DocumentContraintes` |
+| `ocr.pdf_pages_max` | Entier | `OCR_PDF_MAX_PAGES` (100) | Nombre maximal de pages d'un PDF accepté à l'extraction OCR | `PdfDocumentProcessor` |
+| `ocr.pdf_poids_max_mo` | Entier | `OCR_PDF_MAX_MB` (50) | Poids maximal d'un PDF accepté à l'extraction OCR | `OcrUploadType`, `PdfDocumentProcessor` |
 | `ocr.seuil_application_auto` | Entier | `OCR_AUTO_APPLY_THRESHOLD` (0) | Confiance (%) à partir de laquelle une suggestion OCR s'applique automatiquement à la fin de l'extraction (sans transition de workflow). **0 = tout manuel** : les suggestions attendent l'arbitrage dans le bloc « Suggestions IA en attente » ou la revue complète | `AutoApplyOcrSuggestionsHandler` |
+| `photos.min_lieu` | Entier | `PHOTOS_MIN_LIEU` (4) | Minimum de photos pour publier un Lieu (sous ce seuil : dépublication marketplace) | `PhotoObligations` |
+| `photos.max_lieu` | Entier | `PHOTOS_MAX_LIEU` (25) | Plafond de photos d'un Lieu | idem |
+| `photos.min_autres` | Entier | `PHOTOS_MIN_AUTRES` (1) | Minimum de photos pour publier une fiche non-Lieu | idem |
+| `photos.max_autres` | Entier | `PHOTOS_MAX_AUTRES` (10) | Plafond de photos d'une fiche non-Lieu | idem |
 
 ### Fonctionnement
 
@@ -71,7 +89,7 @@ Défauts entre parenthèses = valeurs de `html/.env` (suivi par git, valeurs vid
 
 ### Réglages métier (défauts des paramètres applicatifs)
 
-`BOX_OCR_ENABLED` (0), `COMPLETENESS_REMINDER_THRESHOLD` (60), `COMPLETENESS_REMINDER_COOLDOWN_DAYS` (30), `DAM_PHASH_DISTANCE_THRESHOLD` (8) — voir le tableau du §1. Modifier la variable d'env ne sert que de défaut : une surcharge en base prime toujours.
+`BOX_OCR_ENABLED` (0), `COMPLETENESS_REMINDER_THRESHOLD` (60), `COMPLETENESS_REMINDER_COOLDOWN_DAYS` (30), `COMPLETENESS_REMINDER_ENABLED` (1), `ACCOUNT_INVITATION_VALIDITY_HOURS` (24), `ACCOUNT_RESET_VALIDITY_HOURS` (1), `ACCOUNT_TOKEN_PURGE_DAYS` (30), `ACCOUNT_PASSWORD_MIN_LENGTH` (12), `ACCOUNT_MAX_REQUEST_RECIPIENTS` (3), `DAM_PHASH_DISTANCE_THRESHOLD` (8), `DAM_IMAGE_MAX_MB` (25), `DAM_IMAGE_MIN_WIDTH` (960), `DAM_IMAGE_MIN_HEIGHT` (480), `DAM_DOCUMENT_MAX_MB` (10), `DAM_COMMERCIAL_SUPPORT_MAX_MB` (100), `DAM_RIGHTS_ALERT_DAYS` (30), `OCR_PDF_MAX_MB` (50), `OCR_PDF_MAX_PAGES` (100), `OCR_AUTO_APPLY_THRESHOLD` (0), `PHOTOS_MIN_LIEU` (4), `PHOTOS_MAX_LIEU` (25), `PHOTOS_MIN_AUTRES` (1), `PHOTOS_MAX_AUTRES` (10) — voir le tableau du §1. Modifier la variable d'env ne sert que de défaut : une surcharge en base prime toujours.
 
 ### Sécurité et jetons
 
@@ -126,6 +144,8 @@ Défauts entre parenthèses = valeurs de `html/.env` (suivi par git, valeurs vid
 | `GOOGLE_TRANSLATE_API_KEY` 🔒 | vide | Traduction automatique. **Vide = enrichissement de traduction inopérant** |
 | `GOOGLE_TRANSLATE_ENDPOINT` | URL officielle v2 | Point d'accès |
 | `RECHERCHE_ENTREPRISES_ENDPOINT` | `https://recherche-entreprises.api.gouv.fr` | Enrichissement SIRET/SIREN (mocké en test) |
+| `GEOAPIFY_API_KEY` 🔒 | vide (défaut posé dans `services.yaml`) | Vérification des adresses étrangères (cf. [normalisation-adresses.md](normalisation-adresses.md)). **Vide = vérification étrangère désactivée**, la BAN (France) continue sans clé |
+| `GEOAPIFY_API_ENDPOINT` | `https://api.geoapify.com` | Point d'accès Geoapify |
 
 ### Docker / infrastructure (compose racine `lamp-docker-mdm`)
 
