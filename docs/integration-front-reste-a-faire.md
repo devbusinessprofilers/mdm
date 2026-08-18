@@ -607,6 +607,22 @@ note du macro collection (rend `vars.help`), helps sur les collections photos
 ×3 gammes et sur titre/source, mention de la galerie corrigée (« déposées par
 le prestataire via le portail ou ajoutées par la liste "Photos" ci-dessus »).
 
+`9eca0b0` — **photos de gamme au modèle Lieu** (demande utilisateur) : zone de
+dépôt AJAX, vignettes cliquables → modale de paramètres (catégorie, légende,
+source, mots-clés, droits, recadrage/rotation, remplacer/relancer/supprimer),
+réordonnancement au glisser, modales préchargées en arrière-plan. Portage par
+généralisation : LieuPhotoManager/LieuMediaCsrfGuard/LieuImageUploader passent
+en union de types (les gammes partagent RessourceLieu), `markChanged()` public
+ajouté aux trois entités de gamme ; GammePhotoController (routes
+`app_pim_gamme_photo_*` sur /referentiel/{gamme}/fiche/{id}/photos…) au format
+actions-seules (le test d'architecture interdit constructeur/privées →
+GammeEntiteResolver) ; LieuPhotoMetadataType gagne `avec_salles` (pas
+d'association de salle hors Lieu, catégories salle retirées) ; le gabarit
+`_medias_gamme` rend le gestionnaire lieu-media avec les URLs gamme +
+`_medias_gamme_modales` ; la collection photos quitte le formulaire (champs
+Médias = menus/supports/titre/source). Constructeur FicheEditeurEcran modifié
+(CsrfTokenManager) → workers force-recreatés.
+
 `79f9b34` — uploads habillés Dropzone (demande utilisateur) : opt-in
 `attr: { 'data-dropzone': true }` dans le thème global (file → composant
 Form:Dropzone, contraintes accept/max-files/max-size par attr), appliqué aux
