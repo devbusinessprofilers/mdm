@@ -315,9 +315,11 @@
                 {% if widgets_annexes|length > 0 %}
                     {{ _self.volet_ouvre(i, i == section_index) }}
                         {{ _self.volet_titre('Disponibilités', null) }}
-                        {% set w_dispo = widgets_annexes|filter(w => w.vars.name == 'disponibilites')|first|default(null) %}
-                        {% set w_periodes = widgets_annexes|filter(w => w.vars.name == 'periodesFermeture')|first|default(null) %}
-                        {% if w_dispo %}
+                        {# reduce, pas first|default : une collection VIDE est un
+                           FormView Countable à zéro, que default() remplacerait. #}
+                        {% set w_dispo = widgets_annexes|reduce((acc, w) => w.vars.name == 'disponibilites' ? w : acc, null) %}
+                        {% set w_periodes = widgets_annexes|reduce((acc, w) => w.vars.name == 'periodesFermeture' ? w : acc, null) %}
+                        {% if w_dispo is not null %}
                             {% include 'mdm/fiche/_disponibilites.html.twig' with { widget: w_dispo, periodes: w_periodes } only %}
                         {% else %}
                             {% set annexes_simples = widgets_annexes|filter(w => w.vars.name != 'periodesFermeture') %}
@@ -350,7 +352,7 @@
                                     </div>
                                 {% endfor %}
                             </div>
-                            {% if w_periodes %}
+                            {% if w_periodes is not null %}
                                 {% include 'mdm/fiche/_periodes_fermeture.html.twig' with { periodes: w_periodes } only %}
                             {% endif %}
                         {% endif %}

@@ -182,28 +182,28 @@ final class ServiceEvenementielType extends AbstractType
                 "paysMobiles",
                 StringListType::class,
                 $this->field(
-                    "Pays mobiles — un par ligne",
+                    "Pays mobiles",
                     "paysMobiles",
                     "changePaysMobiles",
-                ),
+                ) + ["help" => "Un pays par ligne."],
             )
             ->add(
                 "regionsMobiles",
                 StringListType::class,
                 $this->field(
-                    "Régions mobiles — une par ligne",
+                    "Régions mobiles",
                     "regionsMobiles",
                     "changeRegionsMobiles",
-                ),
+                ) + ["help" => "Une région par ligne."],
             )
             ->add(
                 "departementsMobiles",
                 StringListType::class,
                 $this->field(
-                    "Départements mobiles — un par ligne",
+                    "Départements mobiles",
                     "departementsMobiles",
                     "changeDepartementsMobiles",
-                ),
+                ) + ["help" => "Un département par ligne."],
             );
 
         foreach (

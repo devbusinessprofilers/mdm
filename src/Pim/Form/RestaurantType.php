@@ -220,7 +220,7 @@ final class RestaurantType extends AbstractType
                 'descriptionGenerale',
                 TextareaType::class,
                 $this->field(
-                    'Description générale — texte simple V1',
+                    'Description générale',
                     'descriptionGenerale',
                     'changeDescriptionGenerale',
                 ),
@@ -229,10 +229,10 @@ final class RestaurantType extends AbstractType
                 'atouts',
                 StringListType::class,
                 $this->field(
-                    'Cinq atouts — un par ligne',
+                    'Atouts',
                     'atouts',
                     'changeAtouts',
-                ),
+                ) + ['help' => 'Cinq maximum, un par ligne.'],
             );
 
         foreach (

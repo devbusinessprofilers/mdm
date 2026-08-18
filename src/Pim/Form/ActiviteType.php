@@ -206,28 +206,28 @@ final class ActiviteType extends AbstractType
                 'paysMobiles',
                 StringListType::class,
                 $this->field(
-                    'Pays mobiles — un par ligne',
+                    'Pays mobiles',
                     'paysMobiles',
                     'changePaysMobiles',
-                ),
+                ) + ['help' => 'Un pays par ligne.'],
             )
             ->add(
                 'regionsMobiles',
                 StringListType::class,
                 $this->field(
-                    'Régions mobiles — une par ligne',
+                    'Régions mobiles',
                     'regionsMobiles',
                     'changeRegionsMobiles',
-                ),
+                ) + ['help' => 'Une région par ligne.'],
             )
             ->add(
                 'departementsMobiles',
                 StringListType::class,
                 $this->field(
-                    'Départements mobiles — un par ligne',
+                    'Départements mobiles',
                     'departementsMobiles',
                     'changeDepartementsMobiles',
-                ),
+                ) + ['help' => 'Un département par ligne.'],
             )
             ->add(
                 'descriptionGenerale',
@@ -301,16 +301,16 @@ final class ActiviteType extends AbstractType
                 'plus',
                 StringListType::class,
                 $this->field(
-                    'Les plus — quatre maximum, un par ligne',
+                    'Les plus',
                     'plus',
                     'changePlus',
-                ),
+                ) + ['help' => 'Quatre maximum, un par ligne.'],
             )
             ->add(
                 'tarifParPersonne',
                 MoneyType::class,
                 $this->field(
-                    'Tarif à partir de par personne',
+                    'Tarif par personne (à partir de)',
                     'tarifParPersonne',
                     'changeTarifParPersonne',
                 ) + ['currency' => 'EUR', 'input' => 'string'],
@@ -391,6 +391,7 @@ final class ActiviteType extends AbstractType
                 'required' => false,
             ])
             ->add('offres', CollectionType::class, [
+                'label' => 'Offres',
                 'entry_type' => OffreActiviteType::class,
                 'allow_add' => true,
                 'allow_delete' => true,

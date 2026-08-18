@@ -41,7 +41,7 @@
     </div>
 
     {# Périodes de fermeture — partial partagé (lignes maquette). #}
-    {% if periodes %}
+    {% if periodes is defined and periodes is not null %}
         {% include 'mdm/fiche/_periodes_fermeture.html.twig' with { periodes: periodes } only %}
     {% endif %}
 </div>
