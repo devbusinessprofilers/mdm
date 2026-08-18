@@ -203,7 +203,7 @@
         {% for i, s in sections %}
             {% if s.champs is not empty %}
                 {{ _self.volet_ouvre(i, i == section_index) }}
-                    {{ _self.volet_titre(s.titre, onglets[i].completude, s.proprietes|length, true) }}
+                    {{ _self.volet_titre(s.titre, onglets[i].completude, s.nb_champs|default(null), true) }}
                     {# Grille maquette : champ simple en demi-largeur, riche/groupe/collection en pleine. #}
                     <div class="flex flex-row flex-wrap gap-x-6 gap-y-5">
                         {% for champ in s.champs %}

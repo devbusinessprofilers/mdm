@@ -213,6 +213,17 @@ final readonly class FicheEditeurEcran
         $fiche = $entite->fiche();
         $type = $fiche->type();
         $sections = FicheSectionsCatalogue::pour($type);
+        // Compteur de champs des en-têtes de carte (maquette) : une section
+        // range souvent un unique sous-formulaire, on compte ses feuilles.
+        foreach ($sections as $i => $section) {
+            $nb = 0;
+            foreach ($section['champs'] as $champ) {
+                if ($form->has($champ)) {
+                    $nb += self::nbChampsTerminaux($form->get($champ));
+                }
+            }
+            $sections[$i]['nb_champs'] = $nb;
+        }
         $parSection = $this->completudesParSection($entite);
         $lienSection = fn (int $i): string => TypeFiche::Lieu === $type
             ? $this->urls->generate('app_mdm_fiche_lieu', ['id' => $fiche->idString(), 'section' => $i])
@@ -553,6 +564,27 @@ final readonly class FicheEditeurEcran
             $entite instanceof Activite => $this->activites->save($entite, $form, $existing, $this->actor->id()),
             default => $this->services->save($entite, $form, $existing, $this->actor->id()),
         };
+    }
+
+    /**
+     * Nombre de champs « terminaux » d'un champ de formulaire : une liste de
+     * choix ou une collection comptent pour un, un sous-formulaire pour la
+     * somme de ses feuilles.
+     *
+     * @param FormInterface<mixed> $champ
+     */
+    private static function nbChampsTerminaux(FormInterface $champ): int
+    {
+        $type = $champ->getConfig()->getType()->getInnerType();
+        if ($type instanceof ChoiceType || null !== $champ->getConfig()->getOption('prototype') || 0 === $champ->count()) {
+            return 1;
+        }
+        $nb = 0;
+        foreach ($champ as $enfant) {
+            $nb += self::nbChampsTerminaux($enfant);
+        }
+
+        return $nb;
     }
 
     /** @return array<int, ?int> Complétude par section (null quand la section ne porte aucun champ pondéré). */
