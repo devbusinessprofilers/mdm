@@ -53,12 +53,13 @@ final class FicheLieuEditeurTest extends WebTestCase
         $id = (string) $lieu->id();
         $client->loginUser($user);
 
-        // Le rail des 17 sections est là (dont « Booster ma visibilité », maquette pure), la section 0 est active. L'éditeur
+        // Le rail des 16 sections maquette est là (dont « Booster ma visibilité » et
+        // « Templates de message », maquette pure), la section 0 est active. L'éditeur
         // est la vue unique : suppression et médias y vivent aussi.
         $crawler = $client->request('GET', '/referentiel/lieux/fiche/'.$id);
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'Château des sections');
-        self::assertSame(17, $crawler->filter('nav[aria-label="Sections de la fiche"] li')->count());
+        self::assertSame(16, $crawler->filter('nav[aria-label="Sections de la fiche"] li')->count());
         // Un éditeur ne voit pas la suppression (réservée aux validateurs).
         self::assertSelectorNotExists('.danger-form');
 

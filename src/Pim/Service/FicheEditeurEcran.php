@@ -218,9 +218,15 @@ final readonly class FicheEditeurEcran
         foreach ($sections as $i => $section) {
             $nb = 0;
             foreach ($section['champs'] as $champ) {
-                if ($form->has($champ)) {
-                    $nb += self::nbChampsTerminaux($form->get($champ));
+                // Un champ de section peut être une feuille pointée (`groupe.champ`).
+                $noeud = $form;
+                foreach (explode('.', $champ) as $segment) {
+                    if (!$noeud->has($segment)) {
+                        continue 2;
+                    }
+                    $noeud = $noeud->get($segment);
                 }
+                $nb += self::nbChampsTerminaux($noeud);
             }
             $sections[$i]['nb_champs'] = $nb;
         }
@@ -237,7 +243,7 @@ final readonly class FicheEditeurEcran
                 'actif' => $i === $index,
                 'url' => $lienSection($i),
                 'icone' => self::iconeSection($section['titre']),
-                'groupe' => self::groupeSection($section['blocs']),
+                'groupe' => $section['groupe'] ?? self::groupeSection($section['blocs']),
             ];
         }
         $section = $sections[$index];
@@ -499,7 +505,10 @@ final readonly class FicheEditeurEcran
             str_contains($t, 'descript') => 'note',
             str_contains($t, 'héberg'), str_contains($t, 'heberg') => 'bed',
             str_contains($t, 'restaur') => 'utensils',
-            str_contains($t, 'salle'), str_contains($t, 'capacit') => 'conference',
+            str_contains($t, 'salle'), str_contains($t, 'capacit'), str_contains($t, 'réunion'), str_contains($t, 'reunion') => 'conference',
+            str_contains($t, 'thématique'), str_contains($t, 'thematique'), str_contains($t, 'ambiance') => 'confetti',
+            str_contains($t, 'facturation'), str_contains($t, 'partenariat') => 'list',
+            str_contains($t, 'template'), str_contains($t, 'message') => 'paper-plane',
             str_contains($t, 'prestation') => 'call-bell',
             str_contains($t, 'service'), str_contains($t, 'équipement'), str_contains($t, 'equipement') => 'gear',
             str_contains($t, 'rse'), str_contains($t, 'engagement') => 'plant',

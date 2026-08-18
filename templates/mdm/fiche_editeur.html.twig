@@ -219,15 +219,27 @@
                            cocher rejoignent ainsi la pile de fin de section — ERP sous
                            Téléphone. Les sections à bloc spécialisé gardent leurs groupes
                            entiers, leurs partials attendent le widget complet. #}
-                        {% set aplatir = 'puces' not in s.blocs and 'disponibilites' not in s.blocs and 'capacites' not in s.blocs %}
-                        {% set widgets_section = s.champs|map(c => attribute(form, c))|reduce(
-                            (acc, w) => aplatir
-                                and w.vars.compound|default(false)
+                        {# Un champ peut être une feuille pointée (`groupe.champ`) : la
+                           résolution traverse le formulaire, les noms de soumission ne
+                           changent pas. Les widgets visés par un partial spécialisé
+                           (puces, disponibilités) restent entiers. #}
+                        {% set widgets_section = s.champs|map(c => c|split('.')|reduce((f, p) => attribute(f, p), form))|reduce(
+                            (acc, w) => w.vars.compound|default(false)
                                 and w.vars.prototype is not defined
                                 and not w.vars.expanded|default(false)
+                                and 'puces' not in s.blocs
+                                and w.vars.name != 'disponibilites'
                                 ? w.children|reduce((a, e) => a|merge([e]), acc)
                                 : acc|merge([w]),
                             []) %}
+                        {# Disponibilités et périodes de fermeture : sous la grille, comme
+                           la carte annexe de la maquette. #}
+                        {% set widgets_annexes = 'disponibilites' in s.blocs
+                            ? widgets_section|filter(w => w.vars.name in ['disponibilites', 'periodesFermeture'])
+                            : [] %}
+                        {% set widgets_section = 'disponibilites' in s.blocs
+                            ? widgets_section|filter(w => w.vars.name not in ['disponibilites', 'periodesFermeture'])
+                            : widgets_section %}
                         {% for widget in widgets_section|filter(w => 'checkbox' not in w.vars.block_prefixes) %}
                             {% set champ = widget.vars.name %}
                             {# Les blocs spécialisés passent AVANT la branche collection
@@ -235,8 +247,6 @@
                                sinon avalée par elle (matrice jamais rendue). #}
                             {% if 'capacites' in s.blocs and champ == 'salles' %}
                                 <div class="w-full">{% include 'mdm/fiche/_capacites.html.twig' with { widget: widget } only %}</div>
-                            {% elseif 'disponibilites' in s.blocs and champ == 'disponibilites' %}
-                                <div class="w-full">{% include 'mdm/fiche/_disponibilites.html.twig' with { widget: widget } only %}</div>
                             {% elseif 'puces' in s.blocs %}
                                 <div class="w-full">{% include 'mdm/fiche/_puces.html.twig' with { widget: widget } only %}</div>
                             {% elseif widget.vars.prototype is defined %}
@@ -262,6 +272,15 @@
                             </div>
                         {% endfor %}
                     </div>
+
+                    {# Carte annexe maquette : disponibilités et fermetures sous la grille. #}
+                    {% for widget in widgets_annexes %}
+                        {% if widget.vars.name == 'disponibilites' %}
+                            {% include 'mdm/fiche/_disponibilites.html.twig' with { widget: widget } only %}
+                        {% else %}
+                            {{ _self.collection(widget, widget.vars.label ?? widget.vars.name) }}
+                        {% endif %}
+                    {% endfor %}
                 </section>
             {% endif %}
         {% endfor %}
@@ -273,13 +292,32 @@
     {# Suggestions en attente et historique ne font plus volet : ils vivent dans
        le pied maquette, toujours visible sous les sections. #}
     {% for i, s in sections %}
-        {% if s.blocs|filter(b => b not in ['puces', 'disponibilites', 'capacites', 'suggestions_attente', 'historique'])|length > 0 %}
+        {% if s.blocs|filter(b => b not in ['puces', 'disponibilites', 'capacites', 'suggestions_attente', 'suggestions', 'historique'])|length > 0 %}
             {{ _self.volet_ouvre(i, i == section_index) }}
                 {% if s.champs is empty %}{{ _self.volet_titre(s.titre, onglets[i].completude) }}{% endif %}
 
                 {# ---- Formules de visibilité (maquette pure, désactivé) ---- #}
                 {% if 'formules' in s.blocs %}
                     {% include 'mdm/fiche/_formules.html.twig' %}
+                {% endif %}
+
+                {# ---- Templates de message (maquette pure, désactivé) ---- #}
+                {% if 'templates' in s.blocs %}
+                    <div class="flex flex-col gap-4" title="Fonction à venir — en développement">
+                        <twig:Typography variant="body-sm" textColor="neutral-500">
+                            Modèles de réponse envoyés aux demandes de la marketplace — à venir, sans back aujourd'hui.
+                        </twig:Typography>
+                        <div class="flex flex-col gap-3 opacity-60">
+                            {% for numero in 1..5 %}
+                                <div class="flex flex-col gap-1">
+                                    <twig:Typography variant="body-sm" bold>Template {{ numero }}</twig:Typography>
+                                    <div class="min-h-16 box-border flex items-center px-3 py-2 rounded-xs bg-neutral-200 cursor-not-allowed">
+                                        <twig:Typography variant="body-sm" textColor="neutral-500" class="italic">En développement</twig:Typography>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
                 {% endif %}
 
                 {# ---- Médias ---- #}
@@ -410,74 +448,6 @@
                     </div>
                 {% endif %}
 
-                {# ---- Extraction OCR : le dépôt vit dans la modale, l'onglet
-                       garde la revue, l'historique et le lien plein écran. ---- #}
-                {% if 'suggestions' in s.blocs %}
-                    <div class="flex flex-col gap-3">
-                        <div class="flex items-center gap-3">
-                            <twig:Typography variant="heading-3" element="h3" bold class="grow">Extraire d'un document</twig:Typography>
-                            <twig:Modal:TriggerButton variant="outline" size="sm" icon="upload-simple"
-                                                      modalIdentifier="extraction">Déposer un document</twig:Modal:TriggerButton>
-                        </div>
-
-                        {% if extraction.active and extraction.a_revoir %}
-                            <twig:Typography variant="heading-3" element="h3" bold>Valider les valeurs lues</twig:Typography>
-                            <twig:Typography variant="body-sm" textColor="neutral-500">
-                                {{ extraction.a_revoir.document.originalFilename }} ·
-                                {{ extraction.a_revoir.suggestions|filter(s => s.isPending)|length }} valeur(s) à arbitrer. Le document reste attaché à la fiche.
-                            </twig:Typography>
-                            {% if is_granted('ROLE_BP_VALIDATOR') %}
-                                {% set form_revue = extraction.form_revue %}
-                                {{ form_start(form_revue) }}
-                                    {{ form_widget(form_revue.fiche_version) }}
-                                    {{ form_widget(form_revue._token) }}
-                                    <div class="overflow-x-auto rounded-md inset-ring-1 inset-ring-neutral-200">
-                                        <table class="w-full border-collapse">
-                                            <thead class="bg-primary-5">
-                                                <tr class="text-left h-10 border-b border-neutral-200">
-                                                    {% for col in ['Champ', 'Valeur actuelle', 'Valeur lue (corrigible)', 'Confiance', 'Pages', 'Décision'] %}
-                                                        <th class="px-3"><twig:Typography variant="body-xs" textColor="neutral-500" bold>{{ col }}</twig:Typography></th>
-                                                    {% endfor %}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                            {% for suggestion in extraction.a_revoir.suggestions|filter(s => s.isPending) %}
-                                                {% set ligne = attribute(form_revue, suggestion.id) %}
-                                                <tr class="border-t border-neutral-200 first:border-t-0">
-                                                    <td class="px-3 py-2"><twig:Typography variant="body-sm" bold>{{ suggestion.label }}</twig:Typography><twig:Typography variant="body-xs" textColor="neutral-500">{{ suggestion.fieldPath }}</twig:Typography></td>
-                                                    <td class="px-3 py-2"><twig:Typography variant="body-sm">{{ suggestion.observedValue is iterable ? suggestion.observedValue|json_encode : (suggestion.observedValue ?? 'Champ vide') }}</twig:Typography></td>
-                                                    <td class="px-3 py-2">{{ form_widget(ligne.value) }}</td>
-                                                    <td class="px-3 py-2"><twig:Typography variant="body-sm">{{ suggestion.confidence is null ? '—' : (suggestion.confidence * 100)|number_format(0) ~ ' %' }}</twig:Typography></td>
-                                                    <td class="px-3 py-2"><twig:Typography variant="body-sm">{{ suggestion.pageReferences|map(p => 'p. ' ~ p)|join(', ') ?: '—' }}</twig:Typography></td>
-                                                    <td class="px-3 py-2"><div class="flex items-center gap-3">{{ form_row(ligne.accept) }}{{ form_row(ligne.reject) }}</div></td>
-                                                </tr>
-                                            {% endfor %}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                    <div class="pt-3">{{ form_row(form_revue.save, {label: 'Appliquer les décisions'}) }}</div>
-                                {{ form_end(form_revue, {render_rest: false}) }}
-                            {% else %}
-                                <twig:Typography variant="body-sm" textColor="neutral-500">La validation des valeurs lues est réservée aux validateurs.</twig:Typography>
-                            {% endif %}
-                        {% endif %}
-
-                        <twig:Typography variant="heading-3" element="h3" bold>Extractions de la fiche</twig:Typography>
-                        {% if extractions is not empty %}
-                            <ul class="flex flex-col gap-1">
-                                {% for ligne_extraction in extractions %}
-                                    <li class="flex items-center gap-2">
-                                        <a href="{{ path('app_ocr_show', {id: fiche.idString, extractionId: ligne_extraction.id}) }}" class="hover:underline"><twig:Typography variant="body-sm" textColor="primary-3" bold element="span">{{ ligne_extraction.document.originalFilename }}</twig:Typography></a>
-                                        <twig:Typography variant="body-sm" textColor="neutral-500">· {{ extraction_statuts[ligne_extraction.status.value] ?? ligne_extraction.status.value }} · {{ ligne_extraction.suggestionCount|default('—') }} valeur(s)</twig:Typography>
-                                    </li>
-                                {% endfor %}
-                            </ul>
-                        {% else %}
-                            <twig:Typography variant="body-sm" textColor="neutral-500">Aucune extraction pour cette fiche.</twig:Typography>
-                        {% endif %}
-                        <a href="{{ liens.ocr_admin }}" class="hover:underline"><twig:Typography variant="body-sm" textColor="primary-3" bold element="span">Écran complet des extractions</twig:Typography></a>
-                    </div>
-                {% endif %}
 
             </section>
         {% endif %}
@@ -485,10 +455,15 @@
 
     {# ---------------- Pied maquette : suggestions, complétude par canal, historique #}
     <section class="shrink-0 box-border flex flex-col gap-14 p-14 rounded-[32px] bg-neutral-100 shadow-(--shadow)">
-        {# Suggestions en attente (BAN, Geoapify, IA…) — Accepter les applique immédiatement. #}
+        {# Suggestions en attente (BAN, Geoapify, OCR…) — un clic pour les lignes
+           d'adresse ; les valeurs lues par l'OCR s'arbitrent par le formulaire
+           de revue, rendu dans le même bloc (le dépôt vit dans la modale). #}
+        {% set ocr_pendantes = extraction.active and extraction.a_revoir
+            ? extraction.a_revoir.suggestions|filter(s => s.isPending)
+            : [] %}
         <div class="flex flex-col gap-4" data-suggestions-attente>
             {# « Suggestions IA en attente » sur la maquette — le bloc réel est
-               générique (BAN, Geoapify, IA demain), le libellé reste neutre. #}
+               générique (BAN, Geoapify, OCR), le libellé reste neutre. #}
             <twig:Typography variant="heading-3" element="h2" class="font-[700]!">Suggestions en attente</twig:Typography>
             {% for ligne in suggestions_attente.lignes|default([]) %}
                 <div class="flex flex-row items-center gap-5 flex-wrap px-5 py-4 rounded-xs bg-primary-5 [&_form]:contents">
@@ -506,9 +481,46 @@
                         {{ form(ligne.ignorer) }}
                     {% endif %}
                 </div>
-            {% else %}
-                <twig:Typography variant="body-sm" textColor="neutral-500">Aucune suggestion en attente sur cette fiche.</twig:Typography>
             {% endfor %}
+
+            {# ---- Valeurs lues par l'OCR : mêmes lignes, décision par le formulaire de revue. ---- #}
+            {% if ocr_pendantes is not empty %}
+                <twig:Typography variant="body-sm" bold>Valider les valeurs lues</twig:Typography>
+                <twig:Typography variant="body-sm" textColor="neutral-500">
+                    {{ extraction.a_revoir.document.originalFilename }} ·
+                    {{ ocr_pendantes|length }} valeur lue (corrigible avant application) par l'extraction — le document reste attaché à la fiche.
+                </twig:Typography>
+                {% if is_granted('ROLE_BP_VALIDATOR') %}
+                    {% set form_revue = extraction.form_revue %}
+                    {{ form_start(form_revue, { attr: { class: 'flex flex-col gap-4' } }) }}
+                        {{ form_widget(form_revue.fiche_version) }}
+                        {{ form_widget(form_revue._token) }}
+                        {% for suggestion in ocr_pendantes %}
+                            {% set ligne = attribute(form_revue, suggestion.id) %}
+                            <div class="flex flex-row items-start gap-5 flex-wrap px-5 py-4 rounded-xs bg-primary-5">
+                                <span class="inline-flex"><twig:Tag label="OCR" variant="neutral" size="sm" /></span>
+                                <div class="min-w-[200px] flex flex-col">
+                                    <twig:Typography variant="body" bold>{{ suggestion.label }}</twig:Typography>
+                                    <twig:Typography variant="body-xs" textColor="neutral-500">{{ suggestion.pageReferences|map(p => 'p. ' ~ p)|join(', ') ?: '—' }}</twig:Typography>
+                                </div>
+                                <div class="flex-1 min-w-[240px] flex flex-col gap-1">
+                                    {{ form_widget(ligne.value) }}
+                                    <twig:Typography variant="body-xs" textColor="neutral-500">Actuel : {{ suggestion.observedValue is iterable ? suggestion.observedValue|json_encode : (suggestion.observedValue ?? 'Champ vide') }}</twig:Typography>
+                                </div>
+                                <twig:Typography variant="body-sm" textColor="neutral-400">{{ suggestion.confidence is null ? '—' : (suggestion.confidence * 100)|number_format(0) ~ ' %' }}</twig:Typography>
+                                <div class="flex items-center gap-3">{{ form_row(ligne.accept) }}{{ form_row(ligne.reject) }}</div>
+                            </div>
+                        {% endfor %}
+                        <div class="flex">{{ form_row(form_revue.save, {label: 'Appliquer les décisions'}) }}</div>
+                    {{ form_end(form_revue, {render_rest: false}) }}
+                {% else %}
+                    <twig:Typography variant="body-sm" textColor="neutral-500">La validation des valeurs lues est réservée aux validateurs.</twig:Typography>
+                {% endif %}
+            {% endif %}
+
+            {% if suggestions_attente.lignes|default([]) is empty and ocr_pendantes is empty %}
+                <twig:Typography variant="body-sm" textColor="neutral-500">Aucune suggestion en attente sur cette fiche.</twig:Typography>
+            {% endif %}
             {% if suggestions_attente.lignes|default([]) is not empty and not is_granted('ROLE_BP_VALIDATOR') %}
                 <twig:Typography variant="body-sm" textColor="neutral-500">L'arbitrage des suggestions est réservé aux validateurs.</twig:Typography>
             {% endif %}
@@ -613,8 +625,8 @@
             {% elseif extraction.form_depot and is_granted('FICHE_EDIT', fiche) %}
                 {% if extraction.a_revoir %}
                     <twig:Typography variant="body-sm" textColor="neutral-500">
-                        Des valeurs lues attendent votre validation dans l'onglet « Suggestions IA & historique ».
-                        Vous pouvez aussi déposer un nouveau document.
+                        Des valeurs lues attendent votre arbitrage dans le bloc « Suggestions en attente »,
+                        en bas de la fiche. Vous pouvez aussi déposer un nouveau document.
                     </twig:Typography>
                 {% endif %}
                 {# Zone de dépôt maquette autour du vrai formulaire (catégorie, PDF, envoi). #}
@@ -629,6 +641,25 @@
                         <twig:Typography variant="body-xs" bold textColor="primary-3">PDF</twig:Typography>
                     </span>
                     <div class="w-full [&_form]:flex [&_form]:flex-col [&_form]:gap-3">{{ form(extraction.form_depot) }}</div>
+                </div>
+            {% endif %}
+            {# Historique des extractions de la fiche — le flux complet vit ici. #}
+            {% if extraction.active %}
+                <div class="flex flex-col gap-1">
+                    <twig:Typography variant="body-sm" bold>Extractions de la fiche</twig:Typography>
+                    {% if extractions is not empty %}
+                        <ul class="flex flex-col gap-1">
+                            {% for ligne_extraction in extractions %}
+                                <li class="flex items-center gap-2">
+                                    <a href="{{ path('app_ocr_show', {id: fiche.idString, extractionId: ligne_extraction.id}) }}" class="hover:underline"><twig:Typography variant="body-sm" textColor="primary-3" bold element="span">{{ ligne_extraction.document.originalFilename }}</twig:Typography></a>
+                                    <twig:Typography variant="body-sm" textColor="neutral-500">· {{ extraction_statuts[ligne_extraction.status.value] ?? ligne_extraction.status.value }} · {{ ligne_extraction.suggestionCount|default('—') }} valeur(s)</twig:Typography>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <twig:Typography variant="body-sm" textColor="neutral-500">Aucune extraction pour cette fiche.</twig:Typography>
+                    {% endif %}
+                    <a href="{{ liens.ocr_admin }}" class="hover:underline"><twig:Typography variant="body-sm" textColor="primary-3" bold element="span">Écran complet des extractions</twig:Typography></a>
                 </div>
             {% endif %}
             <div class="flex justify-end">

@@ -22,7 +22,7 @@ use App\Pim\Lov\ServiceLovCatalog;
  */
 final class FicheSectionsCatalogue
 {
-    /** @return list<array{titre: string, champs: list<string>, proprietes: list<string>, blocs: list<string>}> */
+    /** @return list<array{titre: string, champs: list<string>, proprietes: list<string>, blocs: list<string>, groupe?: string}> */
     public static function pour(TypeFiche $type): array
     {
         return match ($type) {
@@ -57,48 +57,77 @@ final class FicheSectionsCatalogue
         return 0;
     }
 
-    /** @return list<array{titre: string, champs: list<string>, proprietes: list<string>, blocs: list<string>}> */
+    /**
+     * Les 16 onglets de la maquette, dans son ordre. Un champ peut être une
+     * feuille pointée (`groupe.champ`) : le gabarit la résout dans le
+     * formulaire sans changer la structure de soumission — c'est ainsi que le
+     * groupe accessibiliteDescription se répartit sur trois onglets maquette.
+     * Les fonctions back sans onglet maquette rejoignent l'onglet cohérent :
+     * disponibilités → Informations générales (carte annexe maquette),
+     * sites de diffusion + visibilité → Booster ma visibilité,
+     * données Salesforce (notes RSE) → RSE ; l'extraction OCR vit au pied.
+     *
+     * @return list<array{titre: string, champs: list<string>, proprietes: list<string>, blocs: list<string>, groupe: string}>
+     */
     private static function lieu(): array
     {
         return [
             [
                 'titre' => 'Informations générales',
-                // Ordre de la maquette (nom, typologie, groupe/événements/ERP,
-                // site web) ; téléphone et cases hors maquette ferment la marche.
-                'champs' => ['label', 'generaleTypologie', 'informationsGenerales', 'generaleWebsiteUrl', 'telephone', 'businessPremium', 'partenaireBp'],
-                'proprietes' => ['label', 'generaleTypologie', 'generaleWebsiteUrl', ...array_keys(LieuFormCatalog::general())],
-                'blocs' => [],
+                'champs' => ['label', 'generaleTypologie', 'informationsGenerales', 'generaleWebsiteUrl', 'telephone', 'businessPremium', 'partenaireBp', 'disponibilites', 'periodesFermeture'],
+                'proprietes' => ['label', 'generaleTypologie', 'generaleWebsiteUrl', 'periodesFermeture', ...array_keys(LieuFormCatalog::general()), ...array_keys(LieuFormCatalog::availability())],
+                'blocs' => ['disponibilites'],
+                'groupe' => 'ma_fiche',
             ],
             [
-                'titre' => 'Localisation & accès',
-                'champs' => ['localisation', 'acces'],
-                'proprietes' => ['localisation', 'acces'],
+                'titre' => 'Localisation & accessibilité',
+                'champs' => ['localisation', 'acces', 'accessibiliteDescription.pmrAcces', 'accessibiliteDescription.pmrDetails'],
+                'proprietes' => ['localisation', 'acces', 'pmrAcces', 'pmrDetails'],
                 'blocs' => [],
+                'groupe' => 'ma_fiche',
             ],
             [
-                'titre' => 'Descriptif',
-                'champs' => ['accessibiliteDescription'],
-                'proprietes' => array_keys(LieuFormCatalog::accessibilityAndDescription()),
+                'titre' => 'Thématiques & ambiances',
+                'champs' => ['accessibiliteDescription.taThematique', 'accessibiliteDescription.taCadreEnv', 'accessibiliteDescription.taAmbiance'],
+                'proprietes' => ['taThematique', 'taCadreEnv', 'taAmbiance'],
                 'blocs' => [],
+                'groupe' => 'ma_fiche',
+            ],
+            [
+                'titre' => 'Description',
+                'champs' => ['accessibiliteDescription.descGenerale', 'accessibiliteDescription.atout1', 'accessibiliteDescription.atout2', 'accessibiliteDescription.atout3', 'accessibiliteDescription.atout4', 'accessibiliteDescription.atout5', 'accessibiliteDescription.descGeneralePointInteret'],
+                'proprietes' => ['descGenerale', 'atout1', 'atout2', 'atout3', 'atout4', 'atout5', 'descGeneralePointInteret'],
+                'blocs' => [],
+                'groupe' => 'ma_fiche',
             ],
             [
                 'titre' => 'Hébergement',
                 'champs' => ['hebergement'],
                 'proprietes' => array_keys(LieuFormCatalog::accommodation()),
                 'blocs' => [],
+                'groupe' => 'ma_fiche',
+            ],
+            [
+                'titre' => 'Réunion',
+                'champs' => ['syntheseSalles', 'salles'],
+                'proprietes' => ['salles', ...array_keys(LieuFormCatalog::meetingRooms())],
+                // La collection des salles se rend en matrice (mdm/fiche/_capacites).
+                'blocs' => ['capacites'],
+                'groupe' => 'ma_fiche',
             ],
             [
                 'titre' => 'Restauration',
                 'champs' => ['restauration'],
                 'proprietes' => array_keys(LieuFormCatalog::restaurant()),
                 'blocs' => [],
+                'groupe' => 'ma_fiche',
             ],
             [
-                'titre' => 'Salles & capacités',
-                'champs' => ['syntheseSalles', 'salles'],
-                'proprietes' => ['salles', ...array_keys(LieuFormCatalog::meetingRooms())],
-                // La collection des salles se rend en matrice (mdm/fiche/_capacites).
-                'blocs' => ['capacites'],
+                'titre' => 'Loisirs & team building',
+                'champs' => ['loisirs'],
+                'proprietes' => array_keys(LieuFormCatalog::leisure()),
+                'blocs' => [],
+                'groupe' => 'ma_fiche',
             ],
             [
                 'titre' => 'Services & équipements',
@@ -106,74 +135,66 @@ final class FicheSectionsCatalogue
                 'proprietes' => array_keys(LieuFormCatalog::equipmentAndServices()),
                 // Rendu en groupes de puces cochables (partial mdm/fiche/_puces).
                 'blocs' => ['puces'],
+                'groupe' => 'ma_fiche',
             ],
             [
-                'titre' => 'Engagements RSE',
+                'titre' => 'RSE',
                 'champs' => ['rse'],
                 'proprietes' => array_keys(LieuFormCatalog::rse()),
-                'blocs' => [],
+                // Les notes RSE Salesforce (lecture seule) accompagnent l'onglet.
+                'blocs' => ['salesforce'],
+                'groupe' => 'ma_fiche',
             ],
             [
-                'titre' => 'Loisirs & bien-être',
-                'champs' => ['loisirs'],
-                'proprietes' => array_keys(LieuFormCatalog::leisure()),
-                'blocs' => [],
-            ],
-            [
-                'titre' => 'Tarifs & formules',
+                'titre' => 'Tarifs',
                 'champs' => ['tarification'],
                 'proprietes' => ['tarification'],
                 'blocs' => [],
-            ],
-            [
-                'titre' => 'Administratif',
-                'champs' => ['administratif'],
-                'proprietes' => ['administratif'],
-                'blocs' => [],
+                'groupe' => 'ma_fiche',
             ],
             [
                 'titre' => 'Médias',
                 'champs' => [],
                 'proprietes' => ['ressources'],
                 'blocs' => ['medias'],
+                'groupe' => 'ma_fiche',
             ],
             [
-                'titre' => 'Disponibilités & fermetures',
-                'champs' => ['disponibilites', 'periodesFermeture'],
-                'proprietes' => ['periodesFermeture', ...array_keys(LieuFormCatalog::availability())],
-                // Interrupteurs par jour + heures (partial mdm/fiche/_disponibilites).
-                'blocs' => ['disponibilites'],
-            ],
-            [
-                // Maquette pure (« rien ne se perd ») : formules de visibilité
-                // sans entité back — rendues désactivées avec infobulle.
+                // Formules maquette (désactivées, pas d'entité back) + les
+                // réglages réels de visibilité et les sites de diffusion.
                 'titre' => 'Booster ma visibilité',
-                'champs' => [],
-                'proprietes' => [],
-                'blocs' => ['formules'],
+                'champs' => ['visibilite'],
+                'proprietes' => array_keys(LieuFormCatalog::visibility()),
+                'blocs' => ['formules', 'sites'],
+                'groupe' => 'ma_fiche',
+            ],
+            [
+                'titre' => 'Facturation & partenariat',
+                'champs' => ['administratif'],
+                'proprietes' => ['administratif'],
+                'blocs' => [],
+                'groupe' => 'parametres',
             ],
             [
                 'titre' => 'Collaborateurs',
                 'champs' => [],
                 'proprietes' => [],
                 'blocs' => ['collaborateurs'],
+                'groupe' => 'parametres',
             ],
             [
-                'titre' => 'Visibilité & diffusion',
-                'champs' => ['visibilite'],
-                'proprietes' => array_keys(LieuFormCatalog::visibility()),
-                'blocs' => ['sites', 'salesforce'],
-            ],
-            [
-                'titre' => 'Suggestions IA & historique',
+                // Maquette pure (« rien ne se perd ») : pas de back pour les
+                // templates de message — rendus désactivés avec infobulle.
+                'titre' => 'Templates de message',
                 'champs' => [],
                 'proprietes' => [],
-                'blocs' => ['suggestions_attente', 'suggestions', 'historique'],
+                'blocs' => ['templates'],
+                'groupe' => 'parametres',
             ],
         ];
     }
 
-    /** @return list<array{titre: string, champs: list<string>, proprietes: list<string>, blocs: list<string>}> */
+    /** @return list<array{titre: string, champs: list<string>, proprietes: list<string>, blocs: list<string>, groupe?: string}> */
     private static function restaurant(): array
     {
         return [
@@ -246,7 +267,7 @@ final class FicheSectionsCatalogue
         ];
     }
 
-    /** @return list<array{titre: string, champs: list<string>, proprietes: list<string>, blocs: list<string>}> */
+    /** @return list<array{titre: string, champs: list<string>, proprietes: list<string>, blocs: list<string>, groupe?: string}> */
     private static function activite(): array
     {
         return [
@@ -313,7 +334,7 @@ final class FicheSectionsCatalogue
         ];
     }
 
-    /** @return list<array{titre: string, champs: list<string>, proprietes: list<string>, blocs: list<string>}> */
+    /** @return list<array{titre: string, champs: list<string>, proprietes: list<string>, blocs: list<string>, groupe?: string}> */
     private static function service(): array
     {
         return [

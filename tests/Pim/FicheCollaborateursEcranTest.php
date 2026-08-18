@@ -75,9 +75,11 @@ final class FicheCollaborateursEcranTest extends WebTestCase
         self::assertTrue($affiliations[0]->receivesRequests());
         self::assertSame('+33 3 44 62 37 37', $affiliations[0]->collaborateur()->phone());
 
-        // Édition : rôle utilisateur + contact de repli.
-        $form = $crawler->selectButton('Enregistrer')->form();
+        // Édition : rôle utilisateur + contact de repli. Cibler le formulaire par
+        // son nom — selectButton('Enregistrer') attraperait « Enregistrer la
+        // diffusion » (Booster ma visibilité précède désormais Collaborateurs).
         $nom = 'collab_edition_'.$affiliations[0]->idString();
+        $form = $crawler->filter('form[name="'.$nom.'"] button[type="submit"], form[name="'.$nom.'"] button:not([type])')->first()->form();
         $values = $form->getPhpValues();
         $values[$nom]['role'] = 'utilisateur';
         $values[$nom]['repli'] = '1';

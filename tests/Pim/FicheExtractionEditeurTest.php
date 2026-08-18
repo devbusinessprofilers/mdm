@@ -128,13 +128,14 @@ final class FicheExtractionEditeurTest extends WebTestCase
         $entityManager->flush();
         $client->loginUser($user);
 
-        // Temps 3 : la revue est dans l'éditeur, avec page source et confiance.
+        // Temps 3 : la revue vit dans le bloc « Suggestions en attente » au pied
+        // de l'éditeur, avec page source et confiance.
         $crawler = $client->request('GET', '/referentiel/lieux/fiche/'.$lieu->fiche()->idString(), ['section' => 15]);
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('body', 'Valider les valeurs lues');
-        self::assertSelectorTextContains('body', 'Valeur lue (corrigible)');
-        self::assertSelectorTextContains('body', 'p. 2');
-        self::assertSelectorTextContains('body', '90 %');
+        self::assertSelectorTextContains('[data-suggestions-attente]', 'Valider les valeurs lues');
+        self::assertSelectorTextContains('[data-suggestions-attente]', 'valeur lue (corrigible');
+        self::assertSelectorTextContains('[data-suggestions-attente]', 'p. 2');
+        self::assertSelectorTextContains('[data-suggestions-attente]', '90 %');
 
         $form = $crawler->selectButton('Appliquer les décisions')->form();
         $reject = $form['ocr_review['.$suggestion->id().'][reject]'];
