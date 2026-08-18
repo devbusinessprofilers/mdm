@@ -1,0 +1,287 @@
+RÉSUMÉ FONCTIONNEL DU MDM (PIM / DAM)
+=====================================
+
+Application centrale de gestion des fiches établissements et prestataires :
+saisie, validation, enrichissement, puis diffusion vers la marketplace et
+les sites partenaires.
+
+
+LES TYPES DE FICHES
+-------------------
+
+Lieu
+Fiche d'un établissement (hôtel, centre de congrès, lieu événementiel) :
+description, gamme, chambres, salles de réunion, accès, tarifs, équipements.
+
+Restaurant
+Fiche de restauration, autonome ou rattachée à un lieu : cuisine,
+privatisation, horaires, capacités, salles, accès.
+
+Activité
+Fiche d'une offre événementielle (team-building, séminaire, incentive) :
+thématiques, objectifs, nombre de participants, durée, tarifs.
+
+Service événementiel
+Fiche d'un prestataire (traiteur, transporteur, photographe, animateur…) :
+types de prestation, couverture géographique, tarifs, engagement RSE.
+
+Localisation
+Adresse de la fiche, normalisée sur le référentiel officiel INSEE
+(régions/départements) et vérifiable via la Base Adresse Nationale (GPS,
+correction de code postal et de ville).
+
+Collaborateur
+Contact prestataire rattaché à une ou plusieurs fiches, avec un rôle
+(gestionnaire, utilisateur) et la réception ou non des demandes et relances.
+
+Site de diffusion
+Canal sur lequel une fiche peut être diffusée (marketplace, sites
+thématiques…), avec ses caractéristiques (obligatoire, payant, groupe).
+
+
+LE CYCLE DE VIE D'UNE FICHE (WORKFLOW)
+--------------------------------------
+
+En cours
+Brouillon : la fiche est créée et remplie par un éditeur, ou renvoyée par
+un validateur avec un motif de refus.
+
+En attente de validation
+La fiche a été soumise par l'éditeur ; elle attend la relecture d'un
+validateur.
+
+Validée
+Le validateur a approuvé la fiche ; elle est prête à être publiée.
+
+Publiée
+La fiche est diffusée : elle part vers la marketplace et ses traductions
+sont planifiées automatiquement.
+
+Archivée
+La fiche est retirée de la diffusion ; ses documents publiés sont révoqués.
+
+Refus de validation
+Le validateur peut renvoyer une fiche soumise vers « En cours » en
+indiquant un motif, visible par l'éditeur.
+
+
+LES RÔLES UTILISATEURS
+----------------------
+
+Éditeur
+Crée et remplit les fiches, puis les soumet à validation. Son espace de
+travail montre ses fiches assignées, ses soumissions en attente et ses
+priorités de complétude.
+
+Validateur
+Valide, publie, archive ou refuse les fiches ; peut les modifier sans les
+repasser en brouillon ; consulte l'historique des modifications. Son
+espace de travail ajoute la file de validation globale (les soumissions
+les plus anciennes en premier) et les suggestions à arbitrer.
+
+Administrateur
+Accès à tout l'espace d'administration : paramètres, listes de valeurs,
+utilisateurs, collaborateurs, relances, supervision. Son espace de
+travail ajoute l'intégrité du référentiel : fiches publiées sans photo,
+droits d'image invalides, écarts de forme, suggestions en attente.
+
+Super administrateur
+Gestion des comptes administrateurs.
+
+Espace de travail par rôle (décision du 17 août 2026)
+Les vues de l'espace de travail suivent exactement ces rôles : chacun
+n'accède qu'aux vues que son rôle couvre (un validateur voit Éditeur et
+Validateur, un administrateur voit les trois), la plus large s'ouvrant
+par défaut. Le profil « Chef de projet » de la maquette (consultation,
+favoris, signalements) n'existe pas dans le PIM : sans équivalent dans
+ces rôles ni mécanisme applicatif, il relève de Salesforce — ou de
+l'extranet prestataire — s'il doit exister un jour.
+
+
+GESTION QUOTIDIENNE DES FICHES
+------------------------------
+
+Référentiel
+Listes des fiches par type (lieux, restaurants, activités, services) avec
+filtres (statut, complétude, pays…), vues enregistrées et actions groupées
+(validation, publication, archivage).
+
+Recherche globale
+Moteur de recherche plein texte sur toutes les fiches (code, nom,
+descriptions), avec filtres et export CSV.
+
+Création de fiche
+Assistant de création avec détection des doublons, puis formulaires complets
+adaptés à chaque type de fiche.
+
+Édition rapide
+Modification allégée des champs simples (nom, description, coordonnées)
+sans passer par le formulaire complet.
+
+Collaborateurs de la fiche
+Rattachement des contacts à une fiche, attribution des rôles et des
+destinataires des demandes.
+
+Suggestions en attente
+Dans l'onglet « Suggestions IA & historique » de chaque fiche, un tableau
+liste les corrections proposées par les vérifications automatiques (BAN
+aujourd'hui, IA demain) avec la source, la valeur actuelle, la proposition
+et le score de confiance. Le validateur accepte ou ignore en un clic :
+accepter applique immédiatement la proposition à la fiche, ignorer
+conserve la saisie.
+
+Historique (audit)
+Journal complet de toutes les modifications de chaque fiche, consultable
+par les validateurs et administrateurs.
+
+
+MÉDIATHÈQUE (DAM)
+-----------------
+
+Bibliothèque de médias
+Dépôt des photos et documents, validation des métadonnées, génération
+automatique des formats web (WebP) publiés sur le CDN.
+
+Droits et consentements
+Suivi des droits d'utilisation des images, avec alerte avant échéance et
+expiration.
+
+Détection de doublons
+Signalement des images identiques ou visuellement similaires.
+
+Documents
+Les documents restent privés après dépôt ; leur publication ou révocation
+est une action explicite, indépendante du statut de la fiche.
+
+
+COMPLÉTUDE ET RELANCES
+----------------------
+
+Score de complétude
+Chaque fiche reçoit un score global et par canal de diffusion, calculé à
+partir de champs pondérés configurables (présence ou longueur du contenu).
+Le score est recalculé à chaque sauvegarde.
+
+Configuration de la complétude
+L'administrateur définit les champs pris en compte, leur poids et les
+canaux concernés, par type de fiche.
+
+Relances de complétude
+Chaque lundi, un lot de relances est préparé à 8 h (fiches incomplètes et
+destinataires), vérifiable par l'administrateur, puis envoyé par email
+à 14 h (automatiquement ou manuellement).
+
+
+RÉCUPÉRATION DE DONNÉES EXTERNES
+--------------------------------
+
+Recherche d'entreprise
+À la création d'une fiche, l'annuaire public des entreprises
+(recherche-entreprises.api.gouv.fr) pré-remplit automatiquement les
+informations légales : SIREN, SIRET, numéro de TVA, adresse du siège et
+coordonnées GPS.
+
+Vérification d'adresse (BAN et Geoapify)
+À chaque modification d'adresse, un géocodeur vérifie automatiquement
+l'adresse saisie : la Base Adresse Nationale (service public gratuit, sans
+clé) pour la France, Geoapify (données OpenStreetMap, mondial) pour
+l'étranger. Score de confiance, géocodage GPS, détection des incohérences
+(code postal, ville). Les compléments sûrs (GPS manquant, code postal ou
+ville vides) sont appliqués automatiquement ; les écarts deviennent des
+suggestions à arbitrer en un clic, depuis la fiche ou l'écran Qualité,
+avec la source affichée. Accepter corrige la rue (seulement quand le
+géocodeur a reconnu la voie), le code postal, la ville et le GPS ; une
+adresse divergente n'est jamais écrasée sans décision humaine.
+
+Extraction de documents (OCR)
+Depuis une fiche, dépôt d'un PDF (plaquette, grille tarifaire…) lu
+automatiquement : les valeurs détectées sont proposées champ par champ
+avec leur niveau de confiance, puis validées ou corrigées par un
+validateur avant d'être appliquées. Un seuil paramétrable permet
+d'appliquer automatiquement les valeurs les plus sûres (désactivé par
+défaut : tout reste manuel).
+
+Traduction automatique
+Les traductions des fiches publiées sont produites par l'API Google
+Translate, puis corrigeables manuellement dans l'interface.
+
+
+DIFFUSION ET SYNCHRONISATIONS
+-----------------------------
+
+Synchronisation marketplace
+Toute fiche publiée est poussée automatiquement vers la marketplace avec
+l'ensemble de ses données et de ses photos ; la marketplace ne modifie
+jamais le PIM.
+
+Listes de valeurs (LOV)
+Les vocabulaires métier (typologies, thématiques, équipements,
+prestations…) sont gérés dans le PIM et synchronisés vers la marketplace.
+
+Reprise Salesforce
+Chaque nuit, les données commerciales Salesforce (statut partenaire,
+évaluation client, RSE, contrats…) sont rapatriées dans les fiches, qui
+repartent ensuite vers la marketplace.
+
+Traductions
+À la publication, les contenus de la fiche sont traduits automatiquement
+en 6 langues ; seuls les textes modifiés sont retraduits.
+
+API sites externes
+Les sites partenaires autorisés peuvent lire et modifier certaines données
+de fiches via une API sécurisée, sans jamais changer leur statut de
+validation.
+
+
+ADMINISTRATION ET SUPERVISION
+-----------------------------
+
+Paramètres applicatifs
+Réglages métier modifiables directement depuis l'interface d'administration,
+sans redéploiement.
+
+Gestion des utilisateurs
+Création des comptes internes, attribution des rôles, activation et
+désactivation.
+
+Gestion des collaborateurs
+Annuaire des contacts prestataires et de leurs rattachements aux fiches.
+
+Sites de diffusion
+Administration du référentiel des canaux de diffusion.
+
+Tableau de bord
+Statistiques générales, indicateurs de qualité des données (adresses
+douteuses, photos manquantes), outils de lancement manuel des traitements
+et suivi des traitements en échec.
+
+Écran Qualité
+Vue transverse de la qualité des données : santé par gamme, conflits à
+arbitrer (suggestions issues des documents, suggestions d'adresse BAN
+arbitrables sur place, fiches partageant la même adresse), écarts de
+forme, notifications et décisions d'arbitrage.
+
+
+REPRISE DE DONNÉES
+------------------
+
+Import legacy
+Reprise complète de l'ancien système : environ 26 000 fiches (lieux,
+activités, services, restaurants), leurs photos, leurs traductions et les
+collaborateurs, via des imports rejouables sans doublon.
+
+Normalisation des adresses
+Remise en conformité des adresses existantes sur le référentiel INSEE et
+vérification en masse via la Base Adresse Nationale (rapport puis
+application non destructive).
+
+
+TRAITEMENTS AUTOMATIQUES
+------------------------
+
+Lundi 8 h — préparation du lot de relances de complétude.
+Lundi 14 h — envoi des relances de complétude.
+Chaque nuit à 3 h — rafraîchissement des données Salesforce.
+Chaque heure — analyse des anomalies de la médiathèque.
+Chaque nuit — purges techniques (messages traités, jetons expirés).
+Toutes les 15 minutes — supervision des traitements en échec.
