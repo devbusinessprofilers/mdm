@@ -595,6 +595,18 @@ inchangé) ; les MoneyType existants d'Activité/Service en profitent aussi.
 - Constat conservé tel quel : uploads menus/supports Restaurant en champs file
   bruts (fonctionnels, chantier Dropzone séparé si souhaité).
 
+`fc1000a` — onglet Médias des gammes clarifié (retour utilisateur : « des
+champs pour ces mêmes images ? ») : les deux cartes coexistent par
+construction — la carte de champs (form principal) est la voie d'AJOUT et
+d'ÉDITION côté PIM (collection photos, dropzones menus/supports, titre/source),
+la carte DAM en dessous est la CONSULTATION des mêmes médias (ses modales
+photo gamme sont en lecture seule — la retouche vit sur le portail). Fusionner
+exigerait de sortir ces champs du formulaire principal (forms imbriqués
+interdits) → chantier AJAX à la Lieu, non engagé. Clarifié par les textes :
+note du macro collection (rend `vars.help`), helps sur les collections photos
+×3 gammes et sur titre/source, mention de la galerie corrigée (« déposées par
+le prestataire via le portail ou ajoutées par la liste "Photos" ci-dessus »).
+
 `79f9b34` — uploads habillés Dropzone (demande utilisateur) : opt-in
 `attr: { 'data-dropzone': true }` dans le thème global (file → composant
 Form:Dropzone, contraintes accept/max-files/max-size par attr), appliqué aux
