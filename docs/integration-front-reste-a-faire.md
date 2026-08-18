@@ -595,6 +595,16 @@ inchangé) ; les MoneyType existants d'Activité/Service en profitent aussi.
 - Constat conservé tel quel : uploads menus/supports Restaurant en champs file
   bruts (fonctionnels, chantier Dropzone séparé si souhaité).
 
+`79f9b34` — uploads habillés Dropzone (demande utilisateur) : opt-in
+`attr: { 'data-dropzone': true }` dans le thème global (file → composant
+Form:Dropzone, contraintes accept/max-files/max-size par attr), appliqué aux
+menus + supports Restaurant et aux supports Activité/Service. Le contrôleur
+`dropzone` du portail (récupéré de origin/front-end) était une ébauche —
+réécrit : la sélection est rejouée via DataTransfer, la corbeille d'une carte
+retire réellement le fichier de la soumission ; clés form.dropzone.* ajoutées
+aux traductions. L'input natif couvre la zone : dépôt par glisser fonctionnel
+même sans le contrôleur.
+
 ## Transverses
 
 - `composants.html.twig` (vitrine des composants) : reprendre sous une route de dev
