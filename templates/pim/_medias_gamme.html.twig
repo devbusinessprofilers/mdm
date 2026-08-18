@@ -5,7 +5,14 @@
    Variables : photos (FichePhotoPresenter), documents (ViewBuilder de la
    gamme + asset), entite_id, download_route. #}
 
-<section class="card">
+<section
+    class="card lieu-media-manager"
+    data-controller="lieu-media"
+    data-lieu-media-upload-url-value="{{ path('app_pim_gamme_photo_upload', {gamme: gamme_slug, id: entite_id}) }}"
+    data-lieu-media-order-url-value="{{ path('app_pim_gamme_photo_order', {gamme: gamme_slug, id: entite_id}) }}"
+    data-lieu-media-modales-url-value="{{ path('app_pim_gamme_photo_modales', {gamme: gamme_slug, id: entite_id}) }}"
+    data-lieu-media-token-value="{{ media_csrf_token }}"
+>
     <div class="flex items-center gap-3 pb-3">
         <div class="flex flex-col">
             <twig:Typography variant="body-xs" textColor="neutral-500" bold class="uppercase tracking-[0.8px]">DAM</twig:Typography>
@@ -13,15 +20,28 @@
         </div>
         <span class="inline-flex"><twig:Tag label="{{ photos|length }}" variant="primary-3" size="sm" /></span>
         <span class="flex-1"></span>
-        <twig:Typography variant="body-xs" textColor="neutral-400">déposées par le prestataire via le portail ou ajoutées par la liste « Photos » ci-dessus</twig:Typography>
+        <twig:Typography variant="body-xs" textColor="neutral-400">déposées ici ou par le prestataire via le portail</twig:Typography>
     </div>
+    {{ form_start(media_upload_form) }}
+        <div class="lieu-media-dropzone" data-lieu-media-target="dropzone" data-action="dragover->lieu-media#dragover dragleave->lieu-media#dragleave drop->lieu-media#drop">
+            {{ form_label(media_upload_form.photos) }}
+            <span>Choisissez plusieurs fichiers · JPG, PNG, WEBP</span>
+            {{ form_widget(media_upload_form.photos) }}
+        </div>
+    {{ form_end(media_upload_form) }}
+    <div class="lieu-media-progress" hidden data-lieu-media-target="progress"><span data-lieu-media-target="progressBar"></span></div>
+    <p class="form-error" hidden data-lieu-media-target="error"></p>
 
-    <div class="flex flex-row flex-wrap gap-4 py-4">
+    {# Galerie maquette : les vignettes sont les éléments réels — on les
+       réordonne au glisser-déposer, et UN CLIC ouvre les paramètres de la
+       photo en modale (préchargée en arrière-plan, comme le Lieu). #}
+    <div class="flex flex-row flex-wrap gap-4 py-4" data-lieu-media-target="list">
         {% for photo in photos %}
-            <button type="button" title="Voir la photo"
+            <button type="button" title="Modifier les paramètres de la photo"
+                    data-lieu-media-target="item" data-id="{{ photo.resource.id }}" draggable="true"
                     data-controller="modal-trigger-button"
                     data-modal-trigger-button-modal-identifier-value="photo-{{ photo.resource.id }}"
-                    data-action="modal-trigger-button#open"
+                    data-action="modal-trigger-button#open dragstart->lieu-media#dragstart dragover->lieu-media#dragoverItem drop->lieu-media#dropItem"
                     class="relative w-[152px] h-[104px] shrink-0 flex items-center justify-center rounded-xs
                            overflow-hidden cursor-pointer bg-primary-5 inset-ring-1
                            {{ loop.first ? 'inset-ring-primary' : 'inset-ring-neutral-300' }}">
@@ -36,48 +56,21 @@
                 {% else %}
                     <twig:Icon name="images" class="w-7 h-7 text-neutral-400" />
                 {% endif %}
-            </button>
-        {% else %}
-            <twig:Typography variant="body-sm" textColor="neutral-500">Aucune photo n'a encore été déposée pour cette fiche.</twig:Typography>
-        {% endfor %}
-        <span title="Fonction à venir — le dépôt back-office des photos de gamme arrive ; aujourd'hui le prestataire dépose via le portail"
-              class="w-[152px] h-[104px] shrink-0 flex flex-col items-center justify-center gap-1.5
-                     rounded-xs bg-neutral-100 inset-ring-1 inset-ring-neutral-300 opacity-60 cursor-not-allowed">
-            <twig:Icon name="plus" class="w-[22px] h-[22px] text-neutral-400" />
-            <twig:Typography variant="body-sm" textColor="neutral-500" bold>Ajouter un média</twig:Typography>
-        </span>
-    </div>
-
-    {# La visionneuse de chaque photo : légende, source, mots-clés, droits. #}
-    {% for photo in photos %}
-        <twig:Modal identifier="photo-{{ photo.resource.id }}">
-            <div class="flex flex-col gap-4 w-[min(560px,80vw)]">
-                <div class="flex items-center gap-3">
-                    <twig:Typography variant="heading-3" bold class="grow" ellipsis>
-                        {{- photo.resource.legende ?: (photo.asset ? photo.asset.originalFilename : 'Photo') -}}
-                    </twig:Typography>
-                    <span class="inline-flex shrink-0"><twig:Tag label="{{ photo.asset ? photo.asset.status.value : 'introuvable' }}" variant="neutral" size="sm" /></span>
-                </div>
-                {% if photo.url ?? photo.thumbnail_url %}
-                    <img src="{{ photo.url ?? photo.thumbnail_url }}" alt="{{ photo.resource.legende ?: 'Photo' }}"
-                         class="w-full max-h-[320px] object-cover rounded-xs" loading="lazy">
+                {% if photo.asset and photo.asset.errorMessage %}
+                    <span class="absolute bottom-2 right-2 z-1 w-[18px] h-[18px] flex items-center justify-center rounded-full bg-error"
+                          title="{{ photo.asset.errorMessage }}">
+                        <twig:Icon name="warning" class="w-3 h-3 text-neutral-100" />
+                    </span>
                 {% endif %}
-                <div class="flex flex-col gap-1.5">
-                    <twig:Typography variant="body-sm"><strong>Source :</strong> {{ photo.resource.source ?: 'Non renseignée' }}</twig:Typography>
-                    <twig:Typography variant="body-sm"><strong>Mots-clés :</strong> {{ photo.resource.keywords ?: '—' }}</twig:Typography>
-                    <twig:Typography variant="body-sm"><strong>Droits :</strong>
-                        {{ photo.resource.rightsGranted ? 'validés' : 'non validés' }}
-                        {%- if photo.resource.rightsExpiresAt %} · échéance {{ photo.resource.rightsExpiresAt|date('d/m/Y') }}{% endif %}</twig:Typography>
-                </div>
-                <div class="flex items-center gap-3 pt-2 border-t border-neutral-200">
-                    <twig:Typography variant="body-sm" textColor="neutral-500" class="flex-1 text-pretty">La retouche
-                        et les métadonnées se gèrent par le prestataire sur le portail.</twig:Typography>
-                    <twig:Modal:TriggerButton variant="text" size="sm" modalIdentifier="photo-{{ photo.resource.id }}"
-                                              data-action="modal-trigger-button#close">Fermer</twig:Modal:TriggerButton>
-                </div>
-            </div>
-        </twig:Modal>
-    {% endfor %}
+            </button>
+        {% endfor %}
+        <label for="{{ media_upload_form.photos.vars.id }}"
+               class="w-[152px] h-[104px] shrink-0 flex flex-col items-center justify-center gap-1.5
+                      rounded-xs cursor-pointer bg-neutral-100 inset-ring-1 inset-ring-primary">
+            <twig:Icon name="plus" class="w-[22px] h-[22px] text-primary" />
+            <twig:Typography variant="body-sm" textColor="primary-3" bold>Ajouter un média</twig:Typography>
+        </label>
+    </div>
 </section>
 
 <section class="card">

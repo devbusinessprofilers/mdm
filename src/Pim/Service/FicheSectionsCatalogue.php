@@ -252,7 +252,7 @@ final class FicheSectionsCatalogue
             ],
             [
                 'titre' => 'Médias & menus',
-                'champs' => ['ressources', 'menus', 'supportsCommerciaux', 'documentTitle', 'documentSource'],
+                'champs' => ['menus', 'supportsCommerciaux', 'documentTitle', 'documentSource'],
                 'proprietes' => ['ressources', 'menus'],
                 'blocs' => ['medias'],
                 'groupe' => 'ma_fiche',
@@ -336,7 +336,7 @@ final class FicheSectionsCatalogue
             ],
             [
                 'titre' => 'Médias',
-                'champs' => ['ressources', 'supportsCommerciaux', 'supportTitle', 'supportSource'],
+                'champs' => ['supportsCommerciaux', 'supportTitle', 'supportSource'],
                 'proprietes' => ['ressources'],
                 'blocs' => ['medias'],
                 'groupe' => 'ma_fiche',
@@ -413,7 +413,7 @@ final class FicheSectionsCatalogue
             ],
             [
                 'titre' => 'Médias',
-                'champs' => ['ressources', 'supportsCommerciaux', 'supportTitle', 'supportSource'],
+                'champs' => ['supportsCommerciaux', 'supportTitle', 'supportSource'],
                 'proprietes' => ['ressources'],
                 'blocs' => ['medias'],
                 'groupe' => 'ma_fiche',

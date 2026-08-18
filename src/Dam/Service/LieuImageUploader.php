@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace App\Dam\Service;
 
 use App\Dam\Entity\MediaAsset;
+use App\Pim\Entity\Activite\Activite;
 use App\Pim\Entity\Lieu\Lieu;
+use App\Pim\Entity\Restaurant\Restaurant;
+use App\Pim\Entity\Service\ServiceEvenementiel;
 use App\Shared\Service\ParametreProviderInterface;
 use App\Shared\Service\PrivateObjectStorageInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -28,7 +31,7 @@ final readonly class LieuImageUploader
     ) {
     }
 
-    public function upload(UploadedFile $file, Lieu $lieu): MediaAsset
+    public function upload(UploadedFile $file, Lieu|Restaurant|Activite|ServiceEvenementiel $lieu): MediaAsset
     {
         $path = $file->getRealPath();
         if (false === $path || !is_file($path)) {

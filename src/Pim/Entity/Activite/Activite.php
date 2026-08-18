@@ -500,6 +500,11 @@ class Activite
         $this->touch();
     }
 
+    public function markChanged(): void
+    {
+        $this->touch();
+    }
+
     private function touch(): void
     {
         $this->touchDetail();

@@ -9,7 +9,10 @@ use App\Dam\Message\DeleteMedia;
 use App\Dam\Message\RegenerateMedia;
 use App\Dam\Service\ImageVariantRegistry;
 use App\Dam\Service\LieuImageUploader;
+use App\Pim\Entity\Activite\Activite;
 use App\Pim\Entity\Lieu\Lieu;
+use App\Pim\Entity\Restaurant\Restaurant;
+use App\Pim\Entity\Service\ServiceEvenementiel;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Enum\NatureRessource;
 use App\Pim\Enum\TypeFiche;
@@ -31,16 +34,16 @@ final readonly class LieuPhotoManager
     ) {}
 
     /** @return list<RessourceLieu> */
-    public function photos(Lieu $lieu): array
+    public function photos(Lieu|Restaurant|Activite|ServiceEvenementiel $lieu): array
     {
         return array_values(array_filter($lieu->ressources()->toArray(), static fn (RessourceLieu $resource): bool => NatureRessource::Photo === $resource->nature()));
     }
 
     /** @param list<UploadedFile> $files */
-    public function upload(Lieu $lieu, array $files): int
+    public function upload(Lieu|Restaurant|Activite|ServiceEvenementiel $lieu, array $files): int
     {
         $count = count($this->photos($lieu));
-        $maximum = $this->photoObligations->maximum(TypeFiche::Lieu);
+        $maximum = $this->photoObligations->maximum($lieu->fiche()->type());
         if ($count >= $maximum) { throw new \DomainException('Le nombre maximal de photos est atteint.'); }
         if ([] === $files || $count + count($files) > $maximum) { throw new \DomainException('Sélectionnez entre 1 et '.($maximum - $count).' image(s).'); }
         $uploaded = [];
@@ -64,7 +67,7 @@ final readonly class LieuPhotoManager
     }
 
     /** @param list<string> $ids */
-    public function reorder(Lieu $lieu, array $ids): int
+    public function reorder(Lieu|Restaurant|Activite|ServiceEvenementiel $lieu, array $ids): int
     {
         $photos = $this->photos($lieu);
         $known = array_map(static fn (RessourceLieu $photo): string => $photo->id(), $photos);
@@ -80,7 +83,7 @@ final readonly class LieuPhotoManager
     }
 
     /** @param array<string, mixed> $data */
-    public function update(RessourceLieu $resource, Lieu $lieu, array $data, string $actor): void
+    public function update(RessourceLieu $resource, Lieu|Restaurant|Activite|ServiceEvenementiel $lieu, array $data, string $actor): void
     {
         $usage = (string) ($data['usage'] ?? '');
         if (!in_array($usage, self::USAGES, true)) { throw new \DomainException('Catégorie de photo invalide.'); }
@@ -91,7 +94,10 @@ final readonly class LieuPhotoManager
         }
         $salle = null;
         $salleId = (string) ($data['salle_id'] ?? '');
-        if ('' !== $salleId) {
+        if (!$lieu instanceof Lieu && ('' !== $salleId || 'CONFIG_PHOTO_SALLE' === $usage)) {
+            throw new \DomainException('Les photos de salle sont réservées aux fiches Lieu.');
+        }
+        if ($lieu instanceof Lieu && '' !== $salleId) {
             foreach ($lieu->salles() as $candidate) { if ($candidate->id() === $salleId) { $salle = $candidate; break; } }
             if (null === $salle) { throw new \DomainException("La salle n'appartient pas à ce lieu."); }
         }
@@ -118,7 +124,7 @@ final readonly class LieuPhotoManager
         $this->changed($lieu);
     }
 
-    public function replace(RessourceLieu $resource, Lieu $lieu, UploadedFile $file): void
+    public function replace(RessourceLieu $resource, Lieu|Restaurant|Activite|ServiceEvenementiel $lieu, UploadedFile $file): void
     {
         $old = $resource->damAssetId();
         $asset = $this->uploader->upload($file, $lieu);
@@ -137,7 +143,7 @@ final readonly class LieuPhotoManager
         $this->entityManager->flush();
     }
 
-    public function delete(RessourceLieu $resource, Lieu $lieu): void
+    public function delete(RessourceLieu $resource, Lieu|Restaurant|Activite|ServiceEvenementiel $lieu): void
     {
         $id = $resource->damAssetId();
         $lieu->removeRessource($resource);
@@ -146,7 +152,7 @@ final readonly class LieuPhotoManager
         $this->changed($lieu);
     }
 
-    private function changed(Lieu $lieu): void
+    private function changed(Lieu|Restaurant|Activite|ServiceEvenementiel $lieu): void
     {
         $lieu->markChanged();
         $this->outbox->enqueue(new IndexFiche($lieu->fiche()->idString()));

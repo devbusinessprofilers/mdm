@@ -530,6 +530,11 @@ class ServiceEvenementiel
         $this->set($property, "" === $value ? null : $value);
     }
 
+    public function markChanged(): void
+    {
+        $this->touch();
+    }
+
     private function touch(): void
     {
         $this->touchDetail();

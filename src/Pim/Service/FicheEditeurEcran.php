@@ -25,6 +25,7 @@ use App\Pim\Enum\TypeFiche;
 use App\Pim\Form\ActiviteType;
 use App\Pim\Form\AdresseSuggestionFormFactory;
 use App\Pim\Form\FicheActionFormFactory;
+use App\Pim\Form\LieuPhotoUploadType;
 use App\Pim\Form\LieuType;
 use App\Pim\Form\RestaurantType;
 use App\Pim\Form\ServiceEvenementielType;
@@ -37,6 +38,7 @@ use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\FormError;
 use Symfony\Component\Form\FormFactoryInterface;
+use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
@@ -93,6 +95,7 @@ final readonly class FicheEditeurEcran
         private AdresseSuggestionFormFactory $adresseSuggestions,
         private FichePhotoPresenter $fichePhotos,
         private MediaAssetRepository $mediaAssets,
+        private CsrfTokenManagerInterface $csrfTokens,
     ) {
     }
 
@@ -473,6 +476,8 @@ final readonly class FicheEditeurEcran
             $documents[] = $document + ['asset' => $assets[$document['resource']->damAssetId()] ?? null];
         }
 
+        $slug = self::slug($entite->fiche()->type());
+
         return [
             'gamme' => $entite->fiche()->type()->value,
             'vars' => [
@@ -480,6 +485,13 @@ final readonly class FicheEditeurEcran
                 'documents' => $documents,
                 'entite_id' => (string) $entite->id(),
                 'download_route' => $route,
+                // Galerie gérée comme le Lieu : dépôt AJAX + modales préchargées.
+                'gamme_slug' => $slug,
+                'media_upload_form' => $this->forms->createNamed('gamme_photo_upload', LieuPhotoUploadType::class, null, [
+                    'action' => $this->urls->generate('app_pim_gamme_photo_upload', ['gamme' => $slug, 'id' => (string) $entite->id()]),
+                    'method' => 'POST',
+                ])->createView(),
+                'media_csrf_token' => $this->csrfTokens->getToken('lieu-media-'.$entite->id())->getValue(),
             ],
         ];
     }

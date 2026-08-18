@@ -22,17 +22,26 @@ final class LieuPhotoMetadataType extends AbstractType
     /** @param FormBuilderInterface<array<string, mixed>|null> $builder */
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
+        // Hors fiche Lieu (avec_salles = false), pas d'association de salle :
+        // les catégories liées aux salles disparaissent avec le champ.
+        $usages = [
+            'Photo principale' => 'PHOTO_PRINCIPALE', 'Façade' => 'PHOTO_FACADE', 'Chambre' => 'PHOTO_CHAMBRE',
+            'Restauration' => 'PHOTO_RESTAURATION', 'Salle de réunion' => 'CONFIG_PHOTO_SALLE', 'Divers' => 'PHOTO_DIVERSE',
+            'Plan de salle' => 'CONFIG_PLAN_SALLE', 'Team building externe' => 'LOISIR_EXTERNE_PHOTO', 'Photos du lieu' => 'PHOTO',
+        ];
+        if (!$options['avec_salles']) {
+            unset($usages['Salle de réunion'], $usages['Plan de salle']);
+        }
         $builder
-            ->add('usage', ChoiceType::class, ['label' => 'Catégorie', 'choices' => [
-                'Photo principale' => 'PHOTO_PRINCIPALE', 'Façade' => 'PHOTO_FACADE', 'Chambre' => 'PHOTO_CHAMBRE',
-                'Restauration' => 'PHOTO_RESTAURATION', 'Salle de réunion' => 'CONFIG_PHOTO_SALLE', 'Divers' => 'PHOTO_DIVERSE',
-                'Plan de salle' => 'CONFIG_PLAN_SALLE', 'Team building externe' => 'LOISIR_EXTERNE_PHOTO', 'Photos du lieu' => 'PHOTO',
-            ]])
+            ->add('usage', ChoiceType::class, ['label' => 'Catégorie', 'choices' => $usages])
             ->add('legende', TextType::class, ['label' => 'Légende', 'required' => false])
             ->add('source', TextType::class, ['label' => 'Source / crédit', 'required' => false])
             ->add('keywords', TextareaType::class, ['label' => 'Mots-clés', 'required' => false])
-            ->add('rights_expires_at', DateType::class, ['label' => 'Échéance des droits', 'required' => false, 'widget' => 'single_text', 'input' => 'datetime_immutable'])
-            ->add('salle_id', EntityType::class, ['label' => 'Salle', 'class' => Salle::class, 'choices' => $options['salles'], 'choice_value' => 'id', 'choice_label' => static fn (Salle $salle): string => $salle->nom() ?: 'Salle sans nom', 'placeholder' => 'Aucune', 'required' => false])
+            ->add('rights_expires_at', DateType::class, ['label' => 'Échéance des droits', 'required' => false, 'widget' => 'single_text', 'input' => 'datetime_immutable']);
+        if ($options['avec_salles']) {
+            $builder->add('salle_id', EntityType::class, ['label' => 'Salle', 'class' => Salle::class, 'choices' => $options['salles'], 'choice_value' => 'id', 'choice_label' => static fn (Salle $salle): string => $salle->nom() ?: 'Salle sans nom', 'placeholder' => 'Aucune', 'required' => false]);
+        }
+        $builder
             ->add('crop_x', IntegerType::class, ['label' => 'X', 'required' => false, 'attr' => ['min' => 0]])
             ->add('crop_y', IntegerType::class, ['label' => 'Y', 'required' => false, 'attr' => ['min' => 0]])
             ->add('crop_width', IntegerType::class, ['label' => 'Largeur', 'required' => false, 'attr' => ['min' => 1]])
@@ -43,7 +52,8 @@ final class LieuPhotoMetadataType extends AbstractType
 
     public function configureOptions(OptionsResolver $resolver): void
     {
-        $resolver->setDefaults(['csrf_protection' => false, 'salles' => []]);
+        $resolver->setDefaults(['csrf_protection' => false, 'salles' => [], 'avec_salles' => true]);
         $resolver->setAllowedTypes('salles', 'array');
+        $resolver->setAllowedTypes('avec_salles', 'bool');
     }
 }
