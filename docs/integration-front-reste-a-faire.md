@@ -552,6 +552,22 @@ La fidélité maquette de la fiche Lieu est COUVERTE : les seuls écarts restant
 sont les décisions d'abandon explicites ci-dessus (champs hors Bible, onglets
 Médias) et les fonctions maquette sans back rendues désactivées.
 
+## Gammes Restaurant / Activité / Service alignées (2026-08-19, `10c1366`, `3f23c86`)
+
+Les trois catalogues suivent l'organisation Lieu : titres/ordre calqués
+(Localisation & accessibilité, Classification, Description, RSE — avec le bloc
+Salesforce —, Tarifs, Booster ma visibilité — youtubeUrl + formules + sites —,
+et en Paramètres Collaborateurs + Templates de message), groupes explicites.
+Au passage : l'onglet « Suggestions IA & historique » restait déclaré dans les
+trois gammes alors que ses blocs ne se rendent plus → **onglet mort supprimé**.
+La carte annexe « Disponibilités » est généralisée : le Lieu passe par son
+partial (compound + horaires par jour), le Restaurant rend ses champs à plat
+(privatisations, heures TimeType, jours en interrupteurs horizontaux comme le
+Lieu) + périodes de fermeture via le nouveau partial partagé
+`_periodes_fermeture` ; les gammes sans dispo n'affichent pas la carte.
+Tout le reste (grille, cases en pied, typo, barre, collaborateurs, pied,
+modale) était déjà partagé par le gabarit unique.
+
 ## Transverses
 
 - `composants.html.twig` (vitrine des composants) : reprendre sous une route de dev
