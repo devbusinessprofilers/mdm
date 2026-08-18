@@ -55,7 +55,8 @@
 {%- endblock -%}
 
 {%- block form_widget_simple -%}
-    {%- set type = type|default('text') -%}
+    {#- Un champ peut forcer son type HTML natif (time, date…) via attr.type. -#}
+    {%- set type = attr.type|default(type|default('text')) -%}
     {%- if type in ['hidden', 'file'] -%}
         {#- champs sans composant dédié : rendu Symfony standard -#}
         {{- parent() -}}

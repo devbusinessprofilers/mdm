@@ -12,6 +12,7 @@ use App\Pim\Enum\NatureRessource;
 use App\Pim\Enum\TypeAccesLieu;
 use App\Pim\Enum\TypeFiche;
 use App\Pim\Form\LieuFormCatalog;
+use App\Pim\Lov\LieuLovCatalog;
 use App\Pim\Service\PhotoObligations;
 use Symfony\Component\Validator\Constraint;
 use Symfony\Component\Validator\ConstraintValidator;
@@ -239,6 +240,17 @@ final class ValidLieuValidator extends ConstraintValidator
                 "L'heure de fermeture doit être postérieure à l'heure d'ouverture.",
                 'disponibilites.dispoHeureFermetureHeure',
             );
+        }
+        $libellesJours = LieuLovCatalog::choicesFor('DISPO_JOUR_OUVERTURE');
+        foreach ($lieu->dispoHorairesJours() ?? [] as $jour => $heures) {
+            $ouverture = $heures['ouverture'] ?? null;
+            $fermeture = $heures['fermeture'] ?? null;
+            if (null !== $ouverture && null !== $fermeture && $fermeture <= $ouverture) {
+                $this->violation(
+                    sprintf("%s : l'heure de fermeture doit être postérieure à l'heure d'ouverture.", $libellesJours[$jour] ?? $jour),
+                    'disponibilites.dispoHorairesJours',
+                );
+            }
         }
         foreach ($lieu->periodesFermeture() as $index => $period) {
             if (

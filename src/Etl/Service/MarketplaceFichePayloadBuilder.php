@@ -196,6 +196,8 @@ final readonly class MarketplaceFichePayloadBuilder
             'horaires' => [
                 'ouverture' => self::horaire($lieu->dispoHeureOuvertureHeure(), $lieu->dispoHeureOuvertureMinutes()),
                 'fermeture' => self::horaire($lieu->dispoHeureFermetureHeure(), $lieu->dispoHeureFermetureMinutes()),
+                // Détail par jour (additif) — l'amplitude globale ci-dessus reste servie.
+                'parJour' => $lieu->dispoHorairesJours(),
             ],
             'periodesFermeture' => array_values(array_map(static fn (PeriodeFermeture $periode): array => [
                 'nom' => $periode->nom(),

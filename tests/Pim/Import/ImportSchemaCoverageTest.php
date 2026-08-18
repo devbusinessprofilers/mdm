@@ -26,6 +26,7 @@ final class ImportSchemaCoverageTest extends KernelTestCase
             'changeGeneraleGamme',      // colonne de repli dépréciée
             'changeDispoJourOuverture', // colonne de repli dépréciée
             'changeDemarcheRse',        // déduit du thème « RSE » par le row mapper legacy, pas une colonne CSV
+            'changeDispoHorairesJours', // saisi dans l'éditeur — le legacy n'a qu'un horaire global (importé)
         ],
     ];
 

@@ -6,11 +6,9 @@ namespace App\Pim\Form;
 
 use App\Pim\Lov\LieuLovCatalog;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
-use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\UrlType;
-use Symfony\Component\Validator\Constraints\Range;
 use Symfony\Component\Validator\Constraints\Url;
 
 final class LieuFormCatalog
@@ -29,16 +27,13 @@ final class LieuFormCatalog
     /** @return array<string, array<string, mixed>> */
     public static function availability(): array
     {
-        $hour = ['type' => IntegerType::class, 'options' => ['constraints' => [new Range(min: 0, max: 23)]]];
-        $minute = ['type' => IntegerType::class, 'options' => ['constraints' => [new Range(min: 0, max: 59)]]];
-
+        // Les quatre champs globaux historiques ne se saisissent plus : ils
+        // sont dérivés de l'amplitude des horaires par jour (contrat
+        // marketplace inchangé).
         return [
             'dispoLieuPrivatisable' => ['label' => 'Lieu privatisable'],
             'joursOuverture' => self::choice('DISPO_JOUR_OUVERTURE', "Jours d'ouverture", true, etendu: true),
-            'dispoHeureOuvertureHeure' => $hour + ['label' => "Heure d'ouverture"],
-            'dispoHeureOuvertureMinutes' => $minute + ['label' => "Minutes d'ouverture"],
-            'dispoHeureFermetureHeure' => $hour + ['label' => 'Heure de fermeture'],
-            'dispoHeureFermetureMinutes' => $minute + ['label' => 'Minutes de fermeture'],
+            'dispoHorairesJours' => ['label' => false, 'type' => HorairesJoursType::class],
         ];
     }
 

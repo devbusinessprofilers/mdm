@@ -75,7 +75,9 @@ final class FicheSectionsCatalogue
             [
                 'titre' => 'Informations générales',
                 'champs' => ['label', 'generaleTypologie', 'informationsGenerales', 'generaleWebsiteUrl', 'telephone', 'businessPremium', 'partenaireBp', 'disponibilites', 'periodesFermeture'],
-                'proprietes' => ['label', 'generaleTypologie', 'generaleWebsiteUrl', 'periodesFermeture', ...array_keys(LieuFormCatalog::general()), ...array_keys(LieuFormCatalog::availability())],
+                // Les quatre horaires globaux restent des propriétés de la
+                // section (dérivés des horaires par jour, complétude/audit).
+                'proprietes' => ['label', 'generaleTypologie', 'generaleWebsiteUrl', 'periodesFermeture', ...array_keys(LieuFormCatalog::general()), ...array_keys(LieuFormCatalog::availability()), 'dispoHeureOuvertureHeure', 'dispoHeureOuvertureMinutes', 'dispoHeureFermetureHeure', 'dispoHeureFermetureMinutes'],
                 'blocs' => ['disponibilites'],
                 'groupe' => 'ma_fiche',
             ],
