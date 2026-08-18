@@ -519,9 +519,22 @@ Décision utilisateur : les champs maquette absents de la Bible (~35-40 sur
 122 + modèles différents Tarifs/fiches liées) sont IGNORÉS — pas d'inputs
 factices, pas d'ajout au modèle.
 
-Reste pour la fidélité Lieu : pastilles de droits du tableau collaborateurs,
-onglets Médias (à trancher), habillage des lignes de périodes de fermeture
-(champs nom/dates + corbeille au gabarit maquette).
+`7a02305` + `cbe5628` — onglet Collaborateurs refait au gabarit maquette :
+grille `grid-cols-[84px_96px_84px_minmax(0,1fr)_116px_104px_78px_62px]`
+(en-tête bg-primary-4, pastilles de droits vert coché / gris barré pour
+Contact principal et Repli, nom en gras, crayon + corbeille en icônes) ;
+panneau latéral à **deux états réels** : invitation par défaut, édition via
+`?collaborateur=<id>` (le crayon recharge la page — pas de bascule JS
+factice ; la ligne éditée est surlignée, Annuler revient à l'invitation).
+Pièges : une classe `grid-cols-[…]` construite par concaténation Twig n'est
+jamais compilée par Tailwind (l'écrire en toutes lettres) ; un `<button
+type="submit">` brut viole la policy — passer par le composant Button réduit
+à l'icône ; le premier `aside` du document est la navigation du portail
+(cibler `aside[aria-label=…]` dans les tests).
+
+Reste pour la fidélité Lieu : onglets Médias (à trancher), habillage des
+lignes de périodes de fermeture (champs nom/dates + corbeille au gabarit
+maquette).
 
 ## Transverses
 
