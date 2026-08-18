@@ -467,6 +467,33 @@ pilule « Suggérer » maquette sous les champs riches, désactivée + infobulle
 (pas de back IA champ par champ — rien ne se perd), via un textarea_widget
 propre à _form-theme-fiche pour ne pas toucher les autres écrans.
 
+`84f68e0` — **réorganisation aux 16 onglets maquette** (audit onglet par onglet
+demandé par l'utilisateur) : titres/ordre maquette (Localisation & accessibilité,
+Thématiques & ambiances, Description, Réunion, Loisirs & team building, RSE,
+Tarifs, Facturation & partenariat, Templates de message — maquette pure
+désactivée), chemins pointés `groupe.champ` dans le catalogue de sections (le
+groupe accessibiliteDescription se répartit sur 3 onglets SANS toucher la
+structure de soumission — l'API PATCH externe en dépend), groupes Ma
+fiche/Paramètres explicites. Onglets hors maquette reversés : disponibilités →
+Info générales, visibilité + sites → Booster ma visibilité, Salesforce → RSE,
+OCR → pied/modale. Piège : « Booster » précède désormais Collaborateurs, un
+selectButton('Enregistrer') attrapait « Enregistrer la diffusion ».
+
+`a8eaa8d` — retours : revue OCR rendue dans le bloc « Suggestions en attente »
+du pied (form_revue en lignes maquette, plus d'onglet dédié), historique des
+extractions dans la modale ; carte « Disponibilités » séparée de la carte des
+champs (deux sections même data-volet — le contrôleur bascule tout).
+
+`5d41e00` — **horaires par jour** (demande utilisateur, l'écart « assumé »
+saute) : colonne JSON `dispo_horaires_jours` sur pim_lieu (migration
+Version20260818120000), `HorairesJoursType` (TextType natifs `attr.type=time`,
+« HH:MM » brut — le TimeType chaîne exige H:i:s ; le thème global honore
+désormais attr.type), design maquette (colonne par jour, heures masquées si
+fermé en pur CSS `group-has`), getter avec repli global décliné sur les jours
+ouverts, dérivation de l'amplitude globale à la saisie (contrat marketplace
+inchangé, `parJour` additif dans le payload), validation par jour, exclusion
+import (pas de donnée legacy), workers force-recreatés.
+
 Reste pour la fidélité Lieu : lignes de la collection périodes de fermeture,
 pastilles de droits du tableau collaborateurs, onglets Médias (à trancher).
 
