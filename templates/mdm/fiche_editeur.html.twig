@@ -149,7 +149,7 @@
 
     {# En-tête de fiche : identité et jauge à gauche, actions de barre à droite. #}
     <div class="shrink-0 flex flex-col gap-3">
-        <div class="flex flex-row items-center gap-10 flex-wrap">
+        <div class="flex flex-row items-center gap-8">
             <div class="flex flex-col gap-1 grow min-w-0">
                 <div class="flex flex-row items-center gap-3 flex-wrap">
                     {# 26 px / 34 en Ubuntu 700, comme la maquette (le palier sm
@@ -166,7 +166,8 @@
                 {# Référence en clair : point d'ancrage des tests, hors mise en page maquette. #}
                 <p class="page-description sr-only">{{ entete.reference }} · v{{ entete.version }} · {{ statut_libelles[entete.statut] ?? entete.statut }} · Complété à {{ entete.completude }} %</p>
             </div>
-            <div class="flex flex-row items-center justify-end gap-2 shrink-0 flex-wrap [&_form]:contents">
+            {# Le bloc d'actions se replie en deux rangées plutôt que de passer sous le titre. #}
+            <div class="flex flex-row items-center justify-end gap-2 shrink-0 flex-wrap max-w-[620px] [&_form]:contents">
                 {# Maquette sans back : l'enrichissement IA global n'existe pas encore. #}
                 <twig:Button variant="primary" size="md" icon="ai" disabled
                              title="En développement" class="[&>:first-child]:size-5">Enrichir ce qui manque</twig:Button>
@@ -178,7 +179,10 @@
                 <twig:Button variant="outline" size="md" asLink href="{{ liens.historique }}">Historique</twig:Button>
                 {% if is_granted('FICHE_DELETE', fiche) %}
                     {# Suppression définitive de la fiche (confirmation demandée). #}
-                    <span class="danger-form contents [&_button]:bg-error! [&_button]:border-error! [&_button_span]:text-neutral-100!">{{ form(action_suppression) }}</span>
+                    {# bg-none + before:hidden : le variant outline peint son dégradé en
+                       background-image et un ::before blanc par-dessus le fond — sans les
+                       neutraliser, bg-error resterait invisible (texte blanc sur blanc). #}
+                    <span class="danger-form contents [&_button]:bg-none! [&_button]:before:hidden! [&_button]:bg-error! [&_button]:border-error! [&_button_span]:text-neutral-100!">{{ form(action_suppression) }}</span>
                 {% endif %}
             </div>
         </div>
@@ -204,23 +208,50 @@
             {% if s.champs is not empty %}
                 {{ _self.volet_ouvre(i, i == section_index) }}
                     {{ _self.volet_titre(s.titre, onglets[i].completude, s.nb_champs|default(null), true) }}
-                    {# Grille maquette : champ simple en demi-largeur, riche/groupe/collection en pleine. #}
+                    {# Grille maquette : champ simple en demi-largeur, riche/groupe/collection en
+                       pleine largeur ; les cases à cocher consécutives s'empilent par trois dans
+                       une demi-colonne (même règle dans le form_rows de _form-theme-fiche). Le
+                       libellé d'un groupe de premier niveau est tu : la carte porte déjà le titre. #}
                     <div class="flex flex-row flex-wrap gap-x-6 gap-y-5">
-                        {% for champ in s.champs %}
-                            {% set widget = attribute(form, champ) %}
-                            {% if widget.vars.prototype is defined %}
-                                <div class="w-full">{{ _self.collection(widget, widget.vars.label ?? champ) }}</div>
-                            {% elseif 'puces' in s.blocs %}
-                                <div class="w-full">{% include 'mdm/fiche/_puces.html.twig' with { widget: widget } only %}</div>
-                            {% elseif 'disponibilites' in s.blocs and champ == 'disponibilites' %}
-                                <div class="w-full">{% include 'mdm/fiche/_disponibilites.html.twig' with { widget: widget } only %}</div>
-                            {% elseif 'capacites' in s.blocs and champ == 'salles' %}
-                                <div class="w-full">{% include 'mdm/fiche/_capacites.html.twig' with { widget: widget } only %}</div>
+                        {% set groupes_champs = s.champs|map(c => attribute(form, c))|reduce(
+                            (acc, w) => 'checkbox' in w.vars.block_prefixes
+                                ? (acc|length > 0 and (acc|last).cases
+                                    ? acc|slice(0, acc|length - 1)|merge([{ cases: true, items: (acc|last).items|merge([w]) }])
+                                    : acc|merge([{ cases: true, items: [w] }]))
+                                : acc|merge([{ cases: false, items: [w] }]),
+                            []) %}
+                        {% for groupe in groupes_champs %}
+                            {% if groupe.cases %}
+                                {% for lot in groupe.items|batch(3) %}
+                                    <div class="w-[calc(50%-12px)] flex flex-col gap-3">
+                                        {% for widget in lot %}{{ form_row(widget) }}{% endfor %}
+                                    </div>
+                                {% endfor %}
                             {% else %}
-                                {% set pleine = widget.vars.compound|default(false)
-                                    or widget.vars.attr['data-wysiwyg']|default(false)
-                                    or 'textarea' in widget.vars.block_prefixes %}
-                                {{ form_row(widget, { row_attr: { class: pleine ? 'w-full' : 'w-[calc(50%-12px)]' } }) }}
+                                {% set widget = groupe.items|first %}
+                                {% set champ = widget.vars.name %}
+                                {% if widget.vars.prototype is defined %}
+                                    <div class="w-full">{{ _self.collection(widget, widget.vars.label ?? champ) }}</div>
+                                {% elseif 'puces' in s.blocs %}
+                                    <div class="w-full">{% include 'mdm/fiche/_puces.html.twig' with { widget: widget } only %}</div>
+                                {% elseif 'disponibilites' in s.blocs and champ == 'disponibilites' %}
+                                    <div class="w-full">{% include 'mdm/fiche/_disponibilites.html.twig' with { widget: widget } only %}</div>
+                                {% elseif 'capacites' in s.blocs and champ == 'salles' %}
+                                    <div class="w-full">{% include 'mdm/fiche/_capacites.html.twig' with { widget: widget } only %}</div>
+                                {% else %}
+                                    {% set est_groupe = widget.vars.compound|default(false) and not widget.vars.expanded|default(false) %}
+                                    {% set pleine = est_groupe
+                                        or widget.vars.attr['data-wysiwyg']|default(false)
+                                        or 'textarea' in widget.vars.block_prefixes %}
+                                    {% set rangee = { class: pleine ? 'w-full' : 'w-[calc(50%-12px)]' } %}
+                                    {# label: false seulement pour les groupes — un label: null
+                                       écraserait le libellé configuré du champ. #}
+                                    {% if est_groupe %}
+                                        {{ form_row(widget, { row_attr: rangee, label: false }) }}
+                                    {% else %}
+                                        {{ form_row(widget, { row_attr: rangee }) }}
+                                    {% endif %}
+                                {% endif %}
                             {% endif %}
                         {% endfor %}
                     </div>
@@ -578,7 +609,8 @@
           {% for nom, action in actions_workflow %}
               {% set attribut = {'submit': 'FICHE_SUBMIT', 'validate': 'FICHE_VALIDATE', 'publish': 'FICHE_PUBLISH', 'archive': 'FICHE_ARCHIVE'}[nom] %}
               {% if is_granted(attribut, fiche) %}
-                  <span class="contents [&_button]:bg-primary-3! [&_button]:border-primary-3! [&_button_span]:text-neutral-100!">{{ form(action) }}</span>
+                  {# Même neutralisation du chrome outline que pour la suppression. #}
+                  <span class="contents [&_button]:bg-none! [&_button]:before:hidden! [&_button]:bg-primary-3! [&_button]:border-primary-3! [&_button_span]:text-neutral-100!">{{ form(action) }}</span>
               {% endif %}
           {% endfor %}
       </div>
