@@ -3,7 +3,22 @@ import { Controller } from '@hotwired/stimulus'
 
 export default class extends Controller {
     static targets = ['input', 'dropzone', 'progress', 'progressBar', 'error', 'list', 'item']
-    static values = { uploadUrl: String, orderUrl: String, token: String }
+    static values = { uploadUrl: String, orderUrl: String, modalesUrl: String, token: String }
+
+    // Les modales de paramètres des médias ne sont plus rendues dans la page :
+    // elles sont préchargées ici, en arrière-plan, juste après le chargement.
+    // Le clic sur une vignette (modal-trigger-button) les trouve déjà dans le DOM.
+    connect() { if (this.modalesUrlValue) this.chargerModales() }
+
+    async chargerModales() {
+        try {
+            const response = await window.fetch(this.modalesUrlValue, { headers: { Accept: 'text/html' } })
+            if (!response.ok) throw new Error(String(response.status))
+            this.element.insertAdjacentHTML('beforeend', await response.text())
+        } catch (_) {
+            this.showError('Le chargement des paramètres des médias a échoué — rechargez la page pour les modifier.')
+        }
+    }
 
     upload(event) { this.uploadFiles(Array.from(event.target.files || [])) }
     dragover(event) { event.preventDefault(); this.dropzoneTarget.classList.add('is-dragging') }
