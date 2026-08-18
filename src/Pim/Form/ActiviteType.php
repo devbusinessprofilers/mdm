@@ -363,10 +363,12 @@ final class ActiviteType extends AbstractType
                 },
             ])
             ->add('supportsCommerciaux', FileType::class, [
-                'label' => 'Supports commerciaux PDF, JPEG ou PNG',
+                'label' => 'Supports commerciaux',
+                'help' => 'PDF, JPEG ou PNG.',
                 'mapped' => false,
                 'multiple' => true,
                 'required' => false,
+                'attr' => ['data-dropzone' => true, 'accept' => '.pdf,.jpg,.jpeg,.png', 'data-max-files' => 10, 'data-max-size' => '100M'],
                 'constraints' => [
                     new All([
                         new File(

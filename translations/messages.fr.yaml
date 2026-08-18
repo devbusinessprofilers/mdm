@@ -13,3 +13,8 @@ password:
 
 select:
     no_options: Aucune option disponible
+form.dropzone.select.label: '<u>Sélectionnez vos fichiers</u> ou glissez-les ici'
+form.dropzone.count_constraint.label: '{count} fichier(s) maximum.'
+form.dropzone.size_constraint.label: 'Limité à {size} par fichier.'
+form.dropzone.image_constraint.label: 'Dimension minimum {minWidth} x {minHeight} px'
+form.dropzone.button.label: 'Importer les fichiers'

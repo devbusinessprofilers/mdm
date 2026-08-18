@@ -57,7 +57,19 @@
 {%- block form_widget_simple -%}
     {#- Un champ peut forcer son type HTML natif (time, date…) via attr.type. -#}
     {%- set type = attr.type|default(type|default('text')) -%}
-    {%- if type in ['hidden', 'file'] -%}
+    {%- if 'file' == type and attr['data-dropzone']|default(false) -%}
+        {#- Zone de dépôt du design-system (opt-in `attr: { 'data-dropzone': true }`) :
+            l'input natif est soumis avec le formulaire, le contrôleur dropzone
+            gère cartes et retraits. -#}
+        <twig:Form:Dropzone
+            id="{{ id }}"
+            name="{{ full_name }}"
+            accept="{{ attr.accept|default('') }}"
+            :maxFileCount="attr['data-max-files']|default(5)"
+            fileMaxSize="{{ attr['data-max-size']|default('5M') }}"
+            :disabled="disabled"
+        />
+    {%- elseif type in ['hidden', 'file'] -%}
         {#- champs sans composant dédié : rendu Symfony standard -#}
         {{- parent() -}}
     {%- else -%}
