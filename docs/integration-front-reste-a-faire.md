@@ -417,6 +417,20 @@ sur la mise en page. Repris sur `fiche_editeur.html.twig` (toutes gammes) :
   groupes noirs gras, icônes `w-5`, libellés `body`, pastilles `%` arrondies.
 Suite : 557 tests verts. PHPStan : 1 erreur préexistante (l. 455, hors sujet).
 
+Contrôle visuel headless (`03a1c6d`) — dump authentifié via test temporaire dans
+`public/`, captures chromium sur les sections 0/1/4/10/12 :
+- **Cases à cocher regroupées** : les runs consécutifs s'empilent par trois dans
+  une demi-colonne, case + libellé sur la même ligne (`checkbox_row` du thème,
+  partition `reduce` synchronisée entre `form_rows` et la boucle des volets).
+- **Labels de groupe tus** au premier niveau (« Administratif * », « Restauration * »
+  doublonnaient le titre de carte) — piège : `label: null` écrase le libellé
+  configuré, ne passer `label: false` que dans la branche groupe.
+- **En-tête** : le bloc d'actions se replie en 2 rangées (`max-w-[620px]`) au lieu
+  de passer sous le titre.
+- **Boutons d'action pleins** (Supprimer rouge, workflow marine) : le variant
+  outline peint un dégradé `background-image` ET un `::before` blanc — il faut
+  `bg-none!` + `before:hidden!` en plus de `bg-*!` sinon texte blanc sur blanc.
+
 ## Transverses
 
 - `composants.html.twig` (vitrine des composants) : reprendre sous une route de dev
