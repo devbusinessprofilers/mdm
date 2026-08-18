@@ -508,6 +508,17 @@ dispose d'hébergement » / « … de salles de réunion » ouvrent leur bloc en
 pleine largeur sous le titre (liste `cases_en_tete` du gabarit) au lieu de
 rejoindre la pile de cases en pied.
 
+`94bace3` — sites de diffusion en **select multiple** (retour utilisateur, la
+longue liste de cases est abandonnée) : choix aplatis (le composant Select ne
+rend pas les optgroup — l'ordre suit déjà les groupes), mentions
+(obligatoire)/(payant) conservées dans les libellés, label du champ tu (le
+titre du bloc suffit). Les sites obligatoires restent réimposés par
+soumettreSites(), quel que soit le widget.
+
+Décision utilisateur : les champs maquette absents de la Bible (~35-40 sur
+122 + modèles différents Tarifs/fiches liées) sont IGNORÉS — pas d'inputs
+factices, pas d'ajout au modèle.
+
 Reste pour la fidélité Lieu : pastilles de droits du tableau collaborateurs,
 onglets Médias (à trancher), habillage des lignes de périodes de fermeture
 (champs nom/dates + corbeille au gabarit maquette).
