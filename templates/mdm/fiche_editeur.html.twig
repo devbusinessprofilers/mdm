@@ -311,13 +311,10 @@
                 {% if widgets_annexes|length > 0 %}
                     {{ _self.volet_ouvre(i, i == section_index) }}
                         {{ _self.volet_titre('Disponibilités', null) }}
-                        {% for widget in widgets_annexes %}
-                            {% if widget.vars.name == 'disponibilites' %}
-                                {% include 'mdm/fiche/_disponibilites.html.twig' with { widget: widget } only %}
-                            {% else %}
-                                {{ _self.collection(widget, widget.vars.label ?? widget.vars.name) }}
-                            {% endif %}
-                        {% endfor %}
+                        {% include 'mdm/fiche/_disponibilites.html.twig' with {
+                            widget: widgets_annexes|filter(w => w.vars.name == 'disponibilites')|first,
+                            periodes: widgets_annexes|filter(w => w.vars.name == 'periodesFermeture')|first|default(null),
+                        } only %}
                     </section>
                 {% endif %}
             {% endif %}
