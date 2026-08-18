@@ -36,22 +36,27 @@
     Collections de formulaire — le contrôleur Stimulus form-collection ajoute et
     retire les lignes. Ces attributs sont exigés par la policy des templates.
 #}
+{# Titre en `subtitle` gras + bouton d'ajout sur la même rangée, sans encadré :
+   c'est la hiérarchie de la maquette (« Périodes de fermeture », « Accès »…). #}
 {% macro collection(field, title) %}
-    <fieldset class="flex flex-col gap-2 border border-neutral-200 rounded-md p-4"
+    <fieldset class="flex flex-col gap-4 border-0 p-0 m-0"
         data-controller="form-collection"
         data-form-collection-index-value="{{ field|length }}"
         data-form-collection-prototype-value="{{ form_widget(field.vars.prototype)|e('html_attr') }}"
     >
-        <legend><twig:Typography variant="body-sm" bold element="span">{{ title }}</twig:Typography></legend>
+        <div class="flex flex-row items-center gap-6">
+            <legend class="contents"><twig:Typography variant="subtitle" bold element="span">{{ title }}</twig:Typography></legend>
+            <span class="flex-1"></span>
+            <twig:Button variant="outline" size="sm" icon="plus" type="button" data-action="form-collection#add" data-remove-label="Retirer">Ajouter</twig:Button>
+        </div>
         <div class="flex flex-col gap-3" data-form-collection-target="items">
             {% for item in field %}
-                <fieldset data-form-collection-item class="flex items-start gap-2">
+                <fieldset data-form-collection-item class="flex items-start gap-2 border-0 p-0 m-0">
                     <div class="flex-1">{{ form_widget(item) }}</div>
                     <twig:Button variant="outline" size="sm" type="button" data-action="form-collection#remove">Retirer</twig:Button>
                 </fieldset>
             {% endfor %}
         </div>
-        <div><twig:Button variant="outline" size="sm" type="button" data-action="form-collection#add" data-remove-label="Retirer">Ajouter</twig:Button></div>
     </fieldset>
 {% endmacro %}
 
@@ -407,7 +412,7 @@
                 {# ---- Sites de diffusion ---- #}
                 {% if 'sites' in s.blocs %}
                     <div class="flex flex-col gap-3">
-                        <twig:Typography variant="heading-3" element="h3" bold>Sites de diffusion</twig:Typography>
+                        <twig:Typography variant="subtitle" element="h3" bold>Sites de diffusion</twig:Typography>
                         <twig:Typography variant="body-sm" textColor="neutral-500">Les sites obligatoires restent cochés ; les sites payants sont signalés.</twig:Typography>
                         {{ form(form_sites) }}
                     </div>
@@ -416,7 +421,7 @@
                 {# ---- Salesforce (lecture seule) ---- #}
                 {% if 'salesforce' in s.blocs %}
                     <div class="flex flex-col gap-3 pt-4 border-t border-neutral-200 first:pt-0 first:border-t-0">
-                        <twig:Typography variant="heading-3" element="h3" bold>Données Salesforce</twig:Typography>
+                        <twig:Typography variant="subtitle" element="h3" bold>Données Salesforce</twig:Typography>
                         {% if salesforce %}
                             <twig:Typography variant="body-sm" textColor="neutral-500">
                                 Lecture seule — rafraîchies chaque nuit depuis Salesforce et diffusées sur la marketplace.
@@ -491,7 +496,7 @@
 
             {# ---- Valeurs lues par l'OCR : mêmes lignes, décision par le formulaire de revue. ---- #}
             {% if ocr_pendantes is not empty %}
-                <twig:Typography variant="body-sm" bold>Valider les valeurs lues</twig:Typography>
+                <twig:Typography variant="subtitle" element="h3" bold>Valider les valeurs lues</twig:Typography>
                 <twig:Typography variant="body-sm" textColor="neutral-500">
                     {{ extraction.a_revoir.document.originalFilename }} ·
                     {{ ocr_pendantes|length }} valeur lue (corrigible avant application) par l'extraction — le document reste attaché à la fiche.

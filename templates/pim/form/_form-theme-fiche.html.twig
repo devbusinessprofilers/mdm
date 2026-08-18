@@ -115,9 +115,10 @@
             {%- set label = name|humanize -%}
         {%- endif -%}
         {#- Classes Typography inlinées (rendu par champ, ~60 fois par fiche) :
-            synchroniser avec Typography.html.twig / _typography_markup.html.twig. -#}
+            synchroniser avec Typography.html.twig / _typography_markup.html.twig.
+            Graisse normale, comme la maquette (variant input, jamais bold). -#}
         {%- set libelle -%}
-            <span class="antialiased text-[0.875rem] leading-[1.375rem] font-sans text-base-text font-[900]">
+            <span class="antialiased text-[0.875rem] leading-[1.375rem] font-sans text-base-text">
                 {{- translation_domain is same as(false) ? label : label|trans({}, translation_domain) -}}
                 {%- if required %} *{% endif -%}
             </span>
