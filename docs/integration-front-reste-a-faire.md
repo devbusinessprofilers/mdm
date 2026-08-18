@@ -582,6 +582,19 @@ MethodMappedFields (grille tarifaire Lieu) passent de NumberType à MoneyType
 (`input: string` conservé — même famille de transformers, contrat API
 inchangé) ; les MoneyType existants d'Activité/Service en profitent aussi.
 
+`10e5655` — balayage onglet par onglet Restaurant + Activité (22 captures) :
+- **Bug réparé** : une collection VIDE est un FormView Countable à zéro —
+  falsy en Twig ET remplacée par le filtre `default()`. Le bloc « Périodes de
+  fermeture » disparaissait donc tant qu'aucune période n'existait (impossible
+  d'ajouter la première — Lieu et Restaurant). Détection par `reduce(...,
+  null)` + `is not null`, jamais `first|default` ni truthiness sur un FormView.
+- Libellés techniques nettoyés, format déplacé en `help` : « — un par ligne »
+  (pays/régions/départements mobiles ×2 gammes, atouts, plus), « — texte
+  simple V1 », « Tarif à partir de par personne » → « Tarif par personne (à
+  partir de) » ; collection `offres` titrée.
+- Constat conservé tel quel : uploads menus/supports Restaurant en champs file
+  bruts (fonctionnels, chantier Dropzone séparé si souhaité).
+
 ## Transverses
 
 - `composants.html.twig` (vitrine des composants) : reprendre sous une route de dev
