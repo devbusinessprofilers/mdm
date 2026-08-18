@@ -321,6 +321,7 @@ final class ActiviteType extends AbstractType
                 $this->field('Lien YouTube', 'youtubeUrl', 'changeYoutubeUrl'),
             )
             ->add('ressources', CollectionType::class, [
+                'help' => 'Ajoutez, corrigez ou retirez ici les photos de la fiche — la galerie « Photos de la fiche » ci-dessous les présente une fois enregistrées.',
                 'entry_type' => ActiviteRessourceType::class,
                 'allow_add' => true,
                 'allow_delete' => true,
@@ -383,6 +384,7 @@ final class ActiviteType extends AbstractType
                 ],
             ])
             ->add('supportTitle', TextType::class, [
+                'help' => 'Appliqué aux fichiers déposés ci-dessus, à l’enregistrement.',
                 'label' => 'Titre des nouveaux supports',
                 'mapped' => false,
                 'required' => false,

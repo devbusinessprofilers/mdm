@@ -305,6 +305,7 @@ final class RestaurantType extends AbstractType
             )
             ->add('ressources', CollectionType::class, [
                 'label' => 'Photos',
+                'help' => 'Ajoutez, corrigez ou retirez ici les photos de la fiche — la galerie « Photos de la fiche » ci-dessous les présente une fois enregistrées.',
                 'entry_type' => RestaurantRessourceType::class,
                 'entry_options' => ['restaurant' => $options['data']],
                 'allow_add' => true,
@@ -366,6 +367,7 @@ final class RestaurantType extends AbstractType
                 'constraints' => [new All([new File(maxSize: '100M')])],
             ])
             ->add('documentTitle', TextType::class, [
+                'help' => 'Appliqué aux fichiers déposés ci-dessus, à l’enregistrement.',
                 'label' => 'Titre des nouveaux documents',
                 'mapped' => false,
                 'required' => false,
