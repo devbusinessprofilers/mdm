@@ -568,6 +568,20 @@ Lieu) + périodes de fermeture via le nouveau partial partagé
 Tout le reste (grille, cases en pied, typo, barre, collaborateurs, pied,
 modale) était déjà partagé par le gabarit unique.
 
+`2adf11a` — retour utilisateur : les listes de cases de Service (prestations +
+10 familles de sous-prestations) et d'Activité (types, thématiques,
+sous-thématiques) passent en **selects multiples** (expanded → false). Le
+contrôleur Stimulus `sous-thematiques` (filtrage des familles cochées) est
+supprimé avec ses choice_attr — tous les selects de sous-familles restent
+visibles, la famille figure dans le libellé.
+
+`75b82e1` — retour utilisateur (onglet Tarifs) : bloc `money_widget` ajouté au
+thème global → composant `Form:MoneyInput` du design-system, **icône € dans le
+champ** (masque fr, milliers acceptés via grouping). Les décimaux de
+MethodMappedFields (grille tarifaire Lieu) passent de NumberType à MoneyType
+(`input: string` conservé — même famille de transformers, contrat API
+inchangé) ; les MoneyType existants d'Activité/Service en profitent aussi.
+
 ## Transverses
 
 - `composants.html.twig` (vitrine des composants) : reprendre sous une route de dev
