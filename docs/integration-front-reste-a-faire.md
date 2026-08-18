@@ -532,9 +532,17 @@ type="submit">` brut viole la policy — passer par le composant Button réduit
 à l'icône ; le premier `aside` du document est la navigation du portail
 (cibler `aside[aria-label=…]` dans les tests).
 
-Reste pour la fidélité Lieu : onglets Médias (à trancher), habillage des
-lignes de périodes de fermeture (champs nom/dates + corbeille au gabarit
-maquette).
+`ebb448b` — périodes de fermeture au gabarit maquette : lignes nom (large) +
+début/fin (dates natives) + corbeille alignée en pied, rendues dans la carte
+Disponibilités par le partial (la collection quitte le macro générique) ;
+prototype du form-collection au même gabarit.
+
+Décision utilisateur : les onglets Médias restent en l'état (Photos/Documents
+empilés) — l'écart avec les onglets maquette Photos/Plans/Supports est ignoré.
+
+La fidélité maquette de la fiche Lieu est COUVERTE : les seuls écarts restants
+sont les décisions d'abandon explicites ci-dessus (champs hors Bible, onglets
+Médias) et les fonctions maquette sans back rendues désactivées.
 
 ## Transverses
 
