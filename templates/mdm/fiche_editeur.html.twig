@@ -740,16 +740,18 @@
      (motif obligatoire) reste sous l'en-tête. #}
   {% set actions_workflow = actions|filter((a, n) => n != 'reject') %}
   {% if is_granted('FICHE_EDIT', fiche) or actions_workflow is not empty %}
-      <div class="shrink-0 h-24 flex items-center justify-center gap-4 bg-primary-4 [&_form]:contents">
-          <twig:Button variant="outline" size="lg" asLink href="{{ onglets[section_index].url }}">Annuler</twig:Button>
+      {# Barre compacte : trois boutons à la même taille (md, 40 px). #}
+      <div class="shrink-0 h-16 flex items-center justify-center gap-4 bg-primary-4 [&_form]:contents">
+          <twig:Button variant="outline" size="md" asLink href="{{ onglets[section_index].url }}">Annuler</twig:Button>
           {% if is_granted('FICHE_EDIT', fiche) %}
-              <twig:Button variant="primary" size="lg" type="submit" form="form-fiche">Enregistrer les modifications</twig:Button>
+              <twig:Button variant="primary" size="md" type="submit" form="form-fiche">Enregistrer les modifications</twig:Button>
           {% endif %}
           {% for nom, action in actions_workflow %}
               {% set attribut = {'submit': 'FICHE_SUBMIT', 'validate': 'FICHE_VALIDATE', 'publish': 'FICHE_PUBLISH', 'archive': 'FICHE_ARCHIVE'}[nom] %}
               {% if is_granted(attribut, fiche) %}
-                  {# Même neutralisation du chrome outline que pour la suppression. #}
-                  <span class="contents [&_button]:bg-none! [&_button]:before:hidden! [&_button]:bg-primary-3! [&_button]:border-primary-3! [&_button_span]:text-neutral-100!">{{ form(action) }}</span>
+                  {# Même neutralisation du chrome outline que pour la suppression ;
+                     hauteur alignée sur les deux autres boutons (md). #}
+                  <span class="contents [&_button]:bg-none! [&_button]:before:hidden! [&_button]:bg-primary-3! [&_button]:border-primary-3! [&_button]:h-[40px]! [&_button]:px-3.5! [&_button_span]:text-neutral-100!">{{ form(action) }}</span>
               {% endif %}
           {% endfor %}
       </div>
