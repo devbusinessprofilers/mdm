@@ -431,6 +431,20 @@ Contrôle visuel headless (`03a1c6d`) — dump authentifié via test temporaire 
   outline peint un dégradé `background-image` ET un `::before` blanc — il faut
   `bg-none!` + `before:hidden!` en plus de `bg-*!` sinon texte blanc sur blanc.
 
+Retour utilisateur (`a476f13`) : « Informations générales » à l'ordre maquette
+(nom, typologie, groupe/événements/ERP, site web — `LieuFormCatalog::general()`
+réordonné, libellé « Nom du lieu », section 0 du catalogue réordonnée) ; les
+cases à cocher passent toutes SOUS les autres champs (deux passes filter au lieu
+de la partition par runs, volets + form_rows).
+
+`02fee59` — matrice des salles : **régression latente réparée** — la branche
+collection générique attrapait `salles` avant la branche `capacites`, le partial
+`_capacites` n'était plus jamais rendu (les blocs spécialisés passent désormais
+avant `prototype`). Habillage maquette complété : colonnes poignée + vignette
+photo (inertes, « En développement »), lignes `h-[72px]`, « Ajouter une salle »
+en pied, bandeau doré « Pré-remplir avec l'IA » branché sur la vraie modale
+d'extraction OCR.
+
 ## Transverses
 
 - `composants.html.twig` (vitrine des composants) : reprendre sous une route de dev
