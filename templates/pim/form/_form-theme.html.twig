@@ -76,6 +76,19 @@
     {%- endif -%}
 {%- endblock -%}
 
+{%- block money_widget -%}
+    {#- Le composant MoneyInput porte l'icône € dans le champ (masque fr) —
+        pas de motif « {{ widget }} € » Symfony posé en texte nu autour. -#}
+    <twig:Form:MoneyInput
+        id="{{ id }}"
+        name="{{ full_name }}"
+        placeholder="{{ attr.placeholder|default('') }}"
+        :scale="2"
+        :disabled="disabled"
+        :inputAttributes="value != '' ? { value: value } : {}"
+    />
+{%- endblock -%}
+
 {%- block password_widget -%}
     {#- `data-with-control` (opt-in via l'attr du champ) affiche la jauge et
         les règles de robustesse du composant Password du portail. -#}

@@ -10,7 +10,7 @@ use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\EmailType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
-use Symfony\Component\Form\Extension\Core\Type\NumberType;
+use Symfony\Component\Form\Extension\Core\Type\MoneyType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\UrlType;
@@ -48,7 +48,9 @@ final class MethodMappedFieldsType extends AbstractType
             $setter = 'change'.ucfirst($name);
             $fieldOptions = $definition['options'] ?? [];
             if ('decimal' === $doctrineType) {
-                $fieldOptions += ['input' => 'string', 'scale' => 2];
+                // grouping : le masque du MoneyInput sépare les milliers par
+                // une espace, le transformer doit l'accepter en retour.
+                $fieldOptions += ['input' => 'string', 'scale' => 2, 'grouping' => true];
             }
             $fieldOptions += [
                 'label' => $definition['label'] ?? null,
@@ -81,7 +83,9 @@ final class MethodMappedFieldsType extends AbstractType
         return match ($doctrineType) {
             'boolean' => CheckboxType::class,
             'integer', 'smallint', 'bigint' => IntegerType::class,
-            'decimal', 'float' => NumberType::class,
+            // Les décimaux du PIM sont des montants (grilles tarifaires) :
+            // MoneyType → composant MoneyInput, l'icône € dans le champ.
+            'decimal', 'float' => MoneyType::class,
             'text' => TextareaType::class,
             'json' => StringListType::class,
             default => TextType::class,
