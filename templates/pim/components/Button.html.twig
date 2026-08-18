@@ -1,3 +1,8 @@
+{#- Typography/Icon inlinés via les macros partagées : les boutons sont
+    nombreux sur les pages, un composant par libellé/icône coûtait cher. -#}
+{% import 'pim/components/_typography_markup.html.twig' as typo %}
+{% import 'pim/components/_icon_markup.html.twig' as icon_parts %}
+
 {% set cva = cva({
     base: 'flex items-center focus:outline-none',
     variants: {
@@ -96,19 +101,9 @@
         même — à remonter.
     #}
     {% if icon %}
-        <twig:Typography textColor="{{ iconColor.value }}" class="{{ iconCva.apply({ variant: variant.value, size: iconSize.value, isActive, disabled }) }}">
-            <twig:Icon name="{{ icon }}" class="w-full h-full" />
-        </twig:Typography>
+        <span class="{{ typo.classes('body', iconColor.value, false, false, false, false, false, iconCva.apply({ variant: variant.value, size: iconSize.value, isActive, disabled })) }}">{{ icon_parts.icon(icon, {name: icon, class: 'w-full h-full'}) }}</span>
     {% endif %}
     {% if parentContent|trim is not empty %}
-        <twig:Typography
-            variant="button"
-            textColor="{{ textColor.value }}"
-            center
-            bold
-            class="{{ textCva.apply({ variant: variant.value, disabled }) }}"
-        >
-            {{- parentContent -}}
-        </twig:Typography>
+        <span class="{{ typo.classes('button', textColor.value, true, false, true, false, false, textCva.apply({ variant: variant.value, disabled })) }}">{{- parentContent -}}</span>
     {% endif %}
 </{{ asLink ? 'a' : 'button' }}>

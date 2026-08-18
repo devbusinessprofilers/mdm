@@ -21,13 +21,15 @@
     class="{{ linkCva.apply({ isActive, level }, attributes.render('class')) }}"
     {{ attributes.without('class', 'href') }}
 >
+    {#- Typography/Icon inlinés via les macros partagées : le menu est rendu sur
+        chaque page, un composant par libellé/icône coûtait cher. -#}
+    {% import 'pim/components/_typography_markup.html.twig' as typo %}
+    {% import 'pim/components/_icon_markup.html.twig' as icon_parts %}
     {% if icon %}
         {# Icône centrée et calibrée : à 1em elle flottait en haut de sa boîte. #}
-        <twig:Typography textColor="{{ iconColor.value }}" class="w-6 h-6 flex items-center justify-center shrink-0">
-            <twig:Icon name="{{ icon }}" class="w-5 h-5" />
-        </twig:Typography>
+        <span class="{{ typo.classes('body', iconColor.value, false, false, false, false, false, 'w-6 h-6 flex items-center justify-center shrink-0') }}">{{ icon_parts.icon(icon, {name: icon, class: 'w-5 h-5'}) }}</span>
     {% endif %}
-    <twig:Typography variant="{{ labelVariant.value }}" bold="{{ isLabelBold }}">{{ label }}</twig:Typography>
+    <span class="{{ typo.classes(labelVariant.value, 'dark', isLabelBold) }}">{{ label }}</span>
     {% if notification is defined and notification and notification > 0 %} 
         <twig:Sticker value="{{ notification }}" />
     {% endif %}

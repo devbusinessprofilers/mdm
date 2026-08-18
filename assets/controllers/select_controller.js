@@ -8,6 +8,16 @@ export default class extends Controller {
     selection = [];
 
     connect() {
+        // La liste visible n'est plus rendue côté serveur (seul le prototype
+        // de ligne l'est) : elle est construite ici depuis le JSON des choices.
+        if (this.hasElementPrototypeTarget && this.listTarget.children.length === 0 && this.choicesValue.length > 0) {
+            const listFragment = document.createDocumentFragment();
+            this.choicesValue.forEach((choice, index) => {
+                listFragment.appendChild(this.buildListElement(choice, index, this.defaultSelectionValue.includes(choice.value)));
+            });
+            this.listTarget.appendChild(listFragment);
+        }
+
         this.selection = this.choicesValue.reduce((acc, { label, value }) => {
             if (this.defaultSelectionValue.includes(value)) {
                 acc.push(label);
@@ -17,6 +27,39 @@ export default class extends Controller {
         }, []);
 
         this.syncSelection();
+    }
+
+    buildListElement(choice, index, isActive) {
+        const element = this.elementPrototypeTarget.cloneNode(true);
+
+        const typography = element.querySelector('span');
+        if (typography) {
+            typography.innerText = choice.label;
+        }
+
+        const label = element.querySelector('label');
+        if (label) {
+            const checkbox = label.querySelector('input');
+            if (checkbox) {
+                const uniqueIdentifier = `${this.selectTarget.id}_option_${index}`;
+                label.setAttribute('for', uniqueIdentifier);
+                checkbox.id = uniqueIdentifier;
+
+                if (isActive) {
+                    checkbox.checked = true;
+                }
+            }
+        }
+
+        element.classList.remove('hidden');
+        element.setAttribute('data-select-value-param', choice.value);
+        element.setAttribute('data-select-label-param', choice.label);
+        element.removeAttribute('data-select-target');
+        if (isActive) {
+            element.classList.add('bg-primary-4');
+        }
+
+        return element;
     }
 
     defaultSelectionValueChanged() {
@@ -181,36 +224,8 @@ export default class extends Controller {
             optionPrototype.removeAttribute('data-select-target');
             selectFragment.appendChild(optionPrototype);
 
-            const elementPrototype = this.elementPrototypeTarget.cloneNode(true);
-            const typography = elementPrototype.querySelector('span');
-            if (typography) {
-                typography.innerText = choice.label;
-            }
-
             const isActive = parsedDefaultValues.some((parsed) => parsed?.value === choice.value);
-
-            const label = elementPrototype.querySelector('label');
-            if (label) {
-                const checkbox = label.querySelector('input');
-                if (checkbox) {
-                    const uniqueIdentifier = `${this.selectTarget.id}_option_${index}`;
-                    label.setAttribute('for', uniqueIdentifier);
-                    checkbox.id = uniqueIdentifier;
-
-                    if (isActive) {
-                        checkbox.checked = true;
-                    }
-                }
-            }
-
-            elementPrototype.classList.remove('hidden');
-            elementPrototype.setAttribute('data-select-value-param', choice.value);
-            elementPrototype.setAttribute('data-select-label-param', choice.label);
-            elementPrototype.removeAttribute('data-select-target');
-            if (isActive) {
-                elementPrototype.classList.add('bg-primary-4');
-            }
-            listFragment.appendChild(elementPrototype);
+            listFragment.appendChild(this.buildListElement(choice, index, isActive));
         });
 
         this.selectTarget.appendChild(selectFragment);

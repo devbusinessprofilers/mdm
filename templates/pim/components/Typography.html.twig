@@ -1,3 +1,6 @@
+{#- Les classes des variants body/button + dark sont recopiées en dur dans
+    Form/Select.html.twig et Form/_checkbox_markup.html.twig (inlining de
+    performance) : les synchroniser si elles changent ici. -#}
 {% set cva = cva({
     base: 'antialiased',
     variants: {

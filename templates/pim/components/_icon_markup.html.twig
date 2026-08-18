@@ -1,0 +1,23 @@
+{#-
+    Rendu d'une icône du design-system en macro : même logique de préfixe que le
+    composant Icon (qui délègue ici — source unique), sans le coût d'une
+    instanciation de composant dans les boucles chaudes.
+
+    `attrs` doit reproduire les attributs dans l'ordre où le composant les
+    recevait, y compris `name` (qui atterrit sur le <svg> rendu, faute de
+    propriété correspondante dans la classe Icon).
+-#}
+{% macro icon(name, attrs = {}) %}
+{%- if name in ['amphitheatre', 'balcony', 'beach', 'terrace', 'trad'] -%}
+    {%- set prefix = 'provider-portal-stroke' -%}
+{%- elseif name in ['bg-pin', 'bg-home-pin'] -%}
+    {%- set prefix = 'provider-portal-pin' -%}
+{%- elseif name in ['flag-en', 'flag-fr'] -%}
+    {%- set prefix = 'provider-portal-flags' -%}
+{%- elseif name in ['styled-linkedin', 'styled-analytic', 'styled-mail'] -%}
+    {%- set prefix = 'provider-portal-styled' -%}
+{%- else -%}
+    {%- set prefix = 'provider-portal' -%}
+{%- endif -%}
+{{- ux_icon(prefix ~ ':' ~ name, attrs) -}}
+{% endmacro %}

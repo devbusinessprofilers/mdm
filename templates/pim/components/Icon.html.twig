@@ -1,37 +1,4 @@
-{% set styledIcon = [
-    'styled-linkedin',
-    'styled-analytic',
-    'styled-mail',
-] %}
-
-{% set flagIcon = [
-    'flag-en',
-    'flag-fr',
-] %}
-
-{% set mapIcon = [
-    'bg-pin',
-    'bg-home-pin',
-] %}
-
-{% set strokeIcon = [
-    'amphitheatre',
-    'balcony',
-    'beach',
-    'terrace',
-    'trad',
-] %}
-
-{% if name in strokeIcon %}
-    {% set prefix = 'provider-portal-stroke' %}
-{% elseif name in mapIcon %}
-    {% set prefix = 'provider-portal-pin' %}
-{% elseif name in flagIcon %}
-    {% set prefix = 'provider-portal-flags' %}
-{% elseif name in styledIcon %}
-    {% set prefix = 'provider-portal-styled' %}
-{% else %}
-    {% set prefix = 'provider-portal' %}
-{% endif %}
-
-{{ ux_icon(prefix ~ ':' ~ name, attributes.all()) }}
+{# La logique de préfixe vit dans la macro _icon_markup.html.twig, partagée
+   avec les points chauds qui rendent l'icône sans instancier le composant. #}
+{% import 'pim/components/_icon_markup.html.twig' as icon_parts %}
+{{ icon_parts.icon(name, attributes.all()) }}

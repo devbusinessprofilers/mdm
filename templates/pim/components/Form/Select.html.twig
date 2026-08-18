@@ -1,3 +1,5 @@
+{% import 'pim/components/Form/_checkbox_markup.html.twig' as form_parts %}
+
 {% set wrapperCva = cva({
     base: 'flex gap-2 items-center justify-between border rounded-xs pr-2 w-full',
     variants: {
@@ -49,24 +51,26 @@
         >
             Select Option Prototype
         </option>
-
-        <li
-            {{ stimulus_target('select', 'elementPrototype') }}
-            {{ stimulus_action('select', 'toggleChoice', 'click', {
-                value: '',
-                label: '',
-            }) }}
-            class="{{ optionCva.apply({ selected: false }, 'hidden') }}"
-        >
-            {% if multiple %}
-                <twig:Form:Checkbox id="" name="" checked="{{ false }}">
-                    Select Checkbox Choice Prototype
-                </twig:Form:Checkbox>
-            {% else %}
-                <twig:Typography>Select Choice Prototype</twig:Typography>
-            {% endif %}
-        </li>
     {% endif %}
+
+    {# Prototype de ligne d'option : la liste visible est construite par le
+       contrôleur `select` à partir de ce clone et du JSON des choices — le
+       serveur ne rend plus un <li> (avec ses spans/checkbox) par option,
+       ce qui coûtait cher sur les fiches (20 selects × 20-80 options). #}
+    <li
+        {{ stimulus_target('select', 'elementPrototype') }}
+        {{ stimulus_action('select', 'toggleChoice', 'click', {
+            value: '',
+            label: '',
+        }) }}
+        class="{{ optionCva.apply({ selected: false }, 'hidden') }}"
+    >
+        {% if multiple %}
+            {{ form_parts.checkbox('', '', '1', false, false, [], null, 'Select Checkbox Choice Prototype') }}
+        {% else %}
+            <span class="antialiased text-[0.875rem] leading-[1.375rem] font-sans text-base-text">Select Choice Prototype</span>
+        {% endif %}
+    </li>
 
     <select
         id="{{ id }}"
@@ -112,6 +116,10 @@
             />
         </twig:block>
 
+        {# Ré-import nécessaire : le contenu de <twig:Dropdown> est compilé comme
+           un template embarqué, les macros du template parent n'y sont pas visibles. #}
+        {% import 'pim/components/Form/_checkbox_markup.html.twig' as form_parts %}
+
         {% if tip is not null %}
             <div class="flex items-center gap-2 mx-2 pb-2 mb-2 border-b border-neutral-300">
                 {% if tipIcon is not null %}
@@ -123,36 +131,12 @@
             </div>
         {% endif %}
 
+        {# Liste vide côté serveur : remplie au connect() du contrôleur `select`
+           en clonant le prototype de ligne (voir plus haut). #}
         <ul
             {{ stimulus_target('select', 'list') }}
             class="w-full flex flex-col gap-2 max-h-[214px] overflow-x-visible overflow-y-auto scrollbar"
-        >
-            {% for choice in choices %}
-                <li
-                    {{ stimulus_action('select', 'toggleChoice', 'click', {
-                        value: choice.value,
-                        label: choice.label,
-                    }) }}
-                    class="{{ optionCva.apply({ 'selected': choice.value in selectedValues }) }}"
-                >
-                    {% if multiple %}
-                        {% set uniqueIdentifier = id~'_option_'~loop.index %}
-                        {# WARNING: do not set name here since Symfony form uses it on submit (i.e. map checkbox with form data) #}
-                        <twig:Form:Checkbox
-                            id="{{ uniqueIdentifier }}"
-                            name=""
-                            checked="{{ choice.value in selectedValues }}"
-                        >
-                            {{ choice.label }}
-                        </twig:Form:Checkbox>
-                    {% else %}
-                        <twig:Typography>
-                            {{ choice.label }}
-                        </twig:Typography>
-                    {% endif %}
-                </li>
-            {% endfor %}
-        </ul>
+        ></ul>
 
         <twig:Typography
             data-select-target="noOptions"

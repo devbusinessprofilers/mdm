@@ -1,0 +1,41 @@
+{#-
+    Markup canonique de la case à cocher du design-system.
+
+    Source unique partagée entre le composant Form:Checkbox et la boucle
+    d'options de Form:Select. Rendu des centaines de fois par page fiche :
+    ne PAS ré-introduire de composant <twig:…> ici (l'instanciation d'un
+    composant par option coûtait ~1 s de rendu par page).
+
+    Le <span> du label reprend les classes de Typography (variant body/button,
+    textColor dark) et le ux_icon() reprend l'appel du composant Icon (préfixe
+    provider-portal, attribut name conservé sur le svg) — synchroniser si ces
+    composants changent.
+-#}
+{% macro checkbox(id, name, value, checked, disabled, inputAttributes, wrapperClass, content) %}
+<div class="{{ wrapperClass }}">
+    <label for="{{ id }}" class="flex gap-2 items-start{% if not disabled %} cursor-pointer{% endif %}">
+        <input
+            id="{{ id }}"
+            name="{{ name }}"
+            type="checkbox"
+            class="peer hidden"
+            value="{{ value }}"
+            {% if checked %}checked{% endif %}
+            {% if disabled %}disabled{% endif %}
+            {% for key, attrValue in inputAttributes %}
+                {{ key }}="{{ attrValue }}"
+            {% endfor %}
+        />
+        <div class="w-5 min-w-5 h-5 min-h-5 box-border border border-primary rounded-[0.833px] bg-neutral-100
+            peer-checked:bg-primary peer-checked:border-0 peer-checked:display-children
+            peer-disabled:border-neutral-300
+            peer-checked:peer-disabled:bg-neutral-300"
+        >
+            {{ ux_icon('provider-portal:check', { name: 'check', class: 'text-neutral-100 hidden' }) }}
+        </div>
+        {% if content is not null and content|trim is not empty %}
+            <span class="antialiased text-[0.875rem] leading-[1.375rem] font-sans text-base-text -mt-[2px]">{{ content }}</span>
+        {% endif %}
+    </label>
+</div>
+{% endmacro %}

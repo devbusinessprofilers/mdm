@@ -1,0 +1,47 @@
+{#-
+    Classes du composant Typography, reproduites en macro pour les points chauds
+    (form themes, menu, boutons) où instancier un composant Twig par libellé
+    coûtait cher sur la page fiche.
+
+    Copie de la config cva de Typography.html.twig — SYNCHRONISER les deux si le
+    design-system change. L'ordre reproduit Cva::apply : base → variant →
+    textColor → bold → medium → center → underline → ellipsis → compound
+    (heading-1 + bold) → classes additionnelles. Pas de dédoublonnage : ne pas
+    passer dans `extra` une classe déjà produite par les variantes.
+-#}
+{% macro classes(variant = 'body', textColor = 'dark', bold = false, medium = false, center = false, underline = false, ellipsis = false, extra = null) %}
+{%- set variants = {
+    'body': 'text-[0.875rem] leading-[1.375rem] font-sans',
+    'body-lg': 'text-[1rem] leading-[1.5rem] font-sans',
+    'body-sm': 'text-[0.75rem] leading-[1.25rem] font-sans',
+    'body-xs': 'text-[0.625rem] leading-[1rem] font-sans',
+    'heading-1': 'text-[2rem] leading-[2.5rem] sm:text-[2.5rem] sm:leading-[3rem] font-title',
+    'heading-2': 'text-[1.625rem] leading-[2.125rem] sm:text-[2rem] sm:leading-[2.5rem] font-title',
+    'heading-3': 'text-[1.25rem] leading-[1.875rem] sm:text-[1.375rem] font-title',
+    'subtitle': 'text-[1.25rem] leading-[1.75rem] font-title',
+    'input': 'text-[0.75rem] leading-[1.25rem] font-sans',
+    'button': 'text-[0.875rem] leading-[1.375rem] font-sans',
+} -%}
+{%- set colors = {
+    'controlled': 'text-inherit',
+    'dark': 'text-base-text',
+    'error': 'text-error',
+    'light': 'text-light-text',
+    'neutral-100': 'text-neutral-100',
+    'neutral-400': 'text-neutral-400',
+    'neutral-500': 'text-neutral-500',
+    'neutral-900': 'text-neutral-900',
+    'primary': 'text-primary',
+    'primary-3': 'text-primary-3',
+    'success': 'text-success',
+    'old-gold': 'text-old-gold',
+} -%}
+{{- ('antialiased ' ~ (variants[variant] ?? '') ~ ' ' ~ (colors[textColor] ?? ''))
+    ~ (bold ? ' font-[900]' : '')
+    ~ (medium ? ' font-[600]' : '')
+    ~ (center ? ' block text-center' : '')
+    ~ (underline ? ' underline' : '')
+    ~ (ellipsis ? ' truncate' : '')
+    ~ ('heading-1' == variant and bold ? ' font-[950]' : '')
+    ~ (extra is not empty ? ' ' ~ extra : '') -}}
+{% endmacro %}

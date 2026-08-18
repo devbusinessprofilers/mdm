@@ -25,20 +25,22 @@
         {%- if label is empty -%}
             {%- set label = name|humanize -%}
         {%- endif -%}
+        {#- Classes Typography inlinées (rendu par champ, ~60 fois par fiche) :
+            synchroniser avec Typography.html.twig / _typography_markup.html.twig. -#}
         <label for="{{ id }}"{% if disabled %} class="cursor-not-allowed"{% endif %}>
-            <twig:Typography variant="button" bold>
+            <span class="antialiased text-[0.875rem] leading-[1.375rem] font-sans text-base-text font-[900]">
                 {{- label is same as(false) ? '' : (translation_domain is same as(false) ? label : label|trans({}, translation_domain)) -}}
                 {%- if required %} *{% endif -%}
-            </twig:Typography>
+            </span>
         </label>
     {%- endif -%}
 {%- endblock -%}
 
 {%- block form_help -%}
     {%- if help is not empty -%}
-        <twig:Typography variant="body-sm" textColor="neutral-500">
+        <span class="antialiased text-[0.75rem] leading-[1.25rem] font-sans text-neutral-500">
             {{- translation_domain is same as(false) ? help : help|trans({}, translation_domain) -}}
-        </twig:Typography>
+        </span>
     {%- endif -%}
 {%- endblock -%}
 
@@ -46,7 +48,7 @@
     {%- if errors|length > 0 -%}
         <ul class="flex flex-col gap-1">
             {%- for error in errors -%}
-                <li><twig:Typography variant="body-sm" textColor="error">{{ error.message }}</twig:Typography></li>
+                <li><span class="antialiased text-[0.75rem] leading-[1.25rem] font-sans text-error">{{ error.message }}</span></li>
             {%- endfor -%}
         </ul>
     {%- endif -%}
