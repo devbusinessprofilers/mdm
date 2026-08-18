@@ -217,14 +217,17 @@
                         {% set widgets_section = s.champs|map(c => attribute(form, c)) %}
                         {% for widget in widgets_section|filter(w => 'checkbox' not in w.vars.block_prefixes) %}
                             {% set champ = widget.vars.name %}
-                            {% if widget.vars.prototype is defined %}
-                                <div class="w-full">{{ _self.collection(widget, widget.vars.label ?? champ) }}</div>
-                            {% elseif 'puces' in s.blocs %}
-                                <div class="w-full">{% include 'mdm/fiche/_puces.html.twig' with { widget: widget } only %}</div>
+                            {# Les blocs spécialisés passent AVANT la branche collection
+                               générique : `salles` est aussi une collection et serait
+                               sinon avalée par elle (matrice jamais rendue). #}
+                            {% if 'capacites' in s.blocs and champ == 'salles' %}
+                                <div class="w-full">{% include 'mdm/fiche/_capacites.html.twig' with { widget: widget } only %}</div>
                             {% elseif 'disponibilites' in s.blocs and champ == 'disponibilites' %}
                                 <div class="w-full">{% include 'mdm/fiche/_disponibilites.html.twig' with { widget: widget } only %}</div>
-                            {% elseif 'capacites' in s.blocs and champ == 'salles' %}
-                                <div class="w-full">{% include 'mdm/fiche/_capacites.html.twig' with { widget: widget } only %}</div>
+                            {% elseif 'puces' in s.blocs %}
+                                <div class="w-full">{% include 'mdm/fiche/_puces.html.twig' with { widget: widget } only %}</div>
+                            {% elseif widget.vars.prototype is defined %}
+                                <div class="w-full">{{ _self.collection(widget, widget.vars.label ?? champ) }}</div>
                             {% else %}
                                 {% set est_groupe = widget.vars.compound|default(false) and not widget.vars.expanded|default(false) %}
                                 {% set pleine = est_groupe
