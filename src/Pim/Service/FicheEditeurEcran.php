@@ -149,7 +149,10 @@ final readonly class FicheEditeurEcran
         $choices = [];
         foreach ($this->sites->findActifsOrdonnes() as $site) {
             $mention = $site->obligatoire() ? ' (obligatoire)' : ($site->payant() ? ' (payant)' : '');
-            $choices[$site->groupe()][$site->label().$mention] = $site->id();
+            // Liste plate (l'ordre suit déjà les groupes) : le composant Select
+            // du portail ne rend pas les optgroup, et un select multiple reste
+            // plus lisible qu'une longue liste de cases.
+            $choices[$site->label().$mention] = $site->id();
             if ($site->obligatoire()) {
                 $obligatoires[] = $site->id();
             }
@@ -158,15 +161,15 @@ final readonly class FicheEditeurEcran
 
         return $this->forms->createNamedBuilder('sites_diffusion', options: ['csrf_token_id' => 'sites-'.$fiche->idString()])
             ->add('sites', ChoiceType::class, [
-                'label' => 'Sites de diffusion',
+                // Le titre du bloc porte déjà « Sites de diffusion ».
+                'label' => false,
                 'required' => false,
                 'multiple' => true,
-                'expanded' => true,
+                // Select multiple (composant Select) — les sites obligatoires
+                // sont de toute façon réimposés par soumettreSites().
+                'expanded' => false,
                 'choices' => $choices,
                 'data' => $selection,
-                'choice_attr' => static fn (int $id): array => in_array($id, $obligatoires, true)
-                    ? ['disabled' => 'disabled']
-                    : [],
             ])
             ->add('enregistrer', SubmitType::class, ['label' => 'Enregistrer la diffusion'])
             ->getForm();
