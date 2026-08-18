@@ -540,6 +540,14 @@ prototype du form-collection au même gabarit.
 Décision utilisateur : les onglets Médias restent en l'état (Photos/Documents
 empilés) — l'écart avec les onglets maquette Photos/Plans/Supports est ignoré.
 
+`5e03c1a` + `e293095` — barre d'actions compacte (h-16, trois boutons md) ;
+**bug global réparé** : `@utility bg-border-hover-*` (et focus) ne consomme pas
+`--value()`, Tailwind v4 ne générait donc JAMAIS la classe — au survol des
+boutons outline, le voile blanc du ::before restait et le texte passait blanc
+sur blanc, partout depuis l'import du design system. Utilities renommées en
+dur (`bg-border-hover-primary-gradient`) dans app.css — correctif à remonter
+au portail. « Supprimer » aligné md (BOUTON_SOBRE passe en data-size md).
+
 La fidélité maquette de la fiche Lieu est COUVERTE : les seuls écarts restants
 sont les décisions d'abandon explicites ci-dessus (champs hors Bible, onglets
 Médias) et les fonctions maquette sans back rendues désactivées.
