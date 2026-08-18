@@ -101,9 +101,9 @@ final class LieuType extends AbstractType
                 'setter' => static function (Lieu &$lieu, LieuTarification $value): void {},
             ]);
 
-        $this->collection($builder, 'salles', SalleType::class, 'salles', 'addSalle', 'removeSalle');
-        $this->collection($builder, 'periodesFermeture', PeriodeFermetureType::class, 'periodesFermeture', 'addPeriodeFermeture', 'removePeriodeFermeture');
-        $this->collection($builder, 'acces', AccesLieuType::class, 'acces', 'addAcces', 'removeAcces');
+        $this->collection($builder, 'salles', SalleType::class, 'salles', 'addSalle', 'removeSalle', label: 'Salles');
+        $this->collection($builder, 'periodesFermeture', PeriodeFermetureType::class, 'periodesFermeture', 'addPeriodeFermeture', 'removePeriodeFermeture', label: 'Périodes de fermeture');
+        $this->collection($builder, 'acces', AccesLieuType::class, 'acces', 'addAcces', 'removeAcces', label: 'Accès');
         $this->collection($builder, 'ressources', RessourceLieuType::class, 'ressources', 'addRessource', 'removeRessource', [
             'salle_choices' => $options['data'] instanceof Lieu ? $options['data']->salles()->toArray() : [],
         ]);
@@ -139,9 +139,10 @@ final class LieuType extends AbstractType
      * @param class-string<FormTypeInterface<mixed>> $entryType
      * @param array<string, mixed> $entryOptions
      */
-    private function collection(FormBuilderInterface $builder, string $name, string $entryType, string $getter, string $adder, string $remover, array $entryOptions = []): void
+    private function collection(FormBuilderInterface $builder, string $name, string $entryType, string $getter, string $adder, string $remover, array $entryOptions = [], ?string $label = null): void
     {
         $builder->add($name, CollectionType::class, [
+            'label' => $label,
             'entry_type' => $entryType,
             'entry_options' => $entryOptions,
             'allow_add' => true,

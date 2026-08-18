@@ -93,17 +93,13 @@
             {%- if compound|default(false) -%}
                 {{- libelle -}}
             {%- else -%}
+                {#- La pastille suffit, la légende de carte la décode — le badge
+                    nommant l'autorité sur chaque champ a été retiré (bruit). -#}
                 {%- set autorite = label_attr['data-autorite']|default('MDM') -%}
                 {%- set pastille = { 'MDM': 'bg-primary', 'Salesforce': 'bg-primary-3', 'Prestataire': 'bg-peach' }[autorite]|default('bg-primary') -%}
-                {%- set fond = { 'MDM': 'bg-primary-4', 'Salesforce': 'bg-neutral-200', 'Prestataire': 'bg-error-pastel' }[autorite]|default('bg-primary-4') -%}
-                {%- set texte = { 'MDM': 'text-primary-3!', 'Salesforce': 'text-neutral-500!', 'Prestataire': 'text-neutral-500!' }[autorite]|default('text-primary-3!') -%}
-                <span class="flex items-center gap-2">
+                <span class="flex items-center gap-2" title="{{ { 'MDM': 'Maîtrisé par le MDM', 'Salesforce': 'Lecture seule · Salesforce', 'Prestataire': 'Déclaré par le prestataire' }[autorite]|default(autorite) }}">
                     <span class="w-2 h-2 shrink-0 rounded-full {{ pastille }}"></span>
                     {{- libelle -}}
-                    <span class="flex-1"></span>
-                    <span class="shrink-0 px-2 py-0.5 rounded-full {{ fond }}">
-                        <span class="antialiased text-[0.625rem] leading-[1rem] font-sans text-base-text font-[900] {{ texte }}">{{ autorite }}</span>
-                    </span>
                 </span>
             {%- endif -%}
         </label>

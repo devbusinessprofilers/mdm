@@ -214,7 +214,20 @@
                        _form-theme-fiche). Le libellé d'un groupe de premier niveau est tu :
                        la carte porte déjà le titre. #}
                     <div class="flex flex-row flex-wrap gap-x-6 gap-y-5">
-                        {% set widgets_section = s.champs|map(c => attribute(form, c)) %}
+                        {# Les groupes de premier niveau sont aplatis dans la grille de la
+                           section (les noms de soumission ne changent pas) : leurs cases à
+                           cocher rejoignent ainsi la pile de fin de section — ERP sous
+                           Téléphone. Les sections à bloc spécialisé gardent leurs groupes
+                           entiers, leurs partials attendent le widget complet. #}
+                        {% set aplatir = 'puces' not in s.blocs and 'disponibilites' not in s.blocs and 'capacites' not in s.blocs %}
+                        {% set widgets_section = s.champs|map(c => attribute(form, c))|reduce(
+                            (acc, w) => aplatir
+                                and w.vars.compound|default(false)
+                                and w.vars.prototype is not defined
+                                and not w.vars.expanded|default(false)
+                                ? w.children|reduce((a, e) => a|merge([e]), acc)
+                                : acc|merge([w]),
+                            []) %}
                         {% for widget in widgets_section|filter(w => 'checkbox' not in w.vars.block_prefixes) %}
                             {% set champ = widget.vars.name %}
                             {# Les blocs spécialisés passent AVANT la branche collection
@@ -557,28 +570,66 @@
     <twig:Modal identifier="extraction">
         <div class="flex flex-col gap-4 w-[min(680px,80vw)]">
             <twig:Typography variant="heading-3" element="h3" bold>Extraire d'un document</twig:Typography>
+
+            {# Fil d'étapes maquette, branché sur l'état réel du flux : dépôt,
+               lecture en file/en cours, valeurs à valider (dans l'onglet). #}
+            {% if extraction.active %}
+                {% set etape_extraction = extraction.en_cours ? 2 : (extraction.a_revoir ? 3 : 1) %}
+                <div class="flex flex-row items-center gap-3 flex-wrap">
+                    {% for etiquette in ["Dépôt du document", "Lecture par l'IA", "Validation des valeurs"] %}
+                        {% set actif = loop.index == etape_extraction %}
+                        <span class="flex items-center gap-2">
+                            <span class="w-6 h-6 shrink-0 flex items-center justify-center rounded-full
+                                         {{ actif ? 'bg-linear-(--primary-gradient)' : (loop.index < etape_extraction ? 'bg-primary-4' : 'bg-neutral-200') }}">
+                                <twig:Typography variant="body-xs" bold textColor="{{ actif ? 'neutral-100' : 'neutral-500' }}">{{ loop.index }}</twig:Typography>
+                            </span>
+                            <twig:Typography variant="body-sm" :bold="actif" textColor="{{ actif ? 'neutral-900' : 'neutral-500' }}">{{ etiquette }}</twig:Typography>
+                        </span>
+                        {% if not loop.last %}<span class="w-6 h-px bg-neutral-300" aria-hidden="true"></span>{% endif %}
+                    {% endfor %}
+                </div>
+            {% endif %}
+
             {% if not extraction.active %}
                 <twig:Typography variant="body-sm" textColor="neutral-500">L'extraction de documents n'est pas activée sur cet environnement.</twig:Typography>
             {% elseif extraction.en_cours %}
                 {% set en_cours = extraction.en_cours %}
-                <div class="flex flex-col gap-1 p-4 rounded-md bg-primary-5">
-                    <div class="flex items-center gap-2">
-                        <twig:Typography variant="body" bold element="span">{{ en_cours.document.originalFilename }}</twig:Typography>
-                        <twig:Tag label="{{ extraction_statuts[en_cours.status.value] ?? en_cours.status.value }}" variant="primary-3" size="sm" />
-                        {% if en_cours.pageCount %}<twig:Typography variant="body-sm" textColor="neutral-500">{{ en_cours.pageCount }} page{{ en_cours.pageCount > 1 ? 's' : '' }}</twig:Typography>{% endif %}
+                <div class="flex flex-row items-center gap-4 p-4 rounded-md bg-primary-5">
+                    <twig:Icon name="spinner" class="w-6 h-6 shrink-0 animate-spin text-primary" />
+                    <div class="flex flex-col gap-1 min-w-0">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <twig:Typography variant="body" bold element="span">{{ en_cours.document.originalFilename }}</twig:Typography>
+                            <twig:Tag label="{{ extraction_statuts[en_cours.status.value] ?? en_cours.status.value }}" variant="primary-3" size="sm" />
+                            {% if en_cours.pageCount %}<twig:Typography variant="body-sm" textColor="neutral-500">{{ en_cours.pageCount }} page{{ en_cours.pageCount > 1 ? 's' : '' }}</twig:Typography>{% endif %}
+                        </div>
+                        <twig:Typography variant="body-sm" textColor="neutral-500">
+                            Déposé par {{ en_cours.createdBy }} le {{ en_cours.createdAt|date('d/m/Y à H:i') }}.
+                            La lecture peut prendre plusieurs minutes — vous pouvez continuer à travailler.
+                        </twig:Typography>
                     </div>
-                    <twig:Typography variant="body-sm" textColor="neutral-500">
-                        Déposé par {{ en_cours.createdBy }} le {{ en_cours.createdAt|date('d/m/Y à H:i') }}.
-                        La lecture peut prendre plusieurs minutes — vous pouvez continuer à travailler.
-                    </twig:Typography>
                 </div>
                 <twig:Typography variant="body-sm" textColor="neutral-500">Vous pourrez déposer un autre document quand cette lecture sera terminée.</twig:Typography>
-                <twig:Button variant="outline" size="sm" asLink href="{{ liens.ocr }}">Actualiser</twig:Button>
+                <div class="flex"><twig:Button variant="outline" size="sm" asLink href="{{ liens.ocr }}">Actualiser</twig:Button></div>
             {% elseif extraction.form_depot and is_granted('FICHE_EDIT', fiche) %}
-                <twig:Typography variant="body-sm" textColor="neutral-500">
-                    Déposez une plaquette, un devis ou un plan (PDF). L'IA en lit les valeurs et vous les propose — rien n'est écrit sans votre accord, champ par champ.
-                </twig:Typography>
-                {{ form(extraction.form_depot) }}
+                {% if extraction.a_revoir %}
+                    <twig:Typography variant="body-sm" textColor="neutral-500">
+                        Des valeurs lues attendent votre validation dans l'onglet « Suggestions IA & historique ».
+                        Vous pouvez aussi déposer un nouveau document.
+                    </twig:Typography>
+                {% endif %}
+                {# Zone de dépôt maquette autour du vrai formulaire (catégorie, PDF, envoi). #}
+                <div class="box-border flex flex-col items-center gap-3 px-6 py-8 rounded-sm bg-primary-5
+                            border-[1.4px] border-dashed border-primary">
+                    <twig:Icon name="upload-simple" class="w-8 h-8 text-primary" />
+                    <twig:Typography variant="body" bold>Déposez votre document</twig:Typography>
+                    <twig:Typography variant="body-sm" textColor="neutral-500" center class="text-pretty">
+                        Plaquette, devis ou plan — l'IA en lit les valeurs et vous les propose, rien n'est écrit sans votre accord champ par champ.
+                    </twig:Typography>
+                    <span class="inline-flex px-2 py-0.5 rounded-full bg-primary-4">
+                        <twig:Typography variant="body-xs" bold textColor="primary-3">PDF</twig:Typography>
+                    </span>
+                    <div class="w-full [&_form]:flex [&_form]:flex-col [&_form]:gap-3">{{ form(extraction.form_depot) }}</div>
+                </div>
             {% endif %}
             <div class="flex justify-end">
                 <twig:Modal:TriggerButton variant="text" size="sm" modalIdentifier="extraction"
