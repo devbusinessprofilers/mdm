@@ -62,6 +62,39 @@
     </div>
 {%- endblock -%}
 
+{#- Champ riche de l'éditeur de fiche : le Wysiwyg du thème global, plus la
+    pilule « Suggérer » de la maquette — désactivée, la suggestion IA champ
+    par champ n'a pas de back (rien ne se perd). Branche wysiwyg synchronisée
+    avec textarea_widget du thème global. -#}
+{%- block textarea_widget -%}
+    {%- if attr['data-wysiwyg']|default(false) -%}
+        <div class="flex flex-col gap-2">
+            <twig:Form:Wysiwyg
+                id="{{ id }}"
+                name="{{ full_name }}"
+                value="{{ value }}"
+                :disabled="disabled"
+                :maxLength="attr.maxlength|default(0)"
+                class="[&_.tox-tinymce]:h-[200px]!"
+            />
+            <div class="flex flex-row justify-end">
+                <button type="button" disabled title="En développement"
+                        class="shrink-0 flex items-center gap-1 px-2 py-1 rounded-full bg-primary-4 opacity-60 cursor-not-allowed">
+                    <twig:Icon name="ai" class="w-3.5 h-3.5 text-primary-3" />
+                    <span class="antialiased text-[0.625rem] leading-[1rem] font-sans font-[900] text-primary-3">Suggérer</span>
+                </button>
+            </div>
+        </div>
+    {%- else -%}
+        <twig:Form:Textarea
+            id="{{ id }}"
+            name="{{ full_name }}"
+            value="{{ value }}"
+            :disabled="disabled"
+        />
+    {%- endif -%}
+{%- endblock -%}
+
 {#- Rangée d'une case : la case et son libellé (pastille + badge d'autorité)
     sur la même ligne — l'empilement libellé-au-dessus laissait la moitié de
     la cellule vide. -#}
@@ -94,12 +127,18 @@
                 {{- libelle -}}
             {%- else -%}
                 {#- La pastille suffit, la légende de carte la décode — le badge
-                    nommant l'autorité sur chaque champ a été retiré (bruit). -#}
+                    nommant l'autorité sur chaque champ a été retiré (bruit).
+                    Un champ piloté par Salesforce porte en plus le cadenas
+                    maquette. -#}
                 {%- set autorite = label_attr['data-autorite']|default('MDM') -%}
                 {%- set pastille = { 'MDM': 'bg-primary', 'Salesforce': 'bg-primary-3', 'Prestataire': 'bg-peach' }[autorite]|default('bg-primary') -%}
                 <span class="flex items-center gap-2" title="{{ { 'MDM': 'Maîtrisé par le MDM', 'Salesforce': 'Lecture seule · Salesforce', 'Prestataire': 'Déclaré par le prestataire' }[autorite]|default(autorite) }}">
                     <span class="w-2 h-2 shrink-0 rounded-full {{ pastille }}"></span>
                     {{- libelle -}}
+                    {%- if 'Salesforce' == autorite -%}
+                        <twig:Icon name="lock" class="w-3.5 h-3.5 shrink-0 text-neutral-400"
+                                   title="Champ maîtrisé par Salesforce" />
+                    {%- endif -%}
                 </span>
             {%- endif -%}
         </label>
