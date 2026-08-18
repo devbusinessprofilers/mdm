@@ -39,7 +39,7 @@ final class LieuType extends AbstractType
         $partenaireGereParSf = $data instanceof Lieu
             && $this->salesforce->existePourFiche($data->fiche()->id());
         $builder
-            ->add('label', TextType::class, $this->field('Libellé', 'label', 'changeLabel'))
+            ->add('label', TextType::class, $this->field('Nom du lieu', 'label', 'changeLabel'))
             ->add('businessPremium', CheckboxType::class, [
                 'label' => 'Adhérent Business Premium',
                 'required' => false,

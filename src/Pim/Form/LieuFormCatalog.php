@@ -19,9 +19,10 @@ final class LieuFormCatalog
     public static function general(): array
     {
         return [
+            // Ordre de la maquette : groupe, événements, puis ERP.
             'generaleChainesGroupeHot' => self::choice('GENERALE_CHAINES_GROUPE_HOT', 'Groupe et chaîne hôtelière', true),
-            'generaleEtabRp' => ['label' => 'ERP'],
             'evenementsPredilection' => self::choice('GENERALE_EVENEMENTS_PREDILECTION', 'Événements de prédilection', true),
+            'generaleEtabRp' => ['label' => 'ERP'],
         ];
     }
 

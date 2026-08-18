@@ -63,7 +63,9 @@ final class FicheSectionsCatalogue
         return [
             [
                 'titre' => 'Informations générales',
-                'champs' => ['label', 'businessPremium', 'partenaireBp', 'telephone', 'generaleTypologie', 'generaleWebsiteUrl', 'informationsGenerales'],
+                // Ordre de la maquette (nom, typologie, groupe/événements/ERP,
+                // site web) ; téléphone et cases hors maquette ferment la marche.
+                'champs' => ['label', 'generaleTypologie', 'informationsGenerales', 'generaleWebsiteUrl', 'telephone', 'businessPremium', 'partenaireBp'],
                 'proprietes' => ['label', 'generaleTypologie', 'generaleWebsiteUrl', ...array_keys(LieuFormCatalog::general())],
                 'blocs' => [],
             ],

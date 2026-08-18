@@ -40,34 +40,24 @@
 
 {#- Sous-formulaires : la grille 2 colonnes de la maquette s'applique à chaque
     niveau — champ simple en demi-largeur ; riche, collection ou groupe en
-    pleine largeur. Les cases à cocher consécutives s'empilent par trois dans
-    une demi-colonne pour ne pas clairsemer la grille (même règle dans la
-    boucle des volets de mdm/fiche_editeur). Les champs cachés ne prennent pas
-    de place dans le flux. -#}
+    pleine largeur. Les cases à cocher passent toutes SOUS les autres champs,
+    empilées par trois en demi-colonnes (même règle dans la boucle des volets
+    de mdm/fiche_editeur). Les champs cachés ne prennent pas de place dans le
+    flux. -#}
 {%- block form_rows -%}
     <div class="flex flex-row flex-wrap gap-x-6 gap-y-5">
-        {%- set groupes = form.children|filter(c => not c.rendered)|reduce(
-            (acc, c) => 'checkbox' in c.vars.block_prefixes
-                ? (acc|length > 0 and (acc|last).cases
-                    ? acc|slice(0, acc|length - 1)|merge([{ cases: true, items: (acc|last).items|merge([c]) }])
-                    : acc|merge([{ cases: true, items: [c] }]))
-                : acc|merge([{ cases: false, items: [c] }]),
-            []) -%}
-        {%- for groupe in groupes -%}
-            {%- if groupe.cases -%}
-                {%- for lot in groupe.items|batch(3) -%}
-                    <div class="w-[calc(50%-12px)] flex flex-col gap-3">
-                        {%- for enfant in lot -%}{{- form_row(enfant) -}}{%- endfor -%}
-                    </div>
-                {%- endfor -%}
-            {%- else -%}
-                {%- set enfant = groupe.items|first -%}
-                {%- set pleine = enfant.vars.compound|default(false)
-                    or enfant.vars.prototype is defined
-                    or enfant.vars.attr['data-wysiwyg']|default(false)
-                    or 'textarea' in enfant.vars.block_prefixes -%}
-                {{- form_row(enfant, { row_attr: { class: pleine ? 'w-full' : 'w-[calc(50%-12px)]' } }) -}}
-            {%- endif -%}
+        {%- set enfants = form.children|filter(c => not c.rendered) -%}
+        {%- for enfant in enfants|filter(c => 'checkbox' not in c.vars.block_prefixes) -%}
+            {%- set pleine = enfant.vars.compound|default(false)
+                or enfant.vars.prototype is defined
+                or enfant.vars.attr['data-wysiwyg']|default(false)
+                or 'textarea' in enfant.vars.block_prefixes -%}
+            {{- form_row(enfant, { row_attr: { class: pleine ? 'w-full' : 'w-[calc(50%-12px)]' } }) -}}
+        {%- endfor -%}
+        {%- for lot in enfants|filter(c => 'checkbox' in c.vars.block_prefixes)|batch(3) -%}
+            <div class="w-[calc(50%-12px)] flex flex-col gap-3">
+                {%- for enfant in lot -%}{{- form_row(enfant) -}}{%- endfor -%}
+            </div>
         {%- endfor -%}
     </div>
 {%- endblock -%}
