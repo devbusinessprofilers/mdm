@@ -262,12 +262,14 @@
                                 : acc|merge([w]),
                             []) %}
                         {# Disponibilités et périodes de fermeture : sous la grille, comme
-                           la carte annexe de la maquette. #}
+                           la carte annexe de la maquette. Les noms couvrent le compound
+                           du Lieu et les champs à plat du Restaurant. #}
+                        {% set noms_annexes = ['disponibilites', 'periodesFermeture', 'privatisationTotale', 'privatisationPartielle', 'heureOuverture', 'heureFermeture', 'joursOuverture'] %}
                         {% set widgets_annexes = 'disponibilites' in s.blocs
-                            ? widgets_section|filter(w => w.vars.name in ['disponibilites', 'periodesFermeture'])
+                            ? widgets_section|filter(w => w.vars.name in noms_annexes)
                             : [] %}
                         {% set widgets_section = 'disponibilites' in s.blocs
-                            ? widgets_section|filter(w => w.vars.name not in ['disponibilites', 'periodesFermeture'])
+                            ? widgets_section|filter(w => w.vars.name not in noms_annexes)
                             : widgets_section %}
                         {% for widget in widgets_section|filter(w => 'checkbox' in w.vars.block_prefixes and w.vars.name in cases_en_tete) %}
                             <div class="w-full">{{ form_row(widget) }}</div>
@@ -307,14 +309,51 @@
                 </section>
 
                 {# Carte annexe maquette : les disponibilités et fermetures ont
-                   leur propre carte blanche sous celle des champs. #}
+                   leur propre carte blanche sous celle des champs. Le Lieu passe
+                   par son partial (compound + horaires par jour) ; les autres
+                   gammes rendent leurs champs à plat, périodes comprises. #}
                 {% if widgets_annexes|length > 0 %}
                     {{ _self.volet_ouvre(i, i == section_index) }}
                         {{ _self.volet_titre('Disponibilités', null) }}
-                        {% include 'mdm/fiche/_disponibilites.html.twig' with {
-                            widget: widgets_annexes|filter(w => w.vars.name == 'disponibilites')|first,
-                            periodes: widgets_annexes|filter(w => w.vars.name == 'periodesFermeture')|first|default(null),
-                        } only %}
+                        {% set w_dispo = widgets_annexes|filter(w => w.vars.name == 'disponibilites')|first|default(null) %}
+                        {% set w_periodes = widgets_annexes|filter(w => w.vars.name == 'periodesFermeture')|first|default(null) %}
+                        {% if w_dispo %}
+                            {% include 'mdm/fiche/_disponibilites.html.twig' with { widget: w_dispo, periodes: w_periodes } only %}
+                        {% else %}
+                            {% set annexes_simples = widgets_annexes|filter(w => w.vars.name != 'periodesFermeture') %}
+                            <div class="flex flex-row flex-wrap gap-x-6 gap-y-5">
+                                {% for widget in annexes_simples|filter(w => 'checkbox' not in w.vars.block_prefixes) %}
+                                    {% if widget.vars.expanded|default(false) %}
+                                        {# Choix multiples (jours d'ouverture) : interrupteurs en
+                                           rangée, comme la carte Disponibilités du Lieu. #}
+                                        <div class="w-full flex flex-col gap-2">
+                                            {{ form_label(widget) }}
+                                            <div class="flex flex-row gap-x-6 gap-y-3 items-center flex-wrap">
+                                                {% for choix in widget %}
+                                                    <label class="flex flex-row items-center gap-2 shrink-0 cursor-pointer" for="{{ choix.vars.id }}">
+                                                        <twig:Form:SwitchButton id="{{ choix.vars.id }}" name="{{ choix.vars.full_name }}"
+                                                                                value="{{ choix.vars.value }}" :checked="choix.vars.checked" class="shrink-0" />
+                                                        <twig:Typography variant="input" element="span"
+                                                                         class="text-[0.875rem]! leading-[1.375rem]! whitespace-nowrap">{{ choix.vars.label }}</twig:Typography>
+                                                    </label>
+                                                {% endfor %}
+                                            </div>
+                                            {% do widget.setRendered %}
+                                        </div>
+                                    {% else %}
+                                        {{ form_row(widget, { row_attr: { class: 'w-[calc(50%-12px)]' } }) }}
+                                    {% endif %}
+                                {% endfor %}
+                                {% for lot in annexes_simples|filter(w => 'checkbox' in w.vars.block_prefixes)|batch(3) %}
+                                    <div class="w-[calc(50%-12px)] flex flex-col gap-3">
+                                        {% for widget in lot %}{{ form_row(widget) }}{% endfor %}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            {% if w_periodes %}
+                                {% include 'mdm/fiche/_periodes_fermeture.html.twig' with { periodes: w_periodes } only %}
+                            {% endif %}
+                        {% endif %}
                     </section>
                 {% endif %}
             {% endif %}

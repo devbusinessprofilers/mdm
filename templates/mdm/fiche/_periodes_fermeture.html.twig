@@ -1,0 +1,36 @@
+{#
+    Périodes de fermeture — lignes maquette (nom + dates + corbeille),
+    ajout/retrait par le contrôleur form-collection. Partagé entre la carte
+    Disponibilités du Lieu et celles des autres gammes.
+
+    Variables : `periodes` — la collection de formulaires `periodesFermeture`.
+#}
+{% macro periode(item) %}
+    <fieldset data-form-collection-item class="flex flex-row gap-6 items-end self-stretch flex-wrap border-0 p-0 m-0">
+        <div class="flex-[2] min-w-[200px]">{{ form_row(item.nom, { label: 'Nom de la période' }) }}</div>
+        <div class="flex-1 min-w-[150px]">{{ form_row(item.dateDebut, { label: 'Début de fermeture' }) }}</div>
+        <div class="flex-1 min-w-[150px]">{{ form_row(item.dateFin, { label: 'Fin de fermeture' }) }}</div>
+        <twig:Button variant="text" size="sm" type="button" icon="trash" data-action="form-collection#remove"
+                     class="p-0! px-0! h-10! shrink-0 text-neutral-900 hover:text-error [&>:first-child]:w-[18px] [&>:first-child]:h-[18px]">
+            <span class="sr-only">Supprimer la période</span>
+        </twig:Button>
+    </fieldset>
+{% endmacro %}
+
+<fieldset class="flex flex-col gap-4 border-0 p-0 m-0"
+    data-controller="form-collection"
+    data-form-collection-index-value="{{ periodes|length }}"
+    data-form-collection-prototype-value="{{ _self.periode(periodes.vars.prototype)|e('html_attr') }}"
+>
+    <div class="flex flex-row items-center gap-6">
+        <legend class="contents"><twig:Typography variant="subtitle" bold element="span">Périodes de fermeture</twig:Typography></legend>
+        <span class="flex-1"></span>
+        <twig:Button variant="outline" size="sm" icon="plus" type="button"
+                     data-action="form-collection#add" data-remove-label="Retirer">Ajouter une période</twig:Button>
+    </div>
+    <div class="flex flex-col gap-3" data-form-collection-target="items">
+        {% for item in periodes %}
+            {{ _self.periode(item) }}
+        {% endfor %}
+    </div>
+</fieldset>

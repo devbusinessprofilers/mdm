@@ -505,6 +505,9 @@ final readonly class FicheEditeurEcran
 
         return match (true) {
             str_contains($t, 'information') => 'info-circle',
+            // Avant localisation/accès : « Prestation & accessibilité » contient « acces ».
+            str_contains($t, 'prestation') => 'call-bell',
+            str_contains($t, 'classification') => 'squares-four',
             str_contains($t, 'localisation'), str_contains($t, 'accès'), str_contains($t, 'acces') => 'area',
             str_contains($t, 'descript') => 'note',
             str_contains($t, 'héberg'), str_contains($t, 'heberg') => 'bed',
