@@ -33,8 +33,17 @@ final class RessourceLieuRepository extends ServiceEntityRepository
 
     public function findDocumentForFiche(Fiche $fiche, string $id, ?DocumentUsage $usage = null): ?RessourceLieu
     {
+        // Le champ Doctrine est `usage` (usage_code, chaîne) : documentUsage()
+        // n'est qu'un accesseur dérivé, le filtrer levait UnrecognizedField.
+        // Les alias legacy couvrent les usages renommés par documentUsage().
         $criteria = ['id' => $id, 'fiche' => $fiche, 'nature' => NatureRessource::Document];
-        if (null !== $usage) { $criteria['documentUsage'] = $usage; }
+        if (null !== $usage) {
+            $criteria['usage'] = match ($usage) {
+                DocumentUsage::RseEvidence => ['rse', $usage->value],
+                DocumentUsage::GeneralPlan => ['plan_general', $usage->value],
+                default => $usage->value,
+            };
+        }
 
         return $this->findOneBy($criteria);
     }
