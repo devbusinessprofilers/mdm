@@ -8,39 +8,7 @@ export default class extends Controller {
     // Les modales de paramètres des médias ne sont plus rendues dans la page :
     // elles sont préchargées ici, en arrière-plan, juste après le chargement.
     // Le clic sur une vignette (modal-trigger-button) les trouve déjà dans le DOM.
-    connect() {
-        if (this.modalesUrlValue) this.chargerModales()
-        // Les actions des modales rechargent la page (ou y redirigent) : toute
-        // saisie non enregistrée du formulaire principal serait perdue sans
-        // avertissement. Les formulaires natifs des modales (documents) sont
-        // gardés ici en phase de capture ; les actions fetch le sont dans
-        // leurs méthodes.
-        this.gardeSoumission = event => {
-            if (event.target.closest('[data-modal]') && !this.confirmerPerte()) {
-                event.preventDefault()
-                event.stopPropagation()
-            }
-        }
-        document.addEventListener('submit', this.gardeSoumission, true)
-    }
-
-    disconnect() { document.removeEventListener('submit', this.gardeSoumission, true) }
-
-    confirmerPerte() {
-        const fiche = document.getElementById('form-fiche')
-        if (!fiche || !this.formulaireModifie(fiche)) return true
-        return window.confirm('Des modifications non enregistrées de la fiche seront perdues si vous continuez. Enregistrez d’abord la fiche pour les conserver. Continuer quand même ?')
-    }
-
-    formulaireModifie(form) {
-        return Array.from(form.elements).some(element => {
-            if (element.matches('select')) return Array.from(element.options).some(option => option.selected !== option.defaultSelected)
-            if (element.type === 'checkbox' || element.type === 'radio') return element.checked !== element.defaultChecked
-            if (element.type === 'file') return element.files && element.files.length > 0
-            if (element.matches('input, textarea')) return element.value !== element.defaultValue
-            return false
-        })
-    }
+    connect() { if (this.modalesUrlValue) this.chargerModales() }
 
     async chargerModales() {
         try {
@@ -58,7 +26,7 @@ export default class extends Controller {
     drop(event) { event.preventDefault(); this.dropzoneTarget.classList.remove('is-dragging'); this.uploadFiles(Array.from(event.dataTransfer.files || [])) }
 
     uploadFiles(files) {
-        if (!files.length || !this.confirmerPerte()) return
+        if (!files.length) return
         const body = new FormData()
         files.forEach(file => body.append('photos[]', file))
         this.requestWithProgress(this.uploadUrlValue, body)
@@ -78,16 +46,14 @@ export default class extends Controller {
     replace(event) {
         const file = event.target.files[0]
         if (!file) return
-        if (!this.confirmerPerte()) { event.target.value = ''; return }
         const body = new FormData(); body.append('photo', file)
         this.requestWithProgress(event.target.dataset.url, body)
     }
 
     remove(event) {
-        if (!this.confirmerPerte()) return
         if (window.confirm('Supprimer définitivement cette photo ?')) this.fetch(event.currentTarget.dataset.url, { method: 'DELETE' })
     }
-    retry(event) { if (this.confirmerPerte()) this.fetch(event.currentTarget.dataset.url, { method: 'POST' }) }
+    retry(event) { this.fetch(event.currentTarget.dataset.url, { method: 'POST' }) }
     moveUp(event) { const item = event.currentTarget.closest('[data-lieu-media-target="item"]'); item.previousElementSibling?.before(item); this.saveOrder() }
     moveDown(event) { const item = event.currentTarget.closest('[data-lieu-media-target="item"]'); item.nextElementSibling?.after(item); this.saveOrder() }
     dragstart(event) { this.dragged = event.currentTarget }
@@ -105,14 +71,16 @@ export default class extends Controller {
         const headers = { ...(options.headers || {}), 'X-CSRF-TOKEN': this.tokenValue }
         const response = await window.fetch(url, { ...options, headers })
         if (!response.ok) { const result = await response.json().catch(() => ({})); this.showError(result.error || 'Une erreur est survenue.'); return }
-        if (options.reload !== false) window.location.reload()
+        // Plus de rechargement : le wrapper medias-bloc écoute cet événement
+        // et re-rend le bloc seul — la saisie du formulaire principal survit.
+        if (options.reload !== false) this.dispatch('updated')
     }
 
     requestWithProgress(url, body) {
         this.showError(''); this.progressTarget.hidden = false
         const xhr = new XMLHttpRequest(); xhr.open('POST', url); xhr.setRequestHeader('X-CSRF-TOKEN', this.tokenValue)
         xhr.upload.onprogress = event => { if (event.lengthComputable) this.progressBarTarget.style.width = `${Math.round(event.loaded / event.total * 100)}%` }
-        xhr.onload = () => { if (xhr.status >= 200 && xhr.status < 300) window.location.reload(); else { let result = {}; try { result = JSON.parse(xhr.responseText) } catch (_) {} this.showError(result.error || 'Le téléversement a échoué.'); this.progressTarget.hidden = true } }
+        xhr.onload = () => { if (xhr.status >= 200 && xhr.status < 300) this.dispatch('updated'); else { let result = {}; try { result = JSON.parse(xhr.responseText) } catch (_) {} this.showError(result.error || 'Le téléversement a échoué.'); this.progressTarget.hidden = true } }
         xhr.onerror = () => { this.showError('Le stockage des médias est indisponible.'); this.progressTarget.hidden = true }
         xhr.send(body)
     }

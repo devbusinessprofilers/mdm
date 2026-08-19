@@ -23,6 +23,7 @@ use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
 #[Route('/referentiel/activites/fiche/{id}/documents', name: 'app_pim_activite_document_', requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'])]
@@ -37,7 +38,7 @@ final class ActiviteDocumentController extends AbstractController
         FormFactoryInterface $forms,
         FicheDocumentManager $manager,
         CurrentActorProvider $actor,
-    ): RedirectResponse {
+    ): Response {
         $this->denyAccessUnlessGranted(FicheVoter::EDIT, $activite->fiche());
         $document = $resources->findDocumentForFiche($activite->fiche(), $resourceId, DocumentUsage::CommercialSupport);
         if (null === $document) { throw $this->createNotFoundException('Document introuvable.'); }
@@ -45,20 +46,20 @@ final class ActiviteDocumentController extends AbstractController
             'title' => $document->legende(), 'source' => $document->source(), 'keywords' => $document->keywords(), 'rightsExpiresAt' => $document->rightsExpiresAt(),
         ]);
         $form->handleRequest($request);
+        $erreur = null;
         if (!$form->isSubmitted() || !$form->isValid()) {
-            $this->addFlash('error', 'Le formulaire documentaire est invalide.');
+            $erreur = 'Le formulaire documentaire est invalide.';
         } else {
             /** @var array<string, mixed> $data */
             $data = $form->getData();
             $manager->updateMetadata($document, $activite->fiche(), $data, $actor->id());
-            $this->addFlash('success', 'Document modifié.');
         }
 
-        return $this->redirectToRoute('app_mdm_fiche_gamme', ['gamme' => 'activites', 'id' => $activite->id(), 'section' => FicheSectionsCatalogue::indexBloc(TypeFiche::Activite, 'medias')]);
+        return $this->repondre($request, $activite, $erreur, 'Document modifié.');
     }
 
     #[Route('/{resourceId}/fichier', name: 'replace', methods: ['POST'])]
-    public function replace(Request $request, Activite $activite, string $resourceId, RessourceLieuRepository $resources, FormFactoryInterface $forms, FicheDocumentManager $manager): RedirectResponse
+    public function replace(Request $request, Activite $activite, string $resourceId, RessourceLieuRepository $resources, FormFactoryInterface $forms, FicheDocumentManager $manager): Response
     {
         $this->denyAccessUnlessGranted(FicheVoter::EDIT, $activite->fiche());
         $document = $resources->findDocumentForFiche($activite->fiche(), $resourceId, DocumentUsage::CommercialSupport);
@@ -66,54 +67,51 @@ final class ActiviteDocumentController extends AbstractController
         $form = $forms->createNamed('activite_document_replace_'.$document->id(), LieuDocumentReplaceType::class);
         $form->handleRequest($request);
         $file = $form->isSubmitted() && $form->isValid() ? $form->get('document')->getData() : null;
+        $erreur = null;
         if (!$file instanceof UploadedFile) {
-            $this->addFlash('error', 'Sélectionnez un document valide.');
+            $erreur = 'Sélectionnez un document valide.';
         } else {
             $manager->replace($document, $activite->fiche(), $file, DocumentUsage::CommercialSupport);
-            $this->addFlash('success', 'Fichier remplacé.');
         }
 
-        return $this->redirectToRoute('app_mdm_fiche_gamme', ['gamme' => 'activites', 'id' => $activite->id(), 'section' => FicheSectionsCatalogue::indexBloc(TypeFiche::Activite, 'medias')]);
+        return $this->repondre($request, $activite, $erreur, 'Fichier remplacé.');
     }
 
     #[Route('/{resourceId}/publication', name: 'publication', methods: ['POST'])]
-    public function publication(Request $request, Activite $activite, string $resourceId, RessourceLieuRepository $resources, FormFactoryInterface $forms, FicheDocumentManager $manager): RedirectResponse
+    public function publication(Request $request, Activite $activite, string $resourceId, RessourceLieuRepository $resources, FormFactoryInterface $forms, FicheDocumentManager $manager): Response
     {
         $this->denyAccessUnlessGranted('ROLE_BP_VALIDATOR');
         $document = $resources->findDocumentForFiche($activite->fiche(), $resourceId, DocumentUsage::CommercialSupport);
         if (null === $document) { throw $this->createNotFoundException('Document introuvable.'); }
-        $form = $forms->createNamed('activite_document_publication_'.$document->id(), ActionType::class, null, ['csrf_token_id' => 'activite-document-publication-'.$document->id()]);
+        $form = $forms->createNamed('activite_document_publication_'.$document->id(), ActionType::class, null, ['button_label' => 'Action', 'csrf_token_id' => 'activite-document-publication-'.$document->id()]);
         $form->handleRequest($request);
+        $erreur = null;
         if (!$form->isSubmitted() || !$form->isValid()) {
-            $this->addFlash('error', 'Action de publication invalide.');
+            $erreur = 'Action de publication invalide.';
         } else {
-            try {
-                $manager->togglePublication($document, $activite->fiche());
-                $this->addFlash('success', 'Changement de publication mis en file.');
-            } catch (\DomainException $exception) {
-                $this->addFlash('error', $exception->getMessage());
-            }
+            try { $manager->togglePublication($document, $activite->fiche()); }
+            catch (\DomainException $exception) { $erreur = $exception->getMessage(); }
         }
 
-        return $this->redirectToRoute('app_mdm_fiche_gamme', ['gamme' => 'activites', 'id' => $activite->id(), 'section' => FicheSectionsCatalogue::indexBloc(TypeFiche::Activite, 'medias')]);
+        return $this->repondre($request, $activite, $erreur, 'Changement de publication mis en file.');
     }
 
     #[Route('/{resourceId}/supprimer', name: 'delete', methods: ['POST'])]
-    public function delete(Request $request, Activite $activite, string $resourceId, RessourceLieuRepository $resources, FormFactoryInterface $forms, FicheDocumentManager $manager): RedirectResponse
+    public function delete(Request $request, Activite $activite, string $resourceId, RessourceLieuRepository $resources, FormFactoryInterface $forms, FicheDocumentManager $manager): Response
     {
         $this->denyAccessUnlessGranted(FicheVoter::EDIT, $activite->fiche());
         $document = $resources->findDocumentForFiche($activite->fiche(), $resourceId, DocumentUsage::CommercialSupport);
         if (null === $document) { throw $this->createNotFoundException('Document introuvable.'); }
-        $form = $forms->createNamed('activite_document_delete_'.$document->id(), ActionType::class, null, ['csrf_token_id' => 'activite-document-delete-'.$document->id()]);
+        $form = $forms->createNamed('activite_document_delete_'.$document->id(), ActionType::class, null, ['button_label' => 'Supprimer', 'csrf_token_id' => 'activite-document-delete-'.$document->id()]);
         $form->handleRequest($request);
+        $erreur = null;
         if (!$form->isSubmitted() || !$form->isValid()) {
-            $this->addFlash('error', 'Action de suppression invalide.');
+            $erreur = 'Action de suppression invalide.';
         } else {
             $manager->delete($document, $activite->fiche());
-            $this->addFlash('success', 'Document supprimé.');
         }
 
-        return $this->redirectToRoute('app_mdm_fiche_gamme', ['gamme' => 'activites', 'id' => $activite->id(), 'section' => FicheSectionsCatalogue::indexBloc(TypeFiche::Activite, 'medias')]);
+        return $this->repondre($request, $activite, $erreur, 'Document supprimé.');
     }
 
     #[Route('/{resourceId}/download', name: 'download', methods: ['GET'])]
@@ -126,5 +124,21 @@ final class ActiviteDocumentController extends AbstractController
         $asset = $assets->find($document->damAssetId()) ?? throw $this->createNotFoundException('Fichier DAM introuvable.');
 
         return $this->redirect($storage->temporaryUrl($asset->originalStorageKey(), new \DateTimeImmutable('+10 minutes')));
+    }
+
+    // Le contrôleur medias-bloc soumet les formulaires des modales en fetch et
+    // re-rend le bloc seul : réponse JSON quand la requête vient de lui, flash
+    // + redirection sinon (fallback sans JavaScript). Jamais de flash en AJAX,
+    // il s'afficherait à la navigation suivante.
+    private function repondre(Request $request, Activite $activite, ?string $erreur, string $succes): Response
+    {
+        if ($request->isXmlHttpRequest()) {
+            return null === $erreur
+                ? $this->json(['ok' => true])
+                : $this->json(['error' => $erreur], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+        $this->addFlash(null === $erreur ? 'success' : 'error', $erreur ?? $succes);
+
+        return $this->redirectToRoute('app_mdm_fiche_gamme', ['gamme' => 'activites', 'id' => $activite->id(), 'section' => FicheSectionsCatalogue::indexBloc(TypeFiche::Activite, 'medias')]);
     }
 }

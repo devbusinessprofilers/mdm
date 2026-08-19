@@ -299,7 +299,7 @@ final readonly class FicheEditeurEcran
             // Tous les blocs sont calculés quel que soit l'onglet actif : les
             // onglets basculent côté client sans recharger, le gabarit rend
             // chaque bloc dans le volet de sa section.
-            'medias' => $this->medias($entite, $form),
+            'medias' => $this->medias($entite),
             'affiliations' => array_map(
                 static fn (array $ligne): array => [
                     'affiliation' => $ligne['affiliation'],
@@ -438,19 +438,20 @@ final readonly class FicheEditeurEcran
 
     /**
      * Variables de la gestion des médias (partiels repris des anciennes vues
-     * « modifier », construits par les ViewBuilders existants).
-     *
-     * @param FormInterface<mixed> $form
+     * « modifier », construits par les ViewBuilders existants). Publique : le
+     * bloc est aussi re-rendu seul par FicheMediasBlocController après chaque
+     * action média, sans recharger la page.
      *
      * @return array<string, mixed>
      */
-    private function medias(Lieu|Restaurant|Activite|ServiceEvenementiel $entite, FormInterface $form): array
+    public function medias(Lieu|Restaurant|Activite|ServiceEvenementiel $entite): array
     {
         if ($entite instanceof Lieu) {
-            $vue = $this->lieuVue->form($form, $entite, false);
+            $vue = $this->lieuVue->mediasVars($entite);
 
             return [
                 'gamme' => 'lieu',
+                'bloc_url' => $this->urls->generate('app_pim_lieu_medias_bloc', ['id' => $entite->id()]),
                 'vars' => [
                     'lieu' => $entite,
                     'creation' => false,
@@ -462,10 +463,10 @@ final readonly class FicheEditeurEcran
                 ],
             ];
         }
-        [$vue, $route] = match (true) {
-            $entite instanceof Restaurant => [$this->restaurantVue->form($form, $entite, false), 'app_pim_restaurant_document_download'],
-            $entite instanceof Activite => [$this->activiteVue->form($form, $entite, false), 'app_pim_activite_document_download'],
-            default => [$this->serviceVue->form($form, $entite, false), 'app_pim_service_document_download'],
+        [$documentsVue, $route] = match (true) {
+            $entite instanceof Restaurant => [$this->restaurantVue->documents($entite), 'app_pim_restaurant_document_download'],
+            $entite instanceof Activite => [$this->activiteVue->documents($entite), 'app_pim_activite_document_download'],
+            default => [$this->serviceVue->documents($entite), 'app_pim_service_document_download'],
         };
 
         // Même présentation que le lieu : les vignettes réelles des photos
@@ -473,12 +474,12 @@ final readonly class FicheEditeurEcran
         $assets = [];
         foreach ($this->mediaAssets->findByStringIds(array_map(
             static fn (array $d): string => $d['resource']->damAssetId(),
-            $vue['documents'],
+            $documentsVue,
         )) as $asset) {
             $assets[$asset->id()] = $asset;
         }
         $documents = [];
-        foreach ($vue['documents'] as $document) {
+        foreach ($documentsVue as $document) {
             $documents[] = $document + ['asset' => $assets[$document['resource']->damAssetId()] ?? null];
         }
 
@@ -486,6 +487,7 @@ final readonly class FicheEditeurEcran
 
         return [
             'gamme' => $entite->fiche()->type()->value,
+            'bloc_url' => $this->urls->generate('app_pim_gamme_medias_bloc', ['gamme' => $slug, 'id' => (string) $entite->id()]),
             'vars' => [
                 'photos' => $this->fichePhotos->photos($entite->fiche()),
                 'documents' => $documents,

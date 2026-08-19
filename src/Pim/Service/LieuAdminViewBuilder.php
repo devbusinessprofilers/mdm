@@ -35,29 +35,39 @@ final readonly class LieuAdminViewBuilder
      */
     public function form(FormInterface $form, Lieu $lieu, bool $creation): array
     {
-        // La page ne rend que les vignettes : les modales (et leurs formulaires,
-        // coûteux à construire par photo/document) sont servies par
-        // app_pim_lieu_media_modales et préchargées en arrière-plan après le
-        // chargement — voir modalesVars().
-        $photos = $creation ? [] : $this->photos->photos($lieu);
+        return ['form' => $form, 'lieu' => $lieu, 'creation' => $creation] + ($creation
+            ? ['photos' => [], 'documents' => [], 'document_upload_form' => null, 'media_upload_form' => null, 'media_csrf_token' => null]
+            : $this->mediasVars($lieu));
+    }
 
+    /**
+     * Variables du bloc médias (galerie + tuiles documents), rendues dans
+     * l'éditeur et re-servies seules par app_pim_lieu_medias_bloc après chaque
+     * action média — le bloc se rafraîchit sans recharger la page.
+     * La page ne rend que les vignettes : les modales (et leurs formulaires,
+     * coûteux à construire par photo/document) sont servies par
+     * app_pim_lieu_media_modales et préchargées en arrière-plan après le
+     * chargement — voir modalesVars().
+     *
+     * @return array<string, mixed>
+     */
+    public function mediasVars(Lieu $lieu): array
+    {
         $documents = [];
-        if (!$creation) {
-            foreach ($lieu->ressources() as $resource) {
-                if (NatureRessource::Document !== $resource->nature() || null === $resource->documentUsage()) { continue; }
-                $documents[] = ['view' => $this->documents->resource($resource)];
-            }
+        foreach ($lieu->ressources() as $resource) {
+            if (NatureRessource::Document !== $resource->nature() || null === $resource->documentUsage()) { continue; }
+            $documents[] = ['view' => $this->documents->resource($resource)];
         }
 
         return [
-            'form' => $form, 'lieu' => $lieu, 'creation' => $creation, 'photos' => $photos, 'documents' => $documents,
-            'document_upload_form' => $creation ? null : $this->forms->createNamed('document_upload', LieuDocumentUploadType::class, null, [
+            'photos' => $this->photos->photos($lieu), 'documents' => $documents,
+            'document_upload_form' => $this->forms->createNamed('document_upload', LieuDocumentUploadType::class, null, [
                 'action' => $this->urls->generate('app_pim_lieu_document_upload', ['id' => $lieu->id()]), 'method' => 'POST', 'salles' => $lieu->salles()->toArray(),
             ])->createView(),
-            'media_upload_form' => $creation ? null : $this->forms->createNamed('lieu_photo_upload', LieuPhotoUploadType::class, null, [
+            'media_upload_form' => $this->forms->createNamed('lieu_photo_upload', LieuPhotoUploadType::class, null, [
                 'action' => $this->urls->generate('app_pim_lieu_photo_upload', ['id' => $lieu->id()]), 'method' => 'POST',
             ])->createView(),
-            'media_csrf_token' => $creation ? null : $this->csrfTokens->getToken('lieu-media-'.$lieu->id())->getValue(),
+            'media_csrf_token' => $this->csrfTokens->getToken('lieu-media-'.$lieu->id())->getValue(),
         ];
     }
 

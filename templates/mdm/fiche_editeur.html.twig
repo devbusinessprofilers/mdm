@@ -401,8 +401,15 @@
                 {% endif %}
 
                 {# ---- Médias ---- #}
+                {# Le wrapper medias-bloc rafraîchit son contenu par fetch après
+                   chaque action média (upload, modales photo/document) : plus
+                   aucun rechargement de page, la saisie du formulaire principal
+                   est préservée. Les formulaires natifs des modales soumettent
+                   en AJAX via l'intercepteur du wrapper. #}
                 {% if 'medias' in s.blocs and medias %}
-                    <div>
+                    <div data-controller="medias-bloc"
+                         data-medias-bloc-url-value="{{ medias.bloc_url }}"
+                         data-action="submit->medias-bloc#intercepter lieu-media:updated->medias-bloc#rafraichir">
                         {% if medias.gamme == 'lieu' %}
                             {% include 'pim/lieu/_medias.html.twig' with medias.vars %}
                         {% else %}
