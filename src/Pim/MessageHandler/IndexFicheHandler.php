@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Pim\MessageHandler;
 
 use App\Etl\Service\MarketplaceSyncScheduler;
+use App\Etl\Service\PhotoPublicationGuard;
 use App\Pim\Entity\Fiche;
 use App\Pim\Message\IndexFiche;
 use App\Pim\Message\VerifierAdresseFiche;
@@ -22,6 +23,7 @@ final readonly class IndexFicheHandler
         private FicheRepository $repository,
         private FicheSearchIndexer $indexer,
         private MarketplaceSyncScheduler $marketplaceScheduler,
+        private PhotoPublicationGuard $photoGuard,
         private OutboxPublisherInterface $outbox,
         private GeocodeurAdresses $geocodeurs,
     ) {
@@ -39,6 +41,11 @@ final readonly class IndexFicheHandler
             if (null !== $localisation && $this->geocodeurs->estVerifiable($localisation)) {
                 $this->outbox->enqueue(new VerifierAdresseFiche($fiche->idString()));
             }
+            // Invariant photos avant indexation et diffusion : une fiche
+            // publiée qui ne satisfait plus les obligations (suppression de
+            // photo, retrait de la principale) repasse en cours et quitte la
+            // marketplace.
+            $this->photoGuard->enforce($fiche);
             $this->indexer->index($fiche);
             // Toute mutation de fiche converge ici : point unique de décision
             // de la diffusion marketplace (envoi ou dépublication).

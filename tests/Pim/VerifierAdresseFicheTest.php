@@ -6,7 +6,9 @@ namespace App\Tests\Pim;
 
 use App\Dashboard\Repository\QualiteRepository;
 use App\Pim\Entity\Lieu\Lieu;
+use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Entity\Localisation;
+use App\Pim\Enum\NatureRessource;
 use App\Pim\Message\IndexFiche;
 use App\Pim\Message\VerifierAdresseFiche;
 use App\Pim\MessageHandler\IndexFicheHandler;
@@ -16,6 +18,7 @@ use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\Group;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
+use Symfony\Component\Uid\Ulid;
 
 #[Group('database')]
 final class VerifierAdresseFicheTest extends KernelTestCase
@@ -152,6 +155,16 @@ final class VerifierAdresseFicheTest extends KernelTestCase
         $localisation->changeCodePostal('49590');
         $localisation->changeVille("Fontevraud-l'Abbaye");
         $lieu->changeLocalisation($localisation);
+        // Photos conformes aux obligations : IndexFicheHandler rétrograderait
+        // sinon la fiche publiée (invariant photos) et fausserait le test.
+        for ($i = 0; $i < 4; ++$i) {
+            $resource = new RessourceLieu();
+            $resource->changeDamAssetId((string) new Ulid());
+            $resource->changeNature(NatureRessource::Photo);
+            $resource->changeUsage(0 === $i ? 'PHOTO_PRINCIPALE' : 'PHOTO_DIVERSE');
+            $resource->changePosition($i + 1);
+            $lieu->fiche()->addResource($resource);
+        }
         $lieu->fiche()->publishForImport();
         $this->entityManager->persist($lieu);
         $this->entityManager->flush();

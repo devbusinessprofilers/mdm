@@ -429,6 +429,21 @@ class Fiche
         $this->touch();
     }
 
+    /**
+     * Dépublication technique : les obligations photos (minimum du type et
+     * photo principale) ne sont plus satisfaites, la fiche retourne en cours
+     * jusqu'à remise en conformité puis republication par le circuit normal.
+     */
+    public function unpublishForInsufficientPhotos(): void
+    {
+        if (StatutFiche::Publiee !== $this->status) {
+            throw new \DomainException('Seule une fiche publiée peut être dépubliée.');
+        }
+        $this->status = StatutFiche::EnCours;
+        $this->validationFeedback = 'Dépublication automatique : les obligations photos ne sont plus satisfaites.';
+        $this->touch();
+    }
+
     /** @return list<int> */
     public function valueIdsFor(string $attributeCode): array
     {

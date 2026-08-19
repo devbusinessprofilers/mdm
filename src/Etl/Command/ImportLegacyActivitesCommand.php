@@ -6,7 +6,9 @@ namespace App\Etl\Command;
 
 use App\Etl\Entity\LegacyFicheMapping;
 use App\Etl\Repository\LegacyFicheMappingRepository;
+use App\Etl\Service\ImportPublicationPolicy;
 use App\Pim\Entity\FicheSearchDocument;
+use App\Pim\Enum\TypeFiche;
 use App\Pim\Import\Legacy\LegacyActiviteRowMapper;
 use App\Pim\Import\Legacy\LegacyCsvReader;
 use App\Pim\Import\Legacy\LegacyMappedActivite;
@@ -34,6 +36,7 @@ final class ImportLegacyActivitesCommand extends Command
         private readonly LegacyFicheMappingRepository $mappings,
         private readonly LegacyCsvReader $reader,
         private readonly LegacyActiviteRowMapper $mapper,
+        private readonly ImportPublicationPolicy $publicationPolicy,
         #[Autowire('%kernel.project_dir%')] private readonly string $projectDir,
     ) {
         parent::__construct();
@@ -63,7 +66,7 @@ final class ImportLegacyActivitesCommand extends Command
         $headers = $this->reader->headers($file);
         $known = array_fill_keys($this->mappings->allSyspadIds(), true);
 
-        $counters = ['créées' => 0, 'publiées' => 0, 'brouillons' => 0, 'hors périmètre' => 0, 'déjà importées' => 0, 'erreurs' => 0];
+        $counters = ['créées' => 0, 'publiées' => 0, 'publication différée (photos)' => 0, 'brouillons' => 0, 'hors périmètre' => 0, 'déjà importées' => 0, 'erreurs' => 0];
         $warningCounts = [];
         $errors = [];
         $pendingInBatch = 0;
@@ -110,8 +113,12 @@ final class ImportLegacyActivitesCommand extends Command
             $known[$mapped->syspadId] = true;
 
             ++$counters['créées'];
-            if ($mapped->publish) {
+            $publishable = $mapped->publish
+                && $this->publicationPolicy->allowsPublication(TypeFiche::Activite, $mapped->gamme, $mapped->photosJson);
+            if ($publishable) {
                 ++$counters['publiées'];
+            } elseif ($mapped->publish) {
+                ++$counters['publication différée (photos)'];
             } else {
                 ++$counters['brouillons'];
             }
@@ -119,7 +126,7 @@ final class ImportLegacyActivitesCommand extends Command
                 continue;
             }
 
-            $this->persist($mapped);
+            $this->persist($mapped, $publishable);
             if (++$pendingInBatch >= $batchSize) {
                 $this->entityManager->flush();
                 $this->entityManager->clear();
@@ -156,10 +163,10 @@ final class ImportLegacyActivitesCommand extends Command
         return [] === $errors ? Command::SUCCESS : Command::FAILURE;
     }
 
-    private function persist(LegacyMappedActivite $mapped): void
+    private function persist(LegacyMappedActivite $mapped, bool $publishable): void
     {
         $activite = $mapped->activite;
-        if ($mapped->publish) {
+        if ($publishable) {
             $activite->fiche()->publishForImport();
         }
         $this->entityManager->persist($activite);

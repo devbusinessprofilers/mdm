@@ -6,7 +6,9 @@ namespace App\Etl\Command;
 
 use App\Etl\Entity\LegacyFicheMapping;
 use App\Etl\Repository\LegacyFicheMappingRepository;
+use App\Etl\Service\ImportPublicationPolicy;
 use App\Pim\Entity\FicheSearchDocument;
+use App\Pim\Enum\TypeFiche;
 use App\Pim\Import\Legacy\LegacyCsvReader;
 use App\Pim\Import\Legacy\LegacyMappedRestaurant;
 use App\Pim\Import\Legacy\LegacyRestaurantRowMapper;
@@ -34,6 +36,7 @@ final class ImportLegacyRestaurantsCommand extends Command
         private readonly LegacyFicheMappingRepository $mappings,
         private readonly LegacyCsvReader $reader,
         private readonly LegacyRestaurantRowMapper $mapper,
+        private readonly ImportPublicationPolicy $publicationPolicy,
         #[Autowire('%kernel.project_dir%')] private readonly string $projectDir,
     ) {
         parent::__construct();
@@ -63,7 +66,7 @@ final class ImportLegacyRestaurantsCommand extends Command
         $headers = $this->reader->headers($file);
         $known = array_fill_keys($this->mappings->allSyspadIds(), true);
 
-        $counters = ['créées' => 0, 'publiées' => 0, 'brouillons' => 0, 'hors périmètre' => 0, 'déjà importées' => 0, 'erreurs' => 0];
+        $counters = ['créées' => 0, 'publiées' => 0, 'publication différée (photos)' => 0, 'brouillons' => 0, 'hors périmètre' => 0, 'déjà importées' => 0, 'erreurs' => 0];
         $warningCounts = [];
         $errors = [];
         $pendingInBatch = 0;
@@ -110,8 +113,12 @@ final class ImportLegacyRestaurantsCommand extends Command
             $known[$mapped->syspadId] = true;
 
             ++$counters['créées'];
-            if ($mapped->publish) {
+            $publishable = $mapped->publish
+                && $this->publicationPolicy->allowsPublication(TypeFiche::Restaurant, $mapped->gamme, $mapped->photosJson);
+            if ($publishable) {
                 ++$counters['publiées'];
+            } elseif ($mapped->publish) {
+                ++$counters['publication différée (photos)'];
             } else {
                 ++$counters['brouillons'];
             }
@@ -119,7 +126,7 @@ final class ImportLegacyRestaurantsCommand extends Command
                 continue;
             }
 
-            $this->persist($mapped);
+            $this->persist($mapped, $publishable);
             if (++$pendingInBatch >= $batchSize) {
                 $this->entityManager->flush();
                 $this->entityManager->clear();
@@ -156,10 +163,10 @@ final class ImportLegacyRestaurantsCommand extends Command
         return [] === $errors ? Command::SUCCESS : Command::FAILURE;
     }
 
-    private function persist(LegacyMappedRestaurant $mapped): void
+    private function persist(LegacyMappedRestaurant $mapped, bool $publishable): void
     {
         $restaurant = $mapped->restaurant;
-        if ($mapped->publish) {
+        if ($publishable) {
             $restaurant->fiche()->publishForImport();
         }
         $this->entityManager->persist($restaurant);

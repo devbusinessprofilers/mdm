@@ -49,15 +49,18 @@ final class ImportLegacyLieuxCommandTest extends KernelTestCase
         $tester->execute(['--file' => $file]);
         self::assertSame(0, $tester->getStatusCode(), $tester->getDisplay());
 
-        self::assertSame(2, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM pim_fiche'));
-        self::assertSame(2, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM etl_legacy_fiche'));
+        self::assertSame(3, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM pim_fiche'));
+        self::assertSame(3, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM etl_legacy_fiche'));
         self::assertSame('publiee', $this->connection->fetchOne("SELECT f.status FROM pim_fiche f JOIN etl_legacy_fiche m ON m.fiche_id = f.id WHERE m.syspad_id = 256"));
+        // Publié CSV mais photos annoncées sous le minimum : publication différée.
+        self::assertSame('en_cours', $this->connection->fetchOne("SELECT f.status FROM pim_fiche f JOIN etl_legacy_fiche m ON m.fiche_id = f.id WHERE m.syspad_id = 400"));
+        self::assertStringContainsString('publication différée (photos)', $tester->getDisplay());
         // Le code fiche reprend l'Id syspad.
         self::assertSame(256, (int) $this->connection->fetchOne("SELECT f.code FROM pim_fiche f JOIN etl_legacy_fiche m ON m.fiche_id = f.id WHERE m.syspad_id = 256"));
         self::assertSame(300, (int) $this->connection->fetchOne("SELECT f.code FROM pim_fiche f JOIN etl_legacy_fiche m ON m.fiche_id = f.id WHERE m.syspad_id = 300"));
         self::assertSame('en_cours', $this->connection->fetchOne("SELECT f.status FROM pim_fiche f JOIN etl_legacy_fiche m ON m.fiche_id = f.id WHERE m.syspad_id = 300"));
         self::assertSame(1, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM pim_salle'));
-        self::assertSame(2, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM pim_fiche_search'));
+        self::assertSame(3, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM pim_fiche_search'));
         self::assertNotNull($this->connection->fetchOne('SELECT photos_json FROM etl_legacy_fiche WHERE syspad_id = 256'));
         // La description multiligne est conservée.
         $desc = (string) $this->connection->fetchOne('SELECT desc_generale FROM pim_lieu l JOIN etl_legacy_fiche m ON m.fiche_id = l.id WHERE m.syspad_id = 256');
@@ -67,7 +70,7 @@ final class ImportLegacyLieuxCommandTest extends KernelTestCase
         $tester->execute(['--file' => $file]);
         self::assertSame(0, $tester->getStatusCode(), $tester->getDisplay());
         self::assertStringContainsString('déjà importées', $tester->getDisplay());
-        self::assertSame(2, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM pim_fiche'));
+        self::assertSame(3, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM pim_fiche'));
     }
 
     public function testDryRunWritesNothing(): void
@@ -94,8 +97,9 @@ final class ImportLegacyLieuxCommandTest extends KernelTestCase
     {
         $headers = ['Id syspad', 'Publié / non publié', 'Nom Français', 'Gamme', 'Classification', 'Thématique', 'Nombre de chambres', 'Pays', 'Ville', 'Salle', 'Description générale', 'Photos'];
         $rows = [
-            ['256', 'true', 'Le Café de Paris', 'Hôtel', '★★★★', '["Mer"]', '19', 'France', 'Biarritz', '', "ligne 1\nligne 2", '{"master":["x/master/1.jpg"],"chambre":["x/chambre/1.jpg"]}'],
+            ['256', 'true', 'Le Café de Paris', 'Hôtel', '★★★★', '["Mer"]', '19', 'France', 'Biarritz', '', "ligne 1\nligne 2", '{"master":["x/master/1.jpg"],"chambre":["x/chambre/1.jpg","x/chambre/2.jpg","x/chambre/3.jpg"]}'],
             ['999', 'true', 'Bistrot exclu', 'Restaurant', '', '', '', 'France', 'Paris', '', '', ''],
+            ['400', 'true', 'Grange sans photos', 'Lieu', '', '', '', 'France', 'Reims', '', '', '{"master":["x/master/1.jpg"]}'],
             ['300', 'false', 'Domaine du Lac', 'Lieu', '', '["Lac","Pas de Thème"]', '', 'France', 'Annecy', '{"1":{"Nom":"Grande salle","Superficie Salle en m2":"200","Capacité en Théâtre / Conférence":"150","Lumière du jour":"1","Accès PMR":"0","Dansant":"0"}}', 'Au bord du lac.', ''],
         ];
         $path = tempnam(sys_get_temp_dir(), 'mdm-legacy-csv-');

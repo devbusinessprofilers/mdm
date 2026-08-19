@@ -82,6 +82,16 @@ final class LegacyPhotoCatalog
                 }
             }
         }
+        // Activités et services : les exports legacy n'ont souvent pas de
+        // catégorie master — la première photo devient alors la principale,
+        // exigée par la soumission et la diffusion marketplace.
+        if (
+            in_array($gamme, [self::GAMME_ACTIVITE, self::GAMME_SERVICE], true)
+            && [] !== $ordered
+            && !in_array('PHOTO_PRINCIPALE', array_column($ordered, 'usage'), true)
+        ) {
+            $ordered[0]['usage'] = 'PHOTO_PRINCIPALE';
+        }
         $entries = [];
         $skipped = [];
         foreach ($ordered as $position => $entry) {
