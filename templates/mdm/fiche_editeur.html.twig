@@ -292,6 +292,7 @@
                                 {% set est_groupe = widget.vars.compound|default(false) and not widget.vars.expanded|default(false) %}
                                 {% set pleine = est_groupe
                                     or widget.vars.attr['data-wysiwyg']|default(false)
+                                    or widget.vars.attr['data-dropzone']|default(false)
                                     or 'textarea' in widget.vars.block_prefixes %}
                                 {% set rangee = { class: pleine ? 'w-full' : 'w-[calc(50%-12px)]' } %}
                                 {# label: false seulement pour les groupes — un label: null
