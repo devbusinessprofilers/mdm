@@ -9,6 +9,7 @@ use App\Pim\Entity\Activite\Activite;
 use App\Pim\Entity\Fiche;
 use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Entity\Lieu\RessourceLieu;
+use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Enum\NatureRessource;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
@@ -64,6 +65,7 @@ final class PhotosConformiteCommandTest extends KernelTestCase
         $conforme = $this->publishedLieu('Lieu conforme', photos: 4, withPrincipale: true);
         $incomplet = $this->publishedLieu('Lieu incomplet', photos: 2, withPrincipale: true);
         $activite = $this->publishedActivite('Activité sans principale', photos: 2, withPrincipale: false);
+        $restaurant = $this->publishedRestaurant('Restaurant sans principale', photos: 1, withPrincipale: false);
 
         $tester = $this->tester();
         $tester->execute(['--appliquer' => true]);
@@ -76,6 +78,15 @@ final class PhotosConformiteCommandTest extends KernelTestCase
             (int) $this->connection->fetchOne(
                 "SELECT COUNT(*) FROM pim_ressource_lieu WHERE usage_code = 'PHOTO_PRINCIPALE' AND fiche_id = ?",
                 [$activite->id()->toBinary()],
+            ),
+        );
+        // Le restaurant reçoit aussi sa principale et reste publié.
+        self::assertSame('publiee', $this->statutEnBase($restaurant));
+        self::assertSame(
+            1,
+            (int) $this->connection->fetchOne(
+                "SELECT COUNT(*) FROM pim_ressource_lieu WHERE usage_code = 'PHOTO_PRINCIPALE' AND fiche_id = ?",
+                [$restaurant->id()->toBinary()],
             ),
         );
         // Le lieu sous le minimum est rétrogradé, le conforme reste publié.
@@ -114,6 +125,19 @@ final class PhotosConformiteCommandTest extends KernelTestCase
         return $fiche;
     }
 
+    private function publishedRestaurant(string $label, int $photos, bool $withPrincipale): Fiche
+    {
+        $restaurant = new Restaurant();
+        $restaurant->changeLabel($label);
+        $fiche = $restaurant->fiche();
+        $this->addPhotos($fiche, $photos, $withPrincipale);
+        $fiche->publishForImport();
+        $this->entityManager->persist($restaurant);
+        $this->entityManager->flush();
+
+        return $fiche;
+    }
+
     private function addPhotos(Fiche $fiche, int $photos, bool $withPrincipale): void
     {
         for ($i = 0; $i < $photos; ++$i) {
@@ -144,6 +168,7 @@ final class PhotosConformiteCommandTest extends KernelTestCase
                 'pim_lieu_tarification',
                 'pim_lieu',
                 'pim_activite',
+                'pim_restaurant',
                 'pim_fiche',
                 'pim_localisation',
             ] as $table

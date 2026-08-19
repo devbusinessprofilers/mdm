@@ -158,7 +158,7 @@ Sources : chemins relatifs du JSON « Photos », fichiers dans `/var/legacy-imag
 |---|---|---|
 | master (1ʳᵉ) | PHOTO_PRINCIPALE | PHOTO_PRINCIPALE |
 | master (suivantes) | PHOTO_DIVERSE | PHOTO_DIVERSE |
-| (aucun master) | — | 1ʳᵉ photo → PHOTO_PRINCIPALE (activités/services, pas Restaurant) |
+| (aucun master) | — | 1ʳᵉ photo → PHOTO_PRINCIPALE (activités/services/restaurants) |
 | facade | PHOTO_FACADE | PHOTO_DIVERSE |
 | chambre | PHOTO_CHAMBRE | PHOTO_DIVERSE |
 | restaurant | PHOTO_RESTAURATION | PHOTO_DIVERSE |

@@ -91,25 +91,23 @@ final class LegacyPhotoCatalogTest extends TestCase
         self::assertSame([], $this->catalog->entries('pas du json', 'Lieu')['entries']);
     }
 
-    public function testFirstPhotoBecomesPrincipaleForActiviteWithoutMaster(): void
+    public function testFirstPhotoBecomesPrincipaleForFicheGammesWithoutMaster(): void
     {
         $json = json_encode(['divers' => ['x/divers/1.jpg', 'x/divers/2.jpg']], JSON_THROW_ON_ERROR);
-        foreach (['Idée', 'Prestataires de service'] as $gamme) {
+        foreach (['Idée', 'Prestataires de service', 'Restaurant'] as $gamme) {
             $result = $this->catalog->entries($json, $gamme);
             $usages = array_map(static fn (array $entry): string => $entry['usage'], $result['entries']);
             self::assertSame(['PHOTO_PRINCIPALE', 'PHOTO_DIVERSE'], $usages, $gamme);
         }
     }
 
-    public function testNoPrincipalePromotionForLieuAndRestaurantWithoutMaster(): void
+    public function testNoPrincipalePromotionForLieuWithoutMaster(): void
     {
         $json = json_encode(['divers' => ['x/divers/1.jpg']], JSON_THROW_ON_ERROR);
-        foreach (['Lieu', 'Restaurant'] as $gamme) {
-            $usages = array_map(
-                static fn (array $entry): string => $entry['usage'],
-                $this->catalog->entries($json, $gamme)['entries'],
-            );
-            self::assertNotContains('PHOTO_PRINCIPALE', $usages, $gamme);
-        }
+        $usages = array_map(
+            static fn (array $entry): string => $entry['usage'],
+            $this->catalog->entries($json, 'Lieu')['entries'],
+        );
+        self::assertNotContains('PHOTO_PRINCIPALE', $usages);
     }
 }

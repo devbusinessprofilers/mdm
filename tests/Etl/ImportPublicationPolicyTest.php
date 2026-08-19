@@ -43,16 +43,12 @@ final class ImportPublicationPolicyTest extends TestCase
         self::assertFalse($this->policy->allowsPublication(TypeFiche::Restaurant, 'Restaurant', ''));
     }
 
-    public function testActiviteFirstPhotoCountsAsPrincipale(): void
+    public function testFirstPhotoCountsAsPrincipaleForFicheGammes(): void
     {
         // Pas de catégorie master : la première photo est promue principale.
         self::assertTrue($this->policy->allowsPublication(TypeFiche::Activite, 'Idée', '{"divers":["a.jpg"]}'));
         self::assertTrue($this->policy->allowsPublication(TypeFiche::ServiceEvenementiel, 'Prestataires de service', '{"divers":["a.jpg"]}'));
-    }
-
-    public function testRestaurantWithoutMasterStaysDraft(): void
-    {
-        self::assertFalse($this->policy->allowsPublication(TypeFiche::Restaurant, 'Restaurant', '{"divers":["a.jpg"]}'));
+        self::assertTrue($this->policy->allowsPublication(TypeFiche::Restaurant, 'Restaurant', '{"divers":["a.jpg"]}'));
         self::assertTrue($this->policy->allowsPublication(TypeFiche::Restaurant, 'Restaurant', '{"master":["a.jpg"]}'));
     }
 }
