@@ -118,7 +118,13 @@ final readonly class FicheEditeurEcran
      */
     public function soumettreSection(Request $request, Lieu|Restaurant|Activite|ServiceEvenementiel $entite, FormInterface $form): bool
     {
-        $data = $request->request->all($form->getName());
+        // Les fichiers déposés (dropzones des sections Médias) arrivent dans
+        // $request->files : sans cette fusion, submit() ne voit jamais les
+        // uploads et les ignore en silence.
+        $data = array_replace_recursive(
+            $request->request->all($form->getName()),
+            $request->files->all($form->getName()),
+        );
         if ([] === $data) {
             return false;
         }

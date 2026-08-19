@@ -8,10 +8,12 @@ use App\Account\Entity\User;
 use App\Pim\Entity\Activite\Activite;
 use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Entity\Service\ServiceEvenementiel;
+use App\Shared\Service\PrivateObjectStorageInterface;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\Group;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 /** Listes et éditeurs par gamme (Restaurant, Activité, Service) sur le patron du Lieu. */
 #[Group('database')]
@@ -122,12 +124,78 @@ final class FicheGammeEditeurTest extends WebTestCase
         self::assertSelectorTextContains('nav[aria-label="Sections de la fiche"]', 'zone d\'intervention');
     }
 
+    // Le dépôt de supports commerciaux passe par le formulaire principal de la
+    // fiche : la soumission partielle doit fusionner $request->files, sinon les
+    // fichiers sont ignorés en silence (fiche « enregistrée », aucun document).
+    public function testDepotSupportCommercialParLaSectionMedias(): void
+    {
+        $client = self::createClient();
+        // Le stub de stockage doit survivre aux deux requêtes (GET puis POST) :
+        // sans ça, le reboot du kernel entre les requêtes le remplace par le
+        // vrai client S3, qui échoue en FilesystemException.
+        $client->disableReboot();
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $this->connection = self::getContainer()->get(Connection::class);
+        $this->clearTables();
+        self::getContainer()->set(PrivateObjectStorageInterface::class, new class implements PrivateObjectStorageInterface {
+            public function write(string $key, string $contents, array $options = []): void {}
+            public function writeStream(string $key, mixed $stream, array $options = []): void {}
+            public function read(string $key): string { return ''; }
+            public function readStream(string $key): mixed { $stream = fopen('php://temp', 'r+b'); if (false === $stream) { throw new \RuntimeException('Flux temporaire indisponible.'); } return $stream; }
+            public function exists(string $key): bool { return false; }
+            public function temporaryUrl(string $key, \DateTimeInterface $expiresAt): string { return 'https://private.example.test/'.$key; }
+            public function delete(string $key): void {}
+            public function deleteDirectory(string $prefix): void {}
+        });
+
+        $user = new User('support@example.test', ['ROLE_BP_VALIDATOR']);
+        $user->setPassword('not-used-by-login-user');
+        $entityManager->persist($user);
+        $service = new ServiceEvenementiel();
+        $service->changeLabel('Service à supports');
+        $entityManager->persist($service);
+        $entityManager->flush();
+        $client->loginUser($user);
+
+        $pdf = tempnam(sys_get_temp_dir(), 'mdm-support-');
+        self::assertIsString($pdf);
+        file_put_contents($pdf, "%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF");
+
+        $crawler = $client->request('GET', '/referentiel/services/fiche/'.$service->id());
+        self::assertResponseIsSuccessful();
+        $form = $crawler->filter('button[form="form-fiche"]')->form();
+        $values = $form->getPhpValues();
+        $nom = (string) array_key_first($values);
+        $values[$nom]['supportTitle'] = 'Plaquette 2026';
+        $values[$nom]['supportSource'] = 'Prestataire';
+        $fichiers = [$nom => ['supportsCommerciaux' => [
+            new UploadedFile($pdf, 'plaquette.pdf', 'application/pdf', null, true),
+        ]]];
+        $client->request($form->getMethod(), $form->getUri(), $values, $fichiers);
+        self::assertResponseRedirects();
+        @unlink($pdf);
+
+        $document = $this->connection->fetchAssociative(
+            "SELECT nature, usage_code, legende, source FROM pim_ressource_lieu",
+        );
+        self::assertIsArray($document, 'Le support déposé doit créer une ressource document.');
+        self::assertSame('document', $document['nature']);
+        self::assertSame('PJ_SUPPORT_COMMERCIAUX', $document['usage_code']);
+        self::assertSame('Plaquette 2026', $document['legende']);
+        self::assertSame('Prestataire', $document['source']);
+        self::assertSame(1, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM dam_media_asset'));
+    }
+
     private function clearTables(): void
     {
         $this->connection->executeStatement('DELETE FROM pim_fiche_site_diffusion');
         $this->connection->executeStatement('DELETE FROM pim_fiche_affiliation');
         $this->connection->executeStatement('DELETE FROM pim_fiche_collaborateur');
         $this->connection->executeStatement('DELETE FROM pim_ressource_lieu');
+        $this->connection->executeStatement('DELETE FROM dam_media_duplicate_alert');
+        $this->connection->executeStatement('DELETE FROM dam_media_rendition');
+        $this->connection->executeStatement('DELETE FROM dam_media_phash_band');
+        $this->connection->executeStatement('DELETE FROM dam_media_asset');
         $this->connection->executeStatement('DELETE FROM pim_restaurant_salle');
         $this->connection->executeStatement('DELETE FROM pim_restaurant_periode_fermeture');
         $this->connection->executeStatement('DELETE FROM pim_restaurant_acces');
