@@ -59,9 +59,11 @@ final readonly class RechercheEntrepriseClient
         /** @var array<string, mixed> $siege */
         $siege = \is_array($result['siege'] ?? null) ? $result['siege'] : [];
         $siren = self::string($result['siren'] ?? null);
+        $dirigeant = self::dirigeantPrincipal($result['dirigeants'] ?? null);
 
         return new EntrepriseInfo(
             denomination: self::string($result['nom_complet'] ?? null) ?? self::string($result['nom_raison_sociale'] ?? null),
+            raisonSociale: self::string($result['nom_raison_sociale'] ?? null) ?? self::string($result['nom_complet'] ?? null),
             siren: $siren,
             siret: self::string($siege['siret'] ?? null),
             numeroTva: self::numeroTva($siren),
@@ -70,7 +72,35 @@ final readonly class RechercheEntrepriseClient
             ville: self::string($siege['libelle_commune'] ?? null),
             latitude: self::string($siege['latitude'] ?? null),
             longitude: self::string($siege['longitude'] ?? null),
+            dirigeantPrenom: $dirigeant['prenom'] ?? null,
+            dirigeantNom: $dirigeant['nom'] ?? null,
         );
+    }
+
+    /**
+     * Premier dirigeant personne physique : candidat signataire de la convention.
+     *
+     * @return array{prenom: ?string, nom: ?string}|null
+     */
+    private static function dirigeantPrincipal(mixed $dirigeants): ?array
+    {
+        if (!\is_array($dirigeants)) { return null; }
+        foreach ($dirigeants as $dirigeant) {
+            if (!\is_array($dirigeant) || 'personne physique' !== ($dirigeant['type_de_dirigeant'] ?? null)) {
+                continue;
+            }
+            $nom = self::string($dirigeant['nom'] ?? null);
+            // L'API concatène les prénoms ("Jean, Marie") : seul l'usuel nous intéresse.
+            $prenoms = self::string($dirigeant['prenoms'] ?? null) ?? self::string($dirigeant['prenom'] ?? null);
+            $prenom = null === $prenoms ? null : self::string(explode(',', $prenoms)[0]);
+            if (null === $nom && null === $prenom) {
+                continue;
+            }
+
+            return ['prenom' => $prenom, 'nom' => $nom];
+        }
+
+        return null;
     }
 
     /** @param array<string, mixed> $siege */

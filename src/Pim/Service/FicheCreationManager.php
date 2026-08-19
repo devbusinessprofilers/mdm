@@ -276,14 +276,35 @@ final readonly class FicheCreationManager
         return $localisation;
     }
 
+    /** Pré-remplit l'onglet « Facturation & partenariat » depuis l'annuaire sans écraser la saisie. */
     private static function enrichAdministratif(Lieu $lieu, EntrepriseInfo $entreprise): void
     {
         $administratif = $lieu->administratif();
-        if (null === $administratif->infoLegaleSiret()) {
-            $administratif->changeInfoLegaleSiret($entreprise->siret);
+        foreach ([
+            // Informations légales : le siège fait foi (l'annuaire ne référence que la France).
+            ['infoLegaleNom', 'changeInfoLegaleNom', $entreprise->raisonSociale],
+            ['infoLegaleRuePostal', 'changeInfoLegaleRuePostal', $entreprise->rue],
+            ['infoLegaleCodePostal', 'changeInfoLegaleCodePostal', $entreprise->codePostal],
+            ['infoLegaleVille', 'changeInfoLegaleVille', $entreprise->ville],
+            ['inforLegalePays', 'changeInforLegalePays', 'France'],
+            ['infoLegaleSiret', 'changeInfoLegaleSiret', $entreprise->siret],
+            ['infoLegaleNumTva', 'changeInfoLegaleNumTva', $entreprise->numeroTva],
+            // Adresse de facturation : le siège par défaut, ajustable ensuite dans l'onglet.
+            ['adresseFacturationNom', 'changeAdresseFacturationNom', $entreprise->raisonSociale],
+            ['adresseFacturationRuePostal', 'changeAdresseFacturationRuePostal', $entreprise->rue],
+            ['adresseFacturationCodePostal', 'changeAdresseFacturationCodePostal', $entreprise->codePostal],
+            ['adresseFacturationVille', 'changeAdresseFacturationVille', $entreprise->ville],
+            ['adresseFacturationPays', 'changeAdresseFacturationPays', 'France'],
+            ['adresseFacturationNumTva', 'changeAdresseFacturationNumTva', $entreprise->numeroTva],
+        ] as [$getter, $setter, $value]) {
+            if (null === $administratif->{$getter}()) {
+                $administratif->{$setter}($value);
+            }
         }
-        if (null === $administratif->infoLegaleNumTva()) {
-            $administratif->changeInfoLegaleNumTva($entreprise->numeroTva);
+        // Signataire proposé = dirigeant principal ; jamais si un nom ou prénom est déjà saisi.
+        if (null === $administratif->signatairePrenom() && null === $administratif->signataireNom()) {
+            $administratif->changeSignatairePrenom($entreprise->dirigeantPrenom);
+            $administratif->changeSignataireNom($entreprise->dirigeantNom);
         }
     }
 }

@@ -21,8 +21,13 @@ final class RechercheEntrepriseClientTest extends TestCase
             return 1 === count($requests)
                 ? new MockResponse('{"results": []}')
                 : new MockResponse(json_encode(['results' => [[
-                    'nom_complet' => 'BUSINESS PROFILERS',
+                    'nom_complet' => 'BUSINESS PROFILERS (BP)',
+                    'nom_raison_sociale' => 'BUSINESS PROFILERS',
                     'siren' => '480674100',
+                    'dirigeants' => [
+                        ['type_de_dirigeant' => 'personne morale', 'denomination' => 'HOLDING BP'],
+                        ['type_de_dirigeant' => 'personne physique', 'nom' => 'DURAND', 'prenoms' => 'JEAN, MARIE', 'qualite' => 'Président'],
+                    ],
                     'siege' => [
                         'siret' => '48067410000031',
                         'numero_voie' => '1',
@@ -45,6 +50,10 @@ final class RechercheEntrepriseClientTest extends TestCase
         self::assertNotNull($info);
         self::assertSame('1 AVENUE DU GENERAL DE GAULLE', $info->rue);
         self::assertSame('FR39480674100', $info->numeroTva);
+        self::assertSame('BUSINESS PROFILERS', $info->raisonSociale);
+        // Seul le premier dirigeant personne physique est retenu, avec son prénom usuel.
+        self::assertSame('JEAN', $info->dirigeantPrenom);
+        self::assertSame('DURAND', $info->dirigeantNom);
     }
 
     public function testReturnsNullOnTransportError(): void

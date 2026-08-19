@@ -82,7 +82,9 @@
                 <twig:Typography variant="heading-3" element="h2" bold>Identité et localisation</twig:Typography>
                 {{ form_row(form.label) }}
                 {% set prefill_help = 'Optionnel : pré-rempli automatiquement depuis l’annuaire des entreprises si laissé vide.' %}
-                {% for field in ['ruePostale', 'codePostal', 'ville', 'pays', 'countryCode', 'latitude', 'longitude'] %}
+                {{ form_row(form.localisation.ruePostale, {help: prefill_help}) }}
+                {{ form_row(form.localisation.codePostal, {help: 'Utilisé avec le nom pour retrouver l’entreprise dans l’annuaire et fiabiliser le pré-remplissage.'}) }}
+                {% for field in ['ville', 'pays', 'countryCode', 'latitude', 'longitude'] %}
                     {{ form_row(attribute(form.localisation, field), {help: prefill_help}) }}
                 {% endfor %}
                 {{ form_row(form.localisation.region) }}

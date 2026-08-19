@@ -13,6 +13,8 @@ use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\Group;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\HttpClient\MockHttpClient;
+use Symfony\Component\HttpClient\Response\MockResponse;
 
 #[Group('database')]
 final class FicheCreationControllerIntegrationTest extends WebTestCase
@@ -78,18 +80,20 @@ final class FicheCreationControllerIntegrationTest extends WebTestCase
     public function testCreatesAFicheOfEachGammeWithStatutEnCours(): void
     {
         $client = $this->createClientWithUser();
+        // Codes postaux distincts : une adresse identique serait signalée en doublon.
         $expectations = [
-            ['lieu', 'pim_lieu', '/referentiel/lieux/fiche/'],
-            ['restaurant', 'pim_restaurant', '/referentiel/restaurants/fiche/'],
-            ['activite', 'pim_activite', '/referentiel/activites/fiche/'],
-            ['service_evenementiel', 'pim_service_evenementiel', '/referentiel/services/fiche/'],
+            ['lieu', 'pim_lieu', '/referentiel/lieux/fiche/', '75001'],
+            ['restaurant', 'pim_restaurant', '/referentiel/restaurants/fiche/', '75002'],
+            ['activite', 'pim_activite', '/referentiel/activites/fiche/', '75003'],
+            ['service_evenementiel', 'pim_service_evenementiel', '/referentiel/services/fiche/', '75004'],
         ];
-        foreach ($expectations as [$type, $table, $editPrefix]) {
+        foreach ($expectations as [$type, $table, $editPrefix, $codePostal]) {
             $client->request('GET', '/referentiel/fiche/nouvelle?type='.$type);
             self::assertResponseIsSuccessful();
             $client->submitForm('Créer la fiche', [
                 'fiche_creation[type]' => $type,
                 'fiche_creation[label]' => 'Fiche '.$type,
+                'fiche_creation[localisation][codePostal]' => $codePostal,
             ]);
             $location = (string) $client->getResponse()->headers->get('Location');
             self::assertStringStartsWith($editPrefix, $location, 'Redirection vers l’éditeur '.$type);
@@ -99,6 +103,75 @@ final class FicheCreationControllerIntegrationTest extends WebTestCase
                 $this->connection->fetchOne('SELECT status FROM pim_fiche WHERE type = ?', [$type]),
             );
         }
+    }
+
+    public function testRejectsCreationWithoutCodePostal(): void
+    {
+        $client = $this->createClientWithUser();
+        $client->request('GET', '/referentiel/fiche/nouvelle');
+        $client->submitForm('Créer la fiche', [
+            'fiche_creation[type]' => 'lieu',
+            'fiche_creation[label]' => 'Sans code postal',
+        ]);
+        self::assertResponseStatusCodeSame(422);
+        self::assertSelectorTextContains('main', 'Le code postal est obligatoire.');
+        self::assertSame(0, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM pim_fiche'));
+    }
+
+    public function testPrefillsFacturationEtPartenariatFromAnnuaire(): void
+    {
+        $client = $this->createClientWithUser();
+        // Sans cela le kernel reboote entre les requêtes et la réponse simulée est perdue.
+        $client->disableReboot();
+        $mock = self::getContainer()->get('test.recherche_entreprises.mock_http_client');
+        self::assertInstanceOf(MockHttpClient::class, $mock);
+        $mock->setResponseFactory([new MockResponse(json_encode(['results' => [[
+            'nom_complet' => 'CHATEAU DES TESTS (CDT)',
+            'nom_raison_sociale' => 'CHATEAU DES TESTS',
+            'siren' => '480674100',
+            'dirigeants' => [
+                ['type_de_dirigeant' => 'personne physique', 'nom' => 'DURAND', 'prenoms' => 'JEAN, MARIE', 'qualite' => 'Président'],
+            ],
+            'siege' => [
+                'siret' => '48067410000031',
+                'numero_voie' => '1',
+                'type_voie' => 'AVENUE',
+                'libelle_voie' => 'DU GENERAL DE GAULLE',
+                'code_postal' => '60500',
+                'libelle_commune' => 'CHANTILLY',
+                'latitude' => '49.19',
+                'longitude' => '2.46',
+            ],
+        ]]], JSON_THROW_ON_ERROR))]);
+
+        $client->request('GET', '/referentiel/fiche/nouvelle');
+        $client->submitForm('Créer la fiche', [
+            'fiche_creation[type]' => 'lieu',
+            'fiche_creation[label]' => 'Château des tests',
+            'fiche_creation[localisation][codePostal]' => '60500',
+            'fiche_creation[localisation][ville]' => 'Chantilly',
+        ]);
+        self::assertResponseRedirects();
+
+        $administratif = $this->connection->fetchAssociative('SELECT * FROM pim_lieu_administratif');
+        self::assertNotFalse($administratif);
+        self::assertSame('CHATEAU DES TESTS', $administratif['info_legale_nom']);
+        self::assertSame('1 AVENUE DU GENERAL DE GAULLE', $administratif['info_legale_rue_postal']);
+        self::assertSame('60500', $administratif['info_legale_code_postal']);
+        self::assertSame('CHANTILLY', $administratif['info_legale_ville']);
+        self::assertSame('France', $administratif['infor_legale_pays']);
+        self::assertSame('48067410000031', $administratif['info_legale_siret']);
+        self::assertSame('FR39480674100', $administratif['info_legale_num_tva']);
+        self::assertSame('CHATEAU DES TESTS', $administratif['adresse_facturation_nom']);
+        self::assertSame('1 AVENUE DU GENERAL DE GAULLE', $administratif['adresse_facturation_rue_postal']);
+        self::assertSame('60500', $administratif['adresse_facturation_code_postal']);
+        self::assertSame('CHANTILLY', $administratif['adresse_facturation_ville']);
+        self::assertSame('France', $administratif['adresse_facturation_pays']);
+        self::assertSame('FR39480674100', $administratif['adresse_facturation_num_tva']);
+        self::assertSame('JEAN', $administratif['signataire_prenom']);
+        self::assertSame('DURAND', $administratif['signataire_nom']);
+        // La saisie utilisateur reste prioritaire sur l'annuaire.
+        self::assertSame('Chantilly', $this->connection->fetchOne('SELECT ville FROM pim_localisation'));
     }
 
     public function testLieuCreationStoresLocalisationReferencementAndVisibilite(): void
@@ -148,6 +221,7 @@ final class FicheCreationControllerIntegrationTest extends WebTestCase
         $client->submitForm('Créer la fiche', [
             'fiche_creation[type]' => 'restaurant',
             'fiche_creation[label]' => 'Restaurant strict',
+            'fiche_creation[localisation][codePostal]' => '75001',
             'fiche_creation[lieuTypologie]' => ['GENERALE_TYPOLOGIE_6'],
             'fiche_creation[modeIntervention]' => 'mobile',
         ]);
@@ -183,6 +257,7 @@ final class FicheCreationControllerIntegrationTest extends WebTestCase
         $form->setValues([
             'fiche_creation[type]' => 'activite',
             'fiche_creation[label]' => 'Activité affiliée',
+            'fiche_creation[localisation][codePostal]' => '75001',
             'fiche_creation[modeIntervention]' => 'fixe',
             'fiche_creation[collaborateurExistant]' => $collaborateur->id(),
         ]);
@@ -203,6 +278,7 @@ final class FicheCreationControllerIntegrationTest extends WebTestCase
         $client->submitForm('Créer la fiche', [
             'fiche_creation[type]' => 'lieu',
             'fiche_creation[label]' => 'Château unique',
+            'fiche_creation[localisation][codePostal]' => '75001',
         ]);
         self::assertResponseRedirects();
         self::assertSame(1, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM pim_fiche'));
@@ -212,6 +288,7 @@ final class FicheCreationControllerIntegrationTest extends WebTestCase
         $client->submitForm('Créer la fiche', [
             'fiche_creation[type]' => 'restaurant',
             'fiche_creation[label]' => 'château UNIQUE',
+            'fiche_creation[localisation][codePostal]' => '75001',
         ]);
         self::assertResponseStatusCodeSame(422);
         self::assertSelectorTextContains('main', 'Doublons potentiels');
@@ -222,6 +299,7 @@ final class FicheCreationControllerIntegrationTest extends WebTestCase
         $client->submitForm('Créer quand même', [
             'fiche_creation[type]' => 'restaurant',
             'fiche_creation[label]' => 'château UNIQUE',
+            'fiche_creation[localisation][codePostal]' => '75001',
         ]);
         self::assertResponseRedirects();
         self::assertSame(2, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM pim_fiche'));
@@ -234,6 +312,7 @@ final class FicheCreationControllerIntegrationTest extends WebTestCase
         $client->submitForm('Créer la fiche', [
             'fiche_creation[type]' => 'service_evenementiel',
             'fiche_creation[label]' => 'Service avec accès',
+            'fiche_creation[localisation][codePostal]' => '75001',
             'fiche_creation[collabPrenom]' => 'Grace',
             'fiche_creation[collabNom]' => 'Hopper',
             'fiche_creation[collabEmail]' => 'grace@example.test',

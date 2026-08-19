@@ -9,6 +9,7 @@ final readonly class EntrepriseInfo
 {
     public function __construct(
         public ?string $denomination = null,
+        public ?string $raisonSociale = null,
         public ?string $siren = null,
         public ?string $siret = null,
         public ?string $numeroTva = null,
@@ -17,5 +18,7 @@ final readonly class EntrepriseInfo
         public ?string $ville = null,
         public ?string $latitude = null,
         public ?string $longitude = null,
+        public ?string $dirigeantPrenom = null,
+        public ?string $dirigeantNom = null,
     ) {}
 }
