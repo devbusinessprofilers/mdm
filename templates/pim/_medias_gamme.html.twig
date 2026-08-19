@@ -121,9 +121,15 @@
                     <span class="inline-flex shrink-0"><twig:Tag label="{{ document.resource.publicationStatus ? document.resource.publicationStatus.value : 'privé' }}" variant="neutral" size="sm" /></span>
                 </div>
                 {{ form_start(document.metadata_form, {attr: {class: 'flex flex-col gap-3'}}) }}
-                    {{ form_widget(document.metadata_form) }}
+                    {% for champ in document.metadata_form.children|filter(c => 'submit' not in c.vars.block_prefixes and 'hidden' not in c.vars.block_prefixes) %}
+                        {{ form_row(champ) }}
+                    {% endfor %}
+                    <div class="flex justify-end pt-1">{{ form_widget(document.metadata_form.submit, {attr: {'data-full': false, 'data-size': 'md'}}) }}</div>
                 {{ form_end(document.metadata_form) }}
-                {{ form_start(document.replace_form) }}{{ form_widget(document.replace_form) }}{{ form_end(document.replace_form) }}
+                {{ form_start(document.replace_form, {attr: {class: 'flex flex-wrap items-end gap-3'}}) }}
+                    <div class="grow">{{ form_row(document.replace_form.document) }}</div>
+                    {{ form_widget(document.replace_form.submit, {attr: {'data-full': false, 'data-size': 'md', 'data-variant': 'outline'}}) }}
+                {{ form_end(document.replace_form) }}
                 <p>
                     <a href="{{ path(download_route, {id: entite_id, resourceId: document.resource.id}) }}" class="hover:underline">
                         <twig:Typography variant="body-sm" textColor="primary-3" bold element="span">Télécharger l'original</twig:Typography>
@@ -131,12 +137,10 @@
                 </p>
                 <div class="flex flex-wrap items-center gap-3 pt-2 border-t border-neutral-200">
                     {% if is_granted('ROLE_BP_VALIDATOR') %}
-                        {{ form(document.publication_form) }}
+                        {{ form_start(document.publication_form) }}{{ form_widget(document.publication_form.submit, {attr: {'data-full': false, 'data-size': 'sm'}}) }}{{ form_end(document.publication_form) }}
                     {% endif %}
                     <span class="flex-1"></span>
-                    <span class="[&_button]:bg-error! [&_button_span]:text-neutral-100!">{{ form(document.delete_form) }}</span>
-                    <twig:Modal:TriggerButton variant="text" size="sm" modalIdentifier="document-{{ document.resource.id }}"
-                                              data-action="modal-trigger-button#close">Fermer</twig:Modal:TriggerButton>
+                    <span class="[&_button]:bg-error! [&_button_span]:text-neutral-100!">{{ form_start(document.delete_form) }}{{ form_widget(document.delete_form.submit, {attr: {'data-full': false, 'data-size': 'sm'}}) }}{{ form_end(document.delete_form) }}</span>
                 </div>
             </div>
         </twig:Modal>
