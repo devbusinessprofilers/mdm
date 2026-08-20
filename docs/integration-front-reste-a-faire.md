@@ -249,17 +249,20 @@ vrais inputs), barre d'actions basse (Annuler réel, `Créer la fiche` = vrai su
 boutons maquette « Enregistrer comme brouillon » et « Créer et enchaîner »,
 d'abord repris désactivés, ont été retirés sur demande le 2026-08-20), bannière
 d'erreurs maquette sur les champs fautifs. Gamme = cartes-radios réelles
-(`type` passe en expanded, carte « Plateaux repas » inerte), classification = puces
+(`type` passe en expanded), classification = puces
 cochables réelles (6 ChoiceType passent en expanded — thème
 `_form-theme-creation.html.twig`, opt-in `data-puces`/`data-sites`/
 `data-interrupteur`/`data-carte-repli`), sites de diffusion = liste groupée
 maquette sur les vrais groupes (mentions → tags, obligatoires cochés verrouillés —
-le serveur les réimpose), interrupteurs SwitchButton (Business Premium réel,
-« Actif » maquette sans back désactivé), carte « contact de repli » cochable,
+le serveur les réimpose), interrupteur SwitchButton Business Premium réel,
+carte « contact de repli » cochable,
 compteurs et filtre de sites en JS (`fiche_creation_controller`), `?type=` pré-coche
 la gamme. Écarts assumés : pas d'autocomplétion d'adresse (champs structurés réels,
 aides annuaire conservées), zone d'intervention par départements renvoyée à la fiche
 (note), pas de trames d'email en select (textarea réel), voile sans fil d'étapes.
+Retirés sur demande le 2026-08-20 (avec Brouillon/« Créer et enchaîner ») : la
+carte de gamme « Plateaux repas » et l'interrupteur « Actif », éléments maquette
+sans back d'abord repris désactivés.
 Piège DomCrawler : un groupe de cases `name[]` ne fait pas de correspondance par
 valeur (contrairement à un select) → `disableValidation()` dans les 2 tests qui
 posent une typologie. Doublons + « Créer quand même » conservés (bannière old-gold).

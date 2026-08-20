@@ -44,17 +44,6 @@
             </label>
             {%- do enfant.setRendered -%}
         {%- endfor -%}
-        {#- Carte maquette sans équivalent back : reprise, désactivée. -#}
-        <span title="Fonction à venir — en développement"
-              class="flex-1 basis-60 min-w-0 box-border flex items-center gap-2.5 px-[18px] py-4 rounded-[16px]
-                     bg-neutral-100 inset-ring-1 inset-ring-neutral-200 opacity-72 cursor-not-allowed">
-            <twig:Icon name="note" class="w-6 h-6 shrink-0 p-0.5 box-border text-neutral-400" />
-            <span class="flex flex-col gap-0.5 min-w-0">
-                <twig:Typography variant="body" bold element="span" textColor="neutral-400"
-                                 class="whitespace-nowrap">Plateaux repas</twig:Typography>
-                <twig:Typography variant="body-xs" textColor="neutral-400" ellipsis element="span">Catalogue produits</twig:Typography>
-            </span>
-        </span>
     </div>
 {%- endblock -%}
 

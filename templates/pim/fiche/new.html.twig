@@ -278,14 +278,6 @@
                 {{ _self.entete_bloc('4', 'Statut et référencement', "Visibilité dans le référentiel et niveau d'adhésion.") }}
                 {{ _self.verrou(gammeChoisie) }}
                 <div class="flex flex-col gap-[18px]" data-fiche-creation-target="corps" {{ gammeChoisie ? '' : 'hidden' }}>
-                    {# Interrupteur maquette sans back : la fiche naît active, désactivé + infobulle. #}
-                    <div class="flex items-start gap-3.5" title="Fonction à venir — en développement : la fiche naît active, l'archivage se fait depuis le référentiel.">
-                        <twig:Form:SwitchButton id="creation-actif" name="creation-actif" :checked="true" :disabled="true" class="shrink-0" />
-                        <div class="flex flex-col gap-[3px] min-w-0">
-                            <twig:Typography variant="body" bold textColor="neutral-400">Actif</twig:Typography>
-                            <twig:Typography variant="body-sm" textColor="neutral-500" class="text-pretty">Une fiche inactive reste dans le référentiel mais disparaît des canaux publics.</twig:Typography>
-                        </div>
-                    </div>
                     <div class="flex items-start gap-3.5">
                         {{ form_errors(form.businessPremium) }}
                         {{ form_widget(form.businessPremium, { attr: { 'data-interrupteur': '1' } }) }}
