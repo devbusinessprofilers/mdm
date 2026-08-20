@@ -255,6 +255,59 @@
 .lieu-media-manager.is-dragging { outline: 2px dashed var(--color-primary); outline-offset: -6px; background: var(--color-primary-5); }
 
 /*
+ * Champs ux-autocomplete (tom-select) : le thème par défaut de tom-select est
+ * remplacé par le langage du portail — boîte d'input maquette (fond bleuté,
+ * anneau turquoise, radius-xs) et panneau de suggestions maquette (carte
+ * blanche ombrée, option active en primary-4). Vaut pour tous les
+ * autocomplete (collaborateur, fiche, prestataire…).
+ */
+select[data-controller*="autocomplete"]:not(.tomselected) {
+    /* Le select natif, avant que tom-select prenne la main (et sans JS). */
+    min-height: 40px; width: 100%; padding: 8px 10px; border: 0;
+    border-radius: var(--radius-xs); background: var(--color-primary-5);
+    box-shadow: inset 0 0 0 1px var(--color-primary);
+    font-family: var(--font-sans); font-size: 0.875rem; line-height: 1.375rem;
+    color: var(--color-neutral-900);
+}
+/* Le CSS par défaut de tom-select est chargé APRÈS app.css (lien injecté par
+   le contrôleur ux-autocomplete) : seule la spécificité fait foi. Le triple
+   `.ts-wrapper` passe au-dessus de ses règles les plus précises
+   (`.ts-wrapper.single .ts-control`, `.ts-wrapper.multi .ts-control > .item`). */
+.ts-wrapper.ts-wrapper.ts-wrapper .ts-control {
+    min-height: 40px; padding: 8px 10px; border: 0;
+    border-radius: var(--radius-xs);
+    background: var(--color-primary-5) none;
+    box-shadow: inset 0 0 0 1px var(--color-primary);
+    font-family: var(--font-sans); font-size: 0.875rem; line-height: 1.375rem;
+    color: var(--color-neutral-900);
+    transition: background-color 0.15s ease;
+}
+.ts-wrapper.ts-wrapper.ts-wrapper.focus .ts-control { background: var(--color-neutral-100) none; box-shadow: inset 0 0 0 1px var(--color-primary); }
+.ts-wrapper.ts-wrapper.ts-wrapper.disabled .ts-control { background: var(--color-neutral-200) none; box-shadow: none; color: var(--color-neutral-500); }
+.ts-wrapper.ts-wrapper.ts-wrapper .ts-control input { font: inherit; color: inherit; }
+.ts-wrapper.ts-wrapper.ts-wrapper .ts-control input::placeholder { color: var(--color-neutral-400); }
+/* Le caret triangle du thème par défaut, recoloré au gris du portail. */
+.ts-wrapper.ts-wrapper.ts-wrapper.single .ts-control:after { border-color: var(--color-neutral-500) transparent transparent; }
+.ts-wrapper.ts-wrapper.ts-wrapper.single.dropdown-active .ts-control:after { border-color: transparent transparent var(--color-neutral-500); }
+.ts-wrapper.ts-wrapper.ts-wrapper.multi .ts-control > .item {
+    display: inline-flex; align-items: center; margin: 0 6px 0 0; padding: 1px 9px;
+    border: 0; border-radius: var(--radius-lg); background: var(--color-primary-4) none;
+    color: var(--color-primary-3); font-size: 0.75rem; font-weight: 900;
+    text-shadow: none; box-shadow: none;
+}
+.ts-wrapper.ts-wrapper.ts-wrapper .ts-dropdown {
+    margin-top: 6px; padding: 6px; border: 0; border-radius: 12px;
+    background: var(--color-neutral-100);
+    box-shadow: 0 12px 28px rgba(3, 74, 94, 0.18);
+    font-family: var(--font-sans); font-size: 0.875rem; line-height: 1.375rem;
+}
+.ts-wrapper.ts-wrapper.ts-wrapper .ts-dropdown .option { padding: 8px 10px; border-radius: var(--radius-xs); color: var(--color-neutral-900); }
+.ts-wrapper.ts-wrapper.ts-wrapper .ts-dropdown .option.active { background: var(--color-primary-4); color: var(--color-primary-3); font-weight: 900; }
+.ts-wrapper.ts-wrapper.ts-wrapper .ts-dropdown .option.selected { background: var(--color-primary-5); font-weight: 900; }
+.ts-wrapper.ts-wrapper.ts-wrapper .ts-dropdown .no-results,
+.ts-wrapper.ts-wrapper.ts-wrapper .ts-dropdown .loading { padding: 8px 10px; color: var(--color-neutral-500); }
+
+/*
  * Écrans périphériques (templates/mdm/simple.html.twig) : le vocabulaire de
  * classes hérité des anciennes pages, traduit aux couleurs du PIM. Ces écrans
  * n'ont pas de maquette — ils restent simples, mais dans le langage visuel
