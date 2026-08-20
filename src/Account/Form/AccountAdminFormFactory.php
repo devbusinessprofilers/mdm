@@ -50,7 +50,12 @@ final readonly class AccountAdminFormFactory
     {
         return $this->forms->createNamed('edition_affiliation_'.$affiliation->idString(), AffiliationType::class, [
             'role' => $affiliation->role(), 'receivesRequests' => $affiliation->receivesRequests(),
-        ], ['action' => $this->urls->generate('app_account_admin_affiliation_edit', ['id' => $affiliation->idString()]), 'csrf_token_id' => 'edit-affiliation-'.$affiliation->idString()]);
+            'traiteContenus' => $affiliation->traiteContenus(), 'traitePaiements' => $affiliation->traitePaiements(),
+            'repli' => $affiliation->repli(),
+        ], [
+            'action' => $this->urls->generate('app_account_admin_affiliation_edit', ['id' => $affiliation->idString()]),
+            'csrf_token_id' => 'edit-affiliation-'.$affiliation->idString(), 'with_droits' => true,
+        ]);
     }
 
     /** @return FormInterface<mixed> */

@@ -1,0 +1,22 @@
+{# Macros partagées des tableaux de collaborateurs (éditeur de fiche, admin). #}
+
+{# Pastille de droit maquette : disque vert coché quand le droit est accordé,
+   cercle gris barré sinon. #}
+{% macro droit_collab(actif, libelle) %}
+    <span class="flex items-center" role="cell">
+        <span class="sr-only">{{ libelle }} : {{ actif ? 'oui' : 'non' }}</span>
+        {% if actif %}
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true" class="shrink-0">
+                <circle cx="10" cy="10" r="9" fill="var(--color-success)"/>
+                <path d="M5.8 10.2l2.6 2.6 5.2-5.2" stroke="#fff" stroke-width="1.8"
+                      stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        {% else %}
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true" class="shrink-0">
+                <circle cx="10" cy="10" r="8.4" stroke="var(--color-neutral-400)" stroke-width="1.2"/>
+                <path d="M7 7l6 6M13 7l-6 6" stroke="var(--color-neutral-400)" stroke-width="1.2"
+                      stroke-linecap="round"/>
+            </svg>
+        {% endif %}
+    </span>
+{% endmacro %}

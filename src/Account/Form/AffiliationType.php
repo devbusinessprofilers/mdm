@@ -21,8 +21,17 @@ final class AffiliationType extends AbstractType
         }
         $builder
             ->add('role', ChoiceType::class, CollaborateurInvitationType::roleOptions())
-            ->add('receivesRequests', CheckboxType::class, ['label' => 'Reçoit les demandes', 'required' => false])
-            ->add('submit', SubmitType::class, ['label' => $options['button_label']]);
+            ->add('receivesRequests', CheckboxType::class, [
+                'label' => $options['with_droits'] ? 'Traite les demandes' : 'Reçoit les demandes',
+                'required' => false,
+            ]);
+        if ($options['with_droits']) {
+            $builder
+                ->add('traiteContenus', CheckboxType::class, ['label' => 'Traite les contenus', 'required' => false])
+                ->add('traitePaiements', CheckboxType::class, ['label' => 'Traite les paiements', 'required' => false])
+                ->add('repli', CheckboxType::class, ['label' => 'Contact de repli', 'required' => false]);
+        }
+        $builder->add('submit', SubmitType::class, ['label' => $options['button_label']]);
     }
 
     public function configureOptions(OptionsResolver $resolver): void
@@ -30,9 +39,11 @@ final class AffiliationType extends AbstractType
         $resolver->setDefaults([
             'data_class' => null,
             'with_fiche' => false,
+            'with_droits' => false,
             'button_label' => 'Enregistrer',
         ]);
         $resolver->setAllowedTypes('with_fiche', 'bool');
+        $resolver->setAllowedTypes('with_droits', 'bool');
         $resolver->setAllowedTypes('button_label', 'string');
     }
 }

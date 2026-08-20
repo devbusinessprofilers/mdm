@@ -74,12 +74,24 @@ final readonly class FicheAffiliationManager
         FicheAffiliation $affiliation,
         ?FicheAffiliationRole $role,
         ?bool $receivesRequests,
+        ?bool $traiteContenus = null,
+        ?bool $traitePaiements = null,
+        ?bool $repli = null,
     ): FicheAffiliation {
-        return $this->transactional(function () use ($actor, $affiliation, $role, $receivesRequests): FicheAffiliation {
+        return $this->transactional(function () use ($actor, $affiliation, $role, $receivesRequests, $traiteContenus, $traitePaiements, $repli): FicheAffiliation {
             $this->lockAndAuthorize($actor, $affiliation->fiche(), $role ?? $affiliation->role(), $affiliation);
             if (null !== $receivesRequests) {
                 $this->assertRecipientCapacity($affiliation->fiche(), $receivesRequests, $affiliation);
                 $affiliation->changeReceivesRequests($receivesRequests);
+            }
+            if (null !== $traiteContenus) {
+                $affiliation->changeTraiteContenus($traiteContenus);
+            }
+            if (null !== $traitePaiements) {
+                $affiliation->changeTraitePaiements($traitePaiements);
+            }
+            if (null !== $repli) {
+                $affiliation->changeRepli($repli);
             }
             if (null !== $role) {
                 $affiliation->changeRole($role);

@@ -101,5 +101,68 @@ final class CollaborateurAdminControllerIntegrationTest extends WebTestCase
         $client->submit($crawler->selectButton('Désactiver')->form());
         self::assertResponseRedirects('/admin/collaborateurs/'.$provider->id());
         self::assertSame(0, (int) $this->connection->fetchOne('SELECT is_active FROM pim_fiche_collaborateur WHERE email = ?', [$provider->email()]));
+
+        // Édition de l'affiliation via le panneau ?affiliation=<id> : les
+        // droits maquette (contenus, paiements) sont désormais éditables ici.
+        $crawler = $client->request('GET', '/admin/collaborateurs/'.$provider->id().'?affiliation='.$affiliation->idString());
+        self::assertResponseIsSuccessful();
+        $editForm = $crawler->selectButton('Enregistrer')->form();
+        $editForm->disableValidation();
+        $editForm->setValues([
+            'edition_affiliation_'.$affiliation->idString().'[role]' => FicheAffiliationRole::Manager->value,
+            'edition_affiliation_'.$affiliation->idString().'[receivesRequests]' => '1',
+            'edition_affiliation_'.$affiliation->idString().'[traiteContenus]' => '1',
+            'edition_affiliation_'.$affiliation->idString().'[traitePaiements]' => '1',
+        ]);
+        $client->submit($editForm);
+        self::assertResponseRedirects('/admin/collaborateurs/'.$provider->id());
+        $droits = $this->connection->fetchAssociative(
+            'SELECT receives_requests, traite_contenus, traite_paiements, repli FROM pim_fiche_affiliation WHERE id = ?',
+            [$affiliation->id()->toBinary()],
+        );
+        self::assertSame([1, 1, 1, 0], array_map(intval(...), array_values((array) $droits)));
+
+        // Les pastilles du tableau reflètent les droits (libellés sr-only).
+        $client->followRedirect();
+        $content = (string) $client->getResponse()->getContent();
+        self::assertStringContainsString('Traite les contenus : oui', $content);
+        self::assertStringContainsString('Traite les paiements : oui', $content);
+        self::assertStringContainsString('Contact de repli : non', $content);
+    }
+
+    public function testIndexEstPagine(): void
+    {
+        $client = self::createClient();
+        $this->connection = self::getContainer()->get(Connection::class);
+        $this->entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $this->connection->executeStatement('DELETE FROM outbox_message');
+        $this->connection->executeStatement('DELETE FROM pim_fiche_affiliation');
+        $this->connection->executeStatement('DELETE FROM pim_fiche');
+        $this->connection->executeStatement('DELETE FROM pim_fiche_collaborateur');
+        $this->connection->executeStatement('DELETE FROM account_user');
+
+        $admin = new User('super-admin@example.com', ['ROLE_SUPER_ADMIN']);
+        $admin->setPassword('test-password-hash');
+        $this->entityManager->persist($admin);
+        // 51 collaborateurs, emails zéro-remplis pour un tri ASC prévisible.
+        for ($i = 0; $i < 51; ++$i) {
+            $this->entityManager->persist(new FicheCollaborateur(sprintf('collab-%02d@example.com', $i), 'Prénom', 'Nom '.$i));
+        }
+        $this->entityManager->flush();
+        $client->loginUser($admin);
+
+        $crawler = $client->request('GET', '/admin/collaborateurs');
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('main', 'Page 1 / 2 — 51 collaborateurs');
+        self::assertStringContainsString('collab-00@example.com', (string) $client->getResponse()->getContent());
+        self::assertStringNotContainsString('collab-50@example.com', (string) $client->getResponse()->getContent());
+        self::assertCount(1, $crawler->filter('a:contains("Suivant")'));
+
+        $client->request('GET', '/admin/collaborateurs?page=2');
+        self::assertResponseIsSuccessful();
+        $content = (string) $client->getResponse()->getContent();
+        self::assertStringContainsString('collab-50@example.com', $content);
+        self::assertStringNotContainsString('collab-00@example.com', $content);
+        self::assertStringContainsString('Page 2 / 2', $content);
     }
 }

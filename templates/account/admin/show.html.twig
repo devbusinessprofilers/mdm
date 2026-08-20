@@ -1,9 +1,15 @@
 {% extends 'mdm/simple.html.twig' %}
 
+{% import 'shared/_macros_collaborateurs.html.twig' as collab %}
+
 {% block title %}{{ collaborateur.email }}{% endblock %}
 
 {% block corps %}
-<main class="page page-narrow">
+{% set affiliation_editee = app.request.query.get('affiliation') %}
+{% set ligne_editee = affiliation_editee
+    ? (affiliations|filter(a => a.idString == affiliation_editee)|first)
+    : null %}
+<main class="page">
     <a class="back-link" href="{{ path('app_account_admin_index') }}">← Retour aux collaborateurs</a>
     <header class="page-header">
         <div class="page-header-copy">
@@ -14,22 +20,76 @@
         {{ form(toggle_form) }}
     </header>
 
-    <h2 class="card-title">Affiliations</h2>
-    <div class="affiliation-grid">
-    {% for affiliation in affiliations %}
-        <section class="card stacked-form">
-            <h3 class="font-semibold text-slate-900">{{ affiliation.fiche.label ?? affiliation.fiche.idString }}</h3>
-            {{ form(edit_forms[affiliation.idString]) }}
-            <div class="danger-form">{{ form(delete_forms[affiliation.idString]) }}</div>
-        </section>
-    {% else %}
-        <p class="empty-state card">Aucune affiliation.</p>
-    {% endfor %}
-    </div>
+    {# Tableau maquette des collaborateurs (partagé avec l'éditeur de fiche),
+       une ligne par affiliation — la colonne Fiche remplace le regroupement
+       par cartes. Le crayon recharge la page avec ?affiliation=<id> : le
+       panneau passe en mode édition avec le vrai formulaire. #}
+    <section class="card">
+        <h2 class="card-title">Affiliations</h2>
+        <div class="flex flex-col min-[1100px]:flex-row gap-6 items-start">
+            <div class="flex-1 min-w-0 flex flex-col self-stretch overflow-x-auto">
+                <div class="grid grid-cols-[minmax(0,1.2fr)_96px_84px_minmax(0,1fr)_116px_104px_84px_84px_84px_78px_62px] gap-1.5 box-border px-3 py-2.5 rounded-xs bg-primary-4 min-w-[1000px]" role="row">
+                    {% for colonne in ['Fiche', 'Nom', 'Prénom', 'Email', 'Téléphone', 'Rôle', 'Traite les demandes', 'Traite les contenus', 'Traite les paiements', 'Repli'] %}
+                        <span role="columnheader"><twig:Typography variant="body-xs" textColor="primary-3" bold>{{ colonne }}</twig:Typography></span>
+                    {% endfor %}
+                    <span></span>
+                </div>
+                {% for affiliation in affiliations %}
+                    <div class="grid grid-cols-[minmax(0,1.2fr)_96px_84px_minmax(0,1fr)_116px_104px_84px_84px_84px_78px_62px] gap-1.5 items-center box-border px-3 py-3.5 min-w-[1000px]
+                                border-b border-neutral-200 {{ affiliation.idString == affiliation_editee ? 'bg-primary-5' : '' }}" role="row">
+                        <span class="min-w-0 truncate"><twig:Typography variant="body-sm" bold>{{ affiliation.fiche.label ?? affiliation.fiche.idString }}</twig:Typography></span>
+                        <span class="min-w-0 truncate"><twig:Typography variant="body-sm">{{ affiliation.collaborateur.lastName }}</twig:Typography></span>
+                        <span class="min-w-0 truncate"><twig:Typography variant="body-sm">{{ affiliation.collaborateur.firstName }}</twig:Typography></span>
+                        <span class="min-w-0 truncate"><twig:Typography variant="body-sm">{{ affiliation.collaborateur.email }}</twig:Typography></span>
+                        <span class="whitespace-nowrap"><twig:Typography variant="body-sm">{{ affiliation.collaborateur.phone ?? '—' }}</twig:Typography></span>
+                        <span class="min-w-0 truncate"><twig:Typography variant="body-sm">{{ affiliation.role.value|capitalize }}</twig:Typography></span>
+                        {{ collab.droit_collab(affiliation.receivesRequests, 'Traite les demandes') }}
+                        {{ collab.droit_collab(affiliation.traiteContenus, 'Traite les contenus') }}
+                        {{ collab.droit_collab(affiliation.traitePaiements, 'Traite les paiements') }}
+                        {{ collab.droit_collab(affiliation.repli, 'Contact de repli') }}
+                        <div class="flex items-center gap-2.5">
+                            <a href="{{ path('app_account_admin_show', {id: collaborateur.id, affiliation: affiliation.idString}) }}"
+                               class="flex shrink-0 cursor-pointer text-neutral-900">
+                                <span class="sr-only">Modifier l'affiliation à {{ affiliation.fiche.label ?? affiliation.fiche.idString }}</span>
+                                <twig:Icon name="pencil" class="w-[17px] h-[17px]" />
+                            </a>
+                            {{ form_start(delete_forms[affiliation.idString], { attr: { class: 'contents' } }) }}
+                                {# Corbeille maquette : le composant Button porte le submit
+                                   (policy des templates), réduit à l'icône seule. #}
+                                <twig:Button variant="text" size="sm" type="submit" icon="trash"
+                                             class="p-0! px-0! h-fit! shrink-0 text-neutral-900 hover:text-error [&>:first-child]:w-[17px] [&>:first-child]:h-[17px]">
+                                    <span class="sr-only">Retirer l'affiliation à {{ affiliation.fiche.label ?? affiliation.fiche.idString }}</span>
+                                </twig:Button>
+                                {% do delete_forms[affiliation.idString].submit.setRendered %}
+                            {{ form_end(delete_forms[affiliation.idString]) }}
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="px-3 py-6"><twig:Typography variant="body-sm" textColor="neutral-500">Aucune affiliation.</twig:Typography></div>
+                {% endfor %}
+            </div>
 
-    <section class="card form-card">
-        <h2 class="card-title">Ajouter une affiliation</h2>
-        {{ form(invite_form) }}
+            {# Panneau latéral : ajout par défaut, édition de l'affiliation
+               pointée par le crayon (vrais formulaires, avec les droits). #}
+            <aside class="w-full min-[1100px]:w-[420px] shrink-0 box-border flex flex-col gap-5 px-8 py-10
+                          rounded-[24px] bg-primary-5"
+                   aria-label="Ajouter ou modifier une affiliation">
+                {% if ligne_editee %}
+                    <div class="flex flex-col items-center gap-2">
+                        <twig:Typography variant="subtitle" bold class="mt-2">Modifier l'affiliation</twig:Typography>
+                        <twig:Typography variant="body-sm" textColor="neutral-500" center>{{ ligne_editee.fiche.label ?? ligne_editee.fiche.idString }}</twig:Typography>
+                    </div>
+                    {{ form(edit_forms[ligne_editee.idString]) }}
+                    <a class="btn btn-secondary" href="{{ path('app_account_admin_show', {id: collaborateur.id}) }}">Annuler</a>
+                {% else %}
+                    <div class="flex flex-col items-center gap-2">
+                        <twig:Icon name="plus" class="w-12 h-12 text-primary" />
+                        <twig:Typography variant="subtitle" bold class="mt-2">Ajouter une affiliation</twig:Typography>
+                    </div>
+                    {{ form(invite_form) }}
+                {% endif %}
+            </aside>
+        </div>
     </section>
 </main>
 {% endblock %}

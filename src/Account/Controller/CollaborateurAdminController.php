@@ -23,12 +23,21 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('ROLE_SUPER_ADMIN')]
 final class CollaborateurAdminController extends AbstractController
 {
+    private const PAR_PAGE = 50;
+
     #[Route('', name: 'index', methods: ['GET'])]
-    public function index(FicheCollaborateurRepository $collaborateurs, AccountAdminFormFactory $forms): Response
+    public function index(Request $request, FicheCollaborateurRepository $collaborateurs, AccountAdminFormFactory $forms): Response
     {
+        $total = $collaborateurs->countAll();
+        $pages = max(1, (int) ceil($total / self::PAR_PAGE));
+        $page = min(max(1, $request->query->getInt('page', 1)), $pages);
+
         return $this->render('account/admin/index.html.twig', [
-            'collaborateurs' => $collaborateurs->findBy([], ['email' => 'ASC']),
+            'collaborateurs' => $collaborateurs->findPage(self::PAR_PAGE, ($page - 1) * self::PAR_PAGE),
             'invitation_form' => $forms->collaborateurInvitation()->createView(),
+            'page' => $page,
+            'pages' => $pages,
+            'total' => $total,
         ]);
     }
 
@@ -126,10 +135,18 @@ final class CollaborateurAdminController extends AbstractController
         if (!$actor instanceof User || !$form->isSubmitted() || !$form->isValid()) {
             throw $this->createAccessDeniedException('Rôle invalide.');
         }
-        /** @var array{role: FicheAffiliationRole, receivesRequests?: bool} $data */
+        /** @var array{role: FicheAffiliationRole, receivesRequests?: bool, traiteContenus?: bool, traitePaiements?: bool, repli?: bool} $data */
         $data = $form->getData();
         try {
-            $manager->update($actor, $affiliation, $data['role'], $data['receivesRequests'] ?? false);
+            $manager->update(
+                $actor,
+                $affiliation,
+                $data['role'],
+                $data['receivesRequests'] ?? false,
+                $data['traiteContenus'] ?? false,
+                $data['traitePaiements'] ?? false,
+                $data['repli'] ?? false,
+            );
             $this->addFlash('success', 'Affiliation modifiée.');
         } catch (\DomainException $exception) {
             $this->addFlash('error', $exception->getMessage());

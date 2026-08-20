@@ -167,23 +167,15 @@ final readonly class FicheCollaborateursEcran
     /** @param array{role: FicheAffiliationRole, receivesRequests: bool, traiteContenus: bool, traitePaiements: bool, repli: bool} $data */
     public function modifier(User $actor, FicheAffiliation $affiliation, array $data): void
     {
-        $this->manager->update($actor, $affiliation, $data['role'], $data['receivesRequests']);
-        $modifie = false;
-        if ($data['repli'] !== $affiliation->repli()) {
-            $affiliation->changeRepli($data['repli']);
-            $modifie = true;
-        }
-        if ($data['traiteContenus'] !== $affiliation->traiteContenus()) {
-            $affiliation->changeTraiteContenus($data['traiteContenus']);
-            $modifie = true;
-        }
-        if ($data['traitePaiements'] !== $affiliation->traitePaiements()) {
-            $affiliation->changeTraitePaiements($data['traitePaiements']);
-            $modifie = true;
-        }
-        if ($modifie) {
-            $this->entityManager->flush();
-        }
+        $this->manager->update(
+            $actor,
+            $affiliation,
+            $data['role'],
+            $data['receivesRequests'],
+            $data['traiteContenus'],
+            $data['traitePaiements'],
+            $data['repli'],
+        );
     }
 
     public function retirer(User $actor, FicheAffiliation $affiliation): void

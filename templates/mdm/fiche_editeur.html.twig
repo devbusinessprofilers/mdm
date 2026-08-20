@@ -126,26 +126,8 @@
     </span>
 {% endmacro %}
 
-{# Pastille de droit maquette (tableau des collaborateurs) : disque vert coché
-   quand le droit est accordé, cercle gris barré sinon. #}
-{% macro droit_collab(actif, libelle) %}
-    <span class="flex items-center" role="cell">
-        <span class="sr-only">{{ libelle }} : {{ actif ? 'oui' : 'non' }}</span>
-        {% if actif %}
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true" class="shrink-0">
-                <circle cx="10" cy="10" r="9" fill="var(--color-success)"/>
-                <path d="M5.8 10.2l2.6 2.6 5.2-5.2" stroke="#fff" stroke-width="1.8"
-                      stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-        {% else %}
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true" class="shrink-0">
-                <circle cx="10" cy="10" r="8.4" stroke="var(--color-neutral-400)" stroke-width="1.2"/>
-                <path d="M7 7l6 6M13 7l-6 6" stroke="var(--color-neutral-400)" stroke-width="1.2"
-                      stroke-linecap="round"/>
-            </svg>
-        {% endif %}
-    </span>
-{% endmacro %}
+{# Pastille de droit du tableau des collaborateurs : partagée avec l'admin. #}
+{% import 'shared/_macros_collaborateurs.html.twig' as collab %}
 
 {# Le contrôleur des onglets couvre le rail et les volets. #}
 {% block main_attributs %}data-controller="fiche-onglets"{% endblock %}
@@ -456,10 +438,10 @@
                                     <span class="min-w-0 truncate"><twig:Typography variant="body-sm">{{ affiliation.collaborateur.email }}</twig:Typography></span>
                                     <span class="whitespace-nowrap"><twig:Typography variant="body-sm">{{ affiliation.collaborateur.phone ?? '—' }}</twig:Typography></span>
                                     <span class="min-w-0 truncate"><twig:Typography variant="body-sm">{{ affiliation.role.value|capitalize }}</twig:Typography></span>
-                                    {{ _self.droit_collab(affiliation.receivesRequests, 'Traite les demandes') }}
-                                    {{ _self.droit_collab(affiliation.traiteContenus, 'Traite les contenus') }}
-                                    {{ _self.droit_collab(affiliation.traitePaiements, 'Traite les paiements') }}
-                                    {{ _self.droit_collab(affiliation.repli, 'Contact de repli') }}
+                                    {{ collab.droit_collab(affiliation.receivesRequests, 'Traite les demandes') }}
+                                    {{ collab.droit_collab(affiliation.traiteContenus, 'Traite les contenus') }}
+                                    {{ collab.droit_collab(affiliation.traitePaiements, 'Traite les paiements') }}
+                                    {{ collab.droit_collab(affiliation.repli, 'Contact de repli') }}
                                     {% if peut_gerer %}
                                         <div class="flex items-center gap-2.5">
                                             <a href="{{ onglets[i].url }}&collaborateur={{ affiliation.idString }}"

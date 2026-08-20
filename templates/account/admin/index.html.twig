@@ -33,6 +33,11 @@
         {% endfor %}
         </tbody>
     </table></div>
+    <nav class="table-actions">
+        {% if page > 1 %}<a class="btn btn-secondary" href="{{ path('app_account_admin_index', {page: page - 1}) }}">Précédent</a>{% endif %}
+        <span class="badge badge-neutral">Page {{ page }} / {{ pages }} — {{ total }} collaborateur{{ total > 1 ? 's' }}</span>
+        {% if page < pages %}<a class="btn btn-secondary" href="{{ path('app_account_admin_index', {page: page + 1}) }}">Suivant</a>{% endif %}
+    </nav>
     </section>
 </main>
 {% endblock %}
