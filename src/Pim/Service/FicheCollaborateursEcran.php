@@ -143,13 +143,9 @@ final readonly class FicheCollaborateursEcran
             $data['receivesRequests'],
             (string) $data['firstName'],
             (string) $data['lastName'],
+            traiteContenus: $data['traiteContenus'],
+            traitePaiements: $data['traitePaiements'],
         );
-        if ($data['traiteContenus']) {
-            $affiliation->changeTraiteContenus(true);
-        }
-        if ($data['traitePaiements']) {
-            $affiliation->changeTraitePaiements(true);
-        }
         if (null === $affiliation->collaborateur()->phone() && null !== $data['phone'] && '' !== trim($data['phone'])) {
             $affiliation->collaborateur()->changePhone($data['phone']);
         }

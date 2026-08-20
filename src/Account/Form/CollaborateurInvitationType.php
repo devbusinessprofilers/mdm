@@ -26,7 +26,9 @@ final class CollaborateurInvitationType extends AbstractType
             ->add('language', TextType::class, ['label' => 'Langue', 'data' => 'fr'])
             ->add('fiche', FicheAutocompleteType::class)
             ->add('role', ChoiceType::class, self::roleOptions())
-            ->add('receivesRequests', CheckboxType::class, ['label' => 'Reçoit les demandes', 'required' => false])
+            ->add('receivesRequests', CheckboxType::class, ['label' => 'Traite les demandes', 'required' => false])
+            ->add('traiteContenus', CheckboxType::class, ['label' => 'Traite les contenus', 'required' => false])
+            ->add('traitePaiements', CheckboxType::class, ['label' => 'Traite les paiements', 'required' => false])
             ->add('submit', SubmitType::class, ['label' => 'Inviter']);
     }
 

@@ -52,13 +52,15 @@ final class CollaborateurAdminController extends AbstractController
 
             return $this->redirectToRoute('app_account_admin_index');
         }
-        /** @var array{email: string, firstName?: string|null, lastName?: string|null, language: string, fiche: Fiche, role: FicheAffiliationRole, receivesRequests?: bool} $data */
+        /** @var array{email: string, firstName?: string|null, lastName?: string|null, language: string, fiche: Fiche, role: FicheAffiliationRole, receivesRequests?: bool, traiteContenus?: bool, traitePaiements?: bool} $data */
         $data = $form->getData();
         try {
             $affiliation = $manager->invite(
                 $actor, $data['fiche'], $data['email'], $data['role'],
                 $data['receivesRequests'] ?? false,
                 $data['firstName'] ?? '', $data['lastName'] ?? '', $data['language'],
+                traiteContenus: $data['traiteContenus'] ?? false,
+                traitePaiements: $data['traitePaiements'] ?? false,
             );
             $this->addFlash('success', 'Collaborateur invité et affilié.');
 
@@ -114,10 +116,16 @@ final class CollaborateurAdminController extends AbstractController
         if (!$actor instanceof User || !$form->isSubmitted() || !$form->isValid()) {
             throw $this->createAccessDeniedException('Formulaire invalide.');
         }
-        /** @var array{fiche: Fiche, role: FicheAffiliationRole, receivesRequests?: bool} $data */
+        /** @var array{fiche: Fiche, role: FicheAffiliationRole, receivesRequests?: bool, traiteContenus?: bool, traitePaiements?: bool, repli?: bool} $data */
         $data = $form->getData();
         try {
-            $manager->invite($actor, $data['fiche'], $collaborateur->email(), $data['role'], $data['receivesRequests'] ?? false);
+            $manager->invite(
+                $actor, $data['fiche'], $collaborateur->email(), $data['role'],
+                $data['receivesRequests'] ?? false,
+                traiteContenus: $data['traiteContenus'] ?? false,
+                traitePaiements: $data['traitePaiements'] ?? false,
+                repli: $data['repli'] ?? false,
+            );
             $this->addFlash('success', 'Affiliation ajoutée.');
         } catch (\DomainException $exception) {
             $this->addFlash('error', $exception->getMessage());

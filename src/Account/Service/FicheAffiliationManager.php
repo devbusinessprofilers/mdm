@@ -40,8 +40,11 @@ final readonly class FicheAffiliationManager
         string $firstName = '',
         string $lastName = '',
         string $language = 'fr',
+        bool $traiteContenus = false,
+        bool $traitePaiements = false,
+        bool $repli = false,
     ): FicheAffiliation {
-        return $this->transactional(function () use ($actor, $fiche, $email, $role, $receivesRequests, $firstName, $lastName, $language): FicheAffiliation {
+        return $this->transactional(function () use ($actor, $fiche, $email, $role, $receivesRequests, $firstName, $lastName, $language, $traiteContenus, $traitePaiements, $repli): FicheAffiliation {
             $this->lockAndAuthorize($actor, $fiche, $role);
             $collaborateur = $this->collaborateurs->findOneByEmail($email);
             if (null === $collaborateur) {
@@ -52,7 +55,13 @@ final readonly class FicheAffiliationManager
             }
 
             $this->assertRecipientCapacity($fiche, $receivesRequests);
-            $affiliation = new FicheAffiliation($collaborateur, $fiche, $role, $actor, $receivesRequests);
+            $affiliation = new FicheAffiliation($collaborateur, $fiche, $role, $actor, $receivesRequests, $repli);
+            if ($traiteContenus) {
+                $affiliation->changeTraiteContenus(true);
+            }
+            if ($traitePaiements) {
+                $affiliation->changeTraitePaiements(true);
+            }
             $this->entityManager->persist($affiliation);
 
             return $affiliation;

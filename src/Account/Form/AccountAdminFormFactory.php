@@ -40,7 +40,7 @@ final readonly class AccountAdminFormFactory
     public function affiliationInvite(FicheCollaborateur $collaborateur): FormInterface
     {
         return $this->forms->createNamed('invitation_affiliation', AffiliationType::class, null, [
-            'action' => $this->urls->generate('app_account_admin_invite', ['id' => $collaborateur->id()]), 'with_fiche' => true,
+            'action' => $this->urls->generate('app_account_admin_invite', ['id' => $collaborateur->id()]), 'with_fiche' => true, 'with_droits' => true,
             'button_label' => 'Ajouter', 'csrf_token_id' => 'invite-affiliation-'.$collaborateur->id(),
         ]);
     }

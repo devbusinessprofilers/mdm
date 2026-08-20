@@ -89,6 +89,7 @@ final class CollaborateurAdminControllerIntegrationTest extends WebTestCase
             'invitation_affiliation[fiche]' => $fiche->idString(),
             'invitation_affiliation[role]' => FicheAffiliationRole::Manager->value,
             'invitation_affiliation[receivesRequests]' => '1',
+            'invitation_affiliation[traiteContenus]' => '1',
         ]);
         $client->submit($affiliationForm);
         self::assertResponseRedirects('/admin/collaborateurs/'.$provider->id());
@@ -96,6 +97,8 @@ final class CollaborateurAdminControllerIntegrationTest extends WebTestCase
         self::assertNotNull($affiliation);
         self::assertSame(FicheAffiliationRole::Manager, $affiliation->role());
         self::assertTrue($affiliation->receivesRequests());
+        self::assertTrue($affiliation->traiteContenus());
+        self::assertFalse($affiliation->traitePaiements());
 
         $crawler = $client->followRedirect();
         $client->submit($crawler->selectButton('Désactiver')->form());
