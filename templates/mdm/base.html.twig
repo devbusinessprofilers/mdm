@@ -91,6 +91,11 @@
                                     <twig:Icon name="user" aria-hidden="true" class="shrink-0 w-4 h-4 text-primary" />
                                     <twig:Typography variant="body-sm" bold textColor="primary-3">Mon espace de travail</twig:Typography>
                                 </a>
+                                <a href="{{ path('app_signalement_bug') }}"
+                                   class="flex items-center gap-2 px-2 py-1.5 rounded-xs hover:bg-primary-4">
+                                    <twig:Icon name="warning" aria-hidden="true" class="shrink-0 w-4 h-4 text-error" />
+                                    <twig:Typography variant="body-sm" bold textColor="error">Signaler un bug</twig:Typography>
+                                </a>
                                 <div class="px-2 py-1.5">{{ form(logout_form()) }}</div>
                             </div>
                         </div>

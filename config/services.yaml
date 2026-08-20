@@ -108,6 +108,11 @@ services:
         arguments:
             $sender: '%env(MAILER_FROM)%'
 
+    App\Shared\Service\SignalementBugMailer:
+        arguments:
+            $sender: '%env(MAILER_FROM)%'
+            $destinataire: 'theofane@businessprofilers.fr'
+
     # L'invitation d'un collaborateur est poussée vers la marketplace, qui crée
     # le compte et envoie l'email. URL vide = envoi journalisé et ignoré (dev).
     App\Account\Service\MarketplaceCollaborateurGatewayInterface: '@App\Account\Service\MarketplaceHttpGateway'
