@@ -44,6 +44,11 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  * app:sites-diffusion:sync (« Business Profilers » = marketplace_bp), une
  * cellule vide ne touche à rien. Idempotent : collaborateur unique par
  * email, affiliation unique par (collaborateur, fiche).
+ *
+ * Premier contact : quand la fiche n'a encore aucune affiliation, la première
+ * entrée valide reçoit les trois droits (demandes, contenus, paiements) —
+ * jamais le repli. Les fiches déjà peuplées (re-run partiel) sont laissées
+ * telles quelles.
  */
 #[AsCommand(name: 'app:legacy:import-collaborateurs', description: 'Importe les collaborateurs legacy et le statut Business Premium depuis le XLSX production.')]
 final class ImportLegacyCollaborateursCommand extends Command
@@ -113,6 +118,7 @@ final class ImportLegacyCollaborateursCommand extends Command
             'lignes' => 0, 'fiches inconnues' => 0, 'premium activés' => 0, 'premium désactivés' => 0,
             'visibilités appliquées' => 0, 'visibilités inchangées' => 0, 'visibilités absentes' => 0,
             'collaborateurs créés' => 0, 'collaborateurs réutilisés' => 0, 'affiliations créées' => 0,
+            'premiers contacts (tous droits)' => 0,
             'affiliations existantes' => 0, 'entrées sans email' => 0, 'emails invalides' => 0,
         ];
         $columns = null;
@@ -129,6 +135,9 @@ final class ImportLegacyCollaborateursCommand extends Command
         // Paires (email, fiche) déjà traitées pendant ce run : le fichier
         // contient des emails dupliqués au sein d'une même cellule.
         $seenPairs = [];
+        // Fiches dont le premier contact (tous droits) a déjà été attribué
+        // pendant ce run — survit aux clear() des lots, y compris en dry-run.
+        $premierContactAttribue = [];
         $createdByEmail = $createdBy->email();
 
         $reader = new Reader();
@@ -164,8 +173,17 @@ final class ImportLegacyCollaborateursCommand extends Command
                 }
                 $this->applyBusinessPremium($fiche, $cells[$columns[self::HEADER_PREMIUM]] ?? '', $dryRun, $stats, $unknownPremiumValues);
                 $this->applyVisibilite($fiche, $cells[$columns[self::HEADER_VISIBILITE]] ?? '', $dryRun, $stats, $unknownSites);
+                // Fiche vierge : aucune affiliation en base ni créée pendant ce
+                // run → la première entrée valide reçoit les trois droits.
+                $ficheVierge = !isset($premierContactAttribue[$fiche->idString()])
+                    && 0 === $this->affiliations->count(['fiche' => $fiche]);
                 foreach ($this->entries($cells, $columns) as $entry) {
-                    $this->importEntry($fiche, $entry, $role, $createdBy, $dryRun, $stats, $createdThisBatch, $seenPairs);
+                    $creee = $this->importEntry($fiche, $entry, $role, $createdBy, $dryRun, $stats, $createdThisBatch, $seenPairs, $ficheVierge);
+                    if ($creee && $ficheVierge) {
+                        $ficheVierge = false;
+                        $premierContactAttribue[$fiche->idString()] = true;
+                        ++$stats['premiers contacts (tous droits)'];
+                    }
                 }
                 if (!$dryRun && ++$sinceFlush >= $batchSize) {
                     $this->entityManager->flush();
@@ -250,6 +268,8 @@ final class ImportLegacyCollaborateursCommand extends Command
      * @param array<string, int>                                $stats
      * @param array<string, FicheCollaborateur>                 $createdThisBatch
      * @param array<string, true>                               $seenPairs
+     *
+     * @return bool une affiliation a été créée (ou le serait hors dry-run)
      */
     private function importEntry(
         Fiche $fiche,
@@ -260,7 +280,8 @@ final class ImportLegacyCollaborateursCommand extends Command
         array &$stats,
         array &$createdThisBatch,
         array &$seenPairs,
-    ): void {
+        bool $premierContact,
+    ): bool {
         if ('' === $entry['email']) {
             // Nom/prénom sans adresse : inexploitable, l'email est la clé du
             // collaborateur (connexion espace client, invitation marketplace).
@@ -268,19 +289,19 @@ final class ImportLegacyCollaborateursCommand extends Command
                 ++$stats['entrées sans email'];
             }
 
-            return;
+            return false;
         }
         if (false === filter_var($entry['email'], FILTER_VALIDATE_EMAIL)) {
             ++$stats['emails invalides'];
 
-            return;
+            return false;
         }
         $email = FicheCollaborateur::normalizeEmail($entry['email']);
         $pair = $email.'|'.$fiche->idString();
         if (isset($seenPairs[$pair])) {
             ++$stats['affiliations existantes'];
 
-            return;
+            return false;
         }
         $seenPairs[$pair] = true;
         $collaborateur = $createdThisBatch[$email] ?? $this->collaborateurs->findOneByEmail($email);
@@ -291,7 +312,7 @@ final class ImportLegacyCollaborateursCommand extends Command
                 $createdThisBatch[$email] = new FicheCollaborateur($email, $entry['prenom'], $entry['nom']);
                 ++$stats['affiliations créées'];
 
-                return;
+                return true;
             }
             $collaborateur = new FicheCollaborateur($email, $entry['prenom'], $entry['nom']);
             $this->entityManager->persist($collaborateur);
@@ -302,12 +323,19 @@ final class ImportLegacyCollaborateursCommand extends Command
         if (!$isNew && null !== $this->affiliations->findFor($collaborateur, $fiche)) {
             ++$stats['affiliations existantes'];
 
-            return;
+            return false;
         }
         ++$stats['affiliations créées'];
         if (!$dryRun) {
-            $this->entityManager->persist(new FicheAffiliation($collaborateur, $fiche, $role, $createdBy));
+            $affiliation = new FicheAffiliation($collaborateur, $fiche, $role, $createdBy, receivesRequests: $premierContact);
+            if ($premierContact) {
+                $affiliation->changeTraiteContenus(true);
+                $affiliation->changeTraitePaiements(true);
+            }
+            $this->entityManager->persist($affiliation);
         }
+
+        return true;
     }
 
     /**
