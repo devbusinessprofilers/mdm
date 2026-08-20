@@ -424,9 +424,10 @@
                     <div class="flex-1 min-w-0 flex flex-col gap-3">
                         <div class="flex flex-col self-stretch overflow-x-auto">
                             <div class="grid {{ grille_collab }} gap-1.5 box-border px-3 py-2.5 rounded-xs bg-primary-4 min-w-[900px]" role="row">
-                                {% for colonne in ['Nom', 'Prénom', 'Email', 'Téléphone', 'Rôle', 'Traite les demandes', 'Traite les contenus', 'Traite les paiements', 'Repli'] %}
+                                {% for colonne in ['Nom', 'Prénom', 'Email', 'Téléphone', 'Rôle', 'Traite les demandes', 'Traite les contenus', 'Traite les paiements'] %}
                                     <span role="columnheader"><twig:Typography variant="body-xs" textColor="primary-3" bold>{{ colonne }}</twig:Typography></span>
                                 {% endfor %}
+                                {{ collab.entete_repli() }}
                                 {% if peut_gerer %}<span></span>{% endif %}
                             </div>
                             {% for ligne in affiliations %}
@@ -441,7 +442,7 @@
                                     {{ collab.droit_collab(affiliation.receivesRequests, 'Traite les demandes') }}
                                     {{ collab.droit_collab(affiliation.traiteContenus, 'Traite les contenus') }}
                                     {{ collab.droit_collab(affiliation.traitePaiements, 'Traite les paiements') }}
-                                    {{ collab.droit_collab(affiliation.repli, 'Contact de repli') }}
+                                    {{ collab.cellule_repli(affiliation) }}
                                     {% if peut_gerer %}
                                         <div class="flex items-center gap-2.5">
                                             <a href="{{ onglets[i].url }}&collaborateur={{ affiliation.idString }}"

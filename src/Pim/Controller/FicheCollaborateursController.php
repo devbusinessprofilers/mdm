@@ -109,7 +109,7 @@ final class FicheCollaborateursController extends AbstractController
         $form = $ecran->formEdition($affiliation);
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
-            /** @var array{role: \App\Account\Enum\FicheAffiliationRole, receivesRequests: bool, traiteContenus: bool, traitePaiements: bool, repli: bool} $data */
+            /** @var array{role: \App\Account\Enum\FicheAffiliationRole, receivesRequests: bool, traiteContenus: bool, traitePaiements: bool, repli?: bool} $data */
             $data = $form->getData();
             try {
                 $ecran->modifier($user, $affiliation, $data);

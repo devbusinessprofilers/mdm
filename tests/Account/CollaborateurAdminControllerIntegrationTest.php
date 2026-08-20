@@ -55,7 +55,7 @@ final class CollaborateurAdminControllerIntegrationTest extends WebTestCase
 
         $admin = new User('super-admin@example.com', ['ROLE_SUPER_ADMIN']);
         $admin->setPassword('test-password-hash');
-        $provider = new FicheCollaborateur('provider@example.com', 'Grace', 'Hopper');
+        $provider = new FicheCollaborateur('provider@businessprofilers.fr', 'Grace', 'Hopper');
         $fiche = new Fiche(TypeFiche::Lieu);
         $fiche->changeLabel('Lieu administré');
         $this->entityManager->persist($admin);
@@ -66,7 +66,7 @@ final class CollaborateurAdminControllerIntegrationTest extends WebTestCase
 
         $client->request('GET', '/admin/collaborateurs');
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('main', 'provider@example.com');
+        self::assertSelectorTextContains('main', 'provider@businessprofilers.fr');
 
         $crawler = $client->request('GET', '/admin/collaborateurs/'.$provider->id());
         self::assertResponseIsSuccessful();
@@ -106,7 +106,8 @@ final class CollaborateurAdminControllerIntegrationTest extends WebTestCase
         self::assertSame(0, (int) $this->connection->fetchOne('SELECT is_active FROM pim_fiche_collaborateur WHERE email = ?', [$provider->email()]));
 
         // Édition de l'affiliation via le panneau ?affiliation=<id> : les
-        // droits maquette (contenus, paiements) sont désormais éditables ici.
+        // droits maquette (contenus, paiements) sont désormais éditables ici,
+        // et la case « Contact de repli » est proposée (adresse interne).
         $crawler = $client->request('GET', '/admin/collaborateurs/'.$provider->id().'?affiliation='.$affiliation->idString());
         self::assertResponseIsSuccessful();
         $editForm = $crawler->selectButton('Enregistrer')->form();
@@ -116,6 +117,7 @@ final class CollaborateurAdminControllerIntegrationTest extends WebTestCase
             'edition_affiliation_'.$affiliation->idString().'[receivesRequests]' => '1',
             'edition_affiliation_'.$affiliation->idString().'[traiteContenus]' => '1',
             'edition_affiliation_'.$affiliation->idString().'[traitePaiements]' => '1',
+            'edition_affiliation_'.$affiliation->idString().'[repli]' => '1',
         ]);
         $client->submit($editForm);
         self::assertResponseRedirects('/admin/collaborateurs/'.$provider->id());
@@ -123,14 +125,16 @@ final class CollaborateurAdminControllerIntegrationTest extends WebTestCase
             'SELECT receives_requests, traite_contenus, traite_paiements, repli FROM pim_fiche_affiliation WHERE id = ?',
             [$affiliation->id()->toBinary()],
         );
-        self::assertSame([1, 1, 1, 0], array_map(intval(...), array_values((array) $droits)));
+        self::assertSame([1, 1, 1, 1], array_map(intval(...), array_values((array) $droits)));
 
-        // Les pastilles du tableau reflètent les droits (libellés sr-only).
+        // Les pastilles du tableau reflètent les droits (libellés sr-only) et
+        // l'entête « Repli » porte l'infobulle explicative.
         $client->followRedirect();
         $content = (string) $client->getResponse()->getContent();
         self::assertStringContainsString('Traite les contenus : oui', $content);
         self::assertStringContainsString('Traite les paiements : oui', $content);
-        self::assertStringContainsString('Contact de repli : non', $content);
+        self::assertStringContainsString('Contact de repli : oui', $content);
+        self::assertStringContainsString('Réservé aux adresses @businessprofilers.fr.', $content);
     }
 
     public function testIndexEstPagine(): void

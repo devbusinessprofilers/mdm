@@ -1,5 +1,24 @@
 {# Macros partagées des tableaux de collaborateurs (éditeur de fiche, admin). #}
 
+{# Entête de la colonne « Repli » : le concept n'étant ni dans le CDC ni dans
+   la maquette, l'infobulle (AffiliationType::AIDE_REPLI) l'explique. #}
+{% macro entete_repli() %}
+    <span role="columnheader" class="cursor-help underline decoration-dotted underline-offset-2"
+          title="{{ constant('App\\Account\\Form\\AffiliationType::AIDE_REPLI') }}">
+        <twig:Typography variant="body-xs" textColor="primary-3" bold>Repli</twig:Typography>
+    </span>
+{% endmacro %}
+
+{# Cellule « Repli » : la pastille n'a de sens que pour les adresses internes
+   (@businessprofilers.fr) — tiret pour les vrais contacts prestataires. #}
+{% macro cellule_repli(affiliation) %}
+    {% if affiliation.collaborateur.estInterne %}
+        {{ _self.droit_collab(affiliation.repli, 'Contact de repli') }}
+    {% else %}
+        <span role="cell"><twig:Typography variant="body-sm" textColor="neutral-400">—</twig:Typography></span>
+    {% endif %}
+{% endmacro %}
+
 {# Pastille de droit maquette : disque vert coché quand le droit est accordé,
    cercle gris barré sinon. #}
 {% macro droit_collab(actif, libelle) %}

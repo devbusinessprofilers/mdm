@@ -6,6 +6,7 @@ namespace App\Pim\Service;
 
 use App\Account\Entity\User;
 use App\Account\Enum\FicheAffiliationRole;
+use App\Account\Form\AffiliationType;
 use App\Account\Form\CollaborateurInvitationType;
 use App\Account\Message\CollaborateurAccessRequested;
 use App\Account\Service\FicheAffiliationManager;
@@ -109,23 +110,32 @@ final readonly class FicheCollaborateursEcran
     /** @return FormInterface<mixed> */
     public function formEdition(FicheAffiliation $affiliation): FormInterface
     {
-        return $this->forms->createNamedBuilder('collab_edition_'.$affiliation->idString(), data: [
+        $donnees = [
             'role' => $affiliation->role(),
             'receivesRequests' => $affiliation->receivesRequests(),
             'traiteContenus' => $affiliation->traiteContenus(),
             'traitePaiements' => $affiliation->traitePaiements(),
-            'repli' => $affiliation->repli(),
-        ], options: [
+        ];
+        if ($affiliation->collaborateur()->estInterne()) {
+            $donnees['repli'] = $affiliation->repli();
+        }
+        $builder = $this->forms->createNamedBuilder('collab_edition_'.$affiliation->idString(), data: $donnees, options: [
             'action' => $this->urls->generate('app_mdm_fiche_affiliation_modifier', ['id' => $affiliation->idString()]),
             'csrf_token_id' => 'collab-edition-'.$affiliation->idString(),
         ])
             ->add('role', ChoiceType::class, CollaborateurInvitationType::roleOptions())
             ->add('receivesRequests', CheckboxType::class, ['label' => 'Traite les demandes', 'required' => false])
             ->add('traiteContenus', CheckboxType::class, ['label' => 'Traite les contenus', 'required' => false])
-            ->add('traitePaiements', CheckboxType::class, ['label' => 'Traite les paiements', 'required' => false])
-            ->add('repli', CheckboxType::class, ['label' => 'Contact de repli', 'required' => false])
-            ->add('enregistrer', SubmitType::class, ['label' => 'Enregistrer'])
-            ->getForm();
+            ->add('traitePaiements', CheckboxType::class, ['label' => 'Traite les paiements', 'required' => false]);
+        // Réservé au service référencement : la case n'apparaît que pour les
+        // adresses internes, cf. AffiliationType::AIDE_REPLI.
+        if ($affiliation->collaborateur()->estInterne()) {
+            $builder->add('repli', CheckboxType::class, [
+                'label' => 'Contact de repli', 'required' => false, 'help' => AffiliationType::AIDE_REPLI,
+            ]);
+        }
+
+        return $builder->add('enregistrer', SubmitType::class, ['label' => 'Enregistrer'])->getForm();
     }
 
     /**
@@ -160,7 +170,7 @@ final readonly class FicheCollaborateursEcran
         return $affiliation;
     }
 
-    /** @param array{role: FicheAffiliationRole, receivesRequests: bool, traiteContenus: bool, traitePaiements: bool, repli: bool} $data */
+    /** @param array{role: FicheAffiliationRole, receivesRequests: bool, traiteContenus: bool, traitePaiements: bool, repli?: bool} $data */
     public function modifier(User $actor, FicheAffiliation $affiliation, array $data): void
     {
         $this->manager->update(
@@ -170,7 +180,8 @@ final readonly class FicheCollaborateursEcran
             $data['receivesRequests'],
             $data['traiteContenus'],
             $data['traitePaiements'],
-            $data['repli'],
+            // Case absente pour les adresses non internes : ne pas toucher.
+            $data['repli'] ?? null,
         );
     }
 

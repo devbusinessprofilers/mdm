@@ -79,17 +79,18 @@ final class FicheCollaborateursEcranTest extends WebTestCase
         self::assertSame('+33 3 44 62 37 37', $affiliations[0]->collaborateur()->phone());
 
         // Édition : le crayon ouvre le panneau latéral via ?collaborateur=<id>,
-        // qui porte le formulaire d'édition (rôle utilisateur + contact de repli).
-        // Cibler le formulaire par son nom — selectButton('Enregistrer')
-        // attraperait « Enregistrer la diffusion ».
+        // qui porte le formulaire d'édition. Cibler le formulaire par son nom —
+        // selectButton('Enregistrer') attraperait « Enregistrer la diffusion ».
+        // Adresse externe : la case « Contact de repli » n'est pas proposée
+        // (réservée aux adresses @businessprofilers.fr).
         $nom = 'collab_edition_'.$affiliations[0]->idString();
         $crawler = $client->request('GET', '/referentiel/lieux/fiche/'.$id.'?section=14&collaborateur='.$affiliations[0]->idString());
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('aside[aria-label="Ajouter ou modifier un collaborateur"]', 'Modifier Camille Berthier');
+        self::assertCount(0, $crawler->filter('input[name="'.$nom.'[repli]"]'));
         $form = $crawler->filter('form[name="'.$nom.'"] button[type="submit"], form[name="'.$nom.'"] button:not([type])')->first()->form();
         $values = $form->getPhpValues();
         $values[$nom]['role'] = 'utilisateur';
-        $values[$nom]['repli'] = '1';
         $values[$nom]['traiteContenus'] = '1';
         unset($values[$nom]['receivesRequests'], $values[$nom]['traitePaiements']);
         $client->request($form->getMethod(), $form->getUri(), $values);
@@ -100,7 +101,7 @@ final class FicheCollaborateursEcranTest extends WebTestCase
         self::assertInstanceOf(FicheAffiliation::class, $modifiee);
         self::assertSame(FicheAffiliationRole::Utilisateur, $modifiee->role());
         self::assertFalse($modifiee->receivesRequests());
-        self::assertTrue($modifiee->repli());
+        self::assertFalse($modifiee->repli());
         self::assertTrue($modifiee->traiteContenus());
         self::assertFalse($modifiee->traitePaiements());
 

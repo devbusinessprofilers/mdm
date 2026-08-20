@@ -17,6 +17,9 @@ class FicheCollaborateur
 {
     use TimestampableTrait;
 
+    /** Domaine du service référencement : seules ces adresses peuvent être « contact de repli ». */
+    public const DOMAINE_INTERNE = '@businessprofilers.fr';
+
     #[ORM\Id]
     #[ORM\Column(type: 'ulid', unique: true)]
     private Ulid $id;
@@ -57,6 +60,7 @@ class FicheCollaborateur
     }
     public function id(): string { return (string) $this->id; }
     public function email(): string { return $this->email; }
+    public function estInterne(): bool { return str_ends_with($this->email, self::DOMAINE_INTERNE); }
     public function firstName(): string { return $this->firstName; }
     public function lastName(): string { return $this->lastName; }
     public function language(): string { return $this->language; }

@@ -14,6 +14,9 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 /** @extends AbstractType<array<string, mixed>> */
 final class AffiliationType extends AbstractType
 {
+    /** Aide du drapeau « contact de repli » : affichée en help de formulaire et en infobulle des tableaux. */
+    public const AIDE_REPLI = 'Contact provisoire du service référencement quand la fiche n\'a pas de contact prestataire : les demandes lui parviennent mais aucun accès extranet ne lui est envoyé. Réservé aux adresses @businessprofilers.fr.';
+
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         if ($options['with_fiche']) {
@@ -28,8 +31,14 @@ final class AffiliationType extends AbstractType
         if ($options['with_droits']) {
             $builder
                 ->add('traiteContenus', CheckboxType::class, ['label' => 'Traite les contenus', 'required' => false])
-                ->add('traitePaiements', CheckboxType::class, ['label' => 'Traite les paiements', 'required' => false])
-                ->add('repli', CheckboxType::class, ['label' => 'Contact de repli', 'required' => false]);
+                ->add('traitePaiements', CheckboxType::class, ['label' => 'Traite les paiements', 'required' => false]);
+        }
+        // La case n'est proposée que pour les adresses internes : le repli est
+        // par définition quelqu'un du service référencement, pas du prestataire.
+        if ($options['with_repli']) {
+            $builder->add('repli', CheckboxType::class, [
+                'label' => 'Contact de repli', 'required' => false, 'help' => self::AIDE_REPLI,
+            ]);
         }
         $builder->add('submit', SubmitType::class, ['label' => $options['button_label']]);
     }
@@ -40,10 +49,12 @@ final class AffiliationType extends AbstractType
             'data_class' => null,
             'with_fiche' => false,
             'with_droits' => false,
+            'with_repli' => false,
             'button_label' => 'Enregistrer',
         ]);
         $resolver->setAllowedTypes('with_fiche', 'bool');
         $resolver->setAllowedTypes('with_droits', 'bool');
+        $resolver->setAllowedTypes('with_repli', 'bool');
         $resolver->setAllowedTypes('button_label', 'string');
     }
 }

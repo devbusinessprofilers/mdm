@@ -41,6 +41,7 @@ final readonly class AccountAdminFormFactory
     {
         return $this->forms->createNamed('invitation_affiliation', AffiliationType::class, null, [
             'action' => $this->urls->generate('app_account_admin_invite', ['id' => $collaborateur->id()]), 'with_fiche' => true, 'with_droits' => true,
+            'with_repli' => $collaborateur->estInterne(),
             'button_label' => 'Ajouter', 'csrf_token_id' => 'invite-affiliation-'.$collaborateur->id(),
         ]);
     }
@@ -55,6 +56,7 @@ final readonly class AccountAdminFormFactory
         ], [
             'action' => $this->urls->generate('app_account_admin_affiliation_edit', ['id' => $affiliation->idString()]),
             'csrf_token_id' => 'edit-affiliation-'.$affiliation->idString(), 'with_droits' => true,
+            'with_repli' => $affiliation->collaborateur()->estInterne(),
         ]);
     }
 

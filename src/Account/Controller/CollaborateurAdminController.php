@@ -153,7 +153,8 @@ final class CollaborateurAdminController extends AbstractController
                 $data['receivesRequests'] ?? false,
                 $data['traiteContenus'] ?? false,
                 $data['traitePaiements'] ?? false,
-                $data['repli'] ?? false,
+                // Case absente pour les adresses non internes : ne pas toucher.
+                array_key_exists('repli', $data) ? $data['repli'] : null,
             );
             $this->addFlash('success', 'Affiliation modifiée.');
         } catch (\DomainException $exception) {
