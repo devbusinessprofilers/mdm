@@ -7,6 +7,12 @@ framework:
         # The data in this cache should persist between deploys.
         # Other options include:
 
+        # Répertoire des pools filesystem (cache.app) hors de var/cache : sur
+        # Upsun le code déployé est en lecture seule et ce chemin est un mount
+        # inscriptible (cf. .platform.app.yaml). En local, var/ est inscriptible,
+        # le chemin est donc valable partout.
+        directory: '%kernel.project_dir%/var/cache-app/pools'
+
         # Redis — à activer sur Upsun si l'app scale horizontalement :
         # les compteurs de rate limiting et les métriques doivent alors être partagés.
         #app: cache.adapter.redis

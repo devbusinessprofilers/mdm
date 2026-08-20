@@ -29,9 +29,19 @@ disk: 2048
 mounts:
     'var/log': { source: local, source_path: log }
     'var/import': { source: local, source_path: import }
+    # Pools filesystem de cache.app (rate limiter, métriques, paramètres, état
+    # du scheduler) : var/cache est en lecture seule à l'exécution, le pool vit
+    # donc dans ce mount (cf. framework.cache.directory dans cache.yaml).
+    'var/cache-app': { source: local, source_path: cache-app }
 
 # Sessions strictes également en production (aligné sur Docker/php/php.ini en local).
 variables:
+    env:
+        # Nécessaires dès le build : le cache:clear des auto-scripts composer
+        # doit chauffer le cache prod (le .environment n'est sourcé qu'au runtime,
+        # et var/cache est en lecture seule une fois déployé).
+        APP_ENV: prod
+        APP_DEBUG: 0
     php:
         'session.use_strict_mode': 1
         # Opcache dimensionné prudemment pour le code applicatif + vendors
@@ -48,6 +58,10 @@ hooks:
     build: |
         set -e
         composer install --no-dev --optimize-autoloader --no-interaction
+        # public/assets n'est pas versionné : compilation à chaque build
+        # (tailwind:build --minify + asset-map:compile ; importmap:install et
+        # assets:install sont déjà exécutés par les auto-scripts composer).
+        composer run build:assets
     deploy: |
         set -e
         php bin/console doctrine:migrations:migrate --no-interaction
