@@ -311,7 +311,7 @@ final readonly class FicheEditeurEcran
             'form_invitation' => $this->collaborateurs->formInvitation($fiche)->createView(),
             'extractions' => $this->extractions->history($fiche),
             'extraction' => $this->extractionVars($fiche),
-            'historique' => $this->revisions->history($id, null, 10),
+            'historique' => $this->revisions->history($id, null, 3),
             // Données Salesforce en lecture seule (refresh quotidien) ;
             // false = fiche inconnue de Salesforce.
             'salesforce' => $this->salesforce->forFiche($fiche->id()) ?? false,
