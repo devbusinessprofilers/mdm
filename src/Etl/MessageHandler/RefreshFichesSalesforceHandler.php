@@ -27,6 +27,6 @@ final readonly class RefreshFichesSalesforceHandler
 
             return;
         }
-        $this->refresher->refresh();
+        $this->refresher->refresh($message->code);
     }
 }

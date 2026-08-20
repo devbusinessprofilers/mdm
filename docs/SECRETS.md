@@ -49,6 +49,10 @@ Les secrets ne sont **jamais** commités : `html/.env` (suivi) liste toutes les 
 - `SALESFORCE_PRIVATE_KEY` porte le PEM complet (les `\n` littéraux d'une variable mono-ligne sont acceptés) ; `SALESFORCE_USERNAME` est le compte d'intégration (`portail@businessprofilers.fr`), `SALESFORCE_LOGIN_URL` `https://login.salesforce.com` en prod, `https://test.salesforce.com` en sandbox.
 - Rotation : générer un nouveau couple clé/certificat, téléverser le certificat sur la Connected App, déployer la clé privée, vérifier `app:salesforce:refresh-fiches --code=<code>` puis retirer l'ancien certificat. Ce refresh tourne aussi en cron quotidien à 3h (Europe/Paris, `src/Schedule.php`) : une clé invalide se voit dès la nuit suivante dans la file `failed`.
 
+### SALESFORCE_WEBHOOK_TOKEN
+- Générer comme APP_SECRET. Jeton Bearer attendu par le webhook entrant `POST /api/salesforce/produits` (notification des produits modifiés) ; vide = webhook désactivé (404). À communiquer à l'admin Salesforce (Named Credential / en-tête `Authorization` du callout).
+- Rotation libre : déployer le nouveau jeton côté PIM puis mettre à jour le callout Salesforce — pendant l'écart, Salesforce reçoit des 401 et le cron quotidien de 3h rattrape de toute façon les fiches.
+
 ### Credentials MariaDB (dépôt parent `.env` : DB_PASSWORD)
 - Dev uniquement (conteneur non exposé publiquement). Pour changer : mettre à jour le `.env` racine, recréer le volume SQL ou exécuter `ALTER USER` dans le conteneur, mettre à jour `DATABASE_URL` dans `.env.local`.
 

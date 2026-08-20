@@ -359,7 +359,15 @@ Salesforce ; la plomberie **transactionnelle** reste sur la marketplace.
   replanifiées par `MarketplaceSyncScheduler` dans la même transaction) ;
   commande `app:salesforce:refresh-fiches [--code]` ; cron quotidien 3h
   (`Schedule.php` → `RefreshFichesSalesforce` redispatché sur le worker
-  etl) ; payload : bloc `data.salesforce` `{rse{6 clés}, evaluationClient,
+  etl) ; **webhook entrant** `POST /api/salesforce/produits` (2026-08-20,
+  `SalesforceWebhookController`) : Salesforce notifie les codes produit
+  modifiés (`{"codes": [123, "456"]}`, 200 max, jeton Bearer
+  `SALESFORCE_WEBHOOK_TOKEN` — vide = 404, voir `docs/SECRETS.md`) et
+  chaque code part en `RefreshFichesSalesforce(code)` sur la file etl
+  (202) — les données ne sont jamais prises dans le payload, le refresher
+  relit l'état chez Salesforce (mêmes règles que le cron, garde-diff,
+  re-sync marketplace ; retries messenger en cas d'indisponibilité SF) ;
+  payload : bloc `data.salesforce` `{rse{6 clés}, evaluationClient,
   procedureJudiciaire, contratsComptes[]}`, clé absente tant que la fiche
   n'a pas de ligne `etl_fiche_salesforce`. Les 4 formulaires affichent la
   case « Partenaire BP » désactivée avec l'aide « Géré par Salesforce. »
