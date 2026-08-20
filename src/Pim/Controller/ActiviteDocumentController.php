@@ -14,10 +14,9 @@ use App\Pim\Form\ActiviteDocumentMetadataType;
 use App\Pim\Form\LieuDocumentReplaceType;
 use App\Pim\Repository\RessourceLieuRepository;
 use App\Pim\Service\FicheDocumentManager;
+use App\Pim\Service\MediasBlocReponse;
 use App\Shared\Form\ActionType;
 use App\Shared\Service\PrivateObjectStorageInterface;
-use App\Pim\Service\FicheSectionsCatalogue;
-use App\Pim\Enum\TypeFiche;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -38,6 +37,7 @@ final class ActiviteDocumentController extends AbstractController
         FormFactoryInterface $forms,
         FicheDocumentManager $manager,
         CurrentActorProvider $actor,
+        MediasBlocReponse $reponse,
     ): Response {
         $this->denyAccessUnlessGranted(FicheVoter::EDIT, $activite->fiche());
         $document = $resources->findDocumentForFiche($activite->fiche(), $resourceId, DocumentUsage::CommercialSupport);
@@ -55,11 +55,11 @@ final class ActiviteDocumentController extends AbstractController
             $manager->updateMetadata($document, $activite->fiche(), $data, $actor->id());
         }
 
-        return $this->repondre($request, $activite, $erreur, 'Document modifié.');
+        return $reponse->repondre($request, $activite->fiche(), $erreur, 'Document modifié.');
     }
 
     #[Route('/{resourceId}/fichier', name: 'replace', methods: ['POST'])]
-    public function replace(Request $request, Activite $activite, string $resourceId, RessourceLieuRepository $resources, FormFactoryInterface $forms, FicheDocumentManager $manager): Response
+    public function replace(Request $request, Activite $activite, string $resourceId, RessourceLieuRepository $resources, FormFactoryInterface $forms, FicheDocumentManager $manager, MediasBlocReponse $reponse): Response
     {
         $this->denyAccessUnlessGranted(FicheVoter::EDIT, $activite->fiche());
         $document = $resources->findDocumentForFiche($activite->fiche(), $resourceId, DocumentUsage::CommercialSupport);
@@ -74,11 +74,11 @@ final class ActiviteDocumentController extends AbstractController
             $manager->replace($document, $activite->fiche(), $file, DocumentUsage::CommercialSupport);
         }
 
-        return $this->repondre($request, $activite, $erreur, 'Fichier remplacé.');
+        return $reponse->repondre($request, $activite->fiche(), $erreur, 'Fichier remplacé.');
     }
 
     #[Route('/{resourceId}/publication', name: 'publication', methods: ['POST'])]
-    public function publication(Request $request, Activite $activite, string $resourceId, RessourceLieuRepository $resources, FormFactoryInterface $forms, FicheDocumentManager $manager): Response
+    public function publication(Request $request, Activite $activite, string $resourceId, RessourceLieuRepository $resources, FormFactoryInterface $forms, FicheDocumentManager $manager, MediasBlocReponse $reponse): Response
     {
         $this->denyAccessUnlessGranted('ROLE_BP_VALIDATOR');
         $document = $resources->findDocumentForFiche($activite->fiche(), $resourceId, DocumentUsage::CommercialSupport);
@@ -93,11 +93,11 @@ final class ActiviteDocumentController extends AbstractController
             catch (\DomainException $exception) { $erreur = $exception->getMessage(); }
         }
 
-        return $this->repondre($request, $activite, $erreur, 'Changement de publication mis en file.');
+        return $reponse->repondre($request, $activite->fiche(), $erreur, 'Changement de publication mis en file.');
     }
 
     #[Route('/{resourceId}/supprimer', name: 'delete', methods: ['POST'])]
-    public function delete(Request $request, Activite $activite, string $resourceId, RessourceLieuRepository $resources, FormFactoryInterface $forms, FicheDocumentManager $manager): Response
+    public function delete(Request $request, Activite $activite, string $resourceId, RessourceLieuRepository $resources, FormFactoryInterface $forms, FicheDocumentManager $manager, MediasBlocReponse $reponse): Response
     {
         $this->denyAccessUnlessGranted(FicheVoter::EDIT, $activite->fiche());
         $document = $resources->findDocumentForFiche($activite->fiche(), $resourceId, DocumentUsage::CommercialSupport);
@@ -111,7 +111,7 @@ final class ActiviteDocumentController extends AbstractController
             $manager->delete($document, $activite->fiche());
         }
 
-        return $this->repondre($request, $activite, $erreur, 'Document supprimé.');
+        return $reponse->repondre($request, $activite->fiche(), $erreur, 'Document supprimé.');
     }
 
     #[Route('/{resourceId}/download', name: 'download', methods: ['GET'])]
@@ -126,19 +126,4 @@ final class ActiviteDocumentController extends AbstractController
         return $this->redirect($storage->temporaryUrl($asset->originalStorageKey(), new \DateTimeImmutable('+10 minutes')));
     }
 
-    // Le contrôleur medias-bloc soumet les formulaires des modales en fetch et
-    // re-rend le bloc seul : réponse JSON quand la requête vient de lui, flash
-    // + redirection sinon (fallback sans JavaScript). Jamais de flash en AJAX,
-    // il s'afficherait à la navigation suivante.
-    private function repondre(Request $request, Activite $activite, ?string $erreur, string $succes): Response
-    {
-        if ($request->isXmlHttpRequest()) {
-            return null === $erreur
-                ? $this->json(['ok' => true])
-                : $this->json(['error' => $erreur], Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-        $this->addFlash(null === $erreur ? 'success' : 'error', $erreur ?? $succes);
-
-        return $this->redirectToRoute('app_mdm_fiche_gamme', ['gamme' => 'activites', 'id' => $activite->id(), 'section' => FicheSectionsCatalogue::indexBloc(TypeFiche::Activite, 'medias')]);
-    }
 }

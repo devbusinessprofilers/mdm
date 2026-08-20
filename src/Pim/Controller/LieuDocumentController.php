@@ -14,10 +14,9 @@ use App\Pim\Form\LieuDocumentReplaceType;
 use App\Pim\Form\LieuDocumentUploadType;
 use App\Pim\Repository\RessourceLieuRepository;
 use App\Pim\Service\LieuDocumentManager;
+use App\Pim\Service\MediasBlocReponse;
 use App\Shared\Form\ActionType;
 use App\Shared\Service\PrivateObjectStorageInterface;
-use App\Pim\Service\FicheSectionsCatalogue;
-use App\Pim\Enum\TypeFiche;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -30,18 +29,18 @@ use Symfony\Component\Routing\Attribute\Route;
 final class LieuDocumentController extends AbstractController
 {
     #[Route('', name: 'upload', methods: ['POST'])]
-    public function upload(Request $request, Lieu $lieu, FormFactoryInterface $forms, LieuDocumentManager $manager, CurrentActorProvider $actor): Response
+    public function upload(Request $request, Lieu $lieu, FormFactoryInterface $forms, LieuDocumentManager $manager, CurrentActorProvider $actor, MediasBlocReponse $reponse): Response
     {
         $this->denyAccessUnlessGranted(FicheVoter::EDIT, $lieu->fiche());
         $form = $forms->createNamed('document_upload', LieuDocumentUploadType::class, null, ['salles' => $lieu->salles()->toArray()]);
         $form->handleRequest($request);
         if (!$form->isSubmitted() || !$form->isValid()) {
-            return $this->repondre($request, $lieu, 'Le formulaire documentaire est invalide.', '');
+            return $reponse->repondre($request, $lieu->fiche(), 'Le formulaire documentaire est invalide.', '');
         }
         $files = $form->get('documents')->getData();
         $files = is_array($files) ? array_values(array_filter($files, static fn (mixed $file): bool => $file instanceof UploadedFile)) : [];
         if ([] === $files) {
-            return $this->repondre($request, $lieu, 'Sélectionnez au moins un document.', '');
+            return $reponse->repondre($request, $lieu->fiche(), 'Sélectionnez au moins un document.', '');
         }
         $erreur = null;
         $succes = '';
@@ -54,11 +53,11 @@ final class LieuDocumentController extends AbstractController
             $erreur = $exception->getMessage();
         }
 
-        return $this->repondre($request, $lieu, $erreur, $succes);
+        return $reponse->repondre($request, $lieu->fiche(), $erreur, $succes);
     }
 
     #[Route('/{resourceId}/modifier', name: 'update', methods: ['POST'])]
-    public function update(Request $request, Lieu $lieu, string $resourceId, RessourceLieuRepository $resources, FormFactoryInterface $forms, LieuDocumentManager $manager, CurrentActorProvider $actor): Response
+    public function update(Request $request, Lieu $lieu, string $resourceId, RessourceLieuRepository $resources, FormFactoryInterface $forms, LieuDocumentManager $manager, CurrentActorProvider $actor, MediasBlocReponse $reponse): Response
     {
         $this->denyAccessUnlessGranted(FicheVoter::EDIT, $lieu->fiche());
         $document = $resources->findDocumentForFiche($lieu->fiche(), $resourceId);
@@ -79,11 +78,11 @@ final class LieuDocumentController extends AbstractController
             } catch (\DomainException $exception) { $erreur = $exception->getMessage(); }
         }
 
-        return $this->repondre($request, $lieu, $erreur, 'Document modifié.');
+        return $reponse->repondre($request, $lieu->fiche(), $erreur, 'Document modifié.');
     }
 
     #[Route('/{resourceId}/fichier', name: 'replace', methods: ['POST'])]
-    public function replace(Request $request, Lieu $lieu, string $resourceId, RessourceLieuRepository $resources, FormFactoryInterface $forms, LieuDocumentManager $manager): Response
+    public function replace(Request $request, Lieu $lieu, string $resourceId, RessourceLieuRepository $resources, FormFactoryInterface $forms, LieuDocumentManager $manager, MediasBlocReponse $reponse): Response
     {
         $this->denyAccessUnlessGranted(FicheVoter::EDIT, $lieu->fiche());
         $document = $resources->findDocumentForFiche($lieu->fiche(), $resourceId);
@@ -103,11 +102,11 @@ final class LieuDocumentController extends AbstractController
             }
         }
 
-        return $this->repondre($request, $lieu, $erreur, 'Fichier remplacé.');
+        return $reponse->repondre($request, $lieu->fiche(), $erreur, 'Fichier remplacé.');
     }
 
     #[Route('/{resourceId}/publication', name: 'publication', methods: ['POST'])]
-    public function publication(Request $request, Lieu $lieu, string $resourceId, RessourceLieuRepository $resources, FormFactoryInterface $forms, LieuDocumentManager $manager): Response
+    public function publication(Request $request, Lieu $lieu, string $resourceId, RessourceLieuRepository $resources, FormFactoryInterface $forms, LieuDocumentManager $manager, MediasBlocReponse $reponse): Response
     {
         $this->denyAccessUnlessGranted('ROLE_BP_VALIDATOR');
         $document = $resources->findDocumentForFiche($lieu->fiche(), $resourceId);
@@ -121,11 +120,11 @@ final class LieuDocumentController extends AbstractController
             catch (\DomainException $exception) { $erreur = $exception->getMessage(); }
         }
 
-        return $this->repondre($request, $lieu, $erreur, 'Changement de publication mis en file.');
+        return $reponse->repondre($request, $lieu->fiche(), $erreur, 'Changement de publication mis en file.');
     }
 
     #[Route('/{resourceId}/supprimer', name: 'delete', methods: ['POST'])]
-    public function delete(Request $request, Lieu $lieu, string $resourceId, RessourceLieuRepository $resources, FormFactoryInterface $forms, LieuDocumentManager $manager): Response
+    public function delete(Request $request, Lieu $lieu, string $resourceId, RessourceLieuRepository $resources, FormFactoryInterface $forms, LieuDocumentManager $manager, MediasBlocReponse $reponse): Response
     {
         $this->denyAccessUnlessGranted(FicheVoter::EDIT, $lieu->fiche());
         $document = $resources->findDocumentForFiche($lieu->fiche(), $resourceId);
@@ -136,7 +135,7 @@ final class LieuDocumentController extends AbstractController
         if (!$form->isSubmitted() || !$form->isValid()) { $erreur = 'Le formulaire de suppression est invalide.'; }
         else { $manager->delete($document, $lieu); }
 
-        return $this->repondre($request, $lieu, $erreur, 'Document supprimé.');
+        return $reponse->repondre($request, $lieu->fiche(), $erreur, 'Document supprimé.');
     }
 
     #[Route('/{resourceId}/download', name: 'download', methods: ['GET'])]
@@ -151,19 +150,4 @@ final class LieuDocumentController extends AbstractController
         return $this->redirect($storage->temporaryUrl($asset->originalStorageKey(), new \DateTimeImmutable('+10 minutes')));
     }
 
-    // Le contrôleur medias-bloc soumet les formulaires des modales en fetch et
-    // re-rend le bloc seul : réponse JSON quand la requête vient de lui, flash
-    // + redirection sinon (fallback sans JavaScript). Jamais de flash en AJAX,
-    // il s'afficherait à la navigation suivante.
-    private function repondre(Request $request, Lieu $lieu, ?string $erreur, string $succes): Response
-    {
-        if ($request->isXmlHttpRequest()) {
-            return null === $erreur
-                ? $this->json(['ok' => true])
-                : $this->json(['error' => $erreur], Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-        $this->addFlash(null === $erreur ? 'success' : 'error', $erreur ?? $succes);
-
-        return $this->redirectToRoute('app_mdm_fiche_lieu', ['id' => $lieu->id(), 'section' => FicheSectionsCatalogue::indexBloc(TypeFiche::Lieu, 'medias')]);
-    }
 }
