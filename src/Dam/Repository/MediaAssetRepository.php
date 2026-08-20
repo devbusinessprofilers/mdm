@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Dam\Repository;
 
 use App\Dam\Entity\MediaAsset;
+use App\Dam\Entity\MediaRendition;
 use App\Dam\Enum\MediaKind;
 use App\Dam\Enum\MediaStatus;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -171,8 +172,10 @@ final class MediaAssetRepository extends ServiceEntityRepository
 
     /**
      * Nombre et poids cumulé des médias actifs — l'indicateur « Stockage ».
+     * `octets` ne compte que les originaux ; `octetsTotal` y ajoute les
+     * variantes générées (renditions), soit l'espace réellement occupé.
      *
-     * @return array{nb: int, octets: int}
+     * @return array{nb: int, octets: int, octetsTotal: int}
      */
     public function storageStats(): array
     {
@@ -182,8 +185,18 @@ final class MediaAssetRepository extends ServiceEntityRepository
             ->setParameter('deleted', [MediaStatus::Deleting, MediaStatus::Deleted])
             ->getQuery()
             ->getSingleResult();
+        // Requête séparée : jointe à la première, la multiplication des lignes
+        // par variante fausserait SUM(media.sizeBytes).
+        $variantes = (int) $this->getEntityManager()->createQueryBuilder()
+            ->select('COALESCE(SUM(rendition.sizeBytes), 0)')
+            ->from(MediaRendition::class, 'rendition')
+            ->join('rendition.media', 'media')
+            ->where('media.status NOT IN (:deleted)')
+            ->setParameter('deleted', [MediaStatus::Deleting, MediaStatus::Deleted])
+            ->getQuery()
+            ->getSingleScalarResult();
 
-        return ['nb' => (int) $row['nb'], 'octets' => (int) $row['octets']];
+        return ['nb' => (int) $row['nb'], 'octets' => (int) $row['octets'], 'octetsTotal' => (int) $row['octets'] + $variantes];
     }
 
     public function countActiveByKind(MediaKind $kind): int
