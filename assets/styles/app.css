@@ -314,7 +314,7 @@ select[data-controller*="autocomplete"]:not(.tomselected) {
  * du portail (cartes blanches, marine, dégradé de marque sur les actions).
  */
 .page-simple { font-family: var(--font-sans); color: var(--color-base-text); }
-.page-simple .page { display: flex; flex-direction: column; gap: 20px; max-width: 1240px; }
+.page-simple .page { display: flex; flex-direction: column; gap: 20px; max-width: 1240px; width: 100%; margin-inline: auto; }
 .page-simple .page-narrow { max-width: 720px; }
 .page-simple .page-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
 .page-simple .page-header-copy { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
@@ -329,7 +329,7 @@ select[data-controller*="autocomplete"]:not(.tomselected) {
 .page-simple a { color: var(--color-primary-3); }
 .page-simple a:hover { text-decoration: underline; }
 .page-simple .text-link, .page-simple .back-link { font-size: 0.875rem; font-weight: 900; color: var(--color-primary-3); text-decoration: none; width: fit-content; }
-.page-simple .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: var(--radius-lg); background: linear-gradient(var(--primary-gradient)); color: var(--color-neutral-100); font-size: 0.875rem; font-weight: 900; text-decoration: none; cursor: pointer; border: 0; width: fit-content; }
+.page-simple .btn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: var(--radius-lg); background: linear-gradient(var(--primary-gradient)); color: var(--color-neutral-100); font-size: 0.8125rem; font-weight: 900; text-decoration: none; cursor: pointer; border: 0; width: fit-content; }
 .page-simple .btn:hover { background: linear-gradient(var(--primary-gradient-hover)); text-decoration: none; }
 .page-simple .btn-secondary { background: var(--color-neutral-100); color: var(--color-primary-3); box-shadow: inset 0 0 0 1px var(--color-primary); }
 .page-simple .btn-secondary:hover { background: var(--color-primary-4); }
@@ -349,6 +349,13 @@ select[data-controller*="autocomplete"]:not(.tomselected) {
 .page-simple tbody tr:first-child td { border-top: 0; }
 .page-simple tbody tr:hover { background: var(--color-primary-5); }
 .page-simple .table-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.page-simple td .btn, .page-simple .table-actions .btn { padding: 4px 10px; font-size: 0.75rem; }
+/* Boutons du composant Form rendus hors carte (cellules, en-tête de page) :
+   la taille lg pleine largeur du thème y est disproportionnée. Ces règles
+   étant hors @layer, elles priment sur les utilitaires Tailwind du composant. */
+.page-simple td form { display: inline-flex; vertical-align: middle; }
+.page-simple td form button { width: fit-content; height: 32px; padding: 2px 12px; }
+.page-simple .page-header form button { width: fit-content; height: 40px; }
 .page-simple .dam-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
 .page-simple .dam-stat { display: flex; flex-direction: column; gap: 4px; padding: 16px; border-radius: 16px; background: var(--color-neutral-100); box-shadow: var(--shadow); color: inherit; text-decoration: none; }
 .page-simple .dam-stat:hover { background: var(--color-primary-5); text-decoration: none; }
