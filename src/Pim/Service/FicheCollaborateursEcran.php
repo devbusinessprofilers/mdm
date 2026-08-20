@@ -59,7 +59,15 @@ final readonly class FicheCollaborateursEcran
             ->add('phone', TelType::class, ['label' => 'Téléphone', 'required' => false])
             ->add('role', ChoiceType::class, CollaborateurInvitationType::roleOptions())
             ->add('receivesRequests', CheckboxType::class, [
-                'label' => 'Contact principal (reçoit les demandes)',
+                'label' => 'Traite les demandes',
+                'required' => false,
+            ])
+            ->add('traiteContenus', CheckboxType::class, [
+                'label' => 'Traite les contenus',
+                'required' => false,
+            ])
+            ->add('traitePaiements', CheckboxType::class, [
+                'label' => 'Traite les paiements',
                 'required' => false,
             ])
             ->add('envoyerAcces', CheckboxType::class, [
@@ -104,20 +112,24 @@ final readonly class FicheCollaborateursEcran
         return $this->forms->createNamedBuilder('collab_edition_'.$affiliation->idString(), data: [
             'role' => $affiliation->role(),
             'receivesRequests' => $affiliation->receivesRequests(),
+            'traiteContenus' => $affiliation->traiteContenus(),
+            'traitePaiements' => $affiliation->traitePaiements(),
             'repli' => $affiliation->repli(),
         ], options: [
             'action' => $this->urls->generate('app_mdm_fiche_affiliation_modifier', ['id' => $affiliation->idString()]),
             'csrf_token_id' => 'collab-edition-'.$affiliation->idString(),
         ])
             ->add('role', ChoiceType::class, CollaborateurInvitationType::roleOptions())
-            ->add('receivesRequests', CheckboxType::class, ['label' => 'Contact principal', 'required' => false])
+            ->add('receivesRequests', CheckboxType::class, ['label' => 'Traite les demandes', 'required' => false])
+            ->add('traiteContenus', CheckboxType::class, ['label' => 'Traite les contenus', 'required' => false])
+            ->add('traitePaiements', CheckboxType::class, ['label' => 'Traite les paiements', 'required' => false])
             ->add('repli', CheckboxType::class, ['label' => 'Contact de repli', 'required' => false])
             ->add('enregistrer', SubmitType::class, ['label' => 'Enregistrer'])
             ->getForm();
     }
 
     /**
-     * @param array{email: string, firstName: ?string, lastName: ?string, phone: ?string, role: FicheAffiliationRole, receivesRequests: bool, envoyerAcces: bool} $data
+     * @param array{email: string, firstName: ?string, lastName: ?string, phone: ?string, role: FicheAffiliationRole, receivesRequests: bool, traiteContenus: bool, traitePaiements: bool, envoyerAcces: bool} $data
      *
      * @throws \DomainException quand le métier refuse (déjà affilié, plafond de destinataires…)
      */
@@ -132,6 +144,12 @@ final readonly class FicheCollaborateursEcran
             (string) $data['firstName'],
             (string) $data['lastName'],
         );
+        if ($data['traiteContenus']) {
+            $affiliation->changeTraiteContenus(true);
+        }
+        if ($data['traitePaiements']) {
+            $affiliation->changeTraitePaiements(true);
+        }
         if (null === $affiliation->collaborateur()->phone() && null !== $data['phone'] && '' !== trim($data['phone'])) {
             $affiliation->collaborateur()->changePhone($data['phone']);
         }
@@ -146,12 +164,24 @@ final readonly class FicheCollaborateursEcran
         return $affiliation;
     }
 
-    /** @param array{role: FicheAffiliationRole, receivesRequests: bool, repli: bool} $data */
+    /** @param array{role: FicheAffiliationRole, receivesRequests: bool, traiteContenus: bool, traitePaiements: bool, repli: bool} $data */
     public function modifier(User $actor, FicheAffiliation $affiliation, array $data): void
     {
         $this->manager->update($actor, $affiliation, $data['role'], $data['receivesRequests']);
+        $modifie = false;
         if ($data['repli'] !== $affiliation->repli()) {
             $affiliation->changeRepli($data['repli']);
+            $modifie = true;
+        }
+        if ($data['traiteContenus'] !== $affiliation->traiteContenus()) {
+            $affiliation->changeTraiteContenus($data['traiteContenus']);
+            $modifie = true;
+        }
+        if ($data['traitePaiements'] !== $affiliation->traitePaiements()) {
+            $affiliation->changeTraitePaiements($data['traitePaiements']);
+            $modifie = true;
+        }
+        if ($modifie) {
             $this->entityManager->flush();
         }
     }

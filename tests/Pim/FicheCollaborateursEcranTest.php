@@ -64,6 +64,7 @@ final class FicheCollaborateursEcranTest extends WebTestCase
         $values['collab_invitation']['phone'] = '+33 3 44 62 37 37';
         $values['collab_invitation']['role'] = 'manager';
         $values['collab_invitation']['receivesRequests'] = '1';
+        $values['collab_invitation']['traitePaiements'] = '1';
         $client->request($form->getMethod(), $form->getUri(), $values);
         self::assertResponseRedirects();
         $crawler = $client->followRedirect();
@@ -73,6 +74,8 @@ final class FicheCollaborateursEcranTest extends WebTestCase
         self::assertCount(1, $affiliations);
         self::assertSame(FicheAffiliationRole::Manager, $affiliations[0]->role());
         self::assertTrue($affiliations[0]->receivesRequests());
+        self::assertFalse($affiliations[0]->traiteContenus());
+        self::assertTrue($affiliations[0]->traitePaiements());
         self::assertSame('+33 3 44 62 37 37', $affiliations[0]->collaborateur()->phone());
 
         // Édition : le crayon ouvre le panneau latéral via ?collaborateur=<id>,
@@ -87,7 +90,8 @@ final class FicheCollaborateursEcranTest extends WebTestCase
         $values = $form->getPhpValues();
         $values[$nom]['role'] = 'utilisateur';
         $values[$nom]['repli'] = '1';
-        unset($values[$nom]['receivesRequests']);
+        $values[$nom]['traiteContenus'] = '1';
+        unset($values[$nom]['receivesRequests'], $values[$nom]['traitePaiements']);
         $client->request($form->getMethod(), $form->getUri(), $values);
         self::assertResponseRedirects();
         $client->followRedirect();
@@ -97,6 +101,8 @@ final class FicheCollaborateursEcranTest extends WebTestCase
         self::assertSame(FicheAffiliationRole::Utilisateur, $modifiee->role());
         self::assertFalse($modifiee->receivesRequests());
         self::assertTrue($modifiee->repli());
+        self::assertTrue($modifiee->traiteContenus());
+        self::assertFalse($modifiee->traitePaiements());
 
         // Retrait.
         $crawler = $client->request('GET', '/referentiel/lieux/fiche/'.$id.'?section=13');

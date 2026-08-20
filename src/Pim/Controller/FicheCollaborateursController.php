@@ -53,7 +53,7 @@ final class FicheCollaborateursController extends AbstractController
         $form = $ecran->formInvitation($fiche);
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
-            /** @var array{email: string, firstName: ?string, lastName: ?string, phone: ?string, role: \App\Account\Enum\FicheAffiliationRole, receivesRequests: bool, envoyerAcces: bool} $data */
+            /** @var array{email: string, firstName: ?string, lastName: ?string, phone: ?string, role: \App\Account\Enum\FicheAffiliationRole, receivesRequests: bool, traiteContenus: bool, traitePaiements: bool, envoyerAcces: bool} $data */
             $data = $form->getData();
             try {
                 $affiliation = $ecran->inviter($user, $fiche, $data);
@@ -109,7 +109,7 @@ final class FicheCollaborateursController extends AbstractController
         $form = $ecran->formEdition($affiliation);
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
-            /** @var array{role: \App\Account\Enum\FicheAffiliationRole, receivesRequests: bool, repli: bool} $data */
+            /** @var array{role: \App\Account\Enum\FicheAffiliationRole, receivesRequests: bool, traiteContenus: bool, traitePaiements: bool, repli: bool} $data */
             $data = $form->getData();
             try {
                 $ecran->modifier($user, $affiliation, $data);

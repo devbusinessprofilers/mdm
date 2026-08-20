@@ -52,6 +52,14 @@ class FicheAffiliation
     #[ORM\Column(options: ['default' => false])]
     private bool $repli;
 
+    /** Droits maquette : le collaborateur traite les contenus de la fiche. */
+    #[ORM\Column(options: ['default' => false])]
+    private bool $traiteContenus;
+
+    /** Droits maquette : le collaborateur traite les paiements de la fiche. */
+    #[ORM\Column(options: ['default' => false])]
+    private bool $traitePaiements;
+
     public function __construct(FicheCollaborateur $collaborateur, Fiche $fiche, FicheAffiliationRole $role, User $createdBy, bool $receivesRequests = false, bool $repli = false)
     {
         $this->id = new Ulid();
@@ -60,6 +68,8 @@ class FicheAffiliation
         $this->role = $role;
         $this->receivesRequests = $receivesRequests;
         $this->repli = $repli;
+        $this->traiteContenus = false;
+        $this->traitePaiements = false;
         $this->createdByUser = $createdBy;
         $this->initializeTimestamps();
     }
@@ -71,7 +81,11 @@ class FicheAffiliation
     public function role(): FicheAffiliationRole { return $this->role; }
     public function receivesRequests(): bool { return $this->receivesRequests; }
     public function repli(): bool { return $this->repli; }
+    public function traiteContenus(): bool { return $this->traiteContenus; }
+    public function traitePaiements(): bool { return $this->traitePaiements; }
     public function changeRepli(bool $value): void { $this->repli = $value; $this->touch(); }
+    public function changeTraiteContenus(bool $value): void { $this->traiteContenus = $value; $this->touch(); }
+    public function changeTraitePaiements(bool $value): void { $this->traitePaiements = $value; $this->touch(); }
     public function createdBy(): User|FicheCollaborateur { return $this->createdByUser ?? $this->createdByCollaborateur ?? throw new \LogicException('Auteur manquant.'); }
     public function changeRole(FicheAffiliationRole $role): void { $this->role = $role; $this->touch(); }
     public function changeReceivesRequests(bool $value): void { $this->receivesRequests = $value; $this->touch(); }
