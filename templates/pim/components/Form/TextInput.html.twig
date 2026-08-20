@@ -32,16 +32,19 @@
 {% set hasRightIcon = rightIcon is defined and rightIcon %}
 
 <div class="{{ wrapperCva.apply({ disabled }) }}">
+    {# Le type HTML natif (time, date…) vient d'inputAttributes : il doit sortir
+       ici et pas dans la boucle — un type="text" écrit avant gagnerait, les
+       navigateurs gardent la première occurrence d'un attribut dupliqué. #}
     <input
         id="{{ id }}"
         name="{{ name }}"
-        type="text"
+        type="{{ inputAttributes.type|default('text') }}"
         value="{{ value }}"
         {% if disabled %}disabled{% endif %}
         {% if readonly %}readonly{% endif %}
         {% if placeholder is not empty %}placeholder="{{ placeholder }}"{% endif %}
         class="{{ cva.apply({ disabled, readonly, leftIcon: hasLeftIcon, rightIcon: hasRightIcon }, attributes.render('class')) }}"
-        {% for key, value in inputAttributes %}
+        {% for key, value in inputAttributes|filter((v, k) => k != 'type') %}
             {{ key }}="{{ value }}"
         {% endfor %}
     >

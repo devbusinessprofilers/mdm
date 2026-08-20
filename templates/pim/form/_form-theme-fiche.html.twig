@@ -41,7 +41,7 @@
 {#- Sous-formulaires : la grille 2 colonnes de la maquette s'applique à chaque
     niveau — champ simple en demi-largeur ; riche, collection ou groupe en
     pleine largeur. Les cases à cocher passent toutes SOUS les autres champs,
-    empilées par trois en demi-colonnes (même règle dans la boucle des volets
+    deux par rangée en demi-largeur (même règle dans la boucle des volets
     de mdm/fiche_editeur). Les champs cachés ne prennent pas de place dans le
     flux. -#}
 {%- block form_rows -%}
@@ -54,10 +54,8 @@
                 or 'textarea' in enfant.vars.block_prefixes -%}
             {{- form_row(enfant, { row_attr: { class: pleine ? 'w-full' : 'w-[calc(50%-12px)]' } }) -}}
         {%- endfor -%}
-        {%- for lot in enfants|filter(c => 'checkbox' in c.vars.block_prefixes)|batch(3) -%}
-            <div class="w-[calc(50%-12px)] flex flex-col gap-3">
-                {%- for enfant in lot -%}{{- form_row(enfant) -}}{%- endfor -%}
-            </div>
+        {%- for enfant in enfants|filter(c => 'checkbox' in c.vars.block_prefixes) -%}
+            {{- form_row(enfant, { row_attr: { class: 'w-[calc(50%-12px)]' } }) -}}
         {%- endfor -%}
     </div>
 {%- endblock -%}

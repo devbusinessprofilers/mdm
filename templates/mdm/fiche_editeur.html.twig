@@ -32,6 +32,9 @@
 {# Cases « porte d'entrée » (l'établissement dispose de…) : elles ouvrent leur
    bloc en pleine largeur au lieu de rejoindre la pile de cases en pied. #}
 {% set cases_en_tete = ['chambreHebergement', 'salleReunionExist'] %}
+{# Cases rendues à leur position dans l'ordre des champs de la section, au lieu
+   de la pile de pied : l'accessibilité PMR précède la collection Accès. #}
+{% set cases_en_ligne = ['pmrAcces', 'accesPmr', 'toilettesPmr'] %}
 
 {% block title %}{{ fiche.label ?? 'Fiche' }} · {{ section.titre }}{% endblock %}
 
@@ -242,7 +245,7 @@
                     {{ _self.volet_titre(s.titre, onglets[i].completude, s.nb_champs|default(null), true) }}
                     {# Grille maquette : champ simple en demi-largeur, riche/groupe/collection en
                        pleine largeur ; les cases à cocher passent toutes SOUS les autres champs,
-                       empilées par trois en demi-colonnes (même règle dans le form_rows de
+                       deux par rangée en demi-largeur (même règle dans le form_rows de
                        _form-theme-fiche). Le libellé d'un groupe de premier niveau est tu :
                        la carte porte déjà le titre. #}
                     <div class="flex flex-row flex-wrap gap-x-6 gap-y-5">
@@ -277,13 +280,17 @@
                         {% for widget in widgets_section|filter(w => 'checkbox' in w.vars.block_prefixes and w.vars.name in cases_en_tete) %}
                             <div class="w-full">{{ form_row(widget) }}</div>
                         {% endfor %}
-                        {% for widget in widgets_section|filter(w => 'checkbox' not in w.vars.block_prefixes) %}
+                        {% for widget in widgets_section|filter(w => 'checkbox' not in w.vars.block_prefixes or w.vars.name in cases_en_ligne) %}
                             {% set champ = widget.vars.name %}
                             {# Les blocs spécialisés passent AVANT la branche collection
                                générique : `salles` est aussi une collection et serait
                                sinon avalée par elle (matrice jamais rendue). #}
                             {% if 'capacites' in s.blocs and champ == 'salles' %}
-                                <div class="w-full">{% include 'mdm/fiche/_capacites.html.twig' with { widget: widget } only %}</div>
+                                {# min-w-0 : autorise l'item flex à rétrécir pour que la
+                                   matrice défile au lieu d'élargir la carte. L'import de
+                                   fichier par salle n'existe que côté Lieu (flux
+                                   documentaire salle_id). #}
+                                <div class="w-full min-w-0">{% include 'mdm/fiche/_capacites.html.twig' with { widget: widget, avec_fichiers: fiche.type.value == 'lieu' } only %}</div>
                             {% elseif 'puces' in s.blocs %}
                                 <div class="w-full">{% include 'mdm/fiche/_puces.html.twig' with { widget: widget } only %}</div>
                             {% elseif widget.vars.prototype is defined %}
@@ -304,10 +311,11 @@
                                 {% endif %}
                             {% endif %}
                         {% endfor %}
-                        {% for lot in widgets_section|filter(w => 'checkbox' in w.vars.block_prefixes and w.vars.name not in cases_en_tete)|batch(3) %}
-                            <div class="w-[calc(50%-12px)] flex flex-col gap-3">
-                                {% for widget in lot %}{{ form_row(widget) }}{% endfor %}
-                            </div>
+                        {# Cases en demi-largeur dans le flux : deux par rangée, alignées
+                           sur la grille des champs — la dernière reste seule sur sa
+                           ligne quand le compte est impair. #}
+                        {% for widget in widgets_section|filter(w => 'checkbox' in w.vars.block_prefixes and w.vars.name not in cases_en_tete and w.vars.name not in cases_en_ligne) %}
+                            {{ form_row(widget, { row_attr: { class: 'w-[calc(50%-12px)]' } }) }}
                         {% endfor %}
                     </div>
                 </section>
@@ -350,10 +358,8 @@
                                         {{ form_row(widget, { row_attr: { class: 'w-[calc(50%-12px)]' } }) }}
                                     {% endif %}
                                 {% endfor %}
-                                {% for lot in annexes_simples|filter(w => 'checkbox' in w.vars.block_prefixes)|batch(3) %}
-                                    <div class="w-[calc(50%-12px)] flex flex-col gap-3">
-                                        {% for widget in lot %}{{ form_row(widget) }}{% endfor %}
-                                    </div>
+                                {% for widget in annexes_simples|filter(w => 'checkbox' in w.vars.block_prefixes) %}
+                                    {{ form_row(widget, { row_attr: { class: 'w-[calc(50%-12px)]' } }) }}
                                 {% endfor %}
                             </div>
                             {% if w_periodes is not null %}
@@ -431,27 +437,29 @@
                     {# Classes écrites en toutes lettres : Tailwind ne compile pas
                        une classe construite par concaténation. #}
                     {% set grille_collab = peut_gerer
-                        ? 'grid-cols-[84px_96px_84px_minmax(0,1fr)_116px_104px_78px_62px]'
-                        : 'grid-cols-[84px_96px_84px_minmax(0,1fr)_116px_104px_78px]' %}
+                        ? 'grid-cols-[96px_84px_minmax(0,1fr)_116px_104px_84px_84px_84px_78px_62px]'
+                        : 'grid-cols-[96px_84px_minmax(0,1fr)_116px_104px_84px_84px_84px_78px]' %}
                     <div class="flex flex-col min-[1100px]:flex-row gap-6 items-start">
                     <div class="flex-1 min-w-0 flex flex-col gap-3">
                         <div class="flex flex-col self-stretch overflow-x-auto">
-                            <div class="grid {{ grille_collab }} gap-1.5 box-border px-3 py-2.5 rounded-xs bg-primary-4 min-w-[720px]" role="row">
-                                {% for colonne in ['Contact principal', 'Nom', 'Prénom', 'Email', 'Téléphone', 'Rôle', 'Repli'] %}
+                            <div class="grid {{ grille_collab }} gap-1.5 box-border px-3 py-2.5 rounded-xs bg-primary-4 min-w-[900px]" role="row">
+                                {% for colonne in ['Nom', 'Prénom', 'Email', 'Téléphone', 'Rôle', 'Traite les demandes', 'Traite les contenus', 'Traite les paiements', 'Repli'] %}
                                     <span role="columnheader"><twig:Typography variant="body-xs" textColor="primary-3" bold>{{ colonne }}</twig:Typography></span>
                                 {% endfor %}
                                 {% if peut_gerer %}<span></span>{% endif %}
                             </div>
                             {% for ligne in affiliations %}
                                 {% set affiliation = ligne.affiliation %}
-                                <div class="grid {{ grille_collab }} gap-1.5 items-center box-border px-3 py-3.5 min-w-[720px]
+                                <div class="grid {{ grille_collab }} gap-1.5 items-center box-border px-3 py-3.5 min-w-[900px]
                                             border-b border-neutral-200 {{ affiliation.idString == collaborateur_edite ? 'bg-primary-5' : '' }}" role="row">
-                                    {{ _self.droit_collab(affiliation.receivesRequests, 'Contact principal') }}
                                     <span class="min-w-0 truncate"><twig:Typography variant="body-sm" bold>{{ affiliation.collaborateur.lastName }}</twig:Typography></span>
                                     <span class="min-w-0 truncate"><twig:Typography variant="body-sm">{{ affiliation.collaborateur.firstName }}</twig:Typography></span>
                                     <span class="min-w-0 truncate"><twig:Typography variant="body-sm">{{ affiliation.collaborateur.email }}</twig:Typography></span>
                                     <span class="whitespace-nowrap"><twig:Typography variant="body-sm">{{ affiliation.collaborateur.phone ?? '—' }}</twig:Typography></span>
                                     <span class="min-w-0 truncate"><twig:Typography variant="body-sm">{{ affiliation.role.value|capitalize }}</twig:Typography></span>
+                                    {{ _self.droit_collab(affiliation.receivesRequests, 'Traite les demandes') }}
+                                    {{ _self.droit_collab(affiliation.traiteContenus, 'Traite les contenus') }}
+                                    {{ _self.droit_collab(affiliation.traitePaiements, 'Traite les paiements') }}
                                     {{ _self.droit_collab(affiliation.repli, 'Contact de repli') }}
                                     {% if peut_gerer %}
                                         <div class="flex items-center gap-2.5">

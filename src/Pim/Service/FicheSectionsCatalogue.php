@@ -83,8 +83,9 @@ final class FicheSectionsCatalogue
             ],
             [
                 'titre' => 'Localisation & accessibilité',
-                'champs' => ['localisation', 'acces', 'accessibiliteDescription.pmrAcces', 'accessibiliteDescription.pmrDetails'],
-                'proprietes' => ['localisation', 'acces', 'pmrAcces', 'pmrDetails'],
+                // Accessibilité PMR avant la collection Accès (ordre maquette).
+                'champs' => ['localisation', 'accessibiliteDescription.pmrAcces', 'accessibiliteDescription.pmrDetails', 'acces'],
+                'proprietes' => ['localisation', 'pmrAcces', 'pmrDetails', 'acces'],
                 'blocs' => [],
                 'groupe' => 'ma_fiche',
             ],
@@ -209,8 +210,9 @@ final class FicheSectionsCatalogue
             ],
             [
                 'titre' => 'Localisation & accessibilité',
-                'champs' => ['localisation', 'acces', 'accesPmr', 'toilettesPmr'],
-                'proprietes' => ['localisation', 'acces', 'accesPmr', 'toilettesPmr'],
+                // Accessibilité PMR avant la collection Accès (ordre maquette).
+                'champs' => ['localisation', 'accesPmr', 'toilettesPmr', 'acces'],
+                'proprietes' => ['localisation', 'accesPmr', 'toilettesPmr', 'acces'],
                 'blocs' => [],
                 'groupe' => 'ma_fiche',
             ],
@@ -230,9 +232,11 @@ final class FicheSectionsCatalogue
             ],
             [
                 'titre' => 'Salles & capacités',
+                // La collection se rend en matrice maquette (mdm/fiche/_capacites),
+                // comme la section Réunion du Lieu.
                 'champs' => ['salles'],
                 'proprietes' => ['salles'],
-                'blocs' => [],
+                'blocs' => ['capacites'],
                 'groupe' => 'ma_fiche',
             ],
             [
