@@ -1,0 +1,127 @@
+# Installation du projet sur un nouveau poste de développement
+
+Procédure pour installer l'environnement complet (Docker + application, branche
+`dev`, fixtures de démo) sur une nouvelle machine. Vérifiée le 2026-08-20 contre
+l'état réel du dépôt (`docker-compose.yml`, `Docker/php/local-deploy.sh`,
+`Docker/sql/database/`, fixtures).
+
+## Prérequis
+
+- Docker + Docker Compose v2, git.
+- **Utilisateur en UID 1000** (`id -u`) : les conteneurs php/workers tournent en
+  `1000:1000` sur le bind-mount `html/`. Un autre UID posera des problèmes de
+  permissions.
+- Une clé SSH GitHub avec accès à l'organisation `devbusinessprofilers` : le
+  sous-module `html` est déclaré en SSH (`git@github.com:devbusinessprofilers/mdm.git`).
+
+## 1. Récupérer le code (branche dev)
+
+```bash
+git clone https://github.com/devbusinessprofilers/lamp-docker-mdm.git
+cd lamp-docker-mdm
+git checkout dev
+git submodule update --init
+cd html && git checkout dev && git pull origin dev && cd ..
+```
+
+Le `submodule update` laisse `html/` en detached HEAD sur le commit épinglé ;
+le checkout explicite de `dev` met sur la branche de travail.
+
+## 2. Configurer l'environnement
+
+```bash
+cp .env_sample .env
+```
+
+Puis remplir :
+
+| Variable | Valeur |
+|---|---|
+| `DB_NAME` | `mdm` |
+| `DB_USER` | `mdm` (l'init SQL `Docker/sql/database/01-databases.sql` donne les droits à cet utilisateur sur `mdm_test`, `mdm_reel` et `bp-dump`) |
+| `DB_PASSWORD` / `DB_ROOT_PASSWORD` | au choix |
+| `DB_PORT` | `3306` |
+
+Rien à créer côté `html/.env.local` : `local-deploy` le génère au premier boot
+(`APP_ENV=dev`, `DATABASE_URL` vers la base `mdm`, `MAILER_DSN` vers maildev).
+
+**Nuance données réelles** : un poste existant peut pointer vers `mdm_reel`
+(données réelles importées). Sur un nouveau poste, la base est `mdm` avec des
+fixtures — les données réelles ne se récupèrent pas par git. Pour les avoir :
+dump/restore de `mdm_reel`, ou rejeu de l'import legacy
+([import-legacy.md](import-legacy.md)).
+
+Piège mineur : le compose bind-monte un chemin absolu vers les images de
+l'import legacy (`/home/theofane/Documents/Développement/Projets/DAM/images`).
+Sur un autre poste, Docker créera un dossier vide à ce chemin — sans
+conséquence tant qu'on ne rejoue pas l'import photos ; adapter le chemin si
+besoin.
+
+## 3. Premier démarrage — un échec de php est **attendu**
+
+```bash
+docker compose up -d --build
+```
+
+Le premier boot de php est long : `composer install`, `importmap:install`,
+builds Tailwind/Sass, `asset-map:compile`. Ensuite `local-deploy` compte les
+fiches (`SELECT COUNT(*) FROM pim_fiche`) : la table n'existe pas encore
+(aucune migration jouée, `empty-bdd.sql` est vide) → **le conteneur php
+s'arrête volontairement avec un message d'erreur**. C'est le garde-fou
+anti-fixtures, pas un bug.
+
+## 4. Jouer les migrations, puis laisser les fixtures se charger
+
+```bash
+docker compose run --rm --entrypoint bash php -c 'php bin/console doctrine:migrations:migrate --no-interaction'
+docker compose up -d php
+```
+
+Au redémarrage, `local-deploy` voit 0 fiche et charge automatiquement
+`doctrine:fixtures:load --append` : ~400 fiches de démo (100 par domaine
+Lieu/Activité/Restaurant/Service, ~80 % publiées, index de recherche créé).
+Volume ajustable via `PIM_LIEU_FIXTURE_COUNT` & co avant ce démarrage (voir
+`src/DataFixtures/README.md`). Les migrations sèment aussi la table
+`parametre` et les LOV.
+
+## 5. Post-installation
+
+```bash
+# Compte pour se connecter
+docker compose exec php php bin/console app:user:create-super-admin
+
+# Config de complétude (obligatoire avant tout calcul de scores)
+docker compose exec php php bin/console app:completeness:sync-config
+
+# Base de test (mdm_test est déjà créée par l'init SQL)
+docker compose exec php php bin/console doctrine:migrations:migrate --env=test --no-interaction
+```
+
+## 6. Workers (optionnel mais nécessaire pour l'async)
+
+```bash
+docker compose --profile workers up -d
+```
+
+Indexation de recherche, complétude, médias, mails passent par Messenger —
+sans workers, ces traitements restent en file. Piège connu : les workers ont
+leur cache Symfony dans `/tmp` avec `APP_DEBUG=0` → `docker compose up -d
+--force-recreate` des workers après tout changement de constructeur ou de
+variable d'environnement.
+
+## 7. Vérifier
+
+- Application : <http://localhost:6080> (santé sur `/health`), connexion avec
+  le super admin.
+- phpMyAdmin : <http://localhost:6081> (`mdm` / `DB_PASSWORD`, ou `root` /
+  `DB_ROOT_PASSWORD`).
+- Maildev : <http://localhost:6082>.
+
+## Secrets facultatifs (`html/.env.local`, seulement si besoin)
+
+Toutes les intégrations se dégradent proprement quand la variable est vide :
+S3/OVH (DAM), Google Translate, Geoapify (adresses étrangères), Box (OCR),
+Salesforce, marketplace. Pour brancher la marketplace locale :
+`MARKETPLACE_SYNC_API_URL=http://host.docker.internal:7080` + login/mot de
+passe du compte machine. Références : [SECRETS.md](SECRETS.md) et
+[configuration.md](configuration.md).
