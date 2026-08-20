@@ -182,6 +182,9 @@ final readonly class ReferentielEcran
         'dates' => ['cle' => 'Dates', 'valeurs' => [
             'creees_semaine' => 'Créées cette semaine', 'modifiees_jour' => "Modifiées aujourd'hui", 'sans_modif_6m' => 'Sans modification depuis 6 mois',
         ]],
+        'formes' => ['cle' => 'Écart de forme', 'valeurs' => [
+            'sans_pays' => 'Localisations sans code pays', 'sans_gps' => 'Localisations sans GPS', 'sans_libelle' => 'Fiches sans libellé',
+        ]],
     ];
 
     /** Facettes booléennes : libellé porté par le badge, la clé étant retirée d'un bloc. */

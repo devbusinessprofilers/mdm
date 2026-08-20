@@ -142,7 +142,7 @@
             {# La recherche est rendue dans la barre d'outils (rattachée par `form=`). #}
             {% do form_filtres.q.setRendered %}
 
-            {% for groupe in ['gammes', 'statuts', 'completudes', 'canaux', 'pays', 'dates'] %}
+            {% for groupe in ['gammes', 'statuts', 'completudes', 'canaux', 'pays', 'dates', 'formes'] %}
                 {% set champ = attribute(form_filtres, groupe) %}
                 {% if champ.children is not empty %}
                     <div class="flex flex-col gap-0.5 pt-2 pb-2.5">
@@ -485,15 +485,17 @@
                                         Une photo manquante est un champ « vide et
                                         obligatoire » du socle : l'anneau pêche le porte.
                                     #}
-                                    <span class="shrink-0 box-border flex items-center justify-center rounded-xxs
-                                                 w-10 h-8 group-data-[densite=compacte]/tableau:w-[30px] group-data-[densite=compacte]/tableau:h-6
-                                                 {{ ligne.vignette ? 'bg-primary-4' : 'bg-primary-5 inset-ring-1 inset-ring-peach' }}">
-                                        {% if ligne.vignette %}
-                                            <twig:Icon name="images" class="w-[15px] h-[15px] group-data-[densite=compacte]/tableau:w-[13px] group-data-[densite=compacte]/tableau:h-[13px] text-primary-3" />
-                                        {% else %}
+                                    {% if ligne.vignette %}
+                                        <img src="{{ ligne.vignette }}" alt="" loading="lazy"
+                                             class="shrink-0 rounded-xxs object-cover
+                                                    w-10 h-8 group-data-[densite=compacte]/tableau:w-[30px] group-data-[densite=compacte]/tableau:h-6" />
+                                    {% else %}
+                                        <span class="shrink-0 box-border flex items-center justify-center rounded-xxs
+                                                     w-10 h-8 group-data-[densite=compacte]/tableau:w-[30px] group-data-[densite=compacte]/tableau:h-6
+                                                     bg-primary-5 inset-ring-1 inset-ring-peach">
                                             <span class="block w-[5px] h-[5px] rounded-full bg-peach"></span>
-                                        {% endif %}
-                                    </span>
+                                        </span>
+                                    {% endif %}
                                     <div class="flex-1 min-w-0 flex flex-col">
                                         {# Le nom ouvre la fiche : chemin principal vers l'éditeur. #}
                                         <a href="{{ urls[ligne.id].editeur ?? urls[ligne.id].edition_rapide }}" class="min-w-0 hover:underline">

@@ -305,12 +305,12 @@
     {% elseif onglet_actif == 'formes' %}
         <div class="dam-stats shrink-0 flex flex-row gap-4 flex-wrap" aria-label="Écarts de forme">
             {% for carte in [
-                { libelle: 'Localisations sans code pays', valeur: formes.sans_pays, icone: 'pin', texte: 'Le pays manque : la fiche ne sort dans aucun filtre géographique.' },
-                { libelle: 'Localisations sans GPS', valeur: formes.sans_gps, icone: 'area', texte: 'Sans coordonnées, pas de carte ni de recherche par proximité.' },
-                { libelle: 'Fiches sans libellé', valeur: formes.sans_libelle, icone: 'warning', texte: 'Une fiche sans nom est invisible partout — à compléter en priorité.' },
+                { libelle: 'Localisations sans code pays', valeur: formes.sans_pays, icone: 'pin', texte: 'Le pays manque : la fiche ne sort dans aucun filtre géographique.', filtre: 'sans_pays' },
+                { libelle: 'Localisations sans GPS', valeur: formes.sans_gps, icone: 'area', texte: 'Sans coordonnées, pas de carte ni de recherche par proximité.', filtre: 'sans_gps' },
+                { libelle: 'Fiches sans libellé', valeur: formes.sans_libelle, icone: 'warning', texte: 'Une fiche sans nom est invisible partout — à compléter en priorité.', filtre: 'sans_libelle' },
             ] %}
                 <a class="dam-stat flex flex-col box-border gap-3 px-[26px] py-6 rounded-md bg-neutral-100 shadow-(--shadow) flex-1 basis-72 min-w-0 hover:bg-primary-5"
-                   href="{{ path('app_mdm_referentiel_general') }}">
+                   href="{{ path('app_mdm_referentiel_general', {f: {formes: [carte.filtre]}}) }}">
                     <div class="flex items-center gap-3">
                         <twig:Icon name="{{ carte.icone }}" aria-hidden="true"
                                    class="shrink-0 w-6 h-6 {{ carte.valeur > 0 ? 'text-error' : 'text-primary' }}" />

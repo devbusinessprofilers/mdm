@@ -63,6 +63,17 @@ final readonly class ReferentielRepository
         )
         SQL;
 
+    /**
+     * Écarts de forme, mêmes définitions que QualiteRepository::ecartsDeForme()
+     * — la localisation doit exister (jointure interne côté Qualité) pour que
+     * les cartes de l'onglet Formes et la liste filtrée comptent pareil.
+     */
+    private const ECARTS_FORME = [
+        'sans_pays' => '(f.localisation_id IS NOT NULL AND loc.country_code IS NULL)',
+        'sans_gps' => '(f.localisation_id IS NOT NULL AND (loc.latitude IS NULL OR loc.longitude IS NULL))',
+        'sans_libelle' => 'f.label IS NULL',
+    ];
+
     private const MAX_PAYS = 8;
     private const MAX_VALEURS = 12;
     private const MAX_CONTRIBUTEURS = 12;
@@ -427,6 +438,7 @@ final readonly class ReferentielRepository
             'modifiees_jour' => "f.updated_at >= '".$jour."'",
             'sans_modif_6m' => "f.updated_at < '".$sixMois."'",
         ]);
+        $comptes['formes'] = $this->comptesSommes($filtres, 'formes', self::ECARTS_FORME, ['loc']);
         $comptes['contributeurs'] = $this->comptesParExpression($filtres, 'contributeur', 'f.assignee_id');
         $comptes['ia'] = ['1' => $this->compteAvec($filtres, 'ia', self::IA_EXISTS)];
         $comptes['repli'] = ['1' => $this->compteAvec($filtres, 'repli', self::REPLI_EXISTS)];
@@ -495,7 +507,7 @@ final readonly class ReferentielRepository
         }
         $renditions = $this->connection->fetchAllKeyValue(
             "SELECT r.media_id, r.storage_key FROM dam_media_rendition r
-             WHERE r.name = 'small' AND r.media_id IN (:ids)",
+             WHERE r.name = 'cart' AND r.media_id IN (:ids)",
             ['ids' => array_values($assetBinaires)],
             ['ids' => ArrayParameterType::BINARY],
         );
@@ -697,6 +709,9 @@ final readonly class ReferentielRepository
         if ('canaux' !== $groupeExclu && [] !== $filtres->canaux) {
             $requises['sd'] = true;
         }
+        if ('formes' !== $groupeExclu && [] !== array_intersect($filtres->formes, ['sans_pays', 'sans_gps'])) {
+            $requises['loc'] = true;
+        }
         $joins = $this->jointures($requises);
 
         $q = trim((string) $filtres->q);
@@ -769,6 +784,13 @@ final readonly class ReferentielRepository
                     'modifiees_jour' => "f.updated_at >= '".$jour."'",
                     default => "f.updated_at < '".$sixMois."'",
                 };
+            }
+            $conditions[] = '('.implode(' OR ', $parts).')';
+        }
+        if ('formes' !== $groupeExclu && [] !== $filtres->formes) {
+            $parts = [];
+            foreach ($filtres->formes as $ecart) {
+                $parts[] = self::ECARTS_FORME[$ecart] ?? self::ECARTS_FORME['sans_libelle'];
             }
             $conditions[] = '('.implode(' OR ', $parts).')';
         }

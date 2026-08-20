@@ -34,6 +34,9 @@ final class ReferentielFiltres
     /** @var list<string> Paliers : creees_semaine, modifiees_jour, sans_modif_6m. */
     public array $dates = [];
 
+    /** @var list<string> Écarts de forme : sans_pays, sans_gps, sans_libelle. */
+    public array $formes = [];
+
     /** @var list<string> Identifiants des contributeurs internes assignés. */
     public array $contributeurs = [];
 
@@ -56,7 +59,7 @@ final class ReferentielFiltres
     {
         return (null !== $this->q && '' !== trim($this->q) ? 1 : 0)
             + count($this->gammes) + count($this->statuts) + count($this->completudes)
-            + count($this->pays) + count($this->canaux) + count($this->dates) + count($this->contributeurs)
+            + count($this->pays) + count($this->canaux) + count($this->dates) + count($this->formes) + count($this->contributeurs)
             + ($this->ia ? 1 : 0) + ($this->repli ? 1 : 0) + ($this->premium ? 1 : 0) + count($this->valeurs);
     }
 
@@ -77,6 +80,7 @@ final class ReferentielFiltres
             'pays' => $this->pays,
             'canaux' => $this->canaux,
             'dates' => $this->dates,
+            'formes' => $this->formes,
             'contributeurs' => $this->contributeurs,
             'ia' => $this->ia ?: null,
             'repli' => $this->repli ?: null,
@@ -98,6 +102,7 @@ final class ReferentielFiltres
         $filtres->pays = self::stringList($data['pays'] ?? [], null);
         $filtres->canaux = self::stringList($data['canaux'] ?? [], ['c20', 'c5', 'c1', 'c0']);
         $filtres->dates = self::stringList($data['dates'] ?? [], ['creees_semaine', 'modifiees_jour', 'sans_modif_6m']);
+        $filtres->formes = self::stringList($data['formes'] ?? [], ['sans_pays', 'sans_gps', 'sans_libelle']);
         $filtres->contributeurs = self::stringList($data['contributeurs'] ?? [], null);
         $filtres->ia = (bool) ($data['ia'] ?? false);
         $filtres->repli = (bool) ($data['repli'] ?? false);

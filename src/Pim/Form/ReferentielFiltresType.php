@@ -100,6 +100,17 @@ final class ReferentielFiltresType extends AbstractType
                     'Sans modification depuis 6 mois' => 'sans_modif_6m',
                 ],
             ])
+            ->add('formes', ChoiceType::class, [
+                'label' => 'Écarts de forme',
+                'required' => false,
+                'multiple' => true,
+                'expanded' => true,
+                'choices' => [
+                    'Localisations sans code pays' => 'sans_pays',
+                    'Localisations sans GPS' => 'sans_gps',
+                    'Fiches sans libellé' => 'sans_libelle',
+                ],
+            ])
             ->add('contributeurs', ChoiceType::class, [
                 'label' => 'Contributeur',
                 'required' => false,
