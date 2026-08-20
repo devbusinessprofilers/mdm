@@ -382,12 +382,6 @@
             </div>
             <div class="flex items-center shrink-0 gap-3">
                 <twig:Button variant="text" size="md" asLink href="{{ path('app_mdm_referentiel_general') }}">Annuler</twig:Button>
-                <span title="Fonction à venir — en développement" class="inline-flex shrink-0">
-                    <twig:Button variant="text" size="md" disabled>Enregistrer comme brouillon</twig:Button>
-                </span>
-                <span title="Fonction à venir — en développement" class="inline-flex shrink-0">
-                    <twig:Button variant="outline" size="md" disabled>Créer et enchaîner</twig:Button>
-                </span>
                 {{ form_row(form.submit, { attr: { 'data-variant': 'primary', 'data-size': 'md', 'data-full': false } }) }}
             </div>
         </div>

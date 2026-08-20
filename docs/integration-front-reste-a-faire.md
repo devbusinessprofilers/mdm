@@ -245,8 +245,9 @@ langage front » vs 632 maquette) : gabarit maquette intégral posé sur le form
 réel. Rail des 7 blocs avec badges d'état vivants (« ! » serveur conservé tant que
 le bloc n'est pas corrigé), fil d'Ariane + en-tête, blocs-cartes numérotés
 verrouillés tant que la gamme n'est pas choisie (visuel seul, les champs restent de
-vrais inputs), barre d'actions basse (Annuler réel, Brouillon et « Créer et
-enchaîner » désactivés + infobulle, `Créer la fiche` = vrai submit), bannière
+vrais inputs), barre d'actions basse (Annuler réel, `Créer la fiche` = vrai submit — les
+boutons maquette « Enregistrer comme brouillon » et « Créer et enchaîner »,
+d'abord repris désactivés, ont été retirés sur demande le 2026-08-20), bannière
 d'erreurs maquette sur les champs fautifs. Gamme = cartes-radios réelles
 (`type` passe en expanded, carte « Plateaux repas » inerte), classification = puces
 cochables réelles (6 ChoiceType passent en expanded — thème
