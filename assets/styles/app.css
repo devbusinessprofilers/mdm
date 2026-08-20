@@ -249,6 +249,12 @@
 }
 
 /*
+ * Carte médias : toute la carte accepte le glisser-déposer de fichiers —
+ * le contrôleur lieu-media pose is-dragging pendant le survol d'un dépôt.
+ */
+.lieu-media-manager.is-dragging { outline: 2px dashed var(--color-primary); outline-offset: -6px; background: var(--color-primary-5); }
+
+/*
  * Écrans périphériques (templates/mdm/simple.html.twig) : le vocabulaire de
  * classes hérité des anciennes pages, traduit aux couleurs du PIM. Ces écrans
  * n'ont pas de maquette — ils restent simples, mais dans le langage visuel

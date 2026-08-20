@@ -21,9 +21,17 @@ export default class extends Controller {
     }
 
     upload(event) { this.uploadFiles(Array.from(event.target.files || [])) }
-    dragover(event) { event.preventDefault(); this.dropzoneTarget.classList.add('is-dragging') }
-    dragleave() { this.dropzoneTarget.classList.remove('is-dragging') }
-    drop(event) { event.preventDefault(); this.dropzoneTarget.classList.remove('is-dragging'); this.uploadFiles(Array.from(event.dataTransfer.files || [])) }
+    // La carte entière est la zone de dépôt : on ne réagit qu'aux fichiers de
+    // l'OS (types contient « Files »), pas au réordonnancement des vignettes.
+    isFileDrag(event) { return Array.from(event.dataTransfer?.types || []).includes('Files') }
+    dragover(event) { if (!this.isFileDrag(event)) return; event.preventDefault(); this.dropzoneTarget.classList.add('is-dragging') }
+    dragleave(event) {
+        // Passer d'un enfant de la carte à un autre déclenche dragleave : on ne
+        // retire le voile qu'en quittant réellement la carte.
+        if (event.relatedTarget && this.element.contains(event.relatedTarget)) return
+        this.dropzoneTarget.classList.remove('is-dragging')
+    }
+    drop(event) { if (!this.isFileDrag(event)) return; event.preventDefault(); this.dropzoneTarget.classList.remove('is-dragging'); this.uploadFiles(Array.from(event.dataTransfer.files || [])) }
 
     uploadFiles(files) {
         if (!files.length) return
@@ -58,7 +66,9 @@ export default class extends Controller {
     moveDown(event) { const item = event.currentTarget.closest('[data-lieu-media-target="item"]'); item.nextElementSibling?.after(item); this.saveOrder() }
     dragstart(event) { this.dragged = event.currentTarget }
     dragoverItem(event) { event.preventDefault() }
-    dropItem(event) { event.preventDefault(); if (this.dragged && this.dragged !== event.currentTarget) event.currentTarget.before(this.dragged); this.saveOrder() }
+    // Sans vignette en cours de glissement (dépôt de fichiers sur une tuile),
+    // on laisse l'événement remonter au drop de la carte.
+    dropItem(event) { if (!this.dragged) return; event.preventDefault(); if (this.dragged !== event.currentTarget) event.currentTarget.before(this.dragged); this.dragged = null; this.saveOrder() }
 
     saveOrder() {
         if (!this.hasListTarget) return

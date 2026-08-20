@@ -3,6 +3,8 @@
    Variables : lieu, creation, photos, documents, media_upload_form,
    media_csrf_token, document_upload_form. #}
     {% if not creation %}
+        {# Toute la carte est la zone de dépôt (maquette) : les actions de
+           glisser-déposer vivent sur la section, pas sur une bande dédiée. #}
         <section
             class="card lieu-media-manager"
             data-controller="lieu-media"
@@ -10,6 +12,8 @@
             data-lieu-media-order-url-value="{{ path('app_pim_lieu_photo_order', {id: lieu.id}) }}"
             data-lieu-media-modales-url-value="{{ path('app_pim_lieu_media_modales', {id: lieu.id}) }}"
             data-lieu-media-token-value="{{ media_csrf_token }}"
+            data-lieu-media-target="dropzone"
+            data-action="dragover->lieu-media#dragover dragleave->lieu-media#dragleave drop->lieu-media#drop"
         >
             <div class="flex items-center gap-3 pb-3">
                 <div class="flex flex-col">
@@ -20,12 +24,10 @@
                 <span class="flex-1"></span>
                 <twig:Typography variant="body-xs" textColor="neutral-400">25 Mo max · 960 × 480 px · format paysage</twig:Typography>
             </div>
+            {# L'input (sr-only) reste dans la page : la tuile « Ajouter un
+               média » l'ouvre par son libellé, le dépôt se fait sur la carte. #}
             {{ form_start(media_upload_form) }}
-                <div class="lieu-media-dropzone" data-lieu-media-target="dropzone" data-action="dragover->lieu-media#dragover dragleave->lieu-media#dragleave drop->lieu-media#drop">
-                    {{ form_label(media_upload_form.photos) }}
-                    <span>Choisissez plusieurs fichiers · JPG, PNG, WEBP · 25 Mo max · 960 × 480 px min.</span>
-                    {{ form_widget(media_upload_form.photos) }}
-                </div>
+                {{ form_widget(media_upload_form.photos) }}
             {{ form_end(media_upload_form) }}
             <div class="lieu-media-progress" hidden data-lieu-media-target="progress"><span data-lieu-media-target="progressBar"></span></div>
             <p class="form-error" hidden data-lieu-media-target="error"></p>
@@ -33,11 +35,9 @@
             {#
                 Galerie maquette : les vignettes sont les éléments réels — on les
                 réordonne au glisser-déposer, et UN CLIC ouvre les paramètres de
-                la photo en modale. La tuile « Ajouter » ouvre le sélecteur.
+                la photo en modale. La tuile « Ajouter » ouvre le sélecteur ;
+                elle reste présente même sans photo.
             #}
-            {% if photos is empty %}
-                <p class="empty-state">Aucune photo n’a encore été ajoutée.</p>
-            {% else %}
                 <div class="flex flex-row flex-wrap gap-4 py-4" data-lieu-media-target="list">
                     {% for photo in photos %}
                         <button type="button" title="Modifier les paramètres de la photo"
@@ -78,7 +78,6 @@
                 {# Paramètres de chaque photo : une modale par vignette, dans
                    _medias_modales.html.twig — préchargée en arrière-plan après
                    le chargement de la page (lieu-media#connect). #}
-            {% endif %}
         </section>
     {% else %}
         <section class="card"><h2>Photos du lieu</h2><p>Enregistrez d’abord le lieu, puis vous pourrez ajouter plusieurs images et leurs métadonnées.</p></section>
