@@ -184,15 +184,6 @@
             </div>
         </div>
 
-        <span class="flex-1"></span>
-
-        {# La règle de diffusion conditionne les huit onglets : elle reste sous les yeux. #}
-        <div class="shrink-0 flex flex-col gap-1.5 mr-1 p-3.5 rounded-[12px] bg-primary-4">
-            <twig:Typography variant="body-sm" bold textColor="primary-3">Règle de diffusion</twig:Typography>
-            <twig:Typography variant="body-sm" textColor="neutral-500" class="text-pretty">Un média sans droits
-                déclarés ne part sur aucun canal tiers, même si la fiche est publiée.
-                {%- if stats is defined and stats.rights_missing > 0 %} {{ stats.rights_missing|number_format(0, ',', ' ') }} média{{ stats.rights_missing > 1 ? 's sont' : ' est' }} dans ce cas.{% endif %}</twig:Typography>
-        </div>
     </nav>
 {% endblock %}
 

@@ -1,8 +1,8 @@
 {% extends 'mdm/base.html.twig' %}
 
 {#
-    Écran « Qualité » — châssis maquette (rail d'onglets badgés + règle
-    « Qui fait foi » persistante), contenus réels par onglet : santé par
+    Écran « Qualité » — châssis maquette (rail d'onglets badgés),
+    contenus réels par onglet : santé par
     gamme/canal, conflits IA + adresses BAN/Geoapify, écarts de forme,
     notifications, décisions d'arbitrage.
 
@@ -61,15 +61,6 @@
             </div>
         </div>
 
-        <span class="flex-1"></span>
-
-        {# « Qui fait foi » : la règle qui rend les cinq onglets lisibles. #}
-        <div class="shrink-0 flex flex-col gap-1.5 mr-1 p-3.5 rounded-[12px] bg-primary-4">
-            <twig:Typography variant="body-sm" bold textColor="primary-3">Qui fait foi</twig:Typography>
-            <twig:Typography variant="body-sm" textColor="neutral-500" class="text-pretty">Salesforce sur la raison
-                sociale, le SIRET et la facturation · le MDM sur les descriptions, capacités et taxonomies · le
-                portail BP sur les horaires, contacts et médias.</twig:Typography>
-        </div>
     </nav>
 {% endblock %}
 
