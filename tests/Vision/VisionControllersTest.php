@@ -48,11 +48,12 @@ final class VisionControllersTest extends WebTestCase
     {
         $client = $this->clientValidateur();
 
-        $client->request('GET', '/medias', ['onglet' => 'import']);
+        // Le contenu des onglets est servi par la frame Turbo de la coquille.
+        $client->request('GET', '/medias/contenu', ['onglet' => 'import']);
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('body', 'Retouche IA désactivée');
 
-        $client->request('GET', '/medias', ['onglet' => 'ia']);
+        $client->request('GET', '/medias/contenu', ['onglet' => 'ia']);
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('body', 'Reconnaissance IA désactivée');
 
@@ -68,7 +69,7 @@ final class VisionControllersTest extends WebTestCase
         $this->activerOpenAi();
         $enhancement = $this->retouchePrete();
 
-        $crawler = $client->request('GET', '/medias', ['onglet' => 'import']);
+        $crawler = $client->request('GET', '/medias/contenu', ['onglet' => 'import']);
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('body', 'À valider');
 

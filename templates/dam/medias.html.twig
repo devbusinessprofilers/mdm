@@ -132,13 +132,16 @@
     'sync': { icone: 'spinner', sousTitre: 'Le DAM détient les fichiers, le PIM les rattache aux fiches. Les anomalies entre les deux se traitent ici.' },
 } %}
 
-{# Badges réels du rail : seulement là où une donnée back existe. #}
-{% set rail_badges = stats is defined ? {
-    'biblio': _self.nombre(stats.images + stats.documents),
+{# Badges réels du rail : seulement là où une donnée back existe. La coquille
+   les tient des comptes légers rail_stats ; le fragment de contenu, des stats
+   complètes du provider. #}
+{% set badges_source = rail_stats|default(stats|default(null)) %}
+{% set rail_badges = badges_source ? {
+    'biblio': _self.nombre(badges_source.images + badges_source.documents),
     'formats': variantes|length,
-    'droits': _self.nombre(stats.rights_missing),
-    'doublons': stats.duplicates,
-    'sync': stats.orphans + stats.missing_renditions + stats.failed,
+    'droits': _self.nombre(badges_source.rights_missing),
+    'doublons': badges_source.duplicates,
+    'sync': badges_source.orphans + badges_source.missing_renditions + badges_source.failed,
 } : {} %}
 {# Onglets IA : ce qui attend une décision humaine. #}
 {% set rail_badges = rail_badges|merge(vision_badges|default({})) %}
@@ -206,6 +209,34 @@
         </div>
     </div>
 
+    {# Le contenu de l'onglet est différé : la coquille s'affiche tout de suite
+       avec un squelette, la frame va chercher les agrégats et la page d'items
+       sur app_mdm_medias_contenu. target="_top" : les liens et formulaires du
+       contenu naviguent en pleine page, comme avant. #}
+    <turbo-frame id="medias-contenu" target="_top" class="contents"
+                 {% if not contenu_charge %}src="{{ contenu_url }}"{% endif %}>
+    {% if not contenu_charge %}
+    {# Squelette aux dimensions du réel : barre de files puis tableau. #}
+    <div class="flex-1 min-h-0 flex flex-col gap-4 px-10 pb-8 overflow-y-auto scrollbar"
+         role="status" aria-label="Chargement des médias en cours">
+        <div class="shrink-0 flex items-center gap-3.5 px-5 py-[15px] rounded-sm bg-neutral-100 shadow-(--shadow) animate-pulse">
+            <span class="h-4 w-24 rounded-lg bg-neutral-200"></span>
+            <span class="w-px h-4 shrink-0 bg-neutral-200"></span>
+            <span class="h-6 w-28 rounded-lg bg-neutral-200"></span>
+            <span class="h-6 w-36 rounded-lg bg-neutral-200"></span>
+        </div>
+        <div class="shrink-0 flex flex-col rounded-sm overflow-hidden bg-neutral-100 shadow-(--shadow) animate-pulse">
+            <div class="h-9 shrink-0 bg-primary-5 border-b border-neutral-200"></div>
+            {% for ligne in 1..8 %}
+                <div class="{{ grille }} min-h-[56px] py-2 box-border {{ loop.first ? '' : 'border-t border-neutral-200' }}">
+                    {% for colonne in 1..5 %}
+                        <span class="h-3.5 rounded-lg bg-neutral-200 {{ colonne is odd ? 'w-3/4' : 'w-1/2' }}"></span>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% else %}
     <div class="flex-1 min-h-0 flex flex-col gap-4 px-10 pb-8 overflow-y-auto scrollbar">
 
     {# ------------------------------------------------- Indicateurs (bibliothèque) #}
@@ -921,5 +952,7 @@
         </div>
     {% endif %}
     </div>
+    {% endif %}
+    </turbo-frame>
 </main>
 {% endblock %}

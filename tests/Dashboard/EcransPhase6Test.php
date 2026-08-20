@@ -57,14 +57,21 @@ final class EcransPhase6Test extends WebTestCase
         $client->request('GET', '/outils', ['famille' => 'import', 'erreurs' => 1]);
         self::assertResponseIsSuccessful();
 
-        // /medias : bibliothèque (contenu DAM réutilisé) puis onglets propres.
-        $client->request('GET', '/medias');
+        // /medias : coquille immédiate (rail, en-tête, squelette), contenu de
+        // l'onglet servi par la frame Turbo sur /medias/contenu.
+        $crawler = $client->request('GET', '/medias');
         self::assertResponseIsSuccessful();
         // Le h1 porte l'onglet actif ; « Médias » titre le rail.
         self::assertSelectorTextContains('h1', 'Bibliothèque');
         self::assertSelectorTextContains('body', 'Médias');
+        self::assertNotNull(
+            $crawler->filter('turbo-frame#medias-contenu')->attr('src'),
+            'La coquille doit différer le contenu dans une frame Turbo.',
+        );
         foreach (['doublons', 'droits', 'sync', 'formats', 'import', 'ia', 'meta'] as $onglet) {
             $client->request('GET', '/medias', ['onglet' => $onglet]);
+            self::assertResponseIsSuccessful();
+            $client->request('GET', '/medias/contenu', ['onglet' => $onglet]);
             self::assertResponseIsSuccessful();
         }
 

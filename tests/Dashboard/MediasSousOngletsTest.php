@@ -8,7 +8,9 @@ use App\Account\Entity\User;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\Group;
+use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\DomCrawler\Crawler;
 
 /**
  * Régression : les cartes de statistiques (sous-onglets) du contenu DAM
@@ -52,8 +54,7 @@ final class MediasSousOngletsTest extends WebTestCase
         $attendues = ['biblio' => 2, 'droits' => 5, 'doublons' => 1, 'sync' => 3];
 
         foreach ($attendues as $onglet => $nombre) {
-            $crawler = $client->request('GET', '/medias', ['onglet' => $onglet]);
-            self::assertResponseIsSuccessful();
+            $crawler = $this->contenu($client, '/medias?onglet='.$onglet);
             $pastilles = $crawler->filter('a[data-file]');
             self::assertSame($nombre, $pastilles->count(), sprintf('L\'onglet « %s » doit afficher %d files.', $onglet, $nombre));
 
@@ -64,8 +65,7 @@ final class MediasSousOngletsTest extends WebTestCase
                 $href = (string) $pastille->getAttribute('href');
                 $cle = (string) $pastille->getAttribute('data-file');
                 self::assertStringContainsString('/medias?filter=', $href, 'Les pastilles doivent rester sur /medias avec un paramètre filter.');
-                $suivant = $client->request('GET', $href);
-                self::assertResponseIsSuccessful($href);
+                $suivant = $this->contenu($client, $href);
                 self::assertSame(
                     $cle,
                     $suivant->filter('a[data-file-active]')->attr('data-file'),
@@ -73,5 +73,21 @@ final class MediasSousOngletsTest extends WebTestCase
                 );
             }
         }
+    }
+
+    /**
+     * Le contenu est différé dans une frame Turbo : la coquille répond, porte
+     * la frame, et son src rend les pastilles — comme le fait le navigateur.
+     */
+    private function contenu(KernelBrowser $client, string $url): Crawler
+    {
+        $coquille = $client->request('GET', $url);
+        self::assertResponseIsSuccessful($url);
+        $src = $coquille->filter('turbo-frame#medias-contenu')->attr('src');
+        self::assertNotNull($src, sprintf('La coquille %s doit porter une frame de contenu à charger.', $url));
+        $contenu = $client->request('GET', $src);
+        self::assertResponseIsSuccessful($src);
+
+        return $contenu;
     }
 }

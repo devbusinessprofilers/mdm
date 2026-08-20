@@ -46,6 +46,26 @@ final readonly class DamDashboardProvider
         private DamDashboardFormFactory $forms,
     ) {}
 
+    /**
+     * Comptes des badges du rail d'onglets — les seuls agrégats calculés par la
+     * coquille /medias : le reste (stockage, régimes, pages d'items) est différé
+     * dans la frame de contenu pour ne pas retarder l'affichage.
+     *
+     * @return array{images: int, documents: int, rights_missing: int, duplicates: int, failed: int, orphans: int, missing_renditions: int}
+     */
+    public function railStats(): array
+    {
+        return [
+            'images' => $this->assets->countActiveByKind(MediaKind::Image),
+            'documents' => $this->assets->countActiveByKind(MediaKind::Document),
+            'rights_missing' => $this->resources->countByRightsStatus(RightsValidityStatus::NotGranted),
+            'duplicates' => $this->alerts->countPending(),
+            'failed' => $this->assets->countFailed(),
+            'orphans' => $this->anomalies->countOpen(DamAnomalyType::OrphanResource),
+            'missing_renditions' => $this->anomalies->countOpen(DamAnomalyType::MissingRenditions),
+        ];
+    }
+
     /** @return array<string, mixed> */
     public function page(string $requestedFilter, ?string $requestedType, int $page): array
     {
