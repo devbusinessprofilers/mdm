@@ -26,6 +26,11 @@
         <span class="flex-1"></span>
         <twig:Typography variant="body-xs" textColor="neutral-400">déposées ici ou par le prestataire via le portail</twig:Typography>
     </div>
+    <twig:Typography variant="body-sm" textColor="neutral-500" element="p" class="pb-3">
+        Déposez une ou plusieurs images n'importe où sur cette carte, glissez les vignettes pour les réordonner
+        — la première est la photo principale — et cliquez sur une photo pour renseigner ses informations
+        (usage, légende, source…).
+    </twig:Typography>
     {# L'input (sr-only) reste dans la page : la tuile « Ajouter un média »
        l'ouvre par son libellé, le dépôt se fait sur la carte. #}
     {{ form_start(media_upload_form) }}
