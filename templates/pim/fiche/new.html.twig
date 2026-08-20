@@ -1,58 +1,192 @@
+{#
+    Tunnel de création d'une fiche — gabarit maquette « Creation fiche »
+    branché sur le formulaire réel (FicheCreationType).
+
+    Sept blocs sur une seule page : la gamme (bloc 1) débloque les six autres
+    (verrouillage visuel côté client, les champs restent de vrais inputs).
+    Écarts assumés : pas d'autocomplétion d'adresse (champs structurés réels),
+    pas de brouillon ni de « créer et enchaîner » (désactivés + infobulle),
+    voile de création sans fil d'étapes factice (le POST est synchrone).
+#}
 {% extends 'mdm/base.html.twig' %}
+{% form_theme form 'pim/form/_form-theme-creation.html.twig' %}
 
-{% block title %}Nouvelle fiche{% endblock %}
+{% block title %}Créer une fiche{% endblock %}
 
-{% block contenu %}
-<main class="flex flex-col h-full min-h-0 overflow-y-auto scrollbar px-6 py-5 gap-5">
+{# Le contrôleur couvre le rail et le contenu : le rail y déclenche des sauts. #}
+{% block main_attributs %}data-controller="fiche-creation"{% endblock %}
 
-    <div class="shrink-0 flex flex-col gap-1">
-        <a href="{{ path('app_mdm_referentiel_general') }}" class="hover:underline w-fit">
-            <twig:Typography variant="body-sm" textColor="primary-3" bold element="span">← Retour aux fiches</twig:Typography>
-        </a>
-        <twig:Typography variant="body-xs" textColor="neutral-500" bold class="uppercase tracking-[0.8px]">Catalogue</twig:Typography>
-        <twig:Typography variant="heading-2" element="h1" bold>Nouvelle fiche</twig:Typography>
-        <twig:Typography variant="body-sm" textColor="neutral-500" class="max-w-[720px]">
-            Renseignez les informations principales : la fiche sera pré-remplie depuis l'annuaire des entreprises, puis vous pourrez compléter le formulaire détaillé.
-        </twig:Typography>
-    </div>
+{% set demi = 'w-[calc(50%-12px)]' %}
+{% set gammeChoisie = form.type.vars.data is not empty %}
+{% set erreurs = form.vars.submitted and not form.vars.valid %}
 
-    <div data-controller="fiche-creation" class="relative flex flex-col gap-5">
-        {# Voile de création (maquette) : posé à la soumission, le temps que le
-           serveur crée la fiche et redirige. Écart : pas de fil d'étapes — la
-           création est synchrone. #}
-        <div class="absolute inset-0 z-6 grid place-items-center bg-neutral-200/55"
-             data-fiche-creation-target="voile" hidden role="status" aria-live="polite">
-            <div class="w-[min(420px,calc(100vw-48px))] box-border flex flex-col items-center gap-3.5
-                        px-[34px] py-7 rounded-[20px] bg-neutral-100 shadow-[0_8px_24px_rgba(51,38,174,0.16)]">
-                <twig:Icon name="spinner" class="w-[34px] h-[34px] text-primary animate-spin" />
-                <twig:Typography variant="heading-3" bold>Création de la fiche</twig:Typography>
-                <twig:Typography variant="body-sm" textColor="neutral-500" center class="text-pretty">
-                    Pré-remplissage et contrôle des doublons en cours — vous serez redirigé vers la fiche.
-                </twig:Typography>
-            </div>
+{# Champs en erreur, pour la bannière et les badges du rail. #}
+{% set champsFautifs = [] %}
+{% if erreurs %}
+    {% for enfant in form|filter(e => 'button' not in e.vars.block_prefixes) %}
+        {% if enfant.vars.compound|default(false) and 'choice' not in enfant.vars.block_prefixes %}
+            {% for sous in enfant %}
+                {% if sous.vars.errors|default([])|length > 0 %}
+                    {% set champsFautifs = champsFautifs|merge([sous.vars.label|default(sous.vars.name)]) %}
+                {% endif %}
+            {% endfor %}
+        {% elseif enfant.vars.errors|default([])|length > 0 %}
+            {% set champsFautifs = champsFautifs|merge([enfant.vars.label|default(enfant.vars.name)]) %}
+        {% endif %}
+    {% endfor %}
+{% endif %}
+
+{% set classifChamps = [form.lieuTypologie, form.lieuThematique, form.lieuAmbiance, form.typeRestaurant, form.thematiqueActivite, form.typePrestataire] %}
+{% set contactChamps = [form.contactRepli, form.collaborateurExistant, form.collabPrenom, form.collabNom, form.collabEmail, form.collabTelephone] %}
+
+{#
+    Le rail liste les sept blocs avec un état de remplissage : « ! » champ en
+    erreur, « OK » renseigné, « — » en attente de la gamme, « à faire » sinon.
+    Le contrôleur Stimulus les tient à jour pendant la saisie.
+#}
+{% set ancres = [
+    { libelle: 'Gamme', icone: 'layout',
+      fautif: erreurs and form.type.vars.errors|length > 0,
+      rempli: gammeChoisie },
+    { libelle: 'Identité et localisation', icone: 'info-circle',
+      fautif: erreurs and (form.label.vars.errors|length > 0 or form.localisation|filter(c => c.vars.errors|length > 0)|length > 0 or form.modeIntervention.vars.errors|length > 0),
+      rempli: form.label.vars.data is not empty and form.localisation.codePostal.vars.data is not empty },
+    { libelle: 'Classification', icone: 'confetti',
+      fautif: erreurs and classifChamps|filter(c => c.vars.errors|length > 0)|length > 0,
+      rempli: classifChamps|filter(c => c.vars.data is not empty)|length > 0 },
+    { libelle: 'Statut et référencement', icone: 'check-circle', fautif: false, rempli: true },
+    { libelle: 'Visibilité', icone: 'eye',
+      fautif: erreurs and (form.sitesDiffusion.vars.errors|length > 0 or form.sitePremium.vars.errors|length > 0),
+      rempli: form.sitesDiffusion.vars.data is not empty },
+    { libelle: 'Contact prestataire', icone: 'user-rectangle',
+      fautif: erreurs and contactChamps|filter(c => c.vars.errors|length > 0)|length > 0,
+      rempli: form.contactRepli.vars.data or form.collaborateurExistant.vars.data is not empty or form.collabEmail.vars.data is not empty },
+    { libelle: 'Accès extranet', icone: 'lock',
+      fautif: erreurs and (form.envoyerAcces.vars.errors|length > 0 or form.trameEmail.vars.errors|length > 0),
+      rempli: true },
+] %}
+
+{% block rail %}
+    <nav class="w-[284px] shrink-0 flex flex-col overflow-hidden bg-neutral-100 border-r border-neutral-200"
+         aria-label="Sections de la fiche">
+
+        <div class="shrink-0 flex flex-col gap-[3px] px-4 pt-5 pb-3">
+            <span class="px-1 pb-1.5 uppercase tracking-[0.8px]">
+                <twig:Typography variant="body-xs" textColor="neutral-500" bold>Sections de la fiche</twig:Typography>
+            </span>
+
+            {% for ancre in ancres %}
+                {% set verrouillee = loop.index0 > 0 and not gammeChoisie %}
+                {% set badge = ancre.fautif ? '!' : (verrouillee ? '—' : (ancre.rempli ? 'OK' : 'à faire')) %}
+                <button type="button"
+                        class="group/ancre flex items-center gap-2 w-full px-3.5 py-2.5 rounded-xs text-left
+                               cursor-pointer aria-current:bg-linear-(--primary-gradient)"
+                        data-fiche-creation-target="ancre"
+                        data-action="fiche-creation#aller"
+                        data-fiche-creation-bloc-param="{{ loop.index0 }}"
+                        {{ loop.first ? 'aria-current="true"' : '' }}>
+                    <twig:Icon name="{{ ancre.icone }}"
+                               class="w-5 h-5 shrink-0 p-0.5 box-border
+                                      {{ verrouillee ? 'text-neutral-400' : 'text-primary' }}
+                                      group-aria-current/ancre:text-neutral-100" />
+                    <span class="flex-1 min-w-0 truncate">
+                        <twig:Typography variant="body-sm" bold element="span"
+                                         textColor="{{ verrouillee ? 'neutral-400' : 'neutral-900' }}"
+                                         class="group-aria-current/ancre:text-neutral-100!">{{ ancre.libelle }}</twig:Typography>
+                    </span>
+                    <span data-fiche-creation-target="badge"
+                          data-fautif="{{ ancre.fautif ? '1' : '' }}"
+                          class="shrink-0 px-[7px] py-px rounded-full whitespace-nowrap text-[10px] font-black leading-[1.25rem]
+                                 {{ ancre.fautif ? 'bg-error-pastel text-error' : (ancre.rempli and not verrouillee ? 'bg-success-pastel text-success' : 'bg-neutral-200 text-neutral-400') }}
+                                 group-aria-current/ancre:bg-neutral-100/22! group-aria-current/ancre:text-neutral-100!">{{ badge }}</span>
+                </button>
+            {% endfor %}
         </div>
 
-        {{ form_start(form, { attr: { 'data-action': 'submit->fiche-creation#patienter' } }) }}
+        <div class="shrink-0 mt-auto mx-4 mb-5 p-3.5 rounded-[12px] bg-primary-4 flex flex-col gap-1.5">
+            <twig:Typography variant="body-sm" textColor="primary-3" bold>Enrichissement après création</twig:Typography>
+            <twig:Typography variant="body-xs" textColor="neutral-500" class="text-pretty">
+                La création ne recueille que le nécessaire. Le reste s'enrichit ensuite sur la fiche,
+                guidé par le score de complétude.
+            </twig:Typography>
+        </div>
+    </nav>
+{% endblock %}
+
+{% block contenu %}
+<main class="relative flex flex-col h-full min-h-0">
+
+    {# --------------------------------------------------------- En-tête #}
+    <div class="shrink-0 flex items-end justify-between gap-6 px-10 pt-[22px] pb-4">
+        <div class="flex flex-col gap-1.5 min-w-0">
+            <nav class="flex items-center gap-[7px]" aria-label="Fil d'Ariane">
+                <a href="{{ path('app_mdm_referentiel_general') }}">
+                    <twig:Typography variant="body-sm" textColor="primary" element="span">Référentiel</twig:Typography>
+                </a>
+                <twig:Typography variant="body-sm" textColor="neutral-400" element="span" aria-hidden="true">/</twig:Typography>
+                <a href="{{ path('app_mdm_referentiel_general') }}">
+                    <twig:Typography variant="body-sm" textColor="primary" element="span">Toutes les fiches</twig:Typography>
+                </a>
+                <twig:Typography variant="body-sm" textColor="neutral-400" element="span" aria-hidden="true">/</twig:Typography>
+                <twig:Typography variant="body-sm" textColor="neutral-500" bold element="span" aria-current="page">Nouvelle fiche</twig:Typography>
+            </nav>
+            <twig:Typography variant="heading-2" element="h1" bold>Créer une fiche</twig:Typography>
+            <twig:Typography variant="body-sm" textColor="neutral-500">
+                Le strict nécessaire pour que la fiche existe : elle sera pré-remplie depuis l'annuaire
+                des entreprises, l'enrichissement suit sur la fiche complète.
+            </twig:Typography>
+        </div>
+    </div>
+
+    {{ form_start(form, { attr: { id: 'form-creation', class: 'contents', 'data-action': 'submit->fiche-creation#patienter' } }) }}
+
+        {# ------------------------------------------------- Les sept blocs #}
+        <div class="flex-1 min-h-0 overflow-y-auto flex flex-col gap-5 px-10 pb-7 scrollbar"
+             data-fiche-creation-target="defilement">
+
+            {{ form_errors(form) }}
+
+            {% if erreurs and champsFautifs is not empty %}
+                <div class="shrink-0 box-border flex items-start gap-3 px-5 py-4 rounded-[16px]
+                            bg-error-pastel inset-ring-1 inset-ring-peach" role="alert">
+                    <twig:Icon name="warning" class="w-5 h-5 shrink-0 text-error" />
+                    <div class="flex flex-col gap-1.5 min-w-0">
+                        <twig:Typography variant="body" bold>{{ champsFautifs|length }} champ{{ champsFautifs|length > 1 ? 's' : '' }} à corriger</twig:Typography>
+                        <div class="flex flex-wrap gap-x-4 gap-y-2">
+                            {% for champ in champsFautifs %}
+                                <twig:Typography variant="body-sm" textColor="neutral-500" element="span">· {{ champ }}</twig:Typography>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            {# Doublons potentiels : fonction réelle, hors maquette. #}
             {% if duplicates is not empty %}
-                <section class="flex flex-col gap-3 p-6 rounded-[20px] bg-old-gold-pastel inset-ring-1 inset-ring-old-gold">
-                    <twig:Typography variant="heading-3" element="h2" bold>⚠ Doublons potentiels</twig:Typography>
-                    <twig:Typography variant="body-sm" textColor="neutral-500">Des fiches similaires existent déjà. Vérifiez qu'il ne s'agit pas de la même avant de créer.</twig:Typography>
+                <section class="shrink-0 flex flex-col gap-3 px-5 py-4 rounded-[16px] bg-old-gold-pastel inset-ring-1 inset-ring-old-gold">
+                    <div class="flex items-start gap-3">
+                        <twig:Icon name="warning" class="w-5 h-5 shrink-0 text-old-gold" />
+                        <div class="flex flex-col gap-1 min-w-0">
+                            <twig:Typography variant="body" element="h2" bold>Doublons potentiels</twig:Typography>
+                            <twig:Typography variant="body-sm" textColor="neutral-500">Des fiches similaires existent déjà. Vérifiez qu'il ne s'agit pas de la même avant de créer.</twig:Typography>
+                        </div>
+                    </div>
                     <div class="overflow-x-auto rounded-md inset-ring-1 inset-ring-neutral-200 bg-neutral-100">
                         <table class="w-full border-collapse">
                             <thead class="bg-primary-5"><tr class="text-left h-10 border-b border-neutral-200">
-                                {% for col in ['Code', 'Libellé', 'Gamme', 'Ville', 'Statut', 'Correspondances'] %}<th class="px-3"><twig:Typography variant="body-xs" textColor="neutral-500" bold>{{ col }}</twig:Typography></th>{% endfor %}
+                                {% for col in ['Code', 'Libellé', 'Gamme', 'Ville', 'Statut', 'Correspondances'] %}<th class="px-3"><twig:Typography variant="body-xs" textColor="neutral-500" bold element="span">{{ col }}</twig:Typography></th>{% endfor %}
                             </tr></thead>
                             <tbody>
                             {% for candidate in duplicates %}
                                 <tr class="h-11 border-t border-neutral-200 first:border-t-0">
-                                    <td class="px-3"><twig:Typography variant="body-sm">{{ candidate.code }}</twig:Typography></td>
+                                    <td class="px-3"><twig:Typography variant="body-sm" element="span">{{ candidate.code }}</twig:Typography></td>
                                     <td class="px-3">
                                         {% if candidate.url %}<a href="{{ candidate.url }}" class="hover:underline"><twig:Typography variant="body-sm" textColor="primary-3" bold element="span">{{ candidate.label ?? 'Sans libellé' }}</twig:Typography></a>
-                                        {% else %}<twig:Typography variant="body-sm">{{ candidate.label ?? 'Sans libellé' }}</twig:Typography>{% endif %}
+                                        {% else %}<twig:Typography variant="body-sm" element="span">{{ candidate.label ?? 'Sans libellé' }}</twig:Typography>{% endif %}
                                     </td>
-                                    <td class="px-3"><twig:Typography variant="body-sm">{{ candidate.type.value }}</twig:Typography></td>
-                                    <td class="px-3"><twig:Typography variant="body-sm">{{ candidate.ville ?? '—' }}</twig:Typography></td>
-                                    <td class="px-3"><twig:Typography variant="body-sm">{{ candidate.status.value }}</twig:Typography></td>
+                                    <td class="px-3"><twig:Typography variant="body-sm" element="span">{{ candidate.type.value }}</twig:Typography></td>
+                                    <td class="px-3"><twig:Typography variant="body-sm" element="span">{{ candidate.ville ?? '—' }}</twig:Typography></td>
+                                    <td class="px-3"><twig:Typography variant="body-sm" element="span">{{ candidate.status.value }}</twig:Typography></td>
                                     <td class="px-3">
                                         <div class="flex flex-wrap gap-1">
                                             {% for reason in candidate.reasons %}
@@ -65,89 +199,267 @@
                             </tbody>
                         </table>
                     </div>
-                    {{ form_row(form.creerQuandMeme) }}
+                    <div class="flex justify-end">
+                        {{ form_row(form.creerQuandMeme, { attr: { 'data-variant': 'outline', 'data-size': 'md', 'data-full': false } }) }}
+                    </div>
                 </section>
             {% else %}
                 {% do form.creerQuandMeme.setRendered %}
             {% endif %}
 
-            {% set carte = 'flex flex-col gap-4 p-6 rounded-[20px] bg-neutral-100 shadow-(--shadow)' %}
-
-            <section class="{{ carte }}">
-                <twig:Typography variant="heading-3" element="h2" bold>Gamme</twig:Typography>
-                {{ form_row(form.type) }}
-            </section>
-
-            <section class="{{ carte }}">
-                <twig:Typography variant="heading-3" element="h2" bold>Identité et localisation</twig:Typography>
-                {{ form_row(form.label) }}
-                {% set prefill_help = 'Optionnel : pré-rempli automatiquement depuis l’annuaire des entreprises si laissé vide.' %}
-                {{ form_row(form.localisation.ruePostale, {help: prefill_help}) }}
-                {{ form_row(form.localisation.codePostal, {help: 'Utilisé avec le nom pour retrouver l’entreprise dans l’annuaire et fiabiliser le pré-remplissage.'}) }}
-                {% for field in ['ville', 'pays', 'countryCode', 'latitude', 'longitude'] %}
-                    {{ form_row(attribute(form.localisation, field), {help: prefill_help}) }}
-                {% endfor %}
-                {{ form_row(form.localisation.region) }}
-                {{ form_row(form.localisation.departement) }}
-                {{ form_row(form.localisation.arrondissement) }}
-                <div hidden data-fiche-creation-target="section" data-types="activite service_evenementiel">
-                    {{ form_row(form.modeIntervention) }}
+            {# ----------------------------------------------------- 1. Gamme #}
+            <section class="shrink-0 box-border flex flex-col gap-[22px] px-10 py-9 rounded-[32px] bg-neutral-100 shadow-(--shadow)"
+                     data-fiche-creation-target="bloc" data-bloc="0">
+                {{ _self.entete_bloc('1', 'Gamme', 'Le seul choix ouvert du cycle de vie : il fixe la structure de la fiche.') }}
+                <div class="flex flex-col gap-3.5">
+                    {{ form_errors(form.type) }}
+                    {{ form_widget(form.type) }}
+                    {{ _self.note('info-circle', 'La gamme détermine la structure de la fiche : elle sera verrouillée après la création.') }}
                 </div>
             </section>
 
-            <section class="{{ carte }}">
-                <twig:Typography variant="heading-3" element="h2" bold>Classification</twig:Typography>
-                <p class="page-description" data-fiche-creation-target="section" data-types="" hidden>
-                    <twig:Typography variant="body-sm" textColor="neutral-500" element="span">Choisissez d'abord une gamme.</twig:Typography>
-                </p>
-                <div hidden data-fiche-creation-target="section" data-types="lieu" class="flex flex-col gap-4">
-                    {{ form_row(form.lieuTypologie) }}
-                    {{ form_row(form.lieuThematique) }}
-                    {{ form_row(form.lieuAmbiance) }}
+            {# ----------------------------------- 2. Identité et localisation #}
+            <section class="shrink-0 box-border flex flex-col gap-[22px] px-10 py-9 rounded-[32px] bg-neutral-100 shadow-(--shadow) {{ gammeChoisie ? '' : 'opacity-72' }}"
+                     data-fiche-creation-target="bloc" data-bloc="1">
+                {{ _self.entete_bloc('2', 'Identité et localisation', 'Ce qui rend la fiche identifiable et situable dans le référentiel.') }}
+                {{ _self.verrou(gammeChoisie) }}
+                <div class="flex flex-col gap-5" data-fiche-creation-target="corps" {{ gammeChoisie ? '' : 'hidden' }}>
+                    {% set prefill_help = 'Optionnel : pré-rempli automatiquement depuis l’annuaire des entreprises si laissé vide.' %}
+                    <div class="flex flex-row flex-wrap gap-x-6 gap-y-5">
+                        {{ form_row(form.label, { row_attr: { class: demi }, attr: { 'data-action': 'input->fiche-creation#majRail' } }) }}
+                        <div class="flex flex-col gap-1 {{ demi }}">
+                            <twig:Typography variant="input" element="span" class="text-[0.875rem]! leading-[1.375rem]!">Référence MDM</twig:Typography>
+                            {{ _self.boite_lecture('Attribuée automatiquement à la création') }}
+                        </div>
+                        {{ form_row(form.localisation.ruePostale, { row_attr: { class: demi }, help: prefill_help }) }}
+                        {{ form_row(form.localisation.codePostal, { row_attr: { class: demi }, help: 'Utilisé avec le nom pour retrouver l’entreprise dans l’annuaire et fiabiliser le pré-remplissage.', attr: { 'data-action': 'input->fiche-creation#majRail' } }) }}
+                        {{ form_row(form.localisation.ville, { row_attr: { class: demi }, help: prefill_help }) }}
+                        {{ form_row(form.localisation.pays, { row_attr: { class: demi }, help: prefill_help }) }}
+                        {{ form_row(form.localisation.countryCode, { row_attr: { class: demi }, help: prefill_help }) }}
+                        {{ form_row(form.localisation.region, { row_attr: { class: demi } }) }}
+                        {{ form_row(form.localisation.departement, { row_attr: { class: demi } }) }}
+                        {{ form_row(form.localisation.arrondissement, { row_attr: { class: demi } }) }}
+                        {{ form_row(form.localisation.latitude, { row_attr: { class: demi }, help: prefill_help }) }}
+                        {{ form_row(form.localisation.longitude, { row_attr: { class: demi }, help: prefill_help }) }}
+                    </div>
+                    <div hidden data-fiche-creation-target="section" data-types="activite service_evenementiel" class="flex flex-col gap-2.5">
+                        {{ form_row(form.modeIntervention, { label: 'Ce prestataire a-t-il une adresse fixe ?', row_attr: { class: demi } }) }}
+                        {{ _self.note('pin', "La zone d'intervention (pays, régions, départements couverts) se précise après création, sur la fiche complète.") }}
+                    </div>
                 </div>
-                <div hidden data-fiche-creation-target="section" data-types="restaurant" class="flex flex-col gap-4">
-                    {{ form_row(form.typeRestaurant) }}
+            </section>
+
+            {# -------------------------------------------- 3. Classification #}
+            <section class="shrink-0 box-border flex flex-col gap-[22px] px-10 py-9 rounded-[32px] bg-neutral-100 shadow-(--shadow) {{ gammeChoisie ? '' : 'opacity-72' }}"
+                     data-fiche-creation-target="bloc" data-bloc="2">
+                {{ _self.entete_bloc('3', 'Classification', 'Les axes qui déterminent où la fiche apparaît dans les recherches.') }}
+                {{ _self.verrou(gammeChoisie) }}
+                <div class="flex flex-col gap-[22px]" data-fiche-creation-target="corps" {{ gammeChoisie ? '' : 'hidden' }}>
+                    <div hidden data-fiche-creation-target="section" data-types="lieu" class="flex flex-col gap-[22px]">
+                        {{ _self.classif(form.lieuTypologie) }}
+                        {{ _self.classif(form.lieuThematique) }}
+                        {{ _self.classif(form.lieuAmbiance) }}
+                    </div>
+                    <div hidden data-fiche-creation-target="section" data-types="restaurant" class="flex flex-col gap-[22px]">
+                        {{ _self.classif(form.typeRestaurant) }}
+                    </div>
+                    <div hidden data-fiche-creation-target="section" data-types="activite" class="flex flex-col gap-[22px]">
+                        {{ _self.classif(form.thematiqueActivite) }}
+                    </div>
+                    <div hidden data-fiche-creation-target="section" data-types="service_evenementiel" class="flex flex-col gap-[22px]">
+                        {{ _self.classif(form.typePrestataire) }}
+                    </div>
                 </div>
-                <div hidden data-fiche-creation-target="section" data-types="activite" class="flex flex-col gap-4">
-                    {{ form_row(form.thematiqueActivite) }}
+            </section>
+
+            {# ------------------------------------ 4. Statut et référencement #}
+            <section class="shrink-0 box-border flex flex-col gap-[22px] px-10 py-9 rounded-[32px] bg-neutral-100 shadow-(--shadow) {{ gammeChoisie ? '' : 'opacity-72' }}"
+                     data-fiche-creation-target="bloc" data-bloc="3">
+                {{ _self.entete_bloc('4', 'Statut et référencement', "Visibilité dans le référentiel et niveau d'adhésion.") }}
+                {{ _self.verrou(gammeChoisie) }}
+                <div class="flex flex-col gap-[18px]" data-fiche-creation-target="corps" {{ gammeChoisie ? '' : 'hidden' }}>
+                    {# Interrupteur maquette sans back : la fiche naît active, désactivé + infobulle. #}
+                    <div class="flex items-start gap-3.5" title="Fonction à venir — en développement : la fiche naît active, l'archivage se fait depuis le référentiel.">
+                        <twig:Form:SwitchButton id="creation-actif" name="creation-actif" :checked="true" :disabled="true" class="shrink-0" />
+                        <div class="flex flex-col gap-[3px] min-w-0">
+                            <twig:Typography variant="body" bold textColor="neutral-400">Actif</twig:Typography>
+                            <twig:Typography variant="body-sm" textColor="neutral-500" class="text-pretty">Une fiche inactive reste dans le référentiel mais disparaît des canaux publics.</twig:Typography>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3.5">
+                        {{ form_errors(form.businessPremium) }}
+                        {{ form_widget(form.businessPremium, { attr: { 'data-interrupteur': '1' } }) }}
+                        <label for="{{ form.businessPremium.vars.id }}" class="flex flex-col gap-[3px] min-w-0 cursor-pointer">
+                            <span class="flex items-center gap-2.5">
+                                <twig:Typography variant="body" bold element="span">Adhérent Business Premium</twig:Typography>
+                                <twig:Tag label="Premium" variant="old-gold" size="sm" />
+                            </span>
+                            <twig:Typography variant="body-sm" textColor="neutral-500" element="span" class="text-pretty">Activé, la mention « recommandé par Business Profilers » apparaît sur les canaux publics.</twig:Typography>
+                        </label>
+                    </div>
                 </div>
-                <div hidden data-fiche-creation-target="section" data-types="service_evenementiel" class="flex flex-col gap-4">
-                    {{ form_row(form.typePrestataire) }}
+            </section>
+
+            {# ------------------------------------------------ 5. Visibilité #}
+            <section class="shrink-0 box-border flex flex-col gap-[22px] px-10 py-9 rounded-[32px] bg-neutral-100 shadow-(--shadow) {{ gammeChoisie ? '' : 'opacity-72' }}"
+                     data-fiche-creation-target="bloc" data-bloc="4">
+                {{ _self.entete_bloc('5', 'Visibilité', 'Les canaux publics sur lesquels la fiche sera diffusée.') }}
+                {{ _self.verrou(gammeChoisie) }}
+                <div class="flex flex-col gap-3.5" data-fiche-creation-target="corps" {{ gammeChoisie ? '' : 'hidden' }}>
+                    <div class="flex items-center gap-4">
+                        <div class="flex-1 min-w-0 max-w-[420px]">
+                            {# Filtre local, jamais soumis (form= pointe hors du formulaire). #}
+                            <twig:Form:TextInput id="filtre-sites" name="filtre-sites" value=""
+                                                 leftIcon="magnifying-glass"
+                                                 placeholder="Rechercher un site de diffusion"
+                                                 :inputAttributes="{ form: 'hors-soumission', 'data-action': 'input->fiche-creation#filtrerSites' }" />
+                        </div>
+                        <twig:Typography variant="body" textColor="primary-3" bold class="shrink-0"
+                                         data-fiche-creation-target="sitesCompte">{{ form.sitesDiffusion.vars.data|length }} sites retenus</twig:Typography>
+                    </div>
+                    <div class="flex flex-row flex-wrap gap-2.5" data-fiche-creation-target="sitesPuces"></div>
+                    {{ form_errors(form.sitesDiffusion) }}
+                    {{ form_widget(form.sitesDiffusion, { attr: { 'data-sites': '1', 'data-action': 'change->fiche-creation#recompterSites' } }) }}
+                    {{ form_help(form.sitesDiffusion) }}
+                    {{ form_row(form.sitePremium, { row_attr: { class: demi } }) }}
                 </div>
             </section>
 
-            <section class="{{ carte }}">
-                <twig:Typography variant="heading-3" element="h2" bold>Statut et référencement</twig:Typography>
-                {{ form_row(form.businessPremium) }}
+            {# --------------------------------------- 6. Contact prestataire #}
+            <section class="shrink-0 box-border flex flex-col gap-[22px] px-10 py-9 rounded-[32px] bg-neutral-100 shadow-(--shadow) {{ gammeChoisie ? '' : 'opacity-72' }}"
+                     data-fiche-creation-target="bloc" data-bloc="5">
+                {{ _self.entete_bloc('6', 'Contact prestataire', 'Créé dans le CRM en même temps que la fiche.') }}
+                {{ _self.verrou(gammeChoisie) }}
+                <div class="flex flex-col gap-[18px]" data-fiche-creation-target="corps" {{ gammeChoisie ? '' : 'hidden' }}>
+                    {{ form_errors(form.contactRepli) }}
+                    {{ form_widget(form.contactRepli, { attr: { 'data-carte-repli': '1', 'data-action': 'change->fiche-creation#majRail' } }) }}
+                    {{ form_row(form.collaborateurExistant, { label: 'Rattacher un collaborateur existant', row_attr: { class: demi } }) }}
+                    <div class="flex flex-col gap-2.5">
+                        <twig:Typography variant="subtitle" bold>… ou créer un nouveau collaborateur</twig:Typography>
+                        <div class="flex flex-row flex-wrap gap-x-6 gap-y-5">
+                            {{ form_row(form.collabPrenom, { row_attr: { class: demi } }) }}
+                            {{ form_row(form.collabNom, { row_attr: { class: demi } }) }}
+                            {{ form_row(form.collabEmail, { row_attr: { class: demi }, attr: { 'data-action': 'input->fiche-creation#majRail' } }) }}
+                            {{ form_row(form.collabTelephone, { row_attr: { class: demi } }) }}
+                        </div>
+                    </div>
+                    {{ _self.note('users', 'Ce contact sera créé dans le CRM en même temps que la fiche.') }}
+                </div>
             </section>
 
-            <section class="{{ carte }}">
-                <twig:Typography variant="heading-3" element="h2" bold>Visibilité</twig:Typography>
-                {{ form_row(form.sitePremium) }}
-                {{ form_row(form.sitesDiffusion) }}
+            {# ------------------------------------------- 7. Accès extranet #}
+            <section class="shrink-0 box-border flex flex-col gap-[22px] px-10 py-9 rounded-[32px] bg-neutral-100 shadow-(--shadow) {{ gammeChoisie ? '' : 'opacity-72' }}"
+                     data-fiche-creation-target="bloc" data-bloc="6">
+                {{ _self.entete_bloc('7', 'Accès extranet', 'Transmission des identifiants du portail prestataire.') }}
+                {{ _self.verrou(gammeChoisie) }}
+                <div class="flex flex-col gap-[18px]" data-fiche-creation-target="corps" {{ gammeChoisie ? '' : 'hidden' }}>
+                    {{ form_errors(form.envoyerAcces) }}
+                    <div class="flex items-start gap-3.5">
+                        {{ form_widget(form.envoyerAcces, { attr: { 'data-interrupteur': '1', 'data-action': 'change->fiche-creation#majRail' } }) }}
+                        <label for="{{ form.envoyerAcces.vars.id }}" class="flex flex-col gap-[3px] min-w-0 cursor-pointer">
+                            <twig:Typography variant="body" bold element="span">Envoyer les accès par email</twig:Typography>
+                            <twig:Typography variant="body-sm" textColor="neutral-500" element="span" class="text-pretty">Le collaborateur reçoit ses identifiants du portail prestataire dès la création. Indisponible avec le contact de repli.</twig:Typography>
+                        </label>
+                    </div>
+                    {{ form_row(form.trameEmail) }}
+                </div>
             </section>
+        </div>
 
-            <section class="{{ carte }}">
-                <twig:Typography variant="heading-3" element="h2" bold>Collaborateur</twig:Typography>
-                {{ form_row(form.contactRepli) }}
-                {{ form_row(form.collaborateurExistant) }}
-                <fieldset class="flex flex-col gap-4 border border-neutral-200 rounded-md p-4">
-                    <legend><twig:Typography variant="body-sm" bold element="span">… ou créer un nouveau collaborateur</twig:Typography></legend>
-                    {{ form_row(form.collabPrenom) }}
-                    {{ form_row(form.collabNom) }}
-                    {{ form_row(form.collabEmail) }}
-                    {{ form_row(form.collabTelephone) }}
-                </fieldset>
-            </section>
+        {# ------------------------------------------------ Barre d'actions #}
+        <div class="shrink-0 min-h-[76px] box-border flex items-center justify-between gap-6 px-10
+                    bg-neutral-100 border-t border-neutral-200 shadow-[0_-6px_18px_rgba(51,38,174,0.06)]">
+            <div class="flex items-center flex-1 min-w-0 gap-2.5">
+                <twig:Icon name="{{ erreurs ? 'warning' : 'info-circle' }}"
+                           class="w-[18px] h-[18px] shrink-0 {{ erreurs ? 'text-error' : 'text-neutral-400' }}" />
+                <twig:Typography variant="body-sm" textColor="neutral-500" class="text-pretty"
+                                 data-fiche-creation-target="barreNote"
+                                 data-erreurs="{{ erreurs ? '1' : '' }}">
+                    {{- erreurs ? 'Corrigez les champs signalés pour créer la fiche.'
+                        : (gammeChoisie ? "Prêt à créer. L'enrichissement se poursuit sur la fiche complète."
+                            : 'Choisissez une gamme pour activer la création.') -}}
+                </twig:Typography>
+            </div>
+            <div class="flex items-center shrink-0 gap-3">
+                <twig:Button variant="text" size="md" asLink href="{{ path('app_mdm_referentiel_general') }}">Annuler</twig:Button>
+                <span title="Fonction à venir — en développement" class="inline-flex shrink-0">
+                    <twig:Button variant="text" size="md" disabled>Enregistrer comme brouillon</twig:Button>
+                </span>
+                <span title="Fonction à venir — en développement" class="inline-flex shrink-0">
+                    <twig:Button variant="outline" size="md" disabled>Créer et enchaîner</twig:Button>
+                </span>
+                {{ form_row(form.submit, { attr: { 'data-variant': 'primary', 'data-size': 'md', 'data-full': false } }) }}
+            </div>
+        </div>
 
-            <section class="{{ carte }}">
-                <twig:Typography variant="heading-3" element="h2" bold>Accès extranet</twig:Typography>
-                {{ form_row(form.envoyerAcces) }}
-                {{ form_row(form.trameEmail) }}
-            </section>
+    {{ form_end(form) }}
 
-            <div>{{ form_row(form.submit) }}</div>
-        {{ form_end(form) }}
+    {# Voile de création (maquette) : posé à la soumission, le temps que le
+       serveur crée la fiche et redirige. Écart : pas de fil d'étapes — la
+       création est synchrone. #}
+    <div class="absolute inset-0 z-6 grid place-items-center bg-neutral-200/55"
+         data-fiche-creation-target="voile" hidden role="status" aria-live="polite">
+        <div class="w-[min(420px,calc(100vw-48px))] box-border flex flex-col items-center gap-3.5
+                    px-[34px] py-7 rounded-[20px] bg-neutral-100 shadow-[0_8px_24px_rgba(51,38,174,0.16)]">
+            <twig:Icon name="spinner" class="w-[34px] h-[34px] text-primary animate-spin" />
+            <twig:Typography variant="heading-3" bold>Création de la fiche</twig:Typography>
+            <twig:Typography variant="body-sm" textColor="neutral-500" center class="text-pretty">
+                Pré-remplissage et contrôle des doublons en cours — vous serez redirigé vers la fiche.
+            </twig:Typography>
+        </div>
     </div>
 </main>
 {% endblock %}
+
+{# ------------------------------------------------------------- Macros #}
+
+{% macro entete_bloc(numero, titre, description) %}
+    <div class="flex items-start justify-between gap-5">
+        <div class="flex flex-col gap-1 min-w-0">
+            <div class="flex items-center gap-2.5">
+                <span class="w-[26px] h-[26px] shrink-0 flex items-center justify-center rounded-full bg-linear-(--primary-gradient)">
+                    <twig:Typography variant="body-sm" bold element="span" textColor="neutral-100">{{ numero }}</twig:Typography>
+                </span>
+                <twig:Typography variant="heading-3" element="h2" bold>{{ titre }}</twig:Typography>
+            </div>
+            <twig:Typography variant="body-sm" textColor="neutral-500" class="text-pretty">{{ description }}</twig:Typography>
+        </div>
+    </div>
+{% endmacro %}
+
+{% macro verrou(gammeChoisie) %}
+    <div class="flex items-center gap-2.5 px-4 py-3.5 rounded-[12px] bg-neutral-200"
+         data-fiche-creation-target="verrou" {{ gammeChoisie ? 'hidden' : '' }}>
+        <twig:Icon name="lock" class="w-[18px] h-[18px] shrink-0 text-neutral-400" />
+        <twig:Typography variant="body-sm" textColor="neutral-500">Choisissez d'abord une gamme :
+            elle détermine les champs de ce bloc.</twig:Typography>
+    </div>
+{% endmacro %}
+
+{% macro boite_lecture(valeur) %}
+    <div class="min-h-10 box-border flex items-center gap-2 px-2.5 py-2 rounded-xs bg-neutral-200">
+        <twig:Typography variant="input" ellipsis element="span" textColor="neutral-500" class="flex-1 min-w-0">{{ valeur }}</twig:Typography>
+        <twig:Icon name="lock" class="w-3.5 h-3.5 shrink-0 text-neutral-400" />
+    </div>
+{% endmacro %}
+
+{% macro note(icone, texte) %}
+    <div class="flex items-start gap-2.5">
+        <twig:Icon name="{{ icone }}" class="w-4 h-4 shrink-0 text-neutral-400" />
+        <twig:Typography variant="body-sm" textColor="neutral-500" class="text-pretty">{{ texte }}</twig:Typography>
+    </div>
+{% endmacro %}
+
+{% macro classif(champ) %}
+    <div class="flex flex-col gap-2.5" data-fiche-creation-target="groupeClasse">
+        <div class="flex items-baseline justify-between gap-5">
+            <twig:Typography variant="input" element="span" class="text-[0.875rem]! leading-[1.375rem]!">{{ champ.vars.label }}</twig:Typography>
+            <twig:Typography variant="body-sm" bold element="span" textColor="neutral-400"
+                             data-fiche-creation-target="compteClasse">
+                {{- champ.vars.data|length > 0 ? champ.vars.data|length ~ ' sélectionné' ~ (champ.vars.data|length > 1 ? 's' : '') : 'aucune sélection' -}}
+            </twig:Typography>
+        </div>
+        {{ form_errors(champ) }}
+        {{ form_widget(champ, { attr: { 'data-puces': '1', 'data-action': 'change->fiche-creation#recompterClasse' } }) }}
+    </div>
+{% endmacro %}

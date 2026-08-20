@@ -1,0 +1,199 @@
+{#
+    Surcouche du thème de formulaire réservée au tunnel de création de fiche
+    (pim/fiche/new.html.twig). Le thème global fournit tous les autres blocs ;
+    celui-ci rend les habillages maquette « Creation fiche » sur les VRAIS
+    champs soumis : cartes de gamme (radios), puces de classification
+    (cases multiples), interrupteurs (cases booléennes), carte « contact de
+    repli » et liste groupée des sites de diffusion.
+
+    Opt-in par attribut au rendu (form_widget(..., {attr: {...}})) :
+    `data-gammes`, `data-puces`, `data-sites` sur un ChoiceType expanded ;
+    `data-interrupteur`, `data-carte-repli` sur un CheckboxType.
+#}
+
+{#- Sous-libellés et icônes des cartes de gamme, par valeur de TypeFiche. -#}
+{%- block _fiche_creation_type_widget -%}
+    {%- set meta = {
+        'lieu': { icone: 'bed', sous: 'Château, hôtel, salle' },
+        'restaurant': { icone: 'utensils', sous: 'Table, brasserie' },
+        'activite': { icone: 'biking', sous: 'Team building, loisirs' },
+        'service_evenementiel': { icone: 'users', sous: 'Traiteur, audiovisuel' },
+    } -%}
+    <div {{ block('widget_container_attributes') }} class="flex flex-row gap-3.5 flex-wrap">
+        {%- for enfant in form -%}
+            {%- set infos = meta[enfant.vars.value]|default({ icone: 'layout', sous: '' }) -%}
+            <label for="{{ enfant.vars.id }}"
+                   class="group/gamme flex-1 basis-60 min-w-0 box-border flex items-center gap-2.5
+                          px-[18px] py-4 rounded-[16px] text-left cursor-pointer
+                          bg-neutral-100 inset-ring-1 inset-ring-neutral-300
+                          has-checked:bg-linear-(--primary-gradient) has-checked:shadow-(--shadow) has-checked:inset-ring-0">
+                <input type="radio"
+                       id="{{ enfant.vars.id }}"
+                       name="{{ enfant.vars.full_name }}"
+                       value="{{ enfant.vars.value }}"
+                       {% if enfant.vars.checked %}checked{% endif %}
+                       class="sr-only">
+                <twig:Icon name="{{ infos.icone }}"
+                           class="w-6 h-6 shrink-0 p-0.5 box-border text-primary group-has-checked/gamme:text-neutral-100" />
+                <span class="flex flex-col gap-0.5 min-w-0">
+                    <twig:Typography variant="body" bold element="span"
+                                     class="whitespace-nowrap group-has-checked/gamme:text-neutral-100!">{{ enfant.vars.label }}</twig:Typography>
+                    <twig:Typography variant="body-xs" textColor="neutral-400" ellipsis element="span"
+                                     class="group-has-checked/gamme:text-neutral-100! group-has-checked/gamme:opacity-82">{{ infos.sous }}</twig:Typography>
+                </span>
+            </label>
+            {%- do enfant.setRendered -%}
+        {%- endfor -%}
+        {#- Carte maquette sans équivalent back : reprise, désactivée. -#}
+        <span title="Fonction à venir — en développement"
+              class="flex-1 basis-60 min-w-0 box-border flex items-center gap-2.5 px-[18px] py-4 rounded-[16px]
+                     bg-neutral-100 inset-ring-1 inset-ring-neutral-200 opacity-72 cursor-not-allowed">
+            <twig:Icon name="note" class="w-6 h-6 shrink-0 p-0.5 box-border text-neutral-400" />
+            <span class="flex flex-col gap-0.5 min-w-0">
+                <twig:Typography variant="body" bold element="span" textColor="neutral-400"
+                                 class="whitespace-nowrap">Plateaux repas</twig:Typography>
+                <twig:Typography variant="body-xs" textColor="neutral-400" ellipsis element="span">Catalogue produits</twig:Typography>
+            </span>
+        </span>
+    </div>
+{%- endblock -%}
+
+{%- block choice_widget_expanded -%}
+    {%- if attr['data-puces']|default(false) -%}
+        {#- Puces cochables maquette : la pilule est le libellé, l'input reste
+            le vrai champ soumis (name[]), coche/plus en pur CSS `has-checked`. -#}
+        <div {{ block('widget_container_attributes') }} class="flex flex-row flex-wrap gap-2.5">
+            {%- for enfant in form -%}
+                <label for="{{ enfant.vars.id }}"
+                       class="group/puce h-12 box-border shrink-0 flex items-center gap-1 px-4 py-2 rounded-full
+                              cursor-pointer bg-neutral-100 inset-ring-1 inset-ring-neutral-300
+                              has-checked:bg-primary has-checked:inset-ring-0">
+                    <input type="checkbox"
+                           id="{{ enfant.vars.id }}"
+                           name="{{ enfant.vars.full_name }}"
+                           value="{{ enfant.vars.value }}"
+                           {% if enfant.vars.checked %}checked{% endif %}
+                           class="sr-only">
+                    <twig:Icon name="check" class="w-4 h-4 shrink-0 text-neutral-100 hidden group-has-checked/puce:block" />
+                    <twig:Icon name="plus" class="w-4 h-4 shrink-0 text-primary group-has-checked/puce:hidden" />
+                    <twig:Typography variant="body-sm" bold element="span"
+                                     class="whitespace-nowrap group-has-checked/puce:text-neutral-100!">{{ enfant.vars.label }}</twig:Typography>
+                </label>
+                {%- do enfant.setRendered -%}
+            {%- endfor -%}
+        </div>
+    {%- elseif attr['data-sites']|default(false) -%}
+        {#- Sites de diffusion : groupes réels de choicesGroupees(), cases
+            réelles. Un site obligatoire est coché et verrouillé (le serveur le
+            réapplique de toute façon). Les mentions du libellé deviennent des
+            tags maquette. -#}
+        <div {{ block('widget_container_attributes') }}
+             class="max-h-[226px] overflow-y-auto p-1.5 rounded-[12px] inset-ring-1 inset-ring-neutral-200 scrollbar">
+            {%- for groupe in choices -%}
+                <div class="flex flex-col gap-0.5 px-1.5 pt-2 pb-2.5" data-fiche-creation-target="groupeSites">
+                    <div class="flex items-center gap-2.5 px-1.5 pb-1.5">
+                        <span class="uppercase tracking-[0.8px]">
+                            <twig:Typography variant="body-xs" textColor="neutral-500" bold element="span">{{ groupe.label }}</twig:Typography>
+                        </span>
+                        <span class="flex-1 h-px bg-neutral-200"></span>
+                        <twig:Typography variant="body-xs" textColor="neutral-400" bold element="span"
+                                         data-fiche-creation-target="compteGroupe"></twig:Typography>
+                    </div>
+                    <div class="flex flex-row flex-wrap">
+                        {%- for choix in groupe.choices -%}
+                            {%- set enfant = form|filter(c => c.vars.value == choix.value)|first -%}
+                            {%- if enfant -%}
+                                {%- set obligatoire = enfant.vars.label ends with ' (obligatoire)' -%}
+                                {%- set payant = enfant.vars.label ends with ' (payant)' -%}
+                                {%- set libelle = enfant.vars.label|replace({' (obligatoire)': '', ' (payant)': ''}) -%}
+                                <label for="{{ enfant.vars.id }}"
+                                       data-libelle="{{ libelle }}"
+                                       data-fiche-creation-target="site"
+                                       class="group/site w-1/2 lg:w-1/4 box-border flex items-center gap-2 px-2 py-[7px] rounded-xs text-left
+                                              {{ obligatoire ? 'cursor-default' : 'cursor-pointer' }}">
+                                    <input type="checkbox"
+                                           id="{{ enfant.vars.id }}"
+                                           name="{{ enfant.vars.full_name }}"
+                                           value="{{ enfant.vars.value }}"
+                                           {% if enfant.vars.checked or obligatoire %}checked{% endif %}
+                                           {% if obligatoire %}disabled{% endif %}
+                                           class="sr-only">
+                                    <span aria-hidden="true"
+                                          class="w-5 h-5 shrink-0 box-border flex items-center justify-center rounded-xs
+                                                 bg-neutral-100 inset-ring-1 inset-ring-neutral-400
+                                                 group-has-checked/site:bg-primary group-has-checked/site:inset-ring-0
+                                                 {{ obligatoire ? 'bg-neutral-400! inset-ring-0!' : '' }}">
+                                        <twig:Icon name="check" class="w-3.5 h-3.5 text-neutral-100 hidden group-has-checked/site:block" />
+                                    </span>
+                                    <twig:Typography variant="body-sm" textColor="neutral-500" ellipsis element="span"
+                                                     class="flex-1 min-w-0 group-has-checked/site:font-black
+                                                            group-has-checked/site:text-neutral-900!">{{ libelle }}</twig:Typography>
+                                    {%- if obligatoire or payant -%}
+                                        <twig:Tag label="{{ obligatoire ? 'obligatoire' : 'payant' }}"
+                                                  variant="{{ payant ? 'old-gold' : 'primary-3' }}"
+                                                  size="sm" class="shrink-0" />
+                                    {%- endif -%}
+                                </label>
+                                {%- do enfant.setRendered -%}
+                            {%- endif -%}
+                        {%- endfor -%}
+                    </div>
+                </div>
+            {%- endfor -%}
+        </div>
+    {%- else -%}
+        <div {{ block('widget_container_attributes') }}>
+            {%- for enfant in form -%}
+                {{ form_widget(enfant) }}
+                {{ form_label(enfant) }}
+            {%- endfor -%}
+        </div>
+    {%- endif -%}
+{%- endblock -%}
+
+{%- block checkbox_widget -%}
+    {%- if attr['data-interrupteur']|default(false) -%}
+        {#- Interrupteur maquette : le composant SwitchButton EST l'input. -#}
+        <twig:Form:SwitchButton id="{{ id }}"
+                                name="{{ full_name }}"
+                                value="{{ value|default('1') }}"
+                                :checked="checked"
+                                :disabled="disabled"
+                                :inputAttributes="attr|filter((v, k) => k != 'data-interrupteur')"
+                                class="shrink-0" />
+    {%- elseif attr['data-carte-repli']|default(false) -%}
+        {#- Carte cochable « contact de repli » : toute la carte est cliquable. -#}
+        <label for="{{ id }}"
+               class="group/repli flex items-start gap-3 px-4 py-3.5 rounded-[12px] text-left cursor-pointer
+                      bg-neutral-200 has-checked:bg-primary-4">
+            <input type="checkbox"
+                   id="{{ id }}"
+                   name="{{ full_name }}"
+                   value="{{ value|default('1') }}"
+                   {% if checked %}checked{% endif %}
+                   class="sr-only"
+                   {% for cle, valeur in attr|filter((v, k) => k != 'data-carte-repli') %}{{ cle }}="{{ valeur }}" {% endfor %}>
+            <span aria-hidden="true"
+                  class="w-5 h-5 shrink-0 box-border flex items-center justify-center rounded-xs mt-0.5
+                         bg-neutral-100 inset-ring-1 inset-ring-neutral-400
+                         group-has-checked/repli:bg-primary group-has-checked/repli:inset-ring-0">
+                <twig:Icon name="check" class="w-3.5 h-3.5 text-neutral-100 hidden group-has-checked/repli:block" />
+            </span>
+            <span class="flex flex-col gap-[3px] min-w-0 text-left">
+                <twig:Typography variant="body" bold element="span">Utiliser le contact de repli Business Profilers</twig:Typography>
+                <twig:Typography variant="body-sm" textColor="neutral-500" element="span" class="text-pretty">
+                    Le service référencement remplace le contact prestataire ; aucun accès n'est envoyé.
+                </twig:Typography>
+            </span>
+        </label>
+    {%- else -%}
+        <twig:Form:Checkbox
+            id="{{ id }}"
+            name="{{ full_name }}"
+            value="{{ value|default('1') }}"
+            :checked="checked"
+            :disabled="disabled"
+            :inputAttributes="attr"
+        />
+    {%- endif -%}
+{%- endblock -%}

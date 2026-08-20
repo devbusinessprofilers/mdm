@@ -177,8 +177,13 @@ final class FicheCreationControllerIntegrationTest extends WebTestCase
     public function testLieuCreationStoresLocalisationReferencementAndVisibilite(): void
     {
         $client = $this->createClientWithUser();
-        $client->request('GET', '/referentiel/fiche/nouvelle');
-        $client->submitForm('Créer la fiche', [
+        $crawler = $client->request('GET', '/referentiel/fiche/nouvelle');
+        // Les typologies sont des cases à cocher (puces maquette) : DomCrawler
+        // ne fait pas de correspondance par valeur sur un groupe `name[]`,
+        // la validation client est donc débrayée.
+        $form = $crawler->selectButton('Créer la fiche')->form();
+        $form->disableValidation();
+        $form->setValues([
             'fiche_creation[type]' => 'lieu',
             'fiche_creation[label]' => 'Château des tests',
             'fiche_creation[localisation][pays]' => 'France',
@@ -188,6 +193,7 @@ final class FicheCreationControllerIntegrationTest extends WebTestCase
             'fiche_creation[businessPremium]' => '1',
             'fiche_creation[sitePremium]' => ['SITE_PREMIUM_1', 'SITE_PREMIUM_11'],
         ]);
+        $client->submit($form);
         self::assertResponseRedirects();
 
         self::assertSame('Chantilly', $this->connection->fetchOne('SELECT ville FROM pim_localisation'));
@@ -217,14 +223,19 @@ final class FicheCreationControllerIntegrationTest extends WebTestCase
     public function testHiddenSectionsOfOtherGammesAreNeverPersisted(): void
     {
         $client = $this->createClientWithUser();
-        $client->request('GET', '/referentiel/fiche/nouvelle');
-        $client->submitForm('Créer la fiche', [
+        $crawler = $client->request('GET', '/referentiel/fiche/nouvelle');
+        // Cases à cocher `name[]` : pas de correspondance par valeur côté
+        // DomCrawler, validation client débrayée (cf. test précédent).
+        $form = $crawler->selectButton('Créer la fiche')->form();
+        $form->disableValidation();
+        $form->setValues([
             'fiche_creation[type]' => 'restaurant',
             'fiche_creation[label]' => 'Restaurant strict',
             'fiche_creation[localisation][codePostal]' => '75001',
             'fiche_creation[lieuTypologie]' => ['GENERALE_TYPOLOGIE_6'],
             'fiche_creation[modeIntervention]' => 'mobile',
         ]);
+        $client->submit($form);
         self::assertResponseRedirects();
 
         self::assertSame(0, (int) $this->connection->fetchOne(

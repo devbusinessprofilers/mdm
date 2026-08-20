@@ -41,6 +41,8 @@ final class FicheController extends AbstractController
     ): Response {
         $creation = new FicheCreation();
         $creation->sitesDiffusion = $sitesDiffusion->idsPreselectionInitiale();
+        // ?type=lieu : la gamme arrive pré-cochée (liens profonds du référentiel).
+        $creation->type = TypeFiche::tryFrom($request->query->getString('type'));
         $form = $this->createForm(FicheCreationType::class, $creation);
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {

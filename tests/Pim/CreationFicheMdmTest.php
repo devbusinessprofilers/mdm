@@ -57,7 +57,7 @@ final class CreationFicheMdmTest extends WebTestCase
 
         $crawler = $client->request('GET', '/referentiel/fiche/nouvelle');
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('h1', 'Nouvelle fiche');
+        self::assertSelectorTextContains('h1', 'Créer une fiche');
         // La présélection initiale coche l'obligatoire et le site par défaut.
         self::assertGreaterThanOrEqual(2, $crawler->filter('input[type="checkbox"][checked]')->count());
 

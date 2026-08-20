@@ -64,11 +64,15 @@ final class LieuControllerTest extends WebTestCase
         $entityManager->flush();
         $client->loginUser($user);
 
-        $client->request('GET', '/referentiel/fiche/nouvelle');
+        $crawler = $client->request('GET', '/referentiel/fiche/nouvelle');
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('h1', 'Nouvelle fiche');
+        self::assertSelectorTextContains('h1', 'Créer une fiche');
 
-        $client->submitForm('Créer la fiche', [
+        // Typologies en cases à cocher (puces maquette) : DomCrawler ne fait
+        // pas de correspondance par valeur sur un groupe `name[]`.
+        $form = $crawler->selectButton('Créer la fiche')->form();
+        $form->disableValidation();
+        $form->setValues([
             'fiche_creation[type]' => 'lieu',
             'fiche_creation[label]' => 'Lieu CRUD temporaire',
             'fiche_creation[lieuTypologie]' => ['GENERALE_TYPOLOGIE_20'],
@@ -76,6 +80,7 @@ final class LieuControllerTest extends WebTestCase
             'fiche_creation[localisation][codePostal]' => '75001',
             'fiche_creation[localisation][ville]' => 'Paris',
         ]);
+        $client->submit($form);
 
         self::assertResponseRedirects();
         self::assertSame(1, $entityManager->getRepository(Lieu::class)->count([]));

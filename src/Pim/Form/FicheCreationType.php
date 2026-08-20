@@ -44,11 +44,13 @@ final class FicheCreationType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
+            // Expanded : les radios sont les cartes de gamme de la maquette
+            // (rendu dans _form-theme-creation) — de vrais inputs soumis.
             ->add('type', ChoiceType::class, [
                 'label' => 'Gamme',
                 'choices' => self::GAMMES,
                 'choice_value' => static fn (?TypeFiche $type): ?string => $type?->value,
-                'placeholder' => 'Choisir une gamme…',
+                'expanded' => true,
                 'constraints' => [new NotNull(message: 'Choisissez une gamme.')],
                 'attr' => [
                     'data-fiche-creation-target' => 'type',
@@ -74,36 +76,42 @@ final class FicheCreationType extends AbstractType
                 'label' => 'Catégorie du lieu',
                 'choices' => array_flip(LieuLovCatalog::choicesFor('GENERALE_TYPOLOGIE')),
                 'multiple' => true,
+                'expanded' => true,
                 'required' => false,
             ])
             ->add('lieuThematique', ChoiceType::class, [
                 'label' => 'Thématiques du lieu',
                 'choices' => array_flip(LieuLovCatalog::choicesFor('TA_THEMATIQUE')),
                 'multiple' => true,
+                'expanded' => true,
                 'required' => false,
             ])
             ->add('lieuAmbiance', ChoiceType::class, [
                 'label' => 'Ambiances du lieu',
                 'choices' => array_flip(LieuLovCatalog::choicesFor('TA_AMBIANCE')),
                 'multiple' => true,
+                'expanded' => true,
                 'required' => false,
             ])
             ->add('typeRestaurant', ChoiceType::class, [
                 'label' => 'Type de restaurant',
                 'choices' => array_flip(RestaurantLovCatalog::values('TYPE_RESTAURANT')),
                 'multiple' => true,
+                'expanded' => true,
                 'required' => false,
             ])
             ->add('thematiqueActivite', ChoiceType::class, [
                 'label' => 'Type d’activité',
                 'choices' => array_flip(ActiviteLovCatalog::choicesFor('THEMATIQUE_ACTIVITE')),
                 'multiple' => true,
+                'expanded' => true,
                 'required' => false,
             ])
             ->add('typePrestataire', ChoiceType::class, [
                 'label' => 'Type de prestataire',
                 'choices' => array_flip(ServiceLovCatalog::prestations()),
                 'multiple' => true,
+                'expanded' => true,
                 'required' => false,
             ])
             // Le niveau de statut (MICE_STATUT) ne se choisit que dans le

@@ -238,11 +238,34 @@ maquette n'existe** (`templates/mdm/fiche/` absent). Contrôleurs Stimulus déj�
 9. Tests : `FicheLieuEditeurTest`, `FicheGammeEditeurTest`, `FicheExtractionEditeurTest`,
    `FicheCollaborateursEcranTest`.
 
-## ✅ Page 4 — Création de fiche (fait, commit `ce20f9b`)
+## ✅ Page 4 — Création de fiche (fait, commit `ce20f9b` ; REPRISE COMPLÈTE 2026-08-20)
+
+**Reprise 2026-08-20** — le « déjà conforme » de `ce20f9b` était faux (153 l. « au
+langage front » vs 632 maquette) : gabarit maquette intégral posé sur le formulaire
+réel. Rail des 7 blocs avec badges d'état vivants (« ! » serveur conservé tant que
+le bloc n'est pas corrigé), fil d'Ariane + en-tête, blocs-cartes numérotés
+verrouillés tant que la gamme n'est pas choisie (visuel seul, les champs restent de
+vrais inputs), barre d'actions basse (Annuler réel, Brouillon et « Créer et
+enchaîner » désactivés + infobulle, `Créer la fiche` = vrai submit), bannière
+d'erreurs maquette sur les champs fautifs. Gamme = cartes-radios réelles
+(`type` passe en expanded, carte « Plateaux repas » inerte), classification = puces
+cochables réelles (6 ChoiceType passent en expanded — thème
+`_form-theme-creation.html.twig`, opt-in `data-puces`/`data-sites`/
+`data-interrupteur`/`data-carte-repli`), sites de diffusion = liste groupée
+maquette sur les vrais groupes (mentions → tags, obligatoires cochés verrouillés —
+le serveur les réimpose), interrupteurs SwitchButton (Business Premium réel,
+« Actif » maquette sans back désactivé), carte « contact de repli » cochable,
+compteurs et filtre de sites en JS (`fiche_creation_controller`), `?type=` pré-coche
+la gamme. Écarts assumés : pas d'autocomplétion d'adresse (champs structurés réels,
+aides annuaire conservées), zone d'intervention par départements renvoyée à la fiche
+(note), pas de trames d'email en select (textarea réel), voile sans fil d'étapes.
+Piège DomCrawler : un groupe de cases `name[]` ne fait pas de correspondance par
+valeur (contrairement à un select) → `disableValidation()` dans les 2 tests qui
+posent une typologie. Doublons + « Créer quand même » conservés (bannière old-gold).
 
 `ce20f9b` — voile de création : overlay maquette (spinner, carte centrée) posé à la
 soumission par `fiche-creation#patienter`, le temps du POST synchrone. Écart : pas de
-fil d'étapes factice. Le reste de la page était déjà conforme.
+fil d'étapes factice. ~~Le reste de la page était déjà conforme.~~
 
 Détail d'origine :
 
