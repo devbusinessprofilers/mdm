@@ -51,9 +51,11 @@ final class GlobalSearchControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'Recherche globale');
-        // L'en-tête du portail porte une loupe vers /recherche ; le champ vit sur la page.
-        self::assertSelectorExists('header a[href="/recherche"]');
-        self::assertSelectorExists('input[name="q"]');
+        // L'en-tête du portail porte le formulaire de recherche : la loupe
+        // soumet vers le référentiel (`f[q]`), le champ vit à sa droite.
+        self::assertSelectorExists('header form[action="/referentiel"] button[type="submit"]');
+        self::assertSelectorExists('header form[action="/referentiel"] input[name="f[q]"]');
+        self::assertSelectorExists('main input[name="q"]');
         self::assertSelectorTextContains('main', 'Saisissez un code');
         self::assertSelectorNotExists('main table');
     }

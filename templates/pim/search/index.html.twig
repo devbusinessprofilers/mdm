@@ -12,8 +12,35 @@
         </div>
     </header>
 
-    <section class="toolbar global-search-toolbar" aria-label="Critères de recherche">
-        {{ form(search_form) }}
+    {# Critères dans une carte blanche, champ principal en pilule à loupe
+       (même dessin que la barre d'outils du référentiel), bouton compact. #}
+    <section class="card" aria-label="Critères de recherche">
+        {{ form_start(search_form, {attr: {class: 'flex flex-col gap-4'}}) }}
+            <div class="flex flex-wrap items-center gap-3">
+                <div class="flex-1 min-w-[220px] max-w-[460px] h-[38px] rounded-full overflow-hidden
+                            inset-ring-1 inset-ring-neutral-200 focus-within:inset-ring-primary
+                            [&>div]:h-full [&>div]:bg-neutral-100!">
+                    <twig:Form:TextInput
+                        id="{{ search_form.q.vars.id }}"
+                        name="{{ search_form.q.vars.full_name }}"
+                        value="{{ search_form.q.vars.value }}"
+                        leftIcon="magnifying-glass"
+                        placeholder="{{ search_form.q.vars.attr.placeholder|default('') }}"
+                        class="border-0! rounded-full! h-full!"
+                    />
+                </div>
+                {% do search_form.q.setRendered %}
+                {{ form_widget(search_form.submit, {attr: {'data-size': 'sm', 'data-full': '0'}}) }}
+            </div>
+            <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
+                {{ form_row(search_form.type) }}
+                {{ form_row(search_form.status) }}
+                {{ form_row(search_form.country) }}
+                {{ form_row(search_form.completeness_min) }}
+                {{ form_row(search_form.completeness_max) }}
+                {{ form_row(search_form.limit) }}
+            </div>
+        {{ form_end(search_form) }}
     </section>
 
     {% if query == '' %}

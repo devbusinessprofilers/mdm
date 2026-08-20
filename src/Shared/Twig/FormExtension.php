@@ -44,13 +44,14 @@ final class FormExtension extends AbstractExtension
 
     public function globalSearchForm(): FormView
     {
-        $request = $this->requestStack->getCurrentRequest();
-        $query = 'app_pim_global_search' === $request?->attributes->get('_route')
-            ? $request->query->getString('q')
-            : '';
+        // La recherche de l'en-tête atterrit sur le référentiel : le formulaire
+        // est nommé « f » pour que le champ soumette `f[q]`, le paramètre de
+        // recherche des filtres du référentiel. Champ vide → /referentiel nu.
+        $filtres = $this->requestStack->getCurrentRequest()?->query->all('f') ?? [];
+        $query = \is_string($filtres['q'] ?? null) ? $filtres['q'] : '';
 
-        return $this->forms->createNamed('', HeaderSearchType::class, ['q' => $query], [
-            'action' => $this->urls->generate('app_pim_global_search'),
+        return $this->forms->createNamed('f', HeaderSearchType::class, ['q' => $query], [
+            'action' => $this->urls->generate('app_mdm_referentiel_general'),
             'attr' => ['class' => 'header-search', 'role' => 'search'],
         ])->createView();
     }

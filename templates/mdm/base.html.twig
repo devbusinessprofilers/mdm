@@ -43,12 +43,29 @@
             </div>
 
             <div class="hidden 2xl:flex items-center gap-6 shrink-0">
-                {# Recherche globale — conservée depuis l'ancien en-tête. #}
-                <a href="{{ path('app_pim_global_search') }}"
-                   class="flex items-center gap-2 px-2 py-1.5 rounded-xs hover:bg-primary-4"
-                   title="Recherche globale">
-                    <twig:Icon name="magnifying-glass" aria-hidden="true" class="w-5 h-5 text-primary" />
-                </a>
+                {# Recherche : la loupe soumet le formulaire GET vers le
+                   référentiel — champ rempli, la recherche part immédiatement
+                   (`f[q]`) ; champ vide, on atterrit sur /referentiel nu. #}
+                {% set recherche_entete = global_search_form() %}
+                {{ form_start(recherche_entete) }}
+                    {% do recherche_entete.q.setRendered %}
+                    {% do recherche_entete.submit.setRendered %}
+                    <div class="flex items-center w-[260px] h-[38px] rounded-full overflow-hidden
+                                bg-neutral-100 inset-ring-1 inset-ring-neutral-200
+                                focus-within:inset-ring-primary
+                                [&>div]:h-full [&>div]:bg-transparent!">
+                        <twig:Button variant="text" size="sm" type="submit" icon="magnifying-glass"
+                                     title="Rechercher dans le référentiel" aria-label="Rechercher"
+                                     class="h-full! px-2.5! rounded-none! hover:bg-primary-4" />
+                        <twig:Form:TextInput
+                            id="recherche-globale-entete"
+                            name="{{ recherche_entete.q.vars.full_name }}"
+                            value="{{ recherche_entete.q.vars.value }}"
+                            placeholder="nom · ville · identifiant"
+                            class="border-0! rounded-none! h-full! pl-0!"
+                        />
+                    </div>
+                {{ form_end(recherche_entete) }}
 
                 <div class="group/profil relative">
                     <twig:Header:Profil user="{{ entete_utilisateur }}"
