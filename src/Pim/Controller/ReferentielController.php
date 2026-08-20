@@ -9,7 +9,7 @@ use App\Pim\Entity\SavedView;
 use App\Pim\Enum\TypeFiche;
 use App\Pim\Form\ReferentielFiltres;
 use App\Pim\Form\SavedViewType;
-use App\Pim\ReadModel\FicheCursor;
+use App\Pim\ReadModel\ReferentielCursor;
 use App\Pim\ReadModel\ReferentielLigne;
 use App\Pim\Repository\SavedViewRepository;
 use App\Pim\Service\ReferentielActionGroupee;
@@ -20,6 +20,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
@@ -38,15 +39,10 @@ final class ReferentielController extends AbstractController
     public function general(Request $request, CurrentActorProvider $actor, ReferentielEcran $ecran): Response
     {
         $filtres = ReferentielFiltres::fromArray($request->query->all('f'));
-        try {
-            $cursor = FicheCursor::decode($request->query->getString('cursor') ?: null);
-        } catch (\InvalidArgumentException) {
-            throw $this->createNotFoundException('Curseur de pagination invalide.');
-        }
 
         return $this->render(
             'mdm/referentiel.html.twig',
-            $ecran->variables($filtres, $cursor, null, $actor->id(), self::PAR_PAGE),
+            $ecran->variables($filtres, self::curseur($request, $filtres), null, $actor->id(), self::PAR_PAGE),
         );
     }
 
@@ -55,15 +51,10 @@ final class ReferentielController extends AbstractController
     {
         $filtres = ReferentielFiltres::fromArray($request->query->all('f'));
         $filtres->gammes = [TypeFiche::Lieu];
-        try {
-            $cursor = FicheCursor::decode($request->query->getString('cursor') ?: null);
-        } catch (\InvalidArgumentException) {
-            throw $this->createNotFoundException('Curseur de pagination invalide.');
-        }
 
         return $this->render(
             'mdm/referentiel.html.twig',
-            $ecran->variables($filtres, $cursor, TypeFiche::Lieu, $actor->id(), self::PAR_PAGE),
+            $ecran->variables($filtres, self::curseur($request, $filtres), TypeFiche::Lieu, $actor->id(), self::PAR_PAGE),
         );
     }
 
@@ -78,16 +69,30 @@ final class ReferentielController extends AbstractController
         };
         $filtres = ReferentielFiltres::fromArray($request->query->all('f'));
         $filtres->gammes = [$type];
-        try {
-            $cursor = FicheCursor::decode($request->query->getString('cursor') ?: null);
-        } catch (\InvalidArgumentException) {
-            throw $this->createNotFoundException('Curseur de pagination invalide.');
-        }
 
         return $this->render(
             'mdm/referentiel.html.twig',
-            $ecran->variables($filtres, $cursor, $type, $actor->id(), self::PAR_PAGE),
+            $ecran->variables($filtres, self::curseur($request, $filtres), $type, $actor->id(), self::PAR_PAGE),
         );
+    }
+
+    /**
+     * Curseur de pagination de la requête. Un curseur forgé sous un autre tri
+     * comparerait des clés hétérogènes : il est rejeté comme un curseur
+     * invalide.
+     */
+    private static function curseur(Request $request, ReferentielFiltres $filtres): ?ReferentielCursor
+    {
+        try {
+            $cursor = ReferentielCursor::decode($request->query->getString('cursor') ?: null);
+        } catch (\InvalidArgumentException) {
+            throw new NotFoundHttpException('Curseur de pagination invalide.');
+        }
+        if (null !== $cursor && $cursor->tri !== $filtres->tri) {
+            throw new NotFoundHttpException('Curseur incohérent avec le tri demandé.');
+        }
+
+        return $cursor;
     }
 
     #[Route('/actions', name: 'referentiel_actions', methods: ['POST'])]
@@ -129,7 +134,7 @@ final class ReferentielController extends AbstractController
             // Sélection cochée : export direct des ids, sans balayer le filtre.
             $lignes = $data['tout']
                 ? $provider->exportLignes($filtres, $plafond)
-                : $provider->lignesPourIds(array_slice($ids, 0, $plafond));
+                : $provider->lignesPourIds(array_slice($ids, 0, $plafond), $filtres->tri);
 
             return self::reponseCsv($lignes);
         }

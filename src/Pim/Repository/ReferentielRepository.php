@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace App\Pim\Repository;
 
 use App\Pim\Enum\StatutFiche;
+use App\Pim\Enum\TriReferentiel;
 use App\Pim\Enum\TypeFiche;
 use App\Pim\Form\ReferentielFiltres;
-use App\Pim\ReadModel\FicheCursor;
+use App\Pim\ReadModel\ReferentielCursor;
 use App\Shared\Search\BooleanQueryFactory;
 use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
@@ -198,12 +199,13 @@ final readonly class ReferentielRepository
     /** @return list<string> Identifiants (ULID texte) de toutes les fiches du filtre, pour les actions groupées. */
     public function idsPourFiltre(ReferentielFiltres $filtres, int $plafond): array
     {
-        [$conditions, $params, $types, $joins] = $this->conditions($filtres, null);
+        [$conditions, $params, $types, $joins] = $this->conditions($filtres, null, $this->specTri($filtres->tri)['jointures']);
         $rows = $this->connection->fetchFirstColumn(
             sprintf(
-                'SELECT f.id FROM pim_fiche f %s WHERE %s ORDER BY f.updated_at DESC, f.id DESC LIMIT %d',
+                'SELECT f.id FROM pim_fiche f %s WHERE %s %s LIMIT %d',
                 $joins,
                 implode("\n  AND ", $conditions),
+                $this->ordre($filtres->tri),
                 max(1, $plafond),
             ),
             $params,
@@ -221,36 +223,59 @@ final readonly class ReferentielRepository
      */
     public function voisines(ReferentielFiltres $filtres, string $ficheId): array
     {
-        $reference = $this->connection->fetchAssociative(
-            'SELECT updated_at, id FROM pim_fiche WHERE id = :id',
+        $spec = $this->specTri($filtres->tri);
+        $reference = $this->connection->fetchOne(
+            sprintf(
+                'SELECT %s FROM pim_fiche f %s WHERE f.id = :id',
+                $spec['expr'],
+                $this->jointures(array_fill_keys($spec['jointures'], true)),
+            ),
             ['id' => Ulid::fromString($ficheId)->toBinary()],
             ['id' => ParameterType::BINARY],
         );
-        if (false === $reference) {
+        if (false === $reference || null === $reference) {
             return ['precedente' => null, 'suivante' => null];
         }
-        [$conditions, $params, $types, $joins] = $this->conditions($filtres, null);
-        $params['ref_updated_at'] = $reference['updated_at'];
-        $params['ref_id'] = $reference['id'];
-        $types['ref_updated_at'] = ParameterType::STRING;
+        [$conditions, $params, $types, $joins] = $this->conditions($filtres, null, $spec['jointures']);
+        $params['ref_cle'] = ParameterType::INTEGER === $spec['type'] ? (int) $reference : (string) $reference;
+        $params['ref_id'] = Ulid::fromString($ficheId)->toBinary();
+        $types['ref_cle'] = $spec['type'];
         $types['ref_id'] = ParameterType::BINARY;
+
+        $sens = $filtres->tri->direction();
+        $inverse = 'ASC' === $sens ? 'DESC' : 'ASC';
+        $apres = 'ASC' === $sens ? '>' : '<';
+        $avant = 'ASC' === $sens ? '<' : '>';
+        $keyset = static fn (string $op): string => sprintf(
+            '(%1$s %2$s :ref_cle OR (%1$s = :ref_cle AND f.id %2$s :ref_id))',
+            $spec['expr'],
+            $op,
+        );
 
         $suivante = $this->connection->fetchOne(
             sprintf(
-                'SELECT f.id FROM pim_fiche f %s WHERE %s AND (f.updated_at, f.id) < (:ref_updated_at, :ref_id)
-                 ORDER BY f.updated_at DESC, f.id DESC LIMIT 1',
+                'SELECT f.id FROM pim_fiche f %s WHERE %s AND %s
+                 ORDER BY %s %s, f.id %s LIMIT 1',
                 $joins,
                 implode("\n  AND ", $conditions),
+                $keyset($apres),
+                $spec['expr'],
+                $sens,
+                $sens,
             ),
             $params,
             $types,
         );
         $precedente = $this->connection->fetchOne(
             sprintf(
-                'SELECT f.id FROM pim_fiche f %s WHERE %s AND (f.updated_at, f.id) > (:ref_updated_at, :ref_id)
-                 ORDER BY f.updated_at ASC, f.id ASC LIMIT 1',
+                'SELECT f.id FROM pim_fiche f %s WHERE %s AND %s
+                 ORDER BY %s %s, f.id %s LIMIT 1',
                 $joins,
                 implode("\n  AND ", $conditions),
+                $keyset($avant),
+                $spec['expr'],
+                $inverse,
+                $inverse,
             ),
             $params,
             $types,
@@ -263,20 +288,16 @@ final readonly class ReferentielRepository
     }
 
     /**
-     * Page de lignes brutes, ordonnée par modification décroissante.
+     * Page de lignes brutes, dans l'ordre du tri porté par les filtres.
      *
      * @return array{rows: list<array<string, mixed>>, hasNext: bool}
      */
-    public function pageRows(ReferentielFiltres $filtres, ?FicheCursor $cursor, int $limit): array
+    public function pageRows(ReferentielFiltres $filtres, ?ReferentielCursor $cursor, int $limit): array
     {
         [$conditions, $params, $types, $joins] = $this->conditions($filtres, null, ['loc', 'completude', 'sd']);
         $joins .= "\nLEFT JOIN account_user au ON au.id = f.assignee_id";
         if (null !== $cursor) {
-            $conditions[] = '(f.updated_at, f.id) < (:cursor_updated_at, :cursor_id)';
-            $params['cursor_updated_at'] = $cursor->updatedAt->format('Y-m-d H:i:s');
-            $params['cursor_id'] = $cursor->id->toBinary();
-            $types['cursor_updated_at'] = ParameterType::STRING;
-            $types['cursor_id'] = ParameterType::BINARY;
+            $conditions[] = $this->conditionCursor($filtres->tri, $cursor, $params, $types);
         }
         $rows = $this->connection->fetchAllAssociative(
             sprintf(
@@ -302,13 +323,14 @@ final readonly class ReferentielRepository
                 FROM pim_fiche f
                 %s
                 WHERE %s
-                ORDER BY f.updated_at DESC, f.id DESC
+                %s
                 LIMIT %d
                 SQL,
                 self::COMPLETENESS,
                 self::TYPOLOGIE,
                 $joins,
                 implode("\n  AND ", $conditions),
+                $this->ordre($filtres->tri),
                 $limit + 1,
             ),
             $params,
@@ -322,19 +344,22 @@ final readonly class ReferentielRepository
     }
 
     /**
-     * Lignes brutes des seules fiches demandées, dans l'ordre de la liste
-     * (modification décroissante) : l'export d'une sélection cochée n'a pas
-     * à parcourir tout le résultat filtré.
+     * Lignes brutes des seules fiches demandées, dans l'ordre de la liste :
+     * l'export d'une sélection cochée n'a pas à parcourir tout le résultat
+     * filtré.
      *
      * @param list<string> $ids Identifiants binaires
      *
      * @return list<array<string, mixed>>
      */
-    public function rowsPourIds(array $ids): array
+    public function rowsPourIds(array $ids, TriReferentiel $tri = TriReferentiel::DEFAUT): array
     {
         if ([] === $ids) {
             return [];
         }
+        // « diffusion » : sd n'est pas jointe ici, la colonne est le
+        // sous-select aliasé canaux, résolu par MySQL dans le ORDER BY.
+        $expr = 'diffusion' === $tri->colonne() ? 'canaux' : $this->specTri($tri)['expr'];
 
         return $this->connection->fetchAllAssociative(
             sprintf(
@@ -365,10 +390,13 @@ final readonly class ReferentielRepository
                 LEFT JOIN pim_service_evenementiel sv ON sv.fiche_id = f.id AND f.type = 'service_evenementiel'
                 LEFT JOIN account_user au ON au.id = f.assignee_id
                 WHERE f.id IN (:ids)
-                ORDER BY f.updated_at DESC, f.id DESC
+                ORDER BY %s %s, f.id %s
                 SQL,
                 self::COMPLETENESS,
                 self::TYPOLOGIE,
+                $expr,
+                $tri->direction(),
+                $tri->direction(),
             ),
             ['ids' => $ids],
             ['ids' => ArrayParameterType::BINARY],
@@ -587,6 +615,62 @@ final readonly class ReferentielRepository
     }
 
     /**
+     * Expression SQL de la clé du tri donné, jointures qu'elle requiert dans
+     * les requêtes bâties sur conditions(), et type de binding de sa valeur.
+     * Les clés nullables sont COALESCE-ées pour garder un keyset comparable.
+     *
+     * @return array{expr: string, jointures: list<string>, type: ParameterType}
+     */
+    private function specTri(TriReferentiel $tri): array
+    {
+        return match ($tri->colonne()) {
+            'nom' => ['expr' => "COALESCE(f.label, '')", 'jointures' => [], 'type' => ParameterType::STRING],
+            'gamme' => ['expr' => 'f.type', 'jointures' => [], 'type' => ParameterType::STRING],
+            'pays' => ['expr' => "COALESCE(loc.pays, '')", 'jointures' => ['loc'], 'type' => ParameterType::STRING],
+            'statut' => ['expr' => 'f.status', 'jointures' => [], 'type' => ParameterType::STRING],
+            'completude' => ['expr' => 'COALESCE('.self::COMPLETENESS.', -1)', 'jointures' => ['completude'], 'type' => ParameterType::INTEGER],
+            'diffusion' => ['expr' => 'COALESCE(sd.nb, 0)', 'jointures' => ['sd'], 'type' => ParameterType::INTEGER],
+            default => ['expr' => 'f.updated_at', 'jointures' => [], 'type' => ParameterType::STRING],
+        };
+    }
+
+    private function ordre(TriReferentiel $tri): string
+    {
+        $spec = $this->specTri($tri);
+
+        return sprintf('ORDER BY %s %s, f.id %s', $spec['expr'], $tri->direction(), $tri->direction());
+    }
+
+    /**
+     * Condition keyset « après le curseur » dans le sens du tri, départagée
+     * sur f.id. Forme développée : elle reste valable sur les clés calculées
+     * ou COALESCE-ées, que le row constructor ne couvre pas.
+     *
+     * @param array<string, mixed> $params
+     * @param array<string, mixed> $types
+     */
+    private function conditionCursor(TriReferentiel $tri, ReferentielCursor $cursor, array &$params, array &$types): string
+    {
+        $spec = $this->specTri($tri);
+        $op = 'ASC' === $tri->direction() ? '>' : '<';
+        $params['cursor_cle'] = match ($tri->colonne()) {
+            // Seconde près, comme la colonne — comportement historique.
+            'modif' => substr($cursor->cle, 0, 19),
+            'completude', 'diffusion' => (int) $cursor->cle,
+            default => $cursor->cle,
+        };
+        $params['cursor_id'] = $cursor->id->toBinary();
+        $types['cursor_cle'] = $spec['type'];
+        $types['cursor_id'] = ParameterType::BINARY;
+        if ('modif' === $tri->colonne()) {
+            // Colonne non nulle : le row constructor exploite l'index.
+            return sprintf('(f.updated_at, f.id) %s (:cursor_cle, :cursor_id)', $op);
+        }
+
+        return sprintf('(%1$s %2$s :cursor_cle OR (%1$s = :cursor_cle AND f.id %2$s :cursor_id))', $spec['expr'], $op);
+    }
+
+    /**
      * Construit jointures et conditions pour le filtre donné, en excluant au
      * besoin un groupe : le compte d'une facette se calcule sous les filtres
      * de tous les autres groupes. Seules les jointures réellement référencées
@@ -613,21 +697,7 @@ final readonly class ReferentielRepository
         if ('canaux' !== $groupeExclu && [] !== $filtres->canaux) {
             $requises['sd'] = true;
         }
-        $joins = '';
-        if (isset($requises['loc'])) {
-            $joins .= "\nLEFT JOIN pim_localisation loc ON loc.id = f.localisation_id";
-        }
-        if (isset($requises['completude'])) {
-            $joins .= "\n".<<<'SQL'
-                LEFT JOIN pim_lieu l ON l.fiche_id = f.id AND f.type = 'lieu'
-                LEFT JOIN pim_activite a ON a.fiche_id = f.id AND f.type = 'activite'
-                LEFT JOIN pim_restaurant r ON r.fiche_id = f.id AND f.type = 'restaurant'
-                LEFT JOIN pim_service_evenementiel sv ON sv.fiche_id = f.id AND f.type = 'service_evenementiel'
-                SQL;
-        }
-        if (isset($requises['sd'])) {
-            $joins .= "\nLEFT JOIN (SELECT fiche_id, COUNT(*) AS nb FROM pim_fiche_site_diffusion GROUP BY fiche_id) sd ON sd.fiche_id = f.id";
-        }
+        $joins = $this->jointures($requises);
 
         $q = trim((string) $filtres->q);
         if ('' !== $q) {
@@ -723,6 +793,28 @@ final readonly class ReferentielRepository
         }
 
         return [$conditions, $params, $types, $joins];
+    }
+
+    /** @param array<string, true> $requises */
+    private function jointures(array $requises): string
+    {
+        $joins = '';
+        if (isset($requises['loc'])) {
+            $joins .= "\nLEFT JOIN pim_localisation loc ON loc.id = f.localisation_id";
+        }
+        if (isset($requises['completude'])) {
+            $joins .= "\n".<<<'SQL'
+                LEFT JOIN pim_lieu l ON l.fiche_id = f.id AND f.type = 'lieu'
+                LEFT JOIN pim_activite a ON a.fiche_id = f.id AND f.type = 'activite'
+                LEFT JOIN pim_restaurant r ON r.fiche_id = f.id AND f.type = 'restaurant'
+                LEFT JOIN pim_service_evenementiel sv ON sv.fiche_id = f.id AND f.type = 'service_evenementiel'
+                SQL;
+        }
+        if (isset($requises['sd'])) {
+            $joins .= "\nLEFT JOIN (SELECT fiche_id, COUNT(*) AS nb FROM pim_fiche_site_diffusion GROUP BY fiche_id) sd ON sd.fiche_id = f.id";
+        }
+
+        return $joins;
     }
 
     /** @return array{string, string, string} Bornes UTC : début de semaine, début de jour (Europe/Paris) et il y a six mois. */

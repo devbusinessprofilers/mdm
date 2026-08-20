@@ -315,7 +315,7 @@
                     </a>
                 {% endif %}
             </div>
-            <twig:Typography variant="body-sm" textColor="primary-3" bold class="shrink-0">Tri : dernière modification</twig:Typography>
+            <twig:Typography variant="body-sm" textColor="primary-3" bold class="shrink-0">Tri : {{ tri.libelle }}</twig:Typography>
         </div>
 
         {# -- Actions groupées -- #}
@@ -442,16 +442,22 @@
                                     </span>
                                 </button>
                             </th>
-                            {% for col in [
-                                { label: 'Nom et ville', al: 'left' }, { label: 'Gamme', al: 'left' },
-                                { label: 'Type', al: 'left' }, { label: 'Pays', al: 'left' },
-                                { label: 'Statut', al: 'left' }, { label: 'Complétude', al: 'left' },
-                                { label: 'Diffusion', al: 'right' }, { label: 'Actif', al: 'center' },
-                                { label: 'BP', al: 'center' }, { label: 'Dernière modification', al: 'left' },
-                                { label: '', al: 'right' },
-                            ] %}
-                                <th class="pr-2.5 whitespace-nowrap uppercase tracking-[0.3px] text-{{ col.al }}">
-                                    <twig:Typography variant="body-xs" textColor="neutral-500" bold class="text-[10px]!">{{ col.label }}</twig:Typography>
+                            {% for col in colonnes %}
+                                <th class="pr-2.5 whitespace-nowrap uppercase tracking-[0.3px] text-{{ col.al }}"
+                                    {% if col.actif %}aria-sort="{{ col.direction == 'asc' ? 'ascending' : 'descending' }}"{% endif %}>
+                                    {% if col.filtre is not null %}
+                                        <a href="{{ path(route_courante, col.filtre is empty ? params_courants : params_courants|merge({ f: col.filtre })) }}"
+                                           class="inline-flex items-center gap-1 group/tri"
+                                           aria-label="Trier par {{ col.label|lower }}">
+                                            <twig:Typography variant="body-xs" textColor="{{ col.actif ? 'primary-3' : 'neutral-500' }}" bold
+                                                             class="text-[10px]! group-hover/tri:underline">{{ col.label }}</twig:Typography>
+                                            {% if col.actif %}
+                                                <twig:Icon name="caret-down-solid" class="w-2 h-2 shrink-0 text-primary-3 {{ col.direction == 'asc' ? 'rotate-180' : '' }}" />
+                                            {% endif %}
+                                        </a>
+                                    {% else %}
+                                        <twig:Typography variant="body-xs" textColor="neutral-500" bold class="text-[10px]!">{{ col.label }}</twig:Typography>
+                                    {% endif %}
                                 </th>
                             {% endfor %}
                         </tr>

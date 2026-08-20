@@ -14,8 +14,12 @@ use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Entity\SiteDiffusion;
 use App\Pim\Enum\StatutFiche;
+use App\Pim\Enum\TriReferentiel;
+use App\Pim\Form\ReferentielFiltres;
+use App\Pim\ReadModel\ReferentielCursor;
 use App\Pim\Service\FicheSearchIndexer;
 use App\Pim\Service\ReferentielActionGroupee;
+use App\Pim\Service\ReferentielListeProvider;
 use Symfony\Component\Uid\Ulid;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
@@ -366,6 +370,98 @@ final class ReferentielControllerTest extends WebTestCase
         self::assertResponseRedirects();
         $client->followRedirect();
         self::assertSelectorTextContains('body', 'Vue « Publiées » supprimée.');
+    }
+
+    public function testTriParNomEnTetesCliquablesEtPaginationKeyset(): void
+    {
+        $client = self::createClient();
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $this->connection = self::getContainer()->get(Connection::class);
+        $this->clearTables();
+
+        $user = new User('referentiel-tri@example.test', ['ROLE_BP_EDITOR']);
+        $user->setPassword('not-used-by-login-user');
+        $entityManager->persist($user);
+        // Créées dans le désordre alphabétique : le tri par défaut
+        // (modification décroissante) ne coïncide pas avec le tri par nom.
+        foreach (['Zzz pavillon', 'Aaa château', 'Mmm manoir'] as $label) {
+            $lieu = new Lieu();
+            $lieu->changeLabel($label);
+            $entityManager->persist($lieu);
+        }
+        $entityManager->flush();
+        $client->loginUser($user);
+
+        // Tri par nom ascendant : ordre alphabétique et libellé de tri affiché.
+        $crawler = $client->request('GET', '/referentiel', ['f' => ['tri' => 'nom_asc']]);
+        self::assertResponseIsSuccessful();
+        self::assertStringContainsString('Tri : nom (A → Z)', $crawler->text(null, true));
+        self::assertStringContainsString('Aaa château', $crawler->filter('tbody tr')->first()->text(null, true));
+
+        // L'en-tête actif bascule vers le sens inverse, sans transporter de curseur.
+        $lien = (string) $crawler->filter('thead a[aria-label="Trier par nom et ville"]')->attr('href');
+        self::assertStringContainsString('nom_desc', $lien);
+        self::assertStringNotContainsString('cursor', $lien);
+        // Un en-tête inactif part sur son sens naturel.
+        self::assertStringContainsString(
+            'completude_desc',
+            (string) $crawler->filter('thead a[aria-label="Trier par complétude"]')->attr('href'),
+        );
+
+        $crawler = $client->request('GET', '/referentiel', ['f' => ['tri' => 'nom_desc']]);
+        self::assertStringContainsString('Zzz pavillon', $crawler->filter('tbody tr')->first()->text(null, true));
+
+        // Pagination keyset sous tri non défaut : pages de 1, ni doublon ni trou.
+        $provider = self::getContainer()->get(ReferentielListeProvider::class);
+        $filtres = ReferentielFiltres::fromArray(['tri' => 'nom_asc']);
+        $labels = [];
+        $cursor = null;
+        do {
+            $vue = $provider->vue($filtres, $cursor, 1);
+            foreach ($vue->lignes as $ligne) {
+                $labels[] = $ligne->label;
+            }
+            $cursor = ReferentielCursor::decode($vue->nextCursor);
+        } while (null !== $cursor);
+        self::assertSame(['Aaa château', 'Mmm manoir', 'Zzz pavillon'], $labels);
+
+        // Un curseur forgé sous un autre tri est rejeté comme invalide.
+        $client->request('GET', '/referentiel', [
+            'f' => ['tri' => 'statut_asc'],
+            'cursor' => (new ReferentielCursor(TriReferentiel::NomAsc, 'Aaa château', new Ulid()))->encode(),
+        ]);
+        self::assertResponseStatusCodeSame(404);
+    }
+
+    public function testLaVueEnregistreeConserveLeTri(): void
+    {
+        $client = self::createClient();
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $this->connection = self::getContainer()->get(Connection::class);
+        $this->clearTables();
+
+        $user = new User('referentiel-vue-tri@example.test', ['ROLE_BP_EDITOR']);
+        $user->setPassword('not-used-by-login-user');
+        $entityManager->persist($user);
+        $entityManager->flush();
+        $client->loginUser($user);
+
+        $crawler = $client->request('GET', '/referentiel', ['f' => ['tri' => 'nom_asc']]);
+        self::assertResponseIsSuccessful();
+        $form = $crawler->selectButton('Enregistrer la vue')->form();
+        $form['vue[name]'] = 'Par nom';
+        $client->submit($form);
+        self::assertResponseRedirects();
+        $crawler = $client->followRedirect();
+        self::assertSelectorTextContains('body', 'Vue « Par nom » enregistrée.');
+        self::assertStringContainsString(
+            'nom_asc',
+            (string) $this->connection->fetchOne('SELECT filters FROM pim_saved_view'),
+        );
+        // La vue ré-appliquée restitue le tri via son URL.
+        $lien = $crawler->filter('a:contains("Par nom")');
+        self::assertGreaterThan(0, $lien->count());
+        self::assertStringContainsString('nom_asc', (string) $lien->attr('href'));
     }
 
     private function clearTables(): void

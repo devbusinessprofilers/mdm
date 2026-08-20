@@ -5,12 +5,13 @@ declare(strict_types=1);
 namespace App\Pim\Service;
 
 use App\Pim\Entity\SavedView;
+use App\Pim\Enum\TriReferentiel;
 use App\Pim\Enum\TypeFiche;
 use App\Pim\Form\ReferentielFiltres;
 use App\Pim\Form\ReferentielFiltresType;
 use App\Pim\Form\ReferentielSelectionType;
 use App\Pim\Form\SavedViewType;
-use App\Pim\ReadModel\FicheCursor;
+use App\Pim\ReadModel\ReferentielCursor;
 use App\Pim\ReadModel\ReferentielVue;
 use App\Account\Repository\UserRepository;
 use App\Pim\Repository\SavedViewRepository;
@@ -41,7 +42,7 @@ final readonly class ReferentielEcran
     /** @return array<string, mixed> Variables du gabarit mdm/referentiel.html.twig. */
     public function variables(
         ReferentielFiltres $filtres,
-        ?FicheCursor $cursor,
+        ?ReferentielCursor $cursor,
         ?TypeFiche $gammeImposee,
         string $userId,
         int $parPage,
@@ -109,6 +110,8 @@ final readonly class ReferentielEcran
             'actions' => self::actions(),
             'filtres' => $filtres,
             'filtres_actifs' => $this->filtresActifs($filtres, $vue, $gammeImposee),
+            'tri' => $filtres->tri,
+            'colonnes' => $this->colonnes($filtres, $gammeImposee),
             'form_filtres' => $formFiltres->createView(),
             'form_selection' => $formSelection->createView(),
             'form_vue' => $formVue->createView(),
@@ -187,6 +190,58 @@ final readonly class ReferentielEcran
         'repli' => 'Contact de repli',
         'premium' => 'Adhérent Business Premium',
     ];
+
+    /**
+     * En-têtes du tableau. Pour une colonne triable, `filtre` est le jeu de
+     * filtres où un clic mène — le tri de la colonne, sens inversé si elle le
+     * porte déjà — et le gabarit en dérive l'URL sur la route courante, comme
+     * pour les badges. Sur une page de gamme, la colonne Gamme n'a qu'une
+     * valeur : elle reste inerte.
+     *
+     * @return list<array{label: string, al: string, actif: bool, direction: ?string, filtre: ?array<string, mixed>}>
+     */
+    private function colonnes(ReferentielFiltres $filtres, ?TypeFiche $gammeImposee): array
+    {
+        $base = $filtres->toArray();
+        if (null !== $gammeImposee) {
+            unset($base['gammes']);
+        }
+        $definitions = [
+            ['Nom et ville', 'left', 'nom'],
+            ['Gamme', 'left', null === $gammeImposee ? 'gamme' : null],
+            ['Type', 'left', null],
+            ['Pays', 'left', 'pays'],
+            ['Statut', 'left', 'statut'],
+            ['Complétude', 'left', 'completude'],
+            ['Diffusion', 'right', 'diffusion'],
+            ['Actif', 'center', null],
+            ['BP', 'center', null],
+            ['Dernière modification', 'left', 'modif'],
+            ['', 'right', null],
+        ];
+        $colonnes = [];
+        foreach ($definitions as [$label, $al, $colonne]) {
+            $actif = null !== $colonne && $filtres->tri->colonne() === $colonne;
+            $filtre = null;
+            if (null !== $colonne) {
+                $cible = TriReferentiel::pourColonne($colonne, $filtres->tri);
+                $filtre = $base;
+                unset($filtre['tri']);
+                if (!$cible->estDefaut()) {
+                    $filtre['tri'] = $cible->value;
+                }
+            }
+            $colonnes[] = [
+                'label' => $label,
+                'al' => $al,
+                'actif' => $actif,
+                'direction' => $actif ? strtolower($filtres->tri->direction()) : null,
+                'filtre' => $filtre,
+            ];
+        }
+
+        return $colonnes;
+    }
 
     /**
      * Un badge par valeur de filtre active. `filtre` est le jeu de filtres

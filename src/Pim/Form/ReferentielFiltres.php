@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Pim\Form;
 
 use App\Pim\Enum\StatutFiche;
+use App\Pim\Enum\TriReferentiel;
 use App\Pim\Enum\TypeFiche;
 
 /**
@@ -48,6 +49,9 @@ final class ReferentielFiltres
     /** @var list<int> Identifiants de valeurs de classification (catégories, thématiques…). */
     public array $valeurs = [];
 
+    /** Ordre de la liste — pas un filtre : ne compte pas dans actifs(). */
+    public TriReferentiel $tri = TriReferentiel::DEFAUT;
+
     public function actifs(): int
     {
         return (null !== $this->q && '' !== trim($this->q) ? 1 : 0)
@@ -78,6 +82,8 @@ final class ReferentielFiltres
             'repli' => $this->repli ?: null,
             'premium' => $this->premium ?: null,
             'valeurs' => $this->valeurs,
+            // Omis au défaut : URL et vues enregistrées existantes inchangées.
+            'tri' => $this->tri->estDefaut() ? null : $this->tri->value,
         ], static fn (mixed $value): bool => null !== $value && [] !== $value);
     }
 
@@ -100,6 +106,7 @@ final class ReferentielFiltres
             static fn (mixed $v): int => (int) $v,
             is_array($data['valeurs'] ?? null) ? $data['valeurs'] : [],
         ), static fn (int $v): bool => $v > 0));
+        $filtres->tri = TriReferentiel::tryFrom(is_string($data['tri'] ?? null) ? $data['tri'] : '') ?? TriReferentiel::DEFAUT;
 
         return $filtres;
     }

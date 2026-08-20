@@ -6,9 +6,10 @@ namespace App\Pim\Service;
 
 use App\Dam\Service\PublicMediaUrlGenerator;
 use App\Pim\Enum\StatutFiche;
+use App\Pim\Enum\TriReferentiel;
 use App\Pim\Enum\TypeFiche;
 use App\Pim\Form\ReferentielFiltres;
-use App\Pim\ReadModel\FicheCursor;
+use App\Pim\ReadModel\ReferentielCursor;
 use App\Pim\ReadModel\ReferentielLigne;
 use App\Pim\ReadModel\ReferentielVue;
 use App\Pim\Repository\ReferentielRepository;
@@ -27,7 +28,7 @@ final readonly class ReferentielListeProvider
     ) {
     }
 
-    public function vue(ReferentielFiltres $filtres, ?FicheCursor $cursor = null, int $limit = 14): ReferentielVue
+    public function vue(ReferentielFiltres $filtres, ?ReferentielCursor $cursor = null, int $limit = 14): ReferentielVue
     {
         $limit = max(1, min(100, $limit));
         [$lignes, $nextCursor] = $this->page($filtres, $cursor, $limit);
@@ -67,7 +68,7 @@ final readonly class ReferentielListeProvider
             if (null === $next) {
                 break;
             }
-            $cursor = FicheCursor::decode($next);
+            $cursor = ReferentielCursor::decode($next);
         }
 
         return $lignes;
@@ -81,7 +82,7 @@ final readonly class ReferentielListeProvider
      *
      * @return list<ReferentielLigne>
      */
-    public function lignesPourIds(array $ids): array
+    public function lignesPourIds(array $ids, TriReferentiel $tri = TriReferentiel::DEFAUT): array
     {
         $binaires = [];
         foreach ($ids as $id) {
@@ -91,11 +92,11 @@ final readonly class ReferentielListeProvider
             }
         }
 
-        return $this->lignes($this->repository->rowsPourIds($binaires));
+        return $this->lignes($this->repository->rowsPourIds($binaires, $tri));
     }
 
     /** @return array{list<ReferentielLigne>, ?string} */
-    private function page(ReferentielFiltres $filtres, ?FicheCursor $cursor, int $limit): array
+    private function page(ReferentielFiltres $filtres, ?ReferentielCursor $cursor, int $limit): array
     {
         ['rows' => $rows, 'hasNext' => $hasNext] = $this->repository->pageRows($filtres, $cursor, $limit);
         $lignes = $this->lignes($rows);
@@ -104,9 +105,23 @@ final readonly class ReferentielListeProvider
         return [
             $lignes,
             $hasNext && null !== $derniere
-                ? (new FicheCursor($derniere->updatedAt, Ulid::fromString($derniere->id)))->encode()
+                ? (new ReferentielCursor($filtres->tri, self::cleCursor($filtres->tri, $derniere), Ulid::fromString($derniere->id)))->encode()
                 : null,
         ];
+    }
+
+    /** Valeur de la clé de tri sur la ligne, miroir exact des COALESCE SQL de ReferentielRepository::specTri(). */
+    private static function cleCursor(TriReferentiel $tri, ReferentielLigne $ligne): string
+    {
+        return match ($tri->colonne()) {
+            'nom' => $ligne->label ?? '',
+            'gamme' => $ligne->type->value,
+            'pays' => $ligne->pays ?? '',
+            'statut' => $ligne->status->value,
+            'completude' => (string) ($ligne->completeness ?? -1),
+            'diffusion' => (string) $ligne->canaux,
+            default => $ligne->updatedAt->format('Y-m-d H:i:s.u'),
+        };
     }
 
     /**
