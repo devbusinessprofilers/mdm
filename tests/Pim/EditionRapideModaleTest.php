@@ -6,6 +6,7 @@ namespace App\Tests\Pim;
 
 use App\Account\Entity\User;
 use App\Pim\Entity\Lieu\Lieu;
+use App\Pim\Entity\Service\ServiceEvenementiel;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\Group;
@@ -86,5 +87,41 @@ final class EditionRapideModaleTest extends WebTestCase
         $crawler = $client->request('GET', $url);
         $client->submit($crawler->selectButton('Enregistrer et passer à la suivante')->form());
         self::assertResponseRedirects('/referentiel/fiche/'.$suivante->fiche()->idString().'/edition-rapide');
+    }
+
+    /**
+     * Les attributs de sous-prestations Service portent des codes accentués
+     * (TS_COMMUNICATION_PUBLICITÉ_SS) : le nom de champ doit être assaini,
+     * sinon la construction du formulaire lève et la modale reste vide.
+     */
+    public function testLaFicheServiceSAfficheEtSEnregistre(): void
+    {
+        $client = self::createClient();
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $connection = self::getContainer()->get(Connection::class);
+        $connection->executeStatement('DELETE FROM pim_service_evenementiel');
+        $connection->executeStatement('DELETE FROM pim_lieu');
+        $connection->executeStatement('DELETE FROM pim_fiche');
+        $connection->executeStatement('DELETE FROM account_user');
+
+        $user = new User('edition-rapide-service@example.test', ['ROLE_BP_VALIDATOR']);
+        $user->setPassword('not-used-by-login-user');
+        $entityManager->persist($user);
+        $service = new ServiceEvenementiel();
+        $service->changeLabel('Prestataire modale');
+        $entityManager->persist($service);
+        $entityManager->flush();
+        $client->loginUser($user);
+        $url = '/referentiel/fiche/'.$service->fiche()->idString().'/edition-rapide';
+
+        $crawler = $client->request('GET', $url);
+        self::assertResponseIsSuccessful();
+        self::assertSelectorExists('turbo-frame#edition-rapide');
+        self::assertSelectorTextContains('h1', 'Prestataire modale');
+        self::assertGreaterThan(0, $crawler->filter('select[name^="form[classification_"]')->count());
+
+        // Le round-trip complet passe par les mêmes noms assainis.
+        $client->submit($crawler->selectButton('Enregistrer')->form());
+        self::assertResponseRedirects($url);
     }
 }

@@ -43,6 +43,12 @@ final readonly class EditionRapideEcran
         };
     }
 
+    /** Nom de champ sûr : les codes LOV peuvent porter des accents, interdits par Symfony Form. */
+    private static function champClassification(string $code): string
+    {
+        return 'classification_'.preg_replace('/[^A-Za-z0-9_:\-]+/u', '-', $code);
+    }
+
     public function __construct(
         private FicheRepository $fiches,
         private SiteDiffusionRepository $sites,
@@ -69,7 +75,7 @@ final readonly class EditionRapideEcran
             ]);
         foreach ($this->attributsClassification($fiche->type()) as $attribut) {
             // Selects multiples (composant du portail), pas des listes de cases.
-            $builder->add('classification_'.$attribut['code'], ChoiceType::class, [
+            $builder->add(self::champClassification($attribut['code']), ChoiceType::class, [
                 'label' => $attribut['label'],
                 'required' => false,
                 'multiple' => true,
@@ -115,7 +121,7 @@ final readonly class EditionRapideEcran
             $fiche->changeBusinessPremium((bool) ($data['businessPremium'] ?? false));
             foreach ($this->attributsClassification($fiche->type()) as $attribut) {
                 /** @var list<int> $valeurs */
-                $valeurs = $data['classification_'.$attribut['code']] ?? [];
+                $valeurs = $data[self::champClassification($attribut['code'])] ?? [];
                 $fiche->replaceAttributeValues($attribut['code'], $valeurs);
             }
             /** @var list<int> $sitesChoisis */
