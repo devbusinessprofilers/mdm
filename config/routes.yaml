@@ -31,6 +31,10 @@ ocr_controllers:
     resource: '../src/Ocr/Controller/'
     type: attribute
 
+vision_controllers:
+    resource: '../src/Vision/Controller/'
+    type: attribute
+
 account_controllers:
     resource: '../src/Account/Controller/'
     type: attribute

@@ -29,6 +29,14 @@ parameters:
     env(BOX_API_URL): 'https://api.box.com'
     env(BOX_UPLOAD_URL): 'https://upload.box.com/api'
     env(BOX_ENHANCED_EXTRACT_AGENT): 'enhanced_extract_agent'
+    env(OPENAI_ENABLED): '0'
+    env(OPENAI_API_KEY): ''
+    env(OPENAI_API_URL): 'https://api.openai.com'
+    env(OPENAI_IMAGE_EDIT_MODEL): 'gpt-image-1'
+    env(OPENAI_VISION_MODEL): 'gpt-4o'
+    env(OPENAI_RETOUCHE_PROMPT): 'Améliore la luminosité, le contraste, les couleurs et la netteté de cette photo sans modifier son contenu, son cadrage ni les éléments présents.'
+    env(OPENAI_RECO_PROMPT): 'Décris cette photo d’un établissement événementiel en français : une légende d’une phrase, des mots-clés, le type de vue, intérieur ou extérieur.'
+    env(OPENAI_RECO_AUTO_ENABLED): '1'
     env(DAM_PHASH_DISTANCE_THRESHOLD): '8'
     env(COMPLETENESS_REMINDER_THRESHOLD): '60'
     env(COMPLETENESS_REMINDER_COOLDOWN_DAYS): '30'
@@ -227,6 +235,14 @@ services:
 
     App\Ocr\Service\DocumentExtractionProviderInterface: '@App\Ocr\Service\BoxExtractProvider'
 
+    App\Vision\Service\OpenAiImageProvider:
+        arguments:
+            $apiKey: '%env(OPENAI_API_KEY)%'
+            $apiUrl: '%env(OPENAI_API_URL)%'
+
+    App\Vision\Service\ImageEnhancementProviderInterface: '@App\Vision\Service\OpenAiImageProvider'
+    App\Vision\Service\ImageRecognitionProviderInterface: '@App\Vision\Service\OpenAiImageProvider'
+
     # Paramètres applicatifs modifiables dans /admin : la variable d'env reste
     # la valeur par défaut, la table `parametre` la surcharge à chaud.
     App\Shared\Service\ParametreProviderInterface: '@App\Shared\Service\ParametreProvider'
@@ -253,6 +269,12 @@ services:
                 dam.seuil_distance_phash: '%env(DAM_PHASH_DISTANCE_THRESHOLD)%'
                 dam.support_commercial_poids_max_mo: '%env(DAM_COMMERCIAL_SUPPORT_MAX_MB)%'
                 ocr.pdf_pages_max: '%env(OCR_PDF_MAX_PAGES)%'
+                openai.actif: '%env(OPENAI_ENABLED)%'
+                openai.reco_auto_active: '%env(OPENAI_RECO_AUTO_ENABLED)%'
+                openai.reco_modele: '%env(OPENAI_VISION_MODEL)%'
+                openai.reco_prompt: '%env(OPENAI_RECO_PROMPT)%'
+                openai.retouche_modele: '%env(OPENAI_IMAGE_EDIT_MODEL)%'
+                openai.retouche_prompt: '%env(OPENAI_RETOUCHE_PROMPT)%'
                 ocr.pdf_poids_max_mo: '%env(OCR_PDF_MAX_MB)%'
                 ocr.seuil_application_auto: '%env(OCR_AUTO_APPLY_THRESHOLD)%'
                 photos.max_autres: '%env(PHOTOS_MAX_AUTRES)%'

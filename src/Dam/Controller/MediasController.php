@@ -13,6 +13,9 @@ use App\Dam\Service\DamDashboardProvider;
 use App\Dam\Service\ImageVariantRegistry;
 use App\Pim\Repository\RessourceLieuRepository;
 use App\Shared\Form\ActionType;
+use App\Shared\Service\ParametreProviderInterface;
+use App\Vision\Form\VisionFormFactory;
+use App\Vision\Service\VisionDashboardProvider;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -23,8 +26,9 @@ use Symfony\Component\Routing\Attribute\Route;
 /**
  * Écran « Médias » de la maquette : le DAM en onglets. Les onglets adossés à
  * des données réutilisent le contenu de la supervision DAM existante (même
- * provider, mêmes actions) ; les onglets sans mécanisme back (reconnaissance
- * IA, retouche) disent honnêtement ce qui existe.
+ * provider, mêmes actions) ; les onglets IA (retouche, reconnaissance)
+ * s'appuient sur le module Vision et restent visibles — actions désactivées —
+ * tant qu'OPENAI_ENABLED vaut 0.
  */
 final class MediasController extends AbstractController
 {
@@ -38,9 +42,6 @@ final class MediasController extends AbstractController
         'doublons' => 'Doublons',
         'sync' => 'Synchronisation PIM',
     ];
-
-    /** Onglets sans mécanisme back : grisés dans le rail, non navigables. */
-    public const ONGLETS_DESACTIVES = ['import', 'ia'];
 
     /** Filtre du provider affiché par défaut quand on ouvre l'onglet. */
     private const FILTRE_PAR_DEFAUT = [
@@ -72,6 +73,9 @@ final class MediasController extends AbstractController
         MediaAssetRepository $assets,
         RessourceLieuRepository $resources,
         DamAnomalyRepository $anomalies,
+        VisionDashboardProvider $vision,
+        VisionFormFactory $visionForms,
+        ParametreProviderInterface $parametres,
     ): Response {
         $filtre = $request->query->getString('filter');
         $onglet = $request->query->getString('onglet');
@@ -80,7 +84,7 @@ final class MediasController extends AbstractController
             // porte le filtre : l'onglet actif s'en déduit.
             $onglet = self::ONGLET_PAR_FILTRE[$filtre];
         }
-        if (!array_key_exists($onglet, self::ONGLETS) || \in_array($onglet, self::ONGLETS_DESACTIVES, true)) {
+        if (!array_key_exists($onglet, self::ONGLETS)) {
             $onglet = 'biblio';
         }
         // Les stats alimentent les badges du rail sur tous les onglets ; les
@@ -99,9 +103,23 @@ final class MediasController extends AbstractController
             }
         }
 
+        // Onglets IA : listes paginées et formulaires. L'activation pilote
+        // seulement les actions — les onglets restent visibles pour expliquer
+        // la fonction quand OPENAI_ENABLED vaut 0.
+        $iaActive = $parametres->bool('openai.actif');
+        $pageVision = $request->query->getInt('page', 1);
+        $retouche = null;
+        $reco = null;
+        if ('import' === $onglet) {
+            $retouche = $vision->retouchePage($pageVision);
+            $retouche['items'] = $visionForms->addRetoucheActions($retouche['items'], $retouche['page']);
+        } elseif ('ia' === $onglet) {
+            $reco = $vision->recoPage($pageVision);
+            $reco['items'] = $visionForms->addRecoActions($reco['items'], $reco['page']);
+        }
+
         return $this->render('dam/medias.html.twig', [
             'onglets' => self::ONGLETS,
-            'onglets_desactives' => self::ONGLETS_DESACTIVES,
             'onglet_actif' => $onglet,
             'vue' => $vue,
             'stockage' => 'biblio' === $onglet ? $assets->storageStats() : null,
@@ -116,7 +134,14 @@ final class MediasController extends AbstractController
                     'csrf_token_id' => 'medias-scan',
                 ])->createView()
                 : null,
-        ] + ($vue ?? []));
+            'ia_active' => $iaActive,
+            'reco_auto_active' => $iaActive && $parametres->bool('openai.reco_auto_active'),
+            'vision_badges' => $vision->badges(),
+            'retouche' => $retouche,
+            'reco' => $reco,
+            'lancement_retouche_form' => 'import' === $onglet && $iaActive ? $visionForms->lancementRetouche()->createView() : null,
+            'lancement_reco_form' => 'ia' === $onglet && $iaActive ? $visionForms->lancementReco()->createView() : null,
+        ] + $vue);
     }
 
     #[Route('/medias/scanner', name: 'app_mdm_medias_scanner', methods: ['POST'])]

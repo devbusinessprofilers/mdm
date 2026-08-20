@@ -56,7 +56,7 @@ final readonly class MediaProcessingService
         $rotation = $resource?->rotation() ?? 0;
         $fingerprint = self::fingerprint($media, $crop, $rotation);
         $stream = null === $originalPath
-            ? $this->privateStorage->readStream($media->originalStorageKey())
+            ? $this->privateStorage->readStream($media->sourceStorageKey())
             : fopen($originalPath, 'rb');
         if (false === $stream) {
             throw new \RuntimeException("Impossible de lire la copie locale de l'original.");
@@ -167,7 +167,7 @@ final readonly class MediaProcessingService
         int $rotation,
     ): string {
         return substr(
-            sha1($media->checksum().'|'.json_encode($crop).'|'.$rotation),
+            sha1($media->sourceChecksum().'|'.json_encode($crop).'|'.$rotation),
             0,
             8,
         );

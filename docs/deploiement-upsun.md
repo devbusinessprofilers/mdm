@@ -48,6 +48,9 @@ filesystem `cache.app` : rate limiter, métriques, paramètres, état scheduler)
      `SALESFORCE_WEBHOOK_TOKEN` (webhook entrant `/api/salesforce/produits`)
    - Mail : `MAILER_DSN`, `MAILER_FROM`, `ALERT_EMAIL_TO`
    - Box/OCR : `BOX_CLIENT_ID/_SECRET/_SUBJECT_ID/_FOLDER_ID`… (si OCR actif)
+   - OpenAI (retouche & reconnaissance d'images) : `OPENAI_API_KEY` (secret),
+     `OPENAI_ENABLED=1` pour activer — les onglets IA de `/medias` restent
+     visibles mais inactifs tant que le flag vaut 0
    - Traduction/géocodage : `GOOGLE_TRANSLATE_API_KEY`, `GEOAPIFY_API_KEY`
      (⚠ absente de `.env`, ne pas l'oublier — géocodage étranger)
    - JWT sites externes : `EXTERNAL_SITE_JWT_PUBLIC_KEY/_ISSUER/_AUDIENCE/_SUBJECT`

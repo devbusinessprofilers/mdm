@@ -30,6 +30,10 @@ Les secrets ne sont **jamais** commités : `html/.env` (suivi) liste toutes les 
 1. Console développeur Box → application → régénérer le client secret (Box supporte deux secrets actifs simultanément : pas de coupure).
 2. Déployer le nouveau secret, vérifier l'OCR (`BOX_OCR_ENABLED=1`), puis supprimer l'ancien secret.
 
+### OPENAI_API_KEY
+- Console platform.openai.com → API keys. Alimente la retouche (`images/edits`) et la reconnaissance (vision) des photos, onglets IA de `/medias` ; `OPENAI_ENABLED=0` (défaut) = aucun appel sortant, onglets visibles mais inactifs.
+- Rotation libre : créer une nouvelle clé, déployer, supprimer l'ancienne. Penser au force-recreate des workers (`worker-dam` + enrichment) qui portent les appels.
+
 ### Clé JWT site externe (EXTERNAL_SITE_JWT_PUBLIC_KEY)
 - La clé **privée** est détenue par le site externe consommateur ; côté MDM on ne stocke que la clé publique PEM.
 - Rotation : le site externe génère une nouvelle paire RS256, transmet la clé publique par canal sûr ; déployer le nouveau PEM puis le site externe bascule sa clé privée. Prévoir une fenêtre de coordination (une seule clé publique acceptée à la fois).

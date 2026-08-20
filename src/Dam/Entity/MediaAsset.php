@@ -41,6 +41,12 @@ class MediaAsset
     private int $sizeBytes;
     #[ORM\Column(length: 64)]
     private string $checksum;
+    #[ORM\Column(length: 1024, nullable: true)]
+    private ?string $enhancedStorageKey = null;
+    #[ORM\Column(length: 64, nullable: true)]
+    private ?string $enhancedChecksum = null;
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $enhancedAt = null;
     #[ORM\Column(length: 16, nullable: true)]
     private ?string $perceptualHash = null;
     #[
@@ -118,6 +124,52 @@ class MediaAsset
     public function checksum(): string
     {
         return $this->checksum;
+    }
+
+    /**
+     * Source des renditions : la version retouchée acceptée quand elle existe,
+     * sinon l'original. L'original et son checksum ne changent jamais — le
+     * dédoublonnage (checksum, pHash) reste calé sur le fichier déposé.
+     */
+    public function sourceStorageKey(): string
+    {
+        return $this->enhancedStorageKey ?? $this->originalStorageKey;
+    }
+
+    public function sourceChecksum(): string
+    {
+        return $this->enhancedChecksum ?? $this->checksum;
+    }
+
+    public function enhancedStorageKey(): ?string
+    {
+        return $this->enhancedStorageKey;
+    }
+
+    public function enhancedAt(): ?\DateTimeImmutable
+    {
+        return $this->enhancedAt;
+    }
+
+    public function isEnhanced(): bool
+    {
+        return null !== $this->enhancedStorageKey;
+    }
+
+    public function applyEnhancedSource(string $storageKey, string $checksum): void
+    {
+        $this->enhancedStorageKey = $storageKey;
+        $this->enhancedChecksum = $checksum;
+        $this->enhancedAt = new \DateTimeImmutable();
+        $this->touch();
+    }
+
+    public function revertToOriginal(): void
+    {
+        $this->enhancedStorageKey = null;
+        $this->enhancedChecksum = null;
+        $this->enhancedAt = null;
+        $this->touch();
     }
 
     public function perceptualHash(): ?string

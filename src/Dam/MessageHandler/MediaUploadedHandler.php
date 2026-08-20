@@ -9,10 +9,14 @@ use App\Dam\Enum\MediaStatus;
 use App\Dam\Repository\MediaAssetRepository;
 use App\Dam\Service\MediaProcessingService;
 use App\Dam\Service\MediaAnalysisService;
+use App\Dam\Enum\MediaKind;
 use App\Shared\Message\MediaProcessed;
 use App\Shared\Message\MediaUploaded;
 use App\Shared\Outbox\OutboxPublisherInterface;
+use App\Shared\Service\ParametreProviderInterface;
 use App\Shared\Service\PrivateObjectStorageInterface;
+use App\Vision\Entity\ImageRecognition;
+use App\Vision\Service\ImageRecognitionManager;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
@@ -26,6 +30,8 @@ final readonly class MediaUploadedHandler
         private MediaAnalysisService $analysis,
         private PrivateObjectStorageInterface $privateStorage,
         private OutboxPublisherInterface $outbox,
+        private ImageRecognitionManager $recognitions,
+        private ParametreProviderInterface $parametres,
         private EntityManagerInterface $entityManager,
         private LoggerInterface $logger,
     ) {
@@ -70,6 +76,25 @@ final readonly class MediaUploadedHandler
         } finally {
             if (null !== $originalPath) {
                 @unlink($originalPath);
+            }
+        }
+        // Reconnaissance IA au fil de l'eau : après les renditions (l'analyse
+        // lit l'URL publique large), non bloquante comme l'analyse pHash.
+        // Paramètres lus à l'usage : les surcharges /admin s'appliquent sans
+        // redémarrage des workers.
+        if (
+            MediaKind::Image === $media->kind()
+            && MediaStatus::Processed === $media->status()
+            && $this->parametres->bool('openai.actif')
+            && $this->parametres->bool('openai.reco_auto_active')
+        ) {
+            try {
+                $this->recognitions->scheduleForMedia($media, ImageRecognition::CREATED_BY_AUTO);
+            } catch (\Throwable $error) {
+                $this->logger->warning('La mise en file de la reconnaissance IA du média a échoué.', [
+                    'media_id' => $media->id(),
+                    'exception' => $error,
+                ]);
             }
         }
         $this->outbox->enqueue(

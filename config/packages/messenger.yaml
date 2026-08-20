@@ -113,6 +113,10 @@ framework:
             'App\Etl\Message\*': etl
             'App\Enrichment\Message\*': enrichment
             'App\Ocr\Message\*': enrichment
+            # Avant le joker Vision : la régénération d'images est le métier
+            # du worker dam, les appels IA longs restent sur enrichment.
+            App\Vision\Message\ApplyImageEnhancement: dam
+            'App\Vision\Message\*': enrichment
             Symfony\Component\Notifier\Message\ChatMessage: mail
             Symfony\Component\Notifier\Message\SmsMessage: mail
 
