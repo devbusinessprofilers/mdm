@@ -6,8 +6,8 @@ namespace App\Pim\Service;
 
 use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Enum\NatureRessource;
-use App\Pim\Form\ActiviteDocumentMetadataType;
 use App\Pim\Form\LieuDocumentReplaceType;
+use App\Pim\Form\RestaurantDocumentMetadataType;
 use App\Pim\Repository\LocalisationRepository;
 use App\Shared\Form\ActionType;
 use Symfony\Component\Form\FormFactoryInterface;
@@ -43,9 +43,10 @@ final readonly class RestaurantAdminViewBuilder
             $params = ['id' => $restaurant->id(), 'resourceId' => $resource->id()];
             $documents[] = [
                 'resource' => $resource,
-                'metadata_form' => $this->forms->createNamed('restaurant_document_metadata_'.$resource->id(), ActiviteDocumentMetadataType::class, [
-                    'title' => $resource->legende(), 'source' => $resource->source(), 'keywords' => $resource->keywords(), 'rightsExpiresAt' => $resource->rightsExpiresAt(),
-                ], ['action' => $this->urls->generate('app_pim_restaurant_document_update', $params), 'method' => 'POST'])->createView(),
+                'metadata_form' => $this->forms->createNamed('restaurant_document_metadata_'.$resource->id(), RestaurantDocumentMetadataType::class, [
+                    'title' => $resource->legende(), 'source' => $resource->source(), 'keywords' => $resource->keywords(),
+                    'rightsExpiresAt' => $resource->rightsExpiresAt(), 'salle' => $resource->restaurantSalle(),
+                ], ['action' => $this->urls->generate('app_pim_restaurant_document_update', $params), 'method' => 'POST', 'salles' => $restaurant->salles()->toArray()])->createView(),
                 'replace_form' => $this->forms->createNamed('restaurant_document_replace_'.$resource->id(), LieuDocumentReplaceType::class, null, [
                     'action' => $this->urls->generate('app_pim_restaurant_document_replace', $params), 'method' => 'POST',
                 ])->createView(),

@@ -2,22 +2,23 @@
 import { Controller } from '@hotwired/stimulus'
 
 // Import d'un fichier depuis une ligne du tableau « Capacités par salle » :
-// le fichier part vers le flux documentaire du lieu (usage Plan de salle),
-// rattaché à la salle de la ligne. Le fichier se gère ensuite dans la
-// section Médias (métadonnées, remplacement, suppression).
+// le fichier part vers le flux documentaire de la fiche (usage Plan de salle),
+// rattaché à la salle de la ligne. L'endpoint et le nom du formulaire varient
+// par gamme (Lieu, Restaurant) et arrivent en values. Le fichier se gère
+// ensuite dans la section Médias (métadonnées, remplacement, suppression).
 export default class extends Controller {
     static targets = ['erreur']
-    static values = { url: String, token: String }
+    static values = { url: String, token: String, formulaire: String }
 
     async importer(event) {
         const input = event.target
         const file = input.files[0]
         if (!file) return
         const body = new FormData()
-        body.append('document_upload[documents][]', file)
-        body.append('document_upload[usage]', 'CONFIG_PLAN_SALLE')
-        body.append('document_upload[salle]', event.params.salle)
-        body.append('document_upload[_token]', this.tokenValue)
+        body.append(`${this.formulaireValue}[documents][]`, file)
+        body.append(`${this.formulaireValue}[usage]`, 'CONFIG_PLAN_SALLE')
+        body.append(`${this.formulaireValue}[salle]`, event.params.salle)
+        body.append(`${this.formulaireValue}[_token]`, this.tokenValue)
         this.montrerErreur('')
         input.disabled = true
         try {

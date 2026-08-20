@@ -16,23 +16,30 @@
     la section Médias. Une salle pas encore enregistrée reste inerte.
 
     Partagé entre le Lieu (section Réunion) et le Restaurant (Salles &
-    capacités) : mêmes champs de salle. `avec_fichiers` n'est vrai que pour le
-    Lieu — le flux documentaire par salle (salle_id) lui est réservé, la
-    vignette des autres gammes reste inerte.
+    capacités) : mêmes champs de salle. La gamme choisit le flux documentaire
+    de l'import par salle (endpoint et nom de formulaire) ; sans flux connu,
+    la vignette reste inerte.
 
     Variables : `widget` — la collection de formulaires `salles` ;
-    `avec_fichiers` — import de fichier par salle actif.
+    `gamme` — valeur TypeFiche de la fiche ('lieu', 'restaurant'…).
 #}
 {% set grille = 'grid grid-cols-[24px_81px_172px_repeat(9,70px)_repeat(4,66px)_40px] gap-[15px] items-center min-w-min' %}
 {# Le parent de la collection est le formulaire de l'entité (Lieu ou
    Restaurant) : son data alimente l'URL d'upload et le décompte des fichiers
    déjà rattachés à chaque salle. #}
 {% set entite = widget.parent.vars.data %}
+{% set config_fichiers = {
+    'lieu': { url: path('app_pim_lieu_document_upload', {id: entite.id}), formulaire: 'document_upload' },
+    'restaurant': { url: path('app_pim_restaurant_document_upload', {id: entite.id}), formulaire: 'restaurant_document_upload' },
+}[gamme]|default(null) %}
+{% set avec_fichiers = config_fichiers is not null %}
 {% set fichiers_par_salle = {} %}
 {% if avec_fichiers %}
     {% for ressource in entite.ressources %}
-        {% if ressource.salle %}
-            {% set cle = ressource.salle.id ~ '' %}
+        {# La ressource porte la salle du Lieu OU celle du Restaurant. #}
+        {% set salle_ressource = ressource.salle ?? ressource.restaurantSalle %}
+        {% if salle_ressource %}
+            {% set cle = salle_ressource.id ~ '' %}
             {% set fichiers_par_salle = fichiers_par_salle|merge({ (cle): fichiers_par_salle[cle]|default(0) + 1 }) %}
         {% endif %}
     {% endfor %}
@@ -71,7 +78,7 @@
                          border-[1.4px] border-dashed border-neutral-300 cursor-not-allowed"
                   title="{{ avec_fichiers
                       ? 'Enregistrez la salle pour lui associer un fichier'
-                      : 'Association de fichiers par salle réservée aux fiches Lieu pour le moment' }}"
+                      : "L'import de fichier n'est pas disponible pour cette gamme" }}"
                   aria-hidden="true">
                 <twig:Icon name="image" class="w-[22px] h-[22px] text-neutral-400" />
             </span>
@@ -102,8 +109,9 @@
     data-form-collection-index-value="{{ widget|length }}"
     data-form-collection-prototype-value="{{ _self.ligne(widget.vars.prototype, grille, {}, avec_fichiers)|e('html_attr') }}"
     {% if avec_fichiers %}
-    data-salle-plan-url-value="{{ path('app_pim_lieu_document_upload', {id: entite.id}) }}"
-    data-salle-plan-token-value="{{ csrf_token('document_upload') }}"
+    data-salle-plan-url-value="{{ config_fichiers.url }}"
+    data-salle-plan-formulaire-value="{{ config_fichiers.formulaire }}"
+    data-salle-plan-token-value="{{ csrf_token(config_fichiers.formulaire) }}"
     {% endif %}
 >
     <legend class="contents"><twig:Typography variant="subtitle" bold element="span">Capacités par salle</twig:Typography></legend>

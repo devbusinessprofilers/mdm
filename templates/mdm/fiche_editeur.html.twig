@@ -287,10 +287,9 @@
                                sinon avalée par elle (matrice jamais rendue). #}
                             {% if 'capacites' in s.blocs and champ == 'salles' %}
                                 {# min-w-0 : autorise l'item flex à rétrécir pour que la
-                                   matrice défile au lieu d'élargir la carte. L'import de
-                                   fichier par salle n'existe que côté Lieu (flux
-                                   documentaire salle_id). #}
-                                <div class="w-full min-w-0">{% include 'mdm/fiche/_capacites.html.twig' with { widget: widget, avec_fichiers: fiche.type.value == 'lieu' } only %}</div>
+                                   matrice défile au lieu d'élargir la carte. La gamme
+                                   choisit le flux documentaire de l'import par salle. #}
+                                <div class="w-full min-w-0">{% include 'mdm/fiche/_capacites.html.twig' with { widget: widget, gamme: fiche.type.value } only %}</div>
                             {% elseif 'puces' in s.blocs %}
                                 <div class="w-full">{% include 'mdm/fiche/_puces.html.twig' with { widget: widget } only %}</div>
                             {% elseif widget.vars.prototype is defined %}
