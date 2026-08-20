@@ -4,18 +4,41 @@
     8 configurations, 4 équipements en cases, ajout/retrait par le contrôleur
     form-collection.
 
-    Écarts assumés : la poignée de tri et la vignette photo n'ont pas de donnée
-    back par salle — elles gardent le gabarit maquette mais sont inertes
-    (infobulle « En développement ») ; pas de lien « plan de salle » ; la
-    matrice est toujours en édition — l'éditeur EST le mode édition. Le bandeau
-    « Pré-remplir avec l'IA » ouvre le vrai flux d'extraction OCR. Elle défile
-    horizontalement.
+    Écarts assumés : la poignée de tri n'a pas de donnée back par salle — elle
+    garde le gabarit maquette mais reste inerte (infobulle « En
+    développement ») ; la matrice est toujours en édition — l'éditeur EST le
+    mode édition. Le bandeau « Pré-remplir avec l'IA » ouvre le vrai flux
+    d'extraction OCR. Elle défile horizontalement.
 
-    Variables : `widget` — la collection de formulaires `salles`.
+    La vignette de chaque ligne importe un fichier pour la salle (maquette
+    « Importer ») : envoi vers le flux documentaire du lieu (usage Plan de
+    salle) par le contrôleur salle-plan ; les fichiers se gèrent ensuite dans
+    la section Médias. Une salle pas encore enregistrée reste inerte.
+
+    Partagé entre le Lieu (section Réunion) et le Restaurant (Salles &
+    capacités) : mêmes champs de salle. `avec_fichiers` n'est vrai que pour le
+    Lieu — le flux documentaire par salle (salle_id) lui est réservé, la
+    vignette des autres gammes reste inerte.
+
+    Variables : `widget` — la collection de formulaires `salles` ;
+    `avec_fichiers` — import de fichier par salle actif.
 #}
 {% set grille = 'grid grid-cols-[24px_81px_172px_repeat(9,70px)_repeat(4,66px)_40px] gap-[15px] items-center min-w-min' %}
+{# Le parent de la collection est le formulaire de l'entité (Lieu ou
+   Restaurant) : son data alimente l'URL d'upload et le décompte des fichiers
+   déjà rattachés à chaque salle. #}
+{% set entite = widget.parent.vars.data %}
+{% set fichiers_par_salle = {} %}
+{% if avec_fichiers %}
+    {% for ressource in entite.ressources %}
+        {% if ressource.salle %}
+            {% set cle = ressource.salle.id ~ '' %}
+            {% set fichiers_par_salle = fichiers_par_salle|merge({ (cle): fichiers_par_salle[cle]|default(0) + 1 }) %}
+        {% endif %}
+    {% endfor %}
+{% endif %}
 
-{% macro ligne(item, grille) %}
+{% macro ligne(item, grille, fichiers_par_salle, avec_fichiers) %}
     <fieldset data-form-collection-item
               class="{{ grille }} shrink-0 box-border h-[72px] px-2 py-2 rounded-sm border-0">
         {# Poignée de tri maquette : pas de réordonnancement back — inerte. #}
@@ -23,12 +46,36 @@
               title="En développement" aria-hidden="true">
             <twig:Icon name="arrows-out-cardinal" class="w-6 h-6" />
         </span>
-        {# Vignette photo maquette : pas de photo par salle — emplacement au gabarit. #}
-        <span class="w-[81px] h-14 box-border flex items-center justify-center rounded-xs
-                     border-[1.4px] border-dashed border-neutral-300 cursor-not-allowed"
-              title="En développement" aria-hidden="true">
-            <twig:Icon name="image" class="w-[22px] h-[22px] text-neutral-400" />
-        </span>
+        {# Vignette maquette « Importer » : dépose un fichier rattaché à la
+           salle (plan, photo) via le contrôleur salle-plan. Une salle non
+           enregistrée n'a pas encore d'identifiant : la vignette reste inerte,
+           tout comme les gammes sans flux documentaire par salle. #}
+        {% set salle = item.vars.data %}
+        {% if avec_fichiers and salle %}
+            {% set nb_fichiers = fichiers_par_salle[salle.id ~ '']|default(0) %}
+            <label class="w-[81px] h-14 box-border flex items-center justify-center rounded-xs cursor-pointer
+                          border-[1.4px] {{ nb_fichiers > 0
+                              ? 'border-solid border-primary text-primary'
+                              : 'border-dashed border-neutral-300 text-neutral-400 hover:border-primary hover:text-primary' }}"
+                  title="{{ nb_fichiers > 0
+                      ? nb_fichiers ~ ' fichier(s) rattaché(s) — gérés dans la section Médias'
+                      : 'Importer un fichier pour cette salle (plan, photo)' }}"
+                  data-salle-plan-vignette>
+                <twig:Icon name="image" class="w-[22px] h-[22px]" />
+                <twig:Form:FileInput accept="application/pdf,image/jpeg,image/png"
+                                     data-action="change->salle-plan#importer"
+                                     data-salle-plan-salle-param="{{ salle.id }}" />
+            </label>
+        {% else %}
+            <span class="w-[81px] h-14 box-border flex items-center justify-center rounded-xs
+                         border-[1.4px] border-dashed border-neutral-300 cursor-not-allowed"
+                  title="{{ avec_fichiers
+                      ? 'Enregistrez la salle pour lui associer un fichier'
+                      : 'Association de fichiers par salle réservée aux fiches Lieu pour le moment' }}"
+                  aria-hidden="true">
+                <twig:Icon name="image" class="w-[22px] h-[22px] text-neutral-400" />
+            </span>
+        {% endif %}
         {{ form_widget(item.nom, { attr: { placeholder: 'Nom de la salle' } }) }}
         {% for capacite in ['superficie', 'capaciteReunion', 'capaciteU', 'capaciteClasse',
                             'capaciteTheatre', 'capaciteCabaret', 'capaciteBanquet',
@@ -48,10 +95,16 @@
     </fieldset>
 {% endmacro %}
 
-<fieldset class="flex flex-col gap-4 border-0 p-0 m-0"
-    data-controller="form-collection"
+{# min-w-0 : un fieldset a min-inline-size:min-content par défaut — sans le
+   neutraliser, la matrice (~1550 px) élargit la carte au lieu de défiler. #}
+<fieldset class="flex flex-col gap-4 border-0 p-0 m-0 min-w-0"
+    data-controller="form-collection{% if avec_fichiers %} salle-plan{% endif %}"
     data-form-collection-index-value="{{ widget|length }}"
-    data-form-collection-prototype-value="{{ _self.ligne(widget.vars.prototype, grille)|e('html_attr') }}"
+    data-form-collection-prototype-value="{{ _self.ligne(widget.vars.prototype, grille, {}, avec_fichiers)|e('html_attr') }}"
+    {% if avec_fichiers %}
+    data-salle-plan-url-value="{{ path('app_pim_lieu_document_upload', {id: entite.id}) }}"
+    data-salle-plan-token-value="{{ csrf_token('document_upload') }}"
+    {% endif %}
 >
     <legend class="contents"><twig:Typography variant="subtitle" bold element="span">Capacités par salle</twig:Typography></legend>
 
@@ -82,10 +135,12 @@
 
         <div class="flex flex-col min-w-min divide-y divide-neutral-200" data-form-collection-target="items">
             {% for item in widget %}
-                {{ _self.ligne(item, grille) }}
+                {{ _self.ligne(item, grille, fichiers_par_salle, avec_fichiers) }}
             {% endfor %}
         </div>
     </div>
+
+    {% if avec_fichiers %}<p class="form-error" hidden data-salle-plan-target="erreur"></p>{% endif %}
 
     <div class="flex justify-end">
         <twig:Button variant="outline" size="sm" icon="plus" type="button"
