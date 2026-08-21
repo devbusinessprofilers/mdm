@@ -13,6 +13,9 @@
         <meta name="turbo-cache-control" content="no-preview">
         <title>{% block title %}MDM Business Profilers{% endblock %}</title>
         <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><text y=%221.2em%22 font-size=%2296%22>⚫️</text><text y=%221.3em%22 x=%220.2em%22 font-size=%2276%22 fill=%22%23fff%22>sf</text></svg>">
+        {# Les icônes sont des <use> vers le sprite : le précharger évite un
+           premier rendu sans pictogrammes le temps de la requête. #}
+        <link rel="preload" href="{{ asset('sprites/icons.svg') }}" as="image" type="image/svg+xml">
         {% block stylesheets %}
         {% endblock %}
 

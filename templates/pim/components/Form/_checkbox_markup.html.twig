@@ -7,11 +7,12 @@
     composant par option coûtait ~1 s de rendu par page).
 
     Le <span> du label reprend les classes de Typography (variant body/button,
-    textColor dark) et le ux_icon() reprend l'appel du composant Icon (préfixe
-    provider-portal, attribut name conservé sur le svg) — synchroniser si ces
+    textColor dark) et l'icône reprend l'appel du composant Icon via la macro
+    du sprite (attribut name conservé sur le svg) — synchroniser si ces
     composants changent.
 -#}
 {% macro checkbox(id, name, value, checked, disabled, inputAttributes, wrapperClass, content) %}
+{% import 'pim/components/_icon_markup.html.twig' as icon_parts %}
 <div class="{{ wrapperClass }}">
     <label for="{{ id }}" class="flex gap-2 items-start{% if not disabled %} cursor-pointer{% endif %}">
         <input
@@ -31,7 +32,7 @@
             peer-disabled:border-neutral-300
             peer-checked:peer-disabled:bg-neutral-300"
         >
-            {{ ux_icon('provider-portal:check', { name: 'check', class: 'text-neutral-100 hidden' }) }}
+            {{ icon_parts.icon('check', { name: 'check', class: 'text-neutral-100 hidden' }) }}
         </div>
         {% if content is not null and content|trim is not empty %}
             <span class="antialiased text-[0.875rem] leading-[1.375rem] font-sans text-base-text -mt-[2px]">{{ content }}</span>

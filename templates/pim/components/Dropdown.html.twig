@@ -1,3 +1,4 @@
+{% import 'pim/components/_icon_markup.html.twig' as icon_parts %}
 {% set dropdownCva = cva({
     base: 'bg-neutral-100 h-fit',
     variants: {
@@ -34,9 +35,9 @@
     >
         {%- block trigger -%}{% endblock -%}
         {% if not isFixed and withIndicator %}
-            {#- ux_icon direct (mêmes attributs que via le composant Icon, name inclus) :
+            {#- Macro directe (mêmes attributs que via le composant Icon, name inclus) :
                 Dropdown est rendu une fois par select de la page fiche. -#}
-            {{ ux_icon('provider-portal:caret-down', {
+            {{ icon_parts.icon('caret-down', {
                 'data-dropdown-target': 'indicator',
                 name: 'caret-down',
                 class: 'w-6 h-6 transition-[rotate] duration-100 cursor-pointer',

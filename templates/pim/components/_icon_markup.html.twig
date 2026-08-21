@@ -3,21 +3,38 @@
     composant Icon (qui délègue ici — source unique), sans le coût d'une
     instanciation de composant dans les boucles chaudes.
 
-    `attrs` doit reproduire les attributs dans l'ordre où le composant les
-    recevait, y compris `name` (qui atterrit sur le <svg> rendu, faute de
-    propriété correspondante dans la classe Icon).
+    Le SVG n'est plus inliné : un <use> référence le fragment correspondant du
+    sprite (assets/sprites/icons.svg, regénéré par app:icons:build-sprite).
+    Une fiche Lieu embarquait ~300 Ko de tracés répétés ; le sprite est
+    téléchargé une fois puis servi du cache navigateur.
+
+    Les attributs reproduisent ce qu'ux_icon() rendait : défauts du jeu
+    (fill/stroke/height/width), attributs d'appel par-dessus (name inclus,
+    qui atterrit sur le <svg> faute de propriété dans la classe Icon), et
+    aria-hidden="true" ajouté quand l'appel ne porte aucune sémantique
+    d'accessibilité. Le viewBox vit sur le <symbol> du sprite.
 -#}
 {% macro icon(name, attrs = {}) %}
+{%- set defauts = { fill: 'currentColor', height: '1em', width: '1em' } -%}
 {%- if name in ['amphitheatre', 'balcony', 'beach', 'terrace', 'trad'] -%}
-    {%- set prefix = 'provider-portal-stroke' -%}
+    {%- set fragment = 'pp-stroke-' ~ name -%}
+    {#- Icônes en trait : les tracés n'ont qu'un stroke-width, sans couleur
+        de contour. Sans cette surcharge, le fill par défaut les remplit. -#}
+    {%- set defauts = { fill: 'none', stroke: 'currentColor', height: '1em', width: '1em' } -%}
 {%- elseif name in ['bg-pin', 'bg-home-pin'] -%}
-    {%- set prefix = 'provider-portal-pin' -%}
+    {%- set fragment = 'pp-pin-' ~ name -%}
 {%- elseif name in ['flag-en', 'flag-fr'] -%}
-    {%- set prefix = 'provider-portal-flags' -%}
+    {%- set fragment = 'pp-flags-' ~ name -%}
 {%- elseif name in ['styled-linkedin', 'styled-analytic', 'styled-mail'] -%}
-    {%- set prefix = 'provider-portal-styled' -%}
+    {%- set fragment = 'pp-styled-' ~ name -%}
 {%- else -%}
-    {%- set prefix = 'provider-portal' -%}
+    {%- set fragment = 'pp-' ~ name -%}
 {%- endif -%}
-{{- ux_icon(prefix ~ ':' ~ name, attrs) -}}
-{% endmacro %}
+{%- set finaux = defauts|merge(attrs) -%}
+{%- if finaux['aria-hidden'] is not defined and finaux['aria-label'] is not defined
+    and finaux['aria-labelledby'] is not defined and finaux['title'] is not defined
+    and finaux['role'] is not defined -%}
+    {%- set finaux = finaux|merge({ 'aria-hidden': 'true' }) -%}
+{%- endif -%}
+<svg{% for cle, valeur in finaux %} {{ cle }}="{{ valeur }}"{% endfor %}><use href="{{ asset('sprites/icons.svg') }}#{{ fragment }}"/></svg>
+{%- endmacro %}
