@@ -244,4 +244,70 @@ final class LieuController extends AbstractController
 
         return $this->redirectToRoute('app_mdm_fiche_lieu', ['id' => $lieu->id()]);
     }
+
+    #[
+        Route(
+            '/{id}/desarchiver',
+            name: 'unarchive',
+            requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
+            methods: ['POST'],
+        ),
+    ]
+    public function unarchive(
+        Request $request,
+        string $id,
+        LieuRepository $repository,
+        FicheActionFormFactory $forms,
+        FicheWorkflowManager $workflow,
+        CurrentActorProvider $actor,
+    ): Response {
+        $lieu = $repository->find($id);
+        if (!$lieu instanceof Lieu) { throw $this->createNotFoundException('Lieu introuvable.'); }
+        $this->denyAccessUnlessGranted(FicheVoter::ARCHIVE, $lieu->fiche());
+        $form = $forms->action('lieu', $lieu->id(), 'unarchive', 'Désarchiver');
+        $form->handleRequest($request);
+        if ($form->isSubmitted() && $form->isValid()) {
+            try {
+                $workflow->unarchive($lieu->fiche(), $actor->id());
+                $this->addFlash('success', 'Fiche désarchivée.');
+            } catch (\DomainException $exception) {
+                $this->addFlash('warning', $exception->getMessage());
+            }
+        }
+
+        return $this->redirectToRoute('app_mdm_fiche_lieu', ['id' => $lieu->id()]);
+    }
+
+    #[
+        Route(
+            '/{id}/republier',
+            name: 'republish',
+            requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
+            methods: ['POST'],
+        ),
+    ]
+    public function republish(
+        Request $request,
+        string $id,
+        LieuRepository $repository,
+        FicheActionFormFactory $forms,
+        FicheWorkflowManager $workflow,
+        CurrentActorProvider $actor,
+    ): Response {
+        $lieu = $repository->find($id);
+        if (!$lieu instanceof Lieu) { throw $this->createNotFoundException('Lieu introuvable.'); }
+        $this->denyAccessUnlessGranted(FicheVoter::PUBLISH, $lieu->fiche());
+        $form = $forms->action('lieu', $lieu->id(), 'republish', 'Republier');
+        $form->handleRequest($request);
+        if ($form->isSubmitted() && $form->isValid()) {
+            try {
+                $workflow->republish($lieu->fiche(), $actor->id());
+                $this->addFlash('success', 'Fiche republiée.');
+            } catch (\DomainException $exception) {
+                $this->addFlash('warning', $exception->getMessage());
+            }
+        }
+
+        return $this->redirectToRoute('app_mdm_fiche_lieu', ['id' => $lieu->id()]);
+    }
 }

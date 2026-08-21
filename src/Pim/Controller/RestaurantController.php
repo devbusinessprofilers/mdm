@@ -153,6 +153,48 @@ final class RestaurantController extends AbstractController
         return $this->redirectToRoute('app_mdm_fiche_gamme', ['gamme' => 'restaurants', 'id' => $restaurant->id()]);
     }
 
+    #[Route('/{id}/desarchiver', name: 'unarchive', requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'], methods: ['POST'])]
+    public function unarchive(
+        Request $request,
+        string $id,
+        RestaurantRepository $repository,
+        FicheActionFormFactory $forms,
+        FicheWorkflowManager $workflow,
+        CurrentActorProvider $actor,
+    ): Response {
+        $restaurant = $repository->find($id);
+        if (!$restaurant instanceof Restaurant) { throw $this->createNotFoundException('Restaurant introuvable.'); }
+        $this->denyAccessUnlessGranted(FicheVoter::ARCHIVE, $restaurant->fiche());
+        $form = $forms->action('restaurant', $restaurant->id(), 'unarchive', 'Désarchiver');
+        $form->handleRequest($request);
+        if ($form->isSubmitted() && $form->isValid()) {
+            try { $workflow->unarchive($restaurant->fiche(), $actor->id()); } catch (\DomainException $e) { $this->addFlash('warning', $e->getMessage()); }
+        }
+
+        return $this->redirectToRoute('app_mdm_fiche_gamme', ['gamme' => 'restaurants', 'id' => $restaurant->id()]);
+    }
+
+    #[Route('/{id}/republier', name: 'republish', requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'], methods: ['POST'])]
+    public function republish(
+        Request $request,
+        string $id,
+        RestaurantRepository $repository,
+        FicheActionFormFactory $forms,
+        FicheWorkflowManager $workflow,
+        CurrentActorProvider $actor,
+    ): Response {
+        $restaurant = $repository->find($id);
+        if (!$restaurant instanceof Restaurant) { throw $this->createNotFoundException('Restaurant introuvable.'); }
+        $this->denyAccessUnlessGranted(FicheVoter::PUBLISH, $restaurant->fiche());
+        $form = $forms->action('restaurant', $restaurant->id(), 'republish', 'Republier');
+        $form->handleRequest($request);
+        if ($form->isSubmitted() && $form->isValid()) {
+            try { $workflow->republish($restaurant->fiche(), $actor->id()); } catch (\DomainException $e) { $this->addFlash('warning', $e->getMessage()); }
+        }
+
+        return $this->redirectToRoute('app_mdm_fiche_gamme', ['gamme' => 'restaurants', 'id' => $restaurant->id()]);
+    }
+
     #[Route('/{id}/refuser', name: 'reject', requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'], methods: ['POST'])]
     public function reject(
         Request $request,

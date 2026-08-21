@@ -43,6 +43,8 @@ final class ReferentielSelectionType extends AbstractType
                     'Valider' => 'valider',
                     'Publier' => 'publier',
                     'Archiver (dépublier)' => 'archiver',
+                    'Désarchiver (remettre en cours)' => 'desarchiver',
+                    'Republier (fiche archivée)' => 'republier',
                     'Exporter (CSV)' => 'exporter',
                     'Envoyer les accès extranet' => 'acces',
                     'Assigner un contributeur' => 'contributeur',

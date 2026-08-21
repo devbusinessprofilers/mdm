@@ -189,6 +189,62 @@ final class ServiceEvenementielController extends AbstractController
 
     #[
         Route(
+            "/{id}/desarchiver",
+            name: "unarchive",
+            requirements: ["id" => "[0-9A-HJKMNP-TV-Z]{26}"],
+            methods: ["POST"],
+        ),
+    ]
+    public function unarchive(
+        Request $request,
+        string $id,
+        ServiceEvenementielRepository $repo,
+        FicheActionFormFactory $forms,
+        FicheWorkflowManager $workflow,
+        CurrentActorProvider $actor,
+    ): Response {
+        $service = $repo->find($id);
+        if (!$service instanceof ServiceEvenementiel) { throw $this->createNotFoundException('Service introuvable.'); }
+        $this->denyAccessUnlessGranted(FicheVoter::ARCHIVE, $service->fiche());
+        $form = $forms->action('service', $service->id(), 'unarchive', 'Désarchiver');
+        $form->handleRequest($request);
+        if ($form->isSubmitted() && $form->isValid()) {
+            try { $workflow->unarchive($service->fiche(), $actor->id()); } catch (\DomainException $e) { $this->addFlash('warning', $e->getMessage()); }
+        }
+
+        return $this->redirectToRoute('app_mdm_fiche_gamme', ['gamme' => 'services', 'id' => $service->id()]);
+    }
+
+    #[
+        Route(
+            "/{id}/republier",
+            name: "republish",
+            requirements: ["id" => "[0-9A-HJKMNP-TV-Z]{26}"],
+            methods: ["POST"],
+        ),
+    ]
+    public function republish(
+        Request $request,
+        string $id,
+        ServiceEvenementielRepository $repo,
+        FicheActionFormFactory $forms,
+        FicheWorkflowManager $workflow,
+        CurrentActorProvider $actor,
+    ): Response {
+        $service = $repo->find($id);
+        if (!$service instanceof ServiceEvenementiel) { throw $this->createNotFoundException('Service introuvable.'); }
+        $this->denyAccessUnlessGranted(FicheVoter::PUBLISH, $service->fiche());
+        $form = $forms->action('service', $service->id(), 'republish', 'Republier');
+        $form->handleRequest($request);
+        if ($form->isSubmitted() && $form->isValid()) {
+            try { $workflow->republish($service->fiche(), $actor->id()); } catch (\DomainException $e) { $this->addFlash('warning', $e->getMessage()); }
+        }
+
+        return $this->redirectToRoute('app_mdm_fiche_gamme', ['gamme' => 'services', 'id' => $service->id()]);
+    }
+
+    #[
+        Route(
             "/{id}/refuser",
             name: "reject",
             requirements: ["id" => "[0-9A-HJKMNP-TV-Z]{26}"],

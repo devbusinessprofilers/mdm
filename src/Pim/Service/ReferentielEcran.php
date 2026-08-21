@@ -157,6 +157,10 @@ final readonly class ReferentielEcran
             // forment le bloc « Attribuer » (deux selects + un bouton Valider),
             // séparé des autres options.
             'secondaires' => [
+                // Retours en arrière depuis « archivée » : remise en cours ou
+                // republication directe (décision produit).
+                $action('desarchiver', 'Désarchiver', 'arrow-counter-clockwise'),
+                $action('republier', 'Republier', 'paper-plane'),
                 $action('exporter', 'Exporter CSV', 'clipboard'),
                 $action('acces', 'Envoyer les accès extranet', 'lock'),
             ],

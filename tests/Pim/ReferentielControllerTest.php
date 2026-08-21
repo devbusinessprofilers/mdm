@@ -268,6 +268,92 @@ final class ReferentielControllerTest extends WebTestCase
         self::assertSame(StatutFiche::Validee, $entityManager->find(Fiche::class, $idSansPhoto)?->status());
     }
 
+    public function testActionGroupeeDesarchiveVersEnCours(): void
+    {
+        $client = self::createClient();
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $this->connection = self::getContainer()->get(Connection::class);
+        $this->clearTables();
+
+        $user = new User('referentiel-desarchiver@example.test', ['ROLE_BP_VALIDATOR']);
+        $user->setPassword('not-used-by-login-user');
+        $entityManager->persist($user);
+
+        $lieu = new Lieu();
+        $lieu->changeLabel('Château archivé');
+        $lieu->fiche()->archive('setup');
+        $entityManager->persist($lieu);
+        $entityManager->flush();
+        $ficheId = $lieu->fiche()->idString();
+        self::assertSame(StatutFiche::Archivee, $lieu->fiche()->status());
+        $client->loginUser($user);
+
+        $crawler = $client->request('GET', '/referentiel');
+        self::assertResponseIsSuccessful();
+        $form = $crawler->selectButton('Désarchiver')->form();
+        $values = $form->getPhpValues();
+        $values['selection']['ids'] = [$ficheId];
+        $client->request($form->getMethod(), $form->getUri(), $values);
+
+        self::assertResponseRedirects();
+        $client->followRedirect();
+        self::assertSelectorTextContains('body', '1 élément(s) traité(s)');
+        $entityManager->clear();
+        $fiche = $entityManager->find(Fiche::class, $ficheId);
+        self::assertInstanceOf(Fiche::class, $fiche);
+        self::assertSame(StatutFiche::EnCours, $fiche->status());
+        self::assertNull($fiche->archivedAt());
+    }
+
+    public function testActionGroupeeRepublieUneFicheArchiveeConforme(): void
+    {
+        $client = self::createClient();
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $this->connection = self::getContainer()->get(Connection::class);
+        $this->clearTables();
+
+        $user = new User('referentiel-republier@example.test', ['ROLE_BP_VALIDATOR']);
+        $user->setPassword('not-used-by-login-user');
+        $entityManager->persist($user);
+
+        // Une fiche archivée conforme (1 photo principale) est republiée,
+        // une fiche archivée sans photo est ignorée (garde photos).
+        $conforme = new Restaurant();
+        $conforme->changeLabel('Bistrot à republier');
+        $photo = new RessourceLieu();
+        $photo->changeDamAssetId((string) new Ulid());
+        $photo->changeNature(NatureRessource::Photo);
+        $photo->changeUsage('PHOTO_PRINCIPALE');
+        $photo->changePosition(1);
+        $conforme->fiche()->addResource($photo);
+        $conforme->fiche()->archive('setup');
+        $entityManager->persist($conforme);
+
+        $sansPhoto = new Restaurant();
+        $sansPhoto->changeLabel('Bistrot archivé sans photo');
+        $sansPhoto->fiche()->archive('setup');
+        $entityManager->persist($sansPhoto);
+
+        $entityManager->flush();
+        $idConforme = $conforme->fiche()->idString();
+        $idSansPhoto = $sansPhoto->fiche()->idString();
+        $client->loginUser($user);
+
+        $crawler = $client->request('GET', '/referentiel');
+        self::assertResponseIsSuccessful();
+        $form = $crawler->selectButton('Republier')->form();
+        $values = $form->getPhpValues();
+        $values['selection']['ids'] = [$idConforme, $idSansPhoto];
+        $client->request($form->getMethod(), $form->getUri(), $values);
+
+        self::assertResponseRedirects();
+        $client->followRedirect();
+        self::assertSelectorTextContains('body', '1 élément(s) traité(s), 1 ignoré(s)');
+        $entityManager->clear();
+        self::assertSame(StatutFiche::Publiee, $entityManager->find(Fiche::class, $idConforme)?->status());
+        self::assertSame(StatutFiche::Archivee, $entityManager->find(Fiche::class, $idSansPhoto)?->status());
+    }
+
     /** Amène une fiche neuve jusqu'au statut « validée » par le workflow normal. */
     private function porterAValidee(Fiche $fiche): void
     {

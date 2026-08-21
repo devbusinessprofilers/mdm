@@ -425,6 +425,41 @@ class Fiche
         $this->touch();
     }
 
+    /**
+     * Désarchivage : une fiche archivée n'est pas un cul-de-sac, elle revient
+     * en cours pour être reprise puis renvoyée dans le workflow normal
+     * (Soumettre → Valider → Publier).
+     */
+    public function unarchive(string $actorId): void
+    {
+        if (StatutFiche::Archivee !== $this->status) {
+            throw new \DomainException('Seule une fiche archivée peut être désarchivée.');
+        }
+        $this->status = StatutFiche::EnCours;
+        $this->archivedAt = null;
+        $this->validationReviewedAt = new \DateTimeImmutable();
+        $this->validationReviewedBy = $actorId;
+        $this->touch();
+    }
+
+    /**
+     * Republication d'une fiche archivée : retour direct en publiée, sans
+     * repasser par la validation (décision produit). Les obligations photos
+     * restent contrôlées par l'appelant / l'invariant de publication.
+     */
+    public function republish(string $actorId): void
+    {
+        if (StatutFiche::Archivee !== $this->status) {
+            throw new \DomainException('Seule une fiche archivée peut être republiée.');
+        }
+        $this->status = StatutFiche::Publiee;
+        $this->publishedAt = new \DateTimeImmutable();
+        $this->archivedAt = null;
+        $this->validationReviewedAt = new \DateTimeImmutable();
+        $this->validationReviewedBy = $actorId;
+        $this->touch();
+    }
+
     /** Publication technique réservée aux imports et aux jeux de données internes. */
     public function publishForImport(): void
     {

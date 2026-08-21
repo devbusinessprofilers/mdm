@@ -190,6 +190,62 @@ final class ActiviteController extends AbstractController
 
     #[
         Route(
+            '/{id}/desarchiver',
+            name: 'unarchive',
+            requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
+            methods: ['POST'],
+        ),
+    ]
+    public function unarchive(
+        Request $request,
+        string $id,
+        ActiviteRepository $repo,
+        FicheActionFormFactory $forms,
+        FicheWorkflowManager $workflow,
+        CurrentActorProvider $actor,
+    ): Response {
+        $a = $repo->find($id);
+        if (!$a instanceof Activite) { throw $this->createNotFoundException('Activité introuvable.'); }
+        $this->denyAccessUnlessGranted(FicheVoter::ARCHIVE, $a->fiche());
+        $form = $forms->action('activite', $a->id(), 'unarchive', 'Désarchiver');
+        $form->handleRequest($request);
+        if ($form->isSubmitted() && $form->isValid()) {
+            try { $workflow->unarchive($a->fiche(), $actor->id()); } catch (\DomainException $e) { $this->addFlash('warning', $e->getMessage()); }
+        }
+
+        return $this->redirectToRoute('app_mdm_fiche_gamme', ['gamme' => 'activites', 'id' => $a->id()]);
+    }
+
+    #[
+        Route(
+            '/{id}/republier',
+            name: 'republish',
+            requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
+            methods: ['POST'],
+        ),
+    ]
+    public function republish(
+        Request $request,
+        string $id,
+        ActiviteRepository $repo,
+        FicheActionFormFactory $forms,
+        FicheWorkflowManager $workflow,
+        CurrentActorProvider $actor,
+    ): Response {
+        $a = $repo->find($id);
+        if (!$a instanceof Activite) { throw $this->createNotFoundException('Activité introuvable.'); }
+        $this->denyAccessUnlessGranted(FicheVoter::PUBLISH, $a->fiche());
+        $form = $forms->action('activite', $a->id(), 'republish', 'Republier');
+        $form->handleRequest($request);
+        if ($form->isSubmitted() && $form->isValid()) {
+            try { $workflow->republish($a->fiche(), $actor->id()); } catch (\DomainException $e) { $this->addFlash('warning', $e->getMessage()); }
+        }
+
+        return $this->redirectToRoute('app_mdm_fiche_gamme', ['gamme' => 'activites', 'id' => $a->id()]);
+    }
+
+    #[
+        Route(
             '/{id}/refuser',
             name: 'reject',
             requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],

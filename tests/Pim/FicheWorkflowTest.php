@@ -34,6 +34,46 @@ final class FicheWorkflowTest extends TestCase
         self::assertSame(StatutFiche::Archivee, $fiche->status());
     }
 
+    public function testArchivedFicheCanReturnToOtherStatuses(): void
+    {
+        $fiche = new Fiche(TypeFiche::Lieu);
+        $fiche->publishForImport();
+        $fiche->archive('validator');
+        self::assertSame(StatutFiche::Archivee, $fiche->status());
+
+        // Désarchiver : retour en cours, la date d'archivage est effacée.
+        $fiche->unarchive('validator');
+        self::assertSame(StatutFiche::EnCours, $fiche->status());
+        self::assertNull($fiche->archivedAt());
+
+        // Republier : retour direct en publiée depuis « archivée ».
+        $fiche->archive('validator');
+        $fiche->republish('validator');
+        self::assertSame(StatutFiche::Publiee, $fiche->status());
+        self::assertNull($fiche->archivedAt());
+        self::assertNotNull($fiche->publishedAt());
+    }
+
+    public function testUnarchiveAndRepublishRequireAnArchivedFiche(): void
+    {
+        $fiche = new Fiche(TypeFiche::Lieu);
+        $fiche->publishForImport();
+
+        $this->expectException(\DomainException::class);
+        $fiche->unarchive('validator');
+    }
+
+    public function testArchiveWorksFromAnyStatusButIsIdempotent(): void
+    {
+        $fiche = new Fiche(TypeFiche::Lieu);
+        // Depuis « en cours » directement, sans passer par « publiée ».
+        $fiche->archive('validator');
+        self::assertSame(StatutFiche::Archivee, $fiche->status());
+
+        $this->expectException(\DomainException::class);
+        $fiche->archive('validator');
+    }
+
     public function testInternalEditResetsPublishedFicheButTechnicalUpdateDoesNot(): void
     {
         $fiche = new Fiche(TypeFiche::Lieu);

@@ -793,7 +793,7 @@
               <twig:Button variant="primary" size="md" type="submit" form="form-fiche">Enregistrer les modifications</twig:Button>
           {% endif %}
           {% for nom, action in actions_workflow %}
-              {% set attribut = {'submit': 'FICHE_SUBMIT', 'validate': 'FICHE_VALIDATE', 'publish': 'FICHE_PUBLISH', 'archive': 'FICHE_ARCHIVE'}[nom] %}
+              {% set attribut = {'submit': 'FICHE_SUBMIT', 'validate': 'FICHE_VALIDATE', 'publish': 'FICHE_PUBLISH', 'archive': 'FICHE_ARCHIVE', 'unarchive': 'FICHE_ARCHIVE', 'republish': 'FICHE_PUBLISH'}[nom] %}
               {% if is_granted(attribut, fiche) %}
                   {# Même neutralisation du chrome outline que pour la suppression ;
                      hauteur alignée sur les deux autres boutons (md). #}

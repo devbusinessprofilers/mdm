@@ -290,6 +290,9 @@ final readonly class FicheEditeurEcran
                 'reject' => 'en_attente_validation' === $statut ? $this->actions->reject($domaine, $id)->createView() : null,
                 'publish' => 'validee' === $statut ? $this->actions->action($domaine, $id, 'publish', 'Publier', buttonAttr: self::BOUTON_SOBRE)->createView() : null,
                 'archive' => 'publiee' === $statut ? $this->actions->action($domaine, $id, 'archive', 'Archiver', buttonAttr: self::BOUTON_SOBRE)->createView() : null,
+                // Depuis « archivée » : remise en cours ou republication directe.
+                'unarchive' => 'archivee' === $statut ? $this->actions->action($domaine, $id, 'unarchive', 'Désarchiver', buttonAttr: self::BOUTON_SOBRE)->createView() : null,
+                'republish' => 'archivee' === $statut ? $this->actions->action($domaine, $id, 'republish', 'Republier', buttonAttr: self::BOUTON_SOBRE)->createView() : null,
             ]),
             'action_suppression' => $this->actions->action($domaine, $id, 'delete', 'Supprimer', true, match ($type) {
                 TypeFiche::Lieu => 'Supprimer ce lieu ?',

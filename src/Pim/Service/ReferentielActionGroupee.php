@@ -35,6 +35,8 @@ final readonly class ReferentielActionGroupee
         'valider' => 5000,
         'publier' => 5000,
         'archiver' => 5000,
+        'desarchiver' => 5000,
+        'republier' => 5000,
         'exporter' => 5000,
         'acces' => 500,
         'contributeur' => 5000,
@@ -68,7 +70,7 @@ final readonly class ReferentielActionGroupee
      */
     public function appliquer(string $action, array $ids, string $actorId, ?User $contributeur = null, array $siteIds = []): array
     {
-        if (!in_array($action, ['soumettre', 'valider', 'publier', 'archiver', 'acces', 'contributeur', 'visibilite'], true)) {
+        if (!in_array($action, ['soumettre', 'valider', 'publier', 'archiver', 'desarchiver', 'republier', 'acces', 'contributeur', 'visibilite'], true)) {
             throw new \InvalidArgumentException(sprintf('Action groupée inconnue : "%s".', $action));
         }
         if (count($ids) > self::plafond($action)) {
@@ -84,8 +86,8 @@ final readonly class ReferentielActionGroupee
         $attribut = match ($action) {
             'soumettre' => FicheVoter::SUBMIT,
             'valider' => FicheVoter::VALIDATE,
-            'publier' => FicheVoter::PUBLISH,
-            'archiver' => FicheVoter::ARCHIVE,
+            'publier', 'republier' => FicheVoter::PUBLISH,
+            'archiver', 'desarchiver' => FicheVoter::ARCHIVE,
             // Accès extranet et assignation relèvent de la gestion des contacts.
             'acces', 'contributeur' => FicheVoter::MANAGE_AFFILIATIONS,
             'visibilite' => FicheVoter::EDIT,
@@ -123,10 +125,11 @@ final readonly class ReferentielActionGroupee
                     $fiche->ajouterSitesDiffusion($sitesRetenus) > 0 ? ++$appliquees : ++$ignorees;
                     continue;
                 }
-                // Publication de masse : une fiche qui ne satisfait pas les
-                // obligations photos (minimum du type + photo principale) n'est
-                // pas publiée, comme à l'import et au fil de l'eau (garde photos).
-                if ('publier' === $action && !$this->photoGuard->compliant($fiche)) {
+                // Publication de masse (publier une fiche validée, republier une
+                // fiche archivée) : une fiche qui ne satisfait pas les obligations
+                // photos (minimum du type + photo principale) n'est pas publiée,
+                // comme à l'import et au fil de l'eau (garde photos).
+                if (in_array($action, ['publier', 'republier'], true) && !$this->photoGuard->compliant($fiche)) {
                     ++$ignorees;
                     continue;
                 }
@@ -136,7 +139,7 @@ final readonly class ReferentielActionGroupee
                     ++$ignorees;
                     continue;
                 }
-                if ('publier' === $action) {
+                if (in_array($action, ['publier', 'republier'], true)) {
                     $this->translations->schedule($fiche);
                 }
                 $this->outbox->enqueue(new IndexFiche($fiche->idString()));
@@ -218,6 +221,8 @@ final readonly class ReferentielActionGroupee
             'valider' => $fiche->validate($actorId),
             'publier' => $fiche->publish(),
             'archiver' => $fiche->archive($actorId),
+            'desarchiver' => $fiche->unarchive($actorId),
+            'republier' => $fiche->republish($actorId),
             default => throw new \InvalidArgumentException(sprintf('Action groupée inconnue : "%s".', $action)),
         };
     }

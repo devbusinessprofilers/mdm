@@ -53,6 +53,19 @@ final readonly class FicheWorkflowManager
         $this->indexAndFlush($fiche);
     }
 
+    public function unarchive(Fiche $fiche, string $actor): void
+    {
+        $fiche->unarchive($actor);
+        $this->indexAndFlush($fiche);
+    }
+
+    public function republish(Fiche $fiche, string $actor): void
+    {
+        $fiche->republish($actor);
+        $this->translations->schedule($fiche);
+        $this->indexAndFlush($fiche);
+    }
+
     public function reject(Fiche $fiche, string $actor, string $reason): void
     {
         $fiche->rejectValidation($actor, $reason);
