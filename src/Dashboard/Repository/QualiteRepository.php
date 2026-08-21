@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Dashboard\Repository;
 
 use App\Pim\Service\ReferentielGeographiqueFrancais;
+use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
 use Symfony\Component\Uid\Ulid;
 
@@ -75,6 +76,9 @@ final readonly class QualiteRepository
             'conflits' => (int) $this->connection->fetchOne(
                 "SELECT (SELECT COUNT(*) FROM ocr_suggestion WHERE status = 'pending')
                     + (SELECT COUNT(*) FROM pim_localisation WHERE ban_ecart = 1)",
+            ),
+            'doublons_textes' => (int) $this->connection->fetchOne(
+                "SELECT COUNT(*) FROM pim_text_duplicate_alert WHERE status = 'pending'",
             ),
             'formes' => $formes['sans_pays'] + $formes['sans_gps'] + $formes['sans_libelle'],
             'notifs' => (int) $this->connection->fetchOne('SELECT COUNT(*) FROM pim_fiche_relance'),
@@ -252,6 +256,80 @@ final readonly class QualiteRepository
         }
 
         return $groupes;
+    }
+
+    /**
+     * Alertes de doublons de textes en attente d'arbitrage : le champ signalé
+     * et sa fiche de référence, avec l'aperçu des deux textes.
+     *
+     * @return list<array{alert_id: string, field_label: string, kind: string, distance: ?int, signalee: array{fiche_id: string, type: string, label: ?string, snippet: ?string}, reference: array{fiche_id: string, type: string, label: ?string, snippet: ?string}}>
+     */
+    public function doublonsTextes(int $limit = 30): array
+    {
+        $rows = $this->connection->fetchAllAssociative(
+            'SELECT a.id AS alert_id, a.kind, a.distance, fp.field_label,
+                    fp.fiche_id AS s_fiche, fp.fiche_type AS s_type, fp.snippet AS s_snippet,
+                    ref.fiche_id AS r_fiche, ref.fiche_type AS r_type, ref.snippet AS r_snippet
+             FROM pim_text_duplicate_alert a
+             INNER JOIN pim_text_fingerprint fp ON fp.id = a.fingerprint_id
+             INNER JOIN pim_text_fingerprint ref ON ref.id = a.duplicate_of_id
+             WHERE a.status = :status
+             ORDER BY a.created_at DESC
+             LIMIT '.$limit,
+            ['status' => 'pending'],
+        );
+        if ([] === $rows) {
+            return [];
+        }
+
+        $labels = $this->ficheLabels(array_merge(
+            array_column($rows, 's_fiche'),
+            array_column($rows, 'r_fiche'),
+        ));
+
+        return array_map(static fn (array $row): array => [
+            'alert_id' => (string) Ulid::fromBinary((string) $row['alert_id']),
+            'field_label' => (string) $row['field_label'],
+            'kind' => (string) $row['kind'],
+            'distance' => null === $row['distance'] ? null : (int) $row['distance'],
+            'signalee' => [
+                'fiche_id' => (string) $row['s_fiche'],
+                'type' => (string) $row['s_type'],
+                'label' => $labels[(string) $row['s_fiche']] ?? null,
+                'snippet' => null === $row['s_snippet'] ? null : (string) $row['s_snippet'],
+            ],
+            'reference' => [
+                'fiche_id' => (string) $row['r_fiche'],
+                'type' => (string) $row['r_type'],
+                'label' => $labels[(string) $row['r_fiche']] ?? null,
+                'snippet' => null === $row['r_snippet'] ? null : (string) $row['r_snippet'],
+            ],
+        ], $rows);
+    }
+
+    /**
+     * @param list<string> $ficheIds identifiants ULID en chaîne
+     *
+     * @return array<string, ?string> libellé de fiche par identifiant
+     */
+    private function ficheLabels(array $ficheIds): array
+    {
+        $ficheIds = array_values(array_unique(array_filter($ficheIds)));
+        if ([] === $ficheIds) {
+            return [];
+        }
+        $binaries = array_map(static fn (string $id): string => Ulid::fromString($id)->toBinary(), $ficheIds);
+        $rows = $this->connection->fetchAllAssociative(
+            'SELECT id, label FROM pim_fiche WHERE id IN (:ids)',
+            ['ids' => $binaries],
+            ['ids' => ArrayParameterType::BINARY],
+        );
+        $labels = [];
+        foreach ($rows as $row) {
+            $labels[(string) Ulid::fromBinary((string) $row['id'])] = null === $row['label'] ? null : (string) $row['label'];
+        }
+
+        return $labels;
     }
 
     /** @return array{sans_pays: int, sans_gps: int, sans_libelle: int} Candidats à normalisation. */

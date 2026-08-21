@@ -7,6 +7,7 @@ namespace App\Pim\MessageHandler;
 use App\Etl\Service\MarketplaceSyncScheduler;
 use App\Etl\Service\PhotoPublicationGuard;
 use App\Pim\Entity\Fiche;
+use App\Pim\Message\AnalyzeFicheTexts;
 use App\Pim\Message\IndexFiche;
 use App\Pim\Message\VerifierAdresseFiche;
 use App\Pim\Repository\FicheRepository;
@@ -47,6 +48,10 @@ final readonly class IndexFicheHandler
             // marketplace.
             $this->photoGuard->enforce($fiche);
             $this->indexer->index($fiche);
+            // Point de convergence de toute mutation : on y planifie aussi la
+            // détection de doublons de textes (mise à jour technique, sans
+            // transition de workflow).
+            $this->outbox->enqueue(new AnalyzeFicheTexts($fiche->idString()));
             // Toute mutation de fiche converge ici : point unique de décision
             // de la diffusion marketplace (envoi ou dépublication).
             $this->marketplaceScheduler->schedule($fiche);
