@@ -39,6 +39,7 @@ final class ReferentielSelectionType extends AbstractType
                 'label' => 'Action',
                 'placeholder' => 'Choisir une action…',
                 'choices' => [
+                    'Soumettre à validation' => 'soumettre',
                     'Valider' => 'valider',
                     'Publier' => 'publier',
                     'Archiver (dépublier)' => 'archiver',

@@ -405,10 +405,18 @@ class Fiche
         $this->touch();
     }
 
+    /**
+     * Archivage depuis n'importe quel statut : la décision produit veut
+     * qu'une fiche puisse être retirée de la circulation quel que soit son
+     * état d'avancement. Le passage à Archivee la dépublie de fait des sites
+     * de diffusion (retrait marketplace décidé en aval par IndexFicheHandler /
+     * MarketplaceSyncScheduler ; une fiche non publiée n'était de toute façon
+     * plus diffusée). Seule l'idempotence est gardée.
+     */
     public function archive(string $actorId): void
     {
-        if (StatutFiche::Publiee !== $this->status) {
-            throw new \DomainException('Seule une fiche publiée peut être archivée.');
+        if (StatutFiche::Archivee === $this->status) {
+            throw new \DomainException('La fiche est déjà archivée.');
         }
         $this->status = StatutFiche::Archivee;
         $this->archivedAt = new \DateTimeImmutable();

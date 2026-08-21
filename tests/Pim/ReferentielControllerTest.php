@@ -12,7 +12,9 @@ use App\Pim\Entity\FicheCollaborateur;
 use App\Pim\Entity\Localisation;
 use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Entity\Lieu\Lieu;
+use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Entity\SiteDiffusion;
+use App\Pim\Enum\NatureRessource;
 use App\Pim\Enum\StatutFiche;
 use App\Pim\Enum\TriReferentiel;
 use App\Pim\Form\ReferentielFiltres;
@@ -140,6 +142,137 @@ final class ReferentielControllerTest extends WebTestCase
         $fiche = $entityManager->find(Fiche::class, $ficheId);
         self::assertInstanceOf(Fiche::class, $fiche);
         self::assertSame(StatutFiche::Validee, $fiche->status());
+    }
+
+    public function testActionGroupeeSoumetLesFichesEnCours(): void
+    {
+        $client = self::createClient();
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $this->connection = self::getContainer()->get(Connection::class);
+        $this->clearTables();
+
+        $user = new User('referentiel-soumettre@example.test', ['ROLE_BP_VALIDATOR']);
+        $user->setPassword('not-used-by-login-user');
+        $entityManager->persist($user);
+
+        // Une fiche neuve est en cours : c'est le pas manquant du workflow que
+        // l'action de masse « Soumettre à validation » vient combler.
+        $lieu = new Lieu();
+        $lieu->changeLabel('Château à soumettre');
+        $entityManager->persist($lieu);
+        $entityManager->flush();
+        $ficheId = $lieu->fiche()->idString();
+        $client->loginUser($user);
+
+        $crawler = $client->request('GET', '/referentiel');
+        self::assertResponseIsSuccessful();
+        $form = $crawler->selectButton('Soumettre à validation')->form();
+        $values = $form->getPhpValues();
+        $values['selection']['ids'] = [$ficheId];
+        $client->request($form->getMethod(), $form->getUri(), $values);
+
+        self::assertResponseRedirects();
+        $client->followRedirect();
+        self::assertSelectorTextContains('body', '1 élément(s) traité(s)');
+        $entityManager->clear();
+        $fiche = $entityManager->find(Fiche::class, $ficheId);
+        self::assertInstanceOf(Fiche::class, $fiche);
+        self::assertSame(StatutFiche::EnAttenteValidation, $fiche->status());
+    }
+
+    public function testActionGroupeeArchiveDepuisNimporteQuelStatut(): void
+    {
+        $client = self::createClient();
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $this->connection = self::getContainer()->get(Connection::class);
+        $this->clearTables();
+
+        $user = new User('referentiel-archiver@example.test', ['ROLE_BP_VALIDATOR']);
+        $user->setPassword('not-used-by-login-user');
+        $entityManager->persist($user);
+
+        // Archiver doit fonctionner quel que soit le statut, pas seulement
+        // depuis « publiée » : ici une fiche encore en cours.
+        $lieu = new Lieu();
+        $lieu->changeLabel('Château à archiver');
+        $entityManager->persist($lieu);
+        $entityManager->flush();
+        $ficheId = $lieu->fiche()->idString();
+        self::assertSame(StatutFiche::EnCours, $lieu->fiche()->status());
+        $client->loginUser($user);
+
+        $crawler = $client->request('GET', '/referentiel');
+        self::assertResponseIsSuccessful();
+        $form = $crawler->selectButton('Archiver')->form();
+        $values = $form->getPhpValues();
+        $values['selection']['ids'] = [$ficheId];
+        $client->request($form->getMethod(), $form->getUri(), $values);
+
+        self::assertResponseRedirects();
+        $client->followRedirect();
+        self::assertSelectorTextContains('body', '1 élément(s) traité(s)');
+        $entityManager->clear();
+        $fiche = $entityManager->find(Fiche::class, $ficheId);
+        self::assertInstanceOf(Fiche::class, $fiche);
+        self::assertSame(StatutFiche::Archivee, $fiche->status());
+    }
+
+    public function testActionGroupeePublierRespecteLesObligationsPhotos(): void
+    {
+        $client = self::createClient();
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $this->connection = self::getContainer()->get(Connection::class);
+        $this->clearTables();
+
+        $user = new User('referentiel-publier@example.test', ['ROLE_BP_VALIDATOR']);
+        $user->setPassword('not-used-by-login-user');
+        $entityManager->persist($user);
+
+        // Deux restaurants validés (min photos « autres » = 1 + principale) :
+        // l'un conforme est publié, l'autre sans photo est ignoré.
+        // La photo est ajoutée avant le passage à « validée » : addResource()
+        // appelle markChanged(), qui rétrograderait sinon la fiche en cours.
+        $conforme = new Restaurant();
+        $conforme->changeLabel('Bistrot conforme');
+        $photo = new RessourceLieu();
+        $photo->changeDamAssetId((string) new Ulid());
+        $photo->changeNature(NatureRessource::Photo);
+        $photo->changeUsage('PHOTO_PRINCIPALE');
+        $photo->changePosition(1);
+        $conforme->fiche()->addResource($photo);
+        $this->porterAValidee($conforme->fiche());
+        $entityManager->persist($conforme);
+
+        $sansPhoto = new Restaurant();
+        $sansPhoto->changeLabel('Bistrot sans photo');
+        $this->porterAValidee($sansPhoto->fiche());
+        $entityManager->persist($sansPhoto);
+
+        $entityManager->flush();
+        $idConforme = $conforme->fiche()->idString();
+        $idSansPhoto = $sansPhoto->fiche()->idString();
+        $client->loginUser($user);
+
+        $crawler = $client->request('GET', '/referentiel');
+        self::assertResponseIsSuccessful();
+        $form = $crawler->selectButton('Publier')->form();
+        $values = $form->getPhpValues();
+        $values['selection']['ids'] = [$idConforme, $idSansPhoto];
+        $client->request($form->getMethod(), $form->getUri(), $values);
+
+        self::assertResponseRedirects();
+        $client->followRedirect();
+        self::assertSelectorTextContains('body', '1 élément(s) traité(s), 1 ignoré(s)');
+        $entityManager->clear();
+        self::assertSame(StatutFiche::Publiee, $entityManager->find(Fiche::class, $idConforme)?->status());
+        self::assertSame(StatutFiche::Validee, $entityManager->find(Fiche::class, $idSansPhoto)?->status());
+    }
+
+    /** Amène une fiche neuve jusqu'au statut « validée » par le workflow normal. */
+    private function porterAValidee(Fiche $fiche): void
+    {
+        $fiche->submitForValidation('editor');
+        $fiche->validate('validator');
     }
 
     public function testActionGroupeeEnvoieLesAccesEnDedupliquantLesEmails(): void
@@ -472,6 +605,7 @@ final class ReferentielControllerTest extends WebTestCase
         $this->connection->executeStatement('DELETE FROM pim_fiche_site_diffusion');
         $this->connection->executeStatement("DELETE FROM pim_site_diffusion WHERE code LIKE '%_TEST'");
         $this->connection->executeStatement('DELETE FROM pim_fiche_search');
+        $this->connection->executeStatement('DELETE FROM pim_ressource_lieu');
         $this->connection->executeStatement('DELETE FROM pim_fiche_attribute_value');
         $this->connection->executeStatement('DELETE FROM pim_lieu_administratif');
         $this->connection->executeStatement('DELETE FROM pim_lieu_tarification');

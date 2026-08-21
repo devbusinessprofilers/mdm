@@ -8,6 +8,7 @@ use App\Account\Entity\User;
 use App\Account\Message\CollaborateurAccessRequested;
 use App\Account\Security\FicheVoter;
 use App\Enrichment\Service\FicheTranslationScheduler;
+use App\Etl\Service\PhotoPublicationGuard;
 use App\Pim\Entity\Fiche;
 use App\Pim\Entity\FicheAffiliation;
 use App\Pim\Entity\SiteDiffusion;
@@ -30,6 +31,7 @@ final readonly class ReferentielActionGroupee
 {
     /** Plafonds par action, ceux de la maquette. */
     public const PLAFONDS = [
+        'soumettre' => 5000,
         'valider' => 5000,
         'publier' => 5000,
         'archiver' => 5000,
@@ -49,6 +51,7 @@ final readonly class ReferentielActionGroupee
         private FicheTranslationScheduler $translations,
         private OutboxPublisherInterface $outbox,
         private Security $security,
+        private PhotoPublicationGuard $photoGuard,
     ) {
     }
 
@@ -65,7 +68,7 @@ final readonly class ReferentielActionGroupee
      */
     public function appliquer(string $action, array $ids, string $actorId, ?User $contributeur = null, array $siteIds = []): array
     {
-        if (!in_array($action, ['valider', 'publier', 'archiver', 'acces', 'contributeur', 'visibilite'], true)) {
+        if (!in_array($action, ['soumettre', 'valider', 'publier', 'archiver', 'acces', 'contributeur', 'visibilite'], true)) {
             throw new \InvalidArgumentException(sprintf('Action groupée inconnue : "%s".', $action));
         }
         if (count($ids) > self::plafond($action)) {
@@ -79,6 +82,7 @@ final readonly class ReferentielActionGroupee
             throw new \DomainException('Choisissez au moins un site de diffusion à attribuer.');
         }
         $attribut = match ($action) {
+            'soumettre' => FicheVoter::SUBMIT,
             'valider' => FicheVoter::VALIDATE,
             'publier' => FicheVoter::PUBLISH,
             'archiver' => FicheVoter::ARCHIVE,
@@ -117,6 +121,13 @@ final readonly class ReferentielActionGroupee
                 if ('visibilite' === $action) {
                     // Une fiche qui a déjà tous les sites demandés est comptée ignorée.
                     $fiche->ajouterSitesDiffusion($sitesRetenus) > 0 ? ++$appliquees : ++$ignorees;
+                    continue;
+                }
+                // Publication de masse : une fiche qui ne satisfait pas les
+                // obligations photos (minimum du type + photo principale) n'est
+                // pas publiée, comme à l'import et au fil de l'eau (garde photos).
+                if ('publier' === $action && !$this->photoGuard->compliant($fiche)) {
+                    ++$ignorees;
                     continue;
                 }
                 try {
@@ -203,6 +214,7 @@ final readonly class ReferentielActionGroupee
     private function transition(string $action, Fiche $fiche, string $actorId): void
     {
         match ($action) {
+            'soumettre' => $fiche->submitForValidation($actorId),
             'valider' => $fiche->validate($actorId),
             'publier' => $fiche->publish(),
             'archiver' => $fiche->archive($actorId),

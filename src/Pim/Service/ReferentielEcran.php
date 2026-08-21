@@ -148,6 +148,7 @@ final readonly class ReferentielEcran
 
         return [
             'principales' => [
+                $action('soumettre', 'Soumettre à validation', 'cloud-arrow-up'),
                 $action('valider', 'Valider', 'check-circle'),
                 $action('publier', 'Publier', 'paper-plane'),
                 $action('archiver', 'Archiver', 'bin'),
