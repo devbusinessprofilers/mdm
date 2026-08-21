@@ -80,19 +80,21 @@ final readonly class DamDashboardProvider
             $type = null;
         }
         $page = max(1, $page);
-        $stats = [
-            self::FILTER_DUPLICATES => $this->alerts->countPending($type?->value),
-            self::FILTER_RIGHTS_MISSING => $this->resources->countByRightsStatus(RightsValidityStatus::NotGranted, $type),
-            self::FILTER_RIGHTS_EXPIRING => $this->resources->countByRightsStatus(RightsValidityStatus::Expiring, $type),
-            self::FILTER_RIGHTS_EXPIRED => $this->resources->countByRightsStatus(RightsValidityStatus::Expired, $type),
-            self::FILTER_FAILED => $this->assets->countFailed(),
-            self::FILTER_PUBLISHED_NO_PHOTO => $this->fiches->countPublishedWithoutPhoto($type),
-            self::FILTER_PUBLISHED_RIGHTS => $this->resources->countPublishedRightsIssues($type),
-            self::FILTER_ORPHANS => $this->anomalies->countOpen(DamAnomalyType::OrphanResource),
-            self::FILTER_MISSING_RENDITIONS => $this->anomalies->countOpen(DamAnomalyType::MissingRenditions),
-            self::FILTER_IMAGES => $this->assets->countActiveByKind(MediaKind::Image),
-            self::FILTER_DOCUMENTS => $this->assets->countActiveByKind(MediaKind::Document),
-        ];
+        // Paresseux : chaque gabarit ne lit que les compteurs de son onglet,
+        // les autres filtres ne déclenchent aucun COUNT.
+        $stats = new LazyStatMap([
+            self::FILTER_DUPLICATES => fn (): int => $this->alerts->countPending($type?->value),
+            self::FILTER_RIGHTS_MISSING => fn (): int => $this->resources->countByRightsStatus(RightsValidityStatus::NotGranted, $type),
+            self::FILTER_RIGHTS_EXPIRING => fn (): int => $this->resources->countByRightsStatus(RightsValidityStatus::Expiring, $type),
+            self::FILTER_RIGHTS_EXPIRED => fn (): int => $this->resources->countByRightsStatus(RightsValidityStatus::Expired, $type),
+            self::FILTER_FAILED => fn (): int => $this->assets->countFailed(),
+            self::FILTER_PUBLISHED_NO_PHOTO => fn (): int => $this->fiches->countPublishedWithoutPhoto($type),
+            self::FILTER_PUBLISHED_RIGHTS => fn (): int => $this->resources->countPublishedRightsIssues($type),
+            self::FILTER_ORPHANS => fn (): int => $this->anomalies->countOpen(DamAnomalyType::OrphanResource),
+            self::FILTER_MISSING_RENDITIONS => fn (): int => $this->anomalies->countOpen(DamAnomalyType::MissingRenditions),
+            self::FILTER_IMAGES => fn (): int => $this->assets->countActiveByKind(MediaKind::Image),
+            self::FILTER_DOCUMENTS => fn (): int => $this->assets->countActiveByKind(MediaKind::Document),
+        ]);
         [$items, $total] = match ($filter) {
             self::FILTER_DUPLICATES => $this->duplicates($type, $page),
             self::FILTER_RIGHTS_MISSING => $this->rights(RightsValidityStatus::NotGranted, $type, $page),

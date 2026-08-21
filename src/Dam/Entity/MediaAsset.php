@@ -24,6 +24,12 @@ use Symfony\Component\Uid\Ulid;
         columns: ['status', 'created_at'],
     ),
 ]
+#[
+    ORM\Index(
+        name: 'IDX_DAM_MEDIA_KIND_STATUS_CREATED',
+        columns: ['kind', 'status', 'created_at'],
+    ),
+]
 #[ORM\HasLifecycleCallbacks]
 class MediaAsset
 {

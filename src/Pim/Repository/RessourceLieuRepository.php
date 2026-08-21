@@ -105,11 +105,23 @@ final class RessourceLieuRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    /**
+     * Mémorisation par requête : les écrans médias comptent les mêmes régimes
+     * dans les indicateurs, la répartition et les files — chaque combinaison ne
+     * vaut qu'un COUNT (les tables ne bougent pas pendant un GET).
+     *
+     * @var array<string, int>
+     */
+    private array $rightsCounts = [];
+
     public function countByRightsStatus(RightsValidityStatus $status, ?TypeFiche $type = null, ?\DateTimeImmutable $today = null): int
     {
-        $builder = $this->rightsQuery($status, $type, $today)->select('COUNT(resource.id)');
+        $cle = $status->value.'|'.($type?->value ?? '').'|'.($today?->format(\DateTimeInterface::ATOM) ?? '');
 
-        return (int) $builder->getQuery()->getSingleScalarResult();
+        return $this->rightsCounts[$cle] ??= (int) $this->rightsQuery($status, $type, $today)
+            ->select('COUNT(resource.id)')
+            ->getQuery()
+            ->getSingleScalarResult();
     }
 
     public function countByRightsStatusForFiche(Fiche $fiche, RightsValidityStatus $status, ?\DateTimeImmutable $today = null): int

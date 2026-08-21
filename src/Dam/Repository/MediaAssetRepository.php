@@ -12,11 +12,20 @@ use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Component\Uid\Ulid;
+use Symfony\Contracts\Cache\CacheInterface;
+use Symfony\Contracts\Cache\ItemInterface;
 
 /** @extends ServiceEntityRepository<MediaAsset> */
 final class MediaAssetRepository extends ServiceEntityRepository
 {
-    public function __construct(ManagerRegistry $registry)
+    /**
+     * Les agrégats qui parcourent la table des renditions (plus d'un million de
+     * lignes) sont mémorisés : les renditions naissent en asynchrone dans les
+     * workers, ces indicateurs étaient donc déjà des photographies différées.
+     */
+    private const RENDITION_STATS_TTL = 600;
+
+    public function __construct(ManagerRegistry $registry, private readonly CacheInterface $cache)
     {
         parent::__construct($registry, MediaAsset::class);
     }
@@ -124,19 +133,23 @@ final class MediaAssetRepository extends ServiceEntityRepository
     /** @return list<array{name: string, nb: int, octets: int}> Volumes par variante générée. */
     public function renditionStats(): array
     {
-        /** @var list<array{name: string, nb: string|int, octets: string|int|null}> $rows */
-        $rows = $this->getEntityManager()->getConnection()->fetchAllAssociative(
-            'SELECT name, COUNT(*) AS nb, COALESCE(SUM(size_bytes), 0) AS octets
-             FROM dam_media_rendition
-             GROUP BY name
-             ORDER BY name ASC',
-        );
+        return $this->cache->get('dam.stats.renditions_par_variante', function (ItemInterface $item): array {
+            $item->expiresAfter(self::RENDITION_STATS_TTL);
 
-        return array_map(static fn (array $row): array => [
-            'name' => (string) $row['name'],
-            'nb' => (int) $row['nb'],
-            'octets' => (int) $row['octets'],
-        ], $rows);
+            /** @var list<array{name: string, nb: string|int, octets: string|int|null}> $rows */
+            $rows = $this->getEntityManager()->getConnection()->fetchAllAssociative(
+                'SELECT name, COUNT(*) AS nb, COALESCE(SUM(size_bytes), 0) AS octets
+                 FROM dam_media_rendition
+                 GROUP BY name
+                 ORDER BY name ASC',
+            );
+
+            return array_map(static fn (array $row): array => [
+                'name' => (string) $row['name'],
+                'nb' => (int) $row['nb'],
+                'octets' => (int) $row['octets'],
+            ], $rows);
+        });
     }
 
     public function countFailed(): int
@@ -187,14 +200,18 @@ final class MediaAssetRepository extends ServiceEntityRepository
             ->getSingleResult();
         // Requête séparée : jointe à la première, la multiplication des lignes
         // par variante fausserait SUM(media.sizeBytes).
-        $variantes = (int) $this->getEntityManager()->createQueryBuilder()
-            ->select('COALESCE(SUM(rendition.sizeBytes), 0)')
-            ->from(MediaRendition::class, 'rendition')
-            ->join('rendition.media', 'media')
-            ->where('media.status NOT IN (:deleted)')
-            ->setParameter('deleted', [MediaStatus::Deleting, MediaStatus::Deleted])
-            ->getQuery()
-            ->getSingleScalarResult();
+        $variantes = $this->cache->get('dam.stats.poids_variantes', function (ItemInterface $item): int {
+            $item->expiresAfter(self::RENDITION_STATS_TTL);
+
+            return (int) $this->getEntityManager()->createQueryBuilder()
+                ->select('COALESCE(SUM(rendition.sizeBytes), 0)')
+                ->from(MediaRendition::class, 'rendition')
+                ->join('rendition.media', 'media')
+                ->where('media.status NOT IN (:deleted)')
+                ->setParameter('deleted', [MediaStatus::Deleting, MediaStatus::Deleted])
+                ->getQuery()
+                ->getSingleScalarResult();
+        });
 
         return ['nb' => (int) $row['nb'], 'octets' => (int) $row['octets'], 'octetsTotal' => (int) $row['octets'] + $variantes];
     }
