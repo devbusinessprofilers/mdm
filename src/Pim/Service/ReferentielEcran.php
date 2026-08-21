@@ -88,7 +88,8 @@ final readonly class ReferentielEcran
         ]);
         $vuesEnregistrees = [];
         // Nom porté par le sélecteur : la vue enregistrée dont les filtres
-        // sont exactement ceux de l'écran, sinon un libellé d'état.
+        // sont exactement ceux de l'écran, sinon « Gérer les vues » — libellé
+        // explicite pour que le rôle du bouton se comprenne sans l'ouvrir.
         $filtresCourants = $filtres->toArray();
         $vueCourante = null;
         foreach ($this->vues->findVisiblesPour($userId) as $enregistree) {
@@ -103,7 +104,7 @@ final readonly class ReferentielEcran
                     : null,
             ];
         }
-        $vueCourante ??= [] === $filtresCourants ? 'Toutes les fiches' : 'Vue personnalisée';
+        $vueCourante ??= 'Gérer les vues';
 
         return [
             'vue' => $vue,
