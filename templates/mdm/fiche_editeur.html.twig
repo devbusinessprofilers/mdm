@@ -224,7 +224,15 @@
     {# ---------------- Volets de champs : un seul formulaire pour toutes les sections #}
     {# Chrome « autorité » par champ : ce thème ne s'applique qu'ici. #}
     {% form_theme form 'pim/form/_form-theme-fiche.html.twig' %}
-    {{ form_start(form, { attr: { id: 'form-fiche', class: 'contents' } }) }}
+    {{ form_start(form, { attr: {
+        id: 'form-fiche',
+        class: 'contents',
+        'data-fiche-gamme': gamme_slug,
+        'data-fiche-id': fiche.idString,
+        'data-fiche-suggerer-url': path('app_pim_fiche_suggerer'),
+        'data-fiche-suggerer-csrf': suggestion_csrf,
+        'data-ia-suggestion-active': ia_suggestion_active ? '1' : '0',
+    } }) }}
         {% for i, s in sections %}
             {% if s.champs is not empty %}
                 {{ _self.volet_ouvre(i, i == section_index) }}

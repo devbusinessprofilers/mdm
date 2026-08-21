@@ -236,7 +236,7 @@ final class ActiviteType extends AbstractType
                     'Description générale',
                     'descriptionGenerale',
                     'changeDescriptionGenerale',
-                ),
+                ) + ['attr' => ['data-suggerer' => true]],
             )
             ->add(
                 'comprendPrestation',

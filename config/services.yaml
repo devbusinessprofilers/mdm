@@ -37,6 +37,8 @@ parameters:
     env(OPENAI_RETOUCHE_PROMPT): 'Améliore la luminosité, le contraste, les couleurs et la netteté de cette photo sans modifier son contenu, son cadrage ni les éléments présents.'
     env(OPENAI_RECO_PROMPT): 'Décris cette photo d’un établissement événementiel en français : une légende d’une phrase, des mots-clés, le type de vue, intérieur ou extérieur.'
     env(OPENAI_RECO_AUTO_ENABLED): '1'
+    env(OPENAI_SUGGESTION_MODEL): 'gpt-4o'
+    env(OPENAI_SUGGESTION_PROMPT): "Tu es un rédacteur pour un référentiel d’établissements événementiels.\nAméliore ou propose le champ « {champ} » de la fiche décrite ci-dessous.\nRéponds uniquement par le texte du champ, en français, sans commentaire ni guillemets.\n\nContexte de la fiche :\n{contexte}\n\nContenu actuel du champ :\n{valeur}"
     env(DAM_PHASH_DISTANCE_THRESHOLD): '8'
     env(PIM_TEXT_SIMHASH_DISTANCE_THRESHOLD): '10'
     env(PIM_TEXT_MIN_LENGTH): '60'
@@ -245,6 +247,13 @@ services:
     App\Vision\Service\ImageEnhancementProviderInterface: '@App\Vision\Service\OpenAiImageProvider'
     App\Vision\Service\ImageRecognitionProviderInterface: '@App\Vision\Service\OpenAiImageProvider'
 
+    App\Vision\Service\OpenAiTextProvider:
+        arguments:
+            $apiKey: '%env(OPENAI_API_KEY)%'
+            $apiUrl: '%env(OPENAI_API_URL)%'
+
+    App\Vision\Service\TextSuggestionProviderInterface: '@App\Vision\Service\OpenAiTextProvider'
+
     # Paramètres applicatifs modifiables dans /admin : la variable d'env reste
     # la valeur par défaut, la table `parametre` la surcharge à chaud.
     App\Shared\Service\ParametreProviderInterface: '@App\Shared\Service\ParametreProvider'
@@ -277,6 +286,8 @@ services:
                 openai.reco_prompt: '%env(OPENAI_RECO_PROMPT)%'
                 openai.retouche_modele: '%env(OPENAI_IMAGE_EDIT_MODEL)%'
                 openai.retouche_prompt: '%env(OPENAI_RETOUCHE_PROMPT)%'
+                openai.suggestion_modele: '%env(OPENAI_SUGGESTION_MODEL)%'
+                openai.suggestion_prompt: '%env(OPENAI_SUGGESTION_PROMPT)%'
                 ocr.pdf_poids_max_mo: '%env(OCR_PDF_MAX_MB)%'
                 ocr.seuil_application_auto: '%env(OCR_AUTO_APPLY_THRESHOLD)%'
                 pim.longueur_min_texte_doublon: '%env(PIM_TEXT_MIN_LENGTH)%'

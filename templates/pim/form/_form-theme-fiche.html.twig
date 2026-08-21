@@ -61,12 +61,30 @@
 {%- endblock -%}
 
 {#- Champ riche de l'éditeur de fiche : le Wysiwyg du thème global, plus la
-    pilule « Suggérer » de la maquette — désactivée, la suggestion IA champ
-    par champ n'a pas de back (rien ne se perd). Branche wysiwyg synchronisée
+    pilule « Suggérer » de la maquette. La pilule appelle l'IA (contrôleur
+    Stimulus champ-suggestion) sur les champs Wysiwyg et sur les zones de texte
+    portant `data-suggerer` ; gamme/id/URL/jeton/état actif sont lus sur le
+    formulaire de la fiche (mdm/fiche_editeur). Branche wysiwyg synchronisée
     avec textarea_widget du thème global. -#}
 {%- block textarea_widget -%}
+    {#- Pilule partagée par les deux branches : le contenu courant est lu côté
+        client (TinyMCE si Wysiwyg, sinon la zone de texte) puis remplacé. -#}
+    {%- set pilule_suggerer -%}
+        <div class="flex flex-col items-end gap-1">
+            <button type="button" data-action="click->champ-suggestion#suggerer"
+                    data-champ-suggestion-target="bouton"
+                    class="shrink-0 flex items-center gap-1 px-2 py-1 rounded-full bg-primary-4 hover:bg-primary-4/80 transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+                <twig:Icon name="ai" class="w-3.5 h-3.5 text-primary-3" />
+                <span data-champ-suggestion-target="libelle" class="antialiased text-[0.625rem] leading-[1rem] font-sans font-[900] text-primary-3">Suggérer</span>
+            </button>
+            <span data-champ-suggestion-target="statut" class="hidden antialiased text-[0.625rem] leading-[1rem] font-sans text-red-600"></span>
+        </div>
+    {%- endset -%}
     {%- if attr['data-wysiwyg']|default(false) -%}
-        <div class="flex flex-col gap-2">
+        <div class="flex flex-col gap-2"
+             data-controller="champ-suggestion"
+             data-champ-suggestion-champ-value="{{ label|default(name|humanize) }}"
+             data-champ-suggestion-field-id-value="{{ id }}">
             <twig:Form:Wysiwyg
                 id="{{ id }}"
                 name="{{ full_name }}"
@@ -75,13 +93,20 @@
                 :maxLength="attr.maxlength|default(0)"
                 class="[&_.tox-tinymce]:h-[200px]!"
             />
-            <div class="flex flex-row justify-end">
-                <button type="button" disabled title="En développement"
-                        class="shrink-0 flex items-center gap-1 px-2 py-1 rounded-full bg-primary-4 opacity-60 cursor-not-allowed">
-                    <twig:Icon name="ai" class="w-3.5 h-3.5 text-primary-3" />
-                    <span class="antialiased text-[0.625rem] leading-[1rem] font-sans font-[900] text-primary-3">Suggérer</span>
-                </button>
-            </div>
+            <div class="flex flex-row justify-end">{{ pilule_suggerer }}</div>
+        </div>
+    {%- elseif attr['data-suggerer']|default(false) -%}
+        <div class="flex flex-col gap-2"
+             data-controller="champ-suggestion"
+             data-champ-suggestion-champ-value="{{ label|default(name|humanize) }}"
+             data-champ-suggestion-field-id-value="{{ id }}">
+            <twig:Form:Textarea
+                id="{{ id }}"
+                name="{{ full_name }}"
+                value="{{ value }}"
+                :disabled="disabled"
+            />
+            <div class="flex flex-row justify-end">{{ pilule_suggerer }}</div>
         </div>
     {%- else -%}
         <twig:Form:Textarea

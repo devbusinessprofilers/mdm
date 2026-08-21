@@ -36,6 +36,8 @@ Réglages exposés dans `/admin/parametres`, lus via `App\Shared\Service\Paramet
 | `ocr.pdf_pages_max` | Entier | `OCR_PDF_MAX_PAGES` (100) | Nombre maximal de pages d'un PDF accepté à l'extraction OCR | `PdfDocumentProcessor` |
 | `ocr.pdf_poids_max_mo` | Entier | `OCR_PDF_MAX_MB` (50) | Poids maximal d'un PDF accepté à l'extraction OCR | `OcrUploadType`, `PdfDocumentProcessor` |
 | `ocr.seuil_application_auto` | Entier | `OCR_AUTO_APPLY_THRESHOLD` (0) | Confiance (%) à partir de laquelle une suggestion OCR s'applique automatiquement à la fin de l'extraction (sans transition de workflow). **0 = tout manuel** : les suggestions attendent l'arbitrage dans le bloc « Suggestions IA en attente » ou la revue complète | `AutoApplyOcrSuggestionsHandler` |
+| `openai.suggestion_modele` | Texte | `OPENAI_SUGGESTION_MODEL` (`gpt-4o`) | Modèle OpenAI de la pilule « Suggérer » des champs de description | `ChampSuggestionService` |
+| `openai.suggestion_prompt` | Texte | `OPENAI_SUGGESTION_PROMPT` | Gabarit de prompt de la pilule « Suggérer » ; placeholders `{contexte}`, `{champ}`, `{valeur}`. Nécessite `openai.actif = 1` (sinon pilule masquée) | `ChampSuggestionService` |
 | `photos.min_lieu` | Entier | `PHOTOS_MIN_LIEU` (4) | Minimum de photos pour publier un Lieu (sous ce seuil : dépublication marketplace) | `PhotoObligations` |
 | `photos.max_lieu` | Entier | `PHOTOS_MAX_LIEU` (25) | Plafond de photos d'un Lieu | idem |
 | `photos.min_autres` | Entier | `PHOTOS_MIN_AUTRES` (1) | Minimum de photos pour publier une fiche non-Lieu | idem |

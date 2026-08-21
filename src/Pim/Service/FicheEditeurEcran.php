@@ -320,6 +320,11 @@ final readonly class FicheEditeurEcran
             // false = fiche inconnue de Salesforce.
             'salesforce' => $this->salesforce->forFiche($fiche->id()) ?? false,
             'suggestions_attente' => $this->suggestionsAttenteVars($fiche),
+            // Pilule « Suggérer » IA des champs de description : active seulement
+            // si l'IA est branchée ; le jeton couvre l'endpoint de suggestion.
+            'ia_suggestion_active' => $this->parametres->bool('openai.actif'),
+            'suggestion_csrf' => $this->csrfTokens->getToken('fiche-suggestion')->getValue(),
+            'gamme_slug' => self::slug($type),
         ];
     }
 
