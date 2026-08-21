@@ -93,7 +93,11 @@
         </div>
     </div>
 
-    <div class="flex-1 min-h-0 flex flex-col gap-4 px-10 pb-8">
+    {# `grow` sans basis-0 : le bloc s'étire sur l'écran quand le contenu est
+       court, mais grandit AVEC le contenu quand il déborde — sinon la boîte
+       reste à la hauteur de l'écran et le pb-8 se perd au milieu du contenu
+       au lieu d'espacer le bas de la page. #}
+    <div class="grow flex flex-col gap-4 px-10 pb-8">
     {% if onglet_actif == 'miroir' %}
         {# ---- Bloc santé maquette, sur données réelles : score pondéré par
              les volumes de fiches, un axe par canal de diffusion. ---- #}
