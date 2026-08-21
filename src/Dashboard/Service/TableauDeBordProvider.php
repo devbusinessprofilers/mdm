@@ -120,10 +120,10 @@ final readonly class TableauDeBordProvider
             [
                 'id' => 'repli',
                 'libelle' => 'Contacts de repli',
-                'detail' => 'Fiches sans contact prestataire',
+                'detail' => 'Fiches sans aucun contact',
                 'volume' => $comptes['repli'],
                 'severite' => $this->severite('repli', $comptes['repli']),
-                'url' => $this->urls->generate('app_mdm_referentiel_general', ['f' => ['repli' => '1']]),
+                'url' => $this->urls->generate('app_mdm_referentiel_general', ['f' => ['sans_contact' => '1']]),
             ],
             [
                 'id' => 'echecs',

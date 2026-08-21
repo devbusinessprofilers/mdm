@@ -191,6 +191,7 @@ final readonly class ReferentielEcran
     private const LIBELLES_BOOLEENS = [
         'ia' => 'Valeurs IA à arbitrer',
         'repli' => 'Contact de repli',
+        'sans_contact' => 'Sans aucun contact',
         'premium' => 'Adhérent Business Premium',
     ];
 

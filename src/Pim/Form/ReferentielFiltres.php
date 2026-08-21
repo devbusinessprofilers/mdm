@@ -46,6 +46,9 @@ final class ReferentielFiltres
     /** Fiches dont le contact est le contact de repli (service référencement). */
     public bool $repli = false;
 
+    /** Fiches sans aucun contact (aucune affiliation, pas même le repli). */
+    public bool $sansContact = false;
+
     /** Fiches adhérentes Business Premium. */
     public bool $premium = false;
 
@@ -60,7 +63,8 @@ final class ReferentielFiltres
         return (null !== $this->q && '' !== trim($this->q) ? 1 : 0)
             + count($this->gammes) + count($this->statuts) + count($this->completudes)
             + count($this->pays) + count($this->canaux) + count($this->dates) + count($this->formes) + count($this->contributeurs)
-            + ($this->ia ? 1 : 0) + ($this->repli ? 1 : 0) + ($this->premium ? 1 : 0) + count($this->valeurs);
+            + ($this->ia ? 1 : 0) + ($this->repli ? 1 : 0) + ($this->sansContact ? 1 : 0)
+            + ($this->premium ? 1 : 0) + count($this->valeurs);
     }
 
     public function gammeUnique(): ?TypeFiche
@@ -84,6 +88,7 @@ final class ReferentielFiltres
             'contributeurs' => $this->contributeurs,
             'ia' => $this->ia ?: null,
             'repli' => $this->repli ?: null,
+            'sans_contact' => $this->sansContact ?: null,
             'premium' => $this->premium ?: null,
             'valeurs' => $this->valeurs,
             // Omis au défaut : URL et vues enregistrées existantes inchangées.
@@ -106,6 +111,7 @@ final class ReferentielFiltres
         $filtres->contributeurs = self::stringList($data['contributeurs'] ?? [], null);
         $filtres->ia = (bool) ($data['ia'] ?? false);
         $filtres->repli = (bool) ($data['repli'] ?? false);
+        $filtres->sansContact = (bool) ($data['sans_contact'] ?? false);
         $filtres->premium = (bool) ($data['premium'] ?? false);
         $filtres->valeurs = array_values(array_filter(array_map(
             static fn (mixed $v): int => (int) $v,

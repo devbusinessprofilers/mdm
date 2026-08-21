@@ -63,6 +63,14 @@ final readonly class ReferentielRepository
         )
         SQL;
 
+    /** Même définition que le compte « Contacts de repli » du tableau de bord. */
+    private const SANS_CONTACT = <<<'SQL'
+        NOT EXISTS (
+            SELECT 1 FROM pim_fiche_affiliation aff_sc
+            WHERE aff_sc.fiche_id = f.id
+        )
+        SQL;
+
     /**
      * Écarts de forme, mêmes définitions que QualiteRepository::ecartsDeForme()
      * — la localisation doit exister (jointure interne côté Qualité) pour que
@@ -442,6 +450,7 @@ final readonly class ReferentielRepository
         $comptes['contributeurs'] = $this->comptesParExpression($filtres, 'contributeur', 'f.assignee_id');
         $comptes['ia'] = ['1' => $this->compteAvec($filtres, 'ia', self::IA_EXISTS)];
         $comptes['repli'] = ['1' => $this->compteAvec($filtres, 'repli', self::REPLI_EXISTS)];
+        $comptes['sans_contact'] = ['1' => $this->compteAvec($filtres, 'sans_contact', self::SANS_CONTACT)];
         $comptes['premium'] = ['1' => $this->compteAvec($filtres, 'premium', 'f.business_premium = 1')];
         $comptes['valeurs'] = $this->comptesValeurs($filtres);
 
@@ -804,6 +813,9 @@ final readonly class ReferentielRepository
         }
         if ('repli' !== $groupeExclu && $filtres->repli) {
             $conditions[] = self::REPLI_EXISTS;
+        }
+        if ('sans_contact' !== $groupeExclu && $filtres->sansContact) {
+            $conditions[] = self::SANS_CONTACT;
         }
         if ('premium' !== $groupeExclu && $filtres->premium) {
             $conditions[] = 'f.business_premium = 1';

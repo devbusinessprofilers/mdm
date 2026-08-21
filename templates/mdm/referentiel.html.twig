@@ -175,6 +175,7 @@
                 {{ _self.tete_groupe('Files de travail') }}
                 {{ _self.facette(form_filtres.ia, vue.comptes.ia['1'] ?? 0, 'Valeurs IA à arbitrer') }}
                 {{ _self.facette(form_filtres.repli, vue.comptes.repli['1'] ?? 0, 'Contact de repli') }}
+                {{ _self.facette(form_filtres.sans_contact, vue.comptes.sans_contact['1'] ?? 0, 'Sans aucun contact') }}
             </div>
 
             <div class="flex flex-col gap-0.5 pt-2 pb-2.5">

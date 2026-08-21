@@ -48,8 +48,11 @@ final readonly class FilesATraiterRepository
                         SELECT 1 FROM pim_localisation loc
                         WHERE loc.id = f.localisation_id AND loc.ban_ecart = 1)",
             ),
+            // Fiches sans aucun contact — même définition que le filtre
+            // « sans_contact » du référentiel, où la carte atterrit.
             'repli' => (int) $this->connection->fetchOne(
-                'SELECT COUNT(DISTINCT fiche_id) FROM pim_fiche_affiliation WHERE repli = 1',
+                'SELECT COUNT(*) FROM pim_fiche f
+                 WHERE NOT EXISTS (SELECT 1 FROM pim_fiche_affiliation aff WHERE aff.fiche_id = f.id)',
             ),
         ];
     }

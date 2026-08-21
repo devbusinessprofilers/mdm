@@ -126,6 +126,11 @@ final class ReferentielFiltresType extends AbstractType
                 'label' => 'Contact de repli',
                 'required' => false,
             ])
+            ->add('sans_contact', CheckboxType::class, [
+                'label' => 'Sans aucun contact',
+                'required' => false,
+                'property_path' => 'sansContact',
+            ])
             ->add('premium', CheckboxType::class, [
                 'label' => 'Adhérent Business Premium',
                 'required' => false,
