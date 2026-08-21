@@ -33,9 +33,11 @@
 
 {% set selectedValues = this.getSelectedValues() %}
 
+{# Les choix ne voyagent plus en JSON : le <select> caché ci-dessous les
+   porte déjà, le contrôleur `select` les dérive de ses <option> au
+   branchement (le doublon pesait ~90 Ko sur une fiche Lieu). #}
 <div
     {{ stimulus_controller('select', {
-        'choices': choices,
         'defaultSelection': selectedValues,
         'multiple': multiple,
         'limit': limit,

@@ -8,8 +8,17 @@ export default class extends Controller {
     selection = [];
 
     connect() {
+        // Les choix ne voyagent plus en double (JSON + <option>) : le <select>
+        // caché reste la seule source, la liste s'en dérive au branchement.
+        // L'option vide « rien de choisi » n'est pas un choix proposable.
+        if (this.choicesValue.length === 0) {
+            this.choicesValue = Array.from(this.selectTarget.options)
+                .filter((option) => option.value !== '')
+                .map((option) => ({ value: option.value, label: option.textContent.trim() }));
+        }
+
         // La liste visible n'est plus rendue côté serveur (seul le prototype
-        // de ligne l'est) : elle est construite ici depuis le JSON des choices.
+        // de ligne l'est) : elle est construite ici depuis les choix dérivés.
         if (this.hasElementPrototypeTarget && this.listTarget.children.length === 0 && this.choicesValue.length > 0) {
             const listFragment = document.createDocumentFragment();
             this.choicesValue.forEach((choice, index) => {
