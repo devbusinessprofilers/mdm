@@ -64,12 +64,23 @@ final class PhotosConformiteCommandTest extends KernelTestCase
     {
         $conforme = $this->publishedLieu('Lieu conforme', photos: 4, withPrincipale: true);
         $incomplet = $this->publishedLieu('Lieu incomplet', photos: 2, withPrincipale: true);
+        $lieuSansPrincipale = $this->publishedLieu('Lieu sans principale', photos: 4, withPrincipale: false);
         $activite = $this->publishedActivite('Activité sans principale', photos: 2, withPrincipale: false);
         $restaurant = $this->publishedRestaurant('Restaurant sans principale', photos: 1, withPrincipale: false);
 
         $tester = $this->tester();
         $tester->execute(['--appliquer' => true]);
         self::assertSame(0, $tester->getStatusCode(), $tester->getDisplay());
+
+        // Le lieu sans principale reçoit la sienne (première photo) et reste publié.
+        self::assertSame('publiee', $this->statutEnBase($lieuSansPrincipale));
+        self::assertSame(
+            1,
+            (int) $this->connection->fetchOne(
+                "SELECT COUNT(*) FROM pim_ressource_lieu WHERE usage_code = 'PHOTO_PRINCIPALE' AND fiche_id = ?",
+                [$lieuSansPrincipale->id()->toBinary()],
+            ),
+        );
 
         // L'activité a reçu sa principale (première photo) et reste publiée.
         self::assertSame('publiee', $this->statutEnBase($activite));

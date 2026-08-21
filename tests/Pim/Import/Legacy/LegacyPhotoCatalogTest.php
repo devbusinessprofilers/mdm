@@ -101,13 +101,17 @@ final class LegacyPhotoCatalogTest extends TestCase
         }
     }
 
-    public function testNoPrincipalePromotionForLieuWithoutMaster(): void
+    public function testFirstPhotoBecomesPrincipaleForLieuWithoutMaster(): void
     {
-        $json = json_encode(['divers' => ['x/divers/1.jpg']], JSON_THROW_ON_ERROR);
-        $usages = array_map(
-            static fn (array $entry): string => $entry['usage'],
-            $this->catalog->entries($json, 'Lieu')['entries'],
-        );
-        self::assertNotContains('PHOTO_PRINCIPALE', $usages);
+        // Sans master, la première photo (la façade, prioritaire) devient la
+        // principale — même règle que les autres gammes.
+        $json = json_encode([
+            'divers' => ['x/divers/1.jpg'],
+            'facade' => ['x/facade/1.jpg'],
+        ], JSON_THROW_ON_ERROR);
+        $entries = $this->catalog->entries($json, 'Lieu')['entries'];
+        $usages = array_map(static fn (array $entry): string => $entry['usage'], $entries);
+        self::assertSame(['PHOTO_PRINCIPALE', 'PHOTO_DIVERSE'], $usages);
+        self::assertSame('x/facade/1.jpg', $entries[0]['path']);
     }
 }

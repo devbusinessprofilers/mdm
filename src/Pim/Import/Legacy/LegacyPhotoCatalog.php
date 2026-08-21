@@ -82,12 +82,12 @@ final class LegacyPhotoCatalog
                 }
             }
         }
-        // Activités, services et restaurants : les exports legacy n'ont pas
-        // toujours de catégorie master — la première photo devient alors la
-        // principale, exigée par la soumission et la diffusion marketplace.
+        // Les exports legacy n'ont pas toujours de catégorie master, Lieux
+        // compris — la première photo (façade en tête de priorité pour les
+        // Lieux) devient alors la principale, exigée par la soumission et la
+        // diffusion marketplace.
         if (
-            $isFicheBased
-            && [] !== $ordered
+            [] !== $ordered
             && !in_array('PHOTO_PRINCIPALE', array_column($ordered, 'usage'), true)
         ) {
             $ordered[0]['usage'] = 'PHOTO_PRINCIPALE';

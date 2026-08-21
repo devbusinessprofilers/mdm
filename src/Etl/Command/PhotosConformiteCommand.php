@@ -28,23 +28,22 @@ use Symfony\Component\Uid\Ulid;
  * pipeline d'import legacy (après app:legacy:import-photos) ou après un
  * changement de seuils :
  *
- *  1. activités, services et restaurants sans photo principale : la première
+ *  1. fiches sans photo principale (tous types, Lieux compris) : la première
  *     photo devient PHOTO_PRINCIPALE (les exports legacy n'ont pas toujours de
- *     catégorie master pour ces gammes) — correction technique, sans
- *     transition de workflow ;
+ *     catégorie master) — correction technique, sans transition de workflow ;
  *  2. fiches publiées ne satisfaisant pas les obligations (minimum du type et
  *     principale) : retour en cours et dépublication marketplace via
  *     PhotoPublicationGuard.
  *
  * Sans --appliquer, la commande rapporte sans rien écrire.
  */
-#[AsCommand(name: 'app:fiches:conformite-photos', description: 'Pose les photos principales manquantes (activités/services/restaurants) puis rétrograde les fiches publiées sans les photos requises.')]
+#[AsCommand(name: 'app:fiches:conformite-photos', description: 'Pose les photos principales manquantes (tous types de fiche) puis rétrograde les fiches publiées sans les photos requises.')]
 final class PhotosConformiteCommand extends Command
 {
     private const BATCH_SIZE = 100;
 
-    /** Types dont la première photo vaut principale à défaut de master legacy. */
-    private const TYPES_PRINCIPALE_AUTO = [TypeFiche::Activite, TypeFiche::ServiceEvenementiel, TypeFiche::Restaurant];
+    /** Tous les types : la première photo vaut principale à défaut de master legacy. */
+    private const TYPES_PRINCIPALE_AUTO = [TypeFiche::Lieu, TypeFiche::Restaurant, TypeFiche::Activite, TypeFiche::ServiceEvenementiel, TypeFiche::Traiteur];
 
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
@@ -69,7 +68,7 @@ final class PhotosConformiteCommand extends Command
         $principales = $this->poserPrincipales($io, $apply);
         $retrogradees = $this->retrograderNonConformes($io, $apply);
 
-        $io->section('Photos principales posées (activités/services/restaurants)');
+        $io->section('Photos principales posées');
         $io->table(['Type', 'Fiches'], self::rows($principales));
         $io->section($apply ? 'Fiches rétrogradées en cours' : 'Fiches publiées non conformes (seraient rétrogradées)');
         $io->table(['Type', 'Fiches'], self::rows($retrogradees));
@@ -81,10 +80,9 @@ final class PhotosConformiteCommand extends Command
     }
 
     /**
-     * Première photo = principale pour les activités, services et restaurants
-     * qui ont des photos mais aucune PHOTO_PRINCIPALE, quel que soit le
-     * statut : la correction sert autant la diffusion que les futures
-     * soumissions.
+     * Première photo = principale pour les fiches (tous types) qui ont des
+     * photos mais aucune PHOTO_PRINCIPALE, quel que soit le statut : la
+     * correction sert autant la diffusion que les futures soumissions.
      *
      * @return array<string, int>
      */

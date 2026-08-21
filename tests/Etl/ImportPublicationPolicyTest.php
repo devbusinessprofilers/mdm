@@ -33,8 +33,15 @@ final class ImportPublicationPolicyTest extends TestCase
         $trois = '{"master":["a.jpg"],"chambre":["b.jpg","c.jpg"]}';
         self::assertFalse($this->policy->allowsPublication(TypeFiche::Lieu, 'Hôtel', $trois));
 
-        $sansPrincipale = '{"chambre":["a.jpg","b.jpg","c.jpg","d.jpg"]}';
-        self::assertFalse($this->policy->allowsPublication(TypeFiche::Lieu, 'Hôtel', $sansPrincipale));
+        // Sans catégorie master, la première photo (façade prioritaire, sinon
+        // la première présente) devient principale : le Lieu est publiable dès
+        // qu'il atteint le minimum.
+        $sansMasterQuatre = '{"chambre":["a.jpg","b.jpg","c.jpg","d.jpg"]}';
+        self::assertTrue($this->policy->allowsPublication(TypeFiche::Lieu, 'Hôtel', $sansMasterQuatre));
+
+        // Sous le minimum, la promotion ne suffit pas.
+        $sansMasterTrois = '{"chambre":["a.jpg","b.jpg","c.jpg"]}';
+        self::assertFalse($this->policy->allowsPublication(TypeFiche::Lieu, 'Hôtel', $sansMasterTrois));
     }
 
     public function testEmptyPhotosJsonBlocksPublication(): void
