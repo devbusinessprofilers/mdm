@@ -12,7 +12,13 @@ framework:
         cookie_httponly: true
         cookie_samesite: lax
         # session.use_strict_mode (anti-fixation) est activé via Docker/php/php.ini.
-        # La durée de vie (GC) suit session.gc_maxlifetime du php.ini.
+        # Durée de session pilotée ici (source unique local + Upsun) : surcharge
+        # au runtime le session.gc_maxlifetime du php.ini (que la prod ne lit pas).
+        # Inactivité max : 4 h.
+        gc_maxlifetime: 14400
+        # Cookie persistant : la session survit à la fermeture du navigateur,
+        # dans la limite du timeout d'inactivité ci-dessus (cookie glissant).
+        cookie_lifetime: 14400
 
     # lock_factory: null sur chaque limiter : symfony/lock n'est pas installé,
     # et un seul conteneur php sert le HTTP (compteurs sur le cache filesystem).
