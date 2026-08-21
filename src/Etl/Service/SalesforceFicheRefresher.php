@@ -69,10 +69,12 @@ final class SalesforceFicheRefresher
         if (null !== $code) {
             $soql .= sprintf(" AND ID__c = '%d'", $code);
         }
-        $records = $this->salesforce->query($soql);
-        $stats = ['recus' => count($records), 'matches' => 0, 'modifies' => 0, 'inconnus' => 0];
+        // Streaming page par page : le refresh complet (dizaines de milliers de
+        // produits) ne doit jamais charger tout le jeu en mémoire (OOM worker).
+        $stats = ['recus' => 0, 'matches' => 0, 'modifies' => 0, 'inconnus' => 0];
         $lot = 0;
-        foreach ($records as $record) {
+        foreach ($this->salesforce->queryStream($soql) as $record) {
+            ++$stats['recus'];
             $codeFiche = (int) (is_scalar($record['ID__c'] ?? null) ? $record['ID__c'] : 0);
             if ($codeFiche < 1) {
                 ++$stats['inconnus'];

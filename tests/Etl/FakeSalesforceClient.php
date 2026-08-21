@@ -30,4 +30,11 @@ final class FakeSalesforceClient implements SalesforceClientInterface
 
         return $this->records;
     }
+
+    public function queryStream(string $soql): iterable
+    {
+        $this->queries[] = $soql;
+
+        yield from $this->records;
+    }
 }

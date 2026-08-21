@@ -49,8 +49,14 @@ final class SalesforceApiClient implements SalesforceClientInterface
 
     public function query(string $soql): array
     {
+        return iterator_to_array($this->queryStream($soql), false);
+    }
+
+    public function queryStream(string $soql): iterable
+    {
+        // Suit la pagination Salesforce (nextRecordsUrl) et cède chaque
+        // enregistrement : une seule page reste en mémoire à la fois.
         $url = sprintf('/services/data/%s/query?q=%s', self::API_VERSION, urlencode($soql));
-        $records = [];
         while (null !== $url) {
             $data = $this->authenticatedGet($url);
             $page = $data['records'] ?? null;
@@ -59,14 +65,12 @@ final class SalesforceApiClient implements SalesforceClientInterface
             }
             foreach ($page as $record) {
                 if (is_array($record)) {
-                    $records[] = $record;
+                    yield $record;
                 }
             }
             $next = $data['nextRecordsUrl'] ?? null;
             $url = is_string($next) && '' !== $next ? $next : null;
         }
-
-        return $records;
     }
 
     /** @return array<string, mixed> */
