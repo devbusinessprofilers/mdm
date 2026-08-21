@@ -90,7 +90,7 @@
 {# ------------------------------------------------------- Rail : filtres à facettes #}
 {% block rail %}
 <div data-liste-target="panneau"
-     class="shrink-0 flex flex-col w-[284px] transition-[width] overflow-hidden
+     class="shrink-0 flex flex-col w-[284px] transition-[width] overflow-clip
             bg-neutral-100 border-r border-neutral-200">
 
     {# État replié : bouton de déploiement + compteur de filtres actifs. #}
@@ -425,7 +425,7 @@
     {# ------------------------------------------------------------- Tableau #}
     {# `data-densite` (contrôleur `liste`) diffuse la densité par le groupe. #}
     <div class="flex-1 min-h-0 flex flex-col px-[30px] pb-4">
-        <div class="group/tableau flex-1 min-h-0 flex flex-col overflow-hidden rounded-[20px] bg-neutral-100 shadow-(--shadow)"
+        <div class="group/tableau flex-1 min-h-0 flex flex-col overflow-clip rounded-[20px] bg-neutral-100 shadow-(--shadow)"
              data-liste-target="tableau" data-densite="nominal">
             <div class="flex-1 min-h-0 overflow-auto scrollbar">
                 {% set cases = form_selection.ids.children %}

@@ -364,3 +364,9 @@ select[data-controller*="autocomplete"]:not(.tomselected) {
 .page-simple .alert, .page-simple .flash-error { padding: 12px 16px; border-radius: 8px; background: var(--color-primary-4); font-size: 0.875rem; }
 .page-simple .alert-warning { background: var(--color-peach-pastel); }
 .page-simple .flash-error, .page-simple .alert-danger { background: var(--color-error-pastel); color: var(--color-error); }
+
+/* Les cases et radios masquées (sr-only = position absolue) doivent rester
+   ancrées dans leur label : sans ancêtre positionné, elles se calent sur la
+   racine de la page, ne suivent plus le défilement de leur liste et le focus
+   au clic fait alors défiler des conteneurs sans scrollbar (page bloquée). */
+label:has(input.sr-only) { position: relative; }

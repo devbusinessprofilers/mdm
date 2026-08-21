@@ -30,10 +30,11 @@
 {% set famille_icones = { 'import': 'upload-simple', 'ocr': 'ai', 'traduction': 'list', 'media': 'images' } %}
 
 {% set a_venir = 'Fonction à venir — en développement' %}
+{% set familles_desactivees = ['import', 'ocr'] %}
 
 {# ------------------------------------------------- Rail : les outils, puis les familles du journal #}
 {% block rail %}
-    <nav class="flex flex-col shrink-0 box-border w-[328px] pl-5 pr-3 py-4 gap-4 overflow-hidden"
+    <nav class="flex flex-col shrink-0 box-border w-[328px] pl-5 pr-3 py-4 gap-4 overflow-clip"
          aria-label="Outils et familles du journal">
         <div class="flex flex-col gap-1">
             <twig:Typography variant="body" bold class="pl-2 pr-4">Outils</twig:Typography>
@@ -85,15 +86,26 @@
             <twig:Typography variant="body" bold class="pl-2 pr-4">Familles du journal</twig:Typography>
             <div class="flex flex-col">
                 {% for cle, libelle in familles %}
-                    <a href="{{ path('app_mdm_outils', { famille: cle }) }}"
-                       class="group/onglet flex items-center gap-2 box-border px-4 py-2 rounded-xs overflow-hidden cursor-pointer
-                              hover:bg-primary-4 aria-[current=page]:bg-linear-(--primary-gradient) aria-[current=page]:hover:bg-none"
-                       {{ famille == cle ? 'aria-current="page"' : '' }}>
-                        <twig:Icon name="{{ famille_icones[cle]|default('clipboard') }}" aria-hidden="true"
-                                   class="shrink-0 self-center w-4 h-4 mx-1 text-primary group-aria-[current=page]/onglet:text-neutral-100" />
-                        <twig:Typography variant="body" bold ellipsis textColor="primary-3"
-                                         class="flex-1 min-w-0 group-aria-[current=page]/onglet:text-neutral-100!">{{ libelle }}</twig:Typography>
-                    </a>
+                    {% if cle in familles_desactivees %}
+                        <span title="{{ a_venir }}" aria-disabled="true"
+                              class="flex items-center gap-2 box-border px-4 py-2 rounded-xs overflow-hidden opacity-60 cursor-not-allowed">
+                            <twig:Icon name="{{ famille_icones[cle]|default('clipboard') }}" aria-hidden="true"
+                                       class="shrink-0 self-center w-4 h-4 mx-1 text-neutral-400" />
+                            <twig:Typography variant="body" bold ellipsis textColor="neutral-500" class="flex-1 min-w-0">{{ libelle }}</twig:Typography>
+                            <twig:Typography variant="body-xs" bold textColor="neutral-500"
+                                             class="shrink-0 px-[7px] py-0.5 rounded-lg bg-neutral-200">À venir</twig:Typography>
+                        </span>
+                    {% else %}
+                        <a href="{{ path('app_mdm_outils', { famille: cle }) }}"
+                           class="group/onglet flex items-center gap-2 box-border px-4 py-2 rounded-xs overflow-hidden cursor-pointer
+                                  hover:bg-primary-4 aria-[current=page]:bg-linear-(--primary-gradient) aria-[current=page]:hover:bg-none"
+                           {{ famille == cle ? 'aria-current="page"' : '' }}>
+                            <twig:Icon name="{{ famille_icones[cle]|default('clipboard') }}" aria-hidden="true"
+                                       class="shrink-0 self-center w-4 h-4 mx-1 text-primary group-aria-[current=page]/onglet:text-neutral-100" />
+                            <twig:Typography variant="body" bold ellipsis textColor="primary-3"
+                                             class="flex-1 min-w-0 group-aria-[current=page]/onglet:text-neutral-100!">{{ libelle }}</twig:Typography>
+                        </a>
+                    {% endif %}
                 {% endfor %}
             </div>
         </div>
