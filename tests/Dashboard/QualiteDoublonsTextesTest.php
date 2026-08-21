@@ -55,6 +55,10 @@ final class QualiteDoublonsTextesTest extends WebTestCase
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'Doublons de textes');
         self::assertSelectorTextContains('table', 'Domaine copieur');
+        // Le nom de la fiche mène à la fiche complète, pas à l'édition rapide.
+        $contenu = (string) $client->getResponse()->getContent();
+        self::assertStringContainsString('/referentiel/lieux/fiche/'.$reference->fiche()->idString(), $contenu);
+        self::assertStringNotContainsString('/edition-rapide', $contenu);
 
         $form = $crawler->filter('form[action*="/qualite/doublon-texte/"][action*="/ignorer"]')->first()->form();
         $client->submit($form);

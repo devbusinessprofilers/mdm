@@ -324,7 +324,9 @@
                             <td class="px-3 py-2.5"><twig:Typography variant="body-sm" bold>{{ ligne.field_label }}</twig:Typography></td>
                             {% for cote in [ligne.signalee, ligne.reference] %}
                                 <td class="px-3 py-2.5 max-w-[320px]">
-                                    <a href="{{ path('app_mdm_edition_rapide', {id: cote.fiche_id}) }}" class="hover:underline">
+                                    <a href="{{ cote.type == 'lieu'
+                                        ? path('app_mdm_fiche_lieu', {id: cote.fiche_id, section: 1})
+                                        : path('app_mdm_fiche_gamme', {gamme: cote.type == 'restaurant' ? 'restaurants' : (cote.type == 'activite' ? 'activites' : 'services'), id: cote.fiche_id, section: 1}) }}" class="hover:underline">
                                         <twig:Typography variant="body-sm" textColor="primary-3" bold element="span">{{ cote.label ?? 'Sans libellé' }}</twig:Typography>
                                     </a>
                                     {% if cote.snippet %}<twig:Typography variant="body-xs" textColor="neutral-500" class="text-pretty">{{ cote.snippet }}</twig:Typography>{% endif %}
