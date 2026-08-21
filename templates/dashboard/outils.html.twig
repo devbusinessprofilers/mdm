@@ -7,22 +7,6 @@
     journal unifié des traitements.
 #}
 
-{% macro indicateur(libelle, valeur, note, icone, fond) %}
-    <div class="flex flex-col flex-1 basis-48 min-w-0 box-border gap-1.5 px-5 py-4
-                rounded-sm bg-neutral-100 shadow-(--shadow)">
-        <div class="flex items-center gap-2">
-            {# Le fond de la pastille dit la nature du compteur, pas sa valeur. #}
-            <span class="flex items-center justify-center shrink-0 w-7 h-7 rounded-lg {{ fond }}">
-                <twig:Icon name="{{ icone }}" aria-hidden="true" class="w-4 h-4 text-primary-3" />
-            </span>
-            <twig:Typography variant="body-xs" bold textColor="neutral-500" ellipsis
-                             class="min-w-0 tracking-[0.3px] uppercase">{{ libelle }}</twig:Typography>
-        </div>
-        <twig:Typography variant="subtitle" class="font-[700]!">{{ valeur }}</twig:Typography>
-        <twig:Typography variant="body-sm" textColor="neutral-500">{{ note }}</twig:Typography>
-    </div>
-{% endmacro %}
-
 {% block title %}Outils · Journal des traitements{% endblock %}
 
 {% set famille_libelles = familles %}
@@ -56,10 +40,12 @@
                                class="shrink-0 self-center w-4 h-4 mx-1 text-primary group-aria-[current=page]/onglet:text-neutral-100" />
                     <twig:Typography variant="body" bold ellipsis textColor="primary-3"
                                      class="flex-1 min-w-0 group-aria-[current=page]/onglet:text-neutral-100!">Journal des traitements</twig:Typography>
+                    {# Le journal est plafonné : « 50+ » quand il y a davantage de traitements. #}
                     <twig:Typography variant="body-xs" bold textColor="neutral-500"
+                                     title="{{ lignes|length >= journal_limit|default(50) ? 'Journal plafonné aux ' ~ journal_limit|default(50) ~ ' traitements les plus récents' : '' }}"
                                      class="shrink-0 px-[7px] py-0.5 rounded-lg bg-neutral-200
                                             group-aria-[current=page]/onglet:bg-neutral-100
-                                            group-aria-[current=page]/onglet:text-primary-3!">{{ lignes|length }}</twig:Typography>
+                                            group-aria-[current=page]/onglet:text-primary-3!">{{ lignes|length }}{{ lignes|length >= journal_limit|default(50) ? '+' : '' }}</twig:Typography>
                 </a>
 
                 {# Campagnes IA : pas de back → grisée. #}
@@ -145,16 +131,10 @@
 
     <div class="flex-1 min-h-0 flex flex-col gap-4 px-10 pb-8">
 
-        {# ---- Indicateurs maquette, calculés sur le journal courant. ---- #}
+        {# ---- Cartes de synthèse : état de toutes les files Messenger, ----
+             ---- rechargées seules toutes les ~10 s (turbo-frame + poll). ---- #}
         {% set en_erreur = lignes|filter(l => l.statut in statuts_erreur)|length %}
-        {% set en_cours = lignes|filter(l => l.statut in ['en_cours', 'processing', 'running', 'en_attente', 'pending'])|length %}
-        <div class="shrink-0 flex flex-row gap-3.5 flex-wrap">
-            {{ _self.indicateur('Traitements', lignes|length, 'journal courant', 'info-circle', 'bg-neutral-200') }}
-            {{ _self.indicateur('En cours ou en file', en_cours, 'suivis en direct', 'spinner', 'bg-primary-4') }}
-            {{ _self.indicateur('Terminés', lignes|length - en_erreur - en_cours, 'sans erreur bloquante', 'ok-circle', 'bg-success-pastel') }}
-            {{ _self.indicateur('Avec erreurs', en_erreur, 'détail ligne à ligne', 'warning', 'bg-error-pastel') }}
-            {{ _self.indicateur('Outbox', outbox_en_attente, 'messages en attente', 'paper-plane', 'bg-peach-pastel') }}
-        </div>
+        {{ include('dashboard/_outils_indicateurs.html.twig') }}
 
         {# ---- Tableau maquette : Origine / Traitement / État / Erreur / Quand / lien. ---- #}
         {% set grille = 'grid gap-4 items-center px-4 grid-cols-[repeat(auto-fit,minmax(0,1fr))]' %}

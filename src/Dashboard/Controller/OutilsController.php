@@ -30,6 +30,26 @@ final class OutilsController extends AbstractController
             'famille' => $famille,
             'erreurs' => $erreurs,
             'outbox_en_attente' => $journal->outboxEnAttente(),
+            'etat_files' => $journal->etatFilesMessenger(),
+            'journal_limit' => JournalTraitementsRepository::JOURNAL_LIMIT,
         ]);
+    }
+
+    /**
+     * Fragment des cartes de synthèse, rechargé seul (turbo-frame) toutes les
+     * ~10 s pour suivre en direct l'état des files Messenger.
+     */
+    #[Route('/outils/indicateurs', name: 'app_mdm_outils_indicateurs', methods: ['GET'])]
+    public function indicateurs(JournalTraitementsRepository $journal): Response
+    {
+        $response = $this->render('dashboard/_outils_indicateurs.html.twig', [
+            'outbox_en_attente' => $journal->outboxEnAttente(),
+            'etat_files' => $journal->etatFilesMessenger(),
+        ]);
+        // Fragment rafraîchi en continu : jamais servi depuis un cache.
+        $response->setPrivate();
+        $response->headers->addCacheControlDirective('no-store');
+
+        return $response;
     }
 }

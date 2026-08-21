@@ -1,0 +1,43 @@
+{#
+    Cartes de synthèse de l'écran Outils : l'état de toutes les files Messenger
+    du MDM (transport Doctrine), par état réel du message. Rendu dans une
+    turbo-frame rechargée seule toutes les ~10 s (voir poll_controller). Les
+    messages traités sont supprimés de la file : pas de « terminés » à compter.
+#}
+{% macro indicateur(libelle, valeur, note, icone, fond, icone_classe = '') %}
+    <div class="flex flex-col flex-1 basis-48 min-w-0 box-border gap-1.5 px-5 py-4
+                rounded-sm bg-neutral-100 shadow-(--shadow)">
+        <div class="flex items-center gap-2">
+            {# Le fond de la pastille dit la nature du compteur, pas sa valeur. #}
+            <span class="flex items-center justify-center shrink-0 w-7 h-7 rounded-lg {{ fond }}">
+                <twig:Icon name="{{ icone }}" aria-hidden="true" class="w-4 h-4 text-primary-3 {{ icone_classe }}" />
+            </span>
+            <twig:Typography variant="body-xs" bold textColor="neutral-500" ellipsis
+                             class="min-w-0 tracking-[0.3px] uppercase">{{ libelle }}</twig:Typography>
+        </div>
+        <twig:Typography variant="subtitle" class="font-[700]!">{{ valeur }}</twig:Typography>
+        <twig:Typography variant="body-sm" textColor="neutral-500">{{ note }}</twig:Typography>
+    </div>
+{% endmacro %}
+
+<turbo-frame id="outils-indicateurs" class="shrink-0 flex flex-row gap-3.5 flex-wrap"
+             data-controller="poll"
+             data-poll-url-value="{{ path('app_mdm_outils_indicateurs') }}"
+             data-poll-interval-value="10000">
+    {# Icônes animées quand la file n'est pas vide : rotation lente pour l'attente,
+       plus rapide pour le traitement — on voit que ça défile vraiment. #}
+    {{ _self.indicateur('En file', etat_files.en_file, 'en attente de traitement', 'spinner', 'bg-neutral-200',
+        etat_files.en_file > 0 ? 'animate-spin [animation-duration:3s]' : '') }}
+    {{ _self.indicateur('En cours', etat_files.en_cours, 'pris par un worker', 'spinner', 'bg-primary-4',
+        etat_files.en_cours > 0 ? 'animate-spin [animation-duration:1s]' : '') }}
+    {{ _self.indicateur('Planifiés', etat_files.planifies, 'retry programmé', 'arrow-clockwise', 'bg-peach-pastel') }}
+    {% if is_granted('ROLE_ADMIN') %}
+        <a href="{{ path('app_dashboard_traitements_en_echec') }}"
+           class="contents [&>div]:hover:bg-primary-5 [&>div]:transition-colors">
+            {{ _self.indicateur('En erreur', etat_files.echecs, 'voir le détail', 'warning', 'bg-error-pastel') }}
+        </a>
+    {% else %}
+        {{ _self.indicateur('En erreur', etat_files.echecs, 'détail réservé aux admins', 'warning', 'bg-error-pastel') }}
+    {% endif %}
+    {{ _self.indicateur('Outbox', outbox_en_attente, 'en attente de départ', 'paper-plane', 'bg-primary-5') }}
+</turbo-frame>

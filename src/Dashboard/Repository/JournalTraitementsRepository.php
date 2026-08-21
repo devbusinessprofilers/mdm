@@ -27,6 +27,9 @@ final readonly class JournalTraitementsRepository
         'outbox' => 'Outbox',
     ];
 
+    /** Nombre maximum de lignes retournées par le journal (plafond d'affichage). */
+    public const JOURNAL_LIMIT = 50;
+
     private const STATUTS_ERREUR = ['echoue', 'termine_avec_erreurs', 'failed', 'en_erreur'];
 
     public function __construct(private Connection $connection)
@@ -43,7 +46,7 @@ final readonly class JournalTraitementsRepository
      *     lien: ?array{route: string, params: array<string, string>},
      * }>
      */
-    public function journal(?string $famille = null, bool $seulementErreurs = false, int $limit = 50): array
+    public function journal(?string $famille = null, bool $seulementErreurs = false, int $limit = self::JOURNAL_LIMIT): array
     {
         $lignes = [];
         if (null === $famille || 'import' === $famille) {
@@ -259,6 +262,45 @@ final readonly class JournalTraitementsRepository
         return (int) $this->connection->fetchOne(
             "SELECT COUNT(*) FROM outbox_message WHERE status = 'pending'",
         );
+    }
+
+    /**
+     * État de toutes les files Messenger (transport Doctrine, table unique
+     * `messenger_messages`), par état réel du message. Les quatre compteurs
+     * partitionnent la table ; les messages traités sont supprimés, il n'y a
+     * donc pas de « terminés » à compter. `available_at` est stocké en UTC par
+     * le transport.
+     *
+     * - en_file   : en attente, pas encore pris par un worker
+     * - en_cours  : réservé par un worker (livré, pas encore acquitté)
+     * - planifies : en attente d'un retry (disponible dans le futur)
+     * - echecs    : DLQ `failed`
+     *
+     * @return array{en_file: int, en_cours: int, planifies: int, echecs: int}
+     */
+    public function etatFilesMessenger(): array
+    {
+        try {
+            $row = $this->connection->fetchAssociative(
+                "SELECT
+                    COALESCE(SUM(queue_name <> 'failed' AND delivered_at IS NULL AND available_at <= UTC_TIMESTAMP()), 0) AS en_file,
+                    COALESCE(SUM(queue_name <> 'failed' AND delivered_at IS NOT NULL), 0) AS en_cours,
+                    COALESCE(SUM(queue_name <> 'failed' AND delivered_at IS NULL AND available_at > UTC_TIMESTAMP()), 0) AS planifies,
+                    COALESCE(SUM(queue_name = 'failed'), 0) AS echecs
+                 FROM messenger_messages",
+            );
+        } catch (\Throwable) {
+            // Transport Doctrine en auto_setup=0 : la table peut manquer (base
+            // neuve). L'écran Outils ne doit jamais tomber pour autant.
+            return ['en_file' => 0, 'en_cours' => 0, 'planifies' => 0, 'echecs' => 0];
+        }
+
+        return [
+            'en_file' => (int) ($row['en_file'] ?? 0),
+            'en_cours' => (int) ($row['en_cours'] ?? 0),
+            'planifies' => (int) ($row['planifies'] ?? 0),
+            'echecs' => (int) ($row['echecs'] ?? 0),
+        ];
     }
 
     private static function ulid(mixed $binaire): string
