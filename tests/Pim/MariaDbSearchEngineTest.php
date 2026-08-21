@@ -13,7 +13,6 @@ use App\Pim\Enum\StatutFiche;
 use App\Pim\Enum\TypeFiche;
 use App\Pim\Repository\LieuRepository;
 use App\Pim\Service\FicheSearchIndexer;
-use App\Pim\Service\GlobalSearchProvider;
 use App\Pim\Service\MariaDbSearchEngine;
 use App\Shared\Search\SearchQuery;
 use Doctrine\DBAL\Connection;
@@ -110,25 +109,6 @@ final class MariaDbSearchEngineTest extends KernelTestCase
         self::assertSame(0, $emptyPage->totalCount);
     }
 
-    public function testProviderRejectsInvalidCountryAndCompleteness(): void
-    {
-        $provider = self::getContainer()->get(GlobalSearchProvider::class);
-
-        foreach ([
-            static fn () => $provider->search('palais', country: 'France'),
-            static fn () => $provider->search('palais', completenessMin: -1),
-            static fn () => $provider->search('palais', completenessMax: 101),
-            static fn () => $provider->search('palais', completenessMin: 60, completenessMax: 40),
-        ] as $call) {
-            try {
-                $call();
-                self::fail('Expected an InvalidArgumentException.');
-            } catch (\InvalidArgumentException) {
-                $this->addToAssertionCount(1);
-            }
-        }
-    }
-
     public function testScoreCursorDoesNotDuplicateOrOmitResults(): void
     {
         $expectedIds = [];
@@ -216,7 +196,7 @@ final class MariaDbSearchEngineTest extends KernelTestCase
         ));
     }
 
-    public function testGlobalSearchHydratesAllSupportedTypesFiltersAndPaginates(): void
+    public function testMultiTypeSearchHydratesAllSupportedTypesAndPaginates(): void
     {
         $lieu = new Lieu();
         $lieu->changeLabel('Horizon lieu');
@@ -247,44 +227,37 @@ final class MariaDbSearchEngineTest extends KernelTestCase
         }
         $this->entityManager->flush();
 
-        $provider = self::getContainer()->get(GlobalSearchProvider::class);
-        self::assertInstanceOf(GlobalSearchProvider::class, $provider);
-        $rawPage = $this->searchEngine->search(new SearchQuery('horizon', [
+        $allTypes = [
             'type' => [
                 TypeFiche::Lieu->value,
                 TypeFiche::Activite->value,
                 TypeFiche::Restaurant->value,
                 TypeFiche::ServiceEvenementiel->value,
             ],
-        ]));
-        $globalPage = $provider->search('horizon');
+        ];
+        $rawPage = $this->searchEngine->search(new SearchQuery('horizon', $allTypes));
 
-        self::assertSame(4, $globalPage->totalCount);
-        self::assertSame(
-            $this->ids($rawPage->results),
-            array_map(static fn ($result): string => $result->item->id, $globalPage->results),
-        );
+        self::assertSame(4, $rawPage->totalCount);
+        $itemsById = [];
+        foreach (self::getContainer()->get(\App\Pim\Repository\FicheRepository::class)->findGlobalSearchItemsByIds($this->ids($rawPage->results)) as $item) {
+            $itemsById[$item->id] = $item;
+        }
         self::assertEqualsCanonicalizing(
             [TypeFiche::Lieu, TypeFiche::Activite, TypeFiche::Restaurant, TypeFiche::ServiceEvenementiel],
-            array_map(static fn ($result): TypeFiche => $result->item->type, $globalPage->results),
+            array_map(static fn ($item): TypeFiche => $item->type, array_values($itemsById)),
         );
-        foreach ($globalPage->results as $result) {
-            self::assertStringContainsString($result->item->id, $result->showUrl);
-            // « voir » et « modifier » mènent tous deux à l'éditeur MDM.
-            self::assertSame($result->showUrl, $result->editUrl);
-        }
 
-        $codePage = $provider->search((string) $lieu->code());
-        self::assertSame($lieu->id(), $codePage->results[0]->item->id ?? null);
-
-        $archivePage = $provider->search('horizon', TypeFiche::Restaurant, StatutFiche::Archivee);
-        self::assertSame([$restaurant->id()], array_map(static fn ($result): string => $result->item->id, $archivePage->results));
+        $archivePage = $this->searchEngine->search(new SearchQuery('horizon', [
+            'type' => TypeFiche::Restaurant->value,
+            'status' => StatutFiche::Archivee->value,
+        ]));
+        self::assertSame([$restaurant->id()], $this->ids($archivePage->results));
 
         $pagedIds = [];
         $cursor = null;
         do {
-            $page = $provider->search('horizon', limit: 2, cursor: $cursor);
-            $pagedIds = [...$pagedIds, ...array_map(static fn ($result): string => $result->item->id, $page->results)];
+            $page = $this->searchEngine->search(new SearchQuery('horizon', $allTypes, 2, $cursor));
+            $pagedIds = [...$pagedIds, ...$this->ids($page->results)];
             $cursor = $page->nextCursor;
         } while (null !== $cursor);
         self::assertCount(4, $pagedIds);

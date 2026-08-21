@@ -64,8 +64,9 @@ traductions.
 
 `FicheSearchIndexer` construit `pim_fiche_search` après les changements utiles.
 `MariaDbSearchEngine` utilise la recherche FULLTEXT MariaDB, une priorité sur le
-code exact, des filtres par type/statut et une pagination par curseur. La route
-`/recherche` interroge simultanément les quatre domaines opérationnels.
+code exact, des filtres par type/statut et une pagination par curseur. La
+recherche de l'en-tête atterrit sur le référentiel (`f[q]`), qui interroge les
+quatre domaines opérationnels.
 `FicheDuplicateDetector` signale les fiches candidates au doublon.
 
 ## Diffusion, relances et collaborateurs

@@ -20,7 +20,8 @@ final class AdminPageCatalogTest extends KernelTestCase
         self::assertArrayHasKey('API Platform', $groups);
         $names = array_merge(...array_values(array_map(static fn (array $pages): array => array_column($pages, 'name'), $groups)));
         self::assertContains('app_pim_admin', $names);
-        self::assertContains('app_pim_global_search', $names);
+        // La page /recherche a été retirée : la recherche passe par le référentiel.
+        self::assertNotContains('app_pim_global_search', $names);
         self::assertContains('app_pim_restaurant_history', $names);
         self::assertContains('app_pim_service_history', $names);
         // Les vues « voir »/« modifier » ont fusionné dans l'éditeur MDM.
