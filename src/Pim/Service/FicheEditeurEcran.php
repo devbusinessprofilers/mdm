@@ -275,6 +275,7 @@ final readonly class FicheEditeurEcran
                 'statut' => $statut,
                 'completude' => $entite->completeness(),
                 'completude_canaux' => $entite->completenessByChannel(),
+                'message_refus' => $fiche->validationFeedback(),
             ],
             'liens' => [
                 // Le dépôt et la revue vivent dans la section extraction de l'éditeur.

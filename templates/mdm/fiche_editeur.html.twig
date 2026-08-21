@@ -180,6 +180,10 @@
                     <twig:Typography variant="body" bold class="shrink-0">Complété à : {{ entete.completude }} %</twig:Typography>
                     <twig:ProgressBar :value="entete.completude" large class="grow min-w-0" />
                 </div>
+                {# Motif de refus : visible tant que la fiche n'est pas re-soumise ni validée. #}
+                {% if entete.message_refus %}
+                    <twig:Typography variant="body-sm" textColor="error" bold class="mt-1">Fiche refusée : {{ entete.message_refus }}</twig:Typography>
+                {% endif %}
                 {# Référence en clair : point d'ancrage des tests, hors mise en page maquette. #}
                 <p class="page-description sr-only">{{ entete.reference }} · v{{ entete.version }} · {{ statut_libelles[entete.statut] ?? entete.statut }} · Complété à {{ entete.completude }} %</p>
             </div>
