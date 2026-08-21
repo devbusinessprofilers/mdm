@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Pim\Form;
 
 use App\Pim\Entity\Lieu\Salle;
+use App\Pim\Service\PhotoUsageCatalog;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
@@ -24,11 +25,7 @@ final class LieuPhotoMetadataType extends AbstractType
     {
         // Hors fiche Lieu (avec_salles = false), pas d'association de salle :
         // les catégories liées aux salles disparaissent avec le champ.
-        $usages = [
-            'Photo principale' => 'PHOTO_PRINCIPALE', 'Façade' => 'PHOTO_FACADE', 'Chambre' => 'PHOTO_CHAMBRE',
-            'Restauration' => 'PHOTO_RESTAURATION', 'Salle de réunion' => 'CONFIG_PHOTO_SALLE', 'Divers' => 'PHOTO_DIVERSE',
-            'Plan de salle' => 'CONFIG_PLAN_SALLE', 'Team building externe' => 'LOISIR_EXTERNE_PHOTO', 'Photos du lieu' => 'PHOTO',
-        ];
+        $usages = array_flip(PhotoUsageCatalog::LABELS);
         if (!$options['avec_salles']) {
             unset($usages['Salle de réunion'], $usages['Plan de salle']);
         }

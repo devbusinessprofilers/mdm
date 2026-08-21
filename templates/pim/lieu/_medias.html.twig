@@ -45,6 +45,7 @@
             #}
                 <div class="flex flex-row flex-wrap gap-4 py-4" data-lieu-media-target="list">
                     {% for photo in photos %}
+                        {% set principale = photo.resource.usage == 'PHOTO_PRINCIPALE' %}
                         <button type="button" title="Modifier les paramètres de la photo"
                                 data-lieu-media-target="item" data-id="{{ photo.resource.id }}" draggable="true"
                                 data-controller="modal-trigger-button"
@@ -52,10 +53,11 @@
                                 data-action="modal-trigger-button#open dragstart->lieu-media#dragstart dragover->lieu-media#dragoverItem drop->lieu-media#dropItem"
                                 class="relative w-[152px] h-[104px] shrink-0 flex items-center justify-center rounded-xs
                                        overflow-hidden cursor-pointer bg-primary-5 inset-ring-1
-                                       {{ loop.first ? 'inset-ring-primary' : 'inset-ring-neutral-300' }}">
-                            {% if loop.first %}
-                                <span class="absolute top-2 left-2 z-1 px-2 py-0.5 rounded-full bg-primary">
-                                    <twig:Typography variant="body-xs" textColor="neutral-100" bold>Photo principale</twig:Typography>
+                                       {{ principale ? 'inset-ring-primary' : 'inset-ring-neutral-300' }}">
+                            {% if photo.usage_label %}
+                                {# La vraie catégorie de la photo ; la principale garde sa mise en avant. #}
+                                <span class="absolute top-2 left-2 z-1 px-2 py-0.5 rounded-full {{ principale ? 'bg-primary' : 'bg-neutral-100/85' }}">
+                                    <twig:Typography variant="body-xs" textColor="{{ principale ? 'neutral-100' : 'neutral-500' }}" bold>{{ photo.usage_label }}</twig:Typography>
                                 </span>
                             {% endif %}
                             {% if photo.thumbnail_url %}

@@ -24,7 +24,6 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 final readonly class LieuPhotoManager
 {
-    private const USAGES = ['PHOTO_PRINCIPALE', 'PHOTO_FACADE', 'PHOTO_CHAMBRE', 'PHOTO_RESTAURATION', 'CONFIG_PHOTO_SALLE', 'PHOTO_DIVERSE', 'CONFIG_PLAN_SALLE', 'LOISIR_EXTERNE_PHOTO', 'PHOTO'];
 
     public function __construct(
         private LieuImageUploader $uploader,
@@ -77,6 +76,15 @@ final readonly class LieuPhotoManager
         $byId = [];
         foreach ($photos as $photo) { $byId[$photo->id()] = $photo; }
         foreach ($ids as $position => $id) { $byId[$id]->changePosition($position); }
+        // Mettre une photo en premier la désigne photo principale : l'ancienne
+        // principale redescend en catégorie neutre, l'invariant « une seule
+        // principale » est préservé.
+        if ([] !== $ids && PhotoUsageCatalog::PRINCIPALE !== $byId[$ids[0]]->usage()) {
+            foreach ($photos as $photo) {
+                if (PhotoUsageCatalog::PRINCIPALE === $photo->usage()) { $photo->changeUsage(PhotoUsageCatalog::DEFAUT); }
+            }
+            $byId[$ids[0]]->changeUsage(PhotoUsageCatalog::PRINCIPALE);
+        }
         $this->changed($lieu);
 
         return count($ids);
@@ -86,10 +94,12 @@ final readonly class LieuPhotoManager
     public function update(RessourceLieu $resource, Lieu|Restaurant|Activite|ServiceEvenementiel $lieu, array $data, string $actor): void
     {
         $usage = (string) ($data['usage'] ?? '');
-        if (!in_array($usage, self::USAGES, true)) { throw new \DomainException('Catégorie de photo invalide.'); }
-        if ('PHOTO_PRINCIPALE' === $usage) {
+        if (!isset(PhotoUsageCatalog::LABELS[$usage])) { throw new \DomainException('Catégorie de photo invalide.'); }
+        if (PhotoUsageCatalog::PRINCIPALE === $usage) {
+            // Désigner une nouvelle principale rétrograde l'ancienne en
+            // catégorie neutre : une seule principale par fiche, sans erreur.
             foreach ($this->photos($lieu) as $other) {
-                if ($other !== $resource && 'PHOTO_PRINCIPALE' === $other->usage()) { throw new \DomainException('Une seule photo principale est autorisée par lieu.'); }
+                if ($other !== $resource && PhotoUsageCatalog::PRINCIPALE === $other->usage()) { $other->changeUsage(PhotoUsageCatalog::DEFAUT); }
             }
         }
         $salle = null;

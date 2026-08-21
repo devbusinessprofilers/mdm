@@ -9,6 +9,7 @@ use App\Dam\Repository\MediaAssetRepository;
 use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Enum\NatureRessource;
+use App\Pim\Service\PhotoUsageCatalog;
 use App\Shared\Service\PrivateObjectStorageInterface;
 use League\Flysystem\FilesystemException;
 
@@ -27,7 +28,8 @@ final readonly class LieuPhotoPresenter
      *     asset: MediaAsset|null,
      *     url: string|null,
      *     thumbnail_url: string|null,
-     *     variants: list<array{name: string, width: int, height: int, url: string|null}>
+     *     variants: list<array{name: string, width: int, height: int, url: string|null}>,
+     *     usage_label: string
      * }>
      */
     public function photos(Lieu $lieu): array
@@ -40,12 +42,19 @@ final readonly class LieuPhotoPresenter
                 ): bool => NatureRessource::Photo === $resource->nature(),
             ),
         );
+        // La photo principale s'affiche toujours en premier, même si sa
+        // position en base ne la place pas en tête (données historiques).
         usort(
             $resources,
             static fn (RessourceLieu $a, RessourceLieu $b): int => [
+                PhotoUsageCatalog::PRINCIPALE === $a->usage() ? 0 : 1,
                 $a->position(),
                 $a->id(),
-            ] <=> [$b->position(), $b->id()],
+            ] <=> [
+                PhotoUsageCatalog::PRINCIPALE === $b->usage() ? 0 : 1,
+                $b->position(),
+                $b->id(),
+            ],
         );
         $assets = [];
         foreach (
@@ -91,6 +100,7 @@ final readonly class LieuPhotoPresenter
                 'url' => $url,
                 'thumbnail_url' => $thumbnail ?? $url,
                 'variants' => $variants,
+                'usage_label' => PhotoUsageCatalog::label($resource->usage()),
             ];
         }
 
