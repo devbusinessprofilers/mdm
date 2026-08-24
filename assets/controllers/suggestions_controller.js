@@ -7,10 +7,12 @@ import { Controller } from '@hotwired/stimulus';
  * Les vraies cases `suggestion_selection[ids][]` restent le champ soumis.
  */
 export default class extends Controller {
-    static targets = ['tab', 'panel', 'avert'];
+    static targets = ['tab', 'panel', 'avert', 'accepter', 'ignorer'];
 
     connect() {
         this.enAttente = null;
+        const actif = this.panneauActif;
+        this.majActions(actif ? actif.dataset.cle : null);
     }
 
     get panneauActif() {
@@ -52,10 +54,29 @@ export default class extends Controller {
 
     basculer(cle) {
         this.panelTargets.forEach((p) => p.classList.toggle('hidden', p.dataset.cle !== cle));
-        this.tabTargets.forEach((t) => t.setAttribute(
-            'aria-selected',
-            t.dataset.suggestionsCleParam === cle ? 'true' : 'false',
-        ));
+        // Chaque onglet a deux variantes (outline / primary) : on montre la
+        // primary de l'onglet actif et l'outline des autres.
+        this.tabTargets.forEach((t) => {
+            const actif = t.dataset.suggestionsCleParam === cle;
+            const outline = t.querySelector('[data-role="tab-outline"]');
+            const primary = t.querySelector('[data-role="tab-primary"]');
+            if (outline) { outline.classList.toggle('hidden', actif); }
+            if (primary) { primary.classList.toggle('hidden', !actif); }
+        });
+        this.majActions(cle);
+    }
+
+    /* Les boutons Accepter/Ignorer partagés pointent vers l'endpoint de l'onglet actif. */
+    majActions(cle) {
+        if (!cle || !this.hasAccepterTarget) {
+            return;
+        }
+        const tab = this.tabTargets.find((t) => t.dataset.suggestionsCleParam === cle);
+        if (!tab) {
+            return;
+        }
+        if (tab.dataset.accepter) { this.accepterTarget.formAction = tab.dataset.accepter; }
+        if (this.hasIgnorerTarget && tab.dataset.ignorer) { this.ignorerTarget.formAction = tab.dataset.ignorer; }
     }
 
     basculerTout(event) {

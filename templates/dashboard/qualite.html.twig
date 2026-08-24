@@ -340,28 +340,41 @@
             </div>
             <twig:Typography variant="body-sm" textColor="neutral-500">Corrections et enrichissements proposés automatiquement, par source. Cochez les lignes puis appliquez ou ignorez la sélection ; la fiche reste modifiable via « Ouvrir ».</twig:Typography>
 
-            {# Onglets : bascule côté client, sans reload. #}
-            <nav class="flex flex-wrap items-center gap-2" role="tablist" aria-label="Source des suggestions">
-                {% for o in sug_onglets %}
-                    <button type="button" role="tab" aria-selected="{{ o.cle == sug_actif ? 'true' : 'false' }}"
-                            data-suggestions-target="tab" data-action="suggestions#activer" data-suggestions-cle-param="{{ o.cle }}"
-                            class="px-3 py-1.5 rounded-full text-sm cursor-pointer inset-ring-1 inset-ring-primary text-primary-3
-                                   aria-selected:bg-primary aria-selected:text-neutral-100! aria-selected:inset-ring-0">{{ o.label }} ({{ o.compte }})</button>
-                {% endfor %}
-            </nav>
-
             {{ form_start(sug_form, { action: path('app_mdm_qualite_suggestions', {decision: 'accepter', src: sug_actif}), attr: { class: 'flex flex-col gap-3' } }) }}
                 {% set cases = sug_form.ids.children %}
+
+                {# Onglets à gauche (bascule client, sans reload), actions à droite sur la même ligne.
+                   Les boutons Accepter/Ignorer sont partagés : leur formaction suit l'onglet actif (contrôleur). #}
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <nav class="flex flex-wrap items-center gap-2" role="tablist" aria-label="Source des suggestions">
+                        {% for o in sug_onglets %}
+                            {# Deux variantes du composant Button (outline / primary) : la bascule client montre l'une, cache l'autre — design identique aux autres boutons. #}
+                            <span data-suggestions-target="tab" data-suggestions-cle-param="{{ o.cle }}" class="contents"
+                                  data-accepter="{{ path('app_mdm_qualite_suggestions', {decision: 'accepter', src: o.cle, page: o.page}) }}"
+                                  data-ignorer="{{ path('app_mdm_qualite_suggestions', {decision: 'ignorer', src: o.cle, page: o.page}) }}">
+                                <twig:Button variant="outline" size="sm" type="button" data-role="tab-outline"
+                                             data-action="suggestions#activer" data-suggestions-cle-param="{{ o.cle }}"
+                                             class="{{ o.cle == sug_actif ? 'hidden' : '' }}">{{ o.label }} ({{ o.compte }})</twig:Button>
+                                <twig:Button variant="primary" size="sm" type="button" data-role="tab-primary"
+                                             data-action="suggestions#activer" data-suggestions-cle-param="{{ o.cle }}"
+                                             class="{{ o.cle == sug_actif ? '' : 'hidden' }}">{{ o.label }} ({{ o.compte }})</twig:Button>
+                            </span>
+                        {% endfor %}
+                    </nav>
+                    {% if is_granted('ROLE_BP_VALIDATOR') %}
+                        <div class="flex items-center gap-2 shrink-0">
+                            <twig:Button variant="primary" size="sm" icon="check-circle" type="submit"
+                                         data-suggestions-target="accepter"
+                                         formaction="{{ path('app_mdm_qualite_suggestions', {decision: 'accepter', src: sug_actif}) }}">Accepter la sélection</twig:Button>
+                            <twig:Button variant="outline" size="sm" type="submit"
+                                         data-suggestions-target="ignorer"
+                                         formaction="{{ path('app_mdm_qualite_suggestions', {decision: 'ignorer', src: sug_actif}) }}">Ignorer la sélection</twig:Button>
+                        </div>
+                    {% endif %}
+                </div>
+
                 {% for o in sug_onglets %}
                     <div data-suggestions-target="panel" data-cle="{{ o.cle }}" class="flex flex-col gap-3 {{ o.cle == sug_actif ? '' : 'hidden' }}">
-                        {% if is_granted('ROLE_BP_VALIDATOR') and o.lignes is not empty %}
-                            <div class="flex items-center gap-2">
-                                <twig:Button variant="primary" size="sm" icon="check-circle" type="submit"
-                                             formaction="{{ path('app_mdm_qualite_suggestions', {decision: 'accepter', src: o.cle, page: o.page}) }}">Accepter la sélection</twig:Button>
-                                <twig:Button variant="outline" size="sm" type="submit"
-                                             formaction="{{ path('app_mdm_qualite_suggestions', {decision: 'ignorer', src: o.cle, page: o.page}) }}">Ignorer la sélection</twig:Button>
-                            </div>
-                        {% endif %}
                         <div class="overflow-x-auto rounded-md inset-ring-1 inset-ring-neutral-200">
                             <table class="w-full border-collapse">
                                 <thead class="bg-primary-5"><tr class="text-left h-10 border-b border-neutral-200">
