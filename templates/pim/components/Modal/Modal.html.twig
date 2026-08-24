@@ -6,7 +6,7 @@
     data-action="click->modal#backdrop keydown.esc@window->modal#escape"
 >
     {# Défilement vertical seul, à la barre fine du système — pas d'ascenseur horizontal. #}
-    <div class="relative max-w-80/100 max-h-80/100 overflow-y-auto overflow-x-hidden scrollbar bg-neutral-100 p-14 rounded-md">
+    <div class="relative max-w-80/100 max-h-80/100 overflow-y-auto overflow-x-hidden scrollbar bg-neutral-100 p-14 rounded-l-md rounded-r-xs">
         <button type="button" aria-label="Fermer" data-action="modal#close"
                 class="absolute top-4 right-4 p-1 cursor-pointer text-neutral-500 hover:text-neutral-900">
             <twig:Icon name="cross" class="w-5 h-5" />

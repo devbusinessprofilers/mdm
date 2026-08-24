@@ -20,5 +20,13 @@ final readonly class EntrepriseInfo
         public ?string $longitude = null,
         public ?string $dirigeantPrenom = null,
         public ?string $dirigeantNom = null,
+        /** État administratif de l'établissement : 'A' (actif), 'F'/'C' (cessé), null si inconnu. */
+        public ?string $etatAdministratif = null,
     ) {}
+
+    /** Vrai quand l'API a explicitement renvoyé un établissement cessé. */
+    public function estCesse(): bool
+    {
+        return null !== $this->etatAdministratif && 'A' !== $this->etatAdministratif;
+    }
 }

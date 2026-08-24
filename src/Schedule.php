@@ -3,7 +3,9 @@
 namespace App;
 
 use App\Dam\Message\ScanDamAnomalies;
+use App\Etl\Message\FlushSalesforceExports;
 use App\Etl\Message\RefreshFichesSalesforce;
+use App\Etl\Message\SendSalesforceSallesBatch;
 use App\Pim\Message\EnvoyerRelancesPlanifiees;
 use App\Pim\Message\RemindIncompleteFiches;
 use App\Shared\Alert\Message\CheckFailedQueue;
@@ -49,11 +51,25 @@ class Schedule implements ScheduleProviderInterface
             // marketplace par la sync habituelle.
             ->add(RecurringMessage::cron('0 3 * * *', new RedispatchMessage(new RefreshFichesSalesforce(), 'etl'), new \DateTimeZone('Europe/Paris')))
 
+            // Synchro Salesforce sortante (CSV e-mail, système de transition) :
+            // envoi Produits au fil de l'eau (coalescé) toutes les minutes, et
+            // envoi Salles groupé une fois par nuit. Le worker etl porte ces
+            // envois ; désactivés tant que la synchro n'est pas configurée.
+            ->add(RecurringMessage::every('1 minute', new RedispatchMessage(new FlushSalesforceExports(), 'etl')))
+            ->add(RecurringMessage::cron('0 4 * * *', new RedispatchMessage(new SendSalesforceSallesBatch(), 'etl'), new \DateTimeZone('Europe/Paris')))
+
             // Purges quotidiennes, exécutées directement par le consumer cron
             // du scheduler (quelques DELETE bornés) : sans elles, l'outbox et
             // les jetons de compte croissent sans limite.
             ->add(RecurringMessage::cron('20 4 * * *', new RunCommandMessage('app:outbox:purge'), new \DateTimeZone('Europe/Paris')))
             ->add(RecurringMessage::cron('25 4 * * *', new RunCommandMessage('app:account:purge-expired-tokens'), new \DateTimeZone('Europe/Paris')))
+
+            // Contrôle mensuel d'état d'activité des lieux (Sirene) : cadence des
+            // radiations d'entreprises. No-op tant que sirene.verif_statut_actif
+            // est désactivé. Portée par défaut (lieux avec SIRET stocké) = léger,
+            // exécutable dans le consumer cron ; le rapprochement par nom
+            // (--inclure-sans-siret) reste un lancement manuel.
+            ->add(RecurringMessage::cron('0 5 1 * *', new RunCommandMessage('app:pim:verifier-statut-etablissements --appliquer'), new \DateTimeZone('Europe/Paris')))
 
             // add your own tasks here
             // see https://symfony.com/doc/current/scheduler.html#attaching-recurring-messages-to-a-schedule

@@ -63,4 +63,39 @@ final class RechercheEntrepriseClientTest extends TestCase
 
         self::assertNull($client->findBest('Business Profilers', null));
     }
+
+    public function testFindStatutLitLEtatFermeSansFiltrerLesActifs(): void
+    {
+        $requests = [];
+        $httpClient = new MockHttpClient(function (string $method, string $url) use (&$requests): MockResponse {
+            $requests[] = $url;
+
+            return new MockResponse(json_encode(['results' => [[
+                'nom_complet' => 'HOTEL FERME',
+                'siren' => '480674100',
+                'etat_administratif' => 'C',
+                'matching_etablissements' => [
+                    ['siret' => '48067410000031', 'etat_administratif' => 'F'],
+                ],
+                'siege' => ['siret' => '48067410000048', 'etat_administratif' => 'A'],
+            ]]], JSON_THROW_ON_ERROR));
+        });
+        $client = new RechercheEntrepriseClient($httpClient, new NullLogger(), 'https://recherche.example');
+
+        $info = $client->findStatut('480 674 100 00031');
+
+        self::assertNotNull($info);
+        // L'établissement précis (matching_etablissements), pas le siège, fait foi.
+        self::assertSame('F', $info->etatAdministratif);
+        self::assertTrue($info->estCesse());
+        self::assertStringNotContainsString('etat_administratif=A', $requests[0]);
+    }
+
+    public function testFindStatutRejetteUnSiretInvalide(): void
+    {
+        $httpClient = new MockHttpClient(static fn (): MockResponse => new MockResponse('{"results": []}'));
+        $client = new RechercheEntrepriseClient($httpClient, new NullLogger(), 'https://recherche.example');
+
+        self::assertNull($client->findStatut('123'));
+    }
 }

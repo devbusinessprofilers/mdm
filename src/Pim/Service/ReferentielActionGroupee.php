@@ -38,6 +38,9 @@ final readonly class ReferentielActionGroupee
         'desarchiver' => 5000,
         'republier' => 5000,
         'exporter' => 5000,
+        // Envoi manuel groupé vers Salesforce : borné pour garder l'e-mail et
+        // le CSV en mémoire raisonnables (le reste passe par la synchro auto).
+        'salesforce' => 2000,
         'acces' => 500,
         'contributeur' => 5000,
         'visibilite' => 5000,

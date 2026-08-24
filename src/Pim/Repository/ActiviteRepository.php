@@ -30,6 +30,39 @@ final class ActiviteRepository extends ServiceEntityRepository
         return $this->findOneBy(['fiche' => $fiche]);
     }
 
+    /**
+     * Lot d'activités (fiche + localisation chargées) après un curseur ULID,
+     * pour l'enrichissement en masse. Keyset sur l'id.
+     *
+     * $sourceNonScanne exclut les activités déjà scannées « récemment » par
+     * cette source (jamais scannées / modifiées depuis / périmées avant $seuil).
+     *
+     * @return list<Activite>
+     */
+    public function findBatchAfter(?string $afterId, int $limit, ?string $sourceNonScanne = null, ?\DateTimeImmutable $seuilFraicheur = null): array
+    {
+        $builder = $this->createQueryBuilder('a')
+            ->addSelect('f', 'loc')
+            ->join('a.fiche', 'f')
+            ->leftJoin('f.localisation', 'loc')
+            ->orderBy('a.id', 'ASC')
+            ->setMaxResults(max(1, min(1000, $limit)));
+        if (null !== $afterId && '' !== $afterId) {
+            $builder->andWhere('a.id > :after')->setParameter('after', Ulid::fromString($afterId), 'ulid');
+        }
+        if (null !== $sourceNonScanne) {
+            $builder
+                ->andWhere('NOT EXISTS (SELECT 1 FROM App\Pim\Entity\FicheEnrichmentScan sc WHERE sc.fiche = f AND sc.source = :src AND sc.scannedAt >= f.updatedAt AND sc.scannedAt >= :seuil)')
+                ->setParameter('src', $sourceNonScanne)
+                ->setParameter('seuil', $seuilFraicheur ?? new \DateTimeImmutable('@0'));
+        }
+
+        /** @var list<Activite> $activites */
+        $activites = $builder->getQuery()->getResult();
+
+        return $activites;
+    }
+
     public function findListPage(
         ?FicheCursor $cursor = null,
         int $limit = 50,

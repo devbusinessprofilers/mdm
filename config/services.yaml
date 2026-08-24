@@ -46,6 +46,16 @@ parameters:
     env(COMPLETENESS_REMINDER_COOLDOWN_DAYS): '30'
     env(COMPLETENESS_REMINDER_ENABLED): '1'
     env(RECHERCHE_ENTREPRISES_ENDPOINT): 'https://recherche-entreprises.api.gouv.fr'
+    env(SIRENE_STATUS_CHECK_ENABLED): '0'
+    env(SIRENE_RESCAN_AFTER_DAYS): '180'
+    env(GEOAPIFY_RESCAN_AFTER_DAYS): '180'
+    env(DATATOURISME_RESCAN_AFTER_DAYS): '180'
+    env(WIKIDATA_RESCAN_AFTER_DAYS): '180'
+    env(GEOAPIFY_PLACES_ENABLED): '0'
+    env(DATATOURISME_ENABLED): '0'
+    env(DATATOURISME_FLUX_DIR): ''
+    env(WIKIDATA_CHAINE_ENABLED): '0'
+    env(WIKIDATA_SPARQL_ENDPOINT): 'https://query.wikidata.org/sparql'
     env(BAN_API_ENDPOINT): 'https://api-adresse.data.gouv.fr'
     env(GEOAPIFY_API_ENDPOINT): 'https://api.geoapify.com'
     env(GEOAPIFY_API_KEY): ''
@@ -56,6 +66,12 @@ parameters:
     env(SALESFORCE_CLIENT_ID): ''
     env(SALESFORCE_USERNAME): ''
     env(SALESFORCE_PRIVATE_KEY): ''
+    # Synchro Salesforce par CSV e-mail (système de transition, désactivé par
+    # défaut). Vide/0 = rien n'est envoyé (dev, test, avant le « go » migration).
+    env(SALESFORCE_CSV_ENABLED): '0'
+    env(SALESFORCE_CSV_TO): ''
+    env(SALESFORCE_CSV_FROM): '%env(MAILER_FROM)%'
+    env(SALESFORCE_CSV_INTEGRATION_TOKEN): 'a0qw0000004TJbX'
 
 services:
     # default configuration for services in *this* file
@@ -154,6 +170,15 @@ services:
             $clientId: '%env(SALESFORCE_CLIENT_ID)%'
             $username: '%env(SALESFORCE_USERNAME)%'
             $privateKey: '%env(SALESFORCE_PRIVATE_KEY)%'
+
+    # Écriture Salesforce (CSV e-mail, système de transition). Expéditeur par
+    # défaut = MAILER_FROM ; l'activation, le destinataire et le jeton
+    # d'intégration se règlent dans /admin/parametres.
+    App\Etl\Service\SalesforceCsvSettings:
+        arguments:
+            # Repli garanti non vide : SALESFORCE_CSV_FROM peut être vide
+            # (surcharge explicite), MAILER_FROM a toujours une valeur.
+            $expediteurParDefaut: '%env(MAILER_FROM)%'
 
     App\Pim\Service\RechercheEntrepriseClient:
         arguments:
@@ -296,6 +321,26 @@ services:
                 photos.max_lieu: '%env(PHOTOS_MAX_LIEU)%'
                 photos.min_autres: '%env(PHOTOS_MIN_AUTRES)%'
                 photos.min_lieu: '%env(PHOTOS_MIN_LIEU)%'
+                salesforce.csv_actif: '%env(SALESFORCE_CSV_ENABLED)%'
+                salesforce.csv_destinataire: '%env(SALESFORCE_CSV_TO)%'
+                salesforce.csv_expediteur: '%env(SALESFORCE_CSV_FROM)%'
+                salesforce.csv_token: '%env(SALESFORCE_CSV_INTEGRATION_TOKEN)%'
+                sirene.verif_statut_actif: '%env(SIRENE_STATUS_CHECK_ENABLED)%'
+                sirene.rescan_apres_jours: '%env(SIRENE_RESCAN_AFTER_DAYS)%'
+                geoapify.enrichissement_places: '%env(GEOAPIFY_PLACES_ENABLED)%'
+                geoapify.rescan_apres_jours: '%env(GEOAPIFY_RESCAN_AFTER_DAYS)%'
+                datatourisme.import_actif: '%env(DATATOURISME_ENABLED)%'
+                datatourisme.rescan_apres_jours: '%env(DATATOURISME_RESCAN_AFTER_DAYS)%'
+                wikidata.detection_chaine: '%env(WIKIDATA_CHAINE_ENABLED)%'
+                wikidata.rescan_apres_jours: '%env(WIKIDATA_RESCAN_AFTER_DAYS)%'
+
+    App\Pim\Service\DataTourisme\DataTourismeFluxReader:
+        arguments:
+            $fluxDir: '%env(DATATOURISME_FLUX_DIR)%'
+
+    App\Pim\Service\Wikidata\WikidataChaineClient:
+        arguments:
+            $endpoint: '%env(WIKIDATA_SPARQL_ENDPOINT)%'
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones

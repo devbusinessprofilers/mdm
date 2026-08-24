@@ -162,6 +162,7 @@ final readonly class ReferentielEcran
                 $action('desarchiver', 'Désarchiver', 'arrow-counter-clockwise'),
                 $action('republier', 'Republier', 'paper-plane'),
                 $action('exporter', 'Exporter CSV', 'clipboard'),
+                $action('salesforce', 'Envoyer à Salesforce', 'cloud-arrow-up'),
                 $action('acces', 'Envoyer les accès extranet', 'lock'),
             ],
         ];

@@ -34,9 +34,26 @@ final readonly class RechercheEntrepriseClient
         return $result;
     }
 
-    private function search(string $query, ?string $codePostal): ?EntrepriseInfo
+    /**
+     * Recherche destinée au contrôle de statut (pas au pré-remplissage) : ne
+     * filtre PAS sur les actifs et lit l'état administratif de l'établissement
+     * correspondant au SIRET donné (matching_etablissements), à défaut celui du
+     * siège ou de l'unité légale. Retourne null si le SIRET est introuvable.
+     */
+    public function findStatut(string $siret): ?EntrepriseInfo
     {
-        $parameters = ['q' => $query, 'page' => 1, 'per_page' => 1, 'etat_administratif' => 'A'];
+        $siret = preg_replace('/\D/', '', $siret) ?? '';
+        if (!preg_match('/^\d{14}$/', $siret)) { return null; }
+
+        return $this->search($siret, null, actifsSeulement: false, siretAttendu: $siret);
+    }
+
+    private function search(string $query, ?string $codePostal, bool $actifsSeulement = true, ?string $siretAttendu = null): ?EntrepriseInfo
+    {
+        $parameters = ['q' => $query, 'page' => 1, 'per_page' => 1];
+        if ($actifsSeulement) {
+            $parameters['etat_administratif'] = 'A';
+        }
         if (null !== $codePostal) {
             $parameters['code_postal'] = $codePostal;
         }
@@ -60,6 +77,7 @@ final readonly class RechercheEntrepriseClient
         $siege = \is_array($result['siege'] ?? null) ? $result['siege'] : [];
         $siren = self::string($result['siren'] ?? null);
         $dirigeant = self::dirigeantPrincipal($result['dirigeants'] ?? null);
+        $etat = self::etatAdministratif($result, $siege, $siretAttendu);
 
         return new EntrepriseInfo(
             denomination: self::string($result['nom_complet'] ?? null) ?? self::string($result['nom_raison_sociale'] ?? null),
@@ -74,7 +92,32 @@ final readonly class RechercheEntrepriseClient
             longitude: self::string($siege['longitude'] ?? null),
             dirigeantPrenom: $dirigeant['prenom'] ?? null,
             dirigeantNom: $dirigeant['nom'] ?? null,
+            etatAdministratif: $etat,
         );
+    }
+
+    /**
+     * État administratif ('A' actif, 'F'/'C' cessé) : d'abord l'établissement
+     * qui correspond au SIRET attendu (matching_etablissements), sinon le siège,
+     * sinon l'unité légale.
+     *
+     * @param array<string, mixed> $result
+     * @param array<string, mixed> $siege
+     */
+    private static function etatAdministratif(array $result, array $siege, ?string $siretAttendu): ?string
+    {
+        if (null !== $siretAttendu && \is_array($result['matching_etablissements'] ?? null)) {
+            foreach ($result['matching_etablissements'] as $etablissement) {
+                if (\is_array($etablissement) && $siretAttendu === self::string($etablissement['siret'] ?? null)) {
+                    return self::string($etablissement['etat_administratif'] ?? null);
+                }
+            }
+        }
+        if (null !== $siretAttendu && $siretAttendu === self::string($siege['siret'] ?? null)) {
+            return self::string($siege['etat_administratif'] ?? null);
+        }
+
+        return self::string($siege['etat_administratif'] ?? null) ?? self::string($result['etat_administratif'] ?? null);
     }
 
     /**

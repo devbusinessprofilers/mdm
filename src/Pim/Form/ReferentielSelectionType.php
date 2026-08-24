@@ -46,6 +46,7 @@ final class ReferentielSelectionType extends AbstractType
                     'Désarchiver (remettre en cours)' => 'desarchiver',
                     'Republier (fiche archivée)' => 'republier',
                     'Exporter (CSV)' => 'exporter',
+                    'Envoyer à Salesforce' => 'salesforce',
                     'Envoyer les accès extranet' => 'acces',
                     'Assigner un contributeur' => 'contributeur',
                     'Attribuer la visibilité' => 'visibilite',

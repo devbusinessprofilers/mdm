@@ -19,8 +19,11 @@ final readonly class FicheActionFormFactory
         private UrlGeneratorInterface $urls,
     ) {}
 
-    /** @return FormInterface<mixed> */
-    /** @param array<string, string> $buttonAttr Attributs du bouton (data-variant/data-size/data-full pour le thème). */
+    /**
+     * @param array<string, string> $buttonAttr Attributs du bouton (data-variant/data-size/data-full pour le thème).
+     *
+     * @return FormInterface<mixed>
+     */
     public function action(string $domain, string $id, string $name, string $label, bool $confirmDelete = false, string $confirmMessage = 'Supprimer cette fiche ?', array $buttonAttr = []): FormInterface
     {
         $options = [
@@ -38,6 +41,24 @@ final readonly class FicheActionFormFactory
         }
 
         return $this->forms->createNamed($name.'_'.$domain, ActionType::class, null, $options);
+    }
+
+    /**
+     * Bouton « Envoyer à Salesforce » de la fiche : action indépendante de la
+     * gamme (une seule route pour tous les types).
+     *
+     * @param array<string, string> $buttonAttr
+     *
+     * @return FormInterface<mixed>
+     */
+    public function salesforce(string $id, array $buttonAttr = []): FormInterface
+    {
+        return $this->forms->createNamed('salesforce_fiche', ActionType::class, null, [
+            'action' => $this->urls->generate('app_pim_fiche_salesforce', ['id' => $id]),
+            'button_label' => 'Envoyer à Salesforce',
+            'button_attr' => $buttonAttr,
+            'csrf_token_id' => 'salesforce-fiche-'.$id,
+        ]);
     }
 
     /** @return FormInterface<mixed> */

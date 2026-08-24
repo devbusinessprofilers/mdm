@@ -120,6 +120,7 @@ final readonly class QualiteRepository
         return array_slice($faibles, 0, $limit);
     }
 
+    /** @return list<array{fiche_id: string, label: ?string, field: string, valeur: ?string, confiance: ?float, quand: string}> */
     public function suggestionsEnAttente(int $limit = 20): array
     {
         $rows = $this->connection->fetchAllAssociative(
@@ -220,6 +221,144 @@ final readonly class QualiteRepository
             'avec' => (int) ($row['avec'] ?? 0),
             'sans' => (int) ($row['sans'] ?? 0),
         ];
+    }
+
+    /**
+     * Effectifs en attente par source pour les onglets du tableau de
+     * suggestions : les adresses (BAN + Geoapify géocodage réunis) et chaque
+     * source d'enrichissement générique.
+     *
+     * @return array<string, int>
+     */
+    public function comptesSuggestionsParSource(): array
+    {
+        $adresses = (int) $this->connection->fetchOne(
+            'SELECT COUNT(*) FROM pim_fiche f INNER JOIN pim_localisation loc ON loc.id = f.localisation_id WHERE loc.ban_ecart = 1',
+        );
+        /** @var array<string, int> $comptes */
+        $comptes = ['adresses' => $adresses];
+        $rows = $this->connection->fetchAllAssociative(
+            "SELECT source, COUNT(*) AS n FROM pim_fiche_suggestion WHERE statut = 'en_attente' GROUP BY source",
+        );
+        foreach ($rows as $row) {
+            $comptes[(string) $row['source']] = (int) $row['n'];
+        }
+
+        return $comptes;
+    }
+
+    /**
+     * Une page du tableau de suggestions pour une source (onglet). Lignes au
+     * format unifié, triées, avec le total pour la pagination.
+     *
+     * @return array{lignes: list<array<string, mixed>>, total: int}
+     */
+    public function pageSuggestions(string $source, int $page, int $taille, string $tri, string $ordre): array
+    {
+        $taille = max(1, min(100, $taille));
+        $offset = max(0, ($page - 1) * $taille);
+        $ordreSql = 'asc' === $ordre ? 'ASC' : 'DESC';
+
+        return 'adresses' === $source
+            ? $this->pageAdresses($offset, $taille, $tri, $ordreSql)
+            : $this->pageGeneriques($source, $offset, $taille, $tri, $ordreSql);
+    }
+
+    /** @return array{lignes: list<array<string, mixed>>, total: int} */
+    private function pageAdresses(int $offset, int $taille, string $tri, string $ordreSql): array
+    {
+        $total = (int) $this->connection->fetchOne(
+            'SELECT COUNT(*) FROM pim_fiche f INNER JOIN pim_localisation loc ON loc.id = f.localisation_id WHERE loc.ban_ecart = 1',
+        );
+        // Tri : par confiance (défaut) ou par code fiche ; les scores nuls en fin.
+        $ordreBy = 'code' === $tri
+            ? "f.code $ordreSql"
+            : "loc.ban_score IS NULL, loc.ban_score $ordreSql";
+        $rows = $this->connection->fetchAllAssociative(
+            "SELECT f.id, f.code, f.type, f.label, loc.rue_postale, loc.code_postal, loc.ville,
+                loc.country_code, loc.pays, loc.ban_proposition, loc.ban_score, loc.ban_verifie_le
+             FROM pim_fiche f INNER JOIN pim_localisation loc ON loc.id = f.localisation_id
+             WHERE loc.ban_ecart = 1
+             ORDER BY $ordreBy
+             LIMIT $taille OFFSET $offset",
+        );
+        $lignes = array_map(function (array $row): array {
+            $ficheId = (string) Ulid::fromBinary((string) $row['id']);
+            $proposition = $this->propositionAdresse($row['ban_proposition']);
+
+            return [
+                'select_id' => 'adresse:'.$ficheId,
+                'fiche_id' => $ficheId,
+                'code' => (int) $row['code'],
+                'type' => (string) $row['type'],
+                'label' => null === $row['label'] ? null : (string) $row['label'],
+                'source' => 'FR' === $row['country_code'] || (null !== $row['pays'] && 'france' === ReferentielGeographiqueFrancais::cle((string) $row['pays'])) ? 'BAN' : 'Geoapify',
+                'objet' => 'Adresse',
+                'actuel' => trim(sprintf('%s, %s %s', $row['rue_postale'] ?? '—', $row['code_postal'] ?? '', $row['ville'] ?? '')),
+                'proposition' => $proposition ?? 'Aucun résultat fiable — à corriger à la main',
+                'score' => null === $row['ban_score'] ? null : (int) round((float) $row['ban_score'] * 100),
+                'quand' => null === $row['ban_verifie_le'] ? null : (string) $row['ban_verifie_le'],
+                'acceptable' => null !== $proposition,
+            ];
+        }, $rows);
+
+        return ['lignes' => $lignes, 'total' => $total];
+    }
+
+    /** @return array{lignes: list<array<string, mixed>>, total: int} */
+    private function pageGeneriques(string $source, int $offset, int $taille, string $tri, string $ordreSql): array
+    {
+        $total = (int) $this->connection->fetchOne(
+            "SELECT COUNT(*) FROM pim_fiche_suggestion WHERE statut = 'en_attente' AND source = :source",
+            ['source' => $source],
+        );
+        $ordreBy = 'code' === $tri ? "f.code $ordreSql" : "s.score IS NULL, s.score $ordreSql, s.created_at DESC";
+        $rows = $this->connection->fetchAllAssociative(
+            "SELECT s.id, s.label, s.valeur_actuelle, s.valeur_proposee, s.score, s.created_at,
+                f.id AS fiche_id, f.code, f.type, f.label AS fiche_label
+             FROM pim_fiche_suggestion s INNER JOIN pim_fiche f ON f.id = s.fiche_id
+             WHERE s.statut = 'en_attente' AND s.source = :source
+             ORDER BY $ordreBy
+             LIMIT $taille OFFSET $offset",
+            ['source' => $source],
+        );
+        $lignes = array_map(static function (array $row): array {
+            return [
+                'select_id' => 'suggestion:'.((string) Ulid::fromBinary((string) $row['id'])),
+                'fiche_id' => (string) Ulid::fromBinary((string) $row['fiche_id']),
+                'code' => (int) $row['code'],
+                'type' => (string) $row['type'],
+                'label' => null === $row['fiche_label'] ? null : (string) $row['fiche_label'],
+                'objet' => (string) $row['label'],
+                'actuel' => null === $row['valeur_actuelle'] ? '' : (string) $row['valeur_actuelle'],
+                'proposition' => (string) $row['valeur_proposee'],
+                'score' => null === $row['score'] ? null : (int) round((float) $row['score'] * 100),
+                'quand' => null === $row['created_at'] ? null : (string) $row['created_at'],
+                'acceptable' => true,
+            ];
+        }, $rows);
+
+        return ['lignes' => $lignes, 'total' => $total];
+    }
+
+    /** @param mixed $banProposition JSON stocké */
+    private function propositionAdresse(mixed $banProposition): ?string
+    {
+        if (null === $banProposition) {
+            return null;
+        }
+        $decoded = json_decode((string) $banProposition, true);
+        if (!is_array($decoded)) {
+            return null;
+        }
+        $proposition = trim(sprintf(
+            '%s %s %s',
+            $decoded['label'] ?? '',
+            $decoded['codePostal'] ?? '',
+            '' !== (string) ($decoded['label'] ?? '') ? '' : ($decoded['ville'] ?? ''),
+        ));
+
+        return '' === $proposition ? null : $proposition;
     }
 
     /** @return list<array{fiches: list<array{id: string, label: ?string}>, ville: ?string}> Adresses partagées par plusieurs fiches. */

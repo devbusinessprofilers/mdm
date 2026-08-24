@@ -46,6 +46,15 @@ filesystem `cache.app` : rate limiter, métriques, paramètres, état scheduler)
    - Salesforce : `SALESFORCE_CLIENT_ID`, `SALESFORCE_USERNAME`,
      `SALESFORCE_LOGIN_URL`, `SALESFORCE_PRIVATE_KEY`,
      `SALESFORCE_WEBHOOK_TOKEN` (webhook entrant `/api/salesforce/produits`)
+   - Salesforce (synchro sortante CSV e-mail, système de transition) :
+     `SALESFORCE_CSV_ENABLED=1`, `SALESFORCE_CSV_INTEGRATION_TOKEN` (id
+     d'intégration de l'org SF, ex. `a0qw0000004TJbX`), `SALESFORCE_CSV_FROM`
+     (expéditeur autorisé par Salesforce ; vide = `MAILER_FROM`) et surtout
+     **`SALESFORCE_CSV_TO` = `email_integration@1-2bmy141t5kdrs7sdjri14nvgi.2-hceeaa.eu3.apex.salesforce.com`**
+     (⚠ absente de `.env`, ne pas l'oublier — c'est l'adresse d'intégration
+     Salesforce qui reçoit les CSV Produits/Salles ; sans elle rien ne part).
+     Ces trois-là (`csv_actif`, `csv_destinataire`, `csv_token`) sont aussi
+     réglables à chaud dans `/admin/parametres` — la variable d'env reste le défaut.
    - Mail : `MAILER_DSN`, `MAILER_FROM`, `ALERT_EMAIL_TO`
    - Box/OCR : `BOX_CLIENT_ID/_SECRET/_SUBJECT_ID/_FOLDER_ID`… (si OCR actif)
    - OpenAI (retouche & reconnaissance d'images) : `OPENAI_API_KEY` (secret),
@@ -73,10 +82,22 @@ filesystem `cache.app` : rate limiter, métriques, paramètres, état scheduler)
    servent `https://{default}/` et redirigent `www.` vers l'apex), pointer le
    DNS, vérifier le certificat. Mettre `URL`/`DEFAULT_URI` en cohérence.
 
-6. **Salesforce** : poser les secrets et lancer le **premier
+6. **Salesforce (entrant)** : poser les secrets et lancer le **premier
    `app:salesforce:refresh-fiches` dans la même fenêtre** (décision go-live) :
    `upsun ssh 'php bin/console app:salesforce:refresh-fiches'`.
    Déclarer l'URL du webhook (`/api/salesforce/produits` + jeton) côté SF.
+
+6 bis. **Salesforce (sortant, CSV e-mail de transition)** : n'activer
+   (`SALESFORCE_CSV_ENABLED=1` + `SALESFORCE_CSV_TO=email_integration@1-2bmy141t5kdrs7sdjri14nvgi.2-hceeaa.eu3.apex.salesforce.com`)
+   **qu'après le « go » de Théofane**. Deux préalables :
+   - **`ID_SALLE`** : le PIM émet l'ULID de salle en intérimaire (l'id de
+     liaison legacy n'est pas conservé). À remapper avant tout envoi Salles réel,
+     sinon doublons côté Salesforce.
+   - **Expéditeur autorisé** : `SALESFORCE_CSV_FROM` (ou `MAILER_FROM`) doit être
+     une adresse acceptée par le connecteur email → intégration de l'org SF.
+   Test : bouton « Envoyer à Salesforce » d'une fiche (envoi Produits immédiat),
+   ou action de masse du référentiel. L'auto part ensuite à chaque modification
+   (Produits au fil de l'eau, Salles groupées la nuit).
 
 7. **Marketplace** : vérifier que sa conf pointe le nouveau host PIM
    (API sync) et que sa base d'URL photos est `https://business-profilers.fr`.

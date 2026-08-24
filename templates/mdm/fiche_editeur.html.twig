@@ -198,6 +198,8 @@
                                           modalIdentifier="extraction">Extraire d'un document</twig:Modal:TriggerButton>
                 <twig:Button variant="outline" size="md" asLink href="{{ liens.traductions }}">Traductions</twig:Button>
                 <twig:Button variant="outline" size="md" asLink href="{{ liens.historique }}">Historique</twig:Button>
+                {# Envoi immédiat de la fiche vers Salesforce (visible si la synchro CSV est configurée). #}
+                {% if salesforce_envoi %}{{ form(salesforce_envoi) }}{% endif %}
                 {% if is_granted('FICHE_DELETE', fiche) %}
                     {# Suppression définitive de la fiche (confirmation demandée). #}
                     {# bg-none + before:hidden : le variant outline peint son dégradé en

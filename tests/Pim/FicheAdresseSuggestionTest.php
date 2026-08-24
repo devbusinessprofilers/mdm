@@ -174,9 +174,9 @@ final class FicheAdresseSuggestionTest extends WebTestCase
         self::assertSame(1, (int) $ligne['ban_ecart']);
     }
 
-    public function testLEcranQualiteArbitreAvecRetourSurPlace(): void
+    public function testLOngletAdressesArbitreEnMasse(): void
     {
-        $this->lieuAvecEcart([
+        $lieu = $this->lieuAvecEcart([
             'label' => 'Queyrac',
             'name' => null,
             'type' => 'municipality',
@@ -185,33 +185,34 @@ final class FicheAdresseSuggestionTest extends WebTestCase
             'latitude' => null,
             'longitude' => null,
         ]);
+        $ficheId = $lieu->fiche()->idString();
 
-        $crawler = $this->client->request('GET', '/qualite', ['onglet' => 'conflits']);
+        $crawler = $this->client->request('GET', '/qualite', ['onglet' => 'conflits', 'src' => 'adresses']);
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('body', 'Suggestions d\'adresse');
+        self::assertSelectorTextContains('body', 'Suggestions à arbitrer');
+        self::assertSelectorTextContains('body', 'Adresses (1)');
         self::assertSelectorTextContains('body', 'Queyrac');
 
-        $this->client->submit($crawler->selectButton('Ignorer')->form());
-        self::assertResponseRedirects('/qualite?onglet=conflits&adresses=avec');
+        // Ignorer la sélection (case cochée) via le formulaire groupé.
+        $token = $crawler->filter('input[name="suggestion_selection[_token]"]')->attr('value');
+        $this->client->request('POST', '/qualite/suggestions/ignorer?src=adresses&page=1', [
+            'suggestion_selection' => ['ids' => ['adresse:'.$ficheId], '_token' => $token],
+        ]);
+        self::assertResponseRedirects();
         $this->client->followRedirect();
-        self::assertSelectorTextContains('body', 'Aucun écart d\'adresse relevé par la BAN.');
+        self::assertSelectorTextContains('body', 'Aucune suggestion en attente pour cette source.');
     }
 
-    public function testLeFiltreSepareLesEcartsAvecEtSansProposition(): void
+    public function testLOngletAdressesListeLesEcartsSansProposition(): void
     {
-        // Aucun résultat fiable : pas de proposition, arbitrage manuel.
+        // Aucun résultat fiable : la ligne reste listée, à corriger à la main.
         $this->lieuAvecEcart(null);
 
-        $this->client->request('GET', '/qualite', ['onglet' => 'conflits']);
+        $this->client->request('GET', '/qualite', ['onglet' => 'conflits', 'src' => 'adresses']);
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('body', 'Avec proposition (0)');
-        self::assertSelectorTextContains('body', 'Aucun résultat fiable (1)');
-        self::assertSelectorTextNotContains('body', 'Abbaye des écarts');
-
-        $this->client->request('GET', '/qualite', ['onglet' => 'conflits', 'adresses' => 'sans']);
-        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('body', 'Adresses (1)');
         self::assertSelectorTextContains('body', 'Abbaye des écarts');
-        self::assertSelectorNotExists('form[name^="adresse_accepter_"]', 'Rien à accepter sans proposition.');
+        self::assertSelectorTextContains('body', 'Aucun résultat fiable');
     }
 
     /** @param array{label: ?string, name: ?string, type: ?string, codePostal: ?string, ville: ?string, latitude: ?string, longitude: ?string}|null $proposition null = écart sans résultat fiable */

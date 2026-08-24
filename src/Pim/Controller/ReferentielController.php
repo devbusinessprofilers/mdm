@@ -102,6 +102,7 @@ final class ReferentielController extends AbstractController
         ReferentielEcran $ecran,
         ReferentielListeProvider $provider,
         ReferentielActionGroupee $actionneur,
+        \App\Etl\Service\SalesforceSelectionSender $salesforce,
     ): Response {
         $filtres = ReferentielFiltres::fromArray($request->query->all('f'));
         $retour = $this->redirectToRoute('app_mdm_referentiel_general', ['f' => $request->query->all('f')]);
@@ -144,6 +145,20 @@ final class ReferentielController extends AbstractController
                 $action,
                 $plafond,
             ));
+
+            return $retour;
+        }
+        // Envoi manuel groupé vers Salesforce : un CSV Produits (et un CSV
+        // Salles) pour toute la sélection, tous types et statuts.
+        if ('salesforce' === $action) {
+            try {
+                $envoyees = $salesforce->envoyer(array_slice($ids, 0, $plafond));
+            } catch (\DomainException $exception) {
+                $this->addFlash('warning', $exception->getMessage());
+
+                return $retour;
+            }
+            $this->addFlash('success', sprintf('Envoi à Salesforce : %d fiche(s) transmise(s).', $envoyees));
 
             return $retour;
         }

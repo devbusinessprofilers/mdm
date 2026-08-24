@@ -42,6 +42,102 @@ final class GeoapifyClient implements GeocodeurEtrangerInterface
         return '' !== trim($this->apiKey) && '' !== trim($this->endpoint);
     }
 
+    /**
+     * Attributs OpenStreetMap du lieu situé aux coordonnées données (Place
+     * Details). Retourne null si le lieu est introuvable ou l'API injoignable —
+     * l'enrichissement est un confort, jamais bloquant.
+     */
+    public function detailsPlace(string $latitude, string $longitude): ?PlaceAttributs
+    {
+        if (!$this->isConfigured() || '' === trim($latitude) || '' === trim($longitude)) {
+            return null;
+        }
+        try {
+            $donnees = $this->requete('GET', '/v2/place-details', [
+                'lat' => trim($latitude),
+                'lon' => trim($longitude),
+                'features' => 'details',
+            ], attendus: [200]);
+        } catch (\RuntimeException) {
+            return null;
+        }
+        $features = $donnees['features'] ?? null;
+        if (!is_array($features) || [] === $features) {
+            return null;
+        }
+        // Tags OSM bruts fusionnés de tous les features renvoyés (bâtiment +
+        // POI) ; la première valeur rencontrée pour une clé l'emporte.
+        $raw = [];
+        foreach ($features as $feature) {
+            $brut = $feature['properties']['datasource']['raw'] ?? null;
+            if (is_array($brut)) {
+                $raw += $brut;
+            }
+        }
+        if ([] === $raw) {
+            return null;
+        }
+
+        return self::extraireAttributs($raw);
+    }
+
+    /**
+     * @param array<string, mixed> $raw tags OSM bruts
+     */
+    private static function extraireAttributs(array $raw): PlaceAttributs
+    {
+        $tag = static fn (string $cle): ?string => is_string($raw[$cle] ?? null) && '' !== trim($raw[$cle]) ? strtolower(trim($raw[$cle])) : null;
+        $cuisines = null === $tag('cuisine') ? [] : array_values(array_filter(array_map('trim', explode(';', $tag('cuisine')))));
+        $regimes = [];
+        foreach (['vegan', 'vegetarian', 'halal', 'kosher'] as $regime) {
+            if (in_array($tag('diet:'.$regime), ['yes', 'only'], true)) {
+                $regimes[] = $regime;
+            }
+        }
+        if (in_array($tag('organic'), ['yes', 'only'], true)) {
+            $regimes[] = 'organic';
+        }
+
+        return new PlaceAttributs(
+            cuisines: $cuisines,
+            regimes: $regimes,
+            accesPmr: self::triState($tag('wheelchair'), ['yes', 'limited', 'designated']),
+            toilettesPmr: self::triState($tag('toilets:wheelchair'), ['yes']),
+            terrasse: self::triState($tag('outdoor_seating'), ['yes']),
+            climatisation: self::triState($tag('air_conditioning'), ['yes']),
+            wifi: self::triState($tag('internet_access'), ['yes', 'wlan', 'wifi']),
+            siteWeb: self::premiereChaine($raw, ['website', 'contact:website', 'url']),
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $raw
+     * @param list<string>          $cles
+     */
+    private static function premiereChaine(array $raw, array $cles): ?string
+    {
+        foreach ($cles as $cle) {
+            if (is_string($raw[$cle] ?? null) && '' !== trim($raw[$cle])) {
+                return trim($raw[$cle]);
+            }
+        }
+
+        return null;
+    }
+
+    /** @param list<string> $vrais valeurs OSM comptant pour « oui » ; « no » vaut faux, le reste null (inconnu). */
+    private static function triState(?string $valeur, array $vrais): ?bool
+    {
+        if (null === $valeur) {
+            return null;
+        }
+        if (in_array($valeur, $vrais, true)) {
+            return true;
+        }
+
+        return 'no' === $valeur ? false : null;
+    }
+
     public function verifierLot(array $lignes): array
     {
         if ([] === $lignes) {

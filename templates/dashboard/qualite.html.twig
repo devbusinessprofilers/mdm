@@ -225,6 +225,85 @@
             {% endfor %}
         </div>
 
+        {# La modale « sources » est déclenchée depuis l'en-tête du bloc « Suggestions à arbitrer » ci-dessous. #}
+        <twig:Modal identifier="sources-enrichissement">
+            <div class="flex flex-col gap-6 w-[min(720px,80vw)]">
+                <div class="flex flex-col gap-1">
+                    <twig:Typography variant="heading-3" element="h2" bold>D'où viennent les suggestions</twig:Typography>
+                    <twig:Typography variant="body-sm" textColor="neutral-500" class="text-pretty">Les corrections et enrichissements proposés ici sont produits automatiquement par des sources externes gratuites. Rien n'est écrit sans votre décision : Accepter applique, Ignorer conserve la saisie.</twig:Typography>
+                </div>
+                {% for s in [
+                    {
+                        nom: 'Sirene / Recherche-entreprises', etat: 'Actif',
+                        declenchement: 'Batch mensuel automatique (1er du mois, si le paramètre est activé) ; lancement manuel possible.',
+                        porte: 'Statut d\'activité des lieux, SIRET et TVA manquants.',
+                        apport: 'Détecte les établissements cessés (proposition d\'archivage) et complète les identifiants légaux.',
+                        couverture: 'France uniquement.',
+                        prerequis: 'Fiche Lieu avec SIRET (contrôle exact) ou rapprochement par nom + code postal.',
+                        contrainte: 'Hors de France : non couvert. Le rapprochement sans SIRET peut être incertain (arbitrage requis).',
+                        licence: 'Service public gratuit, sans clé.'
+                    },
+                    {
+                        nom: 'BAN / Geoapify (adresses)', etat: 'Actif',
+                        declenchement: 'Automatique à chaque modification d\'adresse d\'une fiche ; vérification de masse manuelle possible.',
+                        porte: 'Adresse postale et coordonnées GPS.',
+                        apport: 'Vérifie l\'adresse, corrige code postal / ville et géolocalise.',
+                        couverture: 'BAN en France, Geoapify à l\'étranger (mondial).',
+                        prerequis: 'Une adresse saisie sur la fiche. Geoapify nécessite une clé API.',
+                        contrainte: 'Sans clé Geoapify, l\'étranger n\'est pas vérifié.',
+                        licence: 'BAN : gratuit, sans clé. Geoapify : gratuit, données © OpenStreetMap.'
+                    },
+                    {
+                        nom: 'Geoapify Places', etat: 'Actif',
+                        declenchement: 'Lancement manuel (commande d\'enrichissement des restaurants) — pas de tâche planifiée (volume d\'appels).',
+                        porte: 'Attributs des restaurants : type de cuisine, spécificités alimentaires, équipements (wifi, terrasse, climatisation), accessibilité PMR, site officiel.',
+                        apport: 'Complète les champs vides depuis OpenStreetMap (n\'écrase jamais une saisie).',
+                        couverture: 'Tous pays, dès qu\'un GPS est présent sur la fiche.',
+                        prerequis: 'Restaurant géolocalisé, clé GEOAPIFY_API_KEY et paramètre activé.',
+                        contrainte: 'Couverture OpenStreetMap inégale selon les zones. Horaires non repris (format trop complexe). Plan gratuit : 3 000 requêtes/jour.',
+                        licence: 'Gratuit, données © OpenStreetMap.'
+                    },
+                    {
+                        nom: 'DATAtourisme', etat: 'Actif',
+                        declenchement: 'Import manuel du flux synchronisé — pas de tâche planifiée.',
+                        porte: 'Lieux et activités : description générale ; équipements bien-être / installations des lieux.',
+                        apport: 'Complète les champs vides depuis les données des offices de tourisme (les photos réutilisables arriveront ensuite).',
+                        couverture: 'France (métropole et outre-mer).',
+                        prerequis: 'Flux JSON-LD configuré sur datatourisme.fr et synchronisé localement ; paramètre activé. Rapprochement par nom + code postal.',
+                        contrainte: 'Couvre uniquement les établissements référencés par les offices de tourisme. Photos non encore reprises.',
+                        licence: 'Open data officiel, Licence Ouverte 2.0 (réutilisation commerciale autorisée).'
+                    },
+                    {
+                        nom: 'Wikidata', etat: 'Actif',
+                        declenchement: 'Lancement manuel (commande de détection de chaînes) — pas de tâche planifiée.',
+                        porte: 'Affiliation d\'un lieu à un groupe / une chaîne / une marque hôtelière.',
+                        apport: 'Détecte l\'enseigne depuis le nom (référentiel interne des grands groupes, enrichi de Wikidata).',
+                        couverture: 'Mondial (enseignes notables). Lieux uniquement.',
+                        prerequis: 'Paramètre activé. Le référentiel interne fonctionne seul ; Wikidata (SPARQL) l\'enrichit s\'il est joignable.',
+                        contrainte: 'Détection sur le nom : un établissement hors enseigne connue n\'est pas rattaché.',
+                        licence: 'Gratuit (SPARQL, données Wikidata sous CC0).'
+                    },
+                ] %}
+                    <div class="flex flex-col gap-1.5 p-4 rounded-md bg-primary-5">
+                        <div class="flex items-center gap-3">
+                            <twig:Typography variant="subtitle" bold class="flex-1 min-w-0">{{ s.nom }}</twig:Typography>
+                            <span class="inline-flex shrink-0"><twig:Tag label="{{ s.etat }}" size="sm"
+                                      variant="{{ s.etat == 'Actif' ? 'success-pastel' : 'neutral' }}" /></span>
+                        </div>
+                        <twig:Typography variant="body-sm"><span class="font-[700]">Porte sur :</span> {{ s.porte }}</twig:Typography>
+                        <twig:Typography variant="body-sm" textColor="neutral-500">{{ s.apport }}</twig:Typography>
+                        <div class="flex flex-col gap-0.5 pt-1">
+                            <twig:Typography variant="body-xs" textColor="neutral-500"><span class="font-[700]">Déclenchement :</span> {{ s.declenchement }}</twig:Typography>
+                            <twig:Typography variant="body-xs" textColor="neutral-500"><span class="font-[700]">Couverture :</span> {{ s.couverture }}</twig:Typography>
+                            <twig:Typography variant="body-xs" textColor="neutral-500"><span class="font-[700]">Prérequis :</span> {{ s.prerequis }}</twig:Typography>
+                            <twig:Typography variant="body-xs" textColor="neutral-500"><span class="font-[700]">Contraintes :</span> {{ s.contrainte }}</twig:Typography>
+                            <twig:Typography variant="body-xs" textColor="neutral-400"><span class="font-[700]">Licence :</span> {{ s.licence }}</twig:Typography>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </twig:Modal>
+
         <section class="shrink-0 flex flex-col gap-3 p-6 rounded-[20px] bg-neutral-100 shadow-(--shadow)" aria-label="Suggestions IA à arbitrer">
             <twig:Typography variant="heading-3" element="h2" bold>Valeurs suggérées par l'IA en attente</twig:Typography>
             <div class="overflow-x-auto rounded-md inset-ring-1 inset-ring-neutral-200">
@@ -250,49 +329,136 @@
             </div>
         </section>
 
-        <section class="shrink-0 flex flex-col gap-3 p-6 rounded-[20px] bg-neutral-100 shadow-(--shadow)" aria-label="Suggestions d'adresse">
-            <twig:Typography variant="heading-3" element="h2" bold>Suggestions d'adresse (vérification BAN)</twig:Typography>
-            <twig:Typography variant="body-sm" textColor="neutral-500">Adresses dont la Base Adresse Nationale propose autre chose ou ne trouve pas d'équivalent fiable — Accepter applique la proposition, Ignorer garde la saisie, la fiche reste modifiable via « Ouvrir ».</twig:Typography>
-            <nav class="flex flex-wrap items-center gap-2" aria-label="Filtre des suggestions d'adresse">
-                <twig:Button variant="{{ adresses_filtre == 'avec' ? 'primary' : 'outline' }}" size="sm" asLink
-                             href="{{ path('app_mdm_qualite', {onglet: 'conflits', adresses: 'avec'}) }}">Avec proposition ({{ adresses_comptes.avec }})</twig:Button>
-                <twig:Button variant="{{ adresses_filtre == 'sans' ? 'primary' : 'outline' }}" size="sm" asLink
-                             href="{{ path('app_mdm_qualite', {onglet: 'conflits', adresses: 'sans'}) }}">Aucun résultat fiable ({{ adresses_comptes.sans }})</twig:Button>
-            </nav>
-            <div class="overflow-x-auto rounded-md inset-ring-1 inset-ring-neutral-200">
-                <table class="w-full border-collapse">
-                    <thead class="bg-primary-5"><tr class="text-left h-10 border-b border-neutral-200">
-                        {% for col in ['Fiche', 'Source', 'Adresse saisie', 'Proposition', 'Score', 'Vérifiée le'] %}<th class="px-3"><twig:Typography variant="body-xs" textColor="neutral-500" bold>{{ col }}</twig:Typography></th>{% endfor %}
-                        {% if is_granted('ROLE_BP_VALIDATOR') %}<th class="px-3"></th><th class="px-3"></th>{% endif %}<th class="px-3"></th>
-                    </tr></thead>
-                    <tbody>
-                    {% for ligne in suggestions_adresse %}
-                        <tr class="h-11 border-t border-neutral-200 first:border-t-0">
-                            <td class="px-3"><twig:Typography variant="body-sm" bold element="span">{{ ligne.label ?? 'Sans libellé' }}</twig:Typography> <twig:Typography variant="body-xs" textColor="neutral-500" element="span">({{ ligne.code }})</twig:Typography></td>
-                            <td class="px-3"><twig:Tag label="{{ ligne.source }}" variant="neutral" size="sm" /></td>
-                            <td class="px-3"><twig:Typography variant="body-sm">{{ ligne.adresse }}</twig:Typography></td>
-                            <td class="px-3"><twig:Typography variant="body-sm">{{ ligne.proposition ?? 'Aucun résultat fiable' }}</twig:Typography></td>
-                            <td class="px-3"><twig:Typography variant="body-sm">{{ ligne.score is null ? '—' : (ligne.score * 100)|round ~ ' %' }}</twig:Typography></td>
-                            <td class="px-3"><twig:Typography variant="body-sm">{{ ligne.quand ? ligne.quand|date('d/m/Y H:i') : '—' }}</twig:Typography></td>
-                            {% if is_granted('ROLE_BP_VALIDATOR') %}
-                                <td class="px-3">{% if ligne.accepter is not null %}{{ form(ligne.accepter) }}{% endif %}</td>
-                                <td class="px-3">{{ form(ligne.ignorer) }}</td>
-                            {% endif %}
-                            <td class="px-3">
-                                {% if ligne.type == 'lieu' %}
-                                    <a href="{{ path('app_mdm_fiche_lieu', {id: ligne.fiche_id, section: 1}) }}" class="hover:underline"><twig:Typography variant="body-sm" textColor="primary-3" bold element="span">Ouvrir</twig:Typography></a>
-                                {% else %}
-                                    <a href="{{ path('app_mdm_fiche_gamme', {gamme: ligne.type == 'restaurant' ? 'restaurants' : (ligne.type == 'activite' ? 'activites' : 'services'), id: ligne.fiche_id, section: 1}) }}" class="hover:underline"><twig:Typography variant="body-sm" textColor="primary-3" bold element="span">Ouvrir</twig:Typography></a>
-                                {% endif %}
-                            </td>
-                        </tr>
-                    {% else %}
-                        <tr><td colspan="{{ is_granted('ROLE_BP_VALIDATOR') ? 9 : 7 }}" class="p-6 text-center"><twig:Typography variant="body-sm" textColor="neutral-500">Aucun écart d'adresse relevé par la BAN.</twig:Typography></td></tr>
-                    {% endfor %}
-                    </tbody>
-                </table>
+        {# ---- Suggestions à arbitrer : 5 onglets, bascule client (sans reload). ---- #}
+        {% form_theme sug_form 'pim/form/_form-theme-referentiel.html.twig' %}
+        <section class="shrink-0 flex flex-col gap-3 p-6 rounded-[20px] bg-neutral-100 shadow-(--shadow)"
+                 aria-label="Suggestions à arbitrer" data-controller="suggestions">
+            <div class="flex items-start justify-between gap-3">
+                <twig:Typography variant="heading-3" element="h2" bold>Suggestions à arbitrer</twig:Typography>
+                <twig:Modal:TriggerButton variant="outline" size="sm" icon="info-circle" class="shrink-0"
+                                          modalIdentifier="sources-enrichissement">En savoir plus sur les suggestions</twig:Modal:TriggerButton>
             </div>
-            <twig:Typography variant="body-xs" textColor="neutral-500">Adresses étrangères vérifiées par Geoapify — données © OpenStreetMap contributors.</twig:Typography>
+            <twig:Typography variant="body-sm" textColor="neutral-500">Corrections et enrichissements proposés automatiquement, par source. Cochez les lignes puis appliquez ou ignorez la sélection ; la fiche reste modifiable via « Ouvrir ».</twig:Typography>
+
+            {# Onglets : bascule côté client, sans reload. #}
+            <nav class="flex flex-wrap items-center gap-2" role="tablist" aria-label="Source des suggestions">
+                {% for o in sug_onglets %}
+                    <button type="button" role="tab" aria-selected="{{ o.cle == sug_actif ? 'true' : 'false' }}"
+                            data-suggestions-target="tab" data-action="suggestions#activer" data-suggestions-cle-param="{{ o.cle }}"
+                            class="px-3 py-1.5 rounded-full text-sm cursor-pointer inset-ring-1 inset-ring-primary text-primary-3
+                                   aria-selected:bg-primary aria-selected:text-neutral-100! aria-selected:inset-ring-0">{{ o.label }} ({{ o.compte }})</button>
+                {% endfor %}
+            </nav>
+
+            {{ form_start(sug_form, { action: path('app_mdm_qualite_suggestions', {decision: 'accepter', src: sug_actif}), attr: { class: 'flex flex-col gap-3' } }) }}
+                {% set cases = sug_form.ids.children %}
+                {% for o in sug_onglets %}
+                    <div data-suggestions-target="panel" data-cle="{{ o.cle }}" class="flex flex-col gap-3 {{ o.cle == sug_actif ? '' : 'hidden' }}">
+                        {% if is_granted('ROLE_BP_VALIDATOR') and o.lignes is not empty %}
+                            <div class="flex items-center gap-2">
+                                <twig:Button variant="primary" size="sm" icon="check-circle" type="submit"
+                                             formaction="{{ path('app_mdm_qualite_suggestions', {decision: 'accepter', src: o.cle, page: o.page}) }}">Accepter la sélection</twig:Button>
+                                <twig:Button variant="outline" size="sm" type="submit"
+                                             formaction="{{ path('app_mdm_qualite_suggestions', {decision: 'ignorer', src: o.cle, page: o.page}) }}">Ignorer la sélection</twig:Button>
+                            </div>
+                        {% endif %}
+                        <div class="overflow-x-auto rounded-md inset-ring-1 inset-ring-neutral-200">
+                            <table class="w-full border-collapse">
+                                <thead class="bg-primary-5"><tr class="text-left h-10 border-b border-neutral-200">
+                                    <th class="pl-4 pr-3 w-0">
+                                        {% if is_granted('ROLE_BP_VALIDATOR') %}
+                                            <button type="button" role="checkbox" aria-checked="false" class="group/tete block cursor-pointer"
+                                                    data-role="caseTete" data-action="suggestions#basculerTout">
+                                                <span class="sr-only">Tout sélectionner</span>
+                                                <span class="w-[18px] h-[18px] box-border flex items-center justify-center rounded-xs bg-neutral-100 inset-ring-1 inset-ring-neutral-400
+                                                             group-aria-checked/tete:bg-primary group-aria-checked/tete:inset-ring-0 group-aria-[checked=mixed]/tete:bg-primary group-aria-[checked=mixed]/tete:inset-ring-0">
+                                                    <twig:Icon name="check" class="w-[13px] h-[13px] text-neutral-100 hidden group-aria-checked/tete:block" />
+                                                    <span class="w-[9px] h-0.5 rounded-[1px] bg-neutral-100 hidden group-aria-[checked=mixed]/tete:block"></span>
+                                                </span>
+                                            </button>
+                                        {% endif %}
+                                    </th>
+                                    {% set p_fiche = {onglet: 'conflits', src: o.cle, tri: 'code', ordre: (o.tri == 'code' and o.ordre == 'asc') ? 'desc' : 'asc'} %}
+                                    {% set p_conf = {onglet: 'conflits', src: o.cle, tri: 'score', ordre: (o.tri == 'score' and o.ordre == 'asc') ? 'desc' : 'asc'} %}
+                                    <th class="px-3">
+                                        <a href="{{ path('app_mdm_qualite', p_fiche) }}" class="inline-flex items-center gap-1 group/tri">
+                                            <twig:Typography variant="body-xs" textColor="{{ o.tri == 'code' ? 'primary-3' : 'neutral-500' }}" bold>Fiche</twig:Typography>
+                                            {% if o.tri == 'code' %}<twig:Icon name="caret-down-solid" class="w-2 h-2 text-primary-3 {{ o.ordre == 'asc' ? 'rotate-180' : '' }}" />{% endif %}
+                                        </a>
+                                    </th>
+                                    {% for col in ['Objet', 'Actuel', 'Proposition'] %}<th class="px-3"><twig:Typography variant="body-xs" textColor="neutral-500" bold>{{ col }}</twig:Typography></th>{% endfor %}
+                                    <th class="px-3">
+                                        <a href="{{ path('app_mdm_qualite', p_conf) }}" class="inline-flex items-center gap-1 group/tri">
+                                            <twig:Typography variant="body-xs" textColor="{{ o.tri == 'score' ? 'primary-3' : 'neutral-500' }}" bold>Confiance</twig:Typography>
+                                            {% if o.tri == 'score' %}<twig:Icon name="caret-down-solid" class="w-2 h-2 text-primary-3 {{ o.ordre == 'asc' ? 'rotate-180' : '' }}" />{% endif %}
+                                        </a>
+                                    </th>
+                                    <th class="px-3"><twig:Typography variant="body-xs" textColor="neutral-500" bold>Le</twig:Typography></th>
+                                    <th class="px-3"></th>
+                                </tr></thead>
+                                <tbody>
+                                {% for ligne in o.lignes %}
+                                    <tr class="h-11 border-t border-neutral-200 first:border-t-0 align-middle">
+                                        <td class="pl-4 pr-3 w-0">
+                                            {% if is_granted('ROLE_BP_VALIDATOR') and cases[o.offset + loop.index0] is defined %}
+                                                <label class="inline-flex cursor-pointer">
+                                                    {{ form_widget(cases[o.offset + loop.index0], { label: false, attr: { 'data-role': 'case', 'data-action': 'change->suggestions#surCase' } }) }}
+                                                </label>
+                                            {% endif %}
+                                        </td>
+                                        <td class="px-3">
+                                            <div class="flex flex-col leading-tight">
+                                                <span>
+                                                    <twig:Typography variant="body-sm" bold element="span">{{ ligne.label ?? 'Sans libellé' }}</twig:Typography>
+                                                    <twig:Typography variant="body-xs" textColor="neutral-500" element="span">({{ ligne.code }})</twig:Typography>
+                                                </span>
+                                                <twig:Typography variant="body-xs" textColor="neutral-400">{{ o.cle == 'adresses' ? ligne.source : o.provenance }}</twig:Typography>
+                                            </div>
+                                        </td>
+                                        <td class="px-3"><twig:Typography variant="body-sm">{{ ligne.objet }}</twig:Typography></td>
+                                        <td class="px-3"><twig:Typography variant="body-sm" textColor="neutral-500">{{ ligne.actuel != '' ? ligne.actuel : '—' }}</twig:Typography></td>
+                                        <td class="px-3"><twig:Typography variant="body-sm">{{ ligne.proposition }}</twig:Typography></td>
+                                        <td class="px-3"><twig:Typography variant="body-sm" textColor="neutral-400">{{ ligne.score is null ? '—' : ligne.score ~ ' %' }}</twig:Typography></td>
+                                        <td class="px-3"><twig:Typography variant="body-sm" textColor="neutral-500">{{ ligne.quand ? ligne.quand|date('d/m/Y') : '—' }}</twig:Typography></td>
+                                        <td class="px-3">
+                                            {% if ligne.type == 'lieu' %}
+                                                <a href="{{ path('app_mdm_fiche_lieu', {id: ligne.fiche_id, section: 1}) }}" class="hover:underline"><twig:Typography variant="body-sm" textColor="primary-3" bold element="span">Ouvrir</twig:Typography></a>
+                                            {% else %}
+                                                <a href="{{ path('app_mdm_fiche_gamme', {gamme: ligne.type == 'restaurant' ? 'restaurants' : (ligne.type == 'activite' ? 'activites' : 'services'), id: ligne.fiche_id, section: 1}) }}" class="hover:underline"><twig:Typography variant="body-sm" textColor="primary-3" bold element="span">Ouvrir</twig:Typography></a>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% else %}
+                                    <tr><td colspan="8" class="p-6 text-center"><twig:Typography variant="body-sm" textColor="neutral-500">Aucune suggestion en attente pour cette source.</twig:Typography></td></tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% if o.pages > 1 %}
+                            <div class="flex items-center justify-between gap-3">
+                                <twig:Typography variant="body-xs" textColor="neutral-500">Page {{ o.page }} / {{ o.pages }} · {{ o.total }} résultat(s)</twig:Typography>
+                                <div class="flex items-center gap-2">
+                                    {% if o.page > 1 %}<twig:Button variant="outline" size="sm" asLink href="{{ path('app_mdm_qualite', {onglet: 'conflits', src: o.cle, tri: o.tri, ordre: o.ordre, page: o.page - 1}) }}">Précédente</twig:Button>{% endif %}
+                                    {% if o.page < o.pages %}<twig:Button variant="outline" size="sm" asLink href="{{ path('app_mdm_qualite', {onglet: 'conflits', src: o.cle, tri: o.tri, ordre: o.ordre, page: o.page + 1}) }}">Suivante</twig:Button>{% endif %}
+                                </div>
+                            </div>
+                        {% endif %}
+                        {% if o.cle == 'adresses' %}<twig:Typography variant="body-xs" textColor="neutral-500">Adresses étrangères vérifiées par Geoapify — données © OpenStreetMap contributors.</twig:Typography>{% endif %}
+                    </div>
+                {% endfor %}
+            {{ form_end(sug_form) }}
+
+            {# Avertissement avant de quitter un onglet avec des cases cochées. #}
+            <div data-suggestions-target="avert" class="hidden fixed top-0 left-0 w-screen h-screen z-256 bg-background-transparency flex items-center justify-center">
+                <div class="bg-neutral-100 p-8 rounded-md w-[min(440px,90vw)] flex flex-col gap-4 shadow-(--shadow)">
+                    <twig:Typography variant="heading-3" element="h2" bold>Sélection non enregistrée</twig:Typography>
+                    <twig:Typography variant="body-sm" textColor="neutral-500">Vous avez coché des lignes sans les enregistrer. En changeant d'onglet, la sélection sera décochée.</twig:Typography>
+                    <div class="flex justify-end gap-2">
+                        <twig:Button variant="outline" size="sm" type="button" data-action="suggestions#annuler">Annuler</twig:Button>
+                        <twig:Button variant="primary" size="sm" type="button" data-action="suggestions#continuer">Continuer</twig:Button>
+                    </div>
+                </div>
+            </div>
         </section>
 
         <section class="shrink-0 flex flex-col gap-2 p-6 rounded-[20px] bg-neutral-100 shadow-(--shadow)" aria-label="Doublons d'adresse">

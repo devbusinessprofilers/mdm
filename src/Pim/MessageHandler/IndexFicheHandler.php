@@ -6,6 +6,7 @@ namespace App\Pim\MessageHandler;
 
 use App\Etl\Service\MarketplaceSyncScheduler;
 use App\Etl\Service\PhotoPublicationGuard;
+use App\Etl\Service\SalesforceExportScheduler;
 use App\Pim\Entity\Fiche;
 use App\Pim\Message\AnalyzeFicheTexts;
 use App\Pim\Message\IndexFiche;
@@ -24,6 +25,7 @@ final readonly class IndexFicheHandler
         private FicheRepository $repository,
         private FicheSearchIndexer $indexer,
         private MarketplaceSyncScheduler $marketplaceScheduler,
+        private SalesforceExportScheduler $salesforceScheduler,
         private PhotoPublicationGuard $photoGuard,
         private OutboxPublisherInterface $outbox,
         private GeocodeurAdresses $geocodeurs,
@@ -55,6 +57,11 @@ final readonly class IndexFicheHandler
             // Toute mutation de fiche converge ici : point unique de décision
             // de la diffusion marketplace (envoi ou dépublication).
             $this->marketplaceScheduler->schedule($fiche);
+            // Même point de convergence pour la synchro Salesforce (CSV e-mail,
+            // système de transition) : la fiche est marquée « à synchroniser »,
+            // l'envoi est différé et coalescé. L'import legacy n'enfile pas
+            // IndexFiche, il n'est donc jamais concerné.
+            $this->salesforceScheduler->schedule($fiche);
         }
     }
 }

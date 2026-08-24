@@ -30,6 +30,39 @@ final class RestaurantRepository extends ServiceEntityRepository
         return $this->findOneBy(['fiche' => $fiche]);
     }
 
+    /**
+     * Lot de restaurants (fiche + localisation chargées) après un curseur ULID,
+     * pour l'enrichissement d'attributs en masse. Keyset sur l'id.
+     *
+     * $sourceNonScanne exclut les restaurants déjà scannés « récemment » par
+     * cette source (jamais scannés / modifiés depuis / périmés avant $seuil).
+     *
+     * @return list<Restaurant>
+     */
+    public function findBatchAfter(?string $afterId, int $limit, ?string $sourceNonScanne = null, ?\DateTimeImmutable $seuilFraicheur = null): array
+    {
+        $builder = $this->createQueryBuilder('r')
+            ->addSelect('f', 'loc')
+            ->join('r.fiche', 'f')
+            ->leftJoin('f.localisation', 'loc')
+            ->orderBy('r.id', 'ASC')
+            ->setMaxResults(max(1, min(1000, $limit)));
+        if (null !== $afterId && '' !== $afterId) {
+            $builder->andWhere('r.id > :after')->setParameter('after', Ulid::fromString($afterId), 'ulid');
+        }
+        if (null !== $sourceNonScanne) {
+            $builder
+                ->andWhere('NOT EXISTS (SELECT 1 FROM App\Pim\Entity\FicheEnrichmentScan sc WHERE sc.fiche = f AND sc.source = :src AND sc.scannedAt >= f.updatedAt AND sc.scannedAt >= :seuil)')
+                ->setParameter('src', $sourceNonScanne)
+                ->setParameter('seuil', $seuilFraicheur ?? new \DateTimeImmutable('@0'));
+        }
+
+        /** @var list<Restaurant> $restaurants */
+        $restaurants = $builder->getQuery()->getResult();
+
+        return $restaurants;
+    }
+
     public function findListPage(
         ?FicheCursor $cursor = null,
         int $limit = 50,

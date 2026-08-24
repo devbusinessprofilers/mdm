@@ -24,6 +24,7 @@ use App\Pim\Entity\SiteDiffusion;
 use App\Pim\Enum\TypeFiche;
 use App\Pim\Form\ActiviteType;
 use App\Pim\Form\AdresseSuggestionFormFactory;
+use App\Pim\Form\EnrichissementSuggestionFormFactory;
 use App\Pim\Form\FicheActionFormFactory;
 use App\Pim\Form\LieuPhotoUploadType;
 use App\Pim\Form\LieuType;
@@ -31,6 +32,7 @@ use App\Pim\Form\RestaurantType;
 use App\Pim\Form\ServiceEvenementielType;
 use App\Pim\Repository\CompletenessFieldConfigurationRepository;
 use App\Pim\Repository\FicheAffiliationRepository;
+use App\Pim\Repository\FicheSuggestionRepository;
 use App\Pim\Repository\SiteDiffusionRepository;
 use App\Shared\Service\ParametreProviderInterface;
 use League\Flysystem\FilesystemException;
@@ -92,7 +94,10 @@ final readonly class FicheEditeurEcran
         private OcrReviewFormFactory $ocrRevues,
         private ParametreProviderInterface $parametres,
         private FicheSalesforceRepository $salesforce,
+        private \App\Etl\Service\SalesforceCsvSettings $salesforceCsv,
         private AdresseSuggestionFormFactory $adresseSuggestions,
+        private FicheSuggestionRepository $enrichissementSuggestionsRepository,
+        private EnrichissementSuggestionFormFactory $enrichissementSuggestions,
         private FichePhotoPresenter $fichePhotos,
         private MediaAssetRepository $mediaAssets,
         private CsrfTokenManagerInterface $csrfTokens,
@@ -294,6 +299,11 @@ final readonly class FicheEditeurEcran
                 'unarchive' => 'archivee' === $statut ? $this->actions->action($domaine, $id, 'unarchive', 'Désarchiver', buttonAttr: self::BOUTON_SOBRE)->createView() : null,
                 'republish' => 'archivee' === $statut ? $this->actions->action($domaine, $id, 'republish', 'Republier', buttonAttr: self::BOUTON_SOBRE)->createView() : null,
             ]),
+            // Bouton « Envoyer à Salesforce » (système de transition CSV
+            // e-mail) : présent seulement quand la synchro est configurée.
+            'salesforce_envoi' => $this->salesforceCsv->isConfigured()
+                ? $this->actions->salesforce($id, self::BOUTON_SOBRE)->createView()
+                : null,
             'action_suppression' => $this->actions->action($domaine, $id, 'delete', 'Supprimer', true, match ($type) {
                 TypeFiche::Lieu => 'Supprimer ce lieu ?',
                 TypeFiche::Activite => 'Supprimer cette activité ?',
@@ -360,6 +370,19 @@ final readonly class FicheEditeurEcran
                     ? null
                     : $this->adresseSuggestions->action($fiche->idString(), 'accepter')->createView(),
                 'ignorer' => $this->adresseSuggestions->action($fiche->idString(), 'ignorer')->createView(),
+            ];
+        }
+        // Suggestions génériques (Sirene : établissement cessé, backfill SIRET/TVA ;
+        // Geoapify/DATAtourisme/Wikidata à venir) — même gabarit de ligne.
+        foreach ($this->enrichissementSuggestionsRepository->findEnAttentePourFiche($fiche) as $suggestion) {
+            $lignes[] = [
+                'source' => $suggestion->source()->label(),
+                'label' => $suggestion->label(),
+                'actuel' => $suggestion->valeurActuelle() ?? '',
+                'valeur' => $suggestion->valeurProposee() ?? '',
+                'confiance' => null === $suggestion->score() ? null : (int) round($suggestion->score() * 100),
+                'accepter' => $this->enrichissementSuggestions->action($suggestion->id(), 'accepter')->createView(),
+                'ignorer' => $this->enrichissementSuggestions->action($suggestion->id(), 'ignorer')->createView(),
             ];
         }
 

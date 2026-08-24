@@ -83,6 +83,10 @@ class Lieu
     #[CompletenessTarget(self::WEBSITE_MAX_LENGTH)]
     private ?string $generaleWebsiteUrl = null;
 
+    // Chaîne / groupe hôtelier (enrichissement Wikidata)
+    #[ORM\Column(name: 'chaine_hoteliere', length: 120, nullable: true)]
+    private ?string $chaineHoteliere = null;
+
     // Événements de prédilection (Bible row 9)
     #[ORM\Column(name: 'generale_gamme', length: 255, nullable: true)]
     private ?string $generaleGamme = null;
@@ -542,6 +546,17 @@ class Lieu
     public function generaleWebsiteUrl(): ?string
     {
         return $this->generaleWebsiteUrl;
+    }
+
+    public function chaineHoteliere(): ?string
+    {
+        return $this->chaineHoteliere;
+    }
+
+    public function changeChaineHoteliere(?string $value): void
+    {
+        $this->chaineHoteliere = self::normalizeNullableString($value);
+        $this->touch();
     }
 
     public function changeGeneraleWebsiteUrl(?string $value): void

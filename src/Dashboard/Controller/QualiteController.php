@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Dashboard\Controller;
 
+use App\Account\Service\CurrentActorProvider;
+use App\Dashboard\Form\SuggestionSelectionType;
 use App\Dashboard\Message\ComputeDashboardStats;
 use App\Dashboard\Message\ComputeFieldFillRates;
-use App\Account\Service\CurrentActorProvider;
 use App\Dashboard\Repository\QualiteRepository;
-use App\Pim\Form\AdresseSuggestionFormFactory;
+use App\Dashboard\Service\SuggestionsBulkArbitre;
+use App\Dashboard\Service\SuggestionsEcran;
 use App\Pim\Form\TextDuplicateFormFactory;
 use App\Pim\Service\TextDuplicateArbitre;
 use App\Shared\Form\ActionType;
@@ -36,35 +38,28 @@ final class QualiteController extends AbstractController
     ];
 
     #[Route('/qualite', name: 'app_mdm_qualite', methods: ['GET'])]
-    public function __invoke(Request $request, QualiteRepository $qualite, AdresseSuggestionFormFactory $adresseForms, TextDuplicateFormFactory $doublonForms): Response
+    public function __invoke(Request $request, QualiteRepository $qualite, SuggestionsEcran $suggestionsEcran, TextDuplicateFormFactory $doublonForms): Response
     {
         $onglet = $request->query->getString('onglet');
         if (!array_key_exists($onglet, self::ONGLETS)) {
             $onglet = 'miroir';
         }
-        // Deux files distinctes : les écarts arbitrables en un clic (la BAN
-        // propose autre chose) et les adresses sans résultat fiable, à
-        // corriger à la main dans la fiche.
-        $filtreAdresses = 'sans' === $request->query->get('adresses') ? 'sans' : 'avec';
+        $suggestionsData = 'conflits' === $onglet
+            ? $suggestionsEcran->assembler(
+                $request->query->getString('src'),
+                $request->query->getInt('page', 1),
+                $request->query->getString('tri'),
+                $request->query->getString('ordre'),
+            )
+            : [];
 
-        return $this->render('dashboard/qualite.html.twig', [
+        return $this->render('dashboard/qualite.html.twig', array_merge([
             'onglets' => self::ONGLETS,
             'onglet_actif' => $onglet,
             'badges' => $qualite->badges(),
             'sante' => 'miroir' === $onglet ? $qualite->santeParGamme() : [],
             'champs_faibles' => 'miroir' === $onglet ? $qualite->champsFaibles() : [],
             'suggestions' => 'conflits' === $onglet ? $qualite->suggestionsEnAttente() : [],
-            // Mêmes décisions un clic que le bloc « Suggestions en attente »
-            // de la fiche, avec retour sur cet écran (filtre conservé).
-            'suggestions_adresse' => 'conflits' === $onglet
-                ? array_map(static fn (array $ligne): array => $ligne + [
-                    'accepter' => null === $ligne['proposition']
-                        ? null
-                        : $adresseForms->action($ligne['fiche_id'], 'accepter', 'qualite', $filtreAdresses)->createView(),
-                    'ignorer' => $adresseForms->action($ligne['fiche_id'], 'ignorer', 'qualite', $filtreAdresses)->createView(),
-                ], $qualite->suggestionsAdresse(20, 'avec' === $filtreAdresses))
-                : [],
-            'adresses_filtre' => $filtreAdresses,
             'adresses_comptes' => 'conflits' === $onglet ? $qualite->comptesSuggestionsAdresse() : ['avec' => 0, 'sans' => 0],
             'doublons_adresse' => 'conflits' === $onglet ? $qualite->doublonsAdresse() : [],
             // Mêmes décisions un clic que les doublons photos du DAM : confirmer
@@ -86,7 +81,48 @@ final class QualiteController extends AbstractController
                     'csrf_token_id' => 'qualite-recalcul',
                 ])->createView()
                 : null,
-        ]);
+        ], $suggestionsData));
+    }
+
+    #[Route('/qualite/suggestions/{decision}', name: 'app_mdm_qualite_suggestions', requirements: ['decision' => 'accepter|ignorer'], methods: ['POST'])]
+    #[IsGranted('ROLE_BP_VALIDATOR')]
+    public function arbitrerSuggestions(string $decision, Request $request, SuggestionsBulkArbitre $arbitre, CurrentActorProvider $actor): Response
+    {
+        $soumis = $request->request->all()['suggestion_selection'] ?? [];
+        $idsSoumis = is_array($soumis) && is_array($soumis['ids'] ?? null) ? $soumis['ids'] : [];
+        $choices = [];
+        foreach ($idsSoumis as $id) {
+            if (is_string($id) && 1 === preg_match('/^(adresse|suggestion):[0-9A-HJKMNP-TV-Z]{26}$/', $id)) {
+                $choices[$id] = $id;
+            }
+        }
+        $retour = $this->redirectToRoute('app_mdm_qualite', array_filter([
+            'onglet' => 'conflits',
+            'src' => $request->query->getString('src') ?: null,
+            'page' => $request->query->getInt('page') ?: null,
+        ]));
+        $form = $this->createForm(SuggestionSelectionType::class, null, ['ids_choices' => $choices]);
+        $form->handleRequest($request);
+        if (!$form->isSubmitted() || !$form->isValid()) {
+            $this->addFlash('error', 'La décision est invalide (jeton expiré ?). Rechargez la page.');
+
+            return $retour;
+        }
+        /** @var array{ids?: list<string>} $data */
+        $data = $form->getData();
+        $ids = $data['ids'] ?? [];
+        if ([] === $ids) {
+            $this->addFlash('error', 'Aucune ligne sélectionnée.');
+
+            return $retour;
+        }
+        $bilan = $arbitre->arbitrer($ids, $decision, $actor->id());
+        $verbe = 'accepter' === $decision ? 'appliquée(s)' : 'ignorée(s)';
+        $this->addFlash('success', 0 === $bilan['echecs']
+            ? sprintf('%d suggestion(s) %s.', $bilan['ok'], $verbe)
+            : sprintf('%d suggestion(s) %s, %d ignorée(s) (déjà arbitrée ou sans proposition).', $bilan['ok'], $verbe, $bilan['echecs']));
+
+        return $retour;
     }
 
     #[Route('/qualite/recalculer', name: 'app_mdm_qualite_recalculer', methods: ['POST'])]

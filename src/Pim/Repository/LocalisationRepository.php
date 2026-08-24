@@ -43,4 +43,15 @@ final class LocalisationRepository extends ServiceEntityRepository
 
         return $codes;
     }
+
+    /** @return list<string> codes postaux distincts renseignés (borne l'index DATAtourisme) */
+    public function findDistinctPostalCodes(): array
+    {
+        /** @var list<string> $codes */
+        $codes = $this->getEntityManager()->getConnection()->fetchFirstColumn(
+            "SELECT DISTINCT code_postal FROM pim_localisation WHERE code_postal IS NOT NULL AND code_postal <> ''",
+        );
+
+        return $codes;
+    }
 }

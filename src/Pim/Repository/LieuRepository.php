@@ -166,6 +166,48 @@ final class LieuRepository extends ServiceEntityRepository
         return array_map(static fn (string $id): string => (string) Ulid::fromBinary($id), $rows);
     }
 
+    /** Le lieu porteur d'une fiche. */
+    public function findOneByFiche(Fiche $fiche): ?Lieu
+    {
+        return $this->findOneBy(['fiche' => $fiche]);
+    }
+
+    /**
+     * Lot de lieux (fiche + administratif + localisation chargés) après un
+     * curseur ULID, pour la vérification de statut en masse. Le keyset sur l'id
+     * évite l'OFFSET lent ; plafond aligné sur les autres itérateurs.
+     *
+     * $sourceNonScanne exclut les lieux déjà scannés « récemment » par cette
+     * source : on ne garde que les jamais scannés, ceux modifiés depuis le scan
+     * (scanned_at < updated_at) ou scannés avant $seuilFraicheur.
+     *
+     * @return list<Lieu>
+     */
+    public function findBatchAfter(?string $afterId, int $limit, ?string $sourceNonScanne = null, ?\DateTimeImmutable $seuilFraicheur = null): array
+    {
+        $builder = $this->createQueryBuilder('l')
+            ->addSelect('f', 'a', 'loc')
+            ->join('l.fiche', 'f')
+            ->join('l.administratif', 'a')
+            ->leftJoin('f.localisation', 'loc')
+            ->orderBy('l.id', 'ASC')
+            ->setMaxResults(max(1, min(1000, $limit)));
+        if (null !== $afterId && '' !== $afterId) {
+            $builder->andWhere('l.id > :after')->setParameter('after', Ulid::fromString($afterId), 'ulid');
+        }
+        if (null !== $sourceNonScanne) {
+            $builder
+                ->andWhere('NOT EXISTS (SELECT 1 FROM App\Pim\Entity\FicheEnrichmentScan sc WHERE sc.fiche = f AND sc.source = :src AND sc.scannedAt >= f.updatedAt AND sc.scannedAt >= :seuil)')
+                ->setParameter('src', $sourceNonScanne)
+                ->setParameter('seuil', $seuilFraicheur ?? new \DateTimeImmutable('@0'));
+        }
+
+        /** @var list<Lieu> $lieux */
+        $lieux = $builder->getQuery()->getResult();
+
+        return $lieux;
+    }
+
     /** @param array{id: string, code: int|string, label: string|null, status: string, completeness: int|string, updated_at: string, ville: string|null} $row */
     private static function toListItem(array $row): LieuListItem
     {
