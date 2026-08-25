@@ -61,7 +61,8 @@ final class WikidataChaineTest extends TestCase
     {
         $lieu = new Lieu();
         $lieu->changeLabel('Mercure Paris Centre');
-        $lieu->changeChaineHoteliere('Accor');
+        // Le sélecteur LOV est l'unique champ chaîne : déjà coché = pas de suggestion.
+        $lieu->changeGeneraleChainesGroupeHot(['GENERALE_CHAINES_GROUPE_HOT_40']);
 
         self::assertSame([], (new ChaineHoteliereVerifier())->analyser($lieu, ChaineDictionnaire::depuis()));
     }

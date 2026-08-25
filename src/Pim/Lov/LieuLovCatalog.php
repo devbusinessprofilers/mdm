@@ -536,6 +536,13 @@ final class LieuLovCatalog
         if (null === $value) {
             return;
         }
+        // Le runtime d'abord : une valeur créée dans /admin/listes-de-valeurs
+        // (ou à l'accept d'une suggestion de chaîne) est aussi légitime que le
+        // catalogue statique — sans quoi elle serait proposée dans les selects
+        // mais rejetée à l'enregistrement de la fiche.
+        if (null !== LovRuntimeCatalog::valueId($attributeCode, $value)) {
+            return;
+        }
 
         if (!isset(self::CHOICES[$attributeCode][$value])) {
             throw new \InvalidArgumentException(sprintf('Unknown LOV code "%s" for attribute "%s".', $value, $attributeCode));

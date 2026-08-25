@@ -8,10 +8,14 @@ use App\Pim\Entity\Activite\Activite;
 use App\Pim\Entity\FicheSuggestion;
 use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Entity\Restaurant\Restaurant;
+use App\Pim\Entity\Service\ServiceEvenementiel;
 use App\Pim\Enum\SuggestionAction;
+use App\Pim\Lov\LieuLovCatalog;
 use App\Pim\Repository\ActiviteRepository;
+use App\Pim\Repository\AttributDefinitionRepository;
 use App\Pim\Repository\LieuRepository;
 use App\Pim\Repository\RestaurantRepository;
+use App\Pim\Repository\ServiceEvenementielRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
@@ -29,6 +33,9 @@ final readonly class EnrichissementSuggestionArbitre
         private LieuRepository $lieux,
         private RestaurantRepository $restaurants,
         private ActiviteRepository $activites,
+        private ServiceEvenementielRepository $services,
+        private AttributDefinitionRepository $attributs,
+        private LovAdminManager $lovAdmin,
         private EntityManagerInterface $entityManager,
     ) {
     }
@@ -47,7 +54,7 @@ final readonly class EnrichissementSuggestionArbitre
 
             return;
         }
-        $this->remplirChamp($suggestion);
+        $this->remplirChamp($suggestion, $actor);
         $suggestion->accepter($actor);
         // La valeur appliquée doit repasser par IndexFiche (complétude, resync
         // marketplace), comme tout autre chemin d'écriture.
@@ -62,7 +69,7 @@ final readonly class EnrichissementSuggestionArbitre
         $this->entityManager->flush();
     }
 
-    private function remplirChamp(FicheSuggestion $suggestion): void
+    private function remplirChamp(FicheSuggestion $suggestion, string $actor): void
     {
         $champ = $suggestion->champ();
         $fiche = $suggestion->fiche();
@@ -80,15 +87,27 @@ final readonly class EnrichissementSuggestionArbitre
 
             return;
         }
+        if (str_starts_with($champ, 'service_')) {
+            $service = $this->services->findOneByFiche($fiche)
+                ?? throw new \DomainException('Service introuvable : impossible d\'appliquer la valeur.');
+            $this->policy->execute($fiche, fn () => $this->appliquerService($service, $suggestion));
+
+            return;
+        }
         $lieu = $this->lieux->findOneByFiche($fiche)
             ?? throw new \DomainException('Fiche sans bloc administratif : impossible d\'appliquer la valeur.');
-        $this->policy->execute($fiche, fn () => $this->appliquerLieu($lieu, $suggestion));
+        $this->policy->execute($fiche, fn () => $this->appliquerLieu($lieu, $suggestion, $actor));
     }
 
-    private function appliquerLieu(Lieu $lieu, FicheSuggestion $suggestion): void
+    private function appliquerLieu(Lieu $lieu, FicheSuggestion $suggestion, string $actor): void
     {
         $champ = $suggestion->champ();
         $payload = $suggestion->payload() ?? [];
+        if ('lieu_chaine' === $champ) {
+            $this->appliquerChaine($lieu, $suggestion->valeurProposee(), $actor);
+
+            return;
+        }
         if (str_starts_with($champ, 'lieu_lov_')) {
             $codes = self::fusion(
                 'BIEN_ETRE' === ($payload['attribut'] ?? null) ? $lieu->bienEtre() : $lieu->installation(),
@@ -106,11 +125,79 @@ final readonly class EnrichissementSuggestionArbitre
             'info_legale_siret' => [$lieu->administratif()->infoLegaleSiret(), fn () => $lieu->administratif()->changeInfoLegaleSiret($suggestion->valeurProposee())],
             'info_legale_num_tva' => [$lieu->administratif()->infoLegaleNumTva(), fn () => $lieu->administratif()->changeInfoLegaleNumTva($suggestion->valeurProposee())],
             'lieu_desc_generale' => [$lieu->descGenerale(), fn () => $lieu->changeDescGenerale(self::texte($payload))],
-            'lieu_chaine' => [$lieu->chaineHoteliere(), fn () => $lieu->changeChaineHoteliere($suggestion->valeurProposee())],
             default => throw new \DomainException(sprintf('Champ « %s » non applicable.', $champ)),
         };
         $this->assertFraicheur($courante, $suggestion);
         $appliquer();
+    }
+
+    /**
+     * La chaîne détectée alimente le sélecteur LOV « Groupe et chaîne
+     * hôtelière » — l'unique champ chaîne de la fiche. Sémantique d'union
+     * (multi-select : on ajoute une enseigne, on n'écrase rien), donc pas de
+     * garde de fraîcheur. Un libellé absent de la liste crée la valeur LOV à
+     * la volée (visible dans /admin/listes-de-valeurs, dictionnaire
+     * marketplace resynchronisé).
+     */
+    private function appliquerChaine(Lieu $lieu, ?string $chaine, string $actor): void
+    {
+        $chaine = trim((string) $chaine);
+        if ('' === $chaine) {
+            throw new \DomainException('Suggestion sans proposition de chaîne.');
+        }
+        $code = self::codeLovChaine($chaine) ?? $this->creerValeurChaine($chaine, $actor);
+        if (!in_array($code, $lieu->generaleChainesGroupeHot(), true)) {
+            $lieu->changeGeneraleChainesGroupeHot([...$lieu->generaleChainesGroupeHot(), $code]);
+        }
+    }
+
+    /** Crée la valeur LOV manquante et retourne son code (réutilise le code en cas de collision de slug). */
+    private function creerValeurChaine(string $chaine, string $actor): string
+    {
+        $attribut = $this->attributs->findOneByCode('GENERALE_CHAINES_GROUPE_HOT')
+            ?? throw new \DomainException('Attribut « Groupe et chaîne hôtelière » introuvable.');
+        $choix = LieuLovCatalog::choicesFor('GENERALE_CHAINES_GROUPE_HOT');
+        $code = self::codeDepuisLibelle($chaine);
+        if (array_key_exists($code, $choix)) {
+            return $code;
+        }
+        $this->lovAdmin->create($attribut, [
+            'code' => $code,
+            'label' => $chaine,
+            'position' => count($choix) + 1,
+            'active' => true,
+        ], $actor);
+
+        return $code;
+    }
+
+    /** Code LOV dérivé du libellé, au format de l'admin des listes de valeurs. */
+    private static function codeDepuisLibelle(string $chaine): string
+    {
+        $ascii = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $chaine);
+        $slug = strtoupper(trim((string) preg_replace('/[^A-Za-z0-9]+/', '_', false === $ascii ? $chaine : $ascii), '_'));
+
+        return mb_substr('GENERALE_CHAINES_GROUPE_HOT_'.('' === $slug ? 'AUTRE' : $slug), 0, 96);
+    }
+
+    private static function codeLovChaine(string $chaine): ?string
+    {
+        $cible = self::normaliseLibelle($chaine);
+        foreach (LieuLovCatalog::choicesFor('GENERALE_CHAINES_GROUPE_HOT') as $code => $label) {
+            if (self::normaliseLibelle($label) === $cible) {
+                return $code;
+            }
+        }
+
+        return null;
+    }
+
+    /** Comparaison de libellés insensible à la casse et aux accents. */
+    private static function normaliseLibelle(string $valeur): string
+    {
+        $translit = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $valeur);
+
+        return mb_strtolower(trim(false === $translit ? $valeur : $translit));
     }
 
     private function appliquerActivite(Activite $activite, FicheSuggestion $suggestion): void
@@ -120,6 +207,15 @@ final readonly class EnrichissementSuggestionArbitre
         }
         $this->assertFraicheur($activite->descriptionGenerale(), $suggestion);
         $activite->changeDescriptionGenerale(self::texte($suggestion->payload() ?? []));
+    }
+
+    private function appliquerService(ServiceEvenementiel $service, FicheSuggestion $suggestion): void
+    {
+        if ('service_desc_generale' !== $suggestion->champ()) {
+            throw new \DomainException(sprintf('Champ « %s » non applicable.', $suggestion->champ()));
+        }
+        $this->assertFraicheur($service->descriptionGenerale(), $suggestion);
+        $service->changeDescriptionGenerale(self::texte($suggestion->payload() ?? []));
     }
 
     /** @param array<string, mixed> $payload */
@@ -134,6 +230,12 @@ final readonly class EnrichissementSuggestionArbitre
         if ('restaurant_site_officiel' === $suggestion->champ()) {
             $this->assertFraicheur($restaurant->siteOfficiel(), $suggestion);
             $restaurant->changeSiteOfficiel($suggestion->valeurProposee());
+
+            return;
+        }
+        if ('restaurant_desc_generale' === $suggestion->champ()) {
+            $this->assertFraicheur($restaurant->descriptionGenerale(), $suggestion);
+            $restaurant->changeDescriptionGenerale(self::texte($payload));
 
             return;
         }

@@ -18,7 +18,9 @@ final readonly class ChaineHoteliereVerifier
     /** @return list<SuggestionProposee> */
     public function analyser(Lieu $lieu, ChaineDictionnaire $dictionnaire): array
     {
-        if (null !== $lieu->chaineHoteliere()) {
+        // Backfill seulement : le sélecteur LOV « Groupe et chaîne hôtelière »
+        // est l'unique champ chaîne de la fiche.
+        if ([] !== $lieu->generaleChainesGroupeHot()) {
             return [];
         }
         $label = $lieu->label();

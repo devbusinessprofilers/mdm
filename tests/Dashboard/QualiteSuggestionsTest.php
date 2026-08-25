@@ -32,10 +32,14 @@ final class QualiteSuggestionsTest extends WebTestCase
     {
         if (isset($this->connection)) {
             $this->connection->executeStatement('DELETE FROM pim_fiche_suggestion');
+            $this->connection->executeStatement('DELETE FROM pim_fiche_attribute_value');
             $this->connection->executeStatement('DELETE FROM pim_lieu_administratif');
             $this->connection->executeStatement('DELETE FROM pim_lieu');
             $this->connection->executeStatement('DELETE FROM pim_fiche');
             $this->connection->executeStatement('DELETE FROM account_user');
+            // Valeur LOV créée par l'accept d'une chaîne hors liste (les
+            // traductions suivent par cascade).
+            $this->connection->executeStatement("DELETE FROM pim_attribute_value WHERE code = 'GENERALE_CHAINES_GROUPE_HOT_ACCOR'");
         }
         parent::tearDown();
     }
@@ -91,7 +95,10 @@ final class QualiteSuggestionsTest extends WebTestCase
         $entityManager->clear();
         $lieu = $entityManager->find(Lieu::class, $lieuId);
         self::assertNotNull($lieu);
-        self::assertSame('Accor', $lieu->chaineHoteliere());
+        // « Accor » n'est pas dans la liste : l'accept crée la valeur LOV puis
+        // la coche — le sélecteur de l'éditeur est l'unique champ chaîne.
+        self::assertContains('GENERALE_CHAINES_GROUPE_HOT_ACCOR', $lieu->generaleChainesGroupeHot());
+        self::assertSame('Accor', $this->connection->fetchOne("SELECT label FROM pim_attribute_value WHERE code = 'GENERALE_CHAINES_GROUPE_HOT_ACCOR'"));
         $suggestion = $entityManager->find(FicheSuggestion::class, $suggestionId);
         self::assertNotNull($suggestion);
         self::assertSame(SuggestionStatut::Acceptee, $suggestion->statut());
@@ -107,33 +114,38 @@ final class QualiteSuggestionsTest extends WebTestCase
         $user->setPassword('x');
         $entityManager->persist($user);
 
-        // Chaîne saisie à la main après le scan : la suggestion est périmée.
+        // Description saisie à la main après le scan (valeurActuelle = null au
+        // scan) : la suggestion est périmée, la saisie ne doit pas être écrasée.
         $lieuPerime = new Lieu();
         $lieuPerime->changeLabel('Hôtel Déjà Renseigné');
-        $lieuPerime->changeChaineHoteliere('Louvre Hotels');
+        $lieuPerime->changeDescGenerale('Décrit à la main après le scan.');
         $entityManager->persist($lieuPerime);
         $perimee = new FicheSuggestion(
             $lieuPerime->fiche(),
             SuggestionSource::Wikidata,
             SuggestionAction::RemplirChamp,
-            'lieu_chaine',
-            'Chaîne / groupe hôtelier',
+            'lieu_desc_generale',
+            'Description générale',
             null,
-            'Accor',
+            'Aperçu proposé.',
+            null,
+            ['text' => 'Description proposée par la source.'],
         );
         $entityManager->persist($perimee);
 
         $lieuValide = new Lieu();
-        $lieuValide->changeLabel('Hôtel Sans Chaîne');
+        $lieuValide->changeLabel('Hôtel Sans Description');
         $entityManager->persist($lieuValide);
         $valide = new FicheSuggestion(
             $lieuValide->fiche(),
             SuggestionSource::Wikidata,
             SuggestionAction::RemplirChamp,
-            'lieu_chaine',
-            'Chaîne / groupe hôtelier',
+            'lieu_desc_generale',
+            'Description générale',
             null,
-            'Accor',
+            'Aperçu proposé.',
+            null,
+            ['text' => 'Description proposée par la source.'],
         );
         $entityManager->persist($valide);
         $entityManager->flush();
@@ -156,12 +168,50 @@ final class QualiteSuggestionsTest extends WebTestCase
         // de la ligne suivante du lot ne doit pas persister un faux « acceptée ».
         $lieuPerime = $entityManager->find(Lieu::class, $lieuPerimeId);
         self::assertNotNull($lieuPerime);
-        self::assertSame('Louvre Hotels', $lieuPerime->chaineHoteliere());
+        self::assertSame('Décrit à la main après le scan.', $lieuPerime->descGenerale());
         $perimee = $entityManager->find(FicheSuggestion::class, $perimeeId);
         self::assertNotNull($perimee);
         self::assertSame(SuggestionStatut::EnAttente, $perimee->statut());
         $valide = $entityManager->find(FicheSuggestion::class, $valideId);
         self::assertNotNull($valide);
         self::assertSame(SuggestionStatut::Acceptee, $valide->statut());
+    }
+
+    public function testUnePropositionIaVitDansLeTableauValeursIaPasDansLesOnglets(): void
+    {
+        $client = self::createClient();
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $this->connection = self::getContainer()->get(Connection::class);
+
+        $user = new User('qualite-ia@example.test', ['ROLE_BP_VALIDATOR']);
+        $user->setPassword('x');
+        $entityManager->persist($user);
+        $lieu = new Lieu();
+        $lieu->changeLabel('Château décrit par IA');
+        $entityManager->persist($lieu);
+        $entityManager->persist(new FicheSuggestion(
+            $lieu->fiche(),
+            SuggestionSource::Ia,
+            SuggestionAction::RemplirChamp,
+            'lieu_desc_generale',
+            'Description générale',
+            null,
+            'Un domaine au calme, à deux pas de la gare.',
+        ));
+        $entityManager->flush();
+        $client->loginUser($user);
+
+        $crawler = $client->request('GET', '/qualite', ['onglet' => 'conflits']);
+        self::assertResponseIsSuccessful();
+
+        // La proposition IA figure dans « Valeurs suggérées par l'IA en
+        // attente », avec « Ouvrir » vers la fiche (l'arbitrage y vit)…
+        $tableauIa = $crawler->filter('section[aria-label="Suggestions IA à arbitrer"]');
+        self::assertStringContainsString('Château décrit par IA', $tableauIa->text());
+        self::assertStringContainsString('Description générale', $tableauIa->text());
+        self::assertSame(1, $tableauIa->filter('a[href*="/referentiel/lieux/fiche/"]')->count());
+
+        // …et pas d'onglet dédié dans le tableau des sources.
+        self::assertSelectorTextNotContains('body', 'Descriptions IA');
     }
 }
