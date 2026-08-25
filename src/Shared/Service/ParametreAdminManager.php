@@ -43,6 +43,10 @@ final readonly class ParametreAdminManager
         'compte.purge_jetons_jours' => ['min' => 1, 'max' => 365],
         'compte.mot_de_passe_longueur_min' => ['min' => 8, 'max' => 64],
         'compte.max_destinataires_demandes' => ['min' => 1, 'max' => 20],
+        'sirene.rescan_apres_jours' => ['min' => 1, 'max' => 365],
+        'geoapify.rescan_apres_jours' => ['min' => 1, 'max' => 365],
+        'datatourisme.rescan_apres_jours' => ['min' => 1, 'max' => 365],
+        'wikidata.rescan_apres_jours' => ['min' => 1, 'max' => 365],
     ];
 
     /** Paires minimum → maximum dont la cohérence est vérifiée à la saisie. */
