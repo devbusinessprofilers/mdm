@@ -170,6 +170,12 @@ final readonly class MarketplaceFichePayloadBuilder
     private function lieu(Lieu $lieu): array
     {
         return [
+            // Clé toujours présente : null propage aussi le désappariement.
+            'restaurantAssocie' => null === $lieu->restaurant() ? null : [
+                'pimId' => $lieu->restaurant()->fiche()->idString(),
+                'code' => $lieu->restaurant()->code(),
+                'nom' => $lieu->restaurant()->label(),
+            ],
             'description' => $lieu->descGenerale(),
             'pointsInteret' => $lieu->descGeneralePointInteret(),
             'atouts' => array_values(array_filter([
@@ -298,6 +304,12 @@ final readonly class MarketplaceFichePayloadBuilder
     private function restaurant(Restaurant $restaurant): array
     {
         return [
+            // Clé toujours présente : null propage aussi le désappariement.
+            'lieuAssocie' => null === $restaurant->lieu() ? null : [
+                'pimId' => $restaurant->lieu()->fiche()->idString(),
+                'code' => $restaurant->lieu()->code(),
+                'nom' => $restaurant->lieu()->label(),
+            ],
             'description' => $restaurant->descriptionGenerale(),
             'atouts' => $restaurant->atouts(),
             'siteWeb' => $restaurant->siteOfficiel(),

@@ -7,6 +7,8 @@ namespace App\Pim\Service;
 use App\Enrichment\Service\FicheTranslationScheduler;
 use App\Etl\Service\PhotoPublicationGuard;
 use App\Pim\Entity\Fiche;
+use App\Pim\Entity\Lieu\Lieu;
+use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Message\IndexFiche;
 use App\Pim\Validation\ValidationGroups;
 use App\Shared\Outbox\OutboxPublisherInterface;
@@ -100,8 +102,27 @@ final readonly class FicheWorkflowManager
 
     public function delete(object $subject): void
     {
+        // Liaison Lieu ↔ Restaurant : la fiche liée survit mais son payload
+        // change — la détacher et la réindexer, sans transition de workflow.
+        $liee = match (true) {
+            $subject instanceof Restaurant => $subject->lieu(),
+            $subject instanceof Lieu => $subject->restaurant(),
+            default => null,
+        };
+        if ($liee instanceof Lieu) {
+            $liee->syncRestaurant(null);
+        }
+        if ($liee instanceof Restaurant) {
+            $liee->syncLieu(null);
+        }
+        if (null !== $liee) {
+            $this->outbox->enqueue(new IndexFiche($liee->fiche()->idString()));
+        }
         $this->entityManager->remove($subject);
-        $this->entityManager->flush();
+        Fiche::preserveWorkflowsDuring(
+            null === $liee ? [] : [$liee->fiche()],
+            fn () => $this->entityManager->flush(),
+        );
     }
 
     public function indexAndFlush(Fiche $fiche): void

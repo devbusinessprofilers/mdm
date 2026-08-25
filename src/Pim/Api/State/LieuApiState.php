@@ -6,6 +6,7 @@ namespace App\Pim\Api\State;
 
 use App\Pim\Api\Exception\ApiProblemException;
 use App\Enrichment\Service\FicheTranslationScheduler;
+use App\Pim\Entity\Fiche;
 use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Message\IndexFiche;
 use App\Pim\Repository\LieuRepository;
@@ -58,6 +59,12 @@ final readonly class LieuApiState
     {
         $this->translationScheduler->schedule($lieu->fiche());
         $this->outbox->enqueue(new IndexFiche($lieu->fiche()->idString()));
-        $this->entityManager->flush();
+        // Liaison Restaurant modifiée : resynchroniser les fiches liées, sans
+        // transition de workflow (flush sous suppression du PreUpdate détail).
+        $liees = $lieu->drainFichesLieesAResynchroniser();
+        foreach ($liees as $ficheLiee) {
+            $this->outbox->enqueue(new IndexFiche($ficheLiee->idString()));
+        }
+        Fiche::preserveWorkflowsDuring($liees, fn () => $this->entityManager->flush());
     }
 }

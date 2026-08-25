@@ -14,6 +14,7 @@ use App\Pim\ReadModel\RestaurantListPage;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\ParameterType;
+use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Component\Uid\Ulid;
 
@@ -23,6 +24,20 @@ final class RestaurantRepository extends ServiceEntityRepository
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Restaurant::class);
+    }
+
+    /**
+     * Sélection pour l'autocomplete (liaison Lieu → Restaurant) : fiches non
+     * archivées. Alias « f » et non « fiche » : EntitySearchUtil joint le sien.
+     */
+    public function createAutocompleteQueryBuilder(): QueryBuilder
+    {
+        return $this->createQueryBuilder('r')
+            ->addSelect('f')
+            ->innerJoin('r.fiche', 'f')
+            ->andWhere('f.status != :archivee')
+            ->setParameter('archivee', StatutFiche::Archivee)
+            ->orderBy('f.label', 'ASC');
     }
 
     public function findOneByFiche(Fiche $fiche): ?Restaurant

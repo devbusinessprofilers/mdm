@@ -69,6 +69,7 @@ final class LieuType extends AbstractType
             ->add('generaleWebsiteUrl', UrlType::class, $this->field('Site web officiel', 'generaleWebsiteUrl', 'changeGeneraleWebsiteUrl', false) + [
                 'constraints' => [new \Symfony\Component\Validator\Constraints\Length(max: Lieu::WEBSITE_MAX_LENGTH), new \Symfony\Component\Validator\Constraints\Url(requireTld: true)],
             ])
+            ->add('restaurant', RestaurantAutocompleteType::class, $this->field('Restaurant associé', 'restaurant', 'changeRestaurant', false))
             ->add('informationsGenerales', MethodMappedFieldsType::class, $this->section(LieuFormCatalog::general()))
             ->add('disponibilites', MethodMappedFieldsType::class, $this->section(LieuFormCatalog::availability()))
             ->add('accessibiliteDescription', MethodMappedFieldsType::class, $this->section(LieuFormCatalog::accessibilityAndDescription()))

@@ -49,6 +49,11 @@ final class RestaurantType extends AbstractType
                 TextType::class,
                 $this->field('Nom du restaurant', 'label', 'changeLabel'),
             )
+            ->add(
+                'lieu',
+                LieuAutocompleteType::class,
+                $this->field('Lieu associé', 'lieu', 'changeLieu'),
+            )
             ->add('businessPremium', CheckboxType::class, [
                 'label' => 'Adhérent Business Premium',
                 'required' => false,

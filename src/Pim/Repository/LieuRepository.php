@@ -14,6 +14,7 @@ use App\Pim\ReadModel\LieuListPage;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\ParameterType;
+use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Component\Uid\Ulid;
 
@@ -23,6 +24,20 @@ final class LieuRepository extends ServiceEntityRepository
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Lieu::class);
+    }
+
+    /**
+     * Sélection pour l'autocomplete (liaison Restaurant → Lieu) : fiches non
+     * archivées. Alias « f » et non « fiche » : EntitySearchUtil joint le sien.
+     */
+    public function createAutocompleteQueryBuilder(): QueryBuilder
+    {
+        return $this->createQueryBuilder('l')
+            ->addSelect('f')
+            ->innerJoin('l.fiche', 'f')
+            ->andWhere('f.status != :archivee')
+            ->setParameter('archivee', StatutFiche::Archivee)
+            ->orderBy('f.label', 'ASC');
     }
 
     public function findListPage(?FicheCursor $cursor = null, int $limit = 50, ?StatutFiche $status = null): LieuListPage
@@ -83,13 +98,14 @@ final class LieuRepository extends ServiceEntityRepository
     public function findOneByFicheWithLocalisation(Fiche $fiche): ?Lieu
     {
         // Fetch-join the inverse one-to-one associations as well: Doctrine
-        // otherwise resolves them with two additional queries while hydrating.
+        // otherwise resolves them with additional queries while hydrating.
         return $this->createQueryBuilder('l')
-            ->addSelect('f', 'loc', 'administratif', 'tarification')
+            ->addSelect('f', 'loc', 'administratif', 'tarification', 'restaurant')
             ->innerJoin('l.fiche', 'f')
             ->leftJoin('f.localisation', 'loc')
             ->leftJoin('l.administratif', 'administratif')
             ->leftJoin('l.tarification', 'tarification')
+            ->leftJoin('l.restaurant', 'restaurant')
             ->where('l.fiche = :fiche')
             // DQL does not run the 'ulid' column type on inferred parameters; bind it explicitly.
             ->setParameter('fiche', $fiche->id(), 'ulid')
@@ -186,10 +202,13 @@ final class LieuRepository extends ServiceEntityRepository
     public function findBatchAfter(?string $afterId, int $limit, ?string $sourceNonScanne = null, ?\DateTimeImmutable $seuilFraicheur = null): array
     {
         $builder = $this->createQueryBuilder('l')
-            ->addSelect('f', 'a', 'loc')
+            // Le OneToOne inverse restaurant se charge de toute façon à
+            // l'hydratation : le fetch-join évite une requête par lieu.
+            ->addSelect('f', 'a', 'loc', 'restaurant')
             ->join('l.fiche', 'f')
             ->join('l.administratif', 'a')
             ->leftJoin('f.localisation', 'loc')
+            ->leftJoin('l.restaurant', 'restaurant')
             ->orderBy('l.id', 'ASC')
             ->setMaxResults(max(1, min(1000, $limit)));
         if (null !== $afterId && '' !== $afterId) {

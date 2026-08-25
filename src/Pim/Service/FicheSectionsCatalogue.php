@@ -120,8 +120,9 @@ final class FicheSectionsCatalogue
             ],
             [
                 'titre' => 'Restauration',
-                'champs' => ['restauration'],
-                'proprietes' => array_keys(LieuFormCatalog::restaurant()),
+                // La liaison vers la fiche Restaurant du lieu ouvre l'onglet.
+                'champs' => ['restaurant', 'restauration'],
+                'proprietes' => ['restaurant', ...array_keys(LieuFormCatalog::restaurant())],
                 'blocs' => [],
                 'groupe' => 'ma_fiche',
             ],
@@ -203,8 +204,8 @@ final class FicheSectionsCatalogue
         return [
             [
                 'titre' => 'Informations générales',
-                'champs' => ['label', 'siteOfficiel', 'telephone', 'businessPremium', 'partenaireBp', 'privatisationTotale', 'privatisationPartielle', 'heureOuverture', 'heureFermeture', 'joursOuverture', 'periodesFermeture'],
-                'proprietes' => ['label', 'siteOfficiel', 'privatisationTotale', 'privatisationPartielle', 'heureOuverture', 'heureFermeture', 'joursOuverture', 'periodesFermeture'],
+                'champs' => ['label', 'lieu', 'siteOfficiel', 'telephone', 'businessPremium', 'partenaireBp', 'privatisationTotale', 'privatisationPartielle', 'heureOuverture', 'heureFermeture', 'joursOuverture', 'periodesFermeture'],
+                'proprietes' => ['label', 'lieu', 'siteOfficiel', 'privatisationTotale', 'privatisationPartielle', 'heureOuverture', 'heureFermeture', 'joursOuverture', 'periodesFermeture'],
                 'blocs' => ['disponibilites'],
                 'groupe' => 'ma_fiche',
             ],

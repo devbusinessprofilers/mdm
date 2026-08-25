@@ -26,6 +26,7 @@ final class LieuTypeTest extends KernelTestCase
         foreach (['informationsGenerales', 'disponibilites', 'accessibiliteDescription', 'hebergement', 'syntheseSalles', 'equipementsServices', 'rse', 'loisirs', 'restauration', 'visibilite', 'administratif', 'tarification'] as $section) {
             self::assertTrue($form->has($section), $section);
         }
+        self::assertTrue($form->has('restaurant'));
         self::assertTrue($form->get('accessibiliteDescription')->has('descGeneralePointInteret'));
         self::assertTrue($form->get('rse')->has('rseDescGenerale'));
         self::assertCount(37, $form->get('administratif'));

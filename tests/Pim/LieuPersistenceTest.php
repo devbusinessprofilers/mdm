@@ -7,6 +7,7 @@ namespace App\Tests\Pim;
 use App\Pim\Entity\Fiche;
 use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Entity\Localisation;
+use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Enum\StatutFiche;
 use App\Pim\Lov\LieuLovCatalog;
 use App\Pim\ReadModel\FicheCursor;
@@ -71,6 +72,66 @@ final class LieuPersistenceTest extends KernelTestCase
 
         self::assertSame(0, $this->countRows('pim_lieu'));
         self::assertSame(0, $this->countRows('pim_localisation'));
+    }
+
+    public function testLiaisonRestaurantEstPersisteeEtDetacheeALaSuppressionDuLieu(): void
+    {
+        $lieu = new Lieu();
+        $lieu->changeLabel('Hôtel des tests');
+        $restaurant = new Restaurant();
+        $restaurant->changeLabel('La Table des tests');
+        $restaurant->changeLieu($lieu);
+        $this->entityManager->persist($lieu);
+        $this->entityManager->persist($restaurant);
+        $this->entityManager->flush();
+        $lieuId = $lieu->id();
+        $restaurantId = $restaurant->id();
+        $this->entityManager->clear();
+
+        $rechargeLieu = $this->entityManager->getRepository(Lieu::class)->find($lieuId);
+        self::assertInstanceOf(Lieu::class, $rechargeLieu);
+        self::assertSame($restaurantId, $rechargeLieu->restaurant()?->id());
+        $rechargeRestaurant = $this->entityManager->getRepository(Restaurant::class)->find($restaurantId);
+        self::assertInstanceOf(Restaurant::class, $rechargeRestaurant);
+        self::assertSame($lieuId, $rechargeRestaurant->lieu()?->id());
+
+        // Suppression du lieu : la FK SET NULL détache le restaurant, sa fiche survit.
+        $this->entityManager->remove($rechargeLieu);
+        $this->entityManager->flush();
+        $this->entityManager->clear();
+
+        self::assertSame(0, $this->countRows('pim_lieu'));
+        $survivant = $this->entityManager->getRepository(Restaurant::class)->find($restaurantId);
+        self::assertInstanceOf(Restaurant::class, $survivant);
+        self::assertNull($survivant->lieu());
+    }
+
+    public function testLierDepuisLeLieuNeDepubliePasLeRestaurantAuFlush(): void
+    {
+        $restaurant = new Restaurant();
+        $restaurant->changeLabel('La Table des tests');
+        $restaurant->fiche()->publishForImport();
+        $lieu = new Lieu();
+        $lieu->changeLabel('Hôtel des tests');
+        $this->entityManager->persist($restaurant);
+        $this->entityManager->persist($lieu);
+        $this->entityManager->flush();
+
+        // Même mécanique que LieuAdminManager::save : le flush s'exécute sous
+        // suppression de transition des fiches liées, sinon le PreUpdate de la
+        // ligne pim_restaurant (lieu_id) repasserait la fiche « en cours ».
+        $lieu->changeRestaurant($restaurant);
+        Fiche::preserveWorkflowsDuring(
+            $lieu->drainFichesLieesAResynchroniser(),
+            fn () => $this->entityManager->flush(),
+        );
+
+        self::assertSame(StatutFiche::Publiee, $restaurant->fiche()->status());
+        $statutEnBase = $this->connection->fetchOne(
+            'SELECT status FROM pim_fiche WHERE id = ?',
+            [\Symfony\Component\Uid\Ulid::fromString($restaurant->fiche()->idString())->toBinary()],
+        );
+        self::assertSame(StatutFiche::Publiee->value, $statutEnBase);
     }
 
     public function testKeysetPaginationDoesNotDuplicateOrOmitEqualTimestamps(): void
@@ -173,6 +234,7 @@ final class LieuPersistenceTest extends KernelTestCase
         $this->connection->executeStatement('DELETE FROM pim_lieu_tarification');
         $this->connection->executeStatement('DELETE FROM pim_fiche_search');
         $this->connection->executeStatement('DELETE FROM pim_fiche_attribute_value');
+        $this->connection->executeStatement('DELETE FROM pim_restaurant');
         $this->connection->executeStatement('DELETE FROM pim_lieu');
         $this->connection->executeStatement('DELETE FROM pim_fiche');
         $this->connection->executeStatement('DELETE FROM pim_localisation');

@@ -22,9 +22,11 @@ use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Entity\Lieu\PeriodeFermeture;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Entity\Localisation;
+use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Entity\SiteDiffusion;
 use App\Pim\Enum\NatureRessource;
 use App\Pim\Enum\TypeAccesLieu;
+use App\Pim\Repository\LieuRepository;
 use App\Pim\Repository\SiteDiffusionRepository;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
@@ -91,6 +93,7 @@ final class SyncFicheMarketplaceHandlerTest extends KernelTestCase
         self::assertSame('2026-08-15', $payload['data']['periodesFermeture'][0]['dateFin']);
         self::assertSame('English description', $payload['translations']['en']['description']);
         self::assertSame([], $payload['photos']);
+        self::assertNull($payload['data']['restaurantAssocie']);
         self::assertNotEmpty($payload['sequence']);
 
         $tracked = $this->tracking()->forFiche($fiche->id());
@@ -100,6 +103,35 @@ final class SyncFicheMarketplaceHandlerTest extends KernelTestCase
         // Payload sans photos : une purge de nettoyage suit l'upsert pour
         // retirer d'éventuelles lignes PIM orphelines.
         self::assertSame(1, $this->outboxCount(PruneMarketplacePhotos::class));
+    }
+
+    public function testLiaisonLieuRestaurantEstPropageeDansLesPayloads(): void
+    {
+        $ficheLieu = $this->publishedFiche();
+        $lieu = self::getContainer()->get(LieuRepository::class)->findOneByFiche($ficheLieu);
+        self::assertInstanceOf(Lieu::class, $lieu);
+        $restaurant = new Restaurant();
+        $restaurant->changeLabel('La Table des tests');
+        $restaurant->changeLieu($lieu);
+        $restaurant->fiche()->replaceSiteDiffusion([$this->site]);
+        $restaurant->fiche()->publishForImport();
+        $this->entityManager->persist($restaurant);
+        $this->entityManager->flush();
+        // La liaison est une mise à jour technique côté lieu : sa fiche
+        // publiée ne doit pas repasser en cours (sinon dépublication).
+        self::assertSame('publiee', $ficheLieu->status()->value);
+
+        $this->handler()(new SyncFicheMarketplace($ficheLieu->idString()));
+        $this->handler()(new SyncFicheMarketplace($restaurant->fiche()->idString()));
+        $this->entityManager->flush();
+
+        self::assertCount(2, $this->client->upserts);
+        $payloadLieu = $this->client->upserts[0]['payload'];
+        self::assertSame($restaurant->fiche()->code(), $payloadLieu['data']['restaurantAssocie']['code']);
+        self::assertSame('La Table des tests', $payloadLieu['data']['restaurantAssocie']['nom']);
+        $payloadRestaurant = $this->client->upserts[1]['payload'];
+        self::assertSame($ficheLieu->code(), $payloadRestaurant['data']['lieuAssocie']['code']);
+        self::assertSame('Château des tests', $payloadRestaurant['data']['lieuAssocie']['nom']);
     }
 
     public function testFicheBelowPhotoPolicyIsPrunedAndDepublished(): void
@@ -248,6 +280,7 @@ final class SyncFicheMarketplaceHandlerTest extends KernelTestCase
                 'pim_periode_fermeture',
                 'pim_lieu_administratif',
                 'pim_lieu_tarification',
+                'pim_restaurant',
                 'pim_lieu',
                 'pim_fiche',
                 'pim_localisation',

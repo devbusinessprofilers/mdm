@@ -11,6 +11,7 @@ use App\Dam\Service\FicheDocumentUploader;
 use App\Dam\Service\FicheImageUploader;
 use App\Dam\Service\ImageVariantRegistry;
 use App\Enrichment\Service\FicheTranslationScheduler;
+use App\Pim\Entity\Fiche;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Enum\NatureRessource;
@@ -66,7 +67,14 @@ final readonly class RestaurantAdminManager
             $this->entityManager->persist($restaurant);
             $this->translationScheduler->schedule($restaurant->fiche());
             $this->outbox->enqueue(new IndexFiche($restaurant->fiche()->idString()));
-            $this->entityManager->flush();
+            // Liaison Lieu modifiée : le payload des fiches détachée/attachée
+            // change aussi, sans transition de workflow (le flush sous
+            // suppression évite le markChanged du PreUpdate détail).
+            $liees = $restaurant->drainFichesLieesAResynchroniser();
+            foreach ($liees as $ficheLiee) {
+                $this->outbox->enqueue(new IndexFiche($ficheLiee->idString()));
+            }
+            Fiche::preserveWorkflowsDuring($liees, fn () => $this->entityManager->flush());
         } catch (\Throwable $exception) {
             $this->cleanup($images, $documents);
             throw $exception;

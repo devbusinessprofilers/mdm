@@ -8,6 +8,7 @@ use App\Pim\Attribute\CompletenessTarget;
 use App\Pim\Entity\CompletenessScoresTrait;
 use App\Pim\Entity\Fiche;
 use App\Pim\Entity\Localisation;
+use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Lov\LieuLovCatalog;
 use App\Pim\Repository\LieuRepository;
 use App\Pim\Enum\TypeFiche;
@@ -49,6 +50,13 @@ class Lieu
 
     #[ORM\OneToOne(mappedBy: 'lieu', cascade: ['persist', 'remove'], orphanRemoval: true)]
     private LieuTarification $tarification;
+
+    // Restaurant possédé par le lieu (liaison 1–1, côté propriétaire sur Restaurant).
+    #[ORM\OneToOne(mappedBy: 'lieu', targetEntity: Restaurant::class)]
+    private ?Restaurant $restaurant = null;
+
+    /** @var list<Fiche> Fiches liées dont le payload marketplace change (transitoire, drainé à l'enregistrement). */
+    private array $fichesLieesAResynchroniser = [];
 
     /** @var Collection<int, Salle> */
     #[ORM\OneToMany(mappedBy: 'lieu', targetEntity: Salle::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
@@ -381,6 +389,63 @@ class Lieu
     {
         $this->fiche->changeLocalisation($localisation);
         $this->touch();
+    }
+
+    public function restaurant(): ?Restaurant
+    {
+        return $this->restaurant;
+    }
+
+    public function changeRestaurant(?Restaurant $value): void
+    {
+        if ($value === $this->restaurant) {
+            return;
+        }
+        if (null !== $value && null !== $value->lieu() && $value->lieu() !== $this) {
+            throw new \DomainException('Ce restaurant est déjà associé à un autre lieu.');
+        }
+        // Les fiches restaurant détachée/attachée changent de payload
+        // marketplace sans transition de workflow : mise à jour technique + resync.
+        $ancien = $this->restaurant;
+        if (null !== $ancien) {
+            $ancien->syncLieu(null);
+            $this->trackFicheLiee($ancien->fiche());
+        }
+        if (null !== $value) {
+            $value->syncLieu($this);
+            $this->trackFicheLiee($value->fiche());
+        }
+        $this->restaurant = $value;
+        $this->touch();
+    }
+
+    /** @internal réservé à Restaurant::changeLieu — côté inverse (aucune colonne ici), sans transition de workflow. */
+    public function syncRestaurant(?Restaurant $value): void
+    {
+        $this->restaurant = $value;
+        $this->fiche->markSystemChanged();
+    }
+
+    /**
+     * Fiches liées à réindexer, vidées à la lecture. Le flush qui suit doit
+     * être exécuté sous Fiche::preserveWorkflowsDuring de ces fiches : la mise
+     * à jour de leur ligne détail déclenche sinon markChanged au PreUpdate.
+     *
+     * @return list<Fiche>
+     */
+    public function drainFichesLieesAResynchroniser(): array
+    {
+        $fiches = $this->fichesLieesAResynchroniser;
+        $this->fichesLieesAResynchroniser = [];
+
+        return $fiches;
+    }
+
+    private function trackFicheLiee(Fiche $fiche): void
+    {
+        if (!in_array($fiche, $this->fichesLieesAResynchroniser, true)) {
+            $this->fichesLieesAResynchroniser[] = $fiche;
+        }
     }
 
     /** @return Collection<int, Salle> */

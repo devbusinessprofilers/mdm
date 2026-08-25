@@ -10,6 +10,7 @@ use App\Dam\Message\UnpublishDocument;
 use App\Dam\Service\ImageVariantRegistry;
 use App\Dam\Service\LieuImageUploader;
 use App\Enrichment\Service\FicheTranslationScheduler;
+use App\Pim\Entity\Fiche;
 use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Enum\NatureRessource;
@@ -61,7 +62,14 @@ final readonly class LieuAdminManager
             $this->entityManager->persist($lieu);
             $this->translationScheduler->schedule($lieu->fiche());
             $this->outbox->enqueue(new IndexFiche($lieu->fiche()->idString()));
-            $this->entityManager->flush();
+            // Liaison Restaurant modifiée : le payload des fiches détachée/
+            // attachée change aussi, sans transition de workflow (le flush
+            // sous suppression évite le markChanged du PreUpdate détail).
+            $liees = $lieu->drainFichesLieesAResynchroniser();
+            foreach ($liees as $ficheLiee) {
+                $this->outbox->enqueue(new IndexFiche($ficheLiee->idString()));
+            }
+            Fiche::preserveWorkflowsDuring($liees, fn () => $this->entityManager->flush());
         } catch (\Throwable $exception) {
             $this->cleanup($uploaded);
             throw $exception;
@@ -74,8 +82,17 @@ final readonly class LieuAdminManager
             if ('' !== $resource->damAssetId()) { $this->outbox->enqueue(new DeleteMedia($resource->damAssetId())); }
             if (null !== $resource->publicStorageKey()) { $this->outbox->enqueue(new UnpublishDocument($resource->id(), $resource->publicStorageKey())); }
         }
+        // Le restaurant lié survit (FK SET NULL) mais son payload change.
+        $restaurant = $lieu->restaurant();
+        if (null !== $restaurant) {
+            $restaurant->syncLieu(null);
+            $this->outbox->enqueue(new IndexFiche($restaurant->fiche()->idString()));
+        }
         $this->entityManager->remove($lieu);
-        $this->entityManager->flush();
+        Fiche::preserveWorkflowsDuring(
+            null === $restaurant ? [] : [$restaurant->fiche()],
+            fn () => $this->entityManager->flush(),
+        );
     }
 
     public function archive(Lieu $lieu, string $actor): void

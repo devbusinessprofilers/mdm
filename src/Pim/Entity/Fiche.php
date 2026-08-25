@@ -684,6 +684,29 @@ class Fiche
         }
     }
 
+    /**
+     * Exécute une mutation (typiquement un flush) sous suppression de
+     * transition de workflow pour plusieurs fiches à la fois — pour les mises
+     * à jour techniques de fiches liées dont la ligne détail déclencherait
+     * markChanged au PreUpdate.
+     *
+     * @template T
+     *
+     * @param list<self>    $fiches
+     * @param callable(): T $mutation
+     *
+     * @return T
+     */
+    public static function preserveWorkflowsDuring(array $fiches, callable $mutation): mixed
+    {
+        $fiche = array_shift($fiches);
+        if (null === $fiche) {
+            return $mutation();
+        }
+
+        return $fiche->preserveWorkflowDuring(static fn (): mixed => self::preserveWorkflowsDuring($fiches, $mutation));
+    }
+
     private static function normalize(?string $value): ?string
     {
         if (null === $value) {

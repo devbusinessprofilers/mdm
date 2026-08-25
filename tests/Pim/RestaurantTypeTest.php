@@ -25,6 +25,7 @@ final class RestaurantTypeTest extends KernelTestCase
 
         foreach (
             [
+                'lieu',
                 'typesRestaurant',
                 'typesCuisine',
                 'specificitesAlimentaires',
