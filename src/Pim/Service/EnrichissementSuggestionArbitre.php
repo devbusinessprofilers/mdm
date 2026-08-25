@@ -37,15 +37,21 @@ final readonly class EnrichissementSuggestionArbitre
     public function accepter(FicheSuggestion $suggestion, string $actor): void
     {
         $this->assertEnAttente($suggestion);
-        $suggestion->accepter($actor);
+        // Applique avant de décider : en arbitrage groupé, une application qui
+        // échoue ne doit pas laisser un statut « acceptée » dans l'unit of work,
+        // que le flush d'une ligne suivante persisterait sans effet sur la fiche.
         if (SuggestionAction::Archiver === $suggestion->action()) {
-            // Archive et flush (fiche + décision) en une passe.
             $this->workflow->archive($suggestion->fiche(), $actor);
+            $suggestion->accepter($actor);
+            $this->entityManager->flush();
 
             return;
         }
         $this->remplirChamp($suggestion);
-        $this->entityManager->flush();
+        $suggestion->accepter($actor);
+        // La valeur appliquée doit repasser par IndexFiche (complétude, resync
+        // marketplace), comme tout autre chemin d'écriture.
+        $this->workflow->indexAndFlush($suggestion->fiche());
     }
 
     /** @throws \DomainException */
@@ -96,21 +102,24 @@ final readonly class EnrichissementSuggestionArbitre
 
             return;
         }
-        match ($champ) {
-            'info_legale_siret' => $lieu->administratif()->changeInfoLegaleSiret($suggestion->valeurProposee()),
-            'info_legale_num_tva' => $lieu->administratif()->changeInfoLegaleNumTva($suggestion->valeurProposee()),
-            'lieu_desc_generale' => $lieu->changeDescGenerale(self::texte($payload)),
-            'lieu_chaine' => $lieu->changeChaineHoteliere($suggestion->valeurProposee()),
+        [$courante, $appliquer] = match ($champ) {
+            'info_legale_siret' => [$lieu->administratif()->infoLegaleSiret(), fn () => $lieu->administratif()->changeInfoLegaleSiret($suggestion->valeurProposee())],
+            'info_legale_num_tva' => [$lieu->administratif()->infoLegaleNumTva(), fn () => $lieu->administratif()->changeInfoLegaleNumTva($suggestion->valeurProposee())],
+            'lieu_desc_generale' => [$lieu->descGenerale(), fn () => $lieu->changeDescGenerale(self::texte($payload))],
+            'lieu_chaine' => [$lieu->chaineHoteliere(), fn () => $lieu->changeChaineHoteliere($suggestion->valeurProposee())],
             default => throw new \DomainException(sprintf('Champ « %s » non applicable.', $champ)),
         };
+        $this->assertFraicheur($courante, $suggestion);
+        $appliquer();
     }
 
     private function appliquerActivite(Activite $activite, FicheSuggestion $suggestion): void
     {
-        match ($suggestion->champ()) {
-            'activite_desc_generale' => $activite->changeDescriptionGenerale(self::texte($suggestion->payload() ?? [])),
-            default => throw new \DomainException(sprintf('Champ « %s » non applicable.', $suggestion->champ())),
-        };
+        if ('activite_desc_generale' !== $suggestion->champ()) {
+            throw new \DomainException(sprintf('Champ « %s » non applicable.', $suggestion->champ()));
+        }
+        $this->assertFraicheur($activite->descriptionGenerale(), $suggestion);
+        $activite->changeDescriptionGenerale(self::texte($suggestion->payload() ?? []));
     }
 
     /** @param array<string, mixed> $payload */
@@ -122,13 +131,18 @@ final readonly class EnrichissementSuggestionArbitre
     private function appliquerRestaurant(Restaurant $restaurant, FicheSuggestion $suggestion): void
     {
         $payload = $suggestion->payload() ?? [];
+        if ('restaurant_site_officiel' === $suggestion->champ()) {
+            $this->assertFraicheur($restaurant->siteOfficiel(), $suggestion);
+            $restaurant->changeSiteOfficiel($suggestion->valeurProposee());
+
+            return;
+        }
         match ($suggestion->champ()) {
             'restaurant_types_cuisine' => $restaurant->changeTypesCuisine(self::fusion($restaurant->typesCuisine(), $payload)),
             'restaurant_specificites' => $restaurant->changeSpecificitesAlimentaires(self::fusion($restaurant->specificitesAlimentaires(), $payload)),
             'restaurant_equipements' => $restaurant->changeEquipements(self::fusion($restaurant->equipements(), $payload)),
             'restaurant_acces_pmr' => $restaurant->changeAccesPmr((bool) ($payload['bool'] ?? false)),
             'restaurant_toilettes_pmr' => $restaurant->changeToilettesPmr((bool) ($payload['bool'] ?? false)),
-            'restaurant_site_officiel' => $restaurant->changeSiteOfficiel($suggestion->valeurProposee()),
             default => throw new \DomainException(sprintf('Champ « %s » non applicable.', $suggestion->champ())),
         };
     }
@@ -146,6 +160,28 @@ final readonly class EnrichissementSuggestionArbitre
         $ajouts = is_array($payload['codes'] ?? null) ? $payload['codes'] : [];
 
         return array_values(array_unique([...$actuels, ...array_map('strval', $ajouts)]));
+    }
+
+    /**
+     * La colonne « Actuel » de l'écran reflète la valeur au moment du scan : si
+     * le champ a changé depuis (saisie manuelle), accepter écraserait cette
+     * saisie — la suggestion reste en attente jusqu'au prochain scan.
+     *
+     * @throws \DomainException
+     */
+    private function assertFraicheur(?string $courante, FicheSuggestion $suggestion): void
+    {
+        if (self::normalise($courante) !== $suggestion->valeurActuelle()) {
+            throw new \DomainException('La valeur du champ a changé depuis le scan : suggestion périmée.');
+        }
+    }
+
+    /** Même normalisation que le stockage de valeurActuelle (trim, vide = null, 500 caractères). */
+    private static function normalise(?string $valeur): ?string
+    {
+        $valeur = trim((string) $valeur);
+
+        return '' === $valeur ? null : mb_substr($valeur, 0, 500);
     }
 
     /** @throws \DomainException */

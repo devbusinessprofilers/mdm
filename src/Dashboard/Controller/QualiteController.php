@@ -120,7 +120,7 @@ final class QualiteController extends AbstractController
         $verbe = 'accepter' === $decision ? 'appliquée(s)' : 'ignorée(s)';
         $this->addFlash('success', 0 === $bilan['echecs']
             ? sprintf('%d suggestion(s) %s.', $bilan['ok'], $verbe)
-            : sprintf('%d suggestion(s) %s, %d ignorée(s) (déjà arbitrée ou sans proposition).', $bilan['ok'], $verbe, $bilan['echecs']));
+            : sprintf('%d suggestion(s) %s, %d en échec (déjà arbitrée, périmée ou sans proposition).', $bilan['ok'], $verbe, $bilan['echecs']));
 
         return $retour;
     }

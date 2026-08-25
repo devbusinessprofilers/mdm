@@ -92,4 +92,72 @@ final class QualiteSuggestionsTest extends WebTestCase
         self::assertNotNull($suggestion);
         self::assertSame(SuggestionStatut::Acceptee, $suggestion->statut());
     }
+
+    public function testSuggestionPerimeeResteEnAttenteSansBloquerLeLot(): void
+    {
+        $client = self::createClient();
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $this->connection = self::getContainer()->get(Connection::class);
+
+        $user = new User('qualite-sug2@example.test', ['ROLE_BP_VALIDATOR']);
+        $user->setPassword('x');
+        $entityManager->persist($user);
+
+        // Chaîne saisie à la main après le scan : la suggestion est périmée.
+        $lieuPerime = new Lieu();
+        $lieuPerime->changeLabel('Hôtel Déjà Renseigné');
+        $lieuPerime->changeChaineHoteliere('Louvre Hotels');
+        $entityManager->persist($lieuPerime);
+        $perimee = new FicheSuggestion(
+            $lieuPerime->fiche(),
+            SuggestionSource::Wikidata,
+            SuggestionAction::RemplirChamp,
+            'lieu_chaine',
+            'Chaîne / groupe hôtelier',
+            null,
+            'Accor',
+        );
+        $entityManager->persist($perimee);
+
+        $lieuValide = new Lieu();
+        $lieuValide->changeLabel('Hôtel Sans Chaîne');
+        $entityManager->persist($lieuValide);
+        $valide = new FicheSuggestion(
+            $lieuValide->fiche(),
+            SuggestionSource::Wikidata,
+            SuggestionAction::RemplirChamp,
+            'lieu_chaine',
+            'Chaîne / groupe hôtelier',
+            null,
+            'Accor',
+        );
+        $entityManager->persist($valide);
+        $entityManager->flush();
+        $perimeeId = $perimee->id();
+        $valideId = $valide->id();
+        $lieuPerimeId = $lieuPerime->id();
+        $client->loginUser($user);
+
+        $crawler = $client->request('GET', '/qualite', ['onglet' => 'conflits', 'src' => 'wikidata']);
+        $token = $crawler->filter('input[name="suggestion_selection[_token]"]')->attr('value');
+        $client->request('POST', '/qualite/suggestions/accepter?src=wikidata&page=1', [
+            'suggestion_selection' => ['ids' => ['suggestion:'.$perimeeId, 'suggestion:'.$valideId], '_token' => $token],
+        ]);
+        self::assertResponseRedirects();
+        $client->followRedirect();
+        self::assertSelectorTextContains('body', '1 suggestion(s) appliquée(s), 1 en échec');
+
+        $entityManager->clear();
+        // La ligne périmée n'écrase pas la saisie et reste en attente : le flush
+        // de la ligne suivante du lot ne doit pas persister un faux « acceptée ».
+        $lieuPerime = $entityManager->find(Lieu::class, $lieuPerimeId);
+        self::assertNotNull($lieuPerime);
+        self::assertSame('Louvre Hotels', $lieuPerime->chaineHoteliere());
+        $perimee = $entityManager->find(FicheSuggestion::class, $perimeeId);
+        self::assertNotNull($perimee);
+        self::assertSame(SuggestionStatut::EnAttente, $perimee->statut());
+        $valide = $entityManager->find(FicheSuggestion::class, $valideId);
+        self::assertNotNull($valide);
+        self::assertSame(SuggestionStatut::Acceptee, $valide->statut());
+    }
 }
