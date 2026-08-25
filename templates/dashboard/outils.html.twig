@@ -11,7 +11,7 @@
 
 {% set famille_libelles = familles %}
 {% set statuts_erreur = ['echoue', 'termine_avec_erreurs', 'failed', 'en_erreur'] %}
-{% set famille_icones = { 'import': 'upload-simple', 'ocr': 'ai', 'traduction': 'list', 'media': 'images' } %}
+{% set famille_icones = { 'import': 'upload-simple', 'ocr': 'ai', 'traduction': 'list', 'media': 'images', 'enrichissement': 'ai' } %}
 
 {% set a_venir = 'Fonction à venir — en développement' %}
 {% set familles_desactivees = ['import', 'ocr'] %}
@@ -40,12 +40,12 @@
                                class="shrink-0 self-center w-4 h-4 mx-1 text-primary group-aria-[current=page]/onglet:text-neutral-100" />
                     <twig:Typography variant="body" bold ellipsis textColor="primary-3"
                                      class="flex-1 min-w-0 group-aria-[current=page]/onglet:text-neutral-100!">Journal des traitements</twig:Typography>
-                    {# Le journal est plafonné : « 50+ » quand il y a davantage de traitements. #}
+                    {# Le journal est plafonné : « 1000+ » quand il y a davantage de traitements. #}
                     <twig:Typography variant="body-xs" bold textColor="neutral-500"
-                                     title="{{ lignes|length >= journal_limit|default(50) ? 'Journal plafonné aux ' ~ journal_limit|default(50) ~ ' traitements les plus récents' : '' }}"
+                                     title="{{ total >= journal_limit ? 'Journal plafonné aux ' ~ journal_limit ~ ' traitements les plus récents' : '' }}"
                                      class="shrink-0 px-[7px] py-0.5 rounded-lg bg-neutral-200
                                             group-aria-[current=page]/onglet:bg-neutral-100
-                                            group-aria-[current=page]/onglet:text-primary-3!">{{ lignes|length }}{{ lignes|length >= journal_limit|default(50) ? '+' : '' }}</twig:Typography>
+                                            group-aria-[current=page]/onglet:text-primary-3!">{{ total }}{{ total >= journal_limit ? '+' : '' }}</twig:Typography>
                 </a>
 
                 {# Campagnes IA : pas de back → grisée. #}
@@ -118,7 +118,7 @@
                              class="sm:text-[1.625rem]! sm:leading-[2.125rem]! font-[700]!">
                 {{- famille ? famille_libelles[famille] : 'Journal des traitements' -}}
             </twig:Typography>
-            <twig:Typography variant="body" element="p" textColor="neutral-500">Imports, extractions, traductions et médias, du plus récent au plus ancien.</twig:Typography>
+            <twig:Typography variant="body" element="p" textColor="neutral-500">Imports, extractions, traductions, médias et enrichissements, du plus récent au plus ancien.</twig:Typography>
         </div>
         <div class="flex items-center gap-2.5 shrink-0">
             <twig:Button variant="{{ erreurs ? 'primary' : 'outline' }}" size="sm" asLink
@@ -133,7 +133,6 @@
 
         {# ---- Cartes de synthèse : état de toutes les files Messenger, ----
              ---- rechargées seules toutes les ~10 s (turbo-frame + poll). ---- #}
-        {% set en_erreur = lignes|filter(l => l.statut in statuts_erreur)|length %}
         {{ include('dashboard/_outils_indicateurs.html.twig') }}
 
         {# ---- Tableau maquette : Origine / Traitement / État / Erreur / Quand / lien. ---- #}
@@ -148,10 +147,18 @@
             'running': ['En cours', 'bg-primary-4'],
             'en_attente': ['En file', 'bg-neutral-200'],
             'pending': ['En file', 'bg-neutral-200'],
+            'uploaded': ['En file', 'bg-neutral-200'],
+            'queued': ['En file', 'bg-neutral-200'],
+            'termine': ['Terminé', 'bg-success-pastel'],
+            'ready': ['Terminé', 'bg-success-pastel'],
+            'disponible': ['Disponible', 'bg-success-pastel'],
+            'obsolete': ['Obsolète', 'bg-neutral-200'],
+            'partially_reviewed': ['Revue partielle', 'bg-primary-4'],
+            'reviewed': ['Revue terminée', 'bg-success-pastel'],
         } %}
         <div class="shrink-0 flex flex-col rounded-sm overflow-hidden bg-neutral-100 shadow-(--shadow)">
             <div class="{{ grille }} h-9 shrink-0 bg-primary-5 border-b border-neutral-200" role="row">
-                {% for colonne in [['Origine'], ['Traitement'], ['État'], ['Erreur'], ['Quand'], ['', 'text-right']] %}
+                {% for colonne in [['Origine'], ['Traitement'], ['État'], ['Détail'], ['Quand'], ['', 'text-right']] %}
                     <span class="min-w-0 truncate {{ colonne.1|default('text-left') }}" role="columnheader">
                         <twig:Typography variant="body-xs" bold textColor="neutral-500"
                                          class="tracking-[0.3px] uppercase">{{ colonne.0 }}</twig:Typography>
@@ -177,13 +184,14 @@
                             </span>
                         </span>
                         <span class="min-w-0">
-                            <twig:Typography variant="body-sm" textColor="{{ ligne.erreur ? 'error' : 'neutral-500' }}" class="text-pretty">{{ ligne.erreur ?? '—' }}</twig:Typography>
+                            {# Rouge seulement pour un vrai échec : la colonne porte aussi des détails sains (résultat d'enrichissement…). #}
+                            <twig:Typography variant="body-sm" textColor="{{ ligne.erreur and ligne.statut in statuts_erreur ? 'error' : 'neutral-500' }}" class="text-pretty">{{ ligne.erreur ?? '—' }}</twig:Typography>
                         </span>
                         <span class="min-w-0">
                             <twig:Typography variant="body-sm" ellipsis textColor="neutral-500">{{ ligne.quand|date('d/m/Y H:i') }}</twig:Typography>
                         </span>
                         <span class="flex items-center justify-end min-w-0">
-                            {% if ligne.lien and (is_granted('ROLE_ADMIN') or ligne.famille in ['ocr', 'traduction']) %}
+                            {% if ligne.lien and (is_granted('ROLE_ADMIN') or ligne.famille in ['ocr', 'traduction', 'enrichissement']) %}
                                 <a href="{{ path(ligne.lien.route, ligne.lien.params) }}"
                                    class="flex items-center gap-1.5 rounded-xs hover:underline decoration-primary-3">
                                     <twig:Typography variant="body-sm" bold textColor="primary-3">Détail</twig:Typography>
@@ -204,10 +212,17 @@
                 {% endfor %}
             </div>
 
-            <div class="shrink-0 flex items-center h-[50px] px-4 border-t border-neutral-200">
+            <div class="shrink-0 flex items-center justify-between gap-3 min-h-[50px] px-4 py-2 border-t border-neutral-200">
                 <twig:Typography variant="body-sm" textColor="neutral-500">
-                    {{- lignes|length }} traitement{{ lignes|length > 1 ? 's' : '' }} affiché{{ lignes|length > 1 ? 's' : '' }} · {{ en_erreur }} en échec
+                    {{- total }}{{ total >= journal_limit ? '+' : '' }} traitement{{ total > 1 ? 's' : '' }} · {{ en_erreur_total }} en échec
+                    {{- pages > 1 ? ' · Page ' ~ page ~ ' / ' ~ pages : '' -}}
                 </twig:Typography>
+                {% if pages > 1 %}
+                    <div class="flex items-center gap-2 shrink-0">
+                        {% if page > 1 %}<twig:Button variant="outline" size="sm" asLink href="{{ path('app_mdm_outils', {famille: famille, erreurs: erreurs ? 1 : null, page: page - 1}) }}">Précédente</twig:Button>{% endif %}
+                        {% if page < pages %}<twig:Button variant="outline" size="sm" asLink href="{{ path('app_mdm_outils', {famille: famille, erreurs: erreurs ? 1 : null, page: page + 1}) }}">Suivante</twig:Button>{% endif %}
+                    </div>
+                {% endif %}
             </div>
         </div>
     </div>

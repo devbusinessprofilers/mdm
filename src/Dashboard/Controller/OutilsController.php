@@ -24,8 +24,20 @@ final class OutilsController extends AbstractController
         $famille = array_key_exists($famille, JournalTraitementsRepository::FAMILLES) ? $famille : null;
         $erreurs = $request->query->getBoolean('erreurs');
 
+        // Journal borné aux 1000 traitements les plus récents, paginé par 50 ;
+        // la page demandée est bornée à l'intervalle réel.
+        $lignes = $journal->journal($famille, $erreurs);
+        $total = count($lignes);
+        $enErreur = count(array_filter($lignes, static fn (array $ligne): bool => in_array($ligne['statut'], JournalTraitementsRepository::STATUTS_ERREUR, true)));
+        $pages = max(1, (int) ceil($total / JournalTraitementsRepository::PAR_PAGE));
+        $page = min(max(1, $request->query->getInt('page', 1)), $pages);
+
         return $this->render('dashboard/outils.html.twig', [
-            'lignes' => $journal->journal($famille, $erreurs),
+            'lignes' => array_slice($lignes, ($page - 1) * JournalTraitementsRepository::PAR_PAGE, JournalTraitementsRepository::PAR_PAGE),
+            'total' => $total,
+            'en_erreur_total' => $enErreur,
+            'page' => $page,
+            'pages' => $pages,
             'familles' => JournalTraitementsRepository::FAMILLES,
             'famille' => $famille,
             'erreurs' => $erreurs,

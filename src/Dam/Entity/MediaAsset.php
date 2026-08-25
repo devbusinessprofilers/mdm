@@ -30,6 +30,8 @@ use Symfony\Component\Uid\Ulid;
         columns: ['kind', 'status', 'created_at'],
     ),
 ]
+// Tri « tous statuts » du journal /outils (167k lignes : sans index, filesort).
+#[ORM\Index(name: 'IDX_DAM_MEDIA_UPDATED', columns: ['updated_at'])]
 #[ORM\HasLifecycleCallbacks]
 class MediaAsset
 {

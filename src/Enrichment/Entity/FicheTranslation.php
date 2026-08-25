@@ -18,6 +18,8 @@ use Symfony\Component\Uid\Ulid;
 #[ORM\Table(name: 'enrichment_fiche_translation')]
 #[ORM\UniqueConstraint(name: 'UNIQ_ENRICHMENT_FICHE_FIELD_LOCALE', columns: ['fiche_id', 'field_path', 'locale'])]
 #[ORM\Index(name: 'IDX_ENRICHMENT_FICHE_TRANSLATION_STATUS', columns: ['status', 'updated_at'])]
+// Tri « tous statuts » du journal /outils (556k lignes : sans index, filesort).
+#[ORM\Index(name: 'IDX_ENRICHMENT_FICHE_TRANSLATION_UPDATED', columns: ['updated_at'])]
 #[ORM\HasLifecycleCallbacks]
 class FicheTranslation
 {
