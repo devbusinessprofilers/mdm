@@ -61,6 +61,42 @@ final readonly class FicheActionFormFactory
         ]);
     }
 
+    /**
+     * Bouton « Enrichir ce qui manque » de la fiche : enfile le scan de toutes
+     * les sources d'enrichissement, quelle que soit la gamme.
+     *
+     * @param array<string, string> $buttonAttr
+     *
+     * @return FormInterface<mixed>
+     */
+    public function enrichir(string $id, array $buttonAttr = []): FormInterface
+    {
+        return $this->forms->createNamed('enrichir_fiche', ActionType::class, null, [
+            'action' => $this->urls->generate('app_pim_fiche_enrichir', ['id' => $id]),
+            'button_label' => 'Enrichir ce qui manque',
+            'button_attr' => $buttonAttr,
+            'csrf_token_id' => 'enrichir-fiche-'.$id,
+        ]);
+    }
+
+    /**
+     * Bouton « Valider et publier » d'une fiche en attente : les deux
+     * transitions en un clic, indépendant de la gamme.
+     *
+     * @param array<string, string> $buttonAttr
+     *
+     * @return FormInterface<mixed>
+     */
+    public function validerPublier(string $id, array $buttonAttr = []): FormInterface
+    {
+        return $this->forms->createNamed('valider_publier_fiche', ActionType::class, null, [
+            'action' => $this->urls->generate('app_pim_fiche_valider_publier', ['id' => $id]),
+            'button_label' => 'Valider et publier',
+            'button_attr' => $buttonAttr,
+            'csrf_token_id' => 'valider-publier-fiche-'.$id,
+        ]);
+    }
+
     /** @return FormInterface<mixed> */
     public function reject(string $domain, string $id): FormInterface
     {

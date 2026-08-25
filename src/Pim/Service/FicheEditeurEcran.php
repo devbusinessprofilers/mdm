@@ -59,6 +59,12 @@ final readonly class FicheEditeurEcran
     // md : aligné sur les boutons d'en-tête et de barre d'actions de la fiche.
     private const BOUTON_SOBRE = ['data-variant' => 'outline', 'data-size' => 'md', 'data-full' => '0'];
 
+    /** Bouton « Enrichir ce qui manque » : primary + icône IA, comme la maquette. */
+    private const BOUTON_ENRICHIR = ['data-variant' => 'primary', 'data-size' => 'md', 'data-full' => '0', 'data-icon' => 'ai'];
+
+    /** Items du menu « Autres actions » : texte pleine largeur, alignés à gauche par le conteneur. */
+    private const BOUTON_MENU = ['data-variant' => 'text', 'data-size' => 'md', 'data-full' => '1'];
+
     private const PREFIXES = [
         'lieu' => 'LIE',
         'restaurant' => 'RES',
@@ -292,6 +298,9 @@ final readonly class FicheEditeurEcran
             'actions' => array_filter([
                 'submit' => 'en_cours' === $statut ? $this->actions->action($domaine, $id, 'submit', 'Soumettre à validation', buttonAttr: self::BOUTON_SOBRE)->createView() : null,
                 'validate' => 'en_attente_validation' === $statut ? $this->actions->action($domaine, $id, 'validate', 'Valider', buttonAttr: self::BOUTON_SOBRE)->createView() : null,
+                // Raccourci validateur : les deux transitions en un clic (la
+                // publication reste retenue si les photos ne sont pas conformes).
+                'validate_and_publish' => 'en_attente_validation' === $statut ? $this->actions->validerPublier($id, self::BOUTON_SOBRE)->createView() : null,
                 'reject' => 'en_attente_validation' === $statut ? $this->actions->reject($domaine, $id)->createView() : null,
                 'publish' => 'validee' === $statut ? $this->actions->action($domaine, $id, 'publish', 'Publier', buttonAttr: self::BOUTON_SOBRE)->createView() : null,
                 'archive' => 'publiee' === $statut ? $this->actions->action($domaine, $id, 'archive', 'Archiver', buttonAttr: self::BOUTON_SOBRE)->createView() : null,
@@ -302,14 +311,18 @@ final readonly class FicheEditeurEcran
             // Bouton « Envoyer à Salesforce » (système de transition CSV
             // e-mail) : présent seulement quand la synchro est configurée.
             'salesforce_envoi' => $this->salesforceCsv->isConfigured()
-                ? $this->actions->salesforce($id, self::BOUTON_SOBRE)->createView()
+                ? $this->actions->salesforce($id, self::BOUTON_MENU)->createView()
                 : null,
+            // Bouton « Enrichir ce qui manque » : toujours affiché, les gates
+            // par source s'appliquent au traitement (une source inactive est
+            // simplement sautée par le scan).
+            'action_enrichir' => $this->actions->enrichir($id, self::BOUTON_ENRICHIR)->createView(),
             'action_suppression' => $this->actions->action($domaine, $id, 'delete', 'Supprimer', true, match ($type) {
                 TypeFiche::Lieu => 'Supprimer ce lieu ?',
                 TypeFiche::Activite => 'Supprimer cette activité ?',
                 TypeFiche::Restaurant => 'Supprimer ce restaurant ?',
                 default => 'Supprimer ce service ?',
-            }, self::BOUTON_SOBRE)->createView(),
+            }, self::BOUTON_MENU)->createView(),
             // Tous les blocs sont calculés quel que soit l'onglet actif : les
             // onglets basculent côté client sans recharger, le gabarit rend
             // chaque bloc dans le volet de sa section.

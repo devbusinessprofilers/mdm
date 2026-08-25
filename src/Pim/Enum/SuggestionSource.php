@@ -19,6 +19,7 @@ enum SuggestionSource: string
     case Geoapify = 'geoapify';
     case DataTourisme = 'datatourisme';
     case Wikidata = 'wikidata';
+    case Ia = 'ia';
 
     /** Libellé affiché dans le tag de la ligne de suggestion. */
     public function label(): string
@@ -28,6 +29,7 @@ enum SuggestionSource: string
             self::Geoapify => 'Geoapify',
             self::DataTourisme => 'DATAtourisme',
             self::Wikidata => 'Wikidata',
+            self::Ia => 'IA',
         };
     }
 }

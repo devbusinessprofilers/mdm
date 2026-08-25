@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Pim\Service;
 
 use App\Enrichment\Service\FicheTranslationScheduler;
+use App\Etl\Service\PhotoPublicationGuard;
 use App\Pim\Entity\Fiche;
 use App\Pim\Message\IndexFiche;
 use App\Pim\Validation\ValidationGroups;
@@ -20,6 +21,7 @@ final readonly class FicheWorkflowManager
         private OutboxPublisherInterface $outbox,
         private FicheTranslationScheduler $translations,
         private ValidatorInterface $validator,
+        private PhotoPublicationGuard $photoGuard,
     ) {}
 
     public function submit(object $subject, Fiche $fiche, string $actor): ConstraintViolationListInterface
@@ -44,6 +46,30 @@ final readonly class FicheWorkflowManager
         $fiche->publish();
         $this->translations->schedule($fiche);
         $this->indexAndFlush($fiche);
+    }
+
+    /**
+     * Valide puis publie en un geste (bouton « Valider et publier ») : la
+     * publication est retenue si les obligations photos ne sont pas satisfaites
+     * — même garde que la publication de masse —, la fiche restant validée.
+     *
+     * @return bool vrai si la fiche a été publiée, faux si elle reste validée
+     *
+     * @throws \DomainException si la fiche n'est pas en attente de validation
+     */
+    public function validateAndPublish(Fiche $fiche, string $actor): bool
+    {
+        $fiche->validate($actor);
+        if (!$this->photoGuard->compliant($fiche)) {
+            $this->indexAndFlush($fiche);
+
+            return false;
+        }
+        $fiche->publish();
+        $this->translations->schedule($fiche);
+        $this->indexAndFlush($fiche);
+
+        return true;
     }
 
     public function archive(Fiche $fiche, string $actor): void

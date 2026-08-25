@@ -189,24 +189,32 @@
             </div>
             {# Le bloc d'actions se replie en deux rangées plutôt que de passer sous le titre. #}
             <div class="flex flex-row items-center justify-end gap-2 shrink-0 flex-wrap max-w-[620px] [&_form]:contents">
-                {# Maquette sans back : l'enrichissement IA global n'existe pas encore. #}
-                <twig:Button variant="primary" size="md" icon="ai" disabled
-                             title="En développement" class="[&>:first-child]:size-5">Enrichir ce qui manque</twig:Button>
+                {# Enrichissement à la demande : toutes les sources actives sur cette fiche (asynchrone). #}
+                {{ form(action_enrichir) }}
                 {# Ouvre la modale d'extraction (le flux OCR réel), comme la maquette. #}
                 <twig:Modal:TriggerButton variant="outline" size="md" icon="upload-simple"
                                           class="[&>:first-child]:size-5"
                                           modalIdentifier="extraction">Extraire d'un document</twig:Modal:TriggerButton>
                 <twig:Button variant="outline" size="md" asLink href="{{ liens.traductions }}">Traductions</twig:Button>
-                <twig:Button variant="outline" size="md" asLink href="{{ liens.historique }}">Historique</twig:Button>
-                {# Envoi immédiat de la fiche vers Salesforce (visible si la synchro CSV est configurée). #}
-                {% if salesforce_envoi %}{{ form(salesforce_envoi) }}{% endif %}
-                {% if is_granted('FICHE_DELETE', fiche) %}
-                    {# Suppression définitive de la fiche (confirmation demandée). #}
-                    {# bg-none + before:hidden : le variant outline peint son dégradé en
-                       background-image et un ::before blanc par-dessus le fond — sans les
-                       neutraliser, bg-error resterait invisible (texte blanc sur blanc). #}
-                    <span class="danger-form contents [&_button]:bg-none! [&_button]:before:hidden! [&_button]:bg-error! [&_button]:border-error! [&_button_span]:text-neutral-100!">{{ form(action_suppression) }}</span>
-                {% endif %}
+                {# Actions secondaires regroupées : l'en-tête reste lisible. Le
+                   déclencheur reprend le gabarit outline md des boutons voisins
+                   (le composant Dropdown rend son propre <button>). #}
+                <twig:Dropdown
+                    wrapperClass="shrink-0"
+                    class="flex items-center focus:outline-none cursor-pointer w-fit rounded-lg justify-center gap-1 border-2 bg-border-primary-gradient bg-border-hover-primary-gradient bg-border-focus-primary-gradient hover:text-neutral-100 focus:text-neutral-100 px-3.5 py-2 h-fit xs:h-[40px]"
+                    containerClass="z-50 min-w-56 rounded-xs py-2 flex flex-col items-stretch text-left [&_form]:contents [&_button]:w-full [&_button]:justify-start! [&_button:hover]:bg-neutral-200 [&_a:hover]:bg-neutral-200"
+                >
+                    <twig:block name="trigger">
+                        <twig:Typography variant="button" element="span" bold>Autres actions</twig:Typography>
+                    </twig:block>
+                    <a href="{{ liens.historique }}" class="px-3.5 py-2"><twig:Typography variant="button" element="span" bold>Historique</twig:Typography></a>
+                    {# Envoi immédiat de la fiche vers Salesforce (visible si la synchro CSV est configurée). #}
+                    {% if salesforce_envoi %}{{ form(salesforce_envoi) }}{% endif %}
+                    {% if is_granted('FICHE_DELETE', fiche) %}
+                        {# Suppression définitive de la fiche (confirmation demandée) : item en rouge. #}
+                        <span class="danger-form contents [&_button_span]:text-error!">{{ form(action_suppression) }}</span>
+                    {% endif %}
+                </twig:Dropdown>
             </div>
         </div>
 
@@ -803,7 +811,8 @@
               <twig:Button variant="primary" size="md" type="submit" form="form-fiche">Enregistrer les modifications</twig:Button>
           {% endif %}
           {% for nom, action in actions_workflow %}
-              {% set attribut = {'submit': 'FICHE_SUBMIT', 'validate': 'FICHE_VALIDATE', 'publish': 'FICHE_PUBLISH', 'archive': 'FICHE_ARCHIVE', 'unarchive': 'FICHE_ARCHIVE', 'republish': 'FICHE_PUBLISH'}[nom] %}
+              {# « Valider et publier » exige le niveau publieur (le voter donne les deux aux validateurs). #}
+              {% set attribut = {'submit': 'FICHE_SUBMIT', 'validate': 'FICHE_VALIDATE', 'validate_and_publish': 'FICHE_PUBLISH', 'publish': 'FICHE_PUBLISH', 'archive': 'FICHE_ARCHIVE', 'unarchive': 'FICHE_ARCHIVE', 'republish': 'FICHE_PUBLISH'}[nom] %}
               {% if is_granted(attribut, fiche) %}
                   {# Même neutralisation du chrome outline que pour la suppression ;
                      hauteur alignée sur les deux autres boutons (md). #}

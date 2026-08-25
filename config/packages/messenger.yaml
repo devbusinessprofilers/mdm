@@ -101,6 +101,10 @@ framework:
             App\Pim\Message\RecalculateCompletenessBatch: completeness
             # Avant le joker Pim : les relances partent par le worker mail.
             App\Pim\Message\EnvoyerRelancePlanifiee: mail
+            # Avant le joker Pim : le scan multi-sources + IA du bouton
+            # « Enrichir ce qui manque » est long (flux DATAtourisme, OpenAI),
+            # il ne doit pas bloquer la file pim (indexation, workflow).
+            App\Pim\Message\EnrichirFiche: enrichment
             'App\Pim\Message\*': pim
             'App\Dashboard\Message\*': pim
             'App\Dam\Message\*': dam
