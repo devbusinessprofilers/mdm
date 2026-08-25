@@ -15,22 +15,26 @@ final class ChaineDictionnaire
     /** Longueur minimale d'un motif normalisé pour être discriminant. */
     private const MOTIF_MIN = 4;
 
-    /** Référentiel interne : nom canonique → motifs (marques et enseignes du groupe). */
+    /**
+     * Référentiel interne : groupe → marques/enseignes, en casse d'affichage
+     * (le libellé du motif gagnant est celui proposé à l'arbitrage, il doit
+     * correspondre aux marques de la LOV « Groupe et chaîne hôtelière »).
+     */
     private const SEED = [
-        'Accor' => ['accor', 'ibis', 'ibis budget', 'ibis styles', 'novotel', 'mercure', 'grand mercure', 'sofitel', 'pullman', 'mgallery', 'raffles', 'adagio', 'mama shelter'],
-        'Hilton' => ['hilton', 'canopy by hilton', 'hampton by hilton', 'doubletree', 'waldorf astoria', 'conrad', 'embassy suites'],
-        'Marriott' => ['marriott', 'courtyard', 'renaissance hotel', 'sheraton', 'westin', 'le meridien', 'moxy', 'autograph collection', 'residence inn'],
-        'InterContinental (IHG)' => ['intercontinental', 'holiday inn', 'crowne plaza', 'kimpton', 'staybridge'],
-        'Best Western' => ['best western'],
-        'Radisson' => ['radisson', 'radisson blu', 'park inn'],
-        'Louvre Hotels' => ['kyriad', 'campanile', 'premiere classe', 'golden tulip', 'tulip inn'],
-        'B&B Hotels' => ['b&b hotels', 'b and b hotels'],
-        'Logis' => ['logis hotels'],
-        'Relais & Châteaux' => ['relais chateaux', 'relais et chateaux'],
-        'NH Hotel Group' => ['nh hotels', 'nh collection'],
+        'Accor' => ['Accor', 'Ibis', 'Ibis Budget', 'Ibis Styles', 'Novotel', 'Mercure', 'Grand Mercure', 'Sofitel', 'Pullman', 'Mgallery', 'Raffles', 'Adagio', 'Mama Shelter'],
+        'Hilton' => ['Hilton', 'Canopy by Hilton', 'Hampton by Hilton', 'DoubleTree', 'Waldorf Astoria', 'Conrad', 'Embassy Suites'],
+        'Marriott' => ['Marriott', 'Courtyard', 'Renaissance Hotel', 'Sheraton', 'Westin', 'Le Méridien', 'Moxy', 'Autograph Collection', 'Residence Inn'],
+        'InterContinental (IHG)' => ['InterContinental', 'Holiday Inn', 'Crowne Plaza', 'Kimpton', 'Staybridge'],
+        'Best Western' => ['Best Western'],
+        'Radisson' => ['Radisson', 'Radisson Blu', 'Park Inn'],
+        'Louvre Hotels' => ['Kyriad', 'Campanile', 'Première Classe', 'Golden Tulip', 'Tulip Inn'],
+        'B&B Hotels' => ['B&B Hotels', 'B and B Hotels'],
+        'Logis' => ['Logis Hotels'],
+        'Relais & Châteaux' => ['Relais Châteaux', 'Relais et Châteaux'],
+        'NH Hotel Group' => ['NH Hotels', 'NH Collection'],
     ];
 
-    /** @var array<string, list<string>> nom canonique → motifs normalisés discriminants */
+    /** @var array<string, array<string, string>> nom canonique (groupe) → [motif normalisé → libellé d'enseigne] */
     private array $entrees = [];
 
     /** @param list<WikidataChaine> $chaines chaînes remontées de Wikidata */
@@ -52,8 +56,13 @@ final class ChaineDictionnaire
         return [] === $this->entrees;
     }
 
-    /** Chaîne canonique détectée dans un nom d'établissement, ou null. */
-    public function detecter(string $nomEtablissement): ?string
+    /**
+     * Enseigne détectée dans un nom d'établissement (motif le plus long), avec
+     * son groupe propriétaire, ou null. C'est l'ENSEIGNE (« Mercure ») qui est
+     * proposée à l'arbitrage — elle correspond aux marques de la LOV — le
+     * groupe (« Accor ») reste en information.
+     */
+    public function detecter(string $nomEtablissement): ?ChaineDetectee
     {
         $nom = self::normaliser($nomEtablissement);
         if (' ' === $nom) {
@@ -62,9 +71,9 @@ final class ChaineDictionnaire
         $meilleur = null;
         $meilleureLongueur = 0;
         foreach ($this->entrees as $canonique => $motifs) {
-            foreach ($motifs as $motif) {
+            foreach ($motifs as $motif => $enseigne) {
                 if (mb_strlen($motif) > $meilleureLongueur && str_contains($nom, ' '.$motif.' ')) {
-                    $meilleur = $canonique;
+                    $meilleur = new ChaineDetectee(enseigne: $enseigne, groupe: $canonique);
                     $meilleureLongueur = mb_strlen($motif);
                 }
             }
@@ -73,17 +82,14 @@ final class ChaineDictionnaire
         return $meilleur;
     }
 
-    /** @param list<string> $motifs */
+    /** @param list<string> $motifs enseignes en casse d'affichage */
     private function ajouter(string $nom, array $motifs): void
     {
         foreach ($motifs as $motif) {
             $normalise = trim(self::normaliser($motif));
-            if (mb_strlen($normalise) >= self::MOTIF_MIN) {
-                $this->entrees[$nom][] = $normalise;
+            if (mb_strlen($normalise) >= self::MOTIF_MIN && !isset($this->entrees[$nom][$normalise])) {
+                $this->entrees[$nom][$normalise] = trim($motif);
             }
-        }
-        if (isset($this->entrees[$nom])) {
-            $this->entrees[$nom] = array_values(array_unique($this->entrees[$nom]));
         }
     }
 

@@ -27,18 +27,21 @@ final readonly class ChaineHoteliereVerifier
         if (null === $label || '' === trim($label)) {
             return [];
         }
-        $chaine = $dictionnaire->detecter($label);
-        if (null === $chaine) {
+        $detection = $dictionnaire->detecter($label);
+        if (null === $detection) {
             return [];
         }
 
+        // L'enseigne (« Mercure ») est proposée — elle correspond aux marques
+        // de la LOV — le groupe (« Accor ») reste en information dans le payload.
         return [new SuggestionProposee(
             action: SuggestionAction::RemplirChamp,
             champ: 'lieu_chaine',
             label: 'Chaîne / groupe hôtelier',
             valeurActuelle: null,
-            valeurProposee: $chaine,
+            valeurProposee: $detection->enseigne,
             score: null,
+            payload: $detection->enseigne === $detection->groupe ? null : ['groupe' => $detection->groupe],
         )];
     }
 }

@@ -32,9 +32,19 @@ final class WikidataChaineTest extends TestCase
     {
         $dico = ChaineDictionnaire::depuis();
 
-        self::assertSame('Hilton', $dico->detecter('Canopy by Hilton Cannes'));
-        self::assertSame('Accor', $dico->detecter('Ibis Budget Lyon Part-Dieu'));
-        self::assertSame('Best Western', $dico->detecter('Best Western Plus Le Faubourg'));
+        // L'enseigne présente dans le nom est retournée avec son groupe.
+        $canopy = $dico->detecter('Canopy by Hilton Cannes');
+        self::assertNotNull($canopy);
+        self::assertSame('Canopy by Hilton', $canopy->enseigne);
+        self::assertSame('Hilton', $canopy->groupe);
+        $ibis = $dico->detecter('Ibis Budget Lyon Part-Dieu');
+        self::assertNotNull($ibis);
+        self::assertSame('Ibis Budget', $ibis->enseigne);
+        self::assertSame('Accor', $ibis->groupe);
+        $bw = $dico->detecter('Best Western Plus Le Faubourg');
+        self::assertNotNull($bw);
+        self::assertSame('Best Western', $bw->enseigne);
+        self::assertSame('Best Western', $bw->groupe);
         self::assertNull($dico->detecter('Hôtel de la Gare'));
     }
 
@@ -42,10 +52,13 @@ final class WikidataChaineTest extends TestCase
     {
         $dico = ChaineDictionnaire::depuis([new WikidataChaine('Citadines', ['citadines apart hotel'])]);
 
-        self::assertSame('Citadines', $dico->detecter('Citadines Croisette Cannes'));
+        $detection = $dico->detecter('Citadines Croisette Cannes');
+        self::assertNotNull($detection);
+        self::assertSame('Citadines', $detection->enseigne);
+        self::assertSame('Citadines', $detection->groupe);
     }
 
-    public function testVerifierProposeLaChaineDetectee(): void
+    public function testVerifierProposeLEnseigneDetecteeAvecSonGroupe(): void
     {
         $lieu = new Lieu();
         $lieu->changeLabel('Mercure Paris Centre Tour Eiffel');
@@ -54,7 +67,9 @@ final class WikidataChaineTest extends TestCase
 
         self::assertCount(1, $propositions);
         self::assertSame('lieu_chaine', $propositions[0]->champ);
-        self::assertSame('Accor', $propositions[0]->valeurProposee);
+        // La MARQUE (dans la LOV) est proposée, le groupe reste en information.
+        self::assertSame('Mercure', $propositions[0]->valeurProposee);
+        self::assertSame(['groupe' => 'Accor'], $propositions[0]->payload);
     }
 
     public function testVerifierNeProposeRienSiChaineDejaRenseignee(): void
