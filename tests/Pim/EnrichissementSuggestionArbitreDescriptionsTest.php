@@ -142,6 +142,39 @@ final class EnrichissementSuggestionArbitreDescriptionsTest extends KernelTestCa
         self::assertSame(1, (int) $valeur['active']);
     }
 
+    public function testAccepterLesNouveauxChampsGeoapifyEtSirene(): void
+    {
+        $em = self::getContainer()->get(EntityManagerInterface::class);
+        $arbitre = self::getContainer()->get(EnrichissementSuggestionArbitre::class);
+        $lieu = new Lieu();
+        $lieu->changeLabel('Hôtel enrichi de partout');
+        $em->persist($lieu);
+        $suggestions = [
+            ['lieu_telephone', 'Téléphone', '+33 1 23 45 67 89', null],
+            ['lieu_website', 'Site web', 'https://hotel.example', null],
+            ['lieu_lov_typologie', 'Typologie', 'Hôtel 4 étoiles', ['attribut' => 'GENERALE_TYPOLOGIE', 'codes' => ['GENERALE_TYPOLOGIE_3']]],
+            ['info_legale_forme_juridique', 'Forme juridique', 'Société par actions simplifiée (SAS)', null],
+        ];
+        $entites = [];
+        foreach ($suggestions as [$champ, $label, $valeur, $payload]) {
+            $entites[] = $s = new FicheSuggestion($lieu->fiche(), SuggestionSource::Geoapify, SuggestionAction::RemplirChamp, $champ, $label, null, $valeur, null, $payload);
+            $em->persist($s);
+        }
+        $em->flush();
+
+        foreach ($entites as $suggestion) {
+            $arbitre->accepter($suggestion, 'testeur');
+        }
+
+        $em->clear();
+        $recharge = $em->find(Lieu::class, $lieu->id());
+        self::assertInstanceOf(Lieu::class, $recharge);
+        self::assertSame('+33 1 23 45 67 89', $recharge->fiche()->telephone());
+        self::assertSame('https://hotel.example', $recharge->generaleWebsiteUrl());
+        self::assertContains('GENERALE_TYPOLOGIE_3', $recharge->generaleTypologie());
+        self::assertSame('Société par actions simplifiée (SAS)', $recharge->administratif()->infoLegaleFormeJuridique());
+    }
+
     private function accepterDescription(\App\Pim\Entity\Fiche $fiche, string $champ, string $texte): void
     {
         $enregistreur = self::getContainer()->get(FicheSuggestionEnregistreur::class);

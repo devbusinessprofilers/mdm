@@ -78,6 +78,8 @@ final class QualiteSuggestionsTest extends WebTestCase
         self::assertSelectorTextContains('body', 'Accor');
         self::assertSelectorTextContains('body', 'Chaîne hôtelière (1)');
         self::assertSelectorTextContains('body', 'Wikidata');
+        // « Accor » n'est pas dans la liste : la ligne prévient que l'accept créera l'entrée.
+        self::assertSelectorTextContains('body', 'Créera une nouvelle entrée');
 
         // La pastille « Conflits » du rail compte aussi les suggestions génériques.
         $badges = self::getContainer()->get(\App\Dashboard\Repository\QualiteRepository::class)->badges();

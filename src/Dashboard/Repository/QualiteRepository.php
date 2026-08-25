@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Dashboard\Repository;
 
+use App\Pim\Service\ChaineLovResolution;
 use App\Pim\Service\ReferentielGeographiqueFrancais;
 use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
@@ -344,7 +345,7 @@ final readonly class QualiteRepository
         );
         $ordreBy = 'code' === $tri ? "f.code $ordreSql" : "s.score IS NULL, s.score $ordreSql, s.created_at DESC";
         $rows = $this->connection->fetchAllAssociative(
-            "SELECT s.id, s.label, s.valeur_actuelle, s.valeur_proposee, s.score, s.created_at,
+            "SELECT s.id, s.champ, s.label, s.valeur_actuelle, s.valeur_proposee, s.score, s.created_at,
                 f.id AS fiche_id, f.code, f.type, f.label AS fiche_label
              FROM pim_fiche_suggestion s INNER JOIN pim_fiche f ON f.id = s.fiche_id
              WHERE s.statut = 'en_attente' AND s.source = :source
@@ -353,6 +354,8 @@ final readonly class QualiteRepository
             ['source' => $source],
         );
         $lignes = array_map(static function (array $row): array {
+            $proposition = (string) $row['valeur_proposee'];
+
             return [
                 'select_id' => 'suggestion:'.((string) Ulid::fromBinary((string) $row['id'])),
                 'fiche_id' => (string) Ulid::fromBinary((string) $row['fiche_id']),
@@ -361,7 +364,11 @@ final readonly class QualiteRepository
                 'label' => null === $row['fiche_label'] ? null : (string) $row['fiche_label'],
                 'objet' => (string) $row['label'],
                 'actuel' => null === $row['valeur_actuelle'] ? '' : (string) $row['valeur_actuelle'],
-                'proposition' => (string) $row['valeur_proposee'],
+                'proposition' => $proposition,
+                // Enseigne absente de la LOV : accepter créera l'entrée — le dire.
+                'note' => 'lieu_chaine' === $row['champ'] && ChaineLovResolution::creeraUneEntree($proposition)
+                    ? 'Créera une nouvelle entrée dans la liste « Groupe et chaîne hôtelière ».'
+                    : null,
                 'score' => null === $row['score'] ? null : (int) round((float) $row['score'] * 100),
                 'quand' => null === $row['created_at'] ? null : (string) $row['created_at'],
                 'acceptable' => true,

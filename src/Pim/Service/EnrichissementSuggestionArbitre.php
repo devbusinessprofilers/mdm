@@ -109,14 +109,17 @@ final readonly class EnrichissementSuggestionArbitre
             return;
         }
         if (str_starts_with($champ, 'lieu_lov_')) {
-            $codes = self::fusion(
-                'BIEN_ETRE' === ($payload['attribut'] ?? null) ? $lieu->bienEtre() : $lieu->installation(),
-                $payload,
-            );
-            match ($payload['attribut'] ?? null) {
+            $attribut = $payload['attribut'] ?? null;
+            $codes = self::fusion(match ($attribut) {
+                'BIEN_ETRE' => $lieu->bienEtre(),
+                'INSTALLATION' => $lieu->installation(),
+                'GENERALE_TYPOLOGIE' => $lieu->generaleTypologie(),
+                default => throw new \DomainException('Attribut LOV Lieu non applicable.'),
+            }, $payload);
+            match ($attribut) {
                 'BIEN_ETRE' => $lieu->changeBienEtre($codes),
                 'INSTALLATION' => $lieu->changeInstallation($codes),
-                default => throw new \DomainException('Attribut LOV Lieu non applicable.'),
+                default => $lieu->changeGeneraleTypologie($codes),
             };
 
             return;
@@ -124,7 +127,11 @@ final readonly class EnrichissementSuggestionArbitre
         [$courante, $appliquer] = match ($champ) {
             'info_legale_siret' => [$lieu->administratif()->infoLegaleSiret(), fn () => $lieu->administratif()->changeInfoLegaleSiret($suggestion->valeurProposee())],
             'info_legale_num_tva' => [$lieu->administratif()->infoLegaleNumTva(), fn () => $lieu->administratif()->changeInfoLegaleNumTva($suggestion->valeurProposee())],
+            'info_legale_forme_juridique' => [$lieu->administratif()->infoLegaleFormeJuridique(), fn () => $lieu->administratif()->changeInfoLegaleFormeJuridique($suggestion->valeurProposee())],
+            'info_legale_nom' => [$lieu->administratif()->infoLegaleNom(), fn () => $lieu->administratif()->changeInfoLegaleNom($suggestion->valeurProposee())],
             'lieu_desc_generale' => [$lieu->descGenerale(), fn () => $lieu->changeDescGenerale(self::texte($payload))],
+            'lieu_website' => [$lieu->generaleWebsiteUrl(), fn () => $lieu->changeGeneraleWebsiteUrl($suggestion->valeurProposee())],
+            'lieu_telephone' => [$lieu->fiche()->telephone(), fn () => $lieu->fiche()->changeTelephone($suggestion->valeurProposee())],
             default => throw new \DomainException(sprintf('Champ « %s » non applicable.', $champ)),
         };
         $this->assertFraicheur($courante, $suggestion);
@@ -145,7 +152,7 @@ final readonly class EnrichissementSuggestionArbitre
         if ('' === $chaine) {
             throw new \DomainException('Suggestion sans proposition de chaîne.');
         }
-        $code = self::codeLovChaine($chaine) ?? $this->creerValeurChaine($chaine, $actor);
+        $code = ChaineLovResolution::codePour($chaine) ?? $this->creerValeurChaine($chaine, $actor);
         if (!in_array($code, $lieu->generaleChainesGroupeHot(), true)) {
             $lieu->changeGeneraleChainesGroupeHot([...$lieu->generaleChainesGroupeHot(), $code]);
         }
@@ -178,26 +185,6 @@ final readonly class EnrichissementSuggestionArbitre
         $slug = strtoupper(trim((string) preg_replace('/[^A-Za-z0-9]+/', '_', false === $ascii ? $chaine : $ascii), '_'));
 
         return mb_substr('GENERALE_CHAINES_GROUPE_HOT_'.('' === $slug ? 'AUTRE' : $slug), 0, 96);
-    }
-
-    private static function codeLovChaine(string $chaine): ?string
-    {
-        $cible = self::normaliseLibelle($chaine);
-        foreach (LieuLovCatalog::choicesFor('GENERALE_CHAINES_GROUPE_HOT') as $code => $label) {
-            if (self::normaliseLibelle($label) === $cible) {
-                return $code;
-            }
-        }
-
-        return null;
-    }
-
-    /** Comparaison de libellés insensible à la casse et aux accents. */
-    private static function normaliseLibelle(string $valeur): string
-    {
-        $translit = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $valeur);
-
-        return mb_strtolower(trim(false === $translit ? $valeur : $translit));
     }
 
     private function appliquerActivite(Activite $activite, FicheSuggestion $suggestion): void
@@ -236,6 +223,12 @@ final readonly class EnrichissementSuggestionArbitre
         if ('restaurant_desc_generale' === $suggestion->champ()) {
             $this->assertFraicheur($restaurant->descriptionGenerale(), $suggestion);
             $restaurant->changeDescriptionGenerale(self::texte($payload));
+
+            return;
+        }
+        if ('restaurant_telephone' === $suggestion->champ()) {
+            $this->assertFraicheur($restaurant->fiche()->telephone(), $suggestion);
+            $restaurant->fiche()->changeTelephone($suggestion->valeurProposee());
 
             return;
         }

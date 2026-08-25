@@ -601,6 +601,9 @@
                         {% if ligne.actuel != '' %}
                             <twig:Typography variant="body-xs" textColor="neutral-500">Actuel : {{ ligne.actuel }}</twig:Typography>
                         {% endif %}
+                        {% if ligne.note|default(null) %}
+                            <twig:Typography variant="body-xs" textColor="neutral-500" class="italic">{{ ligne.note }}</twig:Typography>
+                        {% endif %}
                     </div>
                     <twig:Typography variant="body-sm" textColor="neutral-400">{% if ligne.confiance is not null %}{{ ligne.confiance }} %{% else %}—{% endif %}</twig:Typography>
                     {% if is_granted('ROLE_BP_VALIDATOR') %}
