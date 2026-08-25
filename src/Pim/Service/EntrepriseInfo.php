@@ -20,6 +20,8 @@ final readonly class EntrepriseInfo
         public ?string $longitude = null,
         public ?string $dirigeantPrenom = null,
         public ?string $dirigeantNom = null,
+        /** Libellé lisible de la catégorie juridique INSEE (null si code inconnu du référentiel). */
+        public ?string $formeJuridique = null,
         /** État administratif de l'établissement : 'A' (actif), 'F'/'C' (cessé), null si inconnu. */
         public ?string $etatAdministratif = null,
         /** Vrai quand le résultat n'a été obtenu qu'en repli France entière (filtre code postal retiré). */

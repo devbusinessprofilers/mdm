@@ -62,6 +62,45 @@ final class StatutEtablissementVerifierTest extends TestCase
         self::assertContains('info_legale_num_tva', $champs);
     }
 
+    public function testProposeLaFormeJuridiqueEtLaRaisonSocialeManquantes(): void
+    {
+        $lieu = self::lieuFrancais('BUSINESS PROFILERS');
+
+        $propositions = self::verifier([[
+            'nom_complet' => 'BUSINESS PROFILERS',
+            'nom_raison_sociale' => 'BUSINESS PROFILERS',
+            'siren' => '480674100',
+            'nature_juridique' => '5710',
+            'siege' => ['siret' => '48067410000031', 'etat_administratif' => 'A'],
+        ]])->analyser($lieu);
+
+        $parChamp = [];
+        foreach ($propositions as $proposition) {
+            $parChamp[$proposition->champ] = $proposition;
+        }
+        self::assertSame('Société par actions simplifiée (SAS)', $parChamp['info_legale_forme_juridique']->valeurProposee ?? null);
+        self::assertSame('BUSINESS PROFILERS', $parChamp['info_legale_nom']->valeurProposee ?? null);
+    }
+
+    public function testUnCodeJuridiqueInconnuOuUnChampRempliNeProposentRien(): void
+    {
+        $lieu = self::lieuFrancais('BUSINESS PROFILERS');
+        $lieu->administratif()->changeInfoLegaleNom('Déjà saisi');
+
+        // Code hors référentiel : on ne devine pas une forme juridique.
+        $propositions = self::verifier([[
+            'nom_complet' => 'BUSINESS PROFILERS',
+            'nom_raison_sociale' => 'BUSINESS PROFILERS',
+            'siren' => '480674100',
+            'nature_juridique' => '0000',
+            'siege' => ['siret' => '48067410000031', 'etat_administratif' => 'A'],
+        ]])->analyser($lieu);
+
+        $champs = array_map(static fn ($p): string => $p->champ, $propositions);
+        self::assertNotContains('info_legale_forme_juridique', $champs);
+        self::assertNotContains('info_legale_nom', $champs);
+    }
+
     public function testPenaliseLeBackfillObtenuSansAncrageCodePostal(): void
     {
         $lieu = self::lieuFrancais('BUSINESS PROFILERS');

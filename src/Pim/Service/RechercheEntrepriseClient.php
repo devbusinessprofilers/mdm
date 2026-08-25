@@ -106,6 +106,7 @@ final class RechercheEntrepriseClient
             longitude: self::string($siege['longitude'] ?? null),
             dirigeantPrenom: $dirigeant['prenom'] ?? null,
             dirigeantNom: $dirigeant['nom'] ?? null,
+            formeJuridique: FormeJuridiqueInsee::libelle(self::string($result['nature_juridique'] ?? null)),
             etatAdministratif: $etat,
             rapprochementSansCodePostal: $replisSansCodePostal,
         );

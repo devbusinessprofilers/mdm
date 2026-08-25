@@ -283,6 +283,7 @@ final readonly class FicheCreationManager
         foreach ([
             // Informations légales : le siège fait foi (l'annuaire ne référence que la France).
             ['infoLegaleNom', 'changeInfoLegaleNom', $entreprise->raisonSociale],
+            ['infoLegaleFormeJuridique', 'changeInfoLegaleFormeJuridique', $entreprise->formeJuridique],
             ['infoLegaleRuePostal', 'changeInfoLegaleRuePostal', $entreprise->rue],
             ['infoLegaleCodePostal', 'changeInfoLegaleCodePostal', $entreprise->codePostal],
             ['infoLegaleVille', 'changeInfoLegaleVille', $entreprise->ville],

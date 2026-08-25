@@ -70,9 +70,10 @@ final readonly class StatutEtablissementVerifier
                 score: 1.0,
             )];
         }
-        $tva = $this->propositionTva($lieu, $info);
-
-        return null === $tva ? [] : [$tva];
+        return [
+            ...(null === ($tva = $this->propositionTva($lieu, $info)) ? [] : [$tva]),
+            ...$this->propositionsLegales($lieu, $info, null),
+        ];
     }
 
     /** @return list<SuggestionProposee> */
@@ -107,6 +108,39 @@ final readonly class StatutEtablissementVerifier
         $tva = $this->propositionTva($lieu, $info);
         if (null !== $tva) {
             $propositions[] = $tva;
+        }
+
+        return [...$propositions, ...$this->propositionsLegales($lieu, $info, $score)];
+    }
+
+    /**
+     * Backfill des champs légaux déductibles de l'annuaire : forme juridique
+     * (libellé INSEE) et raison sociale — uniquement quand le champ est vide.
+     *
+     * @return list<SuggestionProposee>
+     */
+    private function propositionsLegales(Lieu $lieu, EntrepriseInfo $info, ?float $score): array
+    {
+        $propositions = [];
+        if (null !== $info->formeJuridique && null === $lieu->administratif()->infoLegaleFormeJuridique()) {
+            $propositions[] = new SuggestionProposee(
+                action: SuggestionAction::RemplirChamp,
+                champ: 'info_legale_forme_juridique',
+                label: 'Forme juridique',
+                valeurActuelle: null,
+                valeurProposee: $info->formeJuridique,
+                score: $score,
+            );
+        }
+        if (null !== $info->raisonSociale && null === $lieu->administratif()->infoLegaleNom()) {
+            $propositions[] = new SuggestionProposee(
+                action: SuggestionAction::RemplirChamp,
+                champ: 'info_legale_nom',
+                label: 'Raison sociale',
+                valeurActuelle: null,
+                valeurProposee: $info->raisonSociale,
+                score: $score,
+            );
         }
 
         return $propositions;
