@@ -121,11 +121,17 @@ final readonly class QualiteRepository
         return array_slice($faibles, 0, $limit);
     }
 
-    /** @return list<array{fiche_id: string, label: ?string, field: string, valeur: ?string, confiance: ?float, quand: string}> */
+    /**
+     * Tableau « Valeurs suggérées par l'IA en attente » : suggestions issues de
+     * l'extraction OCR (arbitrage dans la revue d'extraction) et propositions
+     * IA génériques (FicheSuggestion source « ia », arbitrage sur la fiche).
+     *
+     * @return list<array{fiche_id: string, label: ?string, field: string, valeur: ?string, confiance: ?float, quand: string, origine: string, type: string}>
+     */
     public function suggestionsEnAttente(int $limit = 20): array
     {
         $rows = $this->connection->fetchAllAssociative(
-            "SELECT ext.fiche_id, f.label, sug.field_path, sug.raw_value, sug.confidence, ext.created_at
+            "SELECT ext.fiche_id, f.label, f.type, sug.field_path, sug.raw_value, sug.confidence, ext.created_at
              FROM ocr_suggestion sug
              INNER JOIN ocr_document_extraction ext ON ext.id = sug.extraction_id
              INNER JOIN pim_fiche f ON f.id = ext.fiche_id
@@ -133,15 +139,38 @@ final readonly class QualiteRepository
              ORDER BY ext.created_at DESC
              LIMIT ".$limit,
         );
-
-        return array_map(static fn (array $row): array => [
+        $lignes = array_map(static fn (array $row): array => [
             'fiche_id' => (string) Ulid::fromBinary((string) $row['fiche_id']),
             'label' => null === $row['label'] ? null : (string) $row['label'],
             'field' => (string) $row['field_path'],
             'valeur' => null === $row['raw_value'] ? null : mb_strimwidth((string) $row['raw_value'], 0, 80, '…'),
             'confiance' => null === $row['confidence'] ? null : (float) $row['confidence'],
             'quand' => (string) $row['created_at'],
+            'origine' => 'ocr',
+            'type' => (string) $row['type'],
         ], $rows);
+        foreach ($this->connection->fetchAllAssociative(
+            "SELECT s.fiche_id, f.label AS fiche_label, f.type, s.label, s.valeur_proposee, s.score, s.created_at
+             FROM pim_fiche_suggestion s
+             INNER JOIN pim_fiche f ON f.id = s.fiche_id
+             WHERE s.source = 'ia' AND s.statut = 'en_attente'
+             ORDER BY s.created_at DESC
+             LIMIT ".$limit,
+        ) as $row) {
+            $lignes[] = [
+                'fiche_id' => (string) Ulid::fromBinary((string) $row['fiche_id']),
+                'label' => null === $row['fiche_label'] ? null : (string) $row['fiche_label'],
+                'field' => (string) $row['label'],
+                'valeur' => null === $row['valeur_proposee'] ? null : mb_strimwidth((string) $row['valeur_proposee'], 0, 80, '…'),
+                'confiance' => null === $row['score'] ? null : (float) $row['score'],
+                'quand' => (string) $row['created_at'],
+                'origine' => 'ia',
+                'type' => (string) $row['type'],
+            ];
+        }
+        usort($lignes, static fn (array $a, array $b): int => strcmp($b['quand'], $a['quand']));
+
+        return array_slice($lignes, 0, $limit);
     }
 
     /**

@@ -206,7 +206,7 @@
         {# ---- Cartes maquette, comptes réels. ---- #}
         <div class="shrink-0 flex flex-row gap-4 flex-wrap">
             {% for c in [
-                { icone: 'ai', titre: 'Valeurs IA en attente', valeur: suggestions|length, alerte: suggestions|length > 0, texte: 'Suggestions issues de l\'extraction de documents, à arbitrer champ par champ.' },
+                { icone: 'ai', titre: 'Valeurs IA en attente', valeur: suggestions|length, alerte: suggestions|length > 0, texte: 'Suggestions issues de l\'extraction de documents et des propositions IA, à arbitrer champ par champ.' },
                 { icone: 'warning', titre: 'Écarts d\'adresse', valeur: adresses_comptes.avec, alerte: adresses_comptes.avec > 0, texte: 'La BAN ou Geoapify propose une autre adresse — Accepter applique en un clic.' },
                 { icone: 'magnifying-glass', titre: 'Sans résultat fiable', valeur: adresses_comptes.sans, alerte: false, texte: 'Aucune correspondance sûre : à corriger à la main dans la fiche.' },
                 { icone: 'cube', titre: 'Adresses partagées', valeur: doublons_adresse|length, alerte: false, texte: 'Plusieurs fiches déclarent la même adresse — doublons possibles.' },
@@ -232,6 +232,8 @@
                     <twig:Typography variant="heading-3" element="h2" bold>D'où viennent les suggestions</twig:Typography>
                     <twig:Typography variant="body-sm" textColor="neutral-500" class="text-pretty">Les corrections et enrichissements proposés ici sont produits automatiquement par des sources externes gratuites. Rien n'est écrit sans votre décision : Accepter applique, Ignorer conserve la saisie.</twig:Typography>
                 </div>
+                {# DATAtourisme absent de la liste (décision 2026-08-25) : le code existe
+                   mais la source reste inutilisée tant que le flux n'est pas mis en place. #}
                 {% for s in [
                     {
                         nom: 'Sirene / Recherche-entreprises', etat: 'Actif',
@@ -262,16 +264,6 @@
                         prerequis: 'Restaurant géolocalisé, clé GEOAPIFY_API_KEY et paramètre activé.',
                         contrainte: 'Couverture OpenStreetMap inégale selon les zones. Horaires non repris (format trop complexe). Plan gratuit : 3 000 requêtes/jour.',
                         licence: 'Gratuit, données © OpenStreetMap.'
-                    },
-                    {
-                        nom: 'DATAtourisme', etat: 'Actif',
-                        declenchement: 'Import manuel du flux synchronisé — pas de tâche planifiée.',
-                        porte: 'Lieux et activités : description générale ; équipements bien-être / installations des lieux.',
-                        apport: 'Complète les champs vides depuis les données des offices de tourisme (les photos réutilisables arriveront ensuite).',
-                        couverture: 'France (métropole et outre-mer).',
-                        prerequis: 'Flux JSON-LD configuré sur datatourisme.fr et synchronisé localement ; paramètre activé. Rapprochement par nom + code postal.',
-                        contrainte: 'Couvre uniquement les établissements référencés par les offices de tourisme. Photos non encore reprises.',
-                        licence: 'Open data officiel, Licence Ouverte 2.0 (réutilisation commerciale autorisée).'
                     },
                     {
                         nom: 'Wikidata', etat: 'Actif',
@@ -319,7 +311,15 @@
                             <td class="px-3"><twig:Typography variant="body-sm">{{ suggestion.valeur ?? '—' }}</twig:Typography></td>
                             <td class="px-3"><twig:Typography variant="body-sm">{{ suggestion.confiance is null ? '—' : (suggestion.confiance * 100)|round ~ ' %' }}</twig:Typography></td>
                             <td class="px-3"><twig:Typography variant="body-sm">{{ suggestion.quand|date('d/m/Y H:i') }}</twig:Typography></td>
-                            <td class="px-3"><a href="{{ path('app_ocr_index', {id: suggestion.fiche_id}) }}" class="hover:underline"><twig:Typography variant="body-sm" textColor="primary-3" bold element="span">Arbitrer</twig:Typography></a></td>
+                            {# OCR : arbitrage dans la revue d'extraction ; IA : arbitrage sur la fiche (bloc « Suggestions en attente »). #}
+                            {% if suggestion.origine == 'ia' %}
+                                {% set url_fiche = suggestion.type == 'lieu'
+                                    ? path('app_mdm_fiche_lieu', {id: suggestion.fiche_id, section: 1})
+                                    : path('app_mdm_fiche_gamme', {gamme: suggestion.type == 'restaurant' ? 'restaurants' : (suggestion.type == 'activite' ? 'activites' : 'services'), id: suggestion.fiche_id, section: 1}) %}
+                                <td class="px-3"><a href="{{ url_fiche }}" class="hover:underline"><twig:Typography variant="body-sm" textColor="primary-3" bold element="span">Ouvrir</twig:Typography></a></td>
+                            {% else %}
+                                <td class="px-3"><a href="{{ path('app_ocr_index', {id: suggestion.fiche_id}) }}" class="hover:underline"><twig:Typography variant="body-sm" textColor="primary-3" bold element="span">Arbitrer</twig:Typography></a></td>
+                            {% endif %}
                         </tr>
                     {% else %}
                         <tr><td colspan="6" class="p-6 text-center"><twig:Typography variant="body-sm" textColor="neutral-500">Aucune suggestion en attente.</twig:Typography></td></tr>
@@ -366,13 +366,14 @@
                         {% endfor %}
                     </nav>
                     {% if is_granted('ROLE_BP_VALIDATOR') %}
-                        <div class="flex items-center gap-2 shrink-0">
+                        {# ml-auto : collés à droite même quand les onglets passent sur deux lignes. #}
+                        <div class="flex items-center gap-2 shrink-0 ml-auto">
                             <twig:Button variant="primary" size="sm" icon="check-circle" type="submit"
                                          data-suggestions-target="accepter"
-                                         formaction="{{ path('app_mdm_qualite_suggestions', {decision: 'accepter', src: sug_actif}) }}">Accepter la sélection</twig:Button>
+                                         formaction="{{ path('app_mdm_qualite_suggestions', {decision: 'accepter', src: sug_actif}) }}">Accepter</twig:Button>
                             <twig:Button variant="outline" size="sm" type="submit"
                                          data-suggestions-target="ignorer"
-                                         formaction="{{ path('app_mdm_qualite_suggestions', {decision: 'ignorer', src: sug_actif}) }}">Ignorer la sélection</twig:Button>
+                                         formaction="{{ path('app_mdm_qualite_suggestions', {decision: 'ignorer', src: sug_actif}) }}">Ignorer</twig:Button>
                         </div>
                     {% endif %}
                 </div>

@@ -42,7 +42,7 @@ final readonly class SuggestionsEcran
     }
 
     /**
-     * Charge les CINQ onglets (le bandeau bascule côté client, sans reload) : un
+     * Charge tous les onglets (le bandeau bascule côté client, sans reload) : un
      * seul formulaire de sélection couvre toutes les lignes ; chaque onglet
      * connaît l'offset de ses cases dans ce formulaire. Seul l'onglet actif est
      * paginé/trié via le serveur (les autres à la page 1).
