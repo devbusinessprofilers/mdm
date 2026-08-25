@@ -11,10 +11,11 @@
 
 {% set famille_libelles = familles %}
 {% set statuts_erreur = ['echoue', 'termine_avec_erreurs', 'failed', 'en_erreur'] %}
-{% set famille_icones = { 'import': 'upload-simple', 'ocr': 'ai', 'traduction': 'list', 'media': 'images', 'enrichissement': 'ai' } %}
+{% set famille_icones = { 'traduction': 'list', 'media': 'images', 'enrichissement': 'ai' } %}
 
 {% set a_venir = 'Fonction à venir — en développement' %}
-{% set familles_desactivees = ['import', 'ocr'] %}
+{# import et ocr : familles sans entrée dans le rail, leurs lignes restent dans le journal. #}
+{% set familles_masquees = ['import', 'ocr'] %}
 
 {# ------------------------------------------------- Rail : les outils, puis les familles du journal #}
 {% block rail %}
@@ -57,14 +58,6 @@
                                      class="shrink-0 px-[7px] py-0.5 rounded-lg bg-neutral-200">À venir</twig:Typography>
                 </span>
 
-                {# Imports & exports : écran dédié à venir. #}
-                <span title="{{ a_venir }}" aria-disabled="true"
-                      class="flex items-center gap-2 box-border px-4 py-2 rounded-xs overflow-hidden opacity-60 cursor-not-allowed">
-                    <twig:Icon name="upload-simple" aria-hidden="true" class="shrink-0 self-center w-4 h-4 mx-1 text-neutral-400" />
-                    <twig:Typography variant="body" bold ellipsis textColor="neutral-500" class="flex-1 min-w-0">Imports & exports</twig:Typography>
-                    <twig:Typography variant="body-xs" bold textColor="neutral-500"
-                                     class="shrink-0 px-[7px] py-0.5 rounded-lg bg-neutral-200">À venir</twig:Typography>
-                </span>
             </div>
         </div>
 
@@ -72,16 +65,7 @@
             <twig:Typography variant="body" bold class="pl-2 pr-4">Familles du journal</twig:Typography>
             <div class="flex flex-col">
                 {% for cle, libelle in familles %}
-                    {% if cle in familles_desactivees %}
-                        <span title="{{ a_venir }}" aria-disabled="true"
-                              class="flex items-center gap-2 box-border px-4 py-2 rounded-xs overflow-hidden opacity-60 cursor-not-allowed">
-                            <twig:Icon name="{{ famille_icones[cle]|default('clipboard') }}" aria-hidden="true"
-                                       class="shrink-0 self-center w-4 h-4 mx-1 text-neutral-400" />
-                            <twig:Typography variant="body" bold ellipsis textColor="neutral-500" class="flex-1 min-w-0">{{ libelle }}</twig:Typography>
-                            <twig:Typography variant="body-xs" bold textColor="neutral-500"
-                                             class="shrink-0 px-[7px] py-0.5 rounded-lg bg-neutral-200">À venir</twig:Typography>
-                        </span>
-                    {% else %}
+                    {% if cle not in familles_masquees %}
                         <a href="{{ path('app_mdm_outils', { famille: cle }) }}"
                            class="group/onglet flex items-center gap-2 box-border px-4 py-2 rounded-xs overflow-hidden cursor-pointer
                                   hover:bg-primary-4 aria-[current=page]:bg-linear-(--primary-gradient) aria-[current=page]:hover:bg-none"

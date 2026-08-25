@@ -620,17 +620,6 @@
             </div>
         {% endif %}
 
-        {# Le dépôt de médias reste sur la fiche : l'import par lot est à venir. #}
-        <div title="{{ a_venir }}" class="shrink-0 {{ carte }} opacity-60">
-            <div class="flex items-center gap-3">
-                <twig:Icon name="upload-simple" aria-hidden="true" class="shrink-0 w-6 h-6 text-neutral-400" />
-                <twig:Typography variant="subtitle" class="flex-1 min-w-0 text-[1.125rem]! leading-[1.625rem]! font-[700]!">Import par lot</twig:Typography>
-                <span class="inline-flex shrink-0"><twig:Tag label="À venir" variant="neutral" size="sm" /></span>
-            </div>
-            <twig:Typography variant="body" textColor="neutral-500" class="text-pretty">Le dépôt se fait aujourd'hui
-                sur la fiche : les variantes sont régénérées à chaque dépôt, l'original est conservé.</twig:Typography>
-        </div>
-
         {% set retouche_jetons = {
             'queued': ['En file', 'bg-primary-4'],
             'processing': ['En traitement', 'bg-primary-4'],
