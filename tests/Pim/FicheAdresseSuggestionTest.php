@@ -190,7 +190,7 @@ final class FicheAdresseSuggestionTest extends WebTestCase
         $crawler = $this->client->request('GET', '/qualite', ['onglet' => 'conflits', 'src' => 'adresses']);
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('body', 'Suggestions à arbitrer');
-        self::assertSelectorTextContains('body', 'Adresses (1)');
+        self::assertSelectorTextContains('body', 'Adresses & GPS (1)');
         self::assertSelectorTextContains('body', 'Queyrac');
 
         // Ignorer la sélection (case cochée) via le formulaire groupé.
@@ -210,7 +210,7 @@ final class FicheAdresseSuggestionTest extends WebTestCase
 
         $this->client->request('GET', '/qualite', ['onglet' => 'conflits', 'src' => 'adresses']);
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('body', 'Adresses (1)');
+        self::assertSelectorTextContains('body', 'Adresses & GPS (1)');
         self::assertSelectorTextContains('body', 'Abbaye des écarts');
         self::assertSelectorTextContains('body', 'Aucun résultat fiable');
     }
