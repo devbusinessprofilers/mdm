@@ -7,6 +7,7 @@ namespace App\Pim\Command;
 use App\Pim\Enum\SuggestionSource;
 use App\Pim\Repository\FicheEnrichmentScanRepository;
 use App\Pim\Repository\RestaurantRepository;
+use App\Pim\Service\EnrichissementIndisponibleException;
 use App\Pim\Service\FicheSuggestionEnregistreur;
 use App\Pim\Service\GeoapifyClient;
 use App\Pim\Service\RestaurantAttributsVerifier;
@@ -36,6 +37,9 @@ use Symfony\Component\DependencyInjection\Attribute\Autowire;
 #[AsCommand(name: 'app:pim:enrichir-restaurants', description: 'Propose cuisine, spécificités, équipements, PMR et site des restaurants depuis Geoapify (OpenStreetMap).')]
 final class EnrichirRestaurantsCommand extends Command
 {
+    /** Échecs API consécutifs avant abandon du run (quota épuisé : inutile d'insister). */
+    private const MAX_ERREURS_CONSECUTIVES = 5;
+
     public function __construct(
         private readonly RestaurantRepository $restaurants,
         private readonly RestaurantAttributsVerifier $verifier,
@@ -78,9 +82,11 @@ final class EnrichirRestaurantsCommand extends Command
         $sourceFiltre = $input->getOption('rescan') ? null : SuggestionSource::Geoapify->value;
         $seuil = $now->modify(sprintf('-%d days', max(0, $this->parametres->int('geoapify.rescan_apres_jours'))));
 
-        $stats = ['restaurants analysés' => 0, 'avec propositions' => 0, 'suggestions créées' => 0];
+        $stats = ['restaurants analysés' => 0, 'avec propositions' => 0, 'suggestions créées' => 0, 'erreurs API' => 0];
         $rapport = [];
         $after = null;
+        $erreursConsecutives = 0;
+        $abandon = false;
         do {
             $restaurants = $this->restaurants->findBatchAfter($after, $batch, $sourceFiltre, $seuil);
             $scannesLot = [];
@@ -89,9 +95,22 @@ final class EnrichirRestaurantsCommand extends Command
                 if (null !== $code && $restaurant->fiche()->code() !== $code) {
                     continue;
                 }
+                try {
+                    $propositions = $this->verifier->analyser($restaurant);
+                } catch (EnrichissementIndisponibleException) {
+                    // Panne ou quota : le restaurant n'est PAS marqué scanné, il
+                    // sera retenté au prochain run au lieu d'être gelé 180 jours.
+                    ++$stats['erreurs API'];
+                    if (++$erreursConsecutives >= self::MAX_ERREURS_CONSECUTIVES) {
+                        $abandon = true;
+                        break;
+                    }
+
+                    continue;
+                }
+                $erreursConsecutives = 0;
                 $scannesLot[] = $restaurant->id();
                 ++$stats['restaurants analysés'];
-                $propositions = $this->verifier->analyser($restaurant);
                 if ([] === $propositions) {
                     continue;
                 }
@@ -113,12 +132,17 @@ final class EnrichirRestaurantsCommand extends Command
                 $this->scans->marquer($scannesLot, SuggestionSource::Geoapify, $now);
             }
             $this->entityManager->clear();
-        } while (count($restaurants) === $batch);
+        } while (!$abandon && count($restaurants) === $batch);
 
         $fichier = $this->exporterRapport($rapport);
         $io->table(array_keys($stats), [array_values($stats)]);
         $io->text(sprintf('Rapport détaillé : %s', $fichier));
         $io->text('Données © OpenStreetMap contributors, via Geoapify.');
+        if ($abandon) {
+            $io->warning(sprintf('Geoapify indisponible (%d échecs consécutifs) : scan interrompu, les restaurants restants seront retentés au prochain run.', self::MAX_ERREURS_CONSECUTIVES));
+
+            return Command::FAILURE;
+        }
         $io->success($appliquer ? 'Suggestions créées/rafraîchies.' : 'Rapport généré, aucune écriture.');
 
         return Command::SUCCESS;

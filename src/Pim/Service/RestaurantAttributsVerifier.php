@@ -44,14 +44,22 @@ final readonly class RestaurantAttributsVerifier
     {
     }
 
-    /** @return list<SuggestionProposee> */
+    /**
+     * @return list<SuggestionProposee>
+     *
+     * @throws EnrichissementIndisponibleException quand Geoapify est en panne
+     *                                             ou sous quota
+     */
     public function analyser(Restaurant $restaurant): array
     {
         $localisation = $restaurant->localisation();
         if (null === $localisation || null === $localisation->latitude() || null === $localisation->longitude()) {
             return [];
         }
-        $attributs = $this->geoapify->detailsPlace($localisation->latitude(), $localisation->longitude());
+        // Le nom de la fiche sert de contre-vérification : sans lui, un GPS
+        // imprécis ferait remonter les attributs du commerce voisin.
+        $nom = trim((string) $restaurant->fiche()->label());
+        $attributs = $this->geoapify->detailsPlace($localisation->latitude(), $localisation->longitude(), '' === $nom ? null : $nom);
         if (null === $attributs || $attributs->estVide()) {
             return [];
         }

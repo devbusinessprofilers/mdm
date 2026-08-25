@@ -71,12 +71,23 @@ final class RestaurantAttributsVerifierTest extends TestCase
         self::assertSame([], (new RestaurantAttributsVerifier($client))->analyser($restaurant));
     }
 
+    public function testIgnoreLeCommerceVoisinMalApparie(): void
+    {
+        // GPS imprécis : le POI au point est un autre commerce → aucune proposition.
+        $propositions = self::verifier([
+            'cuisine' => 'french',
+            'website' => 'https://boulangerie.example',
+        ], nomOsm: 'Boulangerie Dupont')->analyser(self::restaurant());
+
+        self::assertSame([], $propositions);
+    }
+
     /** @param array<string, string> $rawTags */
-    private static function verifier(array $rawTags): RestaurantAttributsVerifier
+    private static function verifier(array $rawTags, string $nomOsm = 'Trattoria'): RestaurantAttributsVerifier
     {
         $client = new GeoapifyClient(
             new MockHttpClient(static fn (): MockResponse => new MockResponse(json_encode([
-                'features' => [['properties' => ['datasource' => ['raw' => $rawTags]]]],
+                'features' => [['properties' => ['name' => $nomOsm, 'datasource' => ['raw' => $rawTags]]]],
             ], JSON_THROW_ON_ERROR))),
             'https://geoapify.example',
             'test-key',

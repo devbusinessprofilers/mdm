@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Pim;
 
+use App\Pim\Service\EnrichissementIndisponibleException;
 use App\Pim\Service\GeoapifyClient;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpClient\MockHttpClient;
@@ -48,6 +49,66 @@ final class GeoapifyPlaceDetailsTest extends TestCase
     {
         $client = new GeoapifyClient(new MockHttpClient(), 'https://geoapify.example', '');
         self::assertNull($client->detailsPlace('48.8', '2.3'));
+    }
+
+    public function testNeRetientQueLesFeaturesDontLeNomCorrespond(): void
+    {
+        $client = self::client(['features' => [
+            // Bâtiment sans nom : ses tags ne doivent pas être fusionnés.
+            ['properties' => ['datasource' => ['raw' => ['wheelchair' => 'yes']]]],
+            ['properties' => ['name' => 'Chez Marcel', 'datasource' => ['raw' => [
+                'name' => 'Chez Marcel',
+                'cuisine' => 'french',
+                'website' => 'https://marcel.example',
+            ]]]],
+        ]]);
+
+        $attributs = $client->detailsPlace('48.8', '2.3', 'Chez Marcel');
+
+        self::assertNotNull($attributs);
+        self::assertSame(['french'], $attributs->cuisines);
+        self::assertSame('https://marcel.example', $attributs->siteWeb);
+        self::assertNull($attributs->accesPmr);
+    }
+
+    public function testAucunResultatQuandAucunNomNeCorrespond(): void
+    {
+        $client = self::client(['features' => [
+            ['properties' => ['name' => 'Le Voisin', 'datasource' => ['raw' => ['name' => 'Le Voisin', 'cuisine' => 'thai']]]],
+        ]]);
+
+        self::assertNull($client->detailsPlace('48.8', '2.3', 'La Bella Trattoria'));
+    }
+
+    public function testLaCorrespondanceDeNomIgnoreLesAccents(): void
+    {
+        $client = self::client(['features' => [
+            ['properties' => ['name' => 'Hôtel de la Gare', 'datasource' => ['raw' => ['name' => 'Hôtel de la Gare', 'cuisine' => 'french']]]],
+        ]]);
+
+        self::assertNotNull($client->detailsPlace('48.8', '2.3', 'Hotel de la Gare'));
+    }
+
+    public function testIndisponibiliteLeveeSansExposerLaCle(): void
+    {
+        $client = new GeoapifyClient(
+            new MockHttpClient(static fn (): MockResponse => new MockResponse('', [
+                'error' => 'boom https://geoapify.example/v2/place-details?apiKey=test-key',
+            ])),
+            'https://geoapify.example',
+            'test-key',
+        );
+
+        try {
+            $client->detailsPlace('48.8', '2.3');
+            self::fail('Une EnrichissementIndisponibleException était attendue.');
+        } catch (EnrichissementIndisponibleException $exception) {
+            $messages = $exception->getMessage();
+            for ($e = $exception->getPrevious(); null !== $e; $e = $e->getPrevious()) {
+                $messages .= ' '.$e->getMessage();
+            }
+            self::assertStringNotContainsString('test-key', $messages);
+        }
     }
 
     /** @param array<string, mixed> $payload */

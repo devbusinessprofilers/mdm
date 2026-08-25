@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Pim;
 
+use App\Pim\Service\EnrichissementIndisponibleException;
 use App\Pim\Service\RechercheEntrepriseClient;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
@@ -97,5 +98,59 @@ final class RechercheEntrepriseClientTest extends TestCase
         $client = new RechercheEntrepriseClient($httpClient, new NullLogger(), 'https://recherche.example');
 
         self::assertNull($client->findStatut('123'));
+    }
+
+    public function testFindStatutPropageLIndisponibilite(): void
+    {
+        $httpClient = new MockHttpClient(static fn (): MockResponse => new MockResponse('', ['error' => 'DNS failure']));
+        $client = new RechercheEntrepriseClient($httpClient, new NullLogger(), 'https://recherche.example');
+
+        $this->expectException(EnrichissementIndisponibleException::class);
+        $client->findStatut('48067410000031');
+    }
+
+    public function testFindBestPropageLIndisponibiliteQuandDemande(): void
+    {
+        $httpClient = new MockHttpClient(static fn (): MockResponse => new MockResponse('', ['error' => 'DNS failure']));
+        $client = new RechercheEntrepriseClient($httpClient, new NullLogger(), 'https://recherche.example');
+
+        $this->expectException(EnrichissementIndisponibleException::class);
+        $client->findBest('Business Profilers', null, absorberIndisponibilite: false);
+    }
+
+    public function testRetenteUneSeuleFoisApresUn429(): void
+    {
+        $reponses = [
+            new MockResponse('', ['http_code' => 429, 'response_headers' => ['retry-after' => '1']]),
+            new MockResponse(json_encode(['results' => [[
+                'siren' => '480674100',
+                'siege' => ['siret' => '48067410000031'],
+            ]]], JSON_THROW_ON_ERROR)),
+        ];
+        $client = new RechercheEntrepriseClient(new MockHttpClient($reponses), new NullLogger(), 'https://recherche.example');
+
+        $info = $client->findBest('Business Profilers', null);
+
+        self::assertNotNull($info);
+        self::assertSame('48067410000031', $info->siret);
+    }
+
+    public function testFindStatutRendEtatInconnuQuandLeSiretNEstPasDansLaReponse(): void
+    {
+        // Siège fermé mais SIRET demandé absent de la réponse : ne pas
+        // extrapoler l'état d'un autre établissement.
+        $httpClient = new MockHttpClient(static fn (): MockResponse => new MockResponse(json_encode(['results' => [[
+            'siren' => '480674100',
+            'etat_administratif' => 'C',
+            'matching_etablissements' => [['siret' => '48067410000099', 'etat_administratif' => 'F']],
+            'siege' => ['siret' => '48067410000048', 'etat_administratif' => 'F'],
+        ]]], JSON_THROW_ON_ERROR)));
+        $client = new RechercheEntrepriseClient($httpClient, new NullLogger(), 'https://recherche.example');
+
+        $info = $client->findStatut('48067410000031');
+
+        self::assertNotNull($info);
+        self::assertNull($info->etatAdministratif);
+        self::assertFalse($info->estCesse());
     }
 }

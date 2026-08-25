@@ -6,6 +6,7 @@ namespace App\Pim\Service;
 
 use Symfony\Contracts\HttpClient\Exception\ExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
+use Symfony\Contracts\HttpClient\ResponseInterface;
 
 /**
  * Client Geoapify (géocodage mondial sur données OpenStreetMap) pour les
@@ -22,8 +23,11 @@ final class GeoapifyClient implements GeocodeurEtrangerInterface
     /** Un job batch accepte 1 000 adresses au plus (plafond Geoapify). */
     private const TAILLE_JOB = 1000;
     private const ESSAIS_POLLING = 60;
+    /** Le plan gratuit est limité à 5 req/s : on lisse en dessous. */
+    private const INTERVALLE_MIN_SECONDES = 0.25;
 
     private readonly HttpClientInterface $httpClient;
+    private float $derniereRequete = 0.0;
 
     public function __construct(
         HttpClientInterface $httpClient,
@@ -44,10 +48,14 @@ final class GeoapifyClient implements GeocodeurEtrangerInterface
 
     /**
      * Attributs OpenStreetMap du lieu situé aux coordonnées données (Place
-     * Details). Retourne null si le lieu est introuvable ou l'API injoignable —
-     * l'enrichissement est un confort, jamais bloquant.
+     * Details). Retourne null si le lieu est introuvable ; avec un nom attendu,
+     * seuls les features dont le nom OSM correspond sont retenus — le GPS d'une
+     * fiche géocodée au niveau rue pointe facilement sur le commerce voisin.
+     *
+     * @throws EnrichissementIndisponibleException quand l'API est injoignable
+     *                                             ou sous quota
      */
-    public function detailsPlace(string $latitude, string $longitude): ?PlaceAttributs
+    public function detailsPlace(string $latitude, string $longitude, ?string $nomAttendu = null): ?PlaceAttributs
     {
         if (!$this->isConfigured() || '' === trim($latitude) || '' === trim($longitude)) {
             return null;
@@ -58,27 +66,46 @@ final class GeoapifyClient implements GeocodeurEtrangerInterface
                 'lon' => trim($longitude),
                 'features' => 'details',
             ], attendus: [200]);
-        } catch (\RuntimeException) {
-            return null;
+        } catch (\RuntimeException $exception) {
+            throw new EnrichissementIndisponibleException('Geoapify Place Details est indisponible.', 0, $exception);
         }
         $features = $donnees['features'] ?? null;
         if (!is_array($features) || [] === $features) {
             return null;
         }
-        // Tags OSM bruts fusionnés de tous les features renvoyés (bâtiment +
-        // POI) ; la première valeur rencontrée pour une clé l'emporte.
+        $nomAttendu = null === $nomAttendu || '' === trim($nomAttendu) ? null : trim($nomAttendu);
+        // Tags OSM bruts fusionnés des features retenus ; la première valeur
+        // rencontrée pour une clé l'emporte.
         $raw = [];
         foreach ($features as $feature) {
-            $brut = $feature['properties']['datasource']['raw'] ?? null;
-            if (is_array($brut)) {
-                $raw += $brut;
+            if (!is_array($feature)) {
+                continue;
             }
+            $brut = $feature['properties']['datasource']['raw'] ?? null;
+            if (!is_array($brut)) {
+                continue;
+            }
+            if (null !== $nomAttendu && !self::nomCorrespond($nomAttendu, $feature, $brut)) {
+                continue;
+            }
+            $raw += $brut;
         }
         if ([] === $raw) {
             return null;
         }
 
         return self::extraireAttributs($raw);
+    }
+
+    /**
+     * @param array<array-key, mixed> $feature
+     * @param array<array-key, mixed> $brut
+     */
+    private static function nomCorrespond(string $nomAttendu, array $feature, array $brut): bool
+    {
+        $nom = $feature['properties']['name'] ?? $brut['name'] ?? null;
+
+        return is_string($nom) && NomSimilarite::score($nomAttendu, $nom) >= NomSimilarite::SEUIL_DEFAUT;
     }
 
     /**
@@ -235,11 +262,18 @@ final class GeoapifyClient implements GeocodeurEtrangerInterface
             $options['json'] = $json;
         }
         try {
-            $response = $this->httpClient->request($method, rtrim($this->endpoint, '/').$chemin, $options);
+            $response = $this->executer($method, $chemin, $options);
+            if (429 === $response->getStatusCode()) {
+                // Quota dépassé malgré le lissage : un seul réessai, après Retry-After.
+                sleep(self::retryAfter($response));
+                $response = $this->executer($method, $chemin, $options);
+            }
             $status = $response->getStatusCode();
             $body = $response->getContent(false);
         } catch (ExceptionInterface $exception) {
-            throw new \RuntimeException('Geoapify est injoignable.', 0, $exception);
+            // Pas de chaînage de l'exception d'origine : son message contient
+            // l'URL appelée, clé API incluse.
+            throw new \RuntimeException('Geoapify est injoignable : '.$this->sansCle($exception->getMessage()));
         }
         if (!in_array($status, $attendus, true)) {
             throw new \RuntimeException(sprintf('Geoapify a répondu HTTP %d.', $status));
@@ -250,6 +284,30 @@ final class GeoapifyClient implements GeocodeurEtrangerInterface
         $donnees = json_decode($body, true);
 
         return is_array($donnees) ? $donnees : null;
+    }
+
+    /** @param array<string, mixed> $options */
+    private function executer(string $method, string $chemin, array $options): ResponseInterface
+    {
+        $ecoule = microtime(true) - $this->derniereRequete;
+        if ($ecoule < self::INTERVALLE_MIN_SECONDES) {
+            usleep((int) ((self::INTERVALLE_MIN_SECONDES - $ecoule) * 1_000_000));
+        }
+        $this->derniereRequete = microtime(true);
+
+        return $this->httpClient->request($method, rtrim($this->endpoint, '/').$chemin, $options);
+    }
+
+    private static function retryAfter(ResponseInterface $response): int
+    {
+        $valeur = (int) ($response->getHeaders(false)['retry-after'][0] ?? 0);
+
+        return max(1, min(30, $valeur));
+    }
+
+    private function sansCle(string $message): string
+    {
+        return '' === $this->apiKey ? $message : str_replace($this->apiKey, '***', $message);
     }
 
     /**

@@ -8,6 +8,7 @@ use App\Pim\Enum\SuggestionAction;
 use App\Pim\Enum\SuggestionSource;
 use App\Pim\Repository\FicheEnrichmentScanRepository;
 use App\Pim\Repository\LieuRepository;
+use App\Pim\Service\EnrichissementIndisponibleException;
 use App\Pim\Service\FicheSuggestionEnregistreur;
 use App\Pim\Service\StatutEtablissementVerifier;
 use App\Shared\Service\ParametreProviderInterface;
@@ -38,6 +39,9 @@ use Symfony\Component\DependencyInjection\Attribute\Autowire;
 #[AsCommand(name: 'app:pim:verifier-statut-etablissements', description: 'Détecte les lieux cessés (Sirene) et propose archivage / backfill SIRET-TVA en suggestions.')]
 final class VerifierStatutEtablissementsCommand extends Command
 {
+    /** Échecs API consécutifs avant abandon du run (quota épuisé : inutile d'insister). */
+    private const MAX_ERREURS_CONSECUTIVES = 5;
+
     public function __construct(
         private readonly LieuRepository $lieux,
         private readonly StatutEtablissementVerifier $verifier,
@@ -78,9 +82,11 @@ final class VerifierStatutEtablissementsCommand extends Command
         $sourceFiltre = $input->getOption('rescan') ? null : SuggestionSource::Sirene->value;
         $seuil = $now->modify(sprintf('-%d days', max(0, $this->parametres->int('sirene.rescan_apres_jours'))));
 
-        $stats = ['lieux analysés' => 0, 'cessés' => 0, 'backfill SIRET' => 0, 'backfill TVA' => 0, 'suggestions créées' => 0];
+        $stats = ['lieux analysés' => 0, 'cessés' => 0, 'backfill SIRET' => 0, 'backfill TVA' => 0, 'suggestions créées' => 0, 'erreurs API' => 0];
         $rapport = [];
         $after = null;
+        $erreursConsecutives = 0;
+        $abandon = false;
         do {
             $lieux = $this->lieux->findBatchAfter($after, $batch, $sourceFiltre, $seuil);
             $scannesLot = [];
@@ -92,13 +98,26 @@ final class VerifierStatutEtablissementsCommand extends Command
                 if (!$inclureSansSiret && null === $lieu->administratif()->infoLegaleSiret()) {
                     continue;
                 }
+                try {
+                    $propositions = $this->verifier->analyser($lieu);
+                } catch (EnrichissementIndisponibleException) {
+                    // Panne ou quota : le lieu n'est PAS marqué scanné, il sera
+                    // retenté au prochain run au lieu d'être gelé 180 jours.
+                    ++$stats['erreurs API'];
+                    if (++$erreursConsecutives >= self::MAX_ERREURS_CONSECUTIVES) {
+                        $abandon = true;
+                        break;
+                    }
+
+                    continue;
+                }
+                $erreursConsecutives = 0;
                 // Le lieu est effectivement confronté à Sirene : il compte comme scanné.
                 $scannesLot[] = $lieu->id();
-                $propositions = $this->verifier->analyser($lieu);
+                ++$stats['lieux analysés'];
                 if ([] === $propositions) {
                     continue;
                 }
-                ++$stats['lieux analysés'];
                 foreach ($propositions as $proposition) {
                     if (SuggestionAction::Archiver === $proposition->action) {
                         ++$stats['cessés'];
@@ -129,11 +148,16 @@ final class VerifierStatutEtablissementsCommand extends Command
             // Vide l'EM à chaque lot (rapport comme application) : sans cela,
             // l'itération sur tout le parc Lieu accumulerait les entités hydratées.
             $this->entityManager->clear();
-        } while (count($lieux) === $batch);
+        } while (!$abandon && count($lieux) === $batch);
 
         $fichier = $this->exporterRapport($rapport);
         $io->table(array_keys($stats), [array_values($stats)]);
         $io->text(sprintf('Rapport détaillé : %s', $fichier));
+        if ($abandon) {
+            $io->warning(sprintf('Sirene indisponible (%d échecs consécutifs) : scan interrompu, les lieux restants seront retentés au prochain run.', self::MAX_ERREURS_CONSECUTIVES));
+
+            return Command::FAILURE;
+        }
         $io->success($appliquer ? 'Suggestions créées/rafraîchies.' : 'Rapport généré, aucune écriture.');
 
         return Command::SUCCESS;

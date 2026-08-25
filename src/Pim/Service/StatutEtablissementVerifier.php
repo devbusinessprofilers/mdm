@@ -28,7 +28,13 @@ final readonly class StatutEtablissementVerifier
     {
     }
 
-    /** @return list<SuggestionProposee> */
+    /**
+     * @return list<SuggestionProposee>
+     *
+     * @throws EnrichissementIndisponibleException quand Sirene est en panne ou
+     *                                             sous quota — à distinguer
+     *                                             d'un « aucun constat »
+     */
     public function analyser(Lieu $lieu): array
     {
         $localisation = $lieu->localisation();
@@ -73,7 +79,7 @@ final readonly class StatutEtablissementVerifier
         if ('' === trim($label)) {
             return [];
         }
-        $info = $this->client->findBest($label, $codePostal);
+        $info = $this->client->findBest($label, $codePostal, absorberIndisponibilite: false);
         if (null === $info || null === $info->siret) {
             return [];
         }
