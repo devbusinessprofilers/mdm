@@ -6,6 +6,7 @@ namespace App\Pim\Lov;
 
 use Doctrine\DBAL\Exception;
 use App\Pim\Repository\ValeurAttributRepository;
+use Symfony\Component\Console\Event\ConsoleCommandEvent;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\Messenger\Event\WorkerMessageReceivedEvent;
@@ -27,6 +28,17 @@ final class LovRuntimeCatalog
 
     #[AsEventListener]
     public function onMessage(WorkerMessageReceivedEvent $event): void
+    {
+        unset($event);
+        $this->reload();
+    }
+
+    // Les commandes console lisent aussi les LOV des fiches : sans ce
+    // rechargement, une valeur créée à chaud (accept d'une chaîne hors liste,
+    // admin des listes de valeurs) reste inconnue du catalogue et fait échouer
+    // les scans (« Unknown LOV value id »).
+    #[AsEventListener]
+    public function onConsole(ConsoleCommandEvent $event): void
     {
         unset($event);
         $this->reload();
