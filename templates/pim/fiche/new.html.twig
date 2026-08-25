@@ -56,7 +56,7 @@
       rempli: classifChamps|filter(c => c.vars.data is not empty)|length > 0 },
     { libelle: 'Statut et référencement', icone: 'check-circle', fautif: false, rempli: true },
     { libelle: 'Visibilité', icone: 'eye',
-      fautif: erreurs and (form.sitesDiffusion.vars.errors|length > 0 or form.sitePremium.vars.errors|length > 0),
+      fautif: erreurs and form.sitesDiffusion.vars.errors|length > 0,
       rempli: form.sitesDiffusion.vars.data is not empty },
     { libelle: 'Contact prestataire', icone: 'user-rectangle',
       fautif: erreurs and contactChamps|filter(c => c.vars.errors|length > 0)|length > 0,
@@ -313,7 +313,6 @@
                     {{ form_errors(form.sitesDiffusion) }}
                     {{ form_widget(form.sitesDiffusion, { attr: { 'data-sites': '1', 'data-action': 'change->fiche-creation#recompterSites' } }) }}
                     {{ form_help(form.sitesDiffusion) }}
-                    {{ form_row(form.sitePremium, { row_attr: { class: demi } }) }}
                 </div>
             </section>
 

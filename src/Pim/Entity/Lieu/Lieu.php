@@ -1406,18 +1406,6 @@ class Lieu
         $this->replaceLovValues('MODE_PAIEMENT_CARTE_LISTE', $values);
     }
 
-    /** @return list<string> */
-    public function sitePremium(): array
-    {
-        return $this->lovValues('SITE_PREMIUM');
-    }
-
-    /** @param list<string> $values */
-    public function changeSitePremium(array $values): void
-    {
-        $this->replaceLovValues('SITE_PREMIUM', $values);
-    }
-
     public function miceStatut(): ?string
     {
         return $this->miceStatut;

@@ -18,4 +18,5 @@ enum ColumnKind
     case LovMulti;
     case StringList;
     case Prestataire;
+    case SitesDiffusion;
 }

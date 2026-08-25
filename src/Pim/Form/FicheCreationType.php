@@ -120,12 +120,6 @@ final class FicheCreationType extends AbstractType
                 'label' => 'Adhérent Business Premium',
                 'required' => false,
             ])
-            ->add('sitePremium', ChoiceType::class, [
-                'label' => 'Canaux de visibilité',
-                'choices' => array_flip(LieuLovCatalog::choicesFor('SITE_PREMIUM')),
-                'multiple' => true,
-                'required' => false,
-            ])
             ->add('sitesDiffusion', ChoiceType::class, [
                 'label' => 'Sites de diffusion',
                 'choices' => $this->sitesDiffusion->choicesGroupees(),

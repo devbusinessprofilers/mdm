@@ -7,7 +7,6 @@ namespace App\Tests\Pim;
 use App\Account\Entity\User;
 use App\Account\Enum\FicheAffiliationRole;
 use App\Pim\Entity\FicheCollaborateur;
-use App\Pim\Lov\LieuLovCatalog;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\Group;
@@ -191,7 +190,6 @@ final class FicheCreationControllerIntegrationTest extends WebTestCase
             'fiche_creation[localisation][ville]' => 'Chantilly',
             'fiche_creation[lieuTypologie]' => ['GENERALE_TYPOLOGIE_6'],
             'fiche_creation[businessPremium]' => '1',
-            'fiche_creation[sitePremium]' => ['SITE_PREMIUM_1', 'SITE_PREMIUM_11'],
         ]);
         $client->submit($form);
         self::assertResponseRedirects();
@@ -201,16 +199,6 @@ final class FicheCreationControllerIntegrationTest extends WebTestCase
         // seul l'interrupteur Business Premium y figure.
         self::assertNull($this->connection->fetchOne('SELECT mice_statut FROM pim_lieu'));
         self::assertSame(1, (int) $this->connection->fetchOne('SELECT business_premium FROM pim_fiche'));
-        $valueIds = array_map('intval', $this->connection->fetchFirstColumn(
-            'SELECT value_id FROM pim_fiche_attribute_value WHERE attribute_code = ? ORDER BY value_id',
-            ['SITE_PREMIUM'],
-        ));
-        $expected = [
-            LieuLovCatalog::valueId('SITE_PREMIUM', 'SITE_PREMIUM_1'),
-            LieuLovCatalog::valueId('SITE_PREMIUM', 'SITE_PREMIUM_11'),
-        ];
-        sort($expected);
-        self::assertSame($expected, $valueIds);
         self::assertSame(
             [],
             $this->connection->fetchFirstColumn(

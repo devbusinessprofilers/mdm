@@ -22,6 +22,7 @@ abstract class AbstractFicheImportSchema implements FicheImportSchemaInterface
             $this->locText('arrondissement'),
             new ColumnDefinition('localisation_latitude', ColumnKind::Decimal, 'latitude', targetPath: 'localisation', help: 'décimal, point comme séparateur'),
             new ColumnDefinition('localisation_longitude', ColumnKind::Decimal, 'longitude', targetPath: 'localisation', help: 'décimal, point comme séparateur'),
+            new ColumnDefinition('attribution_visibilite', ColumnKind::SitesDiffusion, 'sitesDiffusion', help: 'libellés (ou codes) du référentiel des sites de diffusion, séparés par | ; les sites obligatoires sont réappliqués'),
         ];
     }
 

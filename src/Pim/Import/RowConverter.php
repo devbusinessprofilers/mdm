@@ -203,13 +203,21 @@ final class RowConverter
                 return self::splitList($raw, false);
             case ColumnKind::Prestataire:
                 return strtoupper($raw);
+            case ColumnKind::SitesDiffusion:
+                // Libellés résolus sur le référentiel par le processeur ; le
+                // retour-ligne est accepté en plus du | (colonne « Attribution
+                // visibilité » du XLSX production : un site par ligne).
+                return array_values(array_filter(
+                    array_map(static fn (string $value): string => trim($value), preg_split('/[|\r\n]+/', $raw) ?: []),
+                    static fn (string $value): bool => '' !== $value,
+                ));
         }
     }
 
     private static function emptyValueFor(ColumnDefinition $column): mixed
     {
         return match ($column->kind) {
-            ColumnKind::LovMulti, ColumnKind::StringList => [],
+            ColumnKind::LovMulti, ColumnKind::StringList, ColumnKind::SitesDiffusion => [],
             default => null,
         };
     }

@@ -39,6 +39,7 @@ final class FicheImportTemplateGeneratorTest extends KernelTestCase
         self::assertCount(1, $dataRows, 'La feuille Données ne doit contenir que la ligne d’en-têtes.');
         self::assertSame($generator->headers(TypeFiche::Lieu), $dataRows[0]);
         self::assertContains('salle_1_nom', $dataRows[0]);
+        self::assertContains('attribution_visibilite', $dataRows[0]);
         self::assertContains('salle_20_climatisee', $dataRows[0]);
         self::assertContains('periode_fermeture_10_date_fin', $dataRows[0]);
         self::assertNotContains('salle_21_nom', $dataRows[0]);

@@ -150,7 +150,6 @@ final class LieuFormCatalog
     {
         return [
             'generaleYoutube' => ['label' => 'Lien YouTube', 'type' => UrlType::class, 'options' => ['constraints' => [new Url(requireTld: true)]]],
-            'sitePremium' => self::choice('SITE_PREMIUM', 'Activation des sites premium', true),
             'miceStatut' => self::choice('MICE_STATUT', 'Statut Premium'),
             'afficherContact' => ['label' => 'Afficher le contact'],
             'modePaiementCarteListe' => self::choice('MODE_PAIEMENT_CARTE_LISTE', 'Cartes bancaires acceptées', true),

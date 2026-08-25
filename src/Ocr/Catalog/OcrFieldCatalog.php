@@ -14,6 +14,8 @@ final readonly class OcrFieldCatalog
 {
     private const EXCLUDED_PATHS = [
         'code', 'status', 'version', 'workflow',
+        // La sélection de sites de diffusion ne se lit pas dans un document.
+        'sitesDiffusion',
         'administratif.modePaiementBic', 'administratif.modePaiementIban',
         'administratif.affacturageBic', 'administratif.affacturageIban',
     ];

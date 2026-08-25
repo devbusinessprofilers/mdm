@@ -102,6 +102,7 @@ final readonly class FicheImportTemplateGenerator
             'LovMulti' => 'codes séparés par |',
             'StringList' => 'valeurs séparées par |',
             'Prestataire' => 'code prestataire',
+            'SitesDiffusion' => 'libellés de sites de diffusion séparés par |',
             default => 'texte'.(null !== $column->maxLength ? ' ('.$column->maxLength.' car. max)' : ''),
         };
 

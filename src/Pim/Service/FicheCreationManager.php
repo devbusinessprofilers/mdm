@@ -158,21 +158,15 @@ final readonly class FicheCreationManager
     }
 
     /**
-     * MICE_STATUT et SITE_PREMIUM sont stockés au niveau Fiche pour toutes les
-     * gammes ; le Lieu garde en plus sa colonne mice_statut synchrone (édition
-     * et import existants).
+     * MICE_STATUT est stocké au niveau Fiche pour toutes les gammes ; le Lieu
+     * garde en plus sa colonne mice_statut synchrone (édition et import
+     * existants).
      */
     private function applyReferencement(object $entity, Fiche $fiche, FicheCreation $data): void
     {
         $fiche->changeBusinessPremium($data->businessPremium);
         if (null !== $data->miceStatut) {
             $fiche->replaceAttributeValues('MICE_STATUT', [LieuLovCatalog::valueId('MICE_STATUT', $data->miceStatut)]);
-        }
-        if ([] !== $data->sitePremium) {
-            $fiche->replaceAttributeValues('SITE_PREMIUM', array_map(
-                static fn (string $code): int => LieuLovCatalog::valueId('SITE_PREMIUM', $code),
-                $data->sitePremium,
-            ));
         }
         if ($entity instanceof Lieu) {
             $entity->changeMiceStatut($data->miceStatut);

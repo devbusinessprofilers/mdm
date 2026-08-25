@@ -25,7 +25,7 @@ final class LieuImportSchema extends AbstractFicheImportSchema
         'DISPO_JOUR_OUVERTURE', 'TA_THEMATIQUE', 'TA_CADRE_ENV', 'TA_AMBIANCE', 'EQUIPEMENTS',
         'SERVICES', 'TECHNIQUE_REUNION', 'INSTALLATION', 'BIEN_ETRE', 'ACHAT_RESPONSABLE',
         'IMPACT_ENV', 'IMPACT_SOCIAL', 'VOLUME_ACHAT_CAT_ESAT_STPA', 'MOBILITE', 'CERTIFICATION',
-        'TYPE_CUISINE', 'SERVICE_RESTAURATION', 'MODE_PAIEMENT_CARTE_LISTE', 'SITE_PREMIUM',
+        'TYPE_CUISINE', 'SERVICE_RESTAURATION', 'MODE_PAIEMENT_CARTE_LISTE',
         'MICE_STATUT', 'INFO_LEGALE_TVA', 'COND_PAIE_ACC_SIGNATURE', 'COND_PAIE_ANN_SIGNATURE',
         'DATE_PAIEMENT_SOLD',
     ];
@@ -112,7 +112,6 @@ final class LieuImportSchema extends AbstractFicheImportSchema
             $this->lovMulti('serviceRestauration', 'SERVICE_RESTAURATION'),
             $this->text('generaleYoutube', 255),
             $this->lovMulti('modePaiementCarteListe', 'MODE_PAIEMENT_CARTE_LISTE'),
-            $this->lovMulti('sitePremium', 'SITE_PREMIUM'),
             $this->lovMono('miceStatut', 'MICE_STATUT'),
             $this->bool('afficherContact'),
             // Bloc administratif

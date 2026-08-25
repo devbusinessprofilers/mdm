@@ -24,6 +24,9 @@ final class RowConverterTest extends KernelTestCase
             'chambre_nb_total' => '12',
             'tarif_loc_salle_seul_journee' => '150.50',
             'desc_generale' => 'NULL',
+            // Retour-ligne et | acceptés : la colonne du XLSX production
+            // empile un site par ligne.
+            'attribution_visibilite' => "Business Profilers\nSéminaire PARIS | Lyon",
             'salle_1_nom' => 'Salle Alpha',
             'salle_1_capacite_theatre' => '120',
             'salle_2_nom' => '',
@@ -42,6 +45,7 @@ final class RowConverterTest extends KernelTestCase
         self::assertSame(12, $byHeader['chambre_nb_total']->value);
         self::assertSame('150.50', $byHeader['tarif_loc_salle_seul_journee']->value);
         self::assertTrue($byHeader['desc_generale']->clear);
+        self::assertSame(['Business Profilers', 'Séminaire PARIS', 'Lyon'], $byHeader['attribution_visibilite']->value);
 
         self::assertArrayHasKey('salle', $converted->collections);
         self::assertCount(1, $converted->collections['salle']);

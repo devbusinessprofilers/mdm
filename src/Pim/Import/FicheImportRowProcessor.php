@@ -17,6 +17,7 @@ use App\Pim\Import\Schema\ColumnKind;
 use App\Pim\Import\Schema\FicheImportSchemaRegistry;
 use App\Pim\Message\IndexFiche;
 use App\Pim\Repository\FicheRepository;
+use App\Pim\Repository\SiteDiffusionRepository;
 use App\Pim\Repository\ValeurAttributRepository;
 use App\Pim\Validation\ValidationGroups;
 use App\Shared\Outbox\OutboxPublisherInterface;
@@ -32,6 +33,7 @@ final readonly class FicheImportRowProcessor
         private RowConverter $converter,
         private ValidatorInterface $validator,
         private ValeurAttributRepository $prestataires,
+        private SiteDiffusionRepository $sitesDiffusion,
         private FicheTranslationScheduler $translationScheduler,
         private OutboxPublisherInterface $outbox,
     ) {
@@ -119,6 +121,17 @@ final readonly class FicheImportRowProcessor
                     continue;
                 }
             }
+            if (ColumnKind::SitesDiffusion === $column->kind) {
+                /** @var list<string> $libelles liste produite par RowConverter */
+                $libelles = $field->clear || !is_array($value) ? [] : array_values($value);
+                // Cellule réduite à des séparateurs : seule la sentinelle NULL
+                // exprime « remettre aux sites obligatoires seuls ».
+                if (!$field->clear && [] === $libelles) {
+                    continue;
+                }
+                $this->applySitesDiffusion($fiche, $libelles, $line, $column->header, $errors);
+                continue;
+            }
 
             $target = $aggregate;
             if ('localisation' === $column->targetPath) {
@@ -134,6 +147,44 @@ final readonly class FicheImportRowProcessor
         if ($localisation instanceof Localisation && $localisation !== $fiche->localisation()) {
             $this->callSetter($aggregate, 'changeLocalisation', $localisation, $line, 'localisation', $errors);
         }
+    }
+
+    /**
+     * Remplace la sélection de sites de diffusion : libellés (ou codes) résolus
+     * sur le référentiel, sites obligatoires réappliqués, sans transition de
+     * workflow (la visibilité est une mise à jour technique).
+     *
+     * @param list<string>   $libelles
+     * @param list<RowError> $errors
+     */
+    private function applySitesDiffusion(Fiche $fiche, array $libelles, int $line, string $column, array &$errors): void
+    {
+        $referentiel = $this->sitesDiffusion->findActifsOrdonnes();
+        $parCle = [];
+        foreach ($referentiel as $site) {
+            $parCle[mb_strtolower($site->label())] = $site;
+            $parCle[mb_strtolower($site->code())] = $site;
+        }
+
+        $retenus = [];
+        foreach ($libelles as $libelle) {
+            $site = $parCle[mb_strtolower($libelle)] ?? null;
+            if (null === $site) {
+                $errors[] = new RowError($line, $column, sprintf('Site de diffusion inconnu : %s.', $libelle));
+
+                return;
+            }
+            $retenus[$site->code()] = $site;
+        }
+        foreach ($referentiel as $site) {
+            if ($site->obligatoire()) {
+                $retenus[$site->code()] = $site;
+            }
+        }
+
+        $fiche->preserveWorkflowDuring(static function () use ($fiche, $retenus): void {
+            $fiche->replaceSiteDiffusion(array_values($retenus));
+        });
     }
 
     /**

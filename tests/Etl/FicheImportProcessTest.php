@@ -11,6 +11,7 @@ use App\Etl\Message\StartFicheImport;
 use App\Etl\MessageHandler\ProcessFicheImportBatchHandler;
 use App\Etl\MessageHandler\StartFicheImportHandler;
 use App\Pim\Entity\Lieu\Lieu;
+use App\Pim\Entity\SiteDiffusion;
 use App\Pim\Enum\TypeFiche;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
@@ -41,6 +42,7 @@ final class FicheImportProcessTest extends KernelTestCase
         if (isset($this->connection)) {
             foreach ([
                 'etl_import_job_error', 'etl_import_job', 'pim_fiche_search', 'pim_fiche_attribute_value',
+                'pim_fiche_site_diffusion', 'pim_site_diffusion',
                 'pim_salle', 'pim_periode_fermeture', 'pim_acces_lieu', 'pim_ressource_lieu',
                 'pim_lieu_administratif', 'pim_lieu_tarification', 'pim_lieu', 'pim_fiche',
                 'pim_localisation', 'outbox_message', 'account_user',
@@ -56,10 +58,11 @@ final class FicheImportProcessTest extends KernelTestCase
     {
         $this->runImportScenario('csv', function (string $path, int $existingCode): void {
             file_put_contents($path, implode("\n", [
-                'code;label;localisation_ville;generale_typologie;salle_1_nom;salle_1_capacite_theatre',
-                ';Nouveau Lieu Import;Paris;GENERALE_TYPOLOGIE_1;Salle Alpha;120',
-                $existingCode.';Lieu Existant Modifié;;;;',
-                ';Lieu Erreur;;CODE_INCONNU;;',
+                'code;label;localisation_ville;generale_typologie;attribution_visibilite;salle_1_nom;salle_1_capacite_theatre',
+                // Sites résolus par libellé (accents) ou code, insensible à la casse.
+                ';Nouveau Lieu Import;Paris;GENERALE_TYPOLOGIE_1;Séminaire PARIS|LYON;Salle Alpha;120',
+                $existingCode.';Lieu Existant Modifié;;;;;',
+                ';Lieu Erreur;;CODE_INCONNU;;;',
             ]));
         }, 'Salle Alpha');
     }
@@ -70,10 +73,10 @@ final class FicheImportProcessTest extends KernelTestCase
             $writer = new Writer();
             $writer->openToFile($path);
             $writer->getCurrentSheet()->setName('Données');
-            $writer->addRow(Row::fromValues(['code', 'label', 'localisation_ville', 'generale_typologie', 'salle_1_nom', 'salle_1_capacite_theatre']));
-            $writer->addRow(Row::fromValues(['', 'Nouveau Lieu Import', 'Paris', 'GENERALE_TYPOLOGIE_1', 'Salle Alpha', 120]));
-            $writer->addRow(Row::fromValues([$existingCode, 'Lieu Existant Modifié', '', '', '', '']));
-            $writer->addRow(Row::fromValues(['', 'Lieu Erreur', '', 'CODE_INCONNU', '', '']));
+            $writer->addRow(Row::fromValues(['code', 'label', 'localisation_ville', 'generale_typologie', 'attribution_visibilite', 'salle_1_nom', 'salle_1_capacite_theatre']));
+            $writer->addRow(Row::fromValues(['', 'Nouveau Lieu Import', 'Paris', 'GENERALE_TYPOLOGIE_1', "Séminaire PARIS\nLYON", 'Salle Alpha', 120]));
+            $writer->addRow(Row::fromValues([$existingCode, 'Lieu Existant Modifié', '', '', '', '', '']));
+            $writer->addRow(Row::fromValues(['', 'Lieu Erreur', '', 'CODE_INCONNU', '', '', '']));
             // Une seconde feuille de notice ne doit jamais être importée.
             $writer->addNewSheetAndMakeItCurrent()->setName('Notice & LOV');
             $writer->addRow(Row::fromValues(['code', 'label']));
@@ -88,9 +91,15 @@ final class FicheImportProcessTest extends KernelTestCase
         $container = self::getContainer();
         $entityManager = $container->get(EntityManagerInterface::class);
         $this->connection = $container->get(Connection::class);
-        foreach (['etl_import_job_error', 'etl_import_job', 'pim_salle', 'pim_lieu_administratif', 'pim_lieu_tarification', 'pim_lieu', 'pim_fiche_attribute_value', 'pim_fiche', 'pim_localisation', 'outbox_message'] as $table) {
+        foreach (['etl_import_job_error', 'etl_import_job', 'pim_salle', 'pim_lieu_administratif', 'pim_lieu_tarification', 'pim_lieu', 'pim_fiche_attribute_value', 'pim_fiche_site_diffusion', 'pim_site_diffusion', 'pim_fiche', 'pim_localisation', 'outbox_message'] as $table) {
             $this->connection->executeStatement('DELETE FROM '.$table);
         }
+
+        // Référentiel des sites : un obligatoire (jamais listé dans le fichier,
+        // réappliqué d'office) et deux sélectionnables par libellé ou code.
+        $entityManager->persist(new SiteDiffusion('marketplace_bp', 'Business Profilers', 'Business Profilers', true, false, 0, []));
+        $entityManager->persist(new SiteDiffusion('seminaire_paris', 'Séminaire PARIS', 'Sites thématiques', false, false, 1, []));
+        $entityManager->persist(new SiteDiffusion('lyon', 'Lyon', 'Sites régionaux', false, false, 2, []));
 
         $existing = new Lieu();
         $existing->changeLabel('Lieu Existant');
@@ -138,6 +147,20 @@ final class FicheImportProcessTest extends KernelTestCase
         self::assertSame('Lieu Existant Modifié', $updatedLabel);
         self::assertSame($expectedSalle, $this->connection->fetchOne('SELECT nom FROM pim_salle'));
         self::assertSame(120, (int) $this->connection->fetchOne('SELECT capacite_theatre FROM pim_salle'));
+        // Attribution visibilité : les 2 sites listés + l'obligatoire réappliqué.
+        $sitesRetenus = $this->connection->fetchFirstColumn(
+            'SELECT s.code FROM pim_fiche_site_diffusion l
+             INNER JOIN pim_site_diffusion s ON s.id = l.site_id
+             INNER JOIN pim_fiche f ON f.id = l.fiche_id
+             WHERE f.label = ? ORDER BY s.code',
+            ['Nouveau Lieu Import'],
+        );
+        self::assertSame(['lyon', 'marketplace_bp', 'seminaire_paris'], $sitesRetenus);
+        // Cellule vide sur la fiche mise à jour : la sélection reste intacte.
+        self::assertSame(0, (int) $this->connection->fetchOne(
+            'SELECT COUNT(*) FROM pim_fiche_site_diffusion WHERE fiche_id = ?',
+            [Ulid::fromString($existingId)->toBinary()],
+        ));
         self::assertGreaterThan(0, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM outbox_message'));
 
         // Redélivrance du même batch : la garde lastProcessedLine évite tout retraitement.

@@ -28,7 +28,6 @@ final class FicheCreation
 
     /** Niveau de statut : réservé au formulaire complet, conservé pour les reprises. */
     public ?string $miceStatut = null;
-    /** @var list<string> */ public array $sitePremium = [];
 
     /** @var list<int> Sites de diffusion retenus (les obligatoires sont réappliqués côté serveur). */
     public array $sitesDiffusion = [];

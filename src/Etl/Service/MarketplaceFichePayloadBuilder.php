@@ -186,7 +186,6 @@ final readonly class MarketplaceFichePayloadBuilder
             'gamme' => $lieu->generaleGammeLibelle(),
             'gammeCode' => $lieu->generaleGamme(),
             'miceStatut' => $lieu->miceStatut(),
-            'sitesPremium' => $lieu->sitePremium(),
             'afficherContact' => $lieu->afficherContact(),
             'siteWeb' => $lieu->generaleWebsiteUrl(),
             'youtube' => $lieu->generaleYoutube(),
