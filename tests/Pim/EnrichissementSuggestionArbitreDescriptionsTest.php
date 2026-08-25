@@ -175,6 +175,39 @@ final class EnrichissementSuggestionArbitreDescriptionsTest extends KernelTestCa
         self::assertSame('Société par actions simplifiée (SAS)', $recharge->administratif()->infoLegaleFormeJuridique());
     }
 
+    public function testAccepterUnCodeDUnAutreSchemaCocheLaBonneCaseDuReferentiel(): void
+    {
+        $em = self::getContainer()->get(EntityManagerInterface::class);
+        // Catalogue runtime chargé comme au réel (requête web / commande) :
+        // TYPE_CUISINE y est codé TYPE_CUISINE_N, pas en mnémoniques.
+        self::getContainer()->get(\App\Pim\Lov\LovRuntimeCatalog::class)->reload();
+        $restaurant = new Restaurant();
+        $restaurant->changeLabel('Brasserie des référentiels');
+        $em->persist($restaurant);
+        $suggestion = new FicheSuggestion(
+            $restaurant->fiche(),
+            SuggestionSource::Geoapify,
+            SuggestionAction::RemplirChamp,
+            'restaurant_types_cuisine',
+            'Type de cuisine',
+            null,
+            'Fruits de mer',
+            null,
+            ['codes' => ['FRUITS_DE_MER']],
+        );
+        $em->persist($suggestion);
+        $em->flush();
+
+        self::getContainer()->get(EnrichissementSuggestionArbitre::class)->accepter($suggestion, 'testeur');
+
+        $em->clear();
+        $recharge = $em->find(Restaurant::class, $restaurant->id());
+        self::assertInstanceOf(Restaurant::class, $recharge);
+        // « FRUITS_DE_MER » (ancien schéma) résolu par libellé vers le code
+        // effectif du référentiel : la case « Fruits de mer » est cochée.
+        self::assertContains('TYPE_CUISINE_44', $recharge->typesCuisine());
+    }
+
     private function accepterDescription(\App\Pim\Entity\Fiche $fiche, string $champ, string $texte): void
     {
         $enregistreur = self::getContainer()->get(FicheSuggestionEnregistreur::class);

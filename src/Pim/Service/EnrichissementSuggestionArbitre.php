@@ -11,6 +11,7 @@ use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Entity\Service\ServiceEvenementiel;
 use App\Pim\Enum\SuggestionAction;
 use App\Pim\Lov\LieuLovCatalog;
+use App\Pim\Lov\RestaurantLovCatalog;
 use App\Pim\Repository\ActiviteRepository;
 use App\Pim\Repository\AttributDefinitionRepository;
 use App\Pim\Repository\LieuRepository;
@@ -115,7 +116,7 @@ final readonly class EnrichissementSuggestionArbitre
                 'INSTALLATION' => $lieu->installation(),
                 'GENERALE_TYPOLOGIE' => $lieu->generaleTypologie(),
                 default => throw new \DomainException('Attribut LOV Lieu non applicable.'),
-            }, $payload);
+            }, $payload, LieuLovCatalog::choicesFor((string) $attribut));
             match ($attribut) {
                 'BIEN_ETRE' => $lieu->changeBienEtre($codes),
                 'INSTALLATION' => $lieu->changeInstallation($codes),
@@ -233,9 +234,9 @@ final readonly class EnrichissementSuggestionArbitre
             return;
         }
         match ($suggestion->champ()) {
-            'restaurant_types_cuisine' => $restaurant->changeTypesCuisine(self::fusion($restaurant->typesCuisine(), $payload)),
-            'restaurant_specificites' => $restaurant->changeSpecificitesAlimentaires(self::fusion($restaurant->specificitesAlimentaires(), $payload)),
-            'restaurant_equipements' => $restaurant->changeEquipements(self::fusion($restaurant->equipements(), $payload)),
+            'restaurant_types_cuisine' => $restaurant->changeTypesCuisine(self::fusion($restaurant->typesCuisine(), $payload, RestaurantLovCatalog::values('TYPE_CUISINE'))),
+            'restaurant_specificites' => $restaurant->changeSpecificitesAlimentaires(self::fusion($restaurant->specificitesAlimentaires(), $payload, RestaurantLovCatalog::values('SPECIFICITE_ALIMENTAIRE'))),
+            'restaurant_equipements' => $restaurant->changeEquipements(self::fusion($restaurant->equipements(), $payload, RestaurantLovCatalog::values('EQUIPEMENT_RESTAURANT'))),
             'restaurant_acces_pmr' => $restaurant->changeAccesPmr((bool) ($payload['bool'] ?? false)),
             'restaurant_toilettes_pmr' => $restaurant->changeToilettesPmr((bool) ($payload['bool'] ?? false)),
             default => throw new \DomainException(sprintf('Champ « %s » non applicable.', $suggestion->champ())),
@@ -243,18 +244,33 @@ final readonly class EnrichissementSuggestionArbitre
     }
 
     /**
-     * Union des codes LOV existants et proposés (le backfill ajoute, n'écrase pas).
+     * Union des codes LOV existants et proposés (le backfill ajoute, n'écrase
+     * pas). Chaque code proposé est résolu contre le catalogue EFFECTIF au
+     * moment de l'accept (le référentiel a pu évoluer depuis le scan) : un code
+     * d'un autre schéma ou en forme libellé est rattrapé par libellé, et si
+     * plus rien ne se résout la suggestion est périmée.
      *
-     * @param list<string>         $actuels
-     * @param array<string, mixed> $payload
+     * @param list<string>          $actuels
+     * @param array<string, mixed>  $payload
+     * @param array<string, string> $choices code → libellé du catalogue effectif
      *
      * @return list<string>
      */
-    private static function fusion(array $actuels, array $payload): array
+    private static function fusion(array $actuels, array $payload, array $choices): array
     {
         $ajouts = is_array($payload['codes'] ?? null) ? $payload['codes'] : [];
+        $resolus = [];
+        foreach ($ajouts as $candidat) {
+            $code = LovValeurResolution::codePour($choices, (string) $candidat);
+            if (null !== $code) {
+                $resolus[] = $code;
+            }
+        }
+        if ([] !== $ajouts && [] === $resolus) {
+            throw new \DomainException('Les valeurs proposées ne correspondent plus à la liste : suggestion périmée.');
+        }
 
-        return array_values(array_unique([...$actuels, ...array_map('strval', $ajouts)]));
+        return array_values(array_unique([...$actuels, ...$resolus]));
     }
 
     /**
