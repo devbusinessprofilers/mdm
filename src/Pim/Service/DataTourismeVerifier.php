@@ -120,7 +120,17 @@ final readonly class DataTourismeVerifier
      */
     private static function lov(string $champ, string $attribut, array $codesProposes, array $codesActuels): ?SuggestionProposee
     {
-        $delta = array_values(array_diff(array_unique($codesProposes), $codesActuels));
+        // Résolution vers le référentiel effectif : un code absent de la liste
+        // réelle (évolution en admin) est écarté plutôt que proposé en brut.
+        $choix = LieuLovCatalog::choicesFor($attribut);
+        $resolus = [];
+        foreach ($codesProposes as $candidat) {
+            $code = LovValeurResolution::codePour($choix, $candidat);
+            if (null !== $code) {
+                $resolus[] = $code;
+            }
+        }
+        $delta = array_values(array_diff(array_unique($resolus), $codesActuels));
         if ([] === $delta) {
             return null;
         }

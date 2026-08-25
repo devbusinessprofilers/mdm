@@ -51,6 +51,8 @@ final readonly class LieuAttributsVerifier
         $propositions = [];
 
         $codeTypologie = null === $attributs->etoiles ? null : (self::ETOILES[$attributs->etoiles] ?? null);
+        // Garde référentiel : le code doit exister dans la liste effective.
+        $codeTypologie = null === $codeTypologie ? null : LovValeurResolution::codePour(LieuLovCatalog::choicesFor('GENERALE_TYPOLOGIE'), $codeTypologie);
         if (null !== $codeTypologie && [] === $lieu->generaleTypologie()) {
             $propositions[] = new SuggestionProposee(
                 action: SuggestionAction::RemplirChamp,

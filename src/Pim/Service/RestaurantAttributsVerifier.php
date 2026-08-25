@@ -111,7 +111,19 @@ final readonly class RestaurantAttributsVerifier
      */
     private function ajouterLov(array &$propositions, string $champ, string $attribut, string $label, array $codesProposes, array $codesActuels): void
     {
-        $delta = array_values(array_diff(array_unique($codesProposes), $codesActuels));
+        // Normalisation vers le référentiel effectif (runtime d'abord) : un
+        // candidat d'un autre schéma de codes ou en forme libellé est résolu
+        // par comparaison de libellés, un candidat non résolu est écarté — on
+        // ne propose jamais un code inconnu de la liste réelle.
+        $valeurs = RestaurantLovCatalog::values($attribut);
+        $resolus = [];
+        foreach ($codesProposes as $candidat) {
+            $code = LovValeurResolution::codePour($valeurs, $candidat);
+            if (null !== $code) {
+                $resolus[] = $code;
+            }
+        }
+        $delta = array_values(array_diff(array_unique($resolus), $codesActuels));
         if ([] === $delta) {
             return;
         }

@@ -31,14 +31,14 @@ final class RestaurantAttributsVerifierTest extends TestCase
         foreach ($propositions as $proposition) {
             $parChamp[$proposition->champ] = $proposition;
         }
-        self::assertArrayHasKey('restaurant_types_cuisine', $parChamp);
-        self::assertSame(['ITALIEN'], $parChamp['restaurant_types_cuisine']->payload['codes']);
-        self::assertArrayHasKey('restaurant_specificites', $parChamp);
-        self::assertSame(['VEGETARIENNES'], $parChamp['restaurant_specificites']->payload['codes']);
-        self::assertArrayHasKey('restaurant_equipements', $parChamp);
-        self::assertSame(['WIFI', 'TERRASSE'], $parChamp['restaurant_equipements']->payload['codes']);
+        // Les codes dépendent du catalogue effectif (runtime BDD ou repli
+        // statique selon l'ordre des tests) : on vérifie les LIBELLÉS résolus,
+        // pas le schéma de codes.
+        self::assertSame(['Italien'], self::libelles('TYPE_CUISINE', $parChamp['restaurant_types_cuisine'] ?? null));
+        self::assertSame(['Végétariennes'], self::libelles('SPECIFICITE_ALIMENTAIRE', $parChamp['restaurant_specificites'] ?? null));
+        self::assertSame(['Wifi', 'Terrasse extérieure'], self::libelles('EQUIPEMENT_RESTAURANT', $parChamp['restaurant_equipements'] ?? null));
         self::assertArrayHasKey('restaurant_acces_pmr', $parChamp);
-        self::assertTrue($parChamp['restaurant_acces_pmr']->payload['bool']);
+        self::assertTrue($parChamp['restaurant_acces_pmr']->payload['bool'] ?? null);
         self::assertArrayHasKey('restaurant_site_officiel', $parChamp);
         self::assertSame('https://trattoria.example', $parChamp['restaurant_site_officiel']->valeurProposee);
         self::assertArrayHasKey('restaurant_telephone', $parChamp);
@@ -99,6 +99,18 @@ final class RestaurantAttributsVerifierTest extends TestCase
         );
 
         return new RestaurantAttributsVerifier($client);
+    }
+
+    /** @return list<string> libellés des codes proposés, résolus contre le catalogue effectif */
+    private static function libelles(string $attribut, ?\App\Pim\Service\SuggestionProposee $proposition): array
+    {
+        self::assertNotNull($proposition);
+        $valeurs = \App\Pim\Lov\RestaurantLovCatalog::values($attribut);
+
+        return array_map(
+            static fn (string $code): string => $valeurs[$code] ?? $code,
+            $proposition->payload['codes'] ?? [],
+        );
     }
 
     private static function restaurant(): Restaurant

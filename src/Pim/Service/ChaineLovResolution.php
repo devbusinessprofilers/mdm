@@ -18,27 +18,12 @@ final class ChaineLovResolution
 
     public static function codePour(string $libelle): ?string
     {
-        $cible = self::normalise($libelle);
-        foreach (LieuLovCatalog::choicesFor(self::ATTRIBUT) as $code => $label) {
-            if (self::normalise($label) === $cible) {
-                return $code;
-            }
-        }
-
-        return null;
+        return LovValeurResolution::codePour(LieuLovCatalog::choicesFor(self::ATTRIBUT), $libelle);
     }
 
     /** Vrai quand accepter cette valeur créera une nouvelle entrée dans la liste. */
     public static function creeraUneEntree(?string $libelle): bool
     {
         return null !== $libelle && '' !== trim($libelle) && null === self::codePour($libelle);
-    }
-
-    /** Comparaison de libellés insensible à la casse et aux accents. */
-    public static function normalise(string $valeur): string
-    {
-        $translit = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $valeur);
-
-        return mb_strtolower(trim(false === $translit ? $valeur : $translit));
     }
 }
