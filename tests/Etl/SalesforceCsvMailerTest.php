@@ -36,7 +36,7 @@ final class SalesforceCsvMailerTest extends TestCase
 
         $email = $mailer->dernier;
         self::assertInstanceOf(Email::class, $email);
-        self::assertSame('integration=a0qw0000004TJbX;interface=Produits', $email->getSubject());
+        self::assertSame('integration=jeton-test;interface=Produits', $email->getSubject());
         self::assertSame('sf@salesforce.example', $email->getTo()[0]->getAddress());
         self::assertSame('expediteur@bp.fr', $email->getFrom()[0]->getAddress());
         $attachment = $email->getAttachments()[0];
@@ -52,7 +52,7 @@ final class SalesforceCsvMailerTest extends TestCase
 
         $email = $mailer->dernier;
         self::assertInstanceOf(Email::class, $email);
-        self::assertSame('integration=a0qw0000004TJbX;interface=Salles', $email->getSubject());
+        self::assertSame('integration=jeton-test;interface=Salles', $email->getSubject());
     }
 
     private function settings(bool $actif): SalesforceCsvSettings
@@ -62,7 +62,7 @@ final class SalesforceCsvMailerTest extends TestCase
                 'salesforce.csv_actif' => $actif ? '1' : '0',
                 'salesforce.csv_destinataire' => 'sf@salesforce.example',
                 'salesforce.csv_expediteur' => 'expediteur@bp.fr',
-                'salesforce.csv_token' => 'a0qw0000004TJbX',
+                'salesforce.csv_token' => 'jeton-test',
             ]),
             'defaut@bp.fr',
         );

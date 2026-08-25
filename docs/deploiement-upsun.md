@@ -48,7 +48,9 @@ filesystem `cache.app` : rate limiter, métriques, paramètres, état scheduler)
      `SALESFORCE_WEBHOOK_TOKEN` (webhook entrant `/api/salesforce/produits`)
    - Salesforce (synchro sortante CSV e-mail, système de transition) :
      `SALESFORCE_CSV_ENABLED=1`, `SALESFORCE_CSV_INTEGRATION_TOKEN` (id
-     d'intégration de l'org SF, ex. `a0qw0000004TJbX`), `SALESFORCE_CSV_FROM`
+     d'intégration de l'org SF — secret, jamais dans le dépôt : à poser à la
+     main comme `GEOAPIFY_API_KEY` ; l'ancienne valeur ayant figuré dans git,
+     la faire tourner côté Salesforce au go-live), `SALESFORCE_CSV_FROM`
      (expéditeur autorisé par Salesforce ; vide = `MAILER_FROM`) et surtout
      **`SALESFORCE_CSV_TO` = `email_integration@1-2bmy141t5kdrs7sdjri14nvgi.2-hceeaa.eu3.apex.salesforce.com`**
      (⚠ absente de `.env`, ne pas l'oublier — c'est l'adresse d'intégration

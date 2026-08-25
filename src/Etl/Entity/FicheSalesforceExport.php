@@ -45,6 +45,13 @@ class FicheSalesforceExport
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $lastError = null;
 
+    #[ORM\Column(options: ['unsigned' => true, 'default' => 0])]
+    private int $failureCount = 0;
+
+    /** Prochain essai Produits autorisé après un échec (backoff exponentiel plafonné). */
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $retryAt = null;
+
     public function __construct(Ulid $ficheId, int $code)
     {
         $this->ficheId = $ficheId;
@@ -82,6 +89,16 @@ class FicheSalesforceExport
         return $this->lastError;
     }
 
+    public function failureCount(): int
+    {
+        return $this->failureCount;
+    }
+
+    public function retryAt(): ?\DateTimeImmutable
+    {
+        return $this->retryAt;
+    }
+
     /** Nouvelle mutation à synchroniser : repousse l'échéance des deux envois. */
     public function markDirty(): void
     {
@@ -98,6 +115,8 @@ class FicheSalesforceExport
     {
         $this->sentAt = $borne;
         $this->lastError = null;
+        $this->failureCount = 0;
+        $this->retryAt = null;
     }
 
     public function recordSallesSent(\DateTimeImmutable $borne): void
@@ -105,8 +124,16 @@ class FicheSalesforceExport
         $this->sallesSentAt = $borne;
     }
 
+    /**
+     * Backoff exponentiel plafonné à 24 h (2, 4, 8… minutes) : une ligne en
+     * échec permanent ne doit ni être retentée à chaque tic d'une minute, ni
+     * occuper la tête du lot au détriment des fiches saines.
+     */
     public function recordFailure(string $error): void
     {
         $this->lastError = $error;
+        $this->failureCount = min($this->failureCount + 1, 20);
+        $minutes = min(2 ** $this->failureCount, 1440);
+        $this->retryAt = (new \DateTimeImmutable())->modify(sprintf('+%d minutes', $minutes));
     }
 }

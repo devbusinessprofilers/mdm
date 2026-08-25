@@ -26,7 +26,8 @@ final readonly class SalesforceCsvSettings
     public function isConfigured(): bool
     {
         return $this->parametres->bool('salesforce.csv_actif')
-            && '' !== $this->destinataire();
+            && '' !== $this->destinataire()
+            && '' !== $this->jetonIntegration();
     }
 
     public function destinataire(): string

@@ -23,35 +23,47 @@ class FicheSalesforceExportRepository extends ServiceEntityRepository
     }
 
     /**
-     * Fiches modifiées depuis le dernier envoi Produits (ou jamais envoyées).
+     * Fiches modifiées depuis le dernier envoi Produits (ou jamais envoyées),
+     * hors lignes en backoff après échec (retryAt futur).
      *
      * @return list<FicheSalesforceExport>
      */
     public function dirtyProduits(int $limit): array
     {
-        return $this->dirtyDepuis('sentAt', $limit);
-    }
-
-    /**
-     * Fiches modifiées depuis le dernier envoi Salles (ou jamais envoyées).
-     *
-     * @return list<FicheSalesforceExport>
-     */
-    public function dirtySalles(int $limit): array
-    {
-        return $this->dirtyDepuis('sallesSentAt', $limit);
-    }
-
-    /** @return list<FicheSalesforceExport> */
-    private function dirtyDepuis(string $champEnvoi, int $limit): array
-    {
         return array_values(
             $this->createQueryBuilder('e')
-                ->andWhere(sprintf('e.%1$s IS NULL OR e.%1$s < e.dirtyAt', $champEnvoi))
+                ->andWhere('e.sentAt IS NULL OR e.sentAt < e.dirtyAt')
+                ->andWhere('e.retryAt IS NULL OR e.retryAt <= :maintenant')
+                ->setParameter('maintenant', new \DateTimeImmutable())
                 ->orderBy('e.dirtyAt', 'ASC')
                 ->setMaxResults($limit)
                 ->getQuery()
                 ->getResult(),
         );
+    }
+
+    /**
+     * Fiches modifiées depuis le dernier envoi Salles (ou jamais envoyées), en
+     * données scalaires (id de fiche → échéance dirtyAt) : le traitement par
+     * sous-lots fait des clear(), aucune entité ne doit y survivre.
+     *
+     * @return array<string, \DateTimeImmutable>
+     */
+    public function dirtySallesDonnees(int $limit): array
+    {
+        /** @var list<array{ficheId: Ulid, dirtyAt: \DateTimeImmutable}> $rows */
+        $rows = $this->createQueryBuilder('e')
+            ->select('e.ficheId AS ficheId', 'e.dirtyAt AS dirtyAt')
+            ->andWhere('e.sallesSentAt IS NULL OR e.sallesSentAt < e.dirtyAt')
+            ->orderBy('e.dirtyAt', 'ASC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getArrayResult();
+        $donnees = [];
+        foreach ($rows as $row) {
+            $donnees[(string) $row['ficheId']] = $row['dirtyAt'];
+        }
+
+        return $donnees;
     }
 }

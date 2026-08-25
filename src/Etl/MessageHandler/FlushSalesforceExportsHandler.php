@@ -12,6 +12,7 @@ use App\Etl\Service\SalesforceProduitsCsvExporter;
 use App\Pim\Entity\Fiche;
 use App\Pim\Repository\FicheRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 /**
@@ -31,6 +32,7 @@ final readonly class FlushSalesforceExportsHandler
         private SalesforceProduitsCsvExporter $exporter,
         private SalesforceCsvMailer $mailer,
         private EntityManagerInterface $entityManager,
+        private LoggerInterface $logger,
     ) {
     }
 
@@ -44,6 +46,7 @@ final readonly class FlushSalesforceExportsHandler
             if (!$fiche instanceof Fiche) {
                 // Fiche supprimée : plus rien à synchroniser.
                 $this->entityManager->remove($export);
+                $this->entityManager->flush();
                 continue;
             }
             // Échéance capturée avant l'envoi : une mutation concurrente
@@ -54,8 +57,15 @@ final readonly class FlushSalesforceExportsHandler
                 $export->recordProduitsSent($borne);
             } catch (\Throwable $exception) {
                 $export->recordFailure($exception->getMessage());
+                $this->logger->error('Envoi Salesforce Produits en échec pour la fiche {code} ({tentatives} tentative(s)) : {message}', [
+                    'code' => $export->code(),
+                    'tentatives' => $export->failureCount(),
+                    'message' => $exception->getMessage(),
+                ]);
             }
+            // Flush par ligne : un crash du worker au milieu du lot ne renvoie
+            // pas en double les e-mails déjà partis.
+            $this->entityManager->flush();
         }
-        $this->entityManager->flush();
     }
 }

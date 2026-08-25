@@ -71,7 +71,8 @@ parameters:
     env(SALESFORCE_CSV_ENABLED): '0'
     env(SALESFORCE_CSV_TO): ''
     env(SALESFORCE_CSV_FROM): '%env(MAILER_FROM)%'
-    env(SALESFORCE_CSV_INTEGRATION_TOKEN): 'a0qw0000004TJbX'
+    # Secret (autorise l'injection de CSV dans Salesforce) : posé hors dépôt.
+    env(SALESFORCE_CSV_INTEGRATION_TOKEN): ''
 
 services:
     # default configuration for services in *this* file

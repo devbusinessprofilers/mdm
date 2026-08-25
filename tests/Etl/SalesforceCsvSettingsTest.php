@@ -24,13 +24,24 @@ final class SalesforceCsvSettingsTest extends TestCase
         self::assertFalse($settings->isConfigured());
     }
 
-    public function testConfiguredWhenEnabledWithRecipient(): void
+    public function testNotConfiguredWhenTokenEmpty(): void
+    {
+        $settings = $this->settings([
+            'salesforce.csv_actif' => '1',
+            'salesforce.csv_destinataire' => 'sf@x.fr',
+            'salesforce.csv_token' => '',
+        ]);
+
+        self::assertFalse($settings->isConfigured());
+    }
+
+    public function testConfiguredWhenEnabledWithRecipientAndToken(): void
     {
         $settings = $this->settings(['salesforce.csv_actif' => '1', 'salesforce.csv_destinataire' => 'sf@x.fr']);
 
         self::assertTrue($settings->isConfigured());
         self::assertSame('sf@x.fr', $settings->destinataire());
-        self::assertSame('a0qw0000004TJbX', $settings->jetonIntegration());
+        self::assertSame('jeton-test', $settings->jetonIntegration());
     }
 
     public function testExpediteurFallsBackToDefaultWhenParamEmpty(): void
@@ -55,7 +66,7 @@ final class SalesforceCsvSettingsTest extends TestCase
                 'salesforce.csv_actif' => '0',
                 'salesforce.csv_destinataire' => '',
                 'salesforce.csv_expediteur' => '',
-                'salesforce.csv_token' => 'a0qw0000004TJbX',
+                'salesforce.csv_token' => 'jeton-test',
             ]),
             'defaut@bp.fr',
         );
