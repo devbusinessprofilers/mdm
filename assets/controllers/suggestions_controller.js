@@ -11,6 +11,7 @@ export default class extends Controller {
 
     connect() {
         this.enAttente = null;
+        this.urlEnAttente = null;
         const actif = this.panneauActif;
         this.majActions(actif ? actif.dataset.cle : null);
     }
@@ -34,9 +35,22 @@ export default class extends Controller {
         this.basculer(cle);
     }
 
+    /* Liens de tri et de pagination : même garde-fou que la bascule d'onglet,
+       un rechargement perdrait la sélection cochée. */
+    naviguer(event) {
+        const actif = this.panneauActif;
+        if (!actif || this.casesCochees(actif).length === 0) {
+            return;
+        }
+        event.preventDefault();
+        this.urlEnAttente = event.currentTarget.href;
+        this.avertTarget.classList.remove('hidden');
+    }
+
     annuler() {
         this.avertTarget.classList.add('hidden');
         this.enAttente = null;
+        this.urlEnAttente = null;
     }
 
     continuer() {
@@ -46,6 +60,13 @@ export default class extends Controller {
             this.majTete(actif);
         }
         this.avertTarget.classList.add('hidden');
+        if (this.urlEnAttente) {
+            const url = this.urlEnAttente;
+            this.urlEnAttente = null;
+            window.location.assign(url);
+
+            return;
+        }
         if (this.enAttente) {
             this.basculer(this.enAttente);
         }

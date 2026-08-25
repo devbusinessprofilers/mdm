@@ -75,6 +75,10 @@ final class QualiteSuggestionsTest extends WebTestCase
         self::assertSelectorTextContains('body', 'Chaîne hôtelière (1)');
         self::assertSelectorTextContains('body', 'Wikidata');
 
+        // La pastille « Conflits » du rail compte aussi les suggestions génériques.
+        $badges = self::getContainer()->get(\App\Dashboard\Repository\QualiteRepository::class)->badges();
+        self::assertGreaterThanOrEqual(1, $badges['conflits']);
+
         // Acceptation groupée de la ligne cochée.
         $token = $crawler->filter('input[name="suggestion_selection[_token]"]')->attr('value');
         $client->request('POST', '/qualite/suggestions/accepter?src=wikidata&page=1', [

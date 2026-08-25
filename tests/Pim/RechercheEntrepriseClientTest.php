@@ -49,6 +49,8 @@ final class RechercheEntrepriseClientTest extends TestCase
         self::assertStringContainsString('code_postal=60460', $requests[0]);
         self::assertStringNotContainsString('code_postal', $requests[1]);
         self::assertNotNull($info);
+        // Résultat obtenu en repli France entière : le flag le signale.
+        self::assertTrue($info->rapprochementSansCodePostal);
         self::assertSame('1 AVENUE DU GENERAL DE GAULLE', $info->rue);
         self::assertSame('FR39480674100', $info->numeroTva);
         self::assertSame('BUSINESS PROFILERS', $info->raisonSociale);

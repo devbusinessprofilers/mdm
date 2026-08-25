@@ -102,7 +102,17 @@ class FicheSalesforceExport
     /** Nouvelle mutation à synchroniser : repousse l'échéance des deux envois. */
     public function markDirty(): void
     {
-        $this->dirtyAt = new \DateTimeImmutable();
+        $now = new \DateTimeImmutable();
+        // Colonnes en secondes entières : une mutation dans la même seconde que
+        // le dernier envoi serait invisible (dirty_at == sent_at, comparaison
+        // stricte) — on force la stricte postériorité.
+        if (null !== $this->sentAt && $now <= $this->sentAt) {
+            $now = $this->sentAt->modify('+1 second');
+        }
+        if (null !== $this->sallesSentAt && $now <= $this->sallesSentAt) {
+            $now = $this->sallesSentAt->modify('+1 second');
+        }
+        $this->dirtyAt = $now;
     }
 
     /**

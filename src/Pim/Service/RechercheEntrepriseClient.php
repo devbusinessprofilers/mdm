@@ -45,7 +45,7 @@ final class RechercheEntrepriseClient
             $result = $this->search($query, '' === $codePostal ? null : $codePostal);
             if (null === $result && '' !== $codePostal) {
                 // Le siège peut être dans une autre commune que la fiche : on retente sans filtre.
-                $result = $this->search($query, null);
+                $result = $this->search($query, null, replisSansCodePostal: true);
             }
         } catch (EnrichissementIndisponibleException $exception) {
             if (!$absorberIndisponibilite) {
@@ -74,7 +74,7 @@ final class RechercheEntrepriseClient
         return $this->search($siret, null, actifsSeulement: false, siretAttendu: $siret);
     }
 
-    private function search(string $query, ?string $codePostal, bool $actifsSeulement = true, ?string $siretAttendu = null): ?EntrepriseInfo
+    private function search(string $query, ?string $codePostal, bool $actifsSeulement = true, ?string $siretAttendu = null, bool $replisSansCodePostal = false): ?EntrepriseInfo
     {
         $parameters = ['q' => $query, 'page' => 1, 'per_page' => 1];
         if ($actifsSeulement) {
@@ -107,6 +107,7 @@ final class RechercheEntrepriseClient
             dirigeantPrenom: $dirigeant['prenom'] ?? null,
             dirigeantNom: $dirigeant['nom'] ?? null,
             etatAdministratif: $etat,
+            rapprochementSansCodePostal: $replisSansCodePostal,
         );
     }
 

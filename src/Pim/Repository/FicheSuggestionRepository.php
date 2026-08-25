@@ -59,15 +59,4 @@ final class FicheSuggestionRepository extends ServiceEntityRepository
             ->getQuery()
             ->getOneOrNullResult();
     }
-
-    /** Nombre total de suggestions génériques en attente (indicateur écran Qualité). */
-    public function countEnAttente(): int
-    {
-        return (int) $this->createQueryBuilder('s')
-            ->select('COUNT(s.id)')
-            ->andWhere('s.statut = :statut')
-            ->setParameter('statut', SuggestionStatut::EnAttente->value)
-            ->getQuery()
-            ->getSingleScalarResult();
-    }
 }

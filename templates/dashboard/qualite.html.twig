@@ -352,10 +352,14 @@
                             <span data-suggestions-target="tab" data-suggestions-cle-param="{{ o.cle }}" class="contents"
                                   data-accepter="{{ path('app_mdm_qualite_suggestions', {decision: 'accepter', src: o.cle, page: o.page}) }}"
                                   data-ignorer="{{ path('app_mdm_qualite_suggestions', {decision: 'ignorer', src: o.cle, page: o.page}) }}">
+                                {# aria-selected est porté statiquement par chaque variante : la
+                                   variante masquée (display:none) sort de l'arbre d'accessibilité. #}
                                 <twig:Button variant="outline" size="sm" type="button" data-role="tab-outline"
+                                             role="tab" aria-selected="false"
                                              data-action="suggestions#activer" data-suggestions-cle-param="{{ o.cle }}"
                                              class="{{ o.cle == sug_actif ? 'hidden' : '' }}">{{ o.label }} ({{ o.compte }})</twig:Button>
                                 <twig:Button variant="primary" size="sm" type="button" data-role="tab-primary"
+                                             role="tab" aria-selected="true"
                                              data-action="suggestions#activer" data-suggestions-cle-param="{{ o.cle }}"
                                              class="{{ o.cle == sug_actif ? '' : 'hidden' }}">{{ o.label }} ({{ o.compte }})</twig:Button>
                             </span>
@@ -394,14 +398,14 @@
                                     {% set p_fiche = {onglet: 'conflits', src: o.cle, tri: 'code', ordre: (o.tri == 'code' and o.ordre == 'asc') ? 'desc' : 'asc'} %}
                                     {% set p_conf = {onglet: 'conflits', src: o.cle, tri: 'score', ordre: (o.tri == 'score' and o.ordre == 'asc') ? 'desc' : 'asc'} %}
                                     <th class="px-3">
-                                        <a href="{{ path('app_mdm_qualite', p_fiche) }}" class="inline-flex items-center gap-1 group/tri">
+                                        <a href="{{ path('app_mdm_qualite', p_fiche) }}" class="inline-flex items-center gap-1 group/tri" data-action="suggestions#naviguer">
                                             <twig:Typography variant="body-xs" textColor="{{ o.tri == 'code' ? 'primary-3' : 'neutral-500' }}" bold>Fiche</twig:Typography>
                                             {% if o.tri == 'code' %}<twig:Icon name="caret-down-solid" class="w-2 h-2 text-primary-3 {{ o.ordre == 'asc' ? 'rotate-180' : '' }}" />{% endif %}
                                         </a>
                                     </th>
                                     {% for col in ['Objet', 'Actuel', 'Proposition'] %}<th class="px-3"><twig:Typography variant="body-xs" textColor="neutral-500" bold>{{ col }}</twig:Typography></th>{% endfor %}
                                     <th class="px-3">
-                                        <a href="{{ path('app_mdm_qualite', p_conf) }}" class="inline-flex items-center gap-1 group/tri">
+                                        <a href="{{ path('app_mdm_qualite', p_conf) }}" class="inline-flex items-center gap-1 group/tri" data-action="suggestions#naviguer">
                                             <twig:Typography variant="body-xs" textColor="{{ o.tri == 'score' ? 'primary-3' : 'neutral-500' }}" bold>Confiance</twig:Typography>
                                             {% if o.tri == 'score' %}<twig:Icon name="caret-down-solid" class="w-2 h-2 text-primary-3 {{ o.ordre == 'asc' ? 'rotate-180' : '' }}" />{% endif %}
                                         </a>
@@ -413,9 +417,9 @@
                                 {% for ligne in o.lignes %}
                                     <tr class="h-11 border-t border-neutral-200 first:border-t-0 align-middle">
                                         <td class="pl-4 pr-3 w-0">
-                                            {% if is_granted('ROLE_BP_VALIDATOR') and cases[o.offset + loop.index0] is defined %}
+                                            {% if is_granted('ROLE_BP_VALIDATOR') and ligne.case_index is not null and cases[ligne.case_index] is defined %}
                                                 <label class="inline-flex cursor-pointer">
-                                                    {{ form_widget(cases[o.offset + loop.index0], { label: false, attr: { 'data-role': 'case', 'data-action': 'change->suggestions#surCase' } }) }}
+                                                    {{ form_widget(cases[ligne.case_index], { label: false, attr: { 'data-role': 'case', 'data-action': 'change->suggestions#surCase' } }) }}
                                                 </label>
                                             {% endif %}
                                         </td>
@@ -451,8 +455,8 @@
                             <div class="flex items-center justify-between gap-3">
                                 <twig:Typography variant="body-xs" textColor="neutral-500">Page {{ o.page }} / {{ o.pages }} · {{ o.total }} résultat(s)</twig:Typography>
                                 <div class="flex items-center gap-2">
-                                    {% if o.page > 1 %}<twig:Button variant="outline" size="sm" asLink href="{{ path('app_mdm_qualite', {onglet: 'conflits', src: o.cle, tri: o.tri, ordre: o.ordre, page: o.page - 1}) }}">Précédente</twig:Button>{% endif %}
-                                    {% if o.page < o.pages %}<twig:Button variant="outline" size="sm" asLink href="{{ path('app_mdm_qualite', {onglet: 'conflits', src: o.cle, tri: o.tri, ordre: o.ordre, page: o.page + 1}) }}">Suivante</twig:Button>{% endif %}
+                                    {% if o.page > 1 %}<twig:Button variant="outline" size="sm" asLink data-action="suggestions#naviguer" href="{{ path('app_mdm_qualite', {onglet: 'conflits', src: o.cle, tri: o.tri, ordre: o.ordre, page: o.page - 1}) }}">Précédente</twig:Button>{% endif %}
+                                    {% if o.page < o.pages %}<twig:Button variant="outline" size="sm" asLink data-action="suggestions#naviguer" href="{{ path('app_mdm_qualite', {onglet: 'conflits', src: o.cle, tri: o.tri, ordre: o.ordre, page: o.page + 1}) }}">Suivante</twig:Button>{% endif %}
                                 </div>
                             </div>
                         {% endif %}

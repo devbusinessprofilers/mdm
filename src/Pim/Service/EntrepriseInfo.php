@@ -22,6 +22,8 @@ final readonly class EntrepriseInfo
         public ?string $dirigeantNom = null,
         /** État administratif de l'établissement : 'A' (actif), 'F'/'C' (cessé), null si inconnu. */
         public ?string $etatAdministratif = null,
+        /** Vrai quand le résultat n'a été obtenu qu'en repli France entière (filtre code postal retiré). */
+        public bool $rapprochementSansCodePostal = false,
     ) {}
 
     /** Vrai quand l'API a explicitement renvoyé un établissement cessé. */

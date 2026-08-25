@@ -75,7 +75,8 @@ final readonly class QualiteRepository
         return [
             'conflits' => (int) $this->connection->fetchOne(
                 "SELECT (SELECT COUNT(*) FROM ocr_suggestion WHERE status = 'pending')
-                    + (SELECT COUNT(*) FROM pim_localisation WHERE ban_ecart = 1)",
+                    + (SELECT COUNT(*) FROM pim_localisation WHERE ban_ecart = 1)
+                    + (SELECT COUNT(*) FROM pim_fiche_suggestion WHERE statut = 'en_attente')",
             ),
             'doublons_textes' => (int) $this->connection->fetchOne(
                 "SELECT COUNT(*) FROM pim_text_duplicate_alert WHERE status = 'pending'",

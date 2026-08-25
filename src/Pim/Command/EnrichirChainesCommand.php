@@ -73,7 +73,15 @@ final class EnrichirChainesCommand extends Command
         $seuil = $now->modify(sprintf('-%d days', max(0, $this->parametres->int('wikidata.rescan_apres_jours'))));
 
         $io->text('Construction du dictionnaire de chaînes (référentiel interne + Wikidata)…');
-        $dictionnaire = ChaineDictionnaire::depuis($this->wikidata->chaines());
+        $chainesWikidata = $this->wikidata->chaines();
+        // L'échec WDQS est silencieux (liste vide) : l'afficher, sinon
+        // l'opérateur croit avoir la couverture Wikidata en seed-only.
+        if ([] === $chainesWikidata) {
+            $io->warning('0 chaîne chargée depuis Wikidata (WDQS indisponible ?) : détection sur le seul référentiel interne.');
+        } else {
+            $io->text(sprintf('%d chaînes chargées depuis Wikidata.', count($chainesWikidata)));
+        }
+        $dictionnaire = ChaineDictionnaire::depuis($chainesWikidata);
 
         $stats = ['lieux analysés' => 0, 'chaînes détectées' => 0, 'suggestions créées' => 0];
         $rapport = [];

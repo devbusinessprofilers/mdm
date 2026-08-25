@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Pim\Service\DataTourisme;
 
+use App\Pim\Service\NomSimilarite;
+
 /**
  * Index en mémoire des POI DATAtourisme par code postal, pour rapprocher une
  * fiche PIM de son équivalent touristique. Le rapprochement se fait dans le
@@ -13,7 +15,7 @@ namespace App\Pim\Service\DataTourisme;
 final class DataTourismeIndex
 {
     /** Similarité minimale nom PIM ↔ nom DATAtourisme. */
-    public const SEUIL_RAPPROCHEMENT = 0.82;
+    public const SEUIL_RAPPROCHEMENT = NomSimilarite::SEUIL_DEFAUT;
 
     /** @var array<string, list<DataTourismePoi>> */
     private array $parCodePostal = [];
@@ -68,7 +70,7 @@ final class DataTourismeIndex
         $meilleur = null;
         $meilleurScore = self::SEUIL_RAPPROCHEMENT;
         foreach ($this->parCodePostal[$codePostal] ?? [] as $poi) {
-            $score = self::similarite($nom, $poi->nom);
+            $score = NomSimilarite::score($nom, $poi->nom);
             if ($score >= $meilleurScore) {
                 $meilleur = $poi;
                 $meilleurScore = $score;
@@ -76,17 +78,5 @@ final class DataTourismeIndex
         }
 
         return $meilleur;
-    }
-
-    private static function similarite(string $a, string $b): float
-    {
-        $a = mb_strtolower(trim($a));
-        $b = mb_strtolower(trim($b));
-        if ('' === $a || '' === $b) {
-            return 0.0;
-        }
-        similar_text($a, $b, $pourcent);
-
-        return $pourcent / 100;
     }
 }

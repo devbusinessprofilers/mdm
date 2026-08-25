@@ -62,6 +62,54 @@ final class StatutEtablissementVerifierTest extends TestCase
         self::assertContains('info_legale_num_tva', $champs);
     }
 
+    public function testPenaliseLeBackfillObtenuSansAncrageCodePostal(): void
+    {
+        $lieu = self::lieuFrancais('BUSINESS PROFILERS');
+        $requests = 0;
+        $client = new RechercheEntrepriseClient(
+            new MockHttpClient(function () use (&$requests): MockResponse {
+                ++$requests;
+
+                // Rien dans le code postal de la fiche : repli France entière.
+                return 1 === $requests
+                    ? new MockResponse('{"results": []}')
+                    : new MockResponse(json_encode(['results' => [[
+                        'nom_complet' => 'BUSINESS PROFILERS',
+                        'siren' => '480674100',
+                        'siege' => ['siret' => '48067410000031', 'etat_administratif' => 'A'],
+                    ]]], JSON_THROW_ON_ERROR));
+            }),
+            new NullLogger(),
+            'https://recherche.example',
+        );
+
+        $propositions = (new StatutEtablissementVerifier($client))->analyser($lieu);
+
+        $siret = null;
+        foreach ($propositions as $proposition) {
+            if ('info_legale_siret' === $proposition->champ) {
+                $siret = $proposition;
+            }
+        }
+        self::assertNotNull($siret);
+        // Nom identique (similarité 1.0) mais sans ancrage géographique : 0.9.
+        self::assertEqualsWithDelta(0.9, $siret->score, 0.001);
+    }
+
+    public function testLaSimilariteIgnoreLesAccents(): void
+    {
+        $lieu = self::lieuFrancais('Hôtel Périgord');
+
+        $propositions = self::verifier([[
+            'nom_complet' => 'HOTEL PERIGORD',
+            'siren' => '480674100',
+            'siege' => ['siret' => '48067410000031', 'etat_administratif' => 'A'],
+        ]])->analyser($lieu);
+
+        $champs = array_map(static fn ($p): string => $p->champ, $propositions);
+        self::assertContains('info_legale_siret', $champs);
+    }
+
     public function testIgnoreLesLieuxEtrangers(): void
     {
         $lieu = new Lieu();

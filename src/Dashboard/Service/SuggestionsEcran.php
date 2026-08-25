@@ -33,7 +33,7 @@ final readonly class SuggestionsEcran
         'wikidata' => 'Wikidata',
     ];
 
-    private const PAR_PAGE = 20;
+    public const PAR_PAGE = 20;
 
     public function __construct(
         private QualiteRepository $qualite,
@@ -61,30 +61,37 @@ final readonly class SuggestionsEcran
 
         $onglets = [];
         $choices = [];
-        $offset = 0;
         foreach (self::SOURCES as $cle => $label) {
             $estActif = $cle === $actif;
             $p = $estActif ? $pageActive : 1;
             $t = $estActif ? $triActif : 'score';
             $o = $estActif ? $ordreActif : 'desc';
             $data = $this->qualite->pageSuggestions($cle, $p, self::PAR_PAGE, $t, $o);
+            $lignes = [];
             foreach ($data['lignes'] as $ligne) {
-                $choices[(string) $ligne['select_id']] = (string) $ligne['select_id'];
+                // Les lignes sans proposition applicable (« Aucun résultat
+                // fiable ») ne sont pas cochables : les inclure enverrait la
+                // sélection vers un échec garanti.
+                if ($ligne['acceptable'] ?? true) {
+                    $ligne['case_index'] = count($choices);
+                    $choices[(string) $ligne['select_id']] = (string) $ligne['select_id'];
+                } else {
+                    $ligne['case_index'] = null;
+                }
+                $lignes[] = $ligne;
             }
             $onglets[] = [
                 'cle' => $cle,
                 'label' => $label,
                 'provenance' => self::PROVENANCES[$cle],
                 'compte' => $comptes[$cle] ?? 0,
-                'lignes' => $data['lignes'],
-                'offset' => $offset,
+                'lignes' => $lignes,
                 'total' => $data['total'],
                 'page' => $p,
                 'pages' => max(1, (int) ceil($data['total'] / self::PAR_PAGE)),
                 'tri' => $t,
                 'ordre' => $o,
             ];
-            $offset += count($data['lignes']);
         }
         $form = $this->forms->create(SuggestionSelectionType::class, null, ['ids_choices' => $choices]);
 

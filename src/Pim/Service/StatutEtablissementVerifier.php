@@ -22,7 +22,10 @@ use App\Pim\Enum\SuggestionAction;
 final readonly class StatutEtablissementVerifier
 {
     /** Similarité minimale nom PIM ↔ dénomination Sirene pour proposer un backfill sans SIRET stocké. */
-    public const SEUIL_RAPPROCHEMENT = 0.82;
+    public const SEUIL_RAPPROCHEMENT = NomSimilarite::SEUIL_DEFAUT;
+
+    /** Pénalité de score quand le rapprochement n'a abouti qu'en repli France entière (sans code postal). */
+    private const PENALITE_SANS_CODE_POSTAL = 0.9;
 
     public function __construct(private RechercheEntrepriseClient $client)
     {
@@ -83,7 +86,13 @@ final readonly class StatutEtablissementVerifier
         if (null === $info || null === $info->siret) {
             return [];
         }
-        $score = self::similarite($label, $info->denomination ?? $info->raisonSociale ?? '');
+        $score = NomSimilarite::score($label, $info->denomination ?? $info->raisonSociale ?? '');
+        // Rapprochement obtenu sans l'ancrage du code postal : risque d'homonyme
+        // d'une autre commune — score pénalisé (écarte les cas limites, et la
+        // confiance affichée à l'arbitre le signale).
+        if ($info->rapprochementSansCodePostal) {
+            $score *= self::PENALITE_SANS_CODE_POSTAL;
+        }
         if ($score < self::SEUIL_RAPPROCHEMENT) {
             return [];
         }
@@ -125,17 +134,5 @@ final readonly class StatutEtablissementVerifier
         $siret = preg_replace('/\D/', '', (string) $siret) ?? '';
 
         return preg_match('/^\d{14}$/', $siret) ? $siret : null;
-    }
-
-    private static function similarite(string $a, string $b): float
-    {
-        $a = mb_strtolower(trim($a));
-        $b = mb_strtolower(trim($b));
-        if ('' === $a || '' === $b) {
-            return 0.0;
-        }
-        similar_text($a, $b, $pourcent);
-
-        return $pourcent / 100;
     }
 }

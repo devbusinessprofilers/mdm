@@ -86,7 +86,7 @@ final class QualiteController extends AbstractController
 
     #[Route('/qualite/suggestions/{decision}', name: 'app_mdm_qualite_suggestions', requirements: ['decision' => 'accepter|ignorer'], methods: ['POST'])]
     #[IsGranted('ROLE_BP_VALIDATOR')]
-    public function arbitrerSuggestions(string $decision, Request $request, SuggestionsBulkArbitre $arbitre, CurrentActorProvider $actor): Response
+    public function arbitrerSuggestions(string $decision, Request $request, SuggestionsBulkArbitre $arbitre, CurrentActorProvider $actor, QualiteRepository $qualite): Response
     {
         $soumis = $request->request->all()['suggestion_selection'] ?? [];
         $idsSoumis = is_array($soumis) && is_array($soumis['ids'] ?? null) ? $soumis['ids'] : [];
@@ -121,6 +121,19 @@ final class QualiteController extends AbstractController
         $this->addFlash('success', 0 === $bilan['echecs']
             ? sprintf('%d suggestion(s) %s.', $bilan['ok'], $verbe)
             : sprintf('%d suggestion(s) %s, %d en échec (déjà arbitrée, périmée ou sans proposition).', $bilan['ok'], $verbe, $bilan['echecs']));
+        // Les lignes arbitrées ont pu vider la page demandée : clamp sur la
+        // dernière page restante de la source.
+        $src = $request->query->getString('src');
+        $page = $request->query->getInt('page');
+        if ('' !== $src && $page > 1) {
+            $comptes = $qualite->comptesSuggestionsParSource();
+            $pages = max(1, (int) ceil(($comptes[$src] ?? 0) / SuggestionsEcran::PAR_PAGE));
+            $retour = $this->redirectToRoute('app_mdm_qualite', array_filter([
+                'onglet' => 'conflits',
+                'src' => $src,
+                'page' => min($page, $pages) > 1 ? min($page, $pages) : null,
+            ]));
+        }
 
         return $retour;
     }

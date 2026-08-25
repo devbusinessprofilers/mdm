@@ -71,6 +71,11 @@ final class FicheEnrichmentScanTest extends KernelTestCase
         $scans->marquer([$id], SuggestionSource::Sirene, $modifieLe->modify('-60 seconds'));
         self::assertTrue($this->contient($lieux->findBatchAfter(null, 10, $s, $seuilLarge), $id));
 
+        // Fiche modifiée dans la seconde du départ du run → ré-incluse (le
+        // marquage stocke scanned_at une seconde avant le run).
+        $scans->marquer([$id], SuggestionSource::Sirene, $modifieLe);
+        self::assertTrue($this->contient($lieux->findBatchAfter(null, 10, $s, $seuilLarge), $id));
+
         // Scan récent mais antérieur au seuil de fraîcheur → ré-inclus.
         $scans->marquer([$id], SuggestionSource::Sirene, $modifieLe->modify('+60 seconds'));
         $seuilStrict = $modifieLe->modify('+120 seconds');

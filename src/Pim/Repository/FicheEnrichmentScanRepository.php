@@ -29,6 +29,11 @@ final class FicheEnrichmentScanRepository extends ServiceEntityRepository
         if ([] === $ficheIds) {
             return;
         }
+        // scanned_at est stocké une seconde AVANT le départ du run : les colonnes
+        // sont en secondes entières, et le filtre incrémental exige
+        // scanned_at >= updated_at pour sauter une fiche — une fiche modifiée
+        // dans la seconde du départ doit rester à rescanner.
+        $at = $at->modify('-1 second');
         $valeurs = [];
         $params = [];
         foreach ($ficheIds as $id) {
