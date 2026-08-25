@@ -91,12 +91,16 @@ filesystem `cache.app` : rate limiter, métriques, paramètres, état scheduler)
 
 6 bis. **Salesforce (sortant, CSV e-mail de transition)** : n'activer
    (`SALESFORCE_CSV_ENABLED=1` + `SALESFORCE_CSV_TO=email_integration@1-2bmy141t5kdrs7sdjri14nvgi.2-hceeaa.eu3.apex.salesforce.com`)
-   **qu'après le « go » de Théofane**. Deux préalables :
+   **qu'après le « go » de Théofane**. Trois préalables :
    - **`ID_SALLE`** : le PIM émet l'ULID de salle en intérimaire (l'id de
      liaison legacy n'est pas conservé). À remapper avant tout envoi Salles réel,
      sinon doublons côté Salesforce.
    - **Expéditeur autorisé** : `SALESFORCE_CSV_FROM` (ou `MAILER_FROM`) doit être
      une adresse acceptée par le connecteur email → intégration de l'org SF.
+   - **Jeton roté** : faire régénérer `SALESFORCE_CSV_INTEGRATION_TOKEN` par
+     l'admin Salesforce avant l'activation (l'ancienne valeur a figuré dans
+     l'historique git — procédure dans `docs/SECRETS.md`), puis poser la
+     nouvelle valeur en variable Upsun sensible.
    Test : bouton « Envoyer à Salesforce » d'une fiche (envoi Produits immédiat),
    ou action de masse du référentiel. L'auto part ensuite à chaque modification
    (Produits au fil de l'eau, Salles groupées la nuit).

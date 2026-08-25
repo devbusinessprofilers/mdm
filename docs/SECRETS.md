@@ -57,6 +57,12 @@ Les secrets ne sont **jamais** commités : `html/.env` (suivi) liste toutes les 
 - Générer comme APP_SECRET. Jeton Bearer attendu par le webhook entrant `POST /api/salesforce/produits` (notification des produits modifiés) ; vide = webhook désactivé (404). À communiquer à l'admin Salesforce (Named Credential / en-tête `Authorization` du callout).
 - Rotation libre : déployer le nouveau jeton côté PIM puis mettre à jour le callout Salesforce — pendant l'écart, Salesforce reçoit des 401 et le cron quotidien de 3h rattrape de toute façon les fiches.
 
+### SALESFORCE_CSV_INTEGRATION_TOKEN
+- Id d'intégration de l'org Salesforce placé dans l'objet des e-mails CSV sortants (`integration=<jeton>;interface=Produits|Salles`). Avec l'expéditeur autorisé, c'est la **seule authentification** du canal email → intégration : quiconque le connaît peut injecter des CSV (upsert par ID_PRODUCT) dans l'org — c'est bien un secret.
+- Pas généré par nous : fourni par l'admin Salesforce (id du connecteur email → intégration, hérité de l'ancien extranet). Valeur réelle dans `.env.local` en local, variable Upsun sensible en prod ; le défaut est vide et `SalesforceCsvSettings::isConfigured()` exige un jeton non vide — sans lui, rien ne part. Surchargeable à chaud dans `/admin/parametres` (`salesforce.csv_token`, la variable d'env reste le défaut).
+- Rotation : l'admin Salesforce régénère l'id du connecteur, déployer la nouvelle valeur (et corriger la surcharge `/admin/parametres` si posée) ; pendant l'écart Salesforce ignore les e-mails, les lignes restent « dirty » et repartent d'elles-mêmes au tic suivant (aucune perte, cf. backoff `etl_fiche_salesforce_export`).
+- ⚠ **Fuite historique connue** : la valeur (`a0qw…`) a été commitée dans `.env`/`services.yaml`/docs/tests du 2026-08-24 (commit `8f00010`) au 2026-08-25 (retirée par `22a58a1`) et reste lisible dans l'historique git → **rotation obligatoire au go-live**, avant la première activation réelle.
+
 ### Credentials MariaDB (dépôt parent `.env` : DB_PASSWORD)
 - Dev uniquement (conteneur non exposé publiquement). Pour changer : mettre à jour le `.env` racine, recréer le volume SQL ou exécuter `ALTER USER` dans le conteneur, mettre à jour `DATABASE_URL` dans `.env.local`.
 
@@ -64,4 +70,4 @@ Les secrets ne sont **jamais** commités : `html/.env` (suivi) liste toutes les 
 
 1. Révoquer immédiatement le secret côté fournisseur (OVH, Box, Google) **avant** de déployer le remplaçant si possible.
 2. Roter tous les secrets présents dans le même fichier/canal fuité.
-3. Vérifier l'historique git : `gitleaks detect` (les fichiers `.env.local` sont ignorés depuis l'origine du dépôt — aucune fuite historique connue au 2026-08-18).
+3. Vérifier l'historique git : `gitleaks detect` (les fichiers `.env.local` sont ignorés depuis l'origine du dépôt). Une fuite historique est connue au 2026-08-25 : `SALESFORCE_CSV_INTEGRATION_TOKEN`, commité un jour dans `.env` — voir sa section ci-dessus, rotation obligatoire au go-live.
