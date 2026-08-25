@@ -24,6 +24,10 @@ final class GeoapifyPlaceDetailsTest extends TestCase
                 'outdoor_seating' => 'yes',
                 'internet_access' => 'wlan',
                 'website' => 'https://trattoria.example',
+                'contact:phone' => '+33 1 23 45 67 89',
+                'brand' => 'Big Mamma',
+                'operator' => 'Exploitant SARL',
+                'stars' => '4S',
             ]]],
         ]]]);
 
@@ -38,6 +42,11 @@ final class GeoapifyPlaceDetailsTest extends TestCase
         self::assertTrue($attributs->wifi);
         self::assertNull($attributs->climatisation);
         self::assertSame('https://trattoria.example', $attributs->siteWeb);
+        self::assertSame('+33 1 23 45 67 89', $attributs->telephone);
+        // `brand` seulement : `operator` est l'exploitant, pas l'enseigne.
+        self::assertSame('Big Mamma', $attributs->marque);
+        // « 4S » = 4 étoiles supérieur.
+        self::assertSame(4, $attributs->etoiles);
     }
 
     public function testRetourneNullSansFeature(): void

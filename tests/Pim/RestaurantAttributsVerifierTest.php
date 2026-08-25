@@ -24,6 +24,7 @@ final class RestaurantAttributsVerifierTest extends TestCase
             'outdoor_seating' => 'yes',
             'internet_access' => 'wlan',
             'website' => 'https://trattoria.example',
+            'phone' => '+33 1 23 45 67 89',
         ])->analyser($restaurant);
 
         $parChamp = [];
@@ -40,6 +41,8 @@ final class RestaurantAttributsVerifierTest extends TestCase
         self::assertTrue($parChamp['restaurant_acces_pmr']->payload['bool']);
         self::assertArrayHasKey('restaurant_site_officiel', $parChamp);
         self::assertSame('https://trattoria.example', $parChamp['restaurant_site_officiel']->valeurProposee);
+        self::assertArrayHasKey('restaurant_telephone', $parChamp);
+        self::assertSame('+33 1 23 45 67 89', $parChamp['restaurant_telephone']->valeurProposee);
     }
 
     public function testNeProposeRienQuandDejaRenseigne(): void
@@ -47,11 +50,13 @@ final class RestaurantAttributsVerifierTest extends TestCase
         $restaurant = self::restaurant();
         $restaurant->changeAccesPmr(true);
         $restaurant->changeSiteOfficiel('https://deja.example');
+        $restaurant->fiche()->changeTelephone('01 02 03 04 05');
 
         // OSM ne renvoie que des champs déjà remplis → aucune proposition.
         $propositions = self::verifier([
             'wheelchair' => 'yes',
             'website' => 'https://autre.example',
+            'phone' => '+33 9 87 65 43 21',
         ])->analyser($restaurant);
 
         self::assertSame([], $propositions);

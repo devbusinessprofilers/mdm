@@ -24,6 +24,7 @@ use App\Pim\Service\DescriptionIaVerifier;
 use App\Pim\Service\EnrichissementIndisponibleException;
 use App\Pim\Service\FicheSuggestionEnregistreur;
 use App\Pim\Service\GeoapifyClient;
+use App\Pim\Service\LieuAttributsVerifier;
 use App\Pim\Service\RestaurantAttributsVerifier;
 use App\Pim\Service\StatutEtablissementVerifier;
 use App\Pim\Service\SuggestionProposee;
@@ -56,6 +57,7 @@ final readonly class EnrichirFicheHandler
         private ServiceEvenementielRepository $services,
         private StatutEtablissementVerifier $statutsEtablissement,
         private RestaurantAttributsVerifier $attributsRestaurant,
+        private LieuAttributsVerifier $attributsLieu,
         private DataTourismeVerifier $dataTourisme,
         private ChaineHoteliereVerifier $chainesHotelieres,
         private DescriptionIaVerifier $descriptionsIa,
@@ -101,11 +103,12 @@ final readonly class EnrichirFicheHandler
                 ? $this->executer($fiche, SuggestionSource::Sirene, fn (): array => $this->statutsEtablissement->analyser($lieu))
                 : 'inactif';
         }
-        if (null !== $restaurant) {
+        if (null !== $restaurant || null !== $lieu) {
             $resultat['geoapify'] = match (true) {
                 !$this->parametres->bool('geoapify.enrichissement_places') => 'inactif',
                 !$this->geoapify->isConfigured() => 'non_configuree',
-                default => $this->executer($fiche, SuggestionSource::Geoapify, fn (): array => $this->attributsRestaurant->analyser($restaurant)),
+                null !== $restaurant => $this->executer($fiche, SuggestionSource::Geoapify, fn (): array => $this->attributsRestaurant->analyser($restaurant)),
+                default => $this->executer($fiche, SuggestionSource::Geoapify, fn (): array => $this->attributsLieu->analyser($lieu)),
             };
         }
         $codePostal = trim((string) $fiche->localisation()?->codePostal());
