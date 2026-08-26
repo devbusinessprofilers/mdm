@@ -180,7 +180,7 @@ final class FicheSectionsCatalogue
                 'groupe' => 'parametres',
             ],
             [
-                'titre' => 'Collaborateurs',
+                'titre' => 'Utilisateurs',
                 'champs' => [],
                 'proprietes' => [],
                 'blocs' => ['collaborateurs'],
@@ -270,7 +270,7 @@ final class FicheSectionsCatalogue
                 'groupe' => 'ma_fiche',
             ],
             [
-                'titre' => 'Collaborateurs',
+                'titre' => 'Utilisateurs',
                 'champs' => [],
                 'proprietes' => [],
                 'blocs' => ['collaborateurs'],
@@ -354,7 +354,7 @@ final class FicheSectionsCatalogue
                 'groupe' => 'ma_fiche',
             ],
             [
-                'titre' => 'Collaborateurs',
+                'titre' => 'Utilisateurs',
                 'champs' => [],
                 'proprietes' => [],
                 'blocs' => ['collaborateurs'],
@@ -431,7 +431,7 @@ final class FicheSectionsCatalogue
                 'groupe' => 'ma_fiche',
             ],
             [
-                'titre' => 'Collaborateurs',
+                'titre' => 'Utilisateurs',
                 'champs' => [],
                 'proprietes' => [],
                 'blocs' => ['collaborateurs'],

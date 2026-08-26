@@ -133,7 +133,7 @@ final class AdminEventCatalog
             ],
             [
                 'type' => InternalUserInvited::class,
-                'label' => 'Invitation utilisateur interne',
+                'label' => 'Invitation collaborateur interne',
                 'domain' => 'Compte',
                 'trigger' => 'Un Super Admin invite un éditeur ou un validateur.',
                 'transport' => 'mail',
@@ -146,7 +146,7 @@ final class AdminEventCatalog
                 'type' => InternalUserPasswordResetRequested::class,
                 'label' => 'Reset de mot de passe interne',
                 'domain' => 'Compte',
-                'trigger' => 'Un utilisateur demande un reset ou un Super Admin renvoie ses identifiants.',
+                'trigger' => 'Un collaborateur demande un reset ou un Super Admin renvoie ses identifiants.',
                 'transport' => 'mail',
                 'worker' => 'worker-mail',
                 'handler' => InternalUserPasswordResetRequestedHandler::class,

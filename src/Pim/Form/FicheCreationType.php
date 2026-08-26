@@ -160,7 +160,7 @@ final class FicheCreationType extends AbstractType
             ->add('trameEmail', TextareaType::class, [
                 'label' => 'Trame d’email',
                 'required' => false,
-                'help' => 'Texte de l’email d’accès envoyé au collaborateur.',
+                'help' => 'Texte de l’email d’accès envoyé à l’utilisateur.',
             ])
             ->add('creerQuandMeme', SubmitType::class, [
                 'label' => 'Créer quand même',
@@ -186,14 +186,14 @@ final class FicheCreationType extends AbstractType
                 ->addViolation();
         }
         if ($data->envoyerAcces && !$data->contactRepli && !$data->veutCollaborateur()) {
-            $context->buildViolation('Sélectionnez ou créez un collaborateur pour lui envoyer les accès.')
+            $context->buildViolation('Sélectionnez ou créez un utilisateur pour lui envoyer les accès.')
                 ->atPath('collaborateurExistant')
                 ->addViolation();
         }
         if (null === $data->collaborateurExistant
             && '' !== trim((string) $data->collabEmail)
             && '' === trim((string) $data->collabPrenom).trim((string) $data->collabNom)) {
-            $context->buildViolation('Renseignez le prénom ou le nom du nouveau collaborateur.')
+            $context->buildViolation('Renseignez le prénom ou le nom du nouvel utilisateur.')
                 ->atPath('collabPrenom')
                 ->addViolation();
         }

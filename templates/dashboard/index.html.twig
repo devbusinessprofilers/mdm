@@ -75,11 +75,11 @@
             {% endif %}
         </section>
 
-        <section class="dam-stats" aria-label="Activité par utilisateur">
+        <section class="dam-stats" aria-label="Activité par collaborateur">
             {% set userTables = {
-                'Fiches créées par utilisateur': perUser.created,
-                'Champs modifiés par utilisateur': perUser.fieldsUpdated,
-                'Fiches validées par utilisateur': perUser.validated
+                'Fiches créées par collaborateur': perUser.created,
+                'Champs modifiés par collaborateur': perUser.fieldsUpdated,
+                'Fiches validées par collaborateur': perUser.validated
             } %}
             {% for heading, rows in userTables %}
                 <div class="card">

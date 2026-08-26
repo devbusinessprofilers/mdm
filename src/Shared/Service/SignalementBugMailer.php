@@ -38,7 +38,7 @@ final readonly class SignalementBugMailer
             ->subject(sprintf('[PIM] Bug : %s', $titre))
             ->text(sprintf(
                 "Signalement envoyé depuis le PIM.\n\n"
-                ."Utilisateur : %s\nRôles : %s\nPage d'origine : %s\nNavigateur : %s\n\n%s",
+                ."Collaborateur : %s\nRôles : %s\nPage d'origine : %s\nNavigateur : %s\n\n%s",
                 $identite,
                 '' === $roles ? '—' : $roles,
                 $page ?? '—',

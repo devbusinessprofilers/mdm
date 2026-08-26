@@ -346,13 +346,13 @@
     <div class="flex flex-row gap-[18px] items-stretch">
         <div class="{{ carte }} flex-1 min-w-0">
             <div class="flex items-baseline justify-between gap-3">
-                <twig:Typography variant="body-sm" bold>Activité par utilisateur</twig:Typography>
+                <twig:Typography variant="body-sm" bold>Activité par collaborateur</twig:Typography>
                 <twig:Typography variant="body-sm" bold textColor="primary-3">Sur {{ c.activite.libelle|lower }}</twig:Typography>
             </div>
 
             <div class="rounded-sm overflow-hidden inset-ring-1 inset-ring-neutral-200">
                 <div class="{{ grille_activite }} {{ entete_table }}" role="row">
-                    {{ _self.colonne('Utilisateur', 'text-left') }}
+                    {{ _self.colonne('Collaborateur', 'text-left') }}
                     {{ _self.colonne('Créées', 'text-right') }}
                     {{ _self.colonne('Enrichies', 'text-right') }}
                     {{ _self.colonne('Validées', 'text-right') }}

@@ -69,6 +69,7 @@ final class EnteteExtension extends AbstractExtension
 
         if ($this->security->isGranted('ROLE_BP_VALIDATOR')) {
             $entrees[] = new MenuDTOItem('outils', 'Outils', 'app_mdm_outils');
+            $entrees[] = new MenuDTOItem('utilisateurs', 'Utilisateurs', 'app_account_collaborateur_consultation_index');
         }
 
         return $entrees;
@@ -124,8 +125,8 @@ final class EnteteExtension extends AbstractExtension
 
         if ($this->security->isGranted('ROLE_SUPER_ADMIN')) {
             $entrees[] = ['Complétude', 'star', 'app_pim_completeness_index'];
-            $entrees[] = ['Collaborateurs', 'users', 'app_account_admin_index'];
-            $entrees[] = ['Utilisateurs', 'user', 'app_account_user_admin_index'];
+            $entrees[] = ['Utilisateurs (gestion)', 'users', 'app_account_admin_index'];
+            $entrees[] = ['Collaborateurs', 'user', 'app_account_user_admin_index'];
         }
 
         return $entrees;

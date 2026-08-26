@@ -460,7 +460,7 @@
                                     <span class="min-w-0 truncate"><twig:Typography variant="body-sm">{{ affiliation.collaborateur.firstName }}</twig:Typography></span>
                                     <span class="min-w-0 truncate"><twig:Typography variant="body-sm">{{ affiliation.collaborateur.email }}</twig:Typography></span>
                                     <span class="whitespace-nowrap"><twig:Typography variant="body-sm">{{ affiliation.collaborateur.phone ?? '—' }}</twig:Typography></span>
-                                    <span class="min-w-0 truncate"><twig:Typography variant="body-sm">{{ affiliation.role.value|capitalize }}</twig:Typography></span>
+                                    <span class="min-w-0 truncate"><twig:Typography variant="body-sm">{{ affiliation.role.label }}</twig:Typography></span>
                                     {{ collab.droit_collab(affiliation.receivesRequests, 'Traite les demandes') }}
                                     {{ collab.droit_collab(affiliation.traiteContenus, 'Traite les contenus') }}
                                     {{ collab.droit_collab(affiliation.traitePaiements, 'Traite les paiements') }}
@@ -485,11 +485,11 @@
                                     {% endif %}
                                 </div>
                             {% else %}
-                                <div class="px-3 py-6"><twig:Typography variant="body-sm" textColor="neutral-500">Aucun collaborateur affilié.</twig:Typography></div>
+                                <div class="px-3 py-6"><twig:Typography variant="body-sm" textColor="neutral-500">Aucun utilisateur affilié.</twig:Typography></div>
                             {% endfor %}
                         </div>
                         {% if not peut_gerer %}
-                            <twig:Typography variant="body-sm" textColor="neutral-500">La gestion des collaborateurs est réservée aux validateurs.</twig:Typography>
+                            <twig:Typography variant="body-sm" textColor="neutral-500">La gestion des utilisateurs est réservée aux validateurs.</twig:Typography>
                         {% endif %}
                     </div>
 
@@ -498,7 +498,7 @@
                     {% if peut_gerer and form_invitation %}
                         <aside class="w-full min-[1100px]:w-[420px] shrink-0 box-border flex flex-col gap-5 px-8 py-10
                                       rounded-[24px] bg-primary-5"
-                               aria-label="Ajouter ou modifier un collaborateur">
+                               aria-label="Ajouter ou modifier un utilisateur">
                             {% if ligne_editee %}
                                 <div class="flex flex-col items-center gap-2">
                                     <twig:Badge icon="user" class="w-24" />
@@ -511,10 +511,10 @@
                             {% else %}
                                 <div class="flex flex-col items-center gap-2">
                                     <twig:Icon name="plus" class="w-12 h-12 text-primary" />
-                                    <twig:Typography variant="subtitle" bold class="mt-2">Ajouter un collaborateur</twig:Typography>
+                                    <twig:Typography variant="subtitle" bold class="mt-2">Ajouter un utilisateur</twig:Typography>
                                     <twig:Typography variant="body-sm" textColor="neutral-500" center class="text-pretty">
-                                        Renseignez l'adresse professionnelle du collaborateur.
-                                        Une adresse déjà connue rattache le collaborateur existant ;
+                                        Renseignez l'adresse professionnelle de l'utilisateur.
+                                        Une adresse déjà connue rattache l'utilisateur existant ;
                                         la marketplace crée le compte et envoie le mail d'accès.
                                     </twig:Typography>
                                 </div>

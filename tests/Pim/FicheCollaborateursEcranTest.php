@@ -55,7 +55,7 @@ final class FicheCollaborateursEcranTest extends WebTestCase
         // Invitation depuis la section 13.
         $crawler = $client->request('GET', '/referentiel/lieux/fiche/'.$id.'?section=13');
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('main', 'Ajouter un collaborateur');
+        self::assertSelectorTextContains('main', 'Ajouter un utilisateur');
         $form = $crawler->selectButton('Inviter')->form();
         $values = $form->getPhpValues();
         $values['collab_invitation']['email'] = 'camille@exemple.test';
@@ -86,7 +86,7 @@ final class FicheCollaborateursEcranTest extends WebTestCase
         $nom = 'collab_edition_'.$affiliations[0]->idString();
         $crawler = $client->request('GET', '/referentiel/lieux/fiche/'.$id.'?section=14&collaborateur='.$affiliations[0]->idString());
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('aside[aria-label="Ajouter ou modifier un collaborateur"]', 'Modifier Camille Berthier');
+        self::assertSelectorTextContains('aside[aria-label="Ajouter ou modifier un utilisateur"]', 'Modifier Camille Berthier');
         self::assertCount(0, $crawler->filter('input[name="'.$nom.'[repli]"]'));
         $form = $crawler->filter('form[name="'.$nom.'"] button[type="submit"], form[name="'.$nom.'"] button:not([type])')->first()->form();
         $values = $form->getPhpValues();
@@ -112,7 +112,7 @@ final class FicheCollaborateursEcranTest extends WebTestCase
         self::assertResponseRedirects();
         $client->followRedirect();
         self::assertSame(0, $entityManager->getRepository(FicheAffiliation::class)->count(['fiche' => $lieu->fiche()->id()]));
-        self::assertSelectorTextContains('body', 'Collaborateur retiré de la fiche.');
+        self::assertSelectorTextContains('body', 'Utilisateur retiré de la fiche.');
     }
 
     private function clearTables(): void

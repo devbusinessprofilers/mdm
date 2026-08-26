@@ -324,9 +324,9 @@
                 <div class="flex flex-col gap-[18px]" data-fiche-creation-target="corps" {{ gammeChoisie ? '' : 'hidden' }}>
                     {{ form_errors(form.contactRepli) }}
                     {{ form_widget(form.contactRepli, { attr: { 'data-carte-repli': '1', 'data-action': 'change->fiche-creation#majRail' } }) }}
-                    {{ form_row(form.collaborateurExistant, { label: 'Rattacher un collaborateur existant', row_attr: { class: demi } }) }}
+                    {{ form_row(form.collaborateurExistant, { label: 'Rattacher un utilisateur existant', row_attr: { class: demi } }) }}
                     <div class="flex flex-col gap-2.5">
-                        <twig:Typography variant="subtitle" bold>… ou créer un nouveau collaborateur</twig:Typography>
+                        <twig:Typography variant="subtitle" bold>… ou créer un nouvel utilisateur</twig:Typography>
                         <div class="flex flex-row flex-wrap gap-x-6 gap-y-5">
                             {{ form_row(form.collabPrenom, { row_attr: { class: demi } }) }}
                             {{ form_row(form.collabNom, { row_attr: { class: demi } }) }}
@@ -349,7 +349,7 @@
                         {{ form_widget(form.envoyerAcces, { attr: { 'data-interrupteur': '1', 'data-action': 'change->fiche-creation#majRail' } }) }}
                         <label for="{{ form.envoyerAcces.vars.id }}" class="flex flex-col gap-[3px] min-w-0 cursor-pointer">
                             <twig:Typography variant="body" bold element="span">Envoyer les accès par email</twig:Typography>
-                            <twig:Typography variant="body-sm" textColor="neutral-500" element="span" class="text-pretty">Le collaborateur reçoit ses identifiants du portail prestataire dès la création. Indisponible avec le contact de repli.</twig:Typography>
+                            <twig:Typography variant="body-sm" textColor="neutral-500" element="span" class="text-pretty">L'utilisateur reçoit ses identifiants du portail prestataire dès la création. Indisponible avec le contact de repli.</twig:Typography>
                         </label>
                     </div>
                     {{ form_row(form.trameEmail) }}

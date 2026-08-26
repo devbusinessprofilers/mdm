@@ -22,9 +22,9 @@ final readonly class AccountAdminFormFactory
     public function __construct(private FormFactoryInterface $forms, private UrlGeneratorInterface $urls) {}
 
     /** @return FormInterface<mixed> */
-    public function collaborateurInvitation(): FormInterface
+    public function collaborateurInvitation(?string $action = null): FormInterface
     {
-        return $this->forms->createNamed('invitation_collaborateur', CollaborateurInvitationType::class, null, ['action' => $this->urls->generate('app_account_admin_create')]);
+        return $this->forms->createNamed('invitation_collaborateur', CollaborateurInvitationType::class, null, ['action' => $action ?? $this->urls->generate('app_account_admin_create')]);
     }
 
     /** @return FormInterface<mixed> */
@@ -127,7 +127,7 @@ final readonly class AccountAdminFormFactory
             'csrf_token_id' => 'user-delete-'.$user->id(),
             'attr' => [
                 'data-controller' => 'confirm',
-                'data-confirm-message-value' => 'Supprimer et anonymiser définitivement cet utilisateur ?',
+                'data-confirm-message-value' => 'Supprimer et anonymiser définitivement ce collaborateur ?',
                 'data-action' => 'submit->confirm#submit',
             ],
         ]);

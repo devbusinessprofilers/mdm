@@ -27,7 +27,7 @@ final class FicheAutocompleteType extends AbstractType
             },
             'searchable_fields' => ['label'],
             'max_results' => 20,
-            'security' => 'ROLE_SUPER_ADMIN',
+            'security' => 'ROLE_BP_VALIDATOR',
         ]);
     }
 

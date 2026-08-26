@@ -150,7 +150,7 @@ final class InternalUserAdminController extends AbstractController
         }
 
         $manager->forcePasswordChange($user);
-        $this->addFlash('success', 'L\'utilisateur devra changer son mot de passe à sa prochaine connexion.');
+        $this->addFlash('success', 'Le collaborateur devra changer son mot de passe à sa prochaine connexion.');
 
         return $this->redirectToRoute('app_account_user_admin_index');
     }
@@ -170,7 +170,7 @@ final class InternalUserAdminController extends AbstractController
         }
 
         $manager->delete($user, $actor);
-        $this->addFlash('success', 'Utilisateur supprimé et anonymisé.');
+        $this->addFlash('success', 'Collaborateur supprimé et anonymisé.');
 
         return $this->redirectToRoute('app_account_user_admin_index');
     }

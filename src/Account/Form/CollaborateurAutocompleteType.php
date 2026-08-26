@@ -18,8 +18,8 @@ final class CollaborateurAutocompleteType extends AbstractType
     {
         $resolver->setDefaults([
             'class' => FicheCollaborateur::class,
-            'label' => 'Collaborateur existant',
-            'placeholder' => 'Rechercher un collaborateur…',
+            'label' => 'Utilisateur existant',
+            'placeholder' => 'Rechercher un utilisateur…',
             'choice_label' => static function (FicheCollaborateur $collaborateur): string {
                 $name = trim($collaborateur->firstName().' '.$collaborateur->lastName());
 

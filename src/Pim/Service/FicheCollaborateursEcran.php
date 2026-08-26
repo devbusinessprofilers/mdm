@@ -97,7 +97,7 @@ final readonly class FicheCollaborateursEcran
                     'csrf_token_id' => 'collab-retrait-'.$affiliation->idString(),
                     'attr' => [
                         'data-controller' => 'confirm',
-                        'data-confirm-message-value' => 'Retirer ce collaborateur de la fiche ?',
+                        'data-confirm-message-value' => 'Retirer cet utilisateur de la fiche ?',
                         'data-action' => 'submit->confirm#submit',
                     ],
                 ]),

@@ -10,10 +10,10 @@
     ? (affiliations|filter(a => a.idString == affiliation_editee)|first)
     : null %}
 <main class="page">
-    <a class="back-link" href="{{ path('app_account_admin_index') }}">← Retour aux collaborateurs</a>
+    <a class="back-link" href="{{ path('app_account_admin_index') }}">← Retour aux utilisateurs</a>
     <header class="page-header">
         <div class="page-header-copy">
-            <p class="page-kicker">Collaborateur prestataire</p>
+            <p class="page-kicker">Utilisateur prestataire</p>
             <h1>{{ collaborateur.email }}</h1>
             <p class="page-description">{{ collaborateur.firstName }} {{ collaborateur.lastName }} · {{ collaborateur.language }}</p>
         </div>
@@ -43,7 +43,7 @@
                         <span class="min-w-0 truncate"><twig:Typography variant="body-sm">{{ affiliation.collaborateur.firstName }}</twig:Typography></span>
                         <span class="min-w-0 truncate"><twig:Typography variant="body-sm">{{ affiliation.collaborateur.email }}</twig:Typography></span>
                         <span class="whitespace-nowrap"><twig:Typography variant="body-sm">{{ affiliation.collaborateur.phone ?? '—' }}</twig:Typography></span>
-                        <span class="min-w-0 truncate"><twig:Typography variant="body-sm">{{ affiliation.role.value|capitalize }}</twig:Typography></span>
+                        <span class="min-w-0 truncate"><twig:Typography variant="body-sm">{{ affiliation.role.label }}</twig:Typography></span>
                         {{ collab.droit_collab(affiliation.receivesRequests, 'Traite les demandes') }}
                         {{ collab.droit_collab(affiliation.traiteContenus, 'Traite les contenus') }}
                         {{ collab.droit_collab(affiliation.traitePaiements, 'Traite les paiements') }}

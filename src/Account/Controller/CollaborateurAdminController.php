@@ -62,7 +62,7 @@ final class CollaborateurAdminController extends AbstractController
                 traiteContenus: $data['traiteContenus'] ?? false,
                 traitePaiements: $data['traitePaiements'] ?? false,
             );
-            $this->addFlash('success', 'Collaborateur invité et affilié.');
+            $this->addFlash('success', 'Utilisateur invité et affilié.');
 
             return $this->redirectToRoute('app_account_admin_show', ['id' => $affiliation->collaborateur()->id()]);
         } catch (\DomainException|\InvalidArgumentException $exception) {
@@ -102,7 +102,7 @@ final class CollaborateurAdminController extends AbstractController
             throw $this->createAccessDeniedException('Formulaire invalide.');
         }
         $manager->toggleCollaborateur($collaborateur);
-        $this->addFlash('success', $collaborateur->isActive() ? 'Collaborateur activé.' : 'Collaborateur désactivé.');
+        $this->addFlash('success', $collaborateur->isActive() ? 'Utilisateur activé.' : 'Utilisateur désactivé.');
 
         return $this->redirectToRoute('app_account_admin_show', ['id' => $collaborateur->id()]);
     }

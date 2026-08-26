@@ -43,7 +43,7 @@ final class CollaborateurInvitationType extends AbstractType
         return [
             'label' => 'Rôle',
             'choices' => array_combine(
-                array_map(static fn (FicheAffiliationRole $role): string => ucfirst($role->value), FicheAffiliationRole::cases()),
+                array_map(static fn (FicheAffiliationRole $role): string => $role->label(), FicheAffiliationRole::cases()),
                 FicheAffiliationRole::cases(),
             ),
             'choice_value' => static fn (?FicheAffiliationRole $role): ?string => $role?->value,

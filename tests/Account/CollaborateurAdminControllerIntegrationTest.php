@@ -160,7 +160,7 @@ final class CollaborateurAdminControllerIntegrationTest extends WebTestCase
 
         $crawler = $client->request('GET', '/admin/collaborateurs');
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('main', 'Page 1 / 2 — 51 collaborateurs');
+        self::assertSelectorTextContains('main', 'Page 1 / 2 — 51 utilisateurs');
         self::assertStringContainsString('collab-00@example.com', (string) $client->getResponse()->getContent());
         self::assertStringNotContainsString('collab-50@example.com', (string) $client->getResponse()->getContent());
         self::assertCount(1, $crawler->filter('a:contains("Suivant")'));

@@ -21,7 +21,7 @@ final class AdminWorkflowCatalog
             [
                 'title' => 'Validation et publication des fiches Lieu, Activité, Restaurant et Service',
                 'domain' => 'PIM',
-                'summary' => 'Le workflow éditorial reste piloté par les utilisateurs du PIM.',
+                'summary' => 'Le workflow éditorial reste piloté par les collaborateurs du PIM.',
                 'steps' => [
                     'En cours → soumission par un éditeur après validation complète de la fiche Lieu, Activité, Restaurant ou Service.',
                     'En attente de validation → validation ou refus motivé par un validateur.',

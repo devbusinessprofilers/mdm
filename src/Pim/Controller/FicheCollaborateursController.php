@@ -58,7 +58,7 @@ final class FicheCollaborateursController extends AbstractController
             try {
                 $affiliation = $ecran->inviter($user, $fiche, $data);
                 $this->addFlash('success', sprintf(
-                    'Collaborateur « %s » affilié à la fiche%s.',
+                    'Utilisateur « %s » affilié à la fiche%s.',
                     $affiliation->collaborateur()->email(),
                     $data['envoyerAcces'] ? ', les accès vont lui être envoyés' : '',
                 ));
@@ -164,7 +164,7 @@ final class FicheCollaborateursController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             try {
                 $ecran->retirer($user, $affiliation);
-                $this->addFlash('success', 'Collaborateur retiré de la fiche.');
+                $this->addFlash('success', 'Utilisateur retiré de la fiche.');
             } catch (\DomainException $exception) {
                 $this->addFlash('warning', $exception->getMessage());
             }
