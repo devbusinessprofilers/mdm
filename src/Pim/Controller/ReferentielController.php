@@ -12,6 +12,7 @@ use App\Pim\Form\SavedViewType;
 use App\Pim\ReadModel\ReferentielCursor;
 use App\Pim\ReadModel\ReferentielLigne;
 use App\Pim\Repository\SavedViewRepository;
+use App\Pim\Service\RechercheSuggestions;
 use App\Pim\Service\ReferentielActionGroupee;
 use App\Pim\Service\ReferentielEcran;
 use App\Pim\Service\ReferentielListeProvider;
@@ -44,6 +45,13 @@ final class ReferentielController extends AbstractController
             'mdm/referentiel.html.twig',
             $ecran->variables($filtres, self::curseur($request, $filtres), null, $actor->id(), self::PAR_PAGE),
         );
+    }
+
+    /** Suggestions de noms de fiches pour l'autocomplétion des champs de recherche. */
+    #[Route('/suggestions', name: 'referentiel_suggestions', methods: ['GET'])]
+    public function suggestions(Request $request, RechercheSuggestions $recherche): Response
+    {
+        return $this->json($recherche->pour($request->query->getString('q')));
     }
 
     #[Route('/lieux', name: 'lieux', methods: ['GET'])]

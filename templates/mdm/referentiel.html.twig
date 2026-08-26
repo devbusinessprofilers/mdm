@@ -216,18 +216,31 @@
     {# ------------------------------------------------------- Barre d'outils #}
     <div class="shrink-0 flex items-center gap-3.5 px-[30px] pt-4 pb-3">
         {# Recherche : vrai champ `f[q]`, rattaché au formulaire de filtres du rail.
-           Le fond vit sur l'enveloppe : un fond opaque sur l'input masquerait la loupe. #}
-        <div class="flex-1 min-w-[220px] max-w-[460px] h-[38px] rounded-full overflow-hidden
-                    inset-ring-1 inset-ring-neutral-200 [&>div]:h-full [&>div]:bg-neutral-100!">
-            <twig:Form:TextInput
-                id="recherche-referentiel"
-                name="f[q]"
-                value="{{ filtres.q }}"
-                leftIcon="magnifying-glass"
-                placeholder="nom · ville · identifiant"
-                class="border-0! rounded-full! h-full!"
-                :inputAttributes="{ form: 'form-filtres' }"
-            />
+           Le fond vit sur l'enveloppe : un fond opaque sur l'input masquerait la loupe.
+           Les suggestions vivent sur une enveloppe relative, hors de l'overflow-hidden qui les rognerait. #}
+        <div class="relative flex-1 min-w-[220px] max-w-[460px]"
+             data-controller="recherche-suggestions"
+             data-recherche-suggestions-url-value="{{ path('app_mdm_referentiel_suggestions') }}">
+            <div class="h-[38px] rounded-full overflow-hidden
+                        inset-ring-1 inset-ring-neutral-200 [&>div]:h-full [&>div]:bg-neutral-100!">
+                <twig:Form:TextInput
+                    id="recherche-referentiel"
+                    name="f[q]"
+                    value="{{ filtres.q }}"
+                    leftIcon="magnifying-glass"
+                    placeholder="nom · ville · identifiant"
+                    class="border-0! rounded-full! h-full!"
+                    :inputAttributes="{
+                        form: 'form-filtres',
+                        'data-recherche-suggestions-target': 'champ',
+                        'data-action': 'input->recherche-suggestions#saisir keydown->recherche-suggestions#clavier focus->recherche-suggestions#saisir',
+                        autocomplete: 'off',
+                        role: 'combobox',
+                        'aria-expanded': 'false',
+                    }"
+                />
+            </div>
+            {% include 'mdm/_recherche_suggestions.html.twig' %}
         </div>
 
         {# ------------------------------------- Vues enregistrées (sélecteur) #}
@@ -287,6 +300,15 @@
                          class="h-[38px]! rounded-full!">Créer une fiche</twig:Button>
         {% endif %}
     </div>
+
+    {# ------------------- Recherche corrigée : la saisie stricte ne donnait rien #}
+    {% if vue.correction %}
+        <div class="shrink-0 mx-[30px] mb-2.5">
+            <twig:Alert icon="info-circle" role="status">
+                Aucun résultat pour «&nbsp;{{ filtres.q }}&nbsp;». Résultats pour&nbsp;: «&nbsp;{{ vue.correction }}&nbsp;».
+            </twig:Alert>
+        </div>
+    {% endif %}
 
     {# Sélection + actions de masse + tableau : un seul formulaire. #}
     {{ form_start(form_selection, { attr: { class: 'flex flex-col flex-1 min-h-0' } }) }}

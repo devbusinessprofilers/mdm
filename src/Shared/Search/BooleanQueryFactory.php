@@ -14,7 +14,7 @@ namespace App\Shared\Search;
  */
 final class BooleanQueryFactory
 {
-    private const MIN_TOKEN_SIZE = 3;
+    public const MIN_TOKEN_SIZE = 3;
 
     public static function fromText(string $text): string
     {

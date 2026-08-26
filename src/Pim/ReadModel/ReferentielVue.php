@@ -23,6 +23,8 @@ final readonly class ReferentielVue
         public array $paysChoices,
         public array $valeursChoices,
         public array $contributeursChoices,
+        /** Recherche réellement exécutée quand la saisie, sans résultat, a été corrigée. */
+        public ?string $correction = null,
     ) {
     }
 }

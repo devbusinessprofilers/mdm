@@ -31,6 +31,9 @@ framework:
             # Surcharges des paramètres applicatifs (table parametre).
             cache.parametres:
                 adapter: cache.app
+            # Vocabulaire de la correction orthographique de la recherche.
+            cache.recherche:
+                adapter: cache.app
 
 when@test:
     framework:
@@ -43,4 +46,8 @@ when@test:
                 cache.metrics:
                     adapter: cache.adapter.array
                 cache.parametres:
+                    adapter: cache.adapter.array
+                # Vocabulaire volatil en test : les fiches d'un test ne doivent
+                # pas alimenter les corrections du suivant.
+                cache.recherche:
                     adapter: cache.adapter.array

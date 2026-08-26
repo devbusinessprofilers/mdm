@@ -25,6 +25,7 @@ final readonly class ReferentielListeProvider
     public function __construct(
         private ReferentielRepository $repository,
         private PublicMediaUrlGenerator $publicUrl,
+        private RechercheCorrecteur $correcteur,
     ) {
     }
 
@@ -32,6 +33,22 @@ final readonly class ReferentielListeProvider
     {
         $limit = max(1, min(100, $limit));
         [$lignes, $nextCursor] = $this->page($filtres, $cursor, $limit);
+
+        $correction = null;
+        if ([] === $lignes) {
+            foreach ($this->filtresCorriges($filtres) as $candidats) {
+                [$lignesCorrigees, $cursorCorrige] = $this->page($candidats, $cursor, $limit);
+                if ([] !== $lignesCorrigees) {
+                    // Le total, les facettes et le curseur suivent la requête
+                    // corrigée ; $filtres d'origine n'est jamais muté (badges,
+                    // formulaires et vues enregistrées affichent la saisie).
+                    $filtres = $candidats;
+                    [$lignes, $nextCursor] = [$lignesCorrigees, $cursorCorrige];
+                    $correction = $candidats->q;
+                    break;
+                }
+            }
+        }
 
         return new ReferentielVue(
             lignes: $lignes,
@@ -42,13 +59,48 @@ final readonly class ReferentielListeProvider
             paysChoices: $this->repository->paysChoices(),
             valeursChoices: $this->repository->valeursChoices($filtres),
             contributeursChoices: $this->repository->contributeursChoices($filtres),
+            correction: $correction,
         );
     }
 
     /** @return list<string> Identifiants (ULID texte) de toutes les fiches du filtre, pour les actions groupées. */
     public function idsPourFiltre(ReferentielFiltres $filtres, int $plafond): array
     {
-        return $this->repository->idsPourFiltre($filtres, $plafond);
+        $ids = $this->repository->idsPourFiltre($filtres, $plafond);
+        if ([] === $ids) {
+            // « Tout le résultat filtré » sur une liste affichée grâce à la
+            // correction doit sélectionner ce que l'utilisateur voit.
+            foreach ($this->filtresCorriges($filtres) as $candidats) {
+                $ids = $this->repository->idsPourFiltre($candidats, $plafond);
+                if ([] !== $ids) {
+                    break;
+                }
+            }
+        }
+
+        return $ids;
+    }
+
+    /**
+     * Clones des filtres portant chaque candidate de correction, de la plus
+     * probable à la moins probable. Déterministe à saisie égale : la pagination
+     * keyset recalcule et resonde à chaque page.
+     *
+     * @return list<ReferentielFiltres>
+     */
+    private function filtresCorriges(ReferentielFiltres $filtres): array
+    {
+        if ('' === trim((string) $filtres->q)) {
+            return [];
+        }
+        $clones = [];
+        foreach ($this->correcteur->corrections((string) $filtres->q) as $corrigee) {
+            $candidats = clone $filtres;
+            $candidats->q = $corrigee;
+            $clones[] = $candidats;
+        }
+
+        return $clones;
     }
 
     /** @return array{precedente: ?string, suivante: ?string} */

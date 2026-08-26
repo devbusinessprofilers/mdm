@@ -1,0 +1,7 @@
+{# Liste des suggestions d'un champ de recherche — les options sont créées par
+   le contrôleur Stimulus recherche-suggestions. À placer dans une enveloppe
+   `relative` qui porte le data-controller, hors de tout conteneur overflow-hidden. #}
+<div data-recherche-suggestions-target="liste" hidden role="listbox"
+     aria-label="Suggestions de fiches"
+     class="absolute left-0 right-0 top-full z-20 mt-1 p-1.5 rounded-[14px] bg-neutral-100
+            shadow-[0_16px_40px_rgba(3,74,94,0.22)] flex flex-col gap-px max-h-72 overflow-y-auto"></div>

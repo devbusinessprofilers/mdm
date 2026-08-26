@@ -51,20 +51,32 @@
                     {{ form_start(recherche_entete) }}
                         {% do recherche_entete.q.setRendered %}
                         {% do recherche_entete.submit.setRendered %}
-                        <div class="flex items-center w-[260px] h-[38px] rounded-full overflow-hidden
-                                    bg-neutral-100 inset-ring-1 inset-ring-neutral-200
-                                    focus-within:inset-ring-primary
-                                    [&>div]:h-full [&>div]:bg-transparent!">
-                            <twig:Button variant="text" size="sm" type="submit" icon="magnifying-glass"
-                                         title="Rechercher dans le référentiel" aria-label="Rechercher"
-                                         class="h-full! px-2.5! rounded-none! hover:bg-primary-4" />
-                            <twig:Form:TextInput
-                                id="recherche-globale-entete"
-                                name="{{ recherche_entete.q.vars.full_name }}"
-                                value="{{ recherche_entete.q.vars.value }}"
-                                placeholder="nom · ville · identifiant"
-                                class="border-0! rounded-none! h-full! pl-0!"
-                            />
+                        <div class="relative w-[260px]"
+                             data-controller="recherche-suggestions"
+                             data-recherche-suggestions-url-value="{{ path('app_mdm_referentiel_suggestions') }}">
+                            <div class="flex items-center h-[38px] rounded-full overflow-hidden
+                                        bg-neutral-100 inset-ring-1 inset-ring-neutral-200
+                                        focus-within:inset-ring-primary
+                                        [&>div]:h-full [&>div]:bg-transparent!">
+                                <twig:Button variant="text" size="sm" type="submit" icon="magnifying-glass"
+                                             title="Rechercher dans le référentiel" aria-label="Rechercher"
+                                             class="h-full! px-2.5! rounded-none! hover:bg-primary-4" />
+                                <twig:Form:TextInput
+                                    id="recherche-globale-entete"
+                                    name="{{ recherche_entete.q.vars.full_name }}"
+                                    value="{{ recherche_entete.q.vars.value }}"
+                                    placeholder="nom · ville · identifiant"
+                                    class="border-0! rounded-none! h-full! pl-0!"
+                                    :inputAttributes="{
+                                        'data-recherche-suggestions-target': 'champ',
+                                        'data-action': 'input->recherche-suggestions#saisir keydown->recherche-suggestions#clavier focus->recherche-suggestions#saisir',
+                                        autocomplete: 'off',
+                                        role: 'combobox',
+                                        'aria-expanded': 'false',
+                                    }"
+                                />
+                            </div>
+                            {% include 'mdm/_recherche_suggestions.html.twig' %}
                         </div>
                     {{ form_end(recherche_entete) }}
                     <a href="{{ path('app_mdm_referentiel_general') }}"

@@ -559,6 +559,51 @@ final class ReferentielControllerTest extends WebTestCase
         self::assertSelectorTextContains('table', 'Le Grand Pavillon Chantilly');
     }
 
+    public function testLaRechercheCorrigeLesFautesQuandLaSaisieStricteNeDonneRien(): void
+    {
+        $client = self::createClient();
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $this->connection = self::getContainer()->get(Connection::class);
+        $this->clearTables();
+
+        $user = new User('recherche-fautes@example.test', ['ROLE_BP_EDITOR']);
+        $user->setPassword('not-used-by-login-user');
+        $entityManager->persist($user);
+        // « Hôtel La Pomme » rend « pomme » légitime dans le vocabulaire : la
+        // correction doit passer par la substitution de mot connu.
+        foreach (['Auberge du Jeu de Paume', 'Hôtel La Pomme'] as $label) {
+            $lieu = new Lieu();
+            $lieu->changeLabel($label);
+            $lieu->fiche()->publishForImport();
+            $entityManager->persist($lieu);
+            $entityManager->flush();
+            self::getContainer()->get(FicheSearchIndexer::class)->index($lieu->fiche());
+        }
+        $client->loginUser($user);
+
+        // « pomme » combiné à « auberge » et « jeu » ne matche rien : la
+        // requête est corrigée vers « paume », la fiche sort, le bandeau
+        // explique — et le champ garde la saisie.
+        $crawler = $client->request('GET', '/referentiel', ['f' => ['q' => 'Auberge du jeu de la pomme']]);
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('table', 'Auberge du Jeu de Paume');
+        self::assertStringContainsString('Résultats pour', $crawler->text(null, true));
+        self::assertStringContainsString('paume', $crawler->text(null, true));
+        self::assertSame('Auberge du jeu de la pomme', $crawler->filter('#recherche-referentiel')->attr('value'));
+
+        // Saisie correcte : pas de bandeau.
+        $crawler = $client->request('GET', '/referentiel', ['f' => ['q' => 'Auberge du Jeu de Paume']]);
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('table', 'Auberge du Jeu de Paume');
+        self::assertStringNotContainsString('Résultats pour', $crawler->text(null, true));
+
+        // Saisie incorrigeable : zéro résultat, pas de bandeau.
+        $crawler = $client->request('GET', '/referentiel', ['f' => ['q' => 'zzzzzzzz']]);
+        self::assertResponseIsSuccessful();
+        self::assertStringNotContainsString('Résultats pour', $crawler->text(null, true));
+        self::assertStringNotContainsString('Auberge du Jeu de Paume', $crawler->text(null, true));
+    }
+
     public function testVueEnregistreePuisSupprimee(): void
     {
         $client = self::createClient();
