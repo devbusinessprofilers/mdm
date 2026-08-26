@@ -84,7 +84,7 @@ final class ImportLegacyCollaborateursCommand extends Command
             ->addOption('limit', null, InputOption::VALUE_REQUIRED, 'Nombre maximum de lignes à traiter.')
             ->addOption('only-syspad', null, InputOption::VALUE_REQUIRED, 'Ne traite que cet Id syspad (debug).')
             ->addOption('batch-size', null, InputOption::VALUE_REQUIRED, 'Taille des lots de flush.', '50')
-            ->addOption('role', null, InputOption::VALUE_REQUIRED, 'Rôle des affiliations créées (manager, administrateur, utilisateur).', FicheAffiliationRole::Utilisateur->value)
+            ->addOption('role', null, InputOption::VALUE_REQUIRED, 'Rôle des affiliations créées, hors premier contact — lui est toujours Manager (manager, administrateur, utilisateur).', FicheAffiliationRole::Utilisateur->value)
             ->addOption('created-by', null, InputOption::VALUE_REQUIRED, 'Email du compte interne auteur des affiliations (défaut : premier super admin).');
     }
 
@@ -118,7 +118,7 @@ final class ImportLegacyCollaborateursCommand extends Command
             'lignes' => 0, 'fiches inconnues' => 0, 'premium activés' => 0, 'premium désactivés' => 0,
             'visibilités appliquées' => 0, 'visibilités inchangées' => 0, 'visibilités absentes' => 0,
             'collaborateurs créés' => 0, 'collaborateurs réutilisés' => 0, 'affiliations créées' => 0,
-            'premiers contacts (tous droits)' => 0,
+            'premiers contacts (Manager, tous droits)' => 0,
             'affiliations existantes' => 0, 'entrées sans email' => 0, 'emails invalides' => 0,
         ];
         $columns = null;
@@ -174,7 +174,8 @@ final class ImportLegacyCollaborateursCommand extends Command
                 $this->applyBusinessPremium($fiche, $cells[$columns[self::HEADER_PREMIUM]] ?? '', $dryRun, $stats, $unknownPremiumValues);
                 $this->applyVisibilite($fiche, $cells[$columns[self::HEADER_VISIBILITE]] ?? '', $dryRun, $stats, $unknownSites);
                 // Fiche vierge : aucune affiliation en base ni créée pendant ce
-                // run → la première entrée valide reçoit les trois droits.
+                // run → la première entrée valide reçoit le rôle Manager et
+                // les trois droits.
                 $ficheVierge = !isset($premierContactAttribue[$fiche->idString()])
                     && 0 === $this->affiliations->count(['fiche' => $fiche]);
                 foreach ($this->entries($cells, $columns) as $entry) {
@@ -182,7 +183,7 @@ final class ImportLegacyCollaborateursCommand extends Command
                     if ($creee && $ficheVierge) {
                         $ficheVierge = false;
                         $premierContactAttribue[$fiche->idString()] = true;
-                        ++$stats['premiers contacts (tous droits)'];
+                        ++$stats['premiers contacts (Manager, tous droits)'];
                     }
                 }
                 if (!$dryRun && ++$sinceFlush >= $batchSize) {
@@ -327,7 +328,7 @@ final class ImportLegacyCollaborateursCommand extends Command
         }
         ++$stats['affiliations créées'];
         if (!$dryRun) {
-            $affiliation = new FicheAffiliation($collaborateur, $fiche, $role, $createdBy, receivesRequests: $premierContact);
+            $affiliation = new FicheAffiliation($collaborateur, $fiche, $premierContact ? FicheAffiliationRole::Manager : $role, $createdBy, receivesRequests: $premierContact);
             if ($premierContact) {
                 $affiliation->changeTraiteContenus(true);
                 $affiliation->changeTraitePaiements(true);

@@ -69,6 +69,9 @@ final class ImportLegacyCollaborateursCommandTest extends KernelTestCase
         self::assertSame([1, 1, 1, 0], $this->droits('premier@example.com'));
         self::assertSame([0, 0, 0, 0], $this->droits('second@example.com'));
         self::assertSame([1, 1, 1, 0], $this->droits('valide@example.com'));
+        self::assertSame('manager', $this->role('premier@example.com'));
+        self::assertSame('utilisateur', $this->role('second@example.com'));
+        self::assertSame('manager', $this->role('valide@example.com'));
         self::assertSame(3, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM pim_fiche_affiliation'));
 
         // Re-run : idempotent, aucune affiliation ni aucun droit supplémentaire.
@@ -98,6 +101,7 @@ final class ImportLegacyCollaborateursCommandTest extends KernelTestCase
 
         self::assertSame([0, 0, 0, 0], $this->droits('existant@example.com'));
         self::assertSame([0, 0, 0, 0], $this->droits('nouveau@example.com'));
+        self::assertSame('utilisateur', $this->role('nouveau@example.com'));
     }
 
     public function testDryRunCompteSansEcrire(): void
@@ -110,7 +114,7 @@ final class ImportLegacyCollaborateursCommandTest extends KernelTestCase
         $tester->execute(['--file' => $file, '--created-by' => self::ADMIN_EMAIL, '--dry-run' => true]);
         self::assertSame(0, $tester->getStatusCode(), $tester->getDisplay());
 
-        self::assertStringContainsString('premiers contacts (tous droits)', $tester->getDisplay());
+        self::assertStringContainsString('premiers contacts (Manager, tous droits)', $tester->getDisplay());
         self::assertSame(0, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM pim_fiche_affiliation'));
         self::assertSame(0, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM pim_fiche_collaborateur'));
     }
@@ -157,6 +161,19 @@ final class ImportLegacyCollaborateursCommandTest extends KernelTestCase
         self::assertIsArray($row, sprintf('Affiliation absente pour %s.', $email));
 
         return array_map(intval(...), array_values($row));
+    }
+
+    private function role(string $email): string
+    {
+        $role = $this->connection->fetchOne(
+            'SELECT a.role FROM pim_fiche_affiliation a
+             JOIN pim_fiche_collaborateur c ON c.id = a.collaborateur_id
+             WHERE c.email = ?',
+            [$email],
+        );
+        self::assertIsString($role, sprintf('Affiliation absente pour %s.', $email));
+
+        return $role;
     }
 
     private function tester(): CommandTester
