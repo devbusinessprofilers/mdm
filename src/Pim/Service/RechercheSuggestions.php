@@ -35,19 +35,12 @@ final readonly class RechercheSuggestions
         $suggestions = $this->labels($q);
         $correction = null;
         if ([] === $suggestions) {
-            // Rien en strict : sonder les candidates de correction jusqu'à la
-            // première qui trouve (« pavilon » → « pavillon ») — avant
-            // d'abandonner le dernier mot, sinon une faute en fin de saisie ne
-            // serait jamais corrigée. Le reste de la requête départage les
-            // voisins ; un mot en cours de frappe (préfixe d'un mot connu)
-            // n'est jamais « corrigé ».
-            foreach ($this->correcteur->corrections($q, dernierTokenPartiel: true) as $corrigee) {
-                $trouvees = $this->labels($corrigee);
-                if ([] !== $trouvees) {
-                    [$suggestions, $correction] = [$trouvees, $corrigee];
-                    break;
-                }
-            }
+            // Rien en strict : résolution par groupes (chaque mot OR ses
+            // voisins, une seule requête) — corrige jusqu'à une faute par mot,
+            // y compris plusieurs mots fautifs à la fois, avant d'abandonner
+            // le dernier mot. Un mot en cours de frappe (préfixe d'un mot
+            // connu) n'est jamais « corrigé ».
+            [$suggestions, $correction] = $this->viaGroupes($q, dernierTokenPartiel: true);
         }
         if ([] === $suggestions) {
             // L'utilisateur est sans doute au milieu du dernier mot (« auberge
@@ -69,6 +62,67 @@ final readonly class RechercheSuggestions
         return ['suggestions' => $suggestions, 'correction' => $correction];
     }
 
+    /**
+     * Recherche corrigée pour une saisie soumise (mots complets), ou null.
+     * Utilisée par la liste du référentiel quand la recherche stricte ne donne
+     * rien : la phrase retournée retraverse le moteur fulltext normal.
+     */
+    public function correction(string $q): ?string
+    {
+        [$labels, $correction] = $this->viaGroupes($q, dernierTokenPartiel: false);
+
+        return [] === $labels ? null : $correction;
+    }
+
+    /**
+     * Résolution par groupes : un nom de fiche satisfaisant, pour chaque mot,
+     * le mot lui-même ou un voisin, est une correction valide — la phrase est
+     * reconstruite depuis le premier nom trouvé.
+     *
+     * @return array{list<string>, ?string} [labels, phrase corrigée]
+     */
+    private function viaGroupes(string $q, bool $dernierTokenPartiel): array
+    {
+        $groupes = $this->correcteur->groupes($q, $dernierTokenPartiel);
+        $corrigeable = array_filter($groupes, static fn (array $g): bool => $g['candidats'] !== [$g['normalise']]);
+        if ([] === $groupes || [] === $corrigeable) {
+            // Aucun groupe n'apporte de candidat nouveau : la requête serait
+            // identique à la recherche stricte qui vient d'échouer.
+            return [[], null];
+        }
+        $labels = $this->repository->labelsParGroupes(
+            array_map(static fn (array $g): array => $g['candidats'], $groupes),
+            $q,
+            self::LIMITE,
+        );
+        if ([] === $labels) {
+            return [[], null];
+        }
+
+        // Élire la correction la plus plausible parmi les noms trouvés (moins
+        // de lettres changées, préfixes préservés) et la remonter en tête.
+        $meilleurIndex = 0;
+        $meilleurPhrase = null;
+        $meilleurScore = null;
+        foreach ($labels as $index => $label) {
+            $correction = $this->correcteur->correctionPourLabel($q, $groupes, $label);
+            if (null === $correction['phrase']) {
+                continue;
+            }
+            $score = [$correction['cout'], -$correction['prefixe'], $index];
+            if (null === $meilleurScore || $score < $meilleurScore) {
+                [$meilleurScore, $meilleurIndex, $meilleurPhrase] = [$score, $index, $correction['phrase']];
+            }
+        }
+        if ($meilleurIndex > 0) {
+            $choisi = $labels[$meilleurIndex];
+            array_splice($labels, $meilleurIndex, 1);
+            array_unshift($labels, $choisi);
+        }
+
+        return [$labels, $meilleurPhrase];
+    }
+
     /** @return list<string> */
     private function labels(string $q): array
     {
@@ -88,8 +142,20 @@ final readonly class RechercheSuggestions
         if (null === $dernier || [] === $tokens) {
             return [];
         }
+        // Les mots de tête passent aussi par les groupes : « monastere royol
+        // de bru » doit corriger « royol » même quand le dernier fragment est
+        // encore en cours de frappe. Le fragment reste un bonus de classement.
+        $groupes = $this->correcteur->groupes(implode(' ', $tokens));
+        if ([] === $groupes) {
+            return $this->repository->labelsContenant($tokens, $q, self::LIMITE, $dernier);
+        }
 
-        return $this->repository->labelsContenant($tokens, $q, self::LIMITE, $dernier);
+        return $this->repository->labelsParGroupes(
+            array_map(static fn (array $g): array => $g['candidats'], $groupes),
+            $q,
+            self::LIMITE,
+            $dernier,
+        );
     }
 
     /**

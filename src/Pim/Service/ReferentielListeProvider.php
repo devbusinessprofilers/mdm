@@ -26,6 +26,7 @@ final readonly class ReferentielListeProvider
         private ReferentielRepository $repository,
         private PublicMediaUrlGenerator $publicUrl,
         private RechercheCorrecteur $correcteur,
+        private RechercheSuggestions $recherche,
     ) {
     }
 
@@ -90,11 +91,20 @@ final readonly class ReferentielListeProvider
      */
     private function filtresCorriges(ReferentielFiltres $filtres): array
     {
-        if ('' === trim((string) $filtres->q)) {
+        $q = trim((string) $filtres->q);
+        if ('' === $q) {
             return [];
         }
+        // La résolution par groupes d'abord (corrige plusieurs mots fautifs à
+        // la fois via les noms de fiches), puis le sondage phrase par phrase
+        // (attrape les fautes qui matchent hors nom : villes, descriptions).
+        $phrases = $this->correcteur->corrections($q);
+        $viaGroupes = $this->recherche->correction($q);
+        if (null !== $viaGroupes) {
+            array_unshift($phrases, $viaGroupes);
+        }
         $clones = [];
-        foreach ($this->correcteur->corrections((string) $filtres->q) as $corrigee) {
+        foreach (array_values(array_unique($phrases)) as $corrigee) {
             $candidats = clone $filtres;
             $candidats->q = $corrigee;
             $clones[] = $candidats;

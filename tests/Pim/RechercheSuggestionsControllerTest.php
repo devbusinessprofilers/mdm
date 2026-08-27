@@ -108,6 +108,33 @@ final class RechercheSuggestionsControllerTest extends WebTestCase
         self::assertSame('grand pavillon', $data['correction']);
     }
 
+    public function testCorrigeDeuxFautesSurDeuxMotsDifferents(): void
+    {
+        // « aubarge » et « jau » fautifs en même temps : la résolution par
+        // groupes explore les combinaisons en une requête.
+        $client = $this->clientAvecFiches();
+
+        $client->request('GET', '/referentiel/suggestions', ['q' => 'aubarge du jau de paume']);
+        self::assertResponseIsSuccessful();
+        $data = json_decode((string) $client->getResponse()->getContent(), true);
+        self::assertContains('Auberge du Jeu de Paume', $data['suggestions']);
+        self::assertSame('auberge du jeu de paume', $data['correction']);
+    }
+
+    public function testCorrigeDeuxFautesDontUneRetombantSurUnMotConnu(): void
+    {
+        // « jeux » et « pomme » existent tous deux ailleurs : aucune
+        // correction mot à mot isolée ne suffit, seule la combinaison
+        // « jeu » + « paume » matche un nom.
+        $client = $this->clientAvecFiches();
+
+        $client->request('GET', '/referentiel/suggestions', ['q' => 'auberge du jeux de pomme']);
+        self::assertResponseIsSuccessful();
+        $data = json_decode((string) $client->getResponse()->getContent(), true);
+        self::assertContains('Auberge du Jeu de Paume', $data['suggestions']);
+        self::assertSame('auberge du jeu de paume', $data['correction']);
+    }
+
     public function testCorrigeLaFauteEnMilieuDeRequete(): void
     {
         // Le repli sur les mots complets ne couvre pas une faute au milieu :
@@ -163,7 +190,7 @@ final class RechercheSuggestionsControllerTest extends WebTestCase
         $user = new User('suggestions@example.test', ['ROLE_BP_EDITOR']);
         $user->setPassword('not-used-by-login-user');
         $entityManager->persist($user);
-        foreach (['Auberge du Jeu de Paume', 'Bistrot du Marché', 'Hôtel La Pomme', 'Le Grand Pavillon Chantilly'] as $label) {
+        foreach (['Auberge du Jeu de Paume', 'Bistrot du Marché', 'Hôtel La Pomme', 'Le Grand Pavillon Chantilly', 'Salle des Jeux Olympiques'] as $label) {
             $lieu = new Lieu();
             $lieu->changeLabel($label);
             $entityManager->persist($lieu);

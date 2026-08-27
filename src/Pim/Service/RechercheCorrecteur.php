@@ -30,6 +30,15 @@ final readonly class RechercheCorrecteur
     /** Plafond de candidates retournées, donc de requêtes sondées par l'appelant. */
     private const MAX_REQUETES = 12;
 
+    /**
+     * Voisins par groupe de candidats — bien plus large que le sondage phrase
+     * par phrase : la base explore toutes les combinaisons en une requête, un
+     * candidat de plus n'ajoute qu'un LIKE. Assez grand pour qu'un voisin à
+     * distance 2 (« paume » depuis « pomme ») survive à la foule des voisins
+     * à distance 1 (somme, homme, comme…).
+     */
+    private const MAX_CANDIDATS_PAR_GROUPE = 16;
+
     public function __construct(private VocabulaireRechercheInterface $vocabulaire)
     {
     }
@@ -147,7 +156,7 @@ final readonly class RechercheCorrecteur
      *
      * @return list<array{mot: string, distance: int, frequence: int}>
      */
-    private function candidats(array $mots, string $normalise): array
+    private function candidats(array $mots, string $normalise, int $max = self::MAX_CANDIDATS_PAR_MOT): array
     {
         $longueur = strlen($normalise);
         $seuil = $longueur <= 4 ? 1 : 2;
@@ -166,7 +175,104 @@ final readonly class RechercheCorrecteur
         }
         usort($candidats, static fn (array $a, array $b): int => [$a['distance'], -$a['frequence'], $a['mot']] <=> [$b['distance'], -$b['frequence'], $b['mot']]);
 
-        return array_slice($candidats, 0, self::MAX_CANDIDATS_PAR_MOT);
+        return array_slice($candidats, 0, $max);
+    }
+
+    /**
+     * Candidats par mot de la saisie, pour une résolution en une requête par
+     * groupes OR (labelsParGroupes) : chaque mot retenu (≥ 3 lettres) devient
+     * un groupe « lui-même s'il est connu + ses voisins » — deux fautes dans
+     * deux mots différents se résolvent ainsi ensemble, là où le sondage
+     * phrase par phrase s'engageait sur un premier voisin possiblement faux.
+     *
+     * @param bool $dernierTokenPartiel Le dernier mot en cours de frappe
+     *                                  (préfixe d'un mot connu) reste seul
+     *                                  dans son groupe : jamais « corrigé ».
+     *
+     * @return list<array{token: string, normalise: string, candidats: non-empty-list<string>}>
+     */
+    public function groupes(string $q, bool $dernierTokenPartiel = false): array
+    {
+        $q = trim($q);
+        if ('' === $q || ctype_digit($q)) {
+            return [];
+        }
+        $tokens = preg_split('/[^\p{L}\p{N}]+/u', $q, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        $mots = $this->vocabulaire->motsParLongueur();
+        if ([] === $tokens || [] === $mots) {
+            return [];
+        }
+
+        $dernier = array_key_last($tokens);
+        $groupes = [];
+        foreach ($tokens as $index => $token) {
+            $normalise = $this->normalise($token);
+            if (strlen($normalise) < BooleanQueryFactory::MIN_TOKEN_SIZE) {
+                continue;
+            }
+            $connu = isset($mots[strlen($normalise)][$normalise]);
+            $candidats = [$normalise];
+            $garde = !$connu && $dernierTokenPartiel && $index === $dernier && $this->prefixeConnu($mots, $normalise);
+            if (!$garde) {
+                foreach ($this->candidats($mots, $normalise, self::MAX_CANDIDATS_PAR_GROUPE) as $candidat) {
+                    $candidats[] = $candidat['mot'];
+                }
+                if (!$connu) {
+                    // Le mot fautif lui-même ne matchera rien d'utile : seuls
+                    // ses voisins comptent — sauf s'il n'en a aucun.
+                    $candidats = count($candidats) > 1 ? array_slice($candidats, 1) : $candidats;
+                }
+            }
+            $groupes[] = ['token' => $token, 'normalise' => $normalise, 'candidats' => array_values(array_unique($candidats))];
+        }
+
+        return $groupes;
+    }
+
+    /**
+     * Correction constatée sur un nom trouvé par groupes : chaque mot de la
+     * saisie remplacé par celui de ses candidats présent dans le nom — aucun
+     * remplacement si le mot tapé y figure déjà. Le coût (distance totale) et
+     * la longueur des préfixes communs départagent les noms candidats : une
+     * faute de frappe épargne rarement les premières lettres.
+     *
+     * @param list<array{token: string, normalise: string, candidats: non-empty-list<string>}> $groupes
+     *
+     * @return array{phrase: ?string, cout: int, prefixe: int}
+     */
+    public function correctionPourLabel(string $q, array $groupes, string $label): array
+    {
+        $motsLabel = array_flip(preg_split('/[^a-z0-9]+/', $this->normalisePhrase($label), -1, PREG_SPLIT_NO_EMPTY) ?: []);
+        $remplacements = [];
+        $cout = 0;
+        $prefixe = 0;
+        foreach ($groupes as $groupe) {
+            $normalise = $groupe['normalise'];
+            if (isset($motsLabel[$normalise])) {
+                continue;
+            }
+            foreach ($groupe['candidats'] as $candidat) {
+                if ($candidat !== $normalise && isset($motsLabel[$candidat])) {
+                    $remplacements[$normalise] = $candidat;
+                    $cout += levenshtein($normalise, $candidat);
+                    $commun = 0;
+                    $max = min(strlen($normalise), strlen($candidat));
+                    while ($commun < $max && $normalise[$commun] === $candidat[$commun]) {
+                        ++$commun;
+                    }
+                    $prefixe += $commun;
+                    break;
+                }
+            }
+        }
+        if ([] === $remplacements) {
+            return ['phrase' => null, 'cout' => 0, 'prefixe' => 0];
+        }
+
+        $tokens = preg_split('/[^\p{L}\p{N}]+/u', trim($q), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        $phrase = array_map(fn (string $token): string => $remplacements[$this->normalise($token)] ?? $token, $tokens);
+
+        return ['phrase' => implode(' ', $phrase), 'cout' => $cout, 'prefixe' => $prefixe];
     }
 
     /**

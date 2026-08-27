@@ -27,17 +27,37 @@ final readonly class RechercheRepository
      */
     public function labelsContenant(array $tokens, string $saisie, int $limite, ?string $motPrefere = null): array
     {
+        return $this->labelsParGroupes(array_map(static fn (string $t): array => [$t], $tokens), $saisie, $limite, $motPrefere);
+    }
+
+    /**
+     * Comme labelsContenant, mais chaque position accepte plusieurs candidats
+     * (le mot tapé et/ou ses corrections possibles) : un nom qui satisfait un
+     * candidat par groupe est une correction valide — la base explore ainsi
+     * toutes les combinaisons en une requête, y compris deux fautes à la fois.
+     *
+     * @param non-empty-list<non-empty-list<string>> $groupes
+     *
+     * @return list<string>
+     */
+    public function labelsParGroupes(array $groupes, string $saisie, int $limite, ?string $motPrefere = null): array
+    {
         $conditions = [];
         $motsEntiers = [];
         $params = ['prefixe' => addcslashes($saisie, '%_\\').'%'];
-        foreach ($tokens as $index => $token) {
-            $conditions[] = sprintf('label LIKE :t%d', $index);
-            $params['t'.$index] = BooleanQueryFactory::likePattern($token);
-            // Bonus de classement : le mot tapé matche un mot entier du nom
-            // (« jeu » vaut plus dans « Jeu de Paume » que dans « Jeunesse »).
-            // Les tokens sortent de preg_split \p{L}\p{N} : rien à échapper.
+        foreach ($groupes as $index => $candidats) {
+            $groupe = [];
+            foreach ($candidats as $rang => $candidat) {
+                $groupe[] = sprintf('label LIKE :t%d_%d', $index, $rang);
+                $params[sprintf('t%d_%d', $index, $rang)] = BooleanQueryFactory::likePattern($candidat);
+            }
+            $conditions[] = '('.implode(' OR ', $groupe).')';
+            // Bonus de classement : un candidat du groupe matche un mot entier
+            // du nom (« jeu » vaut plus dans « Jeu de Paume » que dans
+            // « Jeunesse »). Les candidats sortent de preg_split \p{L}\p{N} ou
+            // du vocabulaire normalisé : rien à échapper.
             $motsEntiers[] = sprintf('(label RLIKE :mot%d)', $index);
-            $params['mot'.$index] = '\\b'.$token.'\\b';
+            $params['mot'.$index] = '\\b('.implode('|', $candidats).')\\b';
         }
         $ordre = '(label LIKE :prefixe) DESC';
         if (null !== $motPrefere && '' !== $motPrefere) {
