@@ -13,9 +13,11 @@ use App\Shared\Outbox\OutboxPublisherInterface;
 use App\Shared\Service\ParametreProviderInterface;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
+use Monolog\Attribute\WithMonologChannel;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
+#[WithMonologChannel('mail')]
 final readonly class PasswordResetManager
 {
     public function __construct(

@@ -1,14 +1,23 @@
 doctrine:
     dbal:
-        url: '%env(resolve:DATABASE_URL)%'
-        schema_filter: '~^(?!(messenger_messages|pim_fiche_code_counter|dam_media_phash_band|sessions)$)~'
+        default_connection: default
+        connections:
+            default:
+                url: '%env(resolve:DATABASE_URL)%'
+                schema_filter: '~^(?!(messenger_messages|pim_fiche_code_counter|dam_media_phash_band|sessions)$)~'
 
-        # IMPORTANT: You MUST configure your server version,
-        # either here or in the DATABASE_URL env var (see .env file)
-        #server_version: '16'
+                # IMPORTANT: You MUST configure your server version,
+                # either here or in the DATABASE_URL env var (see .env file)
+                #server_version: '16'
 
-        profiling_collect_backtrace: '%kernel.debug%'
-        use_savepoints: true
+                profiling_collect_backtrace: '%kernel.debug%'
+                use_savepoints: true
+            # Connexion dédiée aux écritures de logs (DoctrineDbalLogHandler) :
+            # hors des transactions applicatives (un rollback n'emporte pas le
+            # log) et insensible à l'état de la connexion par défaut. Ouverte
+            # paresseusement au premier enregistrement persisté.
+            logs:
+                url: '%env(resolve:DATABASE_URL)%'
     orm:
         auto_generate_proxy_classes: true
         # Lazy objects natifs PHP (remplacent les lazy ghosts var-exporter) :
@@ -86,8 +95,12 @@ doctrine:
 when@test:
     doctrine:
         dbal:
-            # "TEST_TOKEN" is typically set by ParaTest
-            dbname_suffix: '_test%env(default::TEST_TOKEN)%'
+            connections:
+                # "TEST_TOKEN" is typically set by ParaTest
+                default:
+                    dbname_suffix: '_test%env(default::TEST_TOKEN)%'
+                logs:
+                    dbname_suffix: '_test%env(default::TEST_TOKEN)%'
 
 when@prod:
     doctrine:

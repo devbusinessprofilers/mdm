@@ -18,8 +18,10 @@ use App\Vision\Message\ApplyImageEnhancement;
 use App\Vision\Message\EnhanceImage;
 use App\Vision\Repository\ImageEnhancementRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Monolog\Attribute\WithMonologChannel;
 use Psr\Log\LoggerInterface;
 
+#[WithMonologChannel('vision')]
 final readonly class ImageEnhancementManager
 {
     public function __construct(

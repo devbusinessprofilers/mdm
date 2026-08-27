@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Pim\Service\Wikidata;
 
+use Monolog\Attribute\WithMonologChannel;
 use Psr\Log\LoggerInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
@@ -13,6 +14,7 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
  * Une requête unique alimente tout le référentiel ; toute erreur est absorbée
  * (l'enrichissement est un confort) et renvoie une liste vide.
  */
+#[WithMonologChannel('enrichment')]
 final readonly class WikidataChaineClient
 {
     /** Chaînes hôtelières (Q1540363) et marques hôtelières (Q23755436), et leurs sous-classes. */

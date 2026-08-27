@@ -12,6 +12,7 @@ use App\Etl\Service\SalesforceProduitsCsvExporter;
 use App\Pim\Entity\Fiche;
 use App\Pim\Repository\FicheRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Monolog\Attribute\WithMonologChannel;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
@@ -21,6 +22,7 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
  * laisse qu'une ligne à traiter). Traite un lot borné par tic ; le reliquat
  * part au tic suivant.
  */
+#[WithMonologChannel('salesforce')]
 #[AsMessageHandler]
 final readonly class FlushSalesforceExportsHandler
 {

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Etl\Service;
 
 use App\Etl\Enum\SalesforceCsvInterface;
+use Monolog\Attribute\WithMonologChannel;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mime\Email;
@@ -19,6 +20,7 @@ use Symfony\Component\Mime\Email;
  * vide), l'envoi est journalisé puis ignoré : rien ne part en dev/test ni
  * avant le « go » de mise en production.
  */
+#[WithMonologChannel('salesforce')]
 final readonly class SalesforceCsvMailer
 {
     public function __construct(

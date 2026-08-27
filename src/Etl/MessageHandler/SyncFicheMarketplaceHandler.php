@@ -20,11 +20,13 @@ use App\Pim\Enum\StatutFiche;
 use App\Pim\Repository\FicheRepository;
 use App\Shared\Outbox\OutboxPublisherInterface;
 use Doctrine\ORM\EntityManagerInterface;
+use Monolog\Attribute\WithMonologChannel;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Messenger\Exception\UnrecoverableMessageHandlingException;
 use Symfony\Component\Uid\Ulid;
 
+#[WithMonologChannel('marketplace_sync')]
 #[AsMessageHandler]
 final readonly class SyncFicheMarketplaceHandler
 {

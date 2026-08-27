@@ -17,6 +17,7 @@ use App\Pim\Entity\Fiche;
 use App\Pim\Enum\StatutFiche;
 use App\Pim\Repository\FicheRepository;
 use App\Shared\Outbox\OutboxPublisherInterface;
+use Monolog\Attribute\WithMonologChannel;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Messenger\Exception\UnrecoverableMessageHandlingException;
@@ -28,6 +29,7 @@ use Symfony\Component\Uid\Ulid;
  * snapshot passe sous les obligations photos de diffusion, la fiche est
  * dépubliée jusqu'à sa republication PIM.
  */
+#[WithMonologChannel('marketplace_sync')]
 #[AsMessageHandler]
 final readonly class PruneMarketplacePhotosHandler
 {

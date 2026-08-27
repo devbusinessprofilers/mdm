@@ -8,6 +8,7 @@ use App\Pim\Message\EnvoyerRelancePlanifiee;
 use App\Pim\Message\EnvoyerRelancesPlanifiees;
 use App\Pim\Repository\FicheRelancePlanifieeRepository;
 use App\Shared\Service\ParametreProviderInterface;
+use Monolog\Attribute\WithMonologChannel;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Messenger\MessageBusInterface;
@@ -19,6 +20,7 @@ use Symfony\Component\Messenger\MessageBusInterface;
  * (force). Un double fan-out est inoffensif : l'envoi unitaire ne traite que
  * les lignes au statut planifiée.
  */
+#[WithMonologChannel('mail')]
 #[AsMessageHandler]
 final readonly class EnvoyerRelancesPlanifieesHandler
 {

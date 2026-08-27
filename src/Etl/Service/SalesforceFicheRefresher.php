@@ -9,6 +9,7 @@ use App\Etl\Repository\FicheSalesforceRepository;
 use App\Pim\Entity\Fiche;
 use App\Pim\Repository\FicheRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Monolog\Attribute\WithMonologChannel;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -22,6 +23,7 @@ use Psr\Log\LoggerInterface;
  * est écrasé (mise à jour technique, sans transition de workflow) pour
  * toute fiche connue de Salesforce.
  */
+#[WithMonologChannel('salesforce')]
 final class SalesforceFicheRefresher
 {
     private const CONTRACT_FIELDS = [

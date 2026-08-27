@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Account\Service;
 
 use App\Pim\Entity\FicheCollaborateur;
+use Monolog\Attribute\WithMonologChannel;
 use Psr\Log\LoggerInterface;
 use Symfony\Contracts\HttpClient\Exception\ExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
@@ -14,6 +15,7 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
  * configurée (MARKETPLACE_API_URL vide), l'envoi est journalisé et ignoré —
  * le reste du workflow (création PIM, affiliation) n'est jamais bloqué.
  */
+#[WithMonologChannel('marketplace_sync')]
 final readonly class MarketplaceHttpGateway implements MarketplaceCollaborateurGatewayInterface
 {
     public function __construct(

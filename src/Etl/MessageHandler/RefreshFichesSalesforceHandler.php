@@ -7,9 +7,11 @@ namespace App\Etl\MessageHandler;
 use App\Etl\Message\RefreshFichesSalesforce;
 use App\Etl\Service\SalesforceClientInterface;
 use App\Etl\Service\SalesforceFicheRefresher;
+use Monolog\Attribute\WithMonologChannel;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
+#[WithMonologChannel('salesforce')]
 #[AsMessageHandler]
 final readonly class RefreshFichesSalesforceHandler
 {

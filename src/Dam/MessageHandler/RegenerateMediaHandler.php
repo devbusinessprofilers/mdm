@@ -9,9 +9,11 @@ use App\Dam\Message\RegenerateMedia;
 use App\Dam\Repository\MediaAssetRepository;
 use App\Dam\Service\MediaProcessingService;
 use App\Dam\Service\MediaAnalysisService;
+use Monolog\Attribute\WithMonologChannel;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
+#[WithMonologChannel('vision')]
 #[AsMessageHandler]
 final readonly class RegenerateMediaHandler
 {

@@ -11,6 +11,7 @@ use App\Ocr\Repository\DocumentExtractionRepository;
 use App\Ocr\Service\OcrReviewException;
 use App\Ocr\Service\OcrSuggestionApplier;
 use App\Shared\Service\ParametreProviderInterface;
+use Monolog\Attribute\WithMonologChannel;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
@@ -21,6 +22,7 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
  * Une valeur refusée par les validations métier reste simplement en
  * attente d'arbitrage humain.
  */
+#[WithMonologChannel('enrichment')]
 #[AsMessageHandler]
 final readonly class AutoApplyOcrSuggestionsHandler
 {

@@ -18,9 +18,11 @@ use App\Shared\Service\PrivateObjectStorageInterface;
 use App\Vision\Entity\ImageRecognition;
 use App\Vision\Service\ImageRecognitionManager;
 use Doctrine\ORM\EntityManagerInterface;
+use Monolog\Attribute\WithMonologChannel;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
+#[WithMonologChannel('vision')]
 #[AsMessageHandler]
 final readonly class MediaUploadedHandler
 {

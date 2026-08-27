@@ -9,9 +9,11 @@ use App\Account\Repository\AccountInvitationRepository;
 use App\Account\Repository\PasswordResetRequestRepository;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
+use Monolog\Attribute\WithMonologChannel;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
+#[WithMonologChannel('mail')]
 final readonly class AccountInvitationManager
 {
     public function __construct(

@@ -33,6 +33,7 @@ use App\Pim\Service\Wikidata\WikidataChaineClient;
 use App\Shared\Outbox\OutboxPublisherInterface;
 use App\Shared\Service\ParametreProviderInterface;
 use Doctrine\ORM\EntityManagerInterface;
+use Monolog\Attribute\WithMonologChannel;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Uid\Ulid;
@@ -46,6 +47,7 @@ use Symfony\Component\Uid\Ulid;
  * atterrissent dans le bloc « Suggestions en attente » de la fiche et l'onglet
  * Conflits de /qualite ; l'adresse repart par le flux BAN habituel.
  */
+#[WithMonologChannel('enrichment')]
 #[AsMessageHandler]
 final readonly class EnrichirFicheHandler
 {

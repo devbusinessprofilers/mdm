@@ -14,11 +14,13 @@ use App\Etl\Service\MarketplaceSyncScheduler;
 use App\Pim\Entity\Fiche;
 use App\Pim\Enum\StatutFiche;
 use App\Pim\Repository\FicheRepository;
+use Monolog\Attribute\WithMonologChannel;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Messenger\Exception\UnrecoverableMessageHandlingException;
 use Symfony\Component\Uid\Ulid;
 
+#[WithMonologChannel('marketplace_sync')]
 #[AsMessageHandler]
 final readonly class RemoveFicheFromMarketplaceHandler
 {

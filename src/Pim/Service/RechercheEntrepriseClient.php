@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Pim\Service;
 
+use Monolog\Attribute\WithMonologChannel;
 use Psr\Log\LoggerInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Contracts\HttpClient\ResponseInterface;
@@ -17,6 +18,7 @@ use Symfony\Contracts\HttpClient\ResponseInterface;
  * jamais bloquant), propagée aux scans d'enrichissement qui doivent la
  * distinguer d'un « aucun résultat ».
  */
+#[WithMonologChannel('enrichment')]
 final class RechercheEntrepriseClient
 {
     /** L'API publique est limitée à 7 req/s : on lisse en dessous. */
