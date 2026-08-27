@@ -10,19 +10,20 @@ use OpenSpout\Reader\XLSX\Options;
 use OpenSpout\Reader\XLSX\Reader;
 
 /**
- * Lit les fichiers d'import de fiches : XLSX (première feuille uniquement) ou CSV.
- * Les numéros de lignes sont des numéros d'enregistrement (1 = en-têtes) : en CSV,
- * un champ quoté multiligne compte pour un seul enregistrement, le numéro peut donc
- * différer du numéro de ligne physique du fichier. Les lignes vides et celles
- * commençant par # sont ignorées.
+ * Lit les fichiers d'import de fiches : XLSX (première feuille par défaut,
+ * ou une feuille nommée — l'import en masse lit la feuille de sa gamme) ou
+ * CSV. Les numéros de lignes sont des numéros d'enregistrement (1 = en-têtes) :
+ * en CSV, un champ quoté multiligne compte pour un seul enregistrement, le
+ * numéro peut donc différer du numéro de ligne physique du fichier. Les
+ * lignes vides et celles commençant par # sont ignorées.
  */
 final class ImportCsvReader
 {
     /** @return list<string> en-têtes de la ligne 1 */
-    public function headers(string $path): array
+    public function headers(string $path, ?string $sheet = null): array
     {
         if (self::isXlsx($path)) {
-            foreach ($this->xlsxCells($path) as $cells) {
+            foreach ($this->xlsxCells($path, $sheet) as $cells) {
                 return array_map(static fn (string $cell): string => trim($cell), $cells);
             }
 
@@ -51,16 +52,16 @@ final class ImportCsvReader
      *
      * @return \Generator<RawCsvRow>
      */
-    public function rows(string $path, array $headers, int $fromLine): \Generator
+    public function rows(string $path, array $headers, int $fromLine, ?string $sheet = null): \Generator
     {
-        return self::isXlsx($path) ? $this->xlsxRows($path, $headers, $fromLine) : $this->csvRows($path, $headers, $fromLine);
+        return self::isXlsx($path) ? $this->xlsxRows($path, $headers, $fromLine, $sheet) : $this->csvRows($path, $headers, $fromLine);
     }
 
     /** @param list<string> $headers */
-    public function countDataLines(string $path, array $headers): int
+    public function countDataLines(string $path, array $headers, ?string $sheet = null): int
     {
         $count = 0;
-        foreach ($this->rows($path, $headers, 2) as $_row) {
+        foreach ($this->rows($path, $headers, 2, $sheet) as $_row) {
             ++$count;
         }
 
@@ -72,9 +73,9 @@ final class ImportCsvReader
      *
      * @return \Generator<RawCsvRow>
      */
-    private function xlsxRows(string $path, array $headers, int $fromLine): \Generator
+    private function xlsxRows(string $path, array $headers, int $fromLine, ?string $sheet = null): \Generator
     {
-        foreach ($this->xlsxCells($path) as $lineNumber => $cells) {
+        foreach ($this->xlsxCells($path, $sheet) as $lineNumber => $cells) {
             if ($lineNumber < max(2, $fromLine) || !self::isDataCells($cells)) {
                 continue;
             }
@@ -84,11 +85,12 @@ final class ImportCsvReader
     }
 
     /**
-     * Cellules normalisées en chaînes de la première feuille, indexées par numéro de ligne physique.
+     * Cellules normalisées en chaînes, indexées par numéro de ligne physique :
+     * la première feuille par défaut, ou la feuille nommée demandée.
      *
      * @return \Generator<int, list<string>>
      */
-    private function xlsxCells(string $path): \Generator
+    private function xlsxCells(string $path, ?string $sheetName = null): \Generator
     {
         if (!is_readable($path)) {
             throw new \RuntimeException('Fichier d’import illisible.');
@@ -103,13 +105,21 @@ final class ImportCsvReader
         }
 
         try {
+            $trouvee = false;
             foreach ($reader->getSheetIterator() as $sheet) {
+                if (null !== $sheetName && $sheet->getName() !== $sheetName) {
+                    continue;
+                }
+                $trouvee = true;
                 foreach ($sheet->getRowIterator() as $lineNumber => $row) {
                     yield $lineNumber => array_values(array_map(self::stringify(...), $row->toArray()));
                 }
 
-                // Seule la première feuille (« Données ») est importée.
+                // Une seule feuille par lecture (« Données », ou la gamme demandée).
                 break;
+            }
+            if (!$trouvee) {
+                throw new \RuntimeException(sprintf('Feuille « %s » introuvable dans le classeur.', (string) $sheetName));
             }
         } finally {
             $reader->close();

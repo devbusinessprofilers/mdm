@@ -1,0 +1,92 @@
+{#
+    Rail de l'écran Outils, partagé entre le journal des traitements et
+    l'onglet Import en masse. Variables attendues :
+    - rail_actif : 'journal' | 'import_masse' (l'onglet Outils courant)
+    - famille : famille du journal filtrée (null hors filtre)
+    - familles : libellés des familles du journal
+    - total : nombre de lignes du journal (null = badge masqué)
+    - journal_limit : plafond du journal
+    - outbox_en_attente : messages outbox en attente
+#}
+
+{% set a_venir = 'Fonction à venir — en développement' %}
+{% set famille_icones = { 'traduction': 'list', 'media': 'images', 'enrichissement': 'ai' } %}
+{# import et ocr : familles sans entrée dans le rail, leurs lignes restent dans le journal. #}
+{% set familles_masquees = ['import', 'ocr'] %}
+
+<nav class="flex flex-col shrink-0 box-border w-[328px] pl-5 pr-3 py-4 gap-4 overflow-clip"
+     aria-label="Outils et familles du journal">
+    <div class="flex flex-col gap-1">
+        <twig:Typography variant="body" bold class="pl-2 pr-4">Outils</twig:Typography>
+        <div class="flex flex-col">
+            {# Reprise du classeur d'export du référentiel (mode écrasement). #}
+            <a href="{{ path('app_etl_import_masse') }}"
+               class="group/onglet flex items-center gap-2 box-border px-4 py-2 rounded-xs overflow-hidden cursor-pointer
+                      hover:bg-primary-4 aria-[current=page]:bg-linear-(--primary-gradient) aria-[current=page]:hover:bg-none"
+               {{ rail_actif == 'import_masse' ? 'aria-current="page"' : '' }}>
+                <twig:Icon name="upload-simple" aria-hidden="true"
+                           class="shrink-0 self-center w-4 h-4 mx-1 text-primary group-aria-[current=page]/onglet:text-neutral-100" />
+                <twig:Typography variant="body" bold ellipsis textColor="primary-3"
+                                 class="flex-1 min-w-0 group-aria-[current=page]/onglet:text-neutral-100!">Import en masse</twig:Typography>
+            </a>
+
+            <a href="{{ path('app_mdm_outils') }}"
+               class="group/onglet flex items-center gap-2 box-border px-4 py-2 rounded-xs overflow-hidden cursor-pointer
+                      hover:bg-primary-4 aria-[current=page]:bg-linear-(--primary-gradient) aria-[current=page]:hover:bg-none"
+               {{ rail_actif == 'journal' and famille is null ? 'aria-current="page"' : '' }}>
+                <twig:Icon name="spinner" aria-hidden="true"
+                           class="shrink-0 self-center w-4 h-4 mx-1 text-primary group-aria-[current=page]/onglet:text-neutral-100" />
+                <twig:Typography variant="body" bold ellipsis textColor="primary-3"
+                                 class="flex-1 min-w-0 group-aria-[current=page]/onglet:text-neutral-100!">Journal des traitements</twig:Typography>
+                {# Le journal est plafonné : « 1000+ » quand il y a davantage de traitements. #}
+                {% if total is not null %}
+                    <twig:Typography variant="body-xs" bold textColor="neutral-500"
+                                     title="{{ total >= journal_limit ? 'Journal plafonné aux ' ~ journal_limit ~ ' traitements les plus récents' : '' }}"
+                                     class="shrink-0 px-[7px] py-0.5 rounded-lg bg-neutral-200
+                                            group-aria-[current=page]/onglet:bg-neutral-100
+                                            group-aria-[current=page]/onglet:text-primary-3!">{{ total }}{{ total >= journal_limit ? '+' : '' }}</twig:Typography>
+                {% endif %}
+            </a>
+
+            {# Campagnes IA : pas de back → grisée. #}
+            <span title="{{ a_venir }}" aria-disabled="true"
+                  class="flex items-center gap-2 box-border px-4 py-2 rounded-xs overflow-hidden opacity-60 cursor-not-allowed">
+                <twig:Icon name="rocket" aria-hidden="true" class="shrink-0 self-center w-4 h-4 mx-1 text-neutral-400" />
+                <twig:Typography variant="body" bold ellipsis textColor="neutral-500" class="flex-1 min-w-0">Campagnes IA</twig:Typography>
+                <twig:Typography variant="body-xs" bold textColor="neutral-500"
+                                 class="shrink-0 px-[7px] py-0.5 rounded-lg bg-neutral-200">À venir</twig:Typography>
+            </span>
+
+        </div>
+    </div>
+
+    <div class="flex flex-col gap-1">
+        <twig:Typography variant="body" bold class="pl-2 pr-4">Familles du journal</twig:Typography>
+        <div class="flex flex-col">
+            {% for cle, libelle in familles %}
+                {% if cle not in familles_masquees %}
+                    <a href="{{ path('app_mdm_outils', { famille: cle }) }}"
+                       class="group/onglet flex items-center gap-2 box-border px-4 py-2 rounded-xs overflow-hidden cursor-pointer
+                              hover:bg-primary-4 aria-[current=page]:bg-linear-(--primary-gradient) aria-[current=page]:hover:bg-none"
+                       {{ rail_actif == 'journal' and famille == cle ? 'aria-current="page"' : '' }}>
+                        <twig:Icon name="{{ famille_icones[cle]|default('clipboard') }}" aria-hidden="true"
+                                   class="shrink-0 self-center w-4 h-4 mx-1 text-primary group-aria-[current=page]/onglet:text-neutral-100" />
+                        <twig:Typography variant="body" bold ellipsis textColor="primary-3"
+                                         class="flex-1 min-w-0 group-aria-[current=page]/onglet:text-neutral-100!">{{ libelle }}</twig:Typography>
+                    </a>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <span class="flex-1"></span>
+
+    {% if outbox_en_attente > 0 %}
+        <div class="shrink-0 flex flex-col gap-1.5 mr-1 p-3.5 rounded-[12px] bg-primary-4">
+            <twig:Typography variant="body-sm" bold textColor="primary-3">Outbox</twig:Typography>
+            <twig:Typography variant="body-sm" textColor="neutral-500" class="text-pretty">
+                {{- outbox_en_attente }} message{{ outbox_en_attente > 1 ? 's' : '' }} en attente de départ vers la marketplace.
+            </twig:Typography>
+        </div>
+    {% endif %}
+</nav>

@@ -81,6 +81,20 @@ final class ValeurAttributRepository extends ServiceEntityRepository
             ->getOneOrNullResult();
     }
 
+    /** Résolution par libellé (import en masse : le fichier d'export porte les libellés). */
+    public function findPrestataireByLabel(string $label): ?ValeurAttribut
+    {
+        $resultats = $this->createPrestataireQueryBuilder()
+            ->andWhere('LOWER(value.label) = LOWER(:valueLabel)')
+            ->setParameter('valueLabel', trim($label))
+            ->setMaxResults(2)
+            ->getQuery()
+            ->getResult();
+
+        // Libellé ambigu (deux prestataires homonymes) : ne pas deviner.
+        return 1 === count($resultats) ? $resultats[0] : null;
+    }
+
     public function createPrestataireQueryBuilder(): QueryBuilder
     {
         return $this->createQueryBuilder('value')

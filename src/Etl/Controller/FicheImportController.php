@@ -5,9 +5,7 @@ declare(strict_types=1);
 namespace App\Etl\Controller;
 
 use App\Audit\AuditContext;
-use App\Etl\Entity\FicheImportJob;
 use App\Etl\Form\FicheImportUploadType;
-use App\Etl\Repository\FicheImportJobErrorRepository;
 use App\Etl\Repository\FicheImportJobRepository;
 use App\Etl\Service\FicheImportJobManager;
 use App\Pim\Enum\TypeFiche;
@@ -22,7 +20,6 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
-use Symfony\Component\Uid\Ulid;
 
 #[Route('/admin/import-fiches', name: 'app_etl_import_')]
 #[IsGranted('ROLE_ADMIN')]
@@ -81,27 +78,6 @@ final class FicheImportController extends AbstractController
         return $response;
     }
 
-    #[Route('/{id}', name: 'show', requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'], methods: ['GET'])]
-    public function show(
-        string $id,
-        Request $request,
-        FicheImportJobRepository $jobs,
-        FicheImportJobErrorRepository $errors,
-    ): Response {
-        $job = $jobs->find(Ulid::fromString($id));
-        if (!$job instanceof FicheImportJob) {
-            throw $this->createNotFoundException('Import introuvable.');
-        }
-
-        $page = max(1, $request->query->getInt('page', 1));
-        $limit = 100;
-
-        return $this->render('etl/import/show.html.twig', [
-            'job' => $job,
-            'errors' => $errors->findPageForJob($job, $limit, ($page - 1) * $limit),
-            'errorTotal' => $errors->countForJob($job),
-            'page' => $page,
-            'limit' => $limit,
-        ]);
-    }
+    // Le détail d'un import (rapport d'erreurs) vit hors /admin :
+    // FicheImportDetailController, route app_etl_import_show (/outils/imports/{id}).
 }

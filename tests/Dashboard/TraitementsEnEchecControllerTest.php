@@ -117,7 +117,7 @@ final class TraitementsEnEchecControllerTest extends WebTestCase
 
         // Chaque ligne pointe vers l'écran de détail où vit la relance.
         $ficheId = $lieu->fiche()->idString();
-        self::assertGreaterThan(0, $crawler->filter('a[href="/admin/import-fiches/'.$import->idString().'"]')->count());
+        self::assertGreaterThan(0, $crawler->filter('a[href="/outils/imports/'.$import->idString().'"]')->count());
         self::assertGreaterThan(0, $crawler->filter('a[href="/referentiel/fiche/'.$ficheId.'/ocr/'.$extraction->id().'"]')->count());
         self::assertGreaterThan(0, $crawler->filter('a[href="/referentiel/fiche/'.$ficheId.'/traductions"]')->count());
         self::assertGreaterThan(0, $crawler->filter('a[href="/admin/dam?filter=failed"]')->count());

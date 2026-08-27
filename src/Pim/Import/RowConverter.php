@@ -19,7 +19,12 @@ final class RowConverter
     private const TRUE_VALUES = ['1', 'oui', 'true', 'vrai'];
     private const FALSE_VALUES = ['0', 'non', 'false', 'faux'];
 
-    public function convert(FicheImportSchemaInterface $schema, RawCsvRow $row): ConvertedRow
+    /**
+     * En mode écrasement (import en masse du fichier d'export), le fichier
+     * fait foi : une cellule vide vide le champ (au lieu de « ne rien
+     * changer »), et les colonnes LOV acceptent les libellés comme les codes.
+     */
+    public function convert(FicheImportSchemaInterface $schema, RawCsvRow $row, bool $ecrasement = false): ConvertedRow
     {
         $errors = [];
         $fields = [];
@@ -29,6 +34,16 @@ final class RowConverter
         foreach ($schema->ficheColumns() as $column) {
             $raw = $row->cell($column->header);
             if ('' === $raw) {
+                // Écrasement : la cellule vide vaut consigne de vidage — mais
+                // seulement pour une colonne réellement présente dans le
+                // fichier, vidable, et hors identifiants (code, label).
+                if ($ecrasement
+                    && $column->nullable
+                    && !in_array($column->header, ['code', 'label'], true)
+                    && array_key_exists($column->header, $row->cells)
+                ) {
+                    $fields[] = new ConvertedValue($column, self::emptyValueFor($column), clear: true);
+                }
                 continue;
             }
 
@@ -52,7 +67,7 @@ final class RowConverter
             }
 
             $error = null;
-            $value = $this->parse($column, $raw, $lovChoices, $error);
+            $value = $this->parse($column, $raw, $lovChoices, $error, $ecrasement);
             if (null !== $error) {
                 $errors[] = new RowError($row->lineNumber, $column->header, $error);
                 continue;
@@ -74,7 +89,7 @@ final class RowConverter
                     }
                     $filled = true;
                     $error = null;
-                    $value = $this->parse($column, $raw, $lovChoices, $error);
+                    $value = $this->parse($column, $raw, $lovChoices, $error, $ecrasement);
                     if (null !== $error) {
                         $errors[] = new RowError($row->lineNumber, $collection->header($index, $column), $error);
                         continue;
@@ -94,6 +109,12 @@ final class RowConverter
             }
             if ($touched) {
                 $collections[$collection->prefix] = $entries;
+            } elseif ($ecrasement && [] !== $collection->columns
+                && array_key_exists($collection->header(1, $collection->columns[0]), $row->cells)
+            ) {
+                // Écrasement : la collection est dans le fichier mais tous ses
+                // groupes sont vides — elle se remplace par rien.
+                $collections[$collection->prefix] = [];
             }
         }
 
@@ -101,7 +122,7 @@ final class RowConverter
     }
 
     /** @param array<string, array<string, string>> $lovChoices */
-    private function parse(ColumnDefinition $column, string $raw, array $lovChoices, ?string &$error): mixed
+    private function parse(ColumnDefinition $column, string $raw, array $lovChoices, ?string &$error, bool $ecrasement = false): mixed
     {
         switch ($column->kind) {
             case ColumnKind::Text:
@@ -180,8 +201,11 @@ final class RowConverter
 
                 return $value;
             case ColumnKind::LovMono:
-                $code = strtoupper($raw);
-                if (null !== $column->lovAttribute && !isset($lovChoices[$column->lovAttribute][$code])) {
+                if (null === $column->lovAttribute) {
+                    return strtoupper($raw);
+                }
+                $code = self::resoudreCodeLov($raw, $lovChoices[$column->lovAttribute] ?? [], $ecrasement);
+                if (null === $code) {
                     $error = sprintf('Code LOV inconnu pour %s.', $column->lovAttribute);
 
                     return null;
@@ -189,20 +213,28 @@ final class RowConverter
 
                 return $code;
             case ColumnKind::LovMulti:
-                $codes = self::splitList($raw, true);
-                foreach ($codes as $code) {
-                    if (null !== $column->lovAttribute && !isset($lovChoices[$column->lovAttribute][$code])) {
-                        $error = sprintf('Code LOV inconnu pour %s : %s.', $column->lovAttribute, $code);
+                $codes = [];
+                foreach (self::splitList($raw, false) as $brut) {
+                    if (null === $column->lovAttribute) {
+                        $codes[] = strtoupper($brut);
+                        continue;
+                    }
+                    $code = self::resoudreCodeLov($brut, $lovChoices[$column->lovAttribute] ?? [], $ecrasement);
+                    if (null === $code) {
+                        $error = sprintf('Code LOV inconnu pour %s : %s.', $column->lovAttribute, $brut);
 
                         return null;
                     }
+                    $codes[] = $code;
                 }
 
                 return $codes;
             case ColumnKind::StringList:
                 return self::splitList($raw, false);
             case ColumnKind::Prestataire:
-                return strtoupper($raw);
+                // Écrasement : la casse d'un libellé compte, le processeur
+                // résout code puis libellé.
+                return $ecrasement ? trim($raw) : strtoupper($raw);
             case ColumnKind::SitesDiffusion:
                 // Libellés résolus sur le référentiel par le processeur ; le
                 // retour-ligne est accepté en plus du | (colonne « Attribution
@@ -212,6 +244,30 @@ final class RowConverter
                     static fn (string $value): bool => '' !== $value,
                 ));
         }
+    }
+
+    /**
+     * Code LOV depuis un code (comportement historique) ou, en écrasement,
+     * depuis un libellé — le format d'export écrit les libellés.
+     *
+     * @param array<string, string> $choices code => libellé
+     */
+    private static function resoudreCodeLov(string $raw, array $choices, bool $ecrasement): ?string
+    {
+        $code = strtoupper(trim($raw));
+        if (isset($choices[$code])) {
+            return $code;
+        }
+        if ($ecrasement) {
+            $cherche = mb_strtolower(trim($raw));
+            foreach ($choices as $candidat => $libelle) {
+                if (mb_strtolower($libelle) === $cherche) {
+                    return (string) $candidat;
+                }
+            }
+        }
+
+        return null;
     }
 
     private static function emptyValueFor(ColumnDefinition $column): mixed

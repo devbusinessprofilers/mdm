@@ -4,7 +4,12 @@
 
 {% block corps %}
 <main class="page page-narrow">
-    <a class="back-link" href="{{ path('app_etl_import_index') }}">← Retour aux imports</a>
+    {# L'écran d'upload par modèle reste sous /admin ; les autres reviennent à l'onglet Outils. #}
+    {% if is_granted('ROLE_ADMIN') and not job.estEcrasement %}
+        <a class="back-link" href="{{ path('app_etl_import_index') }}">← Retour aux imports</a>
+    {% else %}
+        <a class="back-link" href="{{ path('app_etl_import_masse') }}">← Retour à l'import en masse</a>
+    {% endif %}
     <header class="page-header">
         <div>
             <p class="page-kicker">Import de fiches — {{ job.type.value }}</p>

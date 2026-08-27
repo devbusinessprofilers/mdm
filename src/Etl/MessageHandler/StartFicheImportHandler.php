@@ -10,6 +10,7 @@ use App\Etl\Message\ProcessFicheImportBatch;
 use App\Etl\Message\StartFicheImport;
 use App\Etl\Repository\FicheImportJobRepository;
 use App\Etl\Service\ImportCsvReader;
+use App\Pim\Export\FicheExportXlsxGenerator;
 use App\Pim\Import\FicheImportTemplateGenerator;
 use App\Shared\Outbox\OutboxPublisherInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
@@ -40,9 +41,12 @@ final readonly class StartFicheImportHandler
         }
 
         $path = $this->importDir.'/'.$job->storagePath();
+        // Import en masse : le fichier d'export est multi-feuilles, chaque
+        // job lit la feuille de sa gamme.
+        $sheet = $job->estEcrasement() ? FicheExportXlsxGenerator::nomFeuille($job->type()) : null;
 
         try {
-            $headers = $this->reader->headers($path);
+            $headers = $this->reader->headers($path, $sheet);
         } catch (\RuntimeException $exception) {
             $job->fail($exception->getMessage());
 
@@ -64,15 +68,20 @@ final readonly class StartFicheImportHandler
 
             return;
         }
-        foreach (['code', 'label'] as $required) {
-            if (!in_array($required, $headers, true)) {
-                $job->fail(sprintf('La colonne %s est obligatoire.', $required));
+        // Import en masse : le fichier peut ne porter que la colonne code et
+        // les colonnes à modifier — `label` n'est exigé que par les lignes de
+        // création, contrôlées ligne à ligne. L'import par modèle garde ses
+        // deux colonnes obligatoires.
+        $required = $job->estEcrasement() ? ['code'] : ['code', 'label'];
+        foreach ($required as $colonne) {
+            if (!in_array($colonne, $headers, true)) {
+                $job->fail(sprintf('La colonne %s est obligatoire.', $colonne));
 
                 return;
             }
         }
 
-        $total = $this->reader->countDataLines($path, $headers);
+        $total = $this->reader->countDataLines($path, $headers, $sheet);
         if (0 === $total) {
             $job->fail('Aucune ligne de données dans le fichier.');
 

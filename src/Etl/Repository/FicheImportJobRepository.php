@@ -21,4 +21,18 @@ final class FicheImportJobRepository extends ServiceEntityRepository
     {
         return $this->findBy([], ['createdAt' => 'DESC'], max(1, min(200, $limit)));
     }
+
+    /**
+     * Historique de l'onglet Import en masse : ses seuls imports (écrasement).
+     *
+     * @return list<FicheImportJob>
+     */
+    public function findRecentEcrasement(int $limit = 50): array
+    {
+        return $this->findBy(
+            ['mode' => FicheImportJob::MODE_ECRASEMENT],
+            ['createdAt' => 'DESC'],
+            max(1, min(200, $limit)),
+        );
+    }
 }

@@ -10,6 +10,7 @@ use App\Etl\Enum\ImportJobStatus;
 use App\Etl\Message\ProcessFicheImportBatch;
 use App\Etl\Repository\FicheImportJobRepository;
 use App\Etl\Service\ImportCsvReader;
+use App\Pim\Export\FicheExportXlsxGenerator;
 use App\Pim\Import\Dto\RowAction;
 use App\Pim\Import\FicheImportRowProcessor;
 use App\Shared\Outbox\OutboxPublisherInterface;
@@ -44,9 +45,10 @@ final readonly class ProcessFicheImportBatchHandler
         }
 
         $path = $this->importDir.'/'.$job->storagePath();
+        $sheet = $job->estEcrasement() ? FicheExportXlsxGenerator::nomFeuille($job->type()) : null;
 
         try {
-            $headers = $this->reader->headers($path);
+            $headers = $this->reader->headers($path, $sheet);
         } catch (\RuntimeException $exception) {
             $job->fail($exception->getMessage());
 
@@ -60,14 +62,14 @@ final readonly class ProcessFicheImportBatchHandler
         $nextLine = null;
         $count = 0;
 
-        foreach ($this->reader->rows($path, $headers, $message->fromLine) as $row) {
+        foreach ($this->reader->rows($path, $headers, $message->fromLine, $sheet) as $row) {
             if ($count >= self::BATCH_SIZE) {
                 $nextLine = $row->lineNumber;
                 break;
             }
             ++$count;
 
-            $outcome = $this->rowProcessor->process($job->type(), $row);
+            $outcome = $this->rowProcessor->process($job->type(), $row, $job->estEcrasement());
             if (RowAction::Failed === $outcome->action) {
                 // Le processeur a pu vider l'EntityManager : recharger le job avant d'y rattacher les erreurs.
                 $job = $this->findJob($message->jobId) ?? throw new \RuntimeException('Job d’import disparu en cours de traitement.');

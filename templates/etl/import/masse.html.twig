@@ -1,0 +1,150 @@
+{% extends 'mdm/base.html.twig' %}
+
+{#
+    Onglet « Import en masse » de l'écran Outils : reprise d'un classeur issu
+    de l'export du référentiel (mode écrasement). Le rail est celui d'Outils,
+    l'onglet est marqué courant.
+#}
+
+{% block title %}Outils · Import en masse{% endblock %}
+
+{% block rail %}
+    {{ include('dashboard/_outils_rail.html.twig', {
+        rail_actif: 'import_masse',
+        famille: null,
+        familles: familles,
+        total: null,
+        journal_limit: journal_limit,
+        outbox_en_attente: outbox_en_attente,
+    }) }}
+{% endblock %}
+
+{% block contenu %}
+<main class="flex flex-col h-full min-h-0 overflow-y-auto scrollbar">
+
+    <div class="shrink-0 flex items-end justify-between gap-6 px-10 pt-[22px] pb-4">
+        <div class="flex flex-col gap-1 min-w-0 max-w-[720px]">
+            <twig:Typography variant="heading-2" element="h1"
+                             class="sm:text-[1.625rem]! sm:leading-[2.125rem]! font-[700]!">Import en masse</twig:Typography>
+            <twig:Typography variant="body" element="p" textColor="neutral-500">
+                Reprise d'un classeur issu de l'export du référentiel : mise à jour écrasante ou création de fiches, par gamme.
+            </twig:Typography>
+        </div>
+    </div>
+
+    <div class="flex-1 min-h-0 flex flex-col gap-4 px-10 pb-8">
+
+        {# ---- Cartes de synthèse : état des files Messenger (workers), ----
+             ---- rechargées seules toutes les ~10 s, comme sur le journal. ---- #}
+        {{ include('dashboard/_outils_indicateurs.html.twig') }}
+
+        {# ---- Un seul bloc : les règles du fichier, puis le formulaire d'envoi. ---- #}
+        <div class="shrink-0 flex flex-col gap-3 p-6 rounded-sm bg-neutral-100 shadow-(--shadow)">
+            <twig:Typography variant="subtitle" bold>Les règles du fichier</twig:Typography>
+            <div class="flex flex-col gap-1.5">
+                <twig:Typography variant="body-sm" textColor="neutral-500">
+                    Le fichier attendu est un classeur XLSX issu de l'export du référentiel
+                    (une feuille par gamme : Lieux, Restaurants, Activités, Services), retravaillé dans Excel.
+                </twig:Typography>
+                <twig:Typography variant="body-sm" textColor="neutral-500">
+                    • Une ligne avec un code met à jour la fiche liée : le fichier fait foi, les valeurs du classeur
+                    écrasent les anciennes et une cellule vide vide le champ.
+                </twig:Typography>
+                <twig:Typography variant="body-sm" textColor="neutral-500">
+                    • Une ligne sans code crée une nouvelle fiche (le label est alors obligatoire).
+                </twig:Typography>
+                <twig:Typography variant="body-sm" textColor="neutral-500">
+                    • Les colonnes de listes de valeurs acceptent les libellés du classeur (les codes restent acceptés) ;
+                    la feuille LOV donne les correspondances.
+                </twig:Typography>
+                <twig:Typography variant="body-sm" textColor="neutral-500">
+                    • Seules les colonnes présentes dans le fichier sont touchées : un classeur réduit à code et une
+                    colonne ne modifie que cette colonne, le reste de la fiche est laissé tel quel.
+                </twig:Typography>
+            </div>
+            {{ form(form) }}
+        </div>
+
+        {# ---- Historique des imports en masse : un import par gamme et par classeur. ---- #}
+        {% set gamme_libelles = {
+            'lieu': 'Lieux', 'restaurant': 'Restaurants',
+            'activite': 'Activités', 'service_evenementiel': 'Services',
+        } %}
+        {% set etat_jetons = {
+            'echoue': ['Échoué', 'bg-error-pastel'],
+            'termine_avec_erreurs': ['Terminé avec erreurs', 'bg-peach-pastel'],
+            'en_cours': ['En cours', 'bg-primary-4'],
+            'en_attente': ['En file', 'bg-neutral-200'],
+            'termine': ['Terminé', 'bg-success-pastel'],
+        } %}
+        {% set grille = 'grid gap-4 items-center px-4 grid-cols-[repeat(auto-fit,minmax(0,1fr))]' %}
+        <div class="shrink-0 flex flex-col gap-3 p-6 rounded-sm bg-neutral-100 shadow-(--shadow)">
+            <div class="flex items-end justify-between gap-4">
+                <twig:Typography variant="subtitle" bold>Historique des imports</twig:Typography>
+                <twig:Typography variant="body-sm" textColor="neutral-500">
+                    Le rapport d'erreurs ligne à ligne se suit aussi dans
+                    <a href="{{ path('app_mdm_outils', { famille: 'import' }) }}" class="underline decoration-primary-3">le journal des traitements</a>.
+                </twig:Typography>
+            </div>
+            <div class="flex flex-col rounded-sm overflow-hidden border border-neutral-200">
+                <div class="{{ grille }} h-9 shrink-0 bg-primary-5 border-b border-neutral-200" role="row">
+                    {% for colonne in [['Quand'], ['Fichier'], ['Gamme'], ['État'], ['Progression'], ['Créées'], ['Mises à jour'], ['Erreurs'], ['', 'text-right']] %}
+                        <span class="min-w-0 truncate {{ colonne.1|default('text-left') }}" role="columnheader">
+                            <twig:Typography variant="body-xs" bold textColor="neutral-500"
+                                             class="tracking-[0.3px] uppercase">{{ colonne.0 }}</twig:Typography>
+                        </span>
+                    {% endfor %}
+                </div>
+                <div class="flex flex-col">
+                    {% for job in jobs %}
+                        {% set jeton = etat_jetons[job.status.value]|default([job.status.label, 'bg-neutral-200']) %}
+                        <div role="row" class="{{ grille }} w-full min-h-[48px] py-2 box-border hover:bg-primary-5
+                                               {{ loop.first ? '' : 'border-t border-neutral-200' }}">
+                            <span class="min-w-0">
+                                <twig:Typography variant="body-sm" ellipsis textColor="neutral-500">{{ job.createdAt|date('d/m/Y H:i') }}</twig:Typography>
+                            </span>
+                            <span class="min-w-0">
+                                <twig:Typography variant="body-sm" bold ellipsis>{{ job.originalFilename }}</twig:Typography>
+                            </span>
+                            <span class="min-w-0">
+                                <twig:Typography variant="body-sm" ellipsis textColor="neutral-500">{{ gamme_libelles[job.type.value] ?? job.type.value }}</twig:Typography>
+                            </span>
+                            <span class="min-w-0">
+                                <span class="inline-flex w-fit max-w-full px-[9px] py-[3px] rounded-lg {{ jeton.1 }}"
+                                      {% if job.failureMessage %}title="{{ job.failureMessage }}"{% endif %}>
+                                    <twig:Typography variant="body-xs" bold ellipsis
+                                                     textColor="{{ jeton.1 == 'bg-neutral-200' ? 'neutral-500' : 'primary-3' }}">{{ jeton.0 }}</twig:Typography>
+                                </span>
+                            </span>
+                            <span class="min-w-0">
+                                <twig:Typography variant="body-sm" ellipsis textColor="neutral-500">{{ job.processedLines }}{% if job.totalLines %} / {{ job.totalLines }}{% endif %}</twig:Typography>
+                            </span>
+                            <span class="min-w-0">
+                                <twig:Typography variant="body-sm" ellipsis textColor="neutral-500">{{ job.createdCount }}</twig:Typography>
+                            </span>
+                            <span class="min-w-0">
+                                <twig:Typography variant="body-sm" ellipsis textColor="neutral-500">{{ job.updatedCount }}</twig:Typography>
+                            </span>
+                            <span class="min-w-0">
+                                <twig:Typography variant="body-sm" ellipsis textColor="{{ job.errorCount > 0 ? 'error' : 'neutral-500' }}">{{ job.errorCount }}</twig:Typography>
+                            </span>
+                            <span class="flex items-center justify-end min-w-0">
+                                <a href="{{ path('app_etl_import_show', { id: job.idString }) }}"
+                                   class="flex items-center gap-1.5 rounded-xs hover:underline decoration-primary-3">
+                                    <twig:Typography variant="body-sm" bold textColor="primary-3">Détail</twig:Typography>
+                                    <twig:Icon name="arrow-right" aria-hidden="true" class="shrink-0 w-3 h-3 text-primary" />
+                                </a>
+                            </span>
+                        </div>
+                    {% else %}
+                        <div class="flex items-center px-4 min-h-[48px]">
+                            <twig:Typography variant="body-sm" textColor="neutral-500">Aucun import en masse pour l'instant.</twig:Typography>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+    </div>
+</main>
+{% endblock %}

@@ -19,6 +19,11 @@ class FicheImportJob
 {
     use TimestampableTrait;
 
+    /** Import historique : la cellule vide ne modifie rien, NULL vide le champ. */
+    public const MODE_COMPLEMENT = 'complement';
+    /** Import en masse du fichier d'export : le fichier fait foi, cellule vide = champ vidé, libellés LOV acceptés. */
+    public const MODE_ECRASEMENT = 'ecrasement';
+
     #[ORM\Id]
     #[ORM\Column(type: 'ulid', unique: true)]
     private Ulid $id;
@@ -65,11 +70,18 @@ class FicheImportJob
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $failureMessage = null;
 
-    public function __construct(TypeFiche $type, string $originalFilename, string $createdBy, string $extension = 'csv')
+    #[ORM\Column(length: 16, options: ['default' => self::MODE_COMPLEMENT])]
+    private string $mode = self::MODE_COMPLEMENT;
+
+    public function __construct(TypeFiche $type, string $originalFilename, string $createdBy, string $extension = 'csv', string $mode = self::MODE_COMPLEMENT)
     {
         if (!in_array($extension, ['csv', 'xlsx'], true)) {
             throw new \DomainException('Extension de fichier d’import non prise en charge.');
         }
+        if (!in_array($mode, [self::MODE_COMPLEMENT, self::MODE_ECRASEMENT], true)) {
+            throw new \DomainException('Mode d’import inconnu.');
+        }
+        $this->mode = $mode;
 
         $this->id = new Ulid();
         $this->type = $type;
@@ -157,6 +169,16 @@ class FicheImportJob
     public function failureMessage(): ?string
     {
         return $this->failureMessage;
+    }
+
+    public function mode(): string
+    {
+        return $this->mode;
+    }
+
+    public function estEcrasement(): bool
+    {
+        return self::MODE_ECRASEMENT === $this->mode;
     }
 
     public function start(int $totalLines): void
