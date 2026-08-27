@@ -7,6 +7,8 @@ namespace App\Pim\Repository;
 use App\Pim\Entity\AttributDefinition;
 use App\Pim\Entity\ValeurAttribut;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\DBAL\Exception\InvalidFieldNameException;
+use Doctrine\DBAL\Exception\TableNotFoundException;
 use Doctrine\DBAL\ParameterType;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
@@ -108,20 +110,30 @@ final class ValeurAttributRepository extends ServiceEntityRepository
     /** @return list<array{attribute_code: string, id: int|string, code: string, label: string, active: int|string|bool}> */
     public function findRuntimeRows(): array
     {
+        // Rechargé à chaque requête HTTP, chaque message worker et chaque
+        // commande console : la tolérance au schéma pas encore migré passe par
+        // les exceptions plutôt que par une introspection préalable — quatre
+        // requêtes information_schema (~10 ms) économisées sur chaque hit.
         $connection = $this->getEntityManager()->getConnection();
-        $schema = $connection->createSchemaManager();
-        if (!$schema->tablesExist(['pim_attribute_value', 'pim_attribute_definition'])) {
+        try {
+            /** @var list<array{attribute_code: string, id: int|string, code: string, label: string, active: int|string|bool}> */
+            return $connection->fetchAllAssociative(
+                "SELECT a.code attribute_code, v.id, v.code, v.label, v.active active FROM pim_attribute_value v INNER JOIN pim_attribute_definition a ON a.id = v.attribute_id WHERE a.code <> 'PRESTATAIRE' ORDER BY a.code, v.position, v.id",
+            );
+        } catch (InvalidFieldNameException) {
+            // Colonne active pas encore migrée : toutes les valeurs sont actives.
+            try {
+                /** @var list<array{attribute_code: string, id: int|string, code: string, label: string, active: int|string|bool}> */
+                return $connection->fetchAllAssociative(
+                    "SELECT a.code attribute_code, v.id, v.code, v.label, 1 active FROM pim_attribute_value v INNER JOIN pim_attribute_definition a ON a.id = v.attribute_id WHERE a.code <> 'PRESTATAIRE' ORDER BY a.code, v.position, v.id",
+                );
+            } catch (TableNotFoundException) {
+                return [];
+            }
+        } catch (TableNotFoundException) {
+            // Installation fraîche, tables pas encore créées.
             return [];
         }
-        $hasActive = isset($schema->listTableColumns('pim_attribute_value')['active']);
-
-        /** @var list<array{attribute_code: string, id: int|string, code: string, label: string, active: int|string|bool}> $rows */
-        $rows = $connection->fetchAllAssociative(sprintf(
-            "SELECT a.code attribute_code, v.id, v.code, v.label, %s active FROM pim_attribute_value v INNER JOIN pim_attribute_definition a ON a.id = v.attribute_id WHERE a.code <> 'PRESTATAIRE' ORDER BY a.code, v.position, v.id",
-            $hasActive ? 'v.active' : '1',
-        ));
-
-        return $rows;
     }
 
     /**
