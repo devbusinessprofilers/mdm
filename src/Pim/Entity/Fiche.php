@@ -43,6 +43,7 @@ use Symfony\Component\Uid\Ulid;
     ),
 ]
 #[ORM\Index(name: 'IDX_PIM_FICHE_UPDATED', columns: ['updated_at', 'id'])]
+#[ORM\Index(name: 'FTX_PIM_FICHE_LABEL', columns: ['label'], flags: ['fulltext'])]
 #[ORM\HasLifecycleCallbacks]
 class Fiche
 {

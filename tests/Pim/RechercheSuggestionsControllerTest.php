@@ -46,6 +46,18 @@ final class RechercheSuggestionsControllerTest extends WebTestCase
         }
     }
 
+    public function testMilieuDeMotViaLeRepliLike(): void
+    {
+        // « berg » n'est le début d'aucun mot : l'index fulltext ne trouve
+        // rien, le repli LIKE infixe prend le relais (« Au-berg-e »).
+        $client = $this->clientAvecFiches();
+
+        $client->request('GET', '/referentiel/suggestions', ['q' => 'berg']);
+        self::assertResponseIsSuccessful();
+        $data = json_decode((string) $client->getResponse()->getContent(), true);
+        self::assertContains('Auberge du Jeu de Paume', $data['suggestions']);
+    }
+
     public function testInsensibleALaCasseEtAuxAccents(): void
     {
         $client = $this->clientAvecFiches();

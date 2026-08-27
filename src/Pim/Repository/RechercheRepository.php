@@ -36,26 +36,59 @@ final readonly class RechercheRepository
      * candidat par groupe est une correction valide — la base explore ainsi
      * toutes les combinaisons en une requête, y compris deux fautes à la fois.
      *
+     * L'index FULLTEXT du label porte le chemin nominal ; il ne sait faire que
+     * du préfixe de mot, le repli LIKE (« berg » dans « Auberge ») n'est payé
+     * que quand l'index ne trouve rien.
+     *
      * @param non-empty-list<non-empty-list<string>> $groupes
      *
      * @return list<string>
      */
     public function labelsParGroupes(array $groupes, string $saisie, int $limite, ?string $motPrefere = null): array
     {
+        $labels = $this->labelsRequete($groupes, $saisie, $limite, $motPrefere, fulltext: true);
+        if ([] === $labels) {
+            $labels = $this->labelsRequete($groupes, $saisie, $limite, $motPrefere, fulltext: false);
+        }
+
+        return $labels;
+    }
+
+    /**
+     * @param non-empty-list<non-empty-list<string>> $groupes
+     *
+     * @return list<string>
+     */
+    private function labelsRequete(array $groupes, string $saisie, int $limite, ?string $motPrefere, bool $fulltext): array
+    {
         $conditions = [];
         $motsEntiers = [];
         $params = ['prefixe' => addcslashes($saisie, '%_\\').'%'];
-        foreach ($groupes as $index => $candidats) {
-            $groupe = [];
-            foreach ($candidats as $rang => $candidat) {
-                $groupe[] = sprintf('label LIKE :t%d_%d', $index, $rang);
-                $params[sprintf('t%d_%d', $index, $rang)] = BooleanQueryFactory::likePattern($candidat);
+        if ($fulltext) {
+            // Un groupe parenthésé par mot : au moins un candidat requis dans
+            // chacun. Les candidats sortent de preg_split \p{L}\p{N} ou du
+            // vocabulaire normalisé : aucun opérateur booléen à échapper.
+            $conditions[] = 'MATCH (label) AGAINST (:booleen IN BOOLEAN MODE)';
+            $params['booleen'] = implode(' ', array_map(
+                static fn (array $candidats): string => 1 === count($candidats)
+                    ? '+'.$candidats[0].'*'
+                    : '+('.implode(' ', array_map(static fn (string $c): string => $c.'*', $candidats)).')',
+                $groupes,
+            ));
+        } else {
+            foreach ($groupes as $index => $candidats) {
+                $groupe = [];
+                foreach ($candidats as $rang => $candidat) {
+                    $groupe[] = sprintf('label LIKE :t%d_%d', $index, $rang);
+                    $params[sprintf('t%d_%d', $index, $rang)] = BooleanQueryFactory::likePattern($candidat);
+                }
+                $conditions[] = '('.implode(' OR ', $groupe).')';
             }
-            $conditions[] = '('.implode(' OR ', $groupe).')';
+        }
+        foreach ($groupes as $index => $candidats) {
             // Bonus de classement : un candidat du groupe matche un mot entier
             // du nom (« jeu » vaut plus dans « Jeu de Paume » que dans
-            // « Jeunesse »). Les candidats sortent de preg_split \p{L}\p{N} ou
-            // du vocabulaire normalisé : rien à échapper.
+            // « Jeunesse »).
             $motsEntiers[] = sprintf('(label RLIKE :mot%d)', $index);
             $params['mot'.$index] = '\\b('.implode('|', $candidats).')\\b';
         }
