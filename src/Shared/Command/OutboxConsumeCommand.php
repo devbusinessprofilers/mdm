@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Shared\Command;
 
+use App\Shared\Metrics\WorkerHeartbeatReporter;
 use App\Shared\Outbox\OutboxRelay;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -18,8 +19,10 @@ final class OutboxConsumeCommand extends Command implements SignalableCommandInt
 {
     private bool $shouldStop = false;
 
-    public function __construct(private readonly OutboxRelay $relay)
-    {
+    public function __construct(
+        private readonly OutboxRelay $relay,
+        private readonly WorkerHeartbeatReporter $heartbeat,
+    ) {
         parent::__construct();
     }
 
@@ -47,14 +50,31 @@ final class OutboxConsumeCommand extends Command implements SignalableCommandInt
 
         $io->comment(sprintf('Outbox worker %s started.', $workerId));
 
+        // Pas un worker Messenger (aucun événement Worker*) : le heartbeat de
+        // /admin/performance est entretenu à la main sur la boucle.
+        $this->heartbeat->start(['outbox']);
+
         while (!$this->shouldStop && time() < $deadline && memory_get_usage(true) < $memoryLimit) {
+            $batchStart = hrtime(true);
             $result = $this->relay->relayBatch($workerId, $batchSize, $lease);
+
+            if ($result->claimed > 0) {
+                $this->heartbeat->recordMessage(
+                    'outbox',
+                    'outbox',
+                    $result->failed > 0 ? 'failed' : 'handled',
+                    (hrtime(true) - $batchStart) / 1e9,
+                    $result->claimed,
+                );
+            }
+            $this->heartbeat->beat();
 
             if (0 === $result->claimed && $sleep > 0) {
                 sleep($sleep);
             }
         }
 
+        $this->heartbeat->stop();
         $io->comment('Outbox worker stopped cleanly.');
 
         return Command::SUCCESS;

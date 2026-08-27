@@ -6,8 +6,12 @@ namespace App\Tests\Shared;
 
 use App\Shared\Metrics\MessengerTimingListener;
 use App\Shared\Metrics\MetricsCollector;
+use App\Shared\Metrics\WorkerHeartbeatReporter;
+use App\Shared\Metrics\WorkerNameResolver;
+use Doctrine\DBAL\Connection;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
+use Symfony\Component\Clock\MockClock;
 use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\Event\WorkerMessageFailedEvent;
 use Symfony\Component\Messenger\Event\WorkerMessageHandledEvent;
@@ -22,7 +26,14 @@ final class MessengerTimingListenerTest extends TestCase
     protected function setUp(): void
     {
         $this->metrics = new MetricsCollector(new ArrayAdapter());
-        $this->listener = new MessengerTimingListener($this->metrics);
+        // Reporter jamais démarré (start() non appelé) : relais no-op, le test
+        // reste centré sur les compteurs Prometheus.
+        $reporter = new WorkerHeartbeatReporter(
+            $this->createStub(Connection::class),
+            new WorkerNameResolver(),
+            new MockClock(),
+        );
+        $this->listener = new MessengerTimingListener($this->metrics, $reporter);
     }
 
     public function testHandledMessageIsTimedEvenWhenEnvelopeIsCloned(): void
