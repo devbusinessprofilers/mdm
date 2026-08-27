@@ -1,0 +1,98 @@
+{#
+    Fragment /admin/performance : état courant des files Messenger et DLQ avec
+    actions Réessayer / Supprimer. La racine porte l'id et le poll_controller :
+    le contrôleur retrouve ce même id dans la réponse du endpoint /tableaux —
+    sans lui, il se rabattrait sur le premier élément et perdrait le reste du
+    fragment à chaque rafraîchissement.
+#}
+
+<div id="perf-tableaux" class="shrink-0 flex flex-col gap-4"
+     data-controller="poll"
+     data-poll-url-value="{{ path('app_performance_tableaux') }}"
+     data-poll-interval-value="10000">
+
+<div class="flex flex-col rounded-sm overflow-hidden bg-neutral-100 shadow-(--shadow)">
+    <div class="flex items-center px-4 h-9 bg-primary-5 border-b border-neutral-200">
+        <twig:Typography variant="body-xs" bold textColor="neutral-500"
+                         class="tracking-[0.3px] uppercase">Files Messenger</twig:Typography>
+    </div>
+    {% set grille_files = 'grid gap-4 items-center px-4 grid-cols-[1.2fr_repeat(5,minmax(0,1fr))]' %}
+    <div class="{{ grille_files }} h-8 border-b border-neutral-200" role="row">
+        {% for colonne in [['Transport'], ['En attente', 'text-right'], ['Planifiés (retry)', 'text-right'], ['En cours', 'text-right'], ['Plus ancien', 'text-right'], ['Workers', 'text-right']] %}
+            <span class="min-w-0 truncate {{ colonne.1|default('text-left') }}" role="columnheader">
+                <twig:Typography variant="body-xs" bold textColor="neutral-500"
+                                 class="tracking-[0.3px] uppercase">{{ colonne.0 }}</twig:Typography>
+            </span>
+        {% endfor %}
+    </div>
+    {% for file in tableaux.queues %}
+        <div role="row" class="{{ grille_files }} min-h-[42px] py-1.5 hover:bg-primary-5 {{ loop.first ? '' : 'border-t border-neutral-200' }}">
+            <span class="flex items-center gap-2 min-w-0">
+                <twig:Typography variant="body-sm" bold ellipsis class="font-mono">{{ file.name }}</twig:Typography>
+                {% if file.name == 'failed' %}
+                    <twig:Typography variant="body-xs" bold textColor="primary-3"
+                                     class="shrink-0 px-[7px] py-0.5 rounded-lg bg-error-pastel">DLQ</twig:Typography>
+                {% endif %}
+            </span>
+            <twig:Typography variant="body-sm" bold class="text-right">{{ file.pending }}</twig:Typography>
+            <twig:Typography variant="body-sm" textColor="neutral-500" class="text-right">{{ file.delayed }}</twig:Typography>
+            <twig:Typography variant="body-sm" textColor="neutral-500" class="text-right">{{ file.enCours }}</twig:Typography>
+            <twig:Typography variant="body-sm" textColor="{{ file.oldestAgeS > 600 and file.name != 'failed' ? 'error' : 'neutral-500' }}" class="text-right">
+                {%- if file.oldestAgeS <= 0 -%}
+                    —
+                {%- elseif file.oldestAgeS < 60 -%}
+                    {{ file.oldestAgeS }} s
+                {%- elseif file.oldestAgeS < 3600 -%}
+                    {{ (file.oldestAgeS // 60) }} min
+                {%- else -%}
+                    {{ (file.oldestAgeS // 3600) }} h {{ '%02d'|format((file.oldestAgeS % 3600) // 60) }}
+                {%- endif -%}
+            </twig:Typography>
+            <twig:Typography variant="body-sm" textColor="{{ file.consumers == 0 and file.name != 'failed' and file.pending > 0 ? 'error' : 'neutral-500' }}"
+                             class="text-right">{{ file.name == 'failed' ? '—' : file.consumers }}</twig:Typography>
+        </div>
+    {% else %}
+        <div class="flex items-center gap-3 px-4 min-h-[42px]">
+            <twig:Typography variant="body-sm" textColor="neutral-500">Aucune file : la table messenger_messages est vide.</twig:Typography>
+        </div>
+    {% endfor %}
+</div>
+
+<div class="flex flex-col rounded-sm overflow-hidden bg-neutral-100 shadow-(--shadow)">
+    <div class="flex items-center gap-2 px-4 h-9 bg-primary-5 border-b border-neutral-200">
+        <twig:Typography variant="body-xs" bold textColor="neutral-500"
+                         class="tracking-[0.3px] uppercase">Messages en échec définitif</twig:Typography>
+        {% if tableaux.failed is not empty %}
+            <twig:Typography variant="body-xs" bold textColor="primary-3"
+                             class="px-[7px] py-0.5 rounded-lg bg-error-pastel">{{ tableaux.failed|length }}</twig:Typography>
+        {% endif %}
+    </div>
+    {% set grille_failed = 'grid gap-4 items-center px-4 grid-cols-[1.2fr_2fr_repeat(2,minmax(0,0.8fr))_auto]' %}
+    {% for message in tableaux.failed %}
+        <div role="row" class="{{ grille_failed }} min-h-[48px] py-2 hover:bg-primary-5 {{ loop.first ? '' : 'border-t border-neutral-200' }}">
+            <span class="flex flex-col min-w-0">
+                <twig:Typography variant="body-sm" bold ellipsis class="font-mono"
+                                 title="{{ message.classe }}">{{ message.classe|split('\\')|last }}</twig:Typography>
+                <twig:Typography variant="body-xs" textColor="neutral-500">transport {{ message.transport ?? '?' }}</twig:Typography>
+            </span>
+            <twig:Typography variant="body-sm" textColor="error" class="min-w-0 line-clamp-2"
+                             title="{{ message.erreur ?? '' }}">{{ message.erreur ?? '—' }}</twig:Typography>
+            <twig:Typography variant="body-sm" textColor="neutral-500" ellipsis>
+                {{- message.echoue_le ? message.echoue_le|date('d/m/Y H:i') : '—' -}}
+            </twig:Typography>
+            <twig:Typography variant="body-xs" textColor="neutral-500" ellipsis>id {{ message.id }}</twig:Typography>
+            <span class="flex items-center justify-end gap-2 shrink-0
+                         [&_button]:px-2.5! [&_button]:py-1! [&_button]:text-[13px]!">
+                {{ form(message.form_reessayer) }}
+                <span class="[&_button]:bg-error-pastel! [&_button]:text-error!">{{ form(message.form_supprimer) }}</span>
+            </span>
+        </div>
+    {% else %}
+        <div class="flex items-center gap-3 px-4 min-h-[42px]">
+            <twig:Icon name="ok-circle" aria-hidden="true" class="shrink-0 w-5 h-5 text-success" />
+            <twig:Typography variant="body-sm" textColor="neutral-500">Aucun message en échec définitif — tout roule.</twig:Typography>
+        </div>
+    {% endfor %}
+</div>
+
+</div>

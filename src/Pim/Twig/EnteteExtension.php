@@ -113,6 +113,7 @@ final class EnteteExtension extends AbstractExtension
             $entrees = [
                 ['Sommaire', 'squares-four', 'app_pim_admin'],
                 ['Statistiques détaillées', 'trend-up', 'app_dashboard_index'],
+                ['Performance & monitoring', 'desktop', 'app_performance_index'],
                 ['Traitements en échec', 'warning', 'app_dashboard_traitements_en_echec'],
                 ['Relances de complétude', 'paper-plane', 'app_pim_relance_completude_index'],
                 ['Listes de valeurs', 'list', 'app_pim_lov_index'],

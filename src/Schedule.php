@@ -63,6 +63,9 @@ class Schedule implements ScheduleProviderInterface
             // les jetons de compte croissent sans limite.
             ->add(RecurringMessage::cron('20 4 * * *', new RunCommandMessage('app:outbox:purge'), new \DateTimeZone('Europe/Paris')))
             ->add(RecurringMessage::cron('25 4 * * *', new RunCommandMessage('app:account:purge-expired-tokens'), new \DateTimeZone('Europe/Paris')))
+            // Monitoring /admin/performance : échantillons (7 j), heartbeats
+            // morts (48 h) et logs persistés (15 j).
+            ->add(RecurringMessage::cron('30 4 * * *', new RunCommandMessage('app:performance:purge'), new \DateTimeZone('Europe/Paris')))
 
             // Contrôle mensuel d'état d'activité des lieux (Sirene) : cadence des
             // radiations d'entreprises. No-op tant que sirene.verif_statut_actif

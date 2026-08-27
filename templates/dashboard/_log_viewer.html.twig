@@ -1,0 +1,114 @@
+{#
+    Visionneuse des logs persistés (table log_entry) : filtres GET (niveau,
+    canal, texte, période), compteurs 24 h par niveau, tableau avec contexte
+    JSON dépliable (contrôleur log-context). Seul canal de lecture des logs en
+    prod (stderr n'est pas relisible par l'application).
+#}
+
+{% set niveau_libelles = {
+    100: 'Debug', 200: 'Info', 250: 'Notice', 300: 'Warning',
+    400: 'Error', 500: 'Critical', 550: 'Alert', 600: 'Emergency',
+} %}
+{% set niveau_jetons = {
+    100: 'bg-neutral-200', 200: 'bg-primary-4', 250: 'bg-primary-4', 300: 'bg-peach-pastel',
+    400: 'bg-error-pastel', 500: 'bg-error-pastel', 550: 'bg-error-pastel', 600: 'bg-error-pastel',
+} %}
+
+<div class="shrink-0 flex flex-col rounded-sm overflow-hidden bg-neutral-100 shadow-(--shadow)">
+    <div class="flex items-center gap-4 px-4 h-9 bg-primary-5 border-b border-neutral-200">
+        <twig:Typography variant="body-xs" bold textColor="neutral-500"
+                         class="tracking-[0.3px] uppercase">Journal des logs</twig:Typography>
+        <span class="flex-1"></span>
+        {# Compteurs 24 h par niveau : lecture directe, pas besoin de graphique pour 4 chiffres. #}
+        <div class="flex items-center gap-2">
+            {% for niveau, nombre in compteurs_niveaux %}
+                <span class="inline-flex items-center gap-1.5 px-[7px] py-0.5 rounded-lg {{ niveau_jetons[niveau]|default('bg-neutral-200') }}">
+                    <twig:Typography variant="body-xs" bold textColor="{{ niveau >= 300 ? 'primary-3' : 'neutral-500' }}">
+                        {{- niveau_libelles[niveau]|default(niveau) }} · {{ nombre -}}
+                    </twig:Typography>
+                </span>
+            {% else %}
+                <twig:Typography variant="body-xs" textColor="neutral-500">aucun log sur 24 h</twig:Typography>
+            {% endfor %}
+        </div>
+    </div>
+
+    {# ---- Filtres (formulaire GET sans CSRF : l'état vit dans l'URL) ---- #}
+    {{ form_start(form_filtres, { attr: { class: 'flex flex-wrap items-end gap-3 px-4 py-3 border-b border-neutral-200' } }) }}
+        {% do form_filtres.filtrer.setRendered %}
+        <div class="w-44">{{ form_row(form_filtres.niveau) }}</div>
+        <div class="w-44">{{ form_row(form_filtres.canal) }}</div>
+        <div class="flex-1 min-w-52">{{ form_row(form_filtres.q) }}</div>
+        <div class="w-52">{{ form_row(form_filtres.depuis) }}</div>
+        <div class="w-52">{{ form_row(form_filtres.jusqua) }}</div>
+        <twig:Button variant="primary" size="sm" type="submit">Filtrer</twig:Button>
+        <twig:Button variant="outline" size="sm" asLink href="{{ path('app_performance_index') }}">Réinitialiser</twig:Button>
+    {{ form_end(form_filtres) }}
+
+    {# ---- Lignes ---- #}
+    <div class="flex flex-col">
+        {% for ligne in logs %}
+            <div data-controller="log-context"
+                 class="flex flex-col {{ loop.first ? '' : 'border-t border-neutral-200' }}">
+                <button type="button" data-action="log-context#toggle"
+                        class="grid gap-4 items-center px-4 py-2 min-h-[44px] text-left cursor-pointer hover:bg-primary-5
+                               grid-cols-[9.5rem_5.5rem_8rem_1fr_8rem_auto]">
+                    <twig:Typography variant="body-xs" textColor="neutral-500" class="font-mono">{{ ligne.logged_at|date('d/m/Y H:i:s') }}</twig:Typography>
+                    <span class="inline-flex w-fit max-w-full px-[7px] py-0.5 rounded-lg {{ niveau_jetons[ligne.level]|default('bg-neutral-200') }}">
+                        <twig:Typography variant="body-xs" bold ellipsis
+                                         textColor="{{ ligne.level >= 300 ? 'primary-3' : 'neutral-500' }}">{{ niveau_libelles[ligne.level]|default(ligne.level) }}</twig:Typography>
+                    </span>
+                    <twig:Typography variant="body-xs" ellipsis textColor="neutral-500" class="font-mono min-w-0">{{ ligne.channel }}</twig:Typography>
+                    <twig:Typography variant="body-sm" ellipsis class="min-w-0">{{ ligne.message }}</twig:Typography>
+                    <twig:Typography variant="body-xs" ellipsis textColor="neutral-400" class="font-mono min-w-0"
+                                     title="{{ ligne.request_id ?? '' }}">{{ ligne.hostname ?? '—' }}</twig:Typography>
+                    <twig:Icon name="caret-down-solid" aria-hidden="true"
+                               data-log-context-target="indicateur"
+                               class="shrink-0 w-3 h-3 text-neutral-400 transition-transform" />
+                </button>
+                <div data-log-context-target="contenu" class="hidden px-4 pb-3">
+                    <div class="flex flex-col gap-2 px-4 py-3 rounded-sm bg-primary-5 overflow-x-auto">
+                        <twig:Typography variant="body-xs" textColor="neutral-500" class="font-mono">
+                            {{- ligne.channel }} · {{ niveau_libelles[ligne.level]|default(ligne.level) }}
+                            {{- ligne.request_id ? ' · requête ' ~ ligne.request_id : '' }}
+                            {{- ligne.hostname ? ' · ' ~ ligne.hostname : '' -}}
+                        </twig:Typography>
+                        <twig:Typography variant="body-sm" class="whitespace-pre-wrap break-words">{{ ligne.message }}</twig:Typography>
+                        {% if ligne.contexte_lisible %}
+                            <pre class="text-[12px]/relaxed font-mono text-neutral-600 whitespace-pre-wrap break-words">{{ ligne.contexte_lisible }}</pre>
+                        {% endif %}
+                        {% if ligne.extra_lisible %}
+                            <pre class="text-[12px]/relaxed font-mono text-neutral-400 whitespace-pre-wrap break-words">{{ ligne.extra_lisible }}</pre>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <div class="flex items-center gap-3 px-4 min-h-[48px]">
+                <twig:Icon name="ok-circle" aria-hidden="true" class="shrink-0 w-5 h-5 text-success" />
+                <twig:Typography variant="body-sm" textColor="neutral-500">Aucun log ne correspond à ces filtres.</twig:Typography>
+            </div>
+        {% endfor %}
+    </div>
+
+    {# ---- Pagination (les filtres sont conservés dans l'URL) ---- #}
+    <div class="shrink-0 flex items-center justify-between gap-3 min-h-[50px] px-4 py-2 border-t border-neutral-200">
+        <twig:Typography variant="body-sm" textColor="neutral-500">
+            {{- logs_total }} ligne{{ logs_total > 1 ? 's' : '' }}
+            {{- logs_pages > 1 ? ' · Page ' ~ logs_page ~ ' / ' ~ logs_pages : '' -}}
+        </twig:Typography>
+        {% if logs_pages > 1 %}
+            {% set params_pagination = app.request.query.all|merge({}) %}
+            <div class="flex items-center gap-2 shrink-0">
+                {% if logs_page > 1 %}
+                    <twig:Button variant="outline" size="sm" asLink
+                                 href="{{ path('app_performance_index', params_pagination|merge({ page: logs_page - 1 })) }}">Précédente</twig:Button>
+                {% endif %}
+                {% if logs_page < logs_pages %}
+                    <twig:Button variant="outline" size="sm" asLink
+                                 href="{{ path('app_performance_index', params_pagination|merge({ page: logs_page + 1 })) }}">Suivante</twig:Button>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+</div>

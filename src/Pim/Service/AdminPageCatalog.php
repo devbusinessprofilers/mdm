@@ -20,6 +20,7 @@ final readonly class AdminPageCatalog
         'app_account_admin_show' => 'Fiche d’un utilisateur',
         'app_account_user_admin_index' => 'Collaborateurs internes',
         'app_parametre_index' => 'Paramètres applicatifs',
+        'app_performance_index' => 'Performance & monitoring',
         'app_pim_relance_completude_index' => 'Relances de complétude',
         'app_dam_dashboard' => 'Supervision DAM',
         'api_doc' => 'Documentation API Platform',

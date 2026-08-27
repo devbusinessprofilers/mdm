@@ -1,0 +1,170 @@
+{% extends 'mdm/base.html.twig' %}
+
+{#
+    /admin/performance — monitoring type « gestionnaire de tâches » :
+    cartes d'état des workers (heartbeats en BDD), graphiques temporels
+    (débit, profondeur des files, charge, mémoire) mutés en place par le
+    contrôleur Stimulus `performance` (endpoint JSON /data), tableaux files +
+    DLQ rechargés par poll_controller, et visionneuse des logs persistés.
+#}
+
+{% block title %}Performance & monitoring{% endblock %}
+
+{% set etat_pastilles = {
+    'actif': 'bg-success', 'occupe': 'bg-success', 'retard': 'bg-peach',
+    'inactif': 'bg-error', 'planifie': 'bg-neutral-400', 'inconnu': 'bg-neutral-300',
+} %}
+{% set etat_libelles = {
+    'actif': 'Actif', 'occupe': 'Occupé (message long)', 'retard': 'En retard',
+    'inactif': 'Inactif', 'planifie': 'Planifié', 'inconnu': 'Jamais vu',
+} %}
+
+{% block contenu %}
+<main class="flex flex-col h-full min-h-0 overflow-y-auto scrollbar">
+
+    <div class="flex-1 flex flex-col gap-5 px-10 pt-[22px] pb-8"
+         data-controller="performance"
+         data-performance-url-value="{{ path('app_performance_data') }}"
+         data-performance-interval-value="10000"
+         data-performance-fenetre-value="{{ donnees.fenetreMinutes }}">
+
+        <div class="shrink-0 flex items-end justify-between gap-6">
+            <div class="flex flex-col gap-1 min-w-0 max-w-[720px]">
+                <twig:Typography variant="heading-2" element="h1"
+                                 class="sm:text-[1.625rem]! sm:leading-[2.125rem]! font-[700]!">Performance &amp; monitoring</twig:Typography>
+                <twig:Typography variant="body" element="p" textColor="neutral-500">Workers, files Messenger, temps de traitement et journal des logs, en direct.</twig:Typography>
+            </div>
+            <div class="flex items-center gap-3 shrink-0">
+                <twig:Typography variant="body-sm" textColor="neutral-500">
+                    <span data-performance-target="horodatage">Actualisé au chargement</span>
+                </twig:Typography>
+                <div class="flex items-center rounded-sm overflow-hidden inset-ring-1 inset-ring-neutral-200 bg-neutral-100">
+                    {% for minutes in fenetres %}
+                        <button type="button"
+                                data-action="performance#changerFenetre"
+                                data-performance-minutes-param="{{ minutes }}"
+                                aria-current="{{ minutes == donnees.fenetreMinutes ? 'true' : 'false' }}"
+                                class="px-3 py-1.5 text-[13px] font-bold text-primary-3 cursor-pointer
+                                       hover:bg-primary-4 aria-[current=true]:bg-linear-(--primary-gradient)
+                                       aria-[current=true]:text-neutral-100">
+                            {{- minutes < 60 ? minutes ~ ' min' : (minutes / 60) ~ ' h' -}}
+                        </button>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        {# ---------------- Cartes des workers, patchées en place par le contrôleur ---------------- #}
+        <div class="shrink-0 grid gap-3.5 grid-cols-[repeat(auto-fit,minmax(240px,1fr))]">
+            {% for worker in donnees.workers %}
+                <div data-perf-worker="{{ worker.name }}"
+                     class="flex flex-col gap-2.5 box-border px-5 py-4 rounded-sm bg-neutral-100 shadow-(--shadow)">
+                    <div class="flex items-center gap-2 min-w-0">
+                        <span data-perf-champ="pastille" title="{{ etat_libelles[worker.etat] ?? worker.etat }}"
+                              class="shrink-0 w-2.5 h-2.5 rounded-full {{ etat_pastilles[worker.etat] ?? 'bg-neutral-300' }}"></span>
+                        <twig:Typography variant="body" bold ellipsis class="min-w-0 font-mono">{{ worker.name }}</twig:Typography>
+                        <span class="flex-1"></span>
+                        <twig:Typography variant="body-xs" bold textColor="neutral-500"
+                                         class="shrink-0 px-[7px] py-0.5 rounded-lg bg-neutral-200">
+                            <span data-perf-champ="etat">{{ etat_libelles[worker.etat] ?? worker.etat }}</span>
+                        </twig:Typography>
+                    </div>
+                    <div class="grid grid-cols-2 gap-x-4 gap-y-1.5">
+                        {% set indicateurs = [
+                            ['Charge', 'charge', worker.chargePct is null ? '—' : worker.chargePct ~ ' %'],
+                            ['Vitesse', 'debit', worker.msgParMin is null ? '—' : worker.msgParMin ~ ' msg/min'],
+                            ['Mémoire', 'memoire', worker.memoryBytes is null ? '—' : (worker.memoryBytes / 1048576)|round ~ ' Mo'],
+                            ['Uptime', 'uptime', worker.uptimeS is null ? '—' : (worker.uptimeS >= 3600
+                                ? (worker.uptimeS // 3600) ~ ' h ' ~ '%02d'|format((worker.uptimeS % 3600) // 60)
+                                : (worker.uptimeS >= 60 ? (worker.uptimeS // 60) ~ ' min' : worker.uptimeS ~ ' s'))],
+                            ['Traités', 'traites', worker.totaux.handled],
+                            ['Échecs', 'echecs', worker.totaux.failed],
+                        ] %}
+                        {% for indicateur in indicateurs %}
+                            <div class="flex items-baseline justify-between gap-2 min-w-0">
+                                <twig:Typography variant="body-xs" textColor="neutral-500"
+                                                 class="uppercase tracking-[0.3px]">{{ indicateur.0 }}</twig:Typography>
+                                <twig:Typography variant="body-sm" bold ellipsis class="min-w-0 text-right">
+                                    <span data-perf-champ="{{ indicateur.1 }}">{{ indicateur.2 }}</span>
+                                </twig:Typography>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <div class="flex items-center gap-1.5 min-w-0 pt-1 border-t border-neutral-200">
+                        <twig:Icon name="spinner" aria-hidden="true" class="shrink-0 w-3.5 h-3.5 text-neutral-400" />
+                        <twig:Typography variant="body-xs" ellipsis textColor="neutral-500" class="min-w-0">
+                            <span data-perf-champ="encours">
+                                {%- if worker.enCours -%}
+                                    {{ worker.enCours.classe }} · {{ worker.enCours.depuisS }} s
+                                {%- elseif worker.etat == 'inconnu' -%}
+                                    jamais vu — redémarrer les workers ?
+                                {%- else -%}
+                                    au repos
+                                {%- endif -%}
+                            </span>
+                        </twig:Typography>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        {# ---------------- Graphiques temporels (mutés en place, jamais rechargés) ---------------- #}
+        <div class="shrink-0 grid gap-3.5 grid-cols-1 xl:grid-cols-2">
+            {% set graphiques = [
+                ['Débit par file', 'debit', 'messages traités par minute, par transport'],
+                ['Profondeur des files', 'profondeur', 'messages en attente, par transport'],
+                ['Charge des workers', 'charge', 'part du temps passé à traiter des messages'],
+                ['Mémoire des workers', 'memoire', 'mémoire allouée par processus'],
+            ] %}
+            {% for graphique in graphiques %}
+                <div class="flex flex-col gap-2 box-border px-5 py-4 rounded-sm bg-neutral-100 shadow-(--shadow)">
+                    <div class="flex items-baseline justify-between gap-3">
+                        <twig:Typography variant="body" bold>{{ graphique.0 }}</twig:Typography>
+                        <twig:Typography variant="body-xs" textColor="neutral-500">{{ graphique.2 }}</twig:Typography>
+                    </div>
+                    <div class="relative h-56">
+                        <canvas data-performance-target="{{ graphique.1 }}" aria-label="{{ graphique.0 }}" role="img"></canvas>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        {# ---------------- Temps moyens par classe de message ---------------- #}
+        {% if donnees.messages is not empty %}
+            <div class="shrink-0 flex flex-col rounded-sm overflow-hidden bg-neutral-100 shadow-(--shadow)">
+                <div class="flex items-baseline justify-between gap-3 px-4 h-9 bg-primary-5 border-b border-neutral-200">
+                    <twig:Typography variant="body-xs" bold textColor="neutral-500"
+                                     class="tracking-[0.3px] uppercase self-center">Temps de traitement par type de message</twig:Typography>
+                    <twig:Typography variant="body-xs" textColor="neutral-500" class="self-center">cumuls depuis le démarrage des workers</twig:Typography>
+                </div>
+                <div class="grid grid-cols-[1fr_auto_auto_auto] gap-x-6">
+                    <div class="contents">
+                        {% for entete in ['Message', 'Traités', 'Temps moyen', 'Échecs'] %}
+                            <twig:Typography variant="body-xs" bold textColor="neutral-500"
+                                             class="px-4 py-2 uppercase tracking-[0.3px] {{ loop.first ? '' : 'text-right' }}">{{ entete }}</twig:Typography>
+                        {% endfor %}
+                    </div>
+                    {% for message in donnees.messages %}
+                        <div class="contents">
+                            <twig:Typography variant="body-sm" ellipsis class="px-4 py-1.5 font-mono min-w-0 border-t border-neutral-200">{{ message.classe }}</twig:Typography>
+                            <twig:Typography variant="body-sm" class="px-4 py-1.5 text-right border-t border-neutral-200">{{ message.count }}</twig:Typography>
+                            <twig:Typography variant="body-sm" bold class="px-4 py-1.5 text-right border-t border-neutral-200">
+                                {{- message.avgMs >= 1000 ? (message.avgMs / 1000)|round(1) ~ ' s' : message.avgMs ~ ' ms' -}}
+                            </twig:Typography>
+                            <twig:Typography variant="body-sm" textColor="{{ message.failed > 0 ? 'error' : 'neutral-500' }}"
+                                             class="px-4 py-1.5 text-right border-t border-neutral-200">{{ message.failed }}</twig:Typography>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+
+        {# ---------------- Files + DLQ, rechargés seuls toutes les ~10 s
+             (la racine id="perf-tableaux" + poll est portée par le partial). ---------------- #}
+        {{ include('dashboard/_performance_tableaux.html.twig') }}
+
+        {# ---------------- Visionneuse des logs ---------------- #}
+        {{ include('dashboard/_log_viewer.html.twig') }}
+    </div>
+</main>
+{% endblock %}
