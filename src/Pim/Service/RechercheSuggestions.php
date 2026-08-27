@@ -28,7 +28,9 @@ final readonly class RechercheSuggestions
     public function pour(string $q): array
     {
         $q = trim($q);
-        if (mb_strlen($q) < 2) {
+        // Miroir du seuil du champ : en deçà de la taille minimale d'indexation,
+        // la requête n'est pas discriminante.
+        if (mb_strlen($q) < BooleanQueryFactory::MIN_TOKEN_SIZE) {
             return ['suggestions' => [], 'correction' => null];
         }
 

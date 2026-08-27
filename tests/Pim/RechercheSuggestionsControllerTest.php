@@ -164,10 +164,12 @@ final class RechercheSuggestionsControllerTest extends WebTestCase
     {
         $client = $this->clientAvecFiches();
 
-        $client->request('GET', '/referentiel/suggestions', ['q' => 'a']);
-        self::assertResponseIsSuccessful();
-        $data = json_decode((string) $client->getResponse()->getContent(), true);
-        self::assertSame([], $data['suggestions']);
+        foreach (['a', 'au'] as $q) {
+            $client->request('GET', '/referentiel/suggestions', ['q' => $q]);
+            self::assertResponseIsSuccessful();
+            $data = json_decode((string) $client->getResponse()->getContent(), true);
+            self::assertSame([], $data['suggestions'], sprintf('Saisie « %s »', $q));
+        }
     }
 
     public function testAnonymeRedirigeVersLaConnexion(): void

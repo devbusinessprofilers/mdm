@@ -10,8 +10,12 @@ export default class extends Controller {
     static targets = ['champ', 'liste']
     static values = {
         url: String,
-        min: { type: Number, default: 2 },
-        delai: { type: Number, default: 250 },
+        // 3 lettres : en deçà, la requête n'est pas discriminante (aligné sur
+        // la taille minimale d'indexation fulltext côté serveur).
+        min: { type: Number, default: 3 },
+        // 400 ms : assez long pour absorber une frappe lente sans paraître
+        // paresseux. Chaque frappe annule de toute façon le fetch en cours.
+        delai: { type: Number, default: 400 },
     }
 
     connect() {
