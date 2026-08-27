@@ -17,7 +17,7 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
  * lignes de la page, la bascule « tout le résultat filtré », l'action et son
  * bouton. Les plafonds sont contrôlés côté contrôleur/service.
  *
- * @extends AbstractType<array{ids: list<string>, tout: bool, action: ?string, contributeur: ?User, sites: list<int>}>
+ * @extends AbstractType<array{ids: list<string>, tout: bool, action: ?string, contributeur: ?User, sites: list<int>, colonnes: list<string>}>
  */
 final class ReferentielSelectionType extends AbstractType
 {
@@ -45,7 +45,6 @@ final class ReferentielSelectionType extends AbstractType
                     'Archiver (dépublier)' => 'archiver',
                     'Désarchiver (remettre en cours)' => 'desarchiver',
                     'Republier (fiche archivée)' => 'republier',
-                    'Exporter (CSV)' => 'exporter',
                     'Envoyer à Salesforce' => 'salesforce',
                     'Envoyer les accès extranet' => 'acces',
                     'Assigner un contributeur' => 'contributeur',
@@ -69,6 +68,14 @@ final class ReferentielSelectionType extends AbstractType
                 'multiple' => true,
                 'expanded' => false,
                 'choices' => $options['sites_choices'],
+            ])
+            // Colonnes de l'export Excel, cochées dans la modale « Exporter ».
+            ->add('colonnes', ChoiceType::class, [
+                'label' => false,
+                'required' => false,
+                'multiple' => true,
+                'expanded' => true,
+                'choices' => $options['colonnes_choices'],
             ]);
         // Pas de bouton unique « Appliquer » : chaque bouton du bandeau soumet
         // le formulaire en posant `selection[action]` (valeur du ChoiceType).
@@ -83,10 +90,12 @@ final class ReferentielSelectionType extends AbstractType
             'ids_choices' => [],
             'contributeurs' => [],
             'sites_choices' => [],
+            'colonnes_choices' => [],
         ]);
         $resolver->setAllowedTypes('ids_choices', 'array');
         $resolver->setAllowedTypes('contributeurs', 'array');
         $resolver->setAllowedTypes('sites_choices', 'array');
+        $resolver->setAllowedTypes('colonnes_choices', 'array');
     }
 
     public function getBlockPrefix(): string

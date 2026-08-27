@@ -119,44 +119,6 @@ final readonly class ReferentielListeProvider
         return $this->repository->voisines($filtres, $ficheId);
     }
 
-    /** @return list<ReferentielLigne> Lignes du filtre pour l'export, plafonnées. */
-    public function exportLignes(ReferentielFiltres $filtres, int $plafond): array
-    {
-        $lignes = [];
-        $cursor = null;
-        while (count($lignes) < $plafond) {
-            [$page, $next] = $this->page($filtres, $cursor, min(100, $plafond - count($lignes)));
-            $lignes = [...$lignes, ...$page];
-            if (null === $next) {
-                break;
-            }
-            $cursor = ReferentielCursor::decode($next);
-        }
-
-        return $lignes;
-    }
-
-    /**
-     * Lignes des seules fiches cochées, pour l'export d'une sélection : mêmes
-     * colonnes et hydratation que la liste, sans parcourir le filtre courant.
-     *
-     * @param list<string> $ids ULID texte
-     *
-     * @return list<ReferentielLigne>
-     */
-    public function lignesPourIds(array $ids, TriReferentiel $tri = TriReferentiel::DEFAUT): array
-    {
-        $binaires = [];
-        foreach ($ids as $id) {
-            try {
-                $binaires[] = Ulid::fromString($id)->toBinary();
-            } catch (\InvalidArgumentException) {
-            }
-        }
-
-        return $this->lignes($this->repository->rowsPourIds($binaires, $tri));
-    }
-
     /** @return array{list<ReferentielLigne>, ?string} */
     private function page(ReferentielFiltres $filtres, ?ReferentielCursor $cursor, int $limit): array
     {

@@ -362,66 +362,6 @@ final readonly class ReferentielRepository
         ];
     }
 
-    /**
-     * Lignes brutes des seules fiches demandées, dans l'ordre de la liste :
-     * l'export d'une sélection cochée n'a pas à parcourir tout le résultat
-     * filtré.
-     *
-     * @param list<string> $ids Identifiants binaires
-     *
-     * @return list<array<string, mixed>>
-     */
-    public function rowsPourIds(array $ids, TriReferentiel $tri = TriReferentiel::DEFAUT): array
-    {
-        if ([] === $ids) {
-            return [];
-        }
-        // « diffusion » : sd n'est pas jointe ici, la colonne est le
-        // sous-select aliasé canaux, résolu par MySQL dans le ORDER BY.
-        $expr = 'diffusion' === $tri->colonne() ? 'canaux' : $this->specTri($tri)['expr'];
-
-        return $this->connection->fetchAllAssociative(
-            sprintf(
-                <<<'SQL'
-                SELECT
-                    f.id,
-                    f.type,
-                    f.code,
-                    f.label,
-                    CASE f.type
-                        WHEN 'activite' THEN CASE WHEN a.mode_intervention = 'fixe' THEN loc.ville ELSE NULL END
-                        WHEN 'service_evenementiel' THEN CASE WHEN sv.mode_intervention = 'fixe' THEN loc.ville ELSE NULL END
-                        ELSE loc.ville
-                    END AS ville,
-                    f.status,
-                    %s AS completeness,
-                    (SELECT COUNT(*) FROM pim_fiche_site_diffusion psd WHERE psd.fiche_id = f.id) AS canaux,
-                    au.email AS contributeur,
-                    loc.pays AS pays,
-                    f.business_premium AS premium,
-                    %s AS typologie,
-                    f.updated_at
-                FROM pim_fiche f
-                LEFT JOIN pim_localisation loc ON loc.id = f.localisation_id
-                LEFT JOIN pim_lieu l ON l.fiche_id = f.id AND f.type = 'lieu'
-                LEFT JOIN pim_activite a ON a.fiche_id = f.id AND f.type = 'activite'
-                LEFT JOIN pim_restaurant r ON r.fiche_id = f.id AND f.type = 'restaurant'
-                LEFT JOIN pim_service_evenementiel sv ON sv.fiche_id = f.id AND f.type = 'service_evenementiel'
-                LEFT JOIN account_user au ON au.id = f.assignee_id
-                WHERE f.id IN (:ids)
-                ORDER BY %s %s, f.id %s
-                SQL,
-                self::COMPLETENESS,
-                self::TYPOLOGIE,
-                $expr,
-                $tri->direction(),
-                $tri->direction(),
-            ),
-            ['ids' => $ids],
-            ['ids' => ArrayParameterType::BINARY],
-        );
-    }
-
     /** @return array<string, array<int|string, int>> Comptes de facettes par groupe puis par valeur. */
     public function comptes(ReferentielFiltres $filtres): array
     {

@@ -37,7 +37,7 @@ final readonly class ReferentielActionGroupee
         'archiver' => 5000,
         'desarchiver' => 5000,
         'republier' => 5000,
-        'exporter' => 5000,
+        // L'export Excel n'est pas plafonné : il passe par la vue d'attente.
         // Envoi manuel groupé vers Salesforce : borné pour garder l'e-mail et
         // le CSV en mémoire raisonnables (le reste passe par la synchro auto).
         'salesforce' => 2000,

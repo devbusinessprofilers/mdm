@@ -7,10 +7,12 @@ namespace App\Pim\Service;
 use App\Pim\Entity\SavedView;
 use App\Pim\Enum\TriReferentiel;
 use App\Pim\Enum\TypeFiche;
+use App\Pim\Export\FicheExportColonnesCatalogue;
 use App\Pim\Form\ReferentielFiltres;
 use App\Pim\Form\ReferentielFiltresType;
 use App\Pim\Form\ReferentielSelectionType;
 use App\Pim\Form\SavedViewType;
+use App\Pim\Import\Schema\FicheImportSchemaRegistry;
 use App\Pim\ReadModel\ReferentielCursor;
 use App\Pim\ReadModel\ReferentielVue;
 use App\Account\Repository\UserRepository;
@@ -33,6 +35,7 @@ final readonly class ReferentielEcran
         private SavedViewRepository $vues,
         private UserRepository $utilisateurs,
         private SiteDiffusionRepository $sites,
+        private FicheExportColonnesCatalogue $exportColonnes,
         private FicheRouteResolver $routes,
         private FormFactoryInterface $forms,
         private UrlGeneratorInterface $urls,
@@ -76,13 +79,21 @@ final readonly class ReferentielEcran
                 ),
             ];
         }
+        // Colonnes de l'export Excel : les gammes filtrées, sinon toutes.
+        $gammesExport = FicheExportColonnesCatalogue::ordonnes(
+            [] !== $filtres->gammes ? $filtres->gammes : FicheImportSchemaRegistry::supportedTypes(),
+        );
+        $clesExport = $this->exportColonnes->clesPour($gammesExport);
         $formSelection = $this->forms->createNamed('selection', ReferentielSelectionType::class, null, [
             'action' => $this->urls->generate('app_mdm_referentiel_actions', $parametresFiltre),
             'ids_choices' => $idsPage,
             'contributeurs' => $this->utilisateurs->findActifs(),
             // Liste plate : le composant Select du portail ne rend pas les groupes.
             'sites_choices' => array_merge([], ...array_values($this->sites->choicesGroupees())),
+            'colonnes_choices' => array_combine($clesExport, $clesExport),
         ]);
+        // Toutes les colonnes précochées : l'utilisateur écarte, il ne compose pas.
+        $formSelection->get('colonnes')->setData($clesExport);
         $formVue = $this->forms->createNamed('vue', SavedViewType::class, null, [
             'action' => $this->urls->generate('app_mdm_referentiel_vue_enregistrer', $parametresFiltre),
         ]);
@@ -106,9 +117,33 @@ final readonly class ReferentielEcran
         }
         $vueCourante ??= 'Gérer les vues';
 
+        // Structure de la modale d'export : gammes → onglets → colonnes, les
+        // index suivant l'ordre plat des choices du champ `colonnes` (les
+        // enfants d'un ChoiceType étendu sont indexés par position).
+        $exportModale = [];
+        $position = 0;
+        foreach ($gammesExport as $type) {
+            $onglets = [];
+            foreach ($this->exportColonnes->groupesPour($type) as $groupe) {
+                $colonnes = [];
+                foreach ($groupe['colonnes'] as $colonne) {
+                    $colonnes[] = ['index' => $position++, 'libelle' => $colonne['libelle']];
+                }
+                $onglets[] = ['titre' => $groupe['titre'], 'colonnes' => $colonnes];
+            }
+            $exportModale[] = [
+                'libelle' => self::LIBELLES['gammes']['valeurs'][$type->value] ?? $type->value,
+                'onglets' => $onglets,
+            ];
+        }
+
         return [
             'vue' => $vue,
             'actions' => self::actions(),
+            'export_modale' => $exportModale,
+            // La modale poste la sélection vers la vue d'attente, dans un
+            // nouvel onglet : le référentiel garde sa sélection.
+            'export_url' => $this->urls->generate('app_mdm_referentiel_exporter', $parametresFiltre),
             'filtres' => $filtres,
             'filtres_actifs' => $this->filtresActifs($filtres, $vue, $gammeImposee),
             'tri' => $filtres->tri,
@@ -138,12 +173,16 @@ final readonly class ReferentielEcran
      */
     public static function actions(): array
     {
-        $action = static fn (string $code, string $label, string $icone): array => [
+        $action = static fn (string $code, string $label, string $icone, ?string $modale = null): array => [
             'code' => $code,
             'label' => $label,
             'icone' => $icone,
-            'plafond' => ReferentielActionGroupee::plafond($code),
+            // L'export (modale) n'est pas plafonné : la vue d'attente absorbe
+            // la durée ; les autres actions gardent les plafonds de la maquette.
+            'plafond' => null === $modale ? ReferentielActionGroupee::plafond($code) : null,
             'irreversible' => 'acces' === $code,
+            // Identifiant de modale : le bouton ouvre la modale au lieu de soumettre.
+            'modale' => $modale,
         ];
 
         return [
@@ -161,7 +200,7 @@ final readonly class ReferentielEcran
                 // republication directe (décision produit).
                 $action('desarchiver', 'Désarchiver', 'arrow-counter-clockwise'),
                 $action('republier', 'Republier', 'paper-plane'),
-                $action('exporter', 'Exporter CSV', 'clipboard'),
+                $action('exporter', 'Exporter Excel', 'clipboard', 'export-colonnes'),
                 $action('salesforce', 'Envoyer à Salesforce', 'cloud-arrow-up'),
                 $action('acces', 'Envoyer les accès extranet', 'lock'),
             ],
@@ -364,11 +403,16 @@ final readonly class ReferentielEcran
             }
         }
 
+        // Toutes les gammes : superset sûr même si les filtres ont changé
+        // entre le rendu de la modale et la soumission.
+        $clesExport = $this->exportColonnes->clesPour(FicheImportSchemaRegistry::supportedTypes());
+
         // Les identifiants soumis sont revalidés fiche par fiche (voter + état).
         return $this->forms->createNamed('selection', ReferentielSelectionType::class, null, [
             'ids_choices' => $choices,
             'contributeurs' => $this->utilisateurs->findActifs(),
             'sites_choices' => array_merge([], ...array_values($this->sites->choicesGroupees())),
+            'colonnes_choices' => array_combine($clesExport, $clesExport),
         ]);
     }
 }
