@@ -22,6 +22,7 @@ use App\Pim\ReadModel\ReferentielCursor;
 use App\Pim\Service\FicheSearchIndexer;
 use App\Pim\Service\ReferentielActionGroupee;
 use App\Pim\Service\ReferentielListeProvider;
+use App\Shared\Service\PrivateObjectStorageInterface;
 use Symfony\Component\Uid\Ulid;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
@@ -728,9 +729,276 @@ final class ReferentielControllerTest extends WebTestCase
         self::assertStringContainsString('nom_asc', (string) $lien->attr('href'));
     }
 
+    public function testLExportExcelEstTraceGenereEnFondEtTelechargeable(): void
+    {
+        $client = self::createClient();
+        // Le conteneur survit aux requêtes : le stockage factice posé ici
+        // sert au handler puis au téléchargement.
+        $client->disableReboot();
+        $stockage = new ReferentielExportTestStorage();
+        self::getContainer()->set(PrivateObjectStorageInterface::class, $stockage);
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $this->connection = self::getContainer()->get(Connection::class);
+        $this->clearTables();
+
+        $user = new User('referentiel-export@example.test', ['ROLE_BP_VALIDATOR']);
+        $user->setPassword('not-used-by-login-user');
+        $entityManager->persist($user);
+
+        $lieu = new Lieu();
+        $lieu->changeLabel('Château à exporter');
+        $lieu->changeGeneraleTypologie(['GENERALE_TYPOLOGIE_1']);
+        $entityManager->persist($lieu);
+        $restaurant = new Restaurant();
+        $restaurant->changeLabel('Bistrot à exporter');
+        $entityManager->persist($restaurant);
+        $entityManager->flush();
+        $client->loginUser($user);
+
+        $crawler = $client->request('GET', '/referentiel');
+        self::assertResponseIsSuccessful();
+        // La modale d'export est présente, ses cases précochées, son bouton
+        // vise la demande d'export dans un nouvel onglet.
+        self::assertGreaterThan(0, $crawler->filter('[data-modal="export-colonnes"]')->count());
+        self::assertGreaterThan(0, $crawler->filter('[data-modal="export-colonnes"] input[checked]')->count());
+        self::assertGreaterThan(0, $crawler->filter('[data-modal="export-colonnes"] [formtarget="_blank"]')->count());
+
+        $form = $crawler->selectButton('Valider')->form();
+        $values = $form->getPhpValues();
+        $values['selection']['ids'] = [$lieu->fiche()->idString(), $restaurant->fiche()->idString()];
+        $values['selection']['colonnes'] = ['lieu:label', 'lieu:generale_typologie', 'restaurant:label'];
+
+        // 1. La demande crée l'export (code unique) et mène à la page de suivi.
+        $client->request('POST', '/referentiel/exporter', $values);
+        self::assertResponseRedirects();
+        $suivi = (string) $client->getResponse()->headers->get('Location');
+        self::assertMatchesRegularExpression('#/referentiel/exports/[0-9A-HJKMNP-TV-Z]{26}$#', $suivi);
+        $exportId = substr($suivi, -26);
+
+        $client->followRedirect();
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('body', 'Votre fichier est en cours de génération');
+        self::assertSelectorTextContains('body', 'télécharger automatiquement votre fichier');
+        self::assertSelectorTextContains('body', 'Référence de l\'export : '.$exportId);
+
+        // 2. Le statut se sonde en JSON ; le worker génère puis termine.
+        $client->request('GET', $suivi.'/statut');
+        self::assertResponseIsSuccessful();
+        self::assertStringContainsString('"statut":"en_attente"', (string) $client->getResponse()->getContent());
+
+        $handler = self::getContainer()->get(\App\Pim\MessageHandler\GenererReferentielExportHandler::class);
+        $handler(new \App\Pim\Message\GenererReferentielExport($exportId));
+
+        $client->request('GET', $suivi.'/statut');
+        self::assertStringContainsString('"statut":"terminee"', (string) $client->getResponse()->getContent());
+
+        // 3. La page rouverte plus tard propose directement le téléchargement.
+        $client->request('GET', $suivi);
+        self::assertSelectorTextContains('body', 'Votre fichier est prêt');
+
+        // 4. Le classeur téléchargé porte les colonnes choisies.
+        $client->request('GET', $suivi.'/fichier');
+        self::assertResponseIsSuccessful();
+        self::assertSame(
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            $client->getResponse()->headers->get('Content-Type'),
+        );
+        self::assertStringContainsString('referentiel-export-', (string) $client->getResponse()->headers->get('Content-Disposition'));
+
+        $chemin = tempnam(sys_get_temp_dir(), 'mdm-export-lu');
+        self::assertIsString($chemin);
+        file_put_contents($chemin, $client->getInternalResponse()->getContent());
+        try {
+            $reader = new \OpenSpout\Reader\XLSX\Reader();
+            $reader->open($chemin);
+            $feuilles = [];
+            foreach ($reader->getSheetIterator() as $sheet) {
+                $rows = [];
+                foreach ($sheet->getRowIterator() as $row) {
+                    $rows[] = array_map(static fn (mixed $cell): string => is_scalar($cell) ? (string) $cell : '', $row->toArray());
+                }
+                $feuilles[$sheet->getName()] = $rows;
+            }
+            $reader->close();
+
+            self::assertSame(['Lieux', 'Restaurants', 'LOV'], array_keys($feuilles));
+            // Colonnes retenues seulement (atout1, non cochée, est absente),
+            // le code de fiche en tête, les colonnes LOV en libellés.
+            self::assertSame(['code', 'label', 'generale_typologie'], $feuilles['Lieux'][0]);
+            self::assertSame('Château à exporter', $feuilles['Lieux'][1][1]);
+            self::assertSame('Hôtel 2 étoiles', $feuilles['Lieux'][1][2]);
+            self::assertSame('Bistrot à exporter', $feuilles['Restaurants'][1][1]);
+        } finally {
+            if (is_file($chemin)) {
+                unlink($chemin);
+            }
+        }
+
+        // 5. L'export figure dans Outils → Historique des exports, avec sa
+        // date d'expiration (rétention 30 jours sur le bucket privé).
+        $crawler = $client->request('GET', '/outils', ['famille' => 'export']);
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('body', 'Export Excel · 2 fiche(s) · referentiel-export@example.test');
+        self::assertStringContainsString('Expiration', $crawler->text(null, true));
+        self::assertStringContainsString((new \DateTimeImmutable('+30 days'))->format('d/m/Y'), $crawler->text(null, true));
+    }
+
+    public function testLExportDeToutLeResultatFiltreNeStockePasLesIds(): void
+    {
+        $client = self::createClient();
+        $client->disableReboot();
+        self::getContainer()->set(PrivateObjectStorageInterface::class, new ReferentielExportTestStorage());
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $this->connection = self::getContainer()->get(Connection::class);
+        $this->clearTables();
+
+        $user = new User('referentiel-export-tout@example.test', ['ROLE_BP_VALIDATOR']);
+        $user->setPassword('not-used-by-login-user');
+        $entityManager->persist($user);
+
+        $lieu = new Lieu();
+        $lieu->changeLabel('Château du filtre');
+        $entityManager->persist($lieu);
+        $restaurant = new Restaurant();
+        $restaurant->changeLabel('Bistrot hors filtre');
+        $entityManager->persist($restaurant);
+        $entityManager->flush();
+        $client->loginUser($user);
+
+        $crawler = $client->request('GET', '/referentiel', ['f' => ['gammes' => ['lieu']]]);
+        $form = $crawler->selectButton('Valider')->form();
+        $values = $form->getPhpValues();
+        $values['selection']['tout'] = '1';
+        $values['selection']['ids'] = [];
+        $values['selection']['colonnes'] = ['lieu:label'];
+
+        // « Tout le résultat filtré » : l'entité garde le drapeau (ids null)
+        // et les filtres — pas des milliers d'ids (max_input_vars).
+        $client->request('POST', '/referentiel/exporter?'.http_build_query(['f' => ['gammes' => ['lieu']]]), $values);
+        self::assertResponseRedirects();
+        $suivi = (string) $client->getResponse()->headers->get('Location');
+        $exportId = substr($suivi, -26);
+        self::assertNull($this->connection->fetchOne('SELECT ids FROM pim_referentiel_export LIMIT 1'));
+
+        $crawler = $client->followRedirect();
+        self::assertStringContainsString('1 fiche', $crawler->text(null, true));
+
+        // Le worker re-résout la sélection depuis les filtres stockés.
+        $handler = self::getContainer()->get(\App\Pim\MessageHandler\GenererReferentielExportHandler::class);
+        $handler(new \App\Pim\Message\GenererReferentielExport($exportId));
+
+        $client->request('GET', $suivi.'/fichier');
+        self::assertResponseIsSuccessful();
+
+        $chemin = tempnam(sys_get_temp_dir(), 'mdm-export-tout');
+        self::assertIsString($chemin);
+        file_put_contents($chemin, $client->getInternalResponse()->getContent());
+        try {
+            $reader = new \OpenSpout\Reader\XLSX\Reader();
+            $reader->open($chemin);
+            $noms = [];
+            $contenu = '';
+            foreach ($reader->getSheetIterator() as $sheet) {
+                $noms[] = $sheet->getName();
+                foreach ($sheet->getRowIterator() as $row) {
+                    $contenu .= implode(';', array_map(static fn (mixed $cell): string => is_scalar($cell) ? (string) $cell : '', $row->toArray()));
+                }
+            }
+            $reader->close();
+            self::assertContains('Lieux', $noms);
+            self::assertNotContains('Restaurants', $noms);
+            self::assertStringContainsString('Château du filtre', $contenu);
+            self::assertStringNotContainsString('Bistrot hors filtre', $contenu);
+        } finally {
+            if (is_file($chemin)) {
+                unlink($chemin);
+            }
+        }
+    }
+
+    public function testLExportSansColonneNeCreeRienEtAvertit(): void
+    {
+        $client = self::createClient();
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $this->connection = self::getContainer()->get(Connection::class);
+        $this->clearTables();
+
+        $user = new User('referentiel-export-vide@example.test', ['ROLE_BP_VALIDATOR']);
+        $user->setPassword('not-used-by-login-user');
+        $entityManager->persist($user);
+
+        $lieu = new Lieu();
+        $lieu->changeLabel('Château sans colonnes');
+        $entityManager->persist($lieu);
+        $entityManager->flush();
+        $client->loginUser($user);
+
+        $crawler = $client->request('GET', '/referentiel');
+        $form = $crawler->selectButton('Valider')->form();
+        $values = $form->getPhpValues();
+        $values['selection']['ids'] = [$lieu->fiche()->idString()];
+        $values['selection']['colonnes'] = [];
+        $client->request('POST', '/referentiel/exporter', $values);
+
+        self::assertResponseRedirects();
+        $client->followRedirect();
+        self::assertSelectorTextContains('body', 'Choisissez au moins une colonne à exporter.');
+        self::assertSame(0, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM pim_referentiel_export'));
+    }
+
+    public function testLaPurgeExpireLesExportsEtRetireLeClasseurDuBucket(): void
+    {
+        $client = self::createClient();
+        $client->disableReboot();
+        $stockage = new ReferentielExportTestStorage();
+        self::getContainer()->set(PrivateObjectStorageInterface::class, $stockage);
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $this->connection = self::getContainer()->get(Connection::class);
+        $this->clearTables();
+
+        $user = new User('referentiel-export-purge@example.test', ['ROLE_BP_VALIDATOR']);
+        $user->setPassword('not-used-by-login-user');
+        $entityManager->persist($user);
+        $lieu = new Lieu();
+        $lieu->changeLabel('Château à purger');
+        $entityManager->persist($lieu);
+        $entityManager->flush();
+        $client->loginUser($user);
+
+        $crawler = $client->request('GET', '/referentiel');
+        $form = $crawler->selectButton('Valider')->form();
+        $values = $form->getPhpValues();
+        $values['selection']['ids'] = [$lieu->fiche()->idString()];
+        $values['selection']['colonnes'] = ['lieu:label'];
+        $client->request('POST', '/referentiel/exporter', $values);
+        $suivi = (string) $client->getResponse()->headers->get('Location');
+        $exportId = substr($suivi, -26);
+
+        $handler = self::getContainer()->get(\App\Pim\MessageHandler\GenererReferentielExportHandler::class);
+        $handler(new \App\Pim\Message\GenererReferentielExport($exportId));
+        self::assertCount(1, $stockage->objets);
+
+        // Rétention écoulée : la purge quotidienne retire le classeur du
+        // bucket et marque l'export expiré.
+        $this->connection->executeStatement("UPDATE pim_referentiel_export SET expires_at = '2020-01-01 00:00:00'");
+        $entityManager->clear();
+        $application = new \Symfony\Bundle\FrameworkBundle\Console\Application(self::$kernel);
+        $tester = new \Symfony\Component\Console\Tester\CommandTester($application->find('app:referentiel:purger-exports'));
+        $tester->execute([]);
+        $tester->assertCommandIsSuccessful();
+        self::assertStringContainsString('1 export(s) purgé(s).', $tester->getDisplay());
+        self::assertCount(0, $stockage->objets);
+
+        $client->request('GET', $suivi.'/fichier');
+        self::assertResponseStatusCodeSame(404);
+        $client->request('GET', $suivi);
+        self::assertSelectorTextContains('body', 'Cet export a expiré.');
+    }
+
     private function clearTables(): void
     {
         $this->connection->executeStatement('DELETE FROM pim_saved_view');
+        $this->connection->executeStatement('DELETE FROM pim_referentiel_export');
         $this->connection->executeStatement('DELETE FROM pim_fiche_affiliation');
         $this->connection->executeStatement('DELETE FROM pim_fiche_collaborateur');
         $this->connection->executeStatement('DELETE FROM pim_fiche_site_diffusion');
@@ -746,5 +1014,58 @@ final class ReferentielControllerTest extends WebTestCase
         $this->connection->executeStatement('DELETE FROM pim_localisation');
         $this->connection->executeStatement('DELETE FROM outbox_message');
         $this->connection->executeStatement('DELETE FROM account_user');
+    }
+}
+
+/** Bucket privé factice des tests d'export : objets en mémoire. */
+final class ReferentielExportTestStorage implements PrivateObjectStorageInterface
+{
+    /** @var array<string, string> */
+    public array $objets = [];
+
+    public function write(string $key, string $contents, array $options = []): void
+    {
+        $this->objets[$key] = $contents;
+    }
+
+    public function writeStream(string $key, mixed $stream, array $options = []): void
+    {
+        $this->objets[$key] = (string) stream_get_contents($stream);
+    }
+
+    public function read(string $key): string
+    {
+        return $this->objets[$key] ?? throw new \RuntimeException(sprintf('Objet %s absent.', $key));
+    }
+
+    public function readStream(string $key): mixed
+    {
+        $stream = fopen('php://temp', 'r+b');
+        if (false === $stream) {
+            throw new \RuntimeException('Flux temporaire indisponible.');
+        }
+        fwrite($stream, $this->read($key));
+        rewind($stream);
+
+        return $stream;
+    }
+
+    public function exists(string $key): bool
+    {
+        return isset($this->objets[$key]);
+    }
+
+    public function temporaryUrl(string $key, \DateTimeInterface $expiresAt): string
+    {
+        return 'https://private.example.test/'.$key;
+    }
+
+    public function delete(string $key): void
+    {
+        unset($this->objets[$key]);
+    }
+
+    public function deleteDirectory(string $prefix): void
+    {
     }
 }

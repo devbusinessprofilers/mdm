@@ -1,0 +1,70 @@
+{% extends 'mdm/base.html.twig' %}
+
+{#
+    Page de suivi d'un export Excel du référentiel : son URL porte le code
+    unique de l'export — elle se partage, se ferme et se rouvre. Le contrôleur
+    Stimulus `export-attente` sonde le statut pendant la génération (worker)
+    et propose le téléchargement, automatique si la case est cochée.
+#}
+
+{% block title %}Export {{ export.idString }} — MDM Business Profilers{% endblock %}
+
+{% block contenu %}
+    <div class="flex-1 flex items-center justify-center px-8 py-16">
+        <div class="flex flex-col items-center text-center gap-5 max-w-[620px]"
+             data-controller="export-attente"
+             data-export-attente-statut-value="{{ export.statut }}"
+             data-export-attente-statut-url-value="{{ url_statut }}"
+             data-export-attente-fichier-url-value="{{ url_fichier }}">
+
+            <div class="flex flex-col items-center gap-5" data-export-attente-target="attente"
+                 {{ export.statut in ['en_attente', 'en_cours'] ? '' : 'hidden' }}>
+                <twig:Icon name="spinner" class="w-12 h-12 text-primary-3 animate-spin" />
+                <twig:Typography variant="subtitle" bold>Votre fichier est en cours de génération…</twig:Typography>
+                <twig:Typography variant="body-sm" textColor="neutral-500">
+                    {{ export.nb|number_format(0, ',', ' ') }} fiche{{ export.nb == 1 ? '' : 's' }}, demandé par {{ export.demandeur }}.
+                    Vous pouvez fermer cette page et revenir plus tard : l'export reste disponible à cette adresse
+                    et dans Outils&nbsp;→ Historique des exports.
+                </twig:Typography>
+                <label for="{{ form_auto.auto.vars.id }}" class="flex items-center gap-2 cursor-pointer">
+                    {{ form_widget(form_auto.auto, { attr: { 'data-export-attente-target': 'auto' } }) }}
+                    <twig:Typography variant="body-sm">Cochez la case pour télécharger automatiquement votre fichier quand il sera prêt</twig:Typography>
+                </label>
+            </div>
+
+            <div class="flex flex-col items-center gap-5" data-export-attente-target="pret"
+                 {{ export.telechargeable ? '' : 'hidden' }}>
+                <twig:Icon name="check-circle" class="w-12 h-12 text-primary-3" />
+                <twig:Button variant="primary" type="button" data-action="export-attente#telecharger">
+                    Votre fichier est prêt — cliquez ici pour le télécharger
+                </twig:Button>
+                <twig:Typography variant="body-sm" textColor="neutral-500">
+                    {{ export.nb|number_format(0, ',', ' ') }} fiche{{ export.nb == 1 ? '' : 's' }} · demandé par {{ export.demandeur }}
+                    le {{ export.requestedAt|date('d/m/Y à H:i') }} · {{ export.filename }}
+                    {% if export.expiresAt %} · disponible jusqu'au {{ export.expiresAt|date('d/m/Y') }}{% endif %}
+                </twig:Typography>
+            </div>
+
+            <div class="flex flex-col items-center gap-4" data-export-attente-target="echec"
+                 {{ export.statut == 'echoue' ? '' : 'hidden' }}>
+                <twig:Icon name="warning" class="w-10 h-10 text-peach" />
+                <twig:Typography variant="subtitle" bold>La génération a échoué.</twig:Typography>
+                <twig:Typography variant="body-sm" textColor="neutral-500">
+                    Relancez l'export depuis le référentiel ; le détail est dans Outils&nbsp;→ Historique des exports.
+                </twig:Typography>
+            </div>
+
+            <div class="flex flex-col items-center gap-4" {{ export.estExpiree ? '' : 'hidden' }}>
+                <twig:Icon name="warning" class="w-10 h-10 text-peach" />
+                <twig:Typography variant="subtitle" bold>Cet export a expiré.</twig:Typography>
+                <twig:Typography variant="body-sm" textColor="neutral-500">
+                    Les classeurs sont conservés 30 jours après leur génération
+                    {% if export.expiresAt %}(jusqu'au {{ export.expiresAt|date('d/m/Y') }}){% endif %} :
+                    relancez un export depuis le référentiel.
+                </twig:Typography>
+            </div>
+
+            <twig:Typography variant="body-xs" textColor="neutral-500">Référence de l'export : {{ export.idString }}</twig:Typography>
+        </div>
+    </div>
+{% endblock %}

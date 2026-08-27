@@ -20,6 +20,7 @@ final readonly class JournalTraitementsRepository
         'traduction' => 'Traductions',
         'media' => 'Médias',
         'enrichissement' => 'Enrichissements',
+        'export' => 'Historique des exports',
     ];
 
     /** Libellés des sources du détail d'une demande d'enrichissement. */
@@ -58,6 +59,7 @@ final readonly class JournalTraitementsRepository
      *     erreur: ?string,
      *     quand: string,
      *     lien: ?array{route: string, params: array<string, string>},
+     *     expire?: ?string,
      * }>
      */
     public function journal(?string $famille = null, bool $seulementErreurs = false, int $limit = self::JOURNAL_LIMIT): array
@@ -154,6 +156,24 @@ final readonly class JournalTraitementsRepository
                 ];
             }
         }
+        if (null === $famille || 'export' === $famille) {
+            // Exports Excel du référentiel : la page de suivi (code unique)
+            // reste consultable, le classeur téléchargeable jusqu'à expiration.
+            foreach ($this->connection->fetchAllAssociative(
+                'SELECT id, demandeur, statut, nb, erreur, requested_at, finished_at, expires_at
+                 FROM pim_referentiel_export ORDER BY requested_at DESC LIMIT '.$limit,
+            ) as $row) {
+                $lignes[] = [
+                    'famille' => 'export',
+                    'sujet' => sprintf('Export Excel · %d fiche(s) · %s', (int) $row['nb'], (string) $row['demandeur']),
+                    'statut' => (string) $row['statut'],
+                    'erreur' => null === $row['erreur'] ? null : (string) $row['erreur'],
+                    'quand' => (string) ($row['finished_at'] ?? $row['requested_at']),
+                    'lien' => ['route' => 'app_mdm_referentiel_export_suivi', 'params' => ['id' => self::ulid($row['id'])]],
+                    'expire' => null === $row['expires_at'] ? null : (string) $row['expires_at'],
+                ];
+            }
+        }
         if ($seulementErreurs) {
             $lignes = array_values(array_filter(
                 $lignes,
@@ -247,6 +267,22 @@ final readonly class JournalTraitementsRepository
                 'erreur' => null === $row['error_message'] ? null : (string) $row['error_message'],
                 'quand' => (string) $row['updated_at'],
                 'lien' => ['route' => 'app_dam_dashboard', 'params' => ['filter' => 'failed']],
+            ];
+        }
+        foreach ($this->connection->fetchAllAssociative(
+            "SELECT id, demandeur, statut, nb, erreur,
+                    COALESCE(finished_at, requested_at) AS quand
+             FROM pim_referentiel_export
+             WHERE statut = 'echoue'
+             ORDER BY quand DESC LIMIT ".$limit,
+        ) as $row) {
+            $lignes[] = [
+                'famille' => 'export',
+                'sujet' => sprintf('Export Excel · %d fiche(s) · %s', (int) $row['nb'], (string) $row['demandeur']),
+                'statut' => (string) $row['statut'],
+                'erreur' => null === $row['erreur'] ? null : (string) $row['erreur'],
+                'quand' => (string) $row['quand'],
+                'lien' => ['route' => 'app_mdm_referentiel_export_suivi', 'params' => ['id' => self::ulid($row['id'])]],
             ];
         }
         // Fiches dont la diffusion marketplace a épuisé ses relances : la

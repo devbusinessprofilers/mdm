@@ -66,6 +66,9 @@ class Schedule implements ScheduleProviderInterface
             // Monitoring /admin/performance : échantillons (7 j), heartbeats
             // morts (48 h) et logs persistés (15 j).
             ->add(RecurringMessage::cron('30 4 * * *', new RunCommandMessage('app:performance:purge'), new \DateTimeZone('Europe/Paris')))
+            // Exports Excel du référentiel : les classeurs quittent le bucket
+            // privé 30 jours après génération (l'historique /outils le dit).
+            ->add(RecurringMessage::cron('35 4 * * *', new RunCommandMessage('app:referentiel:purger-exports'), new \DateTimeZone('Europe/Paris')))
 
             // Contrôle mensuel d'état d'activité des lieux (Sirene) : cadence des
             // radiations d'entreprises. No-op tant que sirene.verif_statut_actif

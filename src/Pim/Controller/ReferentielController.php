@@ -5,23 +5,32 @@ declare(strict_types=1);
 namespace App\Pim\Controller;
 
 use App\Account\Service\CurrentActorProvider;
+use App\Pim\Entity\ReferentielExport;
 use App\Pim\Entity\SavedView;
 use App\Pim\Enum\TypeFiche;
+use App\Pim\Form\ExportAttenteType;
 use App\Pim\Form\ReferentielFiltres;
 use App\Pim\Form\SavedViewType;
+use App\Pim\Message\GenererReferentielExport;
+use App\Pim\MessageHandler\GenererReferentielExportHandler;
 use App\Pim\ReadModel\ReferentielCursor;
-use App\Pim\ReadModel\ReferentielLigne;
+use App\Pim\Repository\ReferentielExportRepository;
 use App\Pim\Repository\SavedViewRepository;
 use App\Pim\Service\RechercheSuggestions;
 use App\Pim\Service\ReferentielActionGroupee;
 use App\Pim\Service\ReferentielEcran;
 use App\Pim\Service\ReferentielListeProvider;
 use App\Pim\Service\SavedViewManager;
+use App\Shared\Service\PrivateObjectStorageInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\Messenger\MessageBusInterface;
+use Symfony\Component\Uid\Ulid;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
@@ -121,7 +130,7 @@ final class ReferentielController extends AbstractController
 
             return $retour;
         }
-        /** @var array{ids: list<string>, tout: bool, action: ?string, contributeur: ?\App\Account\Entity\User, sites: list<int>} $data */
+        /** @var array{ids: list<string>, tout: bool, action: ?string, contributeur: ?\App\Account\Entity\User, sites: list<int>, colonnes: list<string>} $data */
         $data = $form->getData();
         // Le placeholder du choix d'action est soumis comme valeur nulle valide.
         if (null === $data['action']) {
@@ -138,14 +147,6 @@ final class ReferentielController extends AbstractController
             $this->addFlash('warning', 'Aucune fiche sélectionnée.');
 
             return $retour;
-        }
-        if ('exporter' === $action) {
-            // Sélection cochée : export direct des ids, sans balayer le filtre.
-            $lignes = $data['tout']
-                ? $provider->exportLignes($filtres, $plafond)
-                : $provider->lignesPourIds(array_slice($ids, 0, $plafond), $filtres->tri);
-
-            return self::reponseCsv($lignes);
         }
         if (count($ids) > $plafond) {
             $this->addFlash('warning', sprintf(
@@ -222,6 +223,119 @@ final class ReferentielController extends AbstractController
         return $retour;
     }
 
+    /**
+     * Demande d'export Excel depuis la modale (nouvel onglet) : la demande
+     * est tracée avec un code unique, la génération part en tâche de fond,
+     * et l'onglet atterrit sur la page de suivi — partageable, refermable.
+     */
+    #[Route('/exporter', name: 'referentiel_exporter', methods: ['POST'])]
+    public function exporter(
+        Request $request,
+        CurrentActorProvider $actor,
+        ReferentielEcran $ecran,
+        ReferentielListeProvider $provider,
+        ReferentielExportRepository $exports,
+        MessageBusInterface $bus,
+    ): Response {
+        $filtres = ReferentielFiltres::fromArray($request->query->all('f'));
+        $form = $ecran->formSelectionSoumise($request->request->all('selection'));
+        $form->handleRequest($request);
+        $retour = $this->redirectToRoute('app_mdm_referentiel_general', ['f' => $request->query->all('f')]);
+        if (!$form->isSubmitted() || !$form->isValid()) {
+            $this->addFlash('warning', 'Sélection invalide, export non lancé.');
+
+            return $retour;
+        }
+        /** @var array{ids: list<string>, tout: bool, colonnes: list<string>} $data */
+        $data = $form->getData();
+        // « Tout le résultat filtré » ne transporte ni ne stocke ses milliers
+        // d'ids : l'entité garde le drapeau (ids null) et les filtres, le
+        // worker re-résout la sélection. Pas de plafond.
+        $tout = $data['tout'];
+        $nb = $tout ? count($provider->idsPourFiltre($filtres, PHP_INT_MAX)) : count($data['ids']);
+        if (0 === $nb) {
+            $this->addFlash('warning', 'Aucune fiche sélectionnée.');
+
+            return $retour;
+        }
+        if ([] === $data['colonnes']) {
+            $this->addFlash('warning', 'Choisissez au moins une colonne à exporter.');
+
+            return $retour;
+        }
+
+        $export = $exports->demarrer(
+            $this->getUser()?->getUserIdentifier() ?? $actor->id(),
+            $data['colonnes'],
+            $tout ? null : $data['ids'],
+            $filtres->toArray(),
+            $nb,
+        );
+        $bus->dispatch(new GenererReferentielExport($export->idString()));
+
+        return $this->redirectToRoute('app_mdm_referentiel_export_suivi', ['id' => $export->idString()], Response::HTTP_SEE_OTHER);
+    }
+
+    /** Page de suivi d'un export : son URL est le code unique, elle se partage et se rouvre. */
+    #[Route('/exports/{id}', name: 'referentiel_export_suivi', requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'], methods: ['GET'])]
+    public function exportSuivi(string $id, ReferentielExportRepository $exports): Response
+    {
+        $export = $exports->find(Ulid::fromString($id));
+        if (!$export instanceof ReferentielExport) {
+            throw $this->createNotFoundException('Export introuvable.');
+        }
+
+        return $this->render('mdm/referentiel_export.html.twig', [
+            'export' => $export,
+            'url_statut' => $this->generateUrl('app_mdm_referentiel_export_statut', ['id' => $id]),
+            'url_fichier' => $this->generateUrl('app_mdm_referentiel_export_fichier', ['id' => $id]),
+            'form_auto' => $this->createForm(ExportAttenteType::class)->createView(),
+        ]);
+    }
+
+    /** Statut JSON, sondé par la page de suivi. */
+    #[Route('/exports/{id}/statut', name: 'referentiel_export_statut', requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'], methods: ['GET'])]
+    public function exportStatut(string $id, ReferentielExportRepository $exports): Response
+    {
+        $export = $exports->find(Ulid::fromString($id));
+        if (!$export instanceof ReferentielExport) {
+            throw $this->createNotFoundException('Export introuvable.');
+        }
+        $response = $this->json(['statut' => $export->statut()]);
+        $response->setPrivate();
+        $response->headers->addCacheControlDirective('no-store');
+
+        return $response;
+    }
+
+    /** Le classeur généré, streamé depuis le bucket privé jusqu'à son expiration (30 jours). */
+    #[Route('/exports/{id}/fichier', name: 'referentiel_export_fichier', requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'], methods: ['GET'])]
+    public function exportFichier(
+        string $id,
+        ReferentielExportRepository $exports,
+        PrivateObjectStorageInterface $storage,
+        #[Autowire('%env(S3_PREFIX)%')] string $storagePrefix,
+    ): Response {
+        $export = $exports->find(Ulid::fromString($id));
+        if (!$export instanceof ReferentielExport || !$export->telechargeable()) {
+            throw $this->createNotFoundException('Export introuvable, pas encore généré, ou expiré (30 jours).');
+        }
+        $stream = $storage->readStream(GenererReferentielExportHandler::cle($storagePrefix, $id));
+        $response = new StreamedResponse(static function () use ($stream): void {
+            fpassthru($stream);
+            if (is_resource($stream)) {
+                fclose($stream);
+            }
+        });
+        $response->headers->set('Content-Type', GenererReferentielExportHandler::CONTENT_TYPE);
+        $response->headers->set(
+            'Content-Disposition',
+            $response->headers->makeDisposition(ResponseHeaderBag::DISPOSITION_ATTACHMENT, $export->filename()),
+        );
+
+        return $response;
+    }
+
     #[Route('/vues', name: 'referentiel_vue_enregistrer', methods: ['POST'])]
     public function enregistrerVue(
         Request $request,
@@ -275,33 +389,4 @@ final class ReferentielController extends AbstractController
         return $this->redirectToRoute('app_mdm_referentiel_general');
     }
 
-    /** @param list<ReferentielLigne> $lignes */
-    private static function reponseCsv(array $lignes): StreamedResponse
-    {
-        $response = new StreamedResponse(static function () use ($lignes): void {
-            $sortie = fopen('php://output', 'w');
-            if (false === $sortie) {
-                return;
-            }
-            fputcsv($sortie, ['code', 'gamme', 'nom', 'ville', 'statut', 'completude', 'canaux', 'modifiee_le', 'auteur'], ';');
-            foreach ($lignes as $ligne) {
-                fputcsv($sortie, [
-                    $ligne->code,
-                    $ligne->type->value,
-                    $ligne->label ?? '',
-                    $ligne->ville ?? '',
-                    $ligne->status->value,
-                    $ligne->completeness ?? '',
-                    $ligne->canaux,
-                    $ligne->updatedAt->format('Y-m-d H:i:s'),
-                    $ligne->auteur ?? '',
-                ], ';');
-            }
-            fclose($sortie);
-        });
-        $response->headers->set('Content-Type', 'text/csv; charset=utf-8');
-        $response->headers->set('Content-Disposition', 'attachment; filename="referentiel.csv"');
-
-        return $response;
-    }
 }

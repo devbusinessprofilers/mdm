@@ -105,6 +105,9 @@ framework:
             # « Enrichir ce qui manque » est long (flux DATAtourisme, OpenAI),
             # il ne doit pas bloquer la file pim (indexation, workflow).
             App\Pim\Message\EnrichirFiche: enrichment
+            # Avant le joker Pim : la génération d'un export Excel peut durer
+            # (tout le référentiel), elle part sur la file batch etl.
+            App\Pim\Message\GenererReferentielExport: etl
             'App\Pim\Message\*': pim
             'App\Dashboard\Message\*': pim
             'App\Dam\Message\*': dam

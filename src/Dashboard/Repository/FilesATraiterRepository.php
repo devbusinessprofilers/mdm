@@ -34,7 +34,8 @@ final readonly class FilesATraiterRepository
                     + (SELECT COUNT(*) FROM ocr_document_extraction WHERE status = 'failed')
                     + (SELECT COUNT(*) FROM dam_media_asset WHERE status = 'failed' AND deleted_at IS NULL)
                     + (SELECT COUNT(*) FROM etl_fiche_marketplace WHERE status = 'failed')
-                    + (SELECT COUNT(*) FROM outbox_message WHERE status = 'failed')",
+                    + (SELECT COUNT(*) FROM outbox_message WHERE status = 'failed')
+                    + (SELECT COUNT(*) FROM pim_referentiel_export WHERE statut = 'echoue')",
             ),
             // Tout ce qui attend un arbitrage humain : suggestions IA (OCR)
             // ET écarts d'adresse (BAN / Geoapify).
