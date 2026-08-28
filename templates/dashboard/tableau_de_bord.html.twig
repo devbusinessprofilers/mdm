@@ -341,7 +341,7 @@
                         <twig:Typography variant="body-sm" textColor="neutral-500">
                             <span class="group-data-[croisement=publiees]/croisement:hidden group-data-[croisement=traductions]/croisement:hidden">Complétude moyenne par gamme</span>
                             <span class="hidden group-data-[croisement=publiees]/croisement:inline">Fiches publiées par gamme</span>
-                            <span class="hidden group-data-[croisement=traductions]/croisement:inline">Champs traduits par gamme (fiches publiées)</span>
+                            <span class="hidden group-data-[croisement=traductions]/croisement:inline">Champs à traduire par gamme (fiches publiées)</span>
                         </twig:Typography>
                     </div>
                     <div class="flex items-center shrink-0 gap-0.5 p-[3px] rounded-lg bg-neutral-200">
@@ -367,7 +367,7 @@
                             <div class="{{ grille_croisement }} h-11 px-4 {{ loop.first ? '' : 'border-t border-neutral-200' }}" role="row">
                                 <twig:Typography variant="body-sm" bold ellipsis class="min-w-0 self-center">{{ ligne.pays }}</twig:Typography>
                                 {% for typeValue, label in c.typeLabels %}
-                                    {{ _self.celluleDouble(ligne.completeness[typeValue] ?? null, ligne.published[typeValue] ?? 0, paliers, ligne.translated[typeValue] ?? null) }}
+                                    {{ _self.celluleDouble(ligne.completeness[typeValue] ?? null, ligne.published[typeValue] ?? 0, paliers, ligne.untranslated[typeValue] ?? null) }}
                                 {% endfor %}
                                 {{ _self.celluleTexte(ligne.total, paliers['total']) }}
                             </div>
@@ -375,7 +375,7 @@
                     </div>
                     <div class="flex items-center gap-2.5">
                         <twig:Icon name="info-circle" aria-hidden="true" class="shrink-0 w-3.5 h-3.5 text-neutral-400" />
-                        <twig:Typography variant="body-xs" textColor="neutral-400">Les 6 pays les plus représentés ; complétude moyenne, fiches publiées ou part traduite par gamme selon la bascule.</twig:Typography>
+                        <twig:Typography variant="body-xs" textColor="neutral-400">Les 6 pays les plus représentés ; complétude moyenne, fiches publiées ou champs à traduire par gamme selon la bascule.</twig:Typography>
                     </div>
                 {% endif %}
             </div>
@@ -589,11 +589,11 @@
 {% endmacro %}
 
 {# Les trois mesures rendues ; `data-croisement` de la carte choisit la face. #}
-{% macro celluleDouble(pct, nombre, paliers, traduit = null) %}
+{% macro celluleDouble(pct, nombre, paliers, aTraduire = null) %}
     {% set palier = pct is null ? null : (pct >= 75 ? 'complet' : (pct >= 60 ? 'publiable' : 'insuffisant')) %}
-    {# La couverture de traduction se juge plus sévèrement que la complétude :
-       le flux automatique doit la tenir à ~100 % sur les publiées. #}
-    {% set palierTrad = traduit is null ? null : (traduit >= 95 ? 'complet' : (traduit >= 70 ? 'publiable' : 'insuffisant')) %}
+    {# Face traductions : dette absolue (la couverture frôle partout 100 %).
+       Zéro champ = à jour ; au-delà de 300 la cellule passe au rouge. #}
+    {% set palierTrad = aTraduire is null ? null : (aTraduire == 0 ? 'complet' : (aTraduire < 300 ? 'publiable' : 'insuffisant')) %}
     <span class="min-w-0 h-[30px] box-border self-center">
         <span class="flex items-center justify-center w-full h-full rounded-xs {{ palier ? paliers[palier] : '' }}
                      group-data-[croisement=publiees]/croisement:hidden group-data-[croisement=traductions]/croisement:hidden">
@@ -605,7 +605,7 @@
         </span>
         <span class="hidden items-center justify-center w-full h-full rounded-xs {{ palierTrad ? paliers[palierTrad] : '' }}
                      group-data-[croisement=traductions]/croisement:flex">
-            <twig:Typography variant="body-sm" bold textColor="primary-3">{{ traduit is null ? '—' : traduit ~ ' %' }}</twig:Typography>
+            <twig:Typography variant="body-sm" bold textColor="primary-3">{{ aTraduire is null ? '—' : aTraduire }}</twig:Typography>
         </span>
     </span>
 {% endmacro %}

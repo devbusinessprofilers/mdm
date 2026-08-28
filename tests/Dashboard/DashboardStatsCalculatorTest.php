@@ -102,10 +102,11 @@ final class DashboardStatsCalculatorTest extends KernelTestCase
             ['champs' => 2, 'caracteres' => 12, 'fiches' => 1],
             $payload['translations']['pending'],
         );
-        // Croisement : part traduite par gamme, publiées seulement (1 sur 3).
+        // Croisement : champs à traduire par gamme, publiées seulement
+        // (EN en attente + DE en erreur ; la fiche en cours est ignorée).
         [$france] = $payload['countryByType'];
-        self::assertSame(33, $france['translated']['lieu']);
-        self::assertNull($france['translated']['restaurant']);
+        self::assertSame(2, $france['untranslated']['lieu']);
+        self::assertNull($france['untranslated']['restaurant']);
     }
 
     public function testStorageAggregatesActiveMediaAndRenditions(): void

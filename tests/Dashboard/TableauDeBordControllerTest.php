@@ -105,7 +105,7 @@ final class TableauDeBordControllerTest extends WebTestCase
         self::assertStringContainsString('Anglais', $main);
         self::assertStringContainsString('1 à traduire', $main);
         self::assertStringContainsString('Néerlandais', $main);
-        self::assertStringContainsString('Champs traduits par gamme', $main);
+        self::assertStringContainsString('Champs à traduire par gamme', $main);
 
         // Dernières publications, la plus récente d'abord, avec lien vers l'éditeur.
         self::assertSelectorTextContains('main', 'Dernières publications');

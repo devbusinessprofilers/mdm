@@ -130,7 +130,7 @@ final readonly class DashboardStatsCalculator
      *     counts: array<string, int>,
      *     published: array<string, int>,
      *     completeness: array<string, int|null>,
-     *     translated: array<string, int|null>,
+     *     untranslated: array<string, int|null>,
      *     total: int,
      * }>
      */
@@ -153,7 +153,7 @@ final readonly class DashboardStatsCalculator
             0,
         );
         $completeness = $this->completenessByCountryType();
-        $translated = $this->translationsByCountryType();
+        $untranslated = $this->translationsByCountryType();
         $countries = [];
         foreach ($rows as $row) {
             $key = $row['cc'].'|'.$row['pays'];
@@ -163,14 +163,14 @@ final readonly class DashboardStatsCalculator
                 'counts' => $emptyCounts,
                 'published' => $emptyCounts,
                 'completeness' => array_fill_keys(array_keys($emptyCounts), null),
-                'translated' => array_fill_keys(array_keys($emptyCounts), null),
+                'untranslated' => array_fill_keys(array_keys($emptyCounts), null),
                 'total' => 0,
             ];
             $type = $row['type'] instanceof TypeFiche ? $row['type']->value : (string) $row['type'];
             $countries[$key]['counts'][$type] = (int) $row['nb'];
             $countries[$key]['published'][$type] = (int) $row['publiees'];
             $countries[$key]['completeness'][$type] = $completeness[$key][$type] ?? null;
-            $countries[$key]['translated'][$type] = $translated[$key][$type] ?? null;
+            $countries[$key]['untranslated'][$type] = $untranslated[$key][$type] ?? null;
             $countries[$key]['total'] += (int) $row['nb'];
         }
         $countries = array_values($countries);
@@ -264,15 +264,21 @@ final readonly class DashboardStatsCalculator
         return ['byLocale' => $byLocale, 'pending' => $pending];
     }
 
-    /** @return array<string, array<string, int>> "cc|pays" => type => % de champs traduits (fiches publiées). */
+    /**
+     * "cc|pays" => type => champs restant à traduire (fiches publiées).
+     * La couverture frôlant partout les 100 %, seul le volume absolu de la
+     * dette est discriminant dans le croisement.
+     *
+     * @return array<string, array<string, int>>
+     */
     private function translationsByCountryType(): array
     {
-        /** @var list<array{cc: string, pays: string, type: string, nb: string|int, dispo: string|int|null}> $rows */
+        /** @var list<array{cc: string, pays: string, type: string, reste: string|int|null}> $rows */
         $rows = $this->entityManager->getConnection()->fetchAllAssociative(
             "SELECT COALESCE(l.country_code, '??') AS cc,"
             ." COALESCE(l.pays, 'Non renseigné') AS pays,"
-            .' f.type AS type, COUNT(*) AS nb,'
-            ." SUM(t.status = 'disponible') AS dispo"
+            .' f.type AS type,'
+            ." COALESCE(SUM(t.status <> 'disponible'), 0) AS reste"
             .' FROM enrichment_fiche_translation t'
             .' INNER JOIN pim_fiche f ON f.id = t.fiche_id'
             .' LEFT JOIN pim_localisation l ON l.id = f.localisation_id'
@@ -281,9 +287,7 @@ final readonly class DashboardStatsCalculator
         );
         $result = [];
         foreach ($rows as $row) {
-            if ((int) $row['nb'] > 0) {
-                $result[$row['cc'].'|'.$row['pays']][$row['type']] = (int) round(100 * (int) $row['dispo'] / (int) $row['nb']);
-            }
+            $result[$row['cc'].'|'.$row['pays']][$row['type']] = (int) $row['reste'];
         }
 
         return $result;
