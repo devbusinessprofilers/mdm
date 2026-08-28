@@ -5,6 +5,10 @@ declare(strict_types=1);
 namespace App\Tests\Dashboard;
 
 use App\Account\Entity\User;
+use App\Dashboard\Entity\DashboardSnapshot;
+use App\Dashboard\Service\DashboardStatsCalculator;
+use App\Enrichment\Entity\FicheTranslation;
+use App\Enrichment\Enum\SupportedLocale;
 use App\Pim\Entity\Lieu\Lieu;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
@@ -63,6 +67,13 @@ final class TableauDeBordControllerTest extends WebTestCase
         $publiee->fiche()->publishForImport();
         $entityManager->persist($publiee);
 
+        // Un champ à traduire sur la publiée : nourrit la carte « Caractères
+        // non traduits » et les tuiles par langue via le snapshot.
+        $entityManager->persist(new FicheTranslation($publiee->fiche(), 'nom', 'Nom', SupportedLocale::En, 'Fiche publiée récemment'));
+        $entityManager->flush();
+
+        $snapshot = new DashboardSnapshot((new DashboardStatsCalculator($entityManager))->compute(), 12);
+        $entityManager->persist($snapshot);
         $entityManager->flush();
         $client->loginUser($user);
 
@@ -83,6 +94,19 @@ final class TableauDeBordControllerTest extends WebTestCase
         self::assertStringContainsString('1', $zoneFiles->text(null, true));
         self::assertStringContainsString('Fiches à publier', $zoneFiles->text(null, true));
 
+        // Carte traductions : caractères du champ EN en attente, lien /outils.
+        self::assertStringContainsString('Caractères non traduits', $zoneFiles->text(null, true));
+        self::assertStringContainsString('1 champ · 1 fiche publiée', $zoneFiles->text(null, true));
+        self::assertSame(1, $crawler->filter('a[href="/outils?famille=traduction"]')->count());
+
+        // Zone Santé : tuiles par langue et bascule Traductions du croisement.
+        $main = $crawler->filter('main')->text(null, true);
+        self::assertStringContainsString('Traductions des fiches publiées', $main);
+        self::assertStringContainsString('Anglais', $main);
+        self::assertStringContainsString('1 à traduire', $main);
+        self::assertStringContainsString('Néerlandais', $main);
+        self::assertStringContainsString('Champs traduits par gamme', $main);
+
         // Dernières publications, la plus récente d'abord, avec lien vers l'éditeur.
         self::assertSelectorTextContains('main', 'Dernières publications');
         self::assertStringContainsString('Fiche publiée récemment', $crawler->filter('main')->text(null, true));
@@ -90,6 +114,8 @@ final class TableauDeBordControllerTest extends WebTestCase
 
     private function clearTables(): void
     {
+        $this->connection->executeStatement('DELETE FROM enrichment_fiche_translation');
+        $this->connection->executeStatement('DELETE FROM dashboard_snapshot');
         $this->connection->executeStatement('DELETE FROM pim_fiche_site_diffusion');
         $this->connection->executeStatement('DELETE FROM pim_fiche_affiliation');
         $this->connection->executeStatement('DELETE FROM pim_fiche_collaborateur');

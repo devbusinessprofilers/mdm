@@ -38,6 +38,7 @@ final readonly class DashboardStatsCalculator
             'completeness' => $this->completeness(),
             'storage' => $this->storage(),
             'countryByType' => $this->countryByType(),
+            'translations' => $this->translations(),
             'validation' => $this->validationDelay(),
             'thisWeek' => $this->thisWeek($weekStartUtc, $weekStart),
             'perUser' => [
@@ -129,6 +130,7 @@ final readonly class DashboardStatsCalculator
      *     counts: array<string, int>,
      *     published: array<string, int>,
      *     completeness: array<string, int|null>,
+     *     translated: array<string, int|null>,
      *     total: int,
      * }>
      */
@@ -151,6 +153,7 @@ final readonly class DashboardStatsCalculator
             0,
         );
         $completeness = $this->completenessByCountryType();
+        $translated = $this->translationsByCountryType();
         $countries = [];
         foreach ($rows as $row) {
             $key = $row['cc'].'|'.$row['pays'];
@@ -160,12 +163,14 @@ final readonly class DashboardStatsCalculator
                 'counts' => $emptyCounts,
                 'published' => $emptyCounts,
                 'completeness' => array_fill_keys(array_keys($emptyCounts), null),
+                'translated' => array_fill_keys(array_keys($emptyCounts), null),
                 'total' => 0,
             ];
             $type = $row['type'] instanceof TypeFiche ? $row['type']->value : (string) $row['type'];
             $countries[$key]['counts'][$type] = (int) $row['nb'];
             $countries[$key]['published'][$type] = (int) $row['publiees'];
             $countries[$key]['completeness'][$type] = $completeness[$key][$type] ?? null;
+            $countries[$key]['translated'][$type] = $translated[$key][$type] ?? null;
             $countries[$key]['total'] += (int) $row['nb'];
         }
         $countries = array_values($countries);
@@ -200,6 +205,84 @@ final readonly class DashboardStatsCalculator
                 if (null !== $row['comp']) {
                     $result[$row['cc'].'|'.$row['pays']][$type] = (int) round((float) $row['comp']);
                 }
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * Traductions des fiches publiées : couverture par langue et volume
+     * restant à traduire. Le périmètre suit le flux automatique, qui ne
+     * traduit que les fiches publiées ; les fiches jamais planifiées
+     * n'ont pas de ligne et ne comptent pas.
+     *
+     * @return array{
+     *     byLocale: list<array{locale: string, total: int, disponibles: int, enAttente: int, enErreur: int, caracteres: int}>,
+     *     pending: array{champs: int, caracteres: int, fiches: int},
+     * }
+     */
+    private function translations(): array
+    {
+        $connection = $this->entityManager->getConnection();
+        /** @var list<array{locale: string, nb: string|int, dispo: string|int|null, attente: string|int|null, erreur: string|int|null, caracteres: string|int|null}> $rows */
+        $rows = $connection->fetchAllAssociative(
+            'SELECT t.locale AS locale, COUNT(*) AS nb,'
+            ." SUM(t.status = 'disponible') AS dispo,"
+            ." SUM(t.status IN ('en_attente', 'en_cours')) AS attente,"
+            ." SUM(t.status IN ('en_erreur', 'obsolete')) AS erreur,"
+            ." COALESCE(SUM(CASE WHEN t.status <> 'disponible' THEN CHAR_LENGTH(t.source_text) ELSE 0 END), 0) AS caracteres"
+            .' FROM enrichment_fiche_translation t'
+            .' INNER JOIN pim_fiche f ON f.id = t.fiche_id'
+            ." WHERE f.status = 'publiee'"
+            .' GROUP BY t.locale ORDER BY t.locale',
+        );
+        $byLocale = [];
+        $pending = ['champs' => 0, 'caracteres' => 0, 'fiches' => 0];
+        foreach ($rows as $row) {
+            $total = (int) $row['nb'];
+            $disponibles = (int) $row['dispo'];
+            $byLocale[] = [
+                'locale' => $row['locale'],
+                'total' => $total,
+                'disponibles' => $disponibles,
+                'enAttente' => (int) $row['attente'],
+                'enErreur' => (int) $row['erreur'],
+                'caracteres' => (int) $row['caracteres'],
+            ];
+            $pending['champs'] += $total - $disponibles;
+            $pending['caracteres'] += (int) $row['caracteres'];
+        }
+        if ($pending['champs'] > 0) {
+            $pending['fiches'] = (int) $connection->fetchOne(
+                'SELECT COUNT(DISTINCT t.fiche_id) FROM enrichment_fiche_translation t'
+                .' INNER JOIN pim_fiche f ON f.id = t.fiche_id'
+                ." WHERE f.status = 'publiee' AND t.status <> 'disponible'",
+            );
+        }
+
+        return ['byLocale' => $byLocale, 'pending' => $pending];
+    }
+
+    /** @return array<string, array<string, int>> "cc|pays" => type => % de champs traduits (fiches publiées). */
+    private function translationsByCountryType(): array
+    {
+        /** @var list<array{cc: string, pays: string, type: string, nb: string|int, dispo: string|int|null}> $rows */
+        $rows = $this->entityManager->getConnection()->fetchAllAssociative(
+            "SELECT COALESCE(l.country_code, '??') AS cc,"
+            ." COALESCE(l.pays, 'Non renseigné') AS pays,"
+            .' f.type AS type, COUNT(*) AS nb,'
+            ." SUM(t.status = 'disponible') AS dispo"
+            .' FROM enrichment_fiche_translation t'
+            .' INNER JOIN pim_fiche f ON f.id = t.fiche_id'
+            .' LEFT JOIN pim_localisation l ON l.id = f.localisation_id'
+            ." WHERE f.status = 'publiee'"
+            .' GROUP BY cc, pays, type',
+        );
+        $result = [];
+        foreach ($rows as $row) {
+            if ((int) $row['nb'] > 0) {
+                $result[$row['cc'].'|'.$row['pays']][$row['type']] = (int) round(100 * (int) $row['dispo'] / (int) $row['nb']);
             }
         }
 

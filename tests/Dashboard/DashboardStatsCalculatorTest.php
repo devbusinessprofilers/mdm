@@ -7,6 +7,8 @@ namespace App\Tests\Dashboard;
 use App\Audit\Entity\AuditChange;
 use App\Audit\Entity\AuditRevision;
 use App\Dashboard\Service\DashboardStatsCalculator;
+use App\Enrichment\Entity\FicheTranslation;
+use App\Enrichment\Enum\SupportedLocale;
 use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Entity\Localisation;
 use App\Pim\Entity\Restaurant\Restaurant;
@@ -57,6 +59,53 @@ final class DashboardStatsCalculatorTest extends KernelTestCase
         self::assertSame([], $payload['perUser']['created']);
         self::assertSame([], $payload['perUser']['fieldsUpdated']);
         self::assertSame([], $payload['perUser']['validated']);
+        self::assertSame(
+            ['byLocale' => [], 'pending' => ['champs' => 0, 'caracteres' => 0, 'fiches' => 0]],
+            $payload['translations'],
+        );
+    }
+
+    public function testTranslationsCountOnlyPublishedFiches(): void
+    {
+        $lieuPublie = $this->createLieu('Palais Alpha', 'FR', 'France');
+        $lieuEnCours = $this->createLieu('Château Beta', 'FR', 'France');
+        $this->entityManager->flush();
+        $lieuPublie->fiche()->submitForValidation('alice');
+        $lieuPublie->fiche()->validate('bob');
+        $lieuPublie->fiche()->publish();
+
+        // Publiée : EN un champ traduit + un champ en attente (5 caractères),
+        // DE un champ en erreur (7 caractères). En cours : ignorée.
+        $traduite = new FicheTranslation($lieuPublie->fiche(), 'nom', 'Nom', SupportedLocale::En, 'Palais');
+        $traduite->schedule('Nom', 'Palais', 'jeton');
+        $traduite->applyGoogle('Palace', 'jeton');
+        $this->entityManager->persist($traduite);
+        $this->entityManager->persist(new FicheTranslation($lieuPublie->fiche(), 'atout', 'Atout', SupportedLocale::En, 'abcde'));
+        $enErreur = new FicheTranslation($lieuPublie->fiche(), 'nom', 'Nom', SupportedLocale::De, 'abcdefg');
+        $this->entityManager->persist($enErreur);
+        $this->entityManager->persist(new FicheTranslation($lieuEnCours->fiche(), 'nom', 'Nom', SupportedLocale::En, 'Château'));
+        $this->entityManager->flush();
+        $this->connection->executeStatement(
+            "UPDATE enrichment_fiche_translation SET status = 'en_erreur' WHERE locale = 'de'",
+        );
+
+        $payload = $this->calculator->compute();
+
+        self::assertSame(
+            [
+                ['locale' => 'de', 'total' => 1, 'disponibles' => 0, 'enAttente' => 0, 'enErreur' => 1, 'caracteres' => 7],
+                ['locale' => 'en', 'total' => 2, 'disponibles' => 1, 'enAttente' => 1, 'enErreur' => 0, 'caracteres' => 5],
+            ],
+            $payload['translations']['byLocale'],
+        );
+        self::assertSame(
+            ['champs' => 2, 'caracteres' => 12, 'fiches' => 1],
+            $payload['translations']['pending'],
+        );
+        // Croisement : part traduite par gamme, publiées seulement (1 sur 3).
+        [$france] = $payload['countryByType'];
+        self::assertSame(33, $france['translated']['lieu']);
+        self::assertNull($france['translated']['restaurant']);
     }
 
     public function testStorageAggregatesActiveMediaAndRenditions(): void
@@ -189,6 +238,7 @@ final class DashboardStatsCalculatorTest extends KernelTestCase
 
     private function clearTables(): void
     {
+        $this->connection->executeStatement('DELETE FROM enrichment_fiche_translation');
         $this->connection->executeStatement('DELETE FROM dam_media_duplicate_alert');
         $this->connection->executeStatement('DELETE FROM dam_media_phash_band');
         $this->connection->executeStatement('DELETE FROM dam_media_rendition');

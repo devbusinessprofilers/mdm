@@ -6,11 +6,20 @@ namespace App\Dashboard\Service;
 
 use App\Dashboard\Entity\DashboardSnapshot;
 use App\Dashboard\Repository\DashboardSnapshotRepository;
+use App\Enrichment\Enum\SupportedLocale;
 use App\Pim\Enum\TypeFiche;
 
 final readonly class DashboardPageProvider
 {
     private const int HISTORY_DAYS = 30;
+
+    /*
+     * Seuils de la carte « Caractères non traduits » : repère de charge, la
+     * traduction coûtant ~20 $ le million de caractères. En régime normal le
+     * flux automatique maintient la dette proche de zéro.
+     */
+    private const int TRADUCTIONS_ATTENTION = 50_000;
+    private const int TRADUCTIONS_CRITIQUE = 250_000;
 
     public function __construct(private DashboardSnapshotRepository $snapshots)
     {
@@ -43,6 +52,7 @@ final readonly class DashboardPageProvider
                 'validated' => $this->withRatios($payload['perUser']['validated'] ?? []),
             ],
             'storage' => $this->storage($payload['storage'] ?? null),
+            'traductions' => $this->traductions($payload['translations'] ?? null),
             'fieldFill' => $this->fieldFill(),
             'sparklines' => $this->sparklines(),
             // Évolution de la complétude moyenne sur l'historique (30 j) —
@@ -102,6 +112,80 @@ final readonly class DashboardPageProvider
                 $parts,
             ),
         ];
+    }
+
+    /**
+     * Vue traductions (fiches publiées) : carte de la zone Files + tuiles par
+     * langue de la zone Santé. Null tant qu'aucun snapshot ne porte la clé
+     * (anciens snapshots d'avant la fonctionnalité).
+     *
+     * @param array{
+     *     byLocale: list<array{locale: string, total: int, disponibles: int, enAttente: int, enErreur: int, caracteres: int}>,
+     *     pending: array{champs: int, caracteres: int, fiches: int},
+     * }|null $translations
+     *
+     * @return array{
+     *     caracteres: int,
+     *     caracteresCompact: string,
+     *     champs: int,
+     *     fiches: int,
+     *     severite: string,
+     *     parLangue: list<array{label: string, pct: float|null, aTraduire: int, enErreur: int}>,
+     * }|null
+     */
+    private function traductions(?array $translations): ?array
+    {
+        if (null === $translations) {
+            return null;
+        }
+        $byLocale = [];
+        foreach ($translations['byLocale'] as $ligne) {
+            $byLocale[$ligne['locale']] = $ligne;
+        }
+        $parLangue = [];
+        // L'ordre d'affichage suit targets() ; une langue sans aucune ligne
+        // planifiée apparaît quand même, à « — ».
+        foreach (SupportedLocale::targets() as $locale) {
+            $ligne = $byLocale[$locale->value] ?? null;
+            $total = (int) ($ligne['total'] ?? 0);
+            $disponibles = (int) ($ligne['disponibles'] ?? 0);
+            $parLangue[] = [
+                'label' => $locale->label(),
+                'pct' => $total > 0 ? round(100 * $disponibles / $total, 1) : null,
+                'aTraduire' => $total - $disponibles,
+                'enErreur' => (int) ($ligne['enErreur'] ?? 0),
+            ];
+        }
+        $caracteres = $translations['pending']['caracteres'];
+
+        return [
+            'caracteres' => $caracteres,
+            'caracteresCompact' => $this->formatCompte($caracteres),
+            'champs' => $translations['pending']['champs'],
+            'fiches' => $translations['pending']['fiches'],
+            'severite' => match (true) {
+                $caracteres > self::TRADUCTIONS_CRITIQUE => 'critique',
+                $caracteres > self::TRADUCTIONS_ATTENTION => 'attention',
+                default => 'normale',
+            },
+            'parLangue' => $parLangue,
+        ];
+    }
+
+    /** Nombre compact pour les cartes : 999, « 12,5 k », « 1,2 M ». */
+    private function formatCompte(int $valeur): string
+    {
+        if ($valeur >= 1_000_000) {
+            return number_format($valeur / 1_000_000, 1, ',', ' ').' M';
+        }
+        if ($valeur >= 10_000) {
+            return number_format((int) round($valeur / 1000), 0, ',', ' ').' k';
+        }
+        if ($valeur >= 1_000) {
+            return number_format($valeur / 1000, 1, ',', ' ').' k';
+        }
+
+        return (string) $valeur;
     }
 
     /** @return array{computedAt: \DateTimeImmutable, perType: array<string, array{fiches: int, worstFields: list<array{code: string, label: string, applicable: int, filled: int, rate: float}>}>}|null */

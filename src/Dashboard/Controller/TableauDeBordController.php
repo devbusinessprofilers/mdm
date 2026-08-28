@@ -27,7 +27,9 @@ final class TableauDeBordController extends AbstractController
     public function __invoke(Request $request, TableauDeBordProvider $files, DashboardPageProvider $stats): Response
     {
         $periode = TableauDeBordProvider::periodeValide($request->query->getString('periode'));
-        $croisement = 'publiees' === $request->query->getString('croisement') ? 'publiees' : 'completude';
+        $croisement = in_array($request->query->getString('croisement'), ['publiees', 'traductions'], true)
+            ? $request->query->getString('croisement')
+            : 'completude';
 
         return $this->render('dashboard/tableau_de_bord.html.twig', [
             'files' => $files->files(),

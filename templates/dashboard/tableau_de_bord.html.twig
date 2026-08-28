@@ -147,7 +147,7 @@
                     <span class="flex-1"></span>
                 </div>
 
-                {% if 'files' == zone.cle %}{{ _self.zoneFiles(files, files_total) }}
+                {% if 'files' == zone.cle %}{{ _self.zoneFiles(files, files_total, traductions ?? null) }}
                 {% elseif 'sante' == zone.cle %}{{ _self.zoneSante(_context, carte, paliers, entete_table, grille_croisement, croisement_pays) }}
                 {% elseif 'activite' == zone.cle %}{{ _self.zoneActivite(_context, carte, entete_table, grille_activite, activite_total) }}
                 {% else %}{{ _self.zoneMedias(_context, carte) }}
@@ -160,7 +160,7 @@
 
 
 {# ==================================================================== Zone 1 #}
-{% macro zoneFiles(files, files_total) %}
+{% macro zoneFiles(files, files_total, traductions = null) %}
     {% if files_total == 0 %}
         <div class="flex items-center gap-4 px-[30px] py-[26px] rounded-[20px] bg-neutral-100 shadow-(--shadow)">
             <twig:Icon name="ok-circle" aria-hidden="true" class="shrink-0 w-[34px] h-[34px] text-success" />
@@ -208,11 +208,52 @@
                     </div>
                 </a>
                 {% if 'repli' == file.id %}
-                    {{ _self.fileAVenir('lock', 'Accès à transmettre', 'Accès extranet non envoyés') }}
+                    {% if traductions %}
+                        {{ _self.carteTraductions(traductions) }}
+                    {% else %}
+                        {{ _self.fileAVenir('trad', 'Caractères non traduits', 'Au prochain calcul des statistiques') }}
+                    {% endif %}
                 {% endif %}
             {% endfor %}
         </div>
     {% endif %}
+{% endmacro %}
+
+{# Carte « Caractères non traduits » : repère de charge issu du snapshot,
+   périmètre = champs des fiches publiées pas encore traduits. #}
+{% macro carteTraductions(traductions) %}
+    {% set chaude = 'critique' == traductions.severite %}
+    {% set tiede = 'attention' == traductions.severite %}
+    <a href="{{ path('app_mdm_outils', { famille: 'traduction' }) }}"
+       class="flex flex-col flex-1 min-w-0 items-stretch gap-1.5 box-border
+              px-5 py-[18px] rounded-[20px] text-left cursor-pointer
+              {{ chaude
+                 ? 'bg-error-pastel inset-ring-1 inset-ring-error'
+                 : (tiede ? 'bg-peach-pastel inset-ring-1 inset-ring-peach'
+                          : 'bg-neutral-100 shadow-(--shadow)') }}">
+        <div class="flex items-center justify-between gap-2">
+            <twig:Icon name="trad" aria-hidden="true"
+                       class="shrink-0 w-5 h-5 {{ chaude ? 'text-error' : (tiede ? 'text-peach' : 'text-primary-3') }}" />
+            {% if chaude or tiede %}
+                <twig:Tag label="{{ chaude ? 'Critique' : 'Attention' }}" variant="error" size="sm"
+                          class="shrink-0 whitespace-nowrap bg-neutral-100!" />
+            {% endif %}
+        </div>
+        <twig:Typography variant="heading-2"
+                         textColor="{{ chaude or tiede ? 'error' : 'primary-3' }}"
+                         class="font-[700]!">{{ traductions.caracteresCompact }}</twig:Typography>
+        <twig:Typography variant="body-sm" bold class="text-pretty">Caractères non traduits</twig:Typography>
+        <div class="flex items-center gap-[5px]">
+            <twig:Typography variant="body-xs">
+                {%- if traductions.champs > 0 -%}
+                    {{ traductions.champs }} champ{{ traductions.champs > 1 ? 's' }} · {{ traductions.fiches }} fiche{{ traductions.fiches > 1 ? 's' }} publiée{{ traductions.fiches > 1 ? 's' }}
+                {%- else -%}
+                    Fiches publiées à jour
+                {%- endif -%}
+            </twig:Typography>
+            <twig:Icon name="arrow-right" aria-hidden="true" class="shrink-0 w-3 h-3 text-primary" />
+        </div>
+    </a>
 {% endmacro %}
 
 {# Carte de file sans donnée back : grisée, avec l'infobulle « à venir ». #}
@@ -298,13 +339,15 @@
                     <div class="flex flex-col gap-0.5 min-w-0">
                         <twig:Typography variant="body-sm" bold>Croisement pays × typologie</twig:Typography>
                         <twig:Typography variant="body-sm" textColor="neutral-500">
-                            <span class="group-data-[croisement=publiees]/croisement:hidden">Complétude moyenne par gamme</span>
+                            <span class="group-data-[croisement=publiees]/croisement:hidden group-data-[croisement=traductions]/croisement:hidden">Complétude moyenne par gamme</span>
                             <span class="hidden group-data-[croisement=publiees]/croisement:inline">Fiches publiées par gamme</span>
+                            <span class="hidden group-data-[croisement=traductions]/croisement:inline">Champs traduits par gamme (fiches publiées)</span>
                         </twig:Typography>
                     </div>
                     <div class="flex items-center shrink-0 gap-0.5 p-[3px] rounded-lg bg-neutral-200">
                         {{ _self.bascule(c, 'completude', 'Complétude') }}
                         {{ _self.bascule(c, 'publiees', 'Fiches publiées') }}
+                        {{ _self.bascule(c, 'traductions', 'Traductions') }}
                     </div>
                 </div>
 
@@ -324,7 +367,7 @@
                             <div class="{{ grille_croisement }} h-11 px-4 {{ loop.first ? '' : 'border-t border-neutral-200' }}" role="row">
                                 <twig:Typography variant="body-sm" bold ellipsis class="min-w-0 self-center">{{ ligne.pays }}</twig:Typography>
                                 {% for typeValue, label in c.typeLabels %}
-                                    {{ _self.celluleDouble(ligne.completeness[typeValue] ?? null, ligne.published[typeValue] ?? 0, paliers) }}
+                                    {{ _self.celluleDouble(ligne.completeness[typeValue] ?? null, ligne.published[typeValue] ?? 0, paliers, ligne.translated[typeValue] ?? null) }}
                                 {% endfor %}
                                 {{ _self.celluleTexte(ligne.total, paliers['total']) }}
                             </div>
@@ -332,11 +375,39 @@
                     </div>
                     <div class="flex items-center gap-2.5">
                         <twig:Icon name="info-circle" aria-hidden="true" class="shrink-0 w-3.5 h-3.5 text-neutral-400" />
-                        <twig:Typography variant="body-xs" textColor="neutral-400">Les 6 pays les plus représentés ; complétude moyenne ou fiches publiées par gamme selon la bascule.</twig:Typography>
+                        <twig:Typography variant="body-xs" textColor="neutral-400">Les 6 pays les plus représentés ; complétude moyenne, fiches publiées ou part traduite par gamme selon la bascule.</twig:Typography>
                     </div>
                 {% endif %}
             </div>
         </div>
+
+        {% if c.traductions %}
+            <div class="{{ carte }}">
+                <div class="flex items-baseline justify-between gap-3">
+                    <twig:Typography variant="body-sm" bold>Traductions des fiches publiées</twig:Typography>
+                    <twig:Typography variant="body-xs" textColor="neutral-400">Couverture par langue · champs restant à traduire</twig:Typography>
+                </div>
+                <div class="grid grid-cols-3 xl:grid-cols-6 gap-3">
+                    {% for langue in c.traductions.parLangue %}
+                        {% set enRetard = langue.aTraduire > 0 %}
+                        <div class="flex flex-col gap-[3px] box-border px-4 py-3 rounded-xl
+                                    {{ enRetard ? 'bg-peach-pastel inset-ring-1 inset-ring-peach' : 'bg-neutral-200/40' }}">
+                            <twig:Typography variant="body-xs" bold textColor="neutral-500"
+                                             class="tracking-[0.4px] uppercase">{{ langue.label }}</twig:Typography>
+                            <twig:Typography variant="subtitle" textColor="{{ enRetard ? 'error' : 'primary-3' }}"
+                                             class="font-[700]!">{{ langue.pct is null ? '—' : langue.pct ~ ' %' }}</twig:Typography>
+                            <twig:Typography variant="body-xs" textColor="{{ enRetard ? 'error' : 'neutral-500' }}">
+                                {%- if langue.aTraduire > 0 -%}
+                                    {{ langue.aTraduire }} à traduire{{ langue.enErreur > 0 ? ' · ' ~ langue.enErreur ~ ' en erreur' }}
+                                {%- else -%}
+                                    À jour
+                                {%- endif -%}
+                            </twig:Typography>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
     {% endif %}
 {% endmacro %}
 
@@ -517,17 +588,24 @@
     </span>
 {% endmacro %}
 
-{# Les deux mesures rendues ; `data-croisement` de la carte choisit la face. #}
-{% macro celluleDouble(pct, nombre, paliers) %}
+{# Les trois mesures rendues ; `data-croisement` de la carte choisit la face. #}
+{% macro celluleDouble(pct, nombre, paliers, traduit = null) %}
     {% set palier = pct is null ? null : (pct >= 75 ? 'complet' : (pct >= 60 ? 'publiable' : 'insuffisant')) %}
+    {# La couverture de traduction se juge plus sévèrement que la complétude :
+       le flux automatique doit la tenir à ~100 % sur les publiées. #}
+    {% set palierTrad = traduit is null ? null : (traduit >= 95 ? 'complet' : (traduit >= 70 ? 'publiable' : 'insuffisant')) %}
     <span class="min-w-0 h-[30px] box-border self-center">
         <span class="flex items-center justify-center w-full h-full rounded-xs {{ palier ? paliers[palier] : '' }}
-                     group-data-[croisement=publiees]/croisement:hidden">
+                     group-data-[croisement=publiees]/croisement:hidden group-data-[croisement=traductions]/croisement:hidden">
             <twig:Typography variant="body-sm" bold textColor="primary-3">{{ pct is null ? '—' : pct ~ ' %' }}</twig:Typography>
         </span>
         <span class="hidden items-center justify-center w-full h-full rounded-xs
                      group-data-[croisement=publiees]/croisement:flex">
             <twig:Typography variant="body-sm" bold textColor="primary-3">{{ nombre }}</twig:Typography>
+        </span>
+        <span class="hidden items-center justify-center w-full h-full rounded-xs {{ palierTrad ? paliers[palierTrad] : '' }}
+                     group-data-[croisement=traductions]/croisement:flex">
+            <twig:Typography variant="body-sm" bold textColor="primary-3">{{ traduit is null ? '—' : traduit ~ ' %' }}</twig:Typography>
         </span>
     </span>
 {% endmacro %}
