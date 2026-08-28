@@ -17,6 +17,7 @@ use App\Pim\Service\LieuMediaCsrfGuard;
 use App\Pim\Service\LieuPhotoManager;
 use App\Shared\Service\ParametreProviderInterface;
 use App\Shared\Service\PrivateObjectStorageInterface;
+use App\Vision\Service\ImageRecognitionManager;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -154,6 +155,26 @@ final class GammePhotoController extends AbstractController
             $manager->retry($resource);
 
             return $this->json(['queued' => true]);
+        } catch (\DomainException $exception) {
+            return $this->json(['error' => $exception->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+    }
+
+    #[Route('/photos/{resourceId}/enrichir', name: 'enrich', methods: ['POST'])]
+    public function enrich(Request $request, string $gamme, string $id, string $resourceId, GammeEntiteResolver $resolver, LieuMediaCsrfGuard $csrf, RessourceLieuRepository $resources, ImageRecognitionManager $recognitions, CurrentActorProvider $actor): JsonResponse
+    {
+        $entite = $resolver->resolve($gamme, $id);
+        if (null === $entite) {
+            throw $this->createNotFoundException('Fiche introuvable.');
+        }
+        $this->denyAccessUnlessGranted(FicheVoter::EDIT, $entite->fiche());
+        $csrf->assertValid($entite, (string) $request->headers->get('X-CSRF-TOKEN', $request->request->getString('_token')));
+        $resource = $resources->findPhotoForFiche($entite->fiche(), $resourceId);
+        if (null === $resource) {
+            throw $this->createNotFoundException('Photo introuvable pour cette fiche.');
+        }
+        try {
+            return $this->json(['queued' => $recognitions->launchForResource($resource, $actor->id())]);
         } catch (\DomainException $exception) {
             return $this->json(['error' => $exception->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
         }

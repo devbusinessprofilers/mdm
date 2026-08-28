@@ -62,6 +62,26 @@ export default class extends Controller {
         if (window.confirm('Supprimer définitivement cette photo ?')) this.fetch(event.currentTarget.dataset.url, { method: 'DELETE' })
     }
     retry(event) { this.fetch(event.currentTarget.dataset.url, { method: 'POST' }) }
+
+    // Lance la reconnaissance IA de la photo. Le retour se fait dans le bouton
+    // lui-même : la modale recouvre la zone d'erreur de la carte, et les
+    // suggestions n'arrivent que plus tard dans Médias › Reconnaissance IA.
+    async enrich(event) {
+        const button = event.currentTarget
+        const label = button.querySelector('span') || button
+        button.disabled = true
+        const response = await window.fetch(button.dataset.url, { method: 'POST', headers: { 'X-CSRF-TOKEN': this.tokenValue } }).catch(() => null)
+        const result = response ? await response.json().catch(() => ({})) : {}
+        if (!response || !response.ok) {
+            label.textContent = result.error || 'Une erreur est survenue.'
+            button.disabled = false
+            return
+        }
+        label.textContent = result.queued
+            ? 'Reconnaissance lancée — suggestions à venir dans Médias › Reconnaissance IA'
+            : 'Une reconnaissance est déjà en cours pour cette photo'
+    }
+
     moveUp(event) { const item = event.currentTarget.closest('[data-lieu-media-target="item"]'); item.previousElementSibling?.before(item); this.saveOrder() }
     moveDown(event) { const item = event.currentTarget.closest('[data-lieu-media-target="item"]'); item.nextElementSibling?.after(item); this.saveOrder() }
     dragstart(event) { this.dragged = event.currentTarget }

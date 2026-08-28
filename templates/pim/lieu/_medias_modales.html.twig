@@ -33,6 +33,8 @@
                 <div class="flex justify-end pt-1">{{ form_widget(photo.metadata_form.save, {attr: {'data-full': false, 'data-size': 'md'}}) }}</div>
             {{ form_end(photo.metadata_form) }}
             <div class="flex flex-wrap items-center gap-3 pt-2 border-t border-neutral-200">
+                <button type="button" data-action="lieu-media#enrich" data-url="{{ path('app_pim_lieu_photo_enrich', {id: lieu.id, resourceId: photo.resource.id}) }}"
+                        class="cursor-pointer"><twig:Typography variant="body-sm" textColor="primary-3" bold element="span">Enrichir l’image (IA)</twig:Typography></button>
                 <button type="button" data-action="lieu-media#retry" data-url="{{ path('app_pim_lieu_photo_retry', {id: lieu.id, resourceId: photo.resource.id}) }}"
                         class="cursor-pointer"><twig:Typography variant="body-sm" textColor="primary-3" bold element="span">Relancer le traitement</twig:Typography></button>
                 {{ form_start(photo.replace_form, {attr: {class: 'button-label'}}) }}

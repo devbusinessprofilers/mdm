@@ -62,7 +62,10 @@ final class OpenAiImageProvider implements ImageEnhancementProviderInterface, Im
                 'role' => 'user',
                 'content' => [
                     ['type' => 'text', 'text' => $prompt],
-                    ['type' => 'image_url', 'image_url' => ['url' => $imageUrl]],
+                    // Détail bas : l'image est facturée 85 tokens au lieu de
+                    // ~425 pour la rendition large — suffisant pour légende et
+                    // mots-clés, à réévaluer si la qualité déçoit.
+                    ['type' => 'image_url', 'image_url' => ['url' => $imageUrl, 'detail' => 'low']],
                 ],
             ]],
             'response_format' => [

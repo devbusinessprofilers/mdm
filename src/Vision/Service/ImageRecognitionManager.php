@@ -63,6 +63,27 @@ final readonly class ImageRecognitionManager
     }
 
     /**
+     * Lancement depuis la modale de paramètres d'une photo (bouton
+     * « Enrichir l'image ») : une seule ressource.
+     *
+     * @return bool false quand une reconnaissance est déjà en cours pour la photo
+     */
+    public function launchForResource(RessourceLieu $resource, string $actor): bool
+    {
+        if (!$this->parametres->bool('openai.actif')) {
+            throw new \DomainException('La reconnaissance IA est désactivée (OPENAI_ENABLED).');
+        }
+        $media = '' === $resource->damAssetId() ? null : $this->mediaRepository->find($resource->damAssetId());
+        if (null === $media || MediaKind::Image !== $media->kind() || MediaStatus::Processed !== $media->status()) {
+            throw new \DomainException('Cette photo n’est pas encore traitée : relancez le traitement avant l’enrichissement.');
+        }
+        $launched = null !== $this->queue($resource, $media, $actor);
+        $this->entityManager->flush();
+
+        return $launched;
+    }
+
+    /**
      * Déclenchement automatique à l'import : appelé par MediaUploadedHandler
      * après la génération des renditions, dans la transaction du worker — le
      * flush appartient à l'appelant.
