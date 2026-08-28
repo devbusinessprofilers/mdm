@@ -19,7 +19,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
-#[Route('/admin/completude', name: 'app_pim_completeness_')]
+#[Route('/qualite/completude', name: 'app_pim_completeness_')]
 #[IsGranted('ROLE_SUPER_ADMIN')]
 final class CompletenessConfigurationController extends AbstractController
 {

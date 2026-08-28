@@ -2,7 +2,8 @@
 {% block title %}Configuration de la complétude{% endblock %}
 {% block corps %}
 <main class="page">
-    <header class="page-header"><div><p class="page-kicker">Administration</p><h1>Complétude des fiches</h1><p>Poids, formule et canaux de chaque champ métier.</p></div></header>
+    <a class="back-link" href="{{ path('app_mdm_qualite') }}">← Retour à la qualité</a>
+    <header class="page-header"><div><p class="page-kicker">Qualité</p><h1>Complétude des fiches</h1><p>Poids, formule et canaux de chaque champ métier.</p></div></header>
     <section class="card">
         {{ form(search_form) }}
     </section>

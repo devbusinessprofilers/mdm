@@ -124,7 +124,6 @@ final class EnteteExtension extends AbstractExtension
         }
 
         if ($this->security->isGranted('ROLE_SUPER_ADMIN')) {
-            $entrees[] = ['Complétude', 'star', 'app_pim_completeness_index'];
             $entrees[] = ['Utilisateurs (gestion)', 'users', 'app_account_admin_index'];
             $entrees[] = ['Collaborateurs', 'user', 'app_account_user_admin_index'];
         }

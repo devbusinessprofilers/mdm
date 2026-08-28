@@ -59,7 +59,6 @@
                         <a class="nav-link" href="{{ path('app_account_collaborateur_consultation_index') }}">Utilisateurs</a>
                     {% endif %}
                     {% if is_granted('ROLE_SUPER_ADMIN') %}
-                        <a class="nav-link" href="{{ path('app_pim_completeness_index') }}">Complétude</a>
                         <a class="nav-link" href="{{ path('app_account_admin_index') }}">Utilisateurs (gestion)</a>
                         <a class="nav-link" href="{{ path('app_account_user_admin_index') }}">Collaborateurs</a>
                     {% endif %}
