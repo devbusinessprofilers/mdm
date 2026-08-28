@@ -93,7 +93,7 @@ final readonly class ParametreAdminManager
         return match ($parametre->type()) {
             TypeParametre::Booleen => filter_var($effective, FILTER_VALIDATE_BOOL),
             TypeParametre::Entier => (int) $effective,
-            TypeParametre::Texte => $effective,
+            TypeParametre::Texte, TypeParametre::TexteLong => $effective,
         };
     }
 
@@ -106,7 +106,7 @@ final readonly class ParametreAdminManager
         $parametre->surcharger(match ($parametre->type()) {
             TypeParametre::Booleen => true === $valeur ? '1' : '0',
             TypeParametre::Entier => (string) (int) $valeur,
-            TypeParametre::Texte => trim((string) $valeur),
+            TypeParametre::Texte, TypeParametre::TexteLong => trim((string) $valeur),
         });
         $this->entityManager->flush();
         $this->provider->invalider();
@@ -148,6 +148,9 @@ final readonly class ParametreAdminManager
         return match ($type) {
             TypeParametre::Booleen => filter_var($valeur, FILTER_VALIDATE_BOOL) ? 'Activé' : 'Désactivé',
             TypeParametre::Entier, TypeParametre::Texte => $valeur,
+            // Les prompts se lisent dans l'écran d'édition : le tableau n'en
+            // montre que le début.
+            TypeParametre::TexteLong => mb_strlen($valeur) <= 120 ? $valeur : mb_substr($valeur, 0, 119).'…',
         };
     }
 }

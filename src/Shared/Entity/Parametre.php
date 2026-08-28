@@ -33,7 +33,7 @@ class Parametre
     #[ORM\Column(length: 8, enumType: TypeParametre::class)]
     private TypeParametre $type;
 
-    #[ORM\Column(length: 255, nullable: true)]
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $valeur = null;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]

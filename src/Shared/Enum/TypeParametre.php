@@ -9,6 +9,7 @@ enum TypeParametre: string
     case Booleen = 'bool';
     case Entier = 'int';
     case Texte = 'string';
+    case TexteLong = 'text';
 
     public function label(): string
     {
@@ -16,6 +17,7 @@ enum TypeParametre: string
             self::Booleen => 'Interrupteur',
             self::Entier => 'Nombre entier',
             self::Texte => 'Texte',
+            self::TexteLong => 'Texte long',
         };
     }
 }

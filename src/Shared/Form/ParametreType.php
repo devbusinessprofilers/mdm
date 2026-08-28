@@ -9,6 +9,7 @@ use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
+use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -43,6 +44,11 @@ final class ParametreType extends AbstractType
             TypeParametre::Texte => $builder->add('valeur', TextType::class, [
                 'label' => 'Valeur', 'required' => false, 'empty_data' => '',
                 'constraints' => [new Length(max: 255)],
+            ]),
+            TypeParametre::TexteLong => $builder->add('valeur', TextareaType::class, [
+                'label' => 'Valeur', 'required' => false, 'empty_data' => '',
+                'attr' => ['rows' => 6],
+                'constraints' => [new Length(max: 5000)],
             ]),
         };
         $builder->add('save', SubmitType::class, ['label' => 'Enregistrer']);
