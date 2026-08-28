@@ -35,13 +35,17 @@ final readonly class ReferentielExporteur
      */
     public function exporter(array $ids, array $colonnes): string
     {
+        // Regroupement par gamme en scalaire : hydrater ~20 000 fiches juste
+        // pour lire leur type saturait la mémoire du worker (OOM 2026-08-28).
         $idsParType = [];
         foreach (array_chunk($ids, self::LOT) as $lot) {
-            foreach ($this->fiches->findBy(['id' => self::ulids($lot)]) as $fiche) {
-                $idsParType[$fiche->type()->value][] = $fiche->idString();
+            $types = $this->fiches->findTypesByIds($lot);
+            foreach ($lot as $id) {
+                if (isset($types[$id])) {
+                    $idsParType[$types[$id]][] = $id;
+                }
             }
         }
-        $this->entityManager->clear();
 
         $aggregats = [];
         foreach (FicheImportSchemaRegistry::supportedTypes() as $type) {

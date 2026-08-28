@@ -242,6 +242,30 @@ final class FicheRepository extends ServiceEntityRepository
         return array_map(static fn (string $id): string => (string) Ulid::fromBinary($id), $rows);
     }
 
+    /**
+     * @param list<string> $ids identifiants ULID
+     *
+     * @return array<string, string> valeur TypeFiche par identifiant ULID, sans hydrater d'entité
+     */
+    public function findTypesByIds(array $ids): array
+    {
+        if ([] === $ids) {
+            return [];
+        }
+        $rows = $this->getEntityManager()->getConnection()->fetchAllKeyValue(
+            'SELECT id, type FROM pim_fiche WHERE id IN (:ids)',
+            ['ids' => array_map(static fn (string $id): string => Ulid::fromString($id)->toBinary(), $ids)],
+            ['ids' => ArrayParameterType::BINARY],
+        );
+
+        $types = [];
+        foreach ($rows as $id => $type) {
+            $types[(string) Ulid::fromBinary($id)] = $type;
+        }
+
+        return $types;
+    }
+
     public function findAllListPage(
         ?FicheCursor $cursor = null,
         int $limit = 50,
