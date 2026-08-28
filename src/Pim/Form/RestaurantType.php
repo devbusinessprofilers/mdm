@@ -10,6 +10,7 @@ use App\Pim\Entity\Localisation;
 use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Enum\NatureRessource;
 use App\Pim\Lov\RestaurantLovCatalog;
+use App\Pim\Validation\LienVideo;
 use App\Pim\Validation\ValidationGroups;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -303,10 +304,10 @@ final class RestaurantType extends AbstractType
                 'youtubeUrl',
                 UrlType::class,
                 $this->field(
-                    'Lien YouTube',
+                    'Lien vidéo',
                     'youtubeUrl',
                     'changeYoutubeUrl',
-                ),
+                ) + ['constraints' => [new LienVideo()]],
             )
             ->add('ressources', CollectionType::class, [
                 'label' => 'Photos',

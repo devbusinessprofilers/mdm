@@ -102,7 +102,7 @@ final class CompletenessFieldCatalog
             'OBJECTIF_SEMINAIRE' => ['Objectifs', 'objectifs'], 'CAP_GLOBALE_NB_MIN_PAX' => ['Participants minimum', 'participantsMin'],
             'CAP_GLOBALE_NB_MAX_PAX' => ['Participants maximum', 'participantsMax'], 'ACTIVITE_DUREE_MIN' => ['Durée minimale', 'dureeMinMinutes'],
             'ACTIVITE_DUREE_MAX' => ['Durée maximale', 'dureeMaxMinutes'], 'PLUS' => ['Les plus', 'plus'],
-            'TARIF_PAR_PERSONNE' => ['Tarif par personne', 'tarifParPersonne'], 'GENERALE_YOUTUBE' => ['Lien YouTube', 'youtubeUrl'],
+            'TARIF_PAR_PERSONNE' => ['Tarif par personne', 'tarifParPersonne'], 'GENERALE_YOUTUBE' => ['Lien vidéo', 'youtubeUrl'],
             'OFFRE_NOM' => ["Nom de l’offre", 'offres.*.nom'], 'OFFRE_PRIX' => ["Prix de l’offre", 'offres.*.prix'],
             'PHOTO' => ['Photos', 'ressources'],
         ];
@@ -131,7 +131,7 @@ final class CompletenessFieldCatalog
             'CAP_ASSISE_MAX' => ['Capacité assise maximale', 'capaciteAssiseMax'], 'CAP_ASSISE_SALLE_PRIVATISABLE' => ['Capacité privatisable', 'capaciteEspacePrivatisable'],
             'CAP_BANQUET' => ['Capacité banquet', 'capaciteBanquet'], 'CAP_COCKTAIL' => ['Capacité cocktail', 'capaciteCocktail'],
             'SERVICE_RESTAURANT' => ['Services', 'services'], 'EQUIPEMENT_RESTAURANT' => ['Équipements', 'equipements'],
-            'ENGAGEMENT_RSE_RESTAURANT' => ['Engagements RSE', 'engagementsRse'], 'GENERALE_YOUTUBE' => ['Lien YouTube', 'youtubeUrl'],
+            'ENGAGEMENT_RSE_RESTAURANT' => ['Engagements RSE', 'engagementsRse'], 'GENERALE_YOUTUBE' => ['Lien vidéo', 'youtubeUrl'],
             'PHOTO' => ['Photos', 'ressources'],
         ];
         foreach ($map as $code => [$label, $path]) {
@@ -164,7 +164,7 @@ final class CompletenessFieldCatalog
             'PAR_PRESTATION' => ['Tarif par prestation', 'tarifParPrestation'], 'PAR_PERSONNE' => ['Tarif par personne', 'tarifParPersonne'],
             'PAR_JOUR' => ['Tarif par jour', 'tarifParJour'], 'PAR_DEMI_JOURNNEE' => ['Tarif par demi-journée', 'tarifParDemiJournee'],
             'PAR_HEURE' => ['Tarif par heure', 'tarifParHeure'], 'SUR_DEVIS' => ['Sur devis', 'surDevis'],
-            'GENERALE_YOUTUBE' => ['Lien YouTube', 'youtubeUrl'], 'PHOTO' => ['Photos', 'ressources'],
+            'GENERALE_YOUTUBE' => ['Lien vidéo', 'youtubeUrl'], 'PHOTO' => ['Photos', 'ressources'],
         ];
         foreach ($map as $code => [$label, $path]) { $fields[] = $this->field($type, $code, $label, $path); }
         $fields = [...$fields, ...$this->localisation($type, 'modeIntervention', 'fixe', 'Applicable pour une localisation fixe')];

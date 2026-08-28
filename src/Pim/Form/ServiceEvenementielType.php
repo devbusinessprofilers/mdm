@@ -11,6 +11,7 @@ use App\Pim\Entity\Service\ServiceEvenementiel;
 use App\Pim\Enum\ModeInterventionService;
 use App\Pim\Enum\NatureRessource;
 use App\Pim\Lov\ServiceLovCatalog;
+use App\Pim\Validation\LienVideo;
 use App\Pim\Validation\ValidationGroups;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -236,7 +237,9 @@ final class ServiceEvenementielType extends AbstractType
             ->add(
                 "youtubeUrl",
                 UrlType::class,
-                $this->field("Lien YouTube", "youtubeUrl", "changeYoutubeUrl"),
+                $this->field("Lien vidéo", "youtubeUrl", "changeYoutubeUrl") + [
+                    "constraints" => [new LienVideo()],
+                ],
             )
             ->add("ressources", CollectionType::class, [
                 "entry_type" => ServiceRessourceType::class,

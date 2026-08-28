@@ -36,7 +36,15 @@ final class ValidServiceEvenementielValidator extends ConstraintValidator
             false === filter_var($value->youtubeUrl(), FILTER_VALIDATE_URL)
         ) {
             $this->violation(
-                "Le lien YouTube doit être une URL valide.",
+                "Le lien vidéo doit être une URL valide.",
+                "youtubeUrl",
+            );
+        } elseif (
+            null !== $value->youtubeUrl() &&
+            !LienVideoValidator::estHebergeurAutorise($value->youtubeUrl())
+        ) {
+            $this->violation(
+                "Le lien vidéo doit pointer vers un hébergeur vidéo reconnu.",
                 "youtubeUrl",
             );
         }

@@ -61,6 +61,15 @@ final class ValidLieuValidator extends ConstraintValidator
                 'generaleWebsiteUrl',
             );
         }
+        if (
+            null !== $value->generaleYoutube()
+            && !LienVideoValidator::estHebergeurAutorise($value->generaleYoutube())
+        ) {
+            $this->violation(
+                'Le lien vidéo doit pointer vers un hébergeur vidéo reconnu.',
+                'generaleYoutube',
+            );
+        }
         $this->length(
             $value->descGenerale(),
             Lieu::DESCRIPTION_MAX_LENGTH,

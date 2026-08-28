@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Pim\Form;
 
 use App\Pim\Lov\LieuLovCatalog;
+use App\Pim\Validation\LienVideo;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
@@ -149,7 +150,7 @@ final class LieuFormCatalog
     public static function visibility(): array
     {
         return [
-            'generaleYoutube' => ['label' => 'Lien YouTube', 'type' => UrlType::class, 'options' => ['constraints' => [new Url(requireTld: true)]]],
+            'generaleYoutube' => ['label' => 'Lien vidéo', 'type' => UrlType::class, 'options' => ['constraints' => [new Url(requireTld: true), new LienVideo()]]],
             'miceStatut' => self::choice('MICE_STATUT', 'Statut Premium'),
             'afficherContact' => ['label' => 'Afficher le contact'],
             'modePaiementCarteListe' => self::choice('MODE_PAIEMENT_CARTE_LISTE', 'Cartes bancaires acceptées', true),

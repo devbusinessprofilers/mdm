@@ -33,6 +33,15 @@ final class ValidRestaurantValidator extends ConstraintValidator
         $this->maximumLength($value->label(), 255, 'label');
         $this->validUrl($value->siteOfficiel(), Restaurant::WEBSITE_MAX_LENGTH, 'siteOfficiel');
         $this->validUrl($value->youtubeUrl(), 255, 'youtubeUrl');
+        if (
+            null !== $value->youtubeUrl()
+            && !LienVideoValidator::estHebergeurAutorise($value->youtubeUrl())
+        ) {
+            $this->violation(
+                'Le lien vidéo doit pointer vers un hébergeur vidéo reconnu.',
+                'youtubeUrl',
+            );
+        }
 
         if (count($value->atouts()) > 5) {
             $this->violation('Un Restaurant ne peut avoir que cinq atouts.', 'atouts');

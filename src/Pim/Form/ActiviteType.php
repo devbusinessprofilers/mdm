@@ -10,6 +10,7 @@ use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Entity\Localisation;
 use App\Pim\Enum\ModeInterventionActivite;
 use App\Pim\Lov\ActiviteLovCatalog;
+use App\Pim\Validation\LienVideo;
 use App\Pim\Validation\ValidationGroups;
 use Doctrine\Common\Collections\Collection;
 use Symfony\Component\Form\AbstractType;
@@ -318,7 +319,8 @@ final class ActiviteType extends AbstractType
             ->add(
                 'youtubeUrl',
                 UrlType::class,
-                $this->field('Lien YouTube', 'youtubeUrl', 'changeYoutubeUrl'),
+                $this->field('Lien vidéo', 'youtubeUrl', 'changeYoutubeUrl')
+                    + ['constraints' => [new LienVideo()]],
             )
             ->add('ressources', CollectionType::class, [
                 'entry_type' => ActiviteRessourceType::class,
