@@ -367,9 +367,6 @@
                     {% else %}
                         <li><a href="{{ path('app_mdm_creation_fiche') }}" class="{{ pilule }}">Créer une fiche</a></li>
                         <li><a href="{{ url_mes_fiches }}" class="{{ pilule }}">Mes fiches</a></li>
-                        {% if is_granted('ROLE_ADMIN') %}
-                            <li><a href="{{ path('app_etl_import_index') }}" class="{{ pilule }}">Importer des fiches</a></li>
-                        {% endif %}
                     {% endif %}
                 </ul>
             </section>

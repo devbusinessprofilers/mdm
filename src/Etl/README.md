@@ -7,12 +7,14 @@ dans le module.
 
 ## Import de fiches
 
-`FicheImportController` permet de déposer un fichier CSV ou XLSX ; chaque dépôt
-crée un `FicheImportJob` traité par lots de façon asynchrone
+`ImportMasseController` (Outils → Import en masse) accepte un classeur XLSX au
+format de l'export du référentiel ; chaque feuille de gamme crée un
+`FicheImportJob` (mode écrasement) traité par lots de façon asynchrone
 (`StartFicheImport` puis `ProcessFicheImportBatch`), avec suivi d'avancement et
-détail des erreurs ligne par ligne. Les schémas de colonnes et la conversion
-des lignes viennent de `Pim/Import`. Après le dernier échec Messenger,
-`FicheImportFailureSubscriber` place le job en erreur.
+détail des erreurs ligne par ligne (`FicheImportDetailController`). Les schémas
+de colonnes et la conversion des lignes viennent de `Pim/Import`. Après le
+dernier échec Messenger, `FicheImportFailureSubscriber` place le job en erreur.
+(L'ancien écran d'import par modèle sous /admin a été retiré.)
 
 La reprise du legacy dispose de commandes dédiées, une par volet :
 `app:legacy:import-lieux`, `-restaurants`, `-activites`, `-services`,

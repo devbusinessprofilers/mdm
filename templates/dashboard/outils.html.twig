@@ -38,9 +38,6 @@
         <div class="flex items-center gap-2.5 shrink-0">
             <twig:Button variant="{{ erreurs ? 'primary' : 'outline' }}" size="sm" asLink
                          href="{{ path('app_mdm_outils', { erreurs: erreurs ? null : 1, famille: famille }) }}">En échec seulement</twig:Button>
-            {% if is_granted('ROLE_ADMIN') %}
-                <twig:Button variant="primary" size="md" icon="upload-simple" asLink href="{{ path('app_etl_import_index') }}">Importer un fichier</twig:Button>
-            {% endif %}
         </div>
     </div>
 

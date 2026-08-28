@@ -119,7 +119,6 @@ final class EnteteExtension extends AbstractExtension
                 ['Listes de valeurs', 'list', 'app_pim_lov_index'],
                 ['Sites de diffusion', 'rocket', 'app_pim_site_diffusion_index'],
                 ['Médiathèque (DAM)', 'image', 'app_dam_dashboard'],
-                ['Import de fiches', 'upload-simple', 'app_etl_import_index'],
                 ['Paramètres', 'gear', 'app_parametre_index'],
             ];
         }
