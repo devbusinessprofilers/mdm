@@ -697,7 +697,7 @@
     {# Dans le formulaire de sélection : les cases des colonnes partent avec
        les cases des lignes, le bouton Exporter soumet l'ensemble. #}
     <twig:Modal identifier="export-colonnes">
-        <div class="w-[820px] max-w-full flex flex-col gap-3.5">
+        <div class="w-[820px] max-w-full flex flex-col gap-3.5" data-controller="export-colonnes">
             <twig:Typography variant="subtitle" bold>Exporter la sélection vers Excel</twig:Typography>
             <twig:Typography variant="body-sm" textColor="neutral-500">
                 Les colonnes sont rangées par onglet, comme dans le détail de la fiche : décochez celles à écarter.
@@ -713,8 +713,12 @@
                         <twig:Typography variant="body" bold textColor="primary-3">{{ gamme.libelle }}</twig:Typography>
                     {% endif %}
                     {% for onglet in gamme.onglets %}
-                        <div class="flex flex-col gap-1.5">
-                            <twig:Typography variant="body-sm" bold>{{ onglet.titre }}</twig:Typography>
+                        <div class="flex flex-col gap-1.5" data-export-colonnes-onglet>
+                            <div class="flex items-baseline gap-3">
+                                <twig:Typography variant="body-sm" bold>{{ onglet.titre }}</twig:Typography>
+                                <button type="button" data-action="export-colonnes#decocherOnglet"
+                                        class="shrink-0 text-[0.75rem] leading-5 text-primary hover:underline cursor-pointer">Décocher tout</button>
+                            </div>
                             <div class="grid grid-cols-3 gap-x-5 gap-y-1">
                                 {% for colonne in onglet.colonnes %}
                                     {% set case = form_selection.colonnes.children[colonne.index] %}
@@ -729,7 +733,9 @@
                 </div>
             {% endfor %}
 
-            <div class="flex items-center justify-end gap-2 pt-1">
+            <div class="flex items-center justify-between gap-2 pt-1">
+                <button type="button" data-action="export-colonnes#decocherTout"
+                        class="shrink-0 text-[0.75rem] leading-5 text-primary hover:underline cursor-pointer">Tout décocher</button>
                 {# La génération peut être longue : la sélection part vers la
                    vue d'attente dans un nouvel onglet, la modale se referme. #}
                 <twig:Button variant="primary" size="sm" type="submit"
