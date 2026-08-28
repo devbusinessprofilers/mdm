@@ -154,6 +154,7 @@ final class MediasController extends AbstractController
             $reco['items'] = $visionForms->addRecoActions($reco['items'], $reco['page']);
         }
         $recoStats = 'ia' === $onglet ? $vision->recoStats() : null;
+        $retoucheStats = 'import' === $onglet ? $vision->retoucheStats() : null;
 
         return $this->render('dam/medias.html.twig', [
             'onglets' => self::ONGLETS,
@@ -175,6 +176,7 @@ final class MediasController extends AbstractController
             'lancement_retouche_form' => 'import' === $onglet && $iaActive ? $visionForms->lancementRetouche()->createView() : null,
             'lancement_reco_form' => 'ia' === $onglet && $iaActive ? $visionForms->lancementReco()->createView() : null,
             'reco_stats' => $recoStats,
+            'retouche_stats' => $retoucheStats,
             'lancement_reco_masse_form' => 'ia' === $onglet && $iaActive ? $visionForms->lancementRecoMasse()->createView() : null,
         ] + $vue);
     }

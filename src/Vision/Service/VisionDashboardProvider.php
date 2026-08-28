@@ -29,6 +29,22 @@ final readonly class VisionDashboardProvider
     }
 
     /**
+     * Cartes de l'onglet Import & retouche : état de la chaîne de retouche.
+     *
+     * @return array{a_valider: int, appliquees: int, rejetees: int, en_file: int, echecs: int}
+     */
+    public function retoucheStats(): array
+    {
+        return [
+            'a_valider' => $this->enhancements->countByStatus(EnhancementStatus::Ready),
+            'appliquees' => $this->enhancements->countByStatus(EnhancementStatus::Accepted),
+            'rejetees' => $this->enhancements->countByStatus(EnhancementStatus::Rejected),
+            'en_file' => $this->enhancements->countByStatus(EnhancementStatus::Queued, EnhancementStatus::Processing),
+            'echecs' => $this->enhancements->countByStatus(EnhancementStatus::Failed),
+        ];
+    }
+
+    /**
      * Cartes de l'onglet Reconnaissance IA : couverture des mots-clés et état
      * de la file.
      *

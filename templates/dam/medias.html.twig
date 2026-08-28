@@ -596,6 +596,47 @@
 
     {# ------------------------------------------------- Onglet Import & retouche #}
     {% if onglet_actif == 'import' and retouche is not null %}
+        {% if retouche_stats is defined and retouche_stats %}
+            <div class="shrink-0 flex flex-row gap-4 flex-wrap">
+                <div class="{{ carte }} flex-1 basis-80 min-w-0">
+                    <div class="flex items-center gap-3">
+                        <twig:Icon name="ok-circle" aria-hidden="true"
+                                   class="shrink-0 w-6 h-6 {{ retouche_stats.a_valider > 0 ? 'text-error' : 'text-primary' }}" />
+                        <twig:Typography variant="subtitle" ellipsis
+                                         class="flex-1 min-w-0 text-[1.125rem]! leading-[1.625rem]! font-[700]!">Retouches à valider</twig:Typography>
+                        <span class="inline-flex shrink-0"><twig:Tag label="{{ retouche_stats.a_valider|number_format(0, ',', ' ') }}" size="sm"
+                                  variant="{{ retouche_stats.a_valider > 0 ? 'error' : 'success-pastel' }}" class="whitespace-nowrap" /></span>
+                    </div>
+                    <twig:Typography variant="body" textColor="neutral-500" class="text-pretty">Versions retouchées en
+                        attente d'une décision en avant/après, ligne par ligne ci-dessous. L'original est toujours
+                        conservé : rien ne change tant qu'une proposition n'est pas acceptée.</twig:Typography>
+                </div>
+                <div class="{{ carte }} flex-1 basis-80 min-w-0">
+                    <div class="flex items-center gap-3">
+                        <twig:Icon name="images" aria-hidden="true" class="shrink-0 w-6 h-6 text-primary" />
+                        <twig:Typography variant="subtitle" ellipsis
+                                         class="flex-1 min-w-0 text-[1.125rem]! leading-[1.625rem]! font-[700]!">Retouches appliquées</twig:Typography>
+                        <span class="inline-flex shrink-0"><twig:Tag label="{{ retouche_stats.appliquees|number_format(0, ',', ' ') }}" size="sm"
+                                  variant="{{ retouche_stats.appliquees > 0 ? 'success-pastel' : 'neutral' }}" class="whitespace-nowrap" /></span>
+                    </div>
+                    <twig:Typography variant="body" textColor="neutral-500" class="text-pretty">Photos dont la version
+                        retouchée acceptée sert désormais de source aux variantes diffusées{{ retouche_stats.rejetees > 0 ? ' — et ' ~ retouche_stats.rejetees|number_format(0, ',', ' ') ~ ' proposition' ~ (retouche_stats.rejetees > 1 ? 's' : '') ~ ' rejetée' ~ (retouche_stats.rejetees > 1 ? 's' : '') : '' }}.
+                        Le retour à l'original reste possible à tout moment.</twig:Typography>
+                </div>
+                <div class="{{ carte }} flex-1 basis-80 min-w-0">
+                    <div class="flex items-center gap-3">
+                        <twig:Icon name="spinner" aria-hidden="true"
+                                   class="shrink-0 w-6 h-6 {{ retouche_stats.echecs > 0 ? 'text-error' : 'text-primary' }}" />
+                        <twig:Typography variant="subtitle" ellipsis
+                                         class="flex-1 min-w-0 text-[1.125rem]! leading-[1.625rem]! font-[700]!">File de retouche</twig:Typography>
+                        <span class="inline-flex shrink-0"><twig:Tag label="{{ retouche_stats.en_file|number_format(0, ',', ' ') }}" size="sm"
+                                  variant="{{ retouche_stats.en_file > 0 ? 'primary-3' : 'neutral' }}" class="whitespace-nowrap" /></span>
+                    </div>
+                    <twig:Typography variant="body" textColor="neutral-500" class="text-pretty">Photos en file ou en
+                        cours de retouche par les workers{{ retouche_stats.echecs > 0 ? ', et ' ~ retouche_stats.echecs|number_format(0, ',', ' ') ~ ' en échec à relancer depuis la liste ci-dessous' : ' — aucun échec à relancer' }}.</twig:Typography>
+                </div>
+            </div>
+        {% endif %}
         {% if ia_active %}
             <div class="shrink-0 {{ carte }}">
                 <div class="flex items-center gap-3">

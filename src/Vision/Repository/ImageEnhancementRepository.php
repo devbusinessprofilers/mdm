@@ -37,9 +37,9 @@ final class ImageEnhancementRepository extends ServiceEntityRepository
         return $this->count([]);
     }
 
-    public function countByStatus(EnhancementStatus $status): int
+    public function countByStatus(EnhancementStatus ...$statuses): int
     {
-        return $this->count(['status' => $status]);
+        return $this->count(['status' => $statuses]);
     }
 
     /** La retouche acceptée dont le résultat est la source actuelle du média. */
