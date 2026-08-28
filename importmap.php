@@ -86,4 +86,40 @@ return [
     '@popperjs/core' => [
         'version' => '2.11.8',
     ],
+    'cropperjs' => [
+        'version' => '2.2.0',
+    ],
+    '@cropper/utils' => [
+        'version' => '2.2.0',
+    ],
+    '@cropper/elements' => [
+        'version' => '2.2.0',
+    ],
+    '@cropper/element' => [
+        'version' => '2.2.0',
+    ],
+    '@cropper/element-canvas' => [
+        'version' => '2.2.0',
+    ],
+    '@cropper/element-image' => [
+        'version' => '2.2.0',
+    ],
+    '@cropper/element-shade' => [
+        'version' => '2.2.0',
+    ],
+    '@cropper/element-handle' => [
+        'version' => '2.2.0',
+    ],
+    '@cropper/element-selection' => [
+        'version' => '2.2.0',
+    ],
+    '@cropper/element-grid' => [
+        'version' => '2.2.0',
+    ],
+    '@cropper/element-crosshair' => [
+        'version' => '2.2.0',
+    ],
+    '@cropper/element-viewer' => [
+        'version' => '2.2.0',
+    ],
 ];

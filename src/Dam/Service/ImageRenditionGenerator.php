@@ -55,6 +55,13 @@ final readonly class ImageRenditionGenerator
                     $input,
                     '-auto-orient',
                 ];
+                // La rotation s'applique avant le rognage : les coordonnées de
+                // crop stockées sont exprimées dans l'espace de l'image après
+                // auto-orient + rotation, telle que l'utilisateur la voit dans
+                // la modale de recadrage.
+                if (0 !== $rotation) {
+                    $command = [...$command, '-rotate', (string) $rotation, '+repage'];
+                }
                 if (null !== $crop) {
                     $command = [
                         ...$command,
@@ -68,9 +75,6 @@ final readonly class ImageRenditionGenerator
                         ),
                         '+repage',
                     ];
-                }
-                if (0 !== $rotation) {
-                    $command = [...$command, '-rotate', (string) $rotation];
                 }
                 // L'original n'est décodé qu'une fois : chaque variante est
                 // produite à partir d'un clone de l'image préparée, la

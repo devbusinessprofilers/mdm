@@ -2,15 +2,24 @@
     base: 'flex flex-col items-center justify-center px-4 py-2 bg-primary-4 rounded-[16px] cursor-pointer',
 }) %}
 
+{# Modale de recadrage visuel : l'original est chargé à l'ouverture (jamais au
+   préchargement), la sélection est verrouillée sur le ratio de l'image et
+   bornée aux minima d'upload — voir crop_modal_controller.js. Le contrôleur
+   modal fournit ouverture (via modal-trigger-button), voile et Échap. #}
 <div
-    id="{{ identifier }}"
+    data-modal="{{ identifier }}"
     class="fixed top-0 left-0 w-screen h-screen bg-background-transparency flex justify-center items-center z-256 hidden"
-    {{ stimulus_controller('crop-modal', {
+    {{ stimulus_controller('modal', { 'display': false })|stimulus_controller('crop-modal', {
+        'originalUrl': originalUrl,
+        'formName': formName,
+        'minWidth': minWidth,
+        'minHeight': minHeight,
         'scaleStep': scaleStep,
         'minScale': minScale,
         'maxScale': maxScale,
     }) }}
-    {{ stimulus_target('crop-modal', 'modal') }}
+    {{ stimulus_target('modal', 'modal') }}
+    data-action="click->modal#backdrop keydown.esc@window->modal#escape modal:opened->crop-modal#prepare"
 >
     <div class="max-w-80/100 max-h-80/100 overflow-auto bg-neutral-900 p-14 rounded-l-md rounded-r-xs">
         <div class="w-full flex flex-col gap-6 items-center">
@@ -24,7 +33,7 @@
                     {{ stimulus_target('crop-modal', 'scale') }}
                     data-action="input->crop-modal#updateScale"
                     type="range"
-                    value="0"
+                    value="1"
                     min="{{ minScale }}"
                     max="{{ maxScale }}"
                     step="{{ scaleStep }}"
@@ -38,22 +47,41 @@
             <cropper-canvas
                 {{ stimulus_target('crop-modal', 'canvas') }}
                 class="w-50 h-25 sm:w-100 sm:h-50 lg:w-200 lg:h-100 rounded-sm bg-neutral-500"
-                scaleStep="{{ scaleStep }}"
+                scale-step="{{ scaleStep }}"
             >
                 <cropper-image
                     {{ stimulus_target('crop-modal', 'picture') }}
-                    src="{{ path('provider_portal_download_media', {'uniqueId': '123'}) }}"
+                    data-action="transform->crop-modal#limitTransform"
                     alt=""
-                    initial-center-size="cover"
                     rotatable scalable translatable
                 ></cropper-image>
+                <cropper-shade hidden></cropper-shade>
+                {# Cadre fixe, image mobile : la sélection n'est pas « movable »,
+                   donc glisser n'importe où — poignée du canevas hors du cadre,
+                   poignée « move » dans le cadre — déplace l'image sous le
+                   cadre ; le cadre ne se règle que par ses poignées de
+                   redimensionnement. #}
+                <cropper-handle action="move" plain></cropper-handle>
                 <cropper-selection
                     {{ stimulus_target('crop-modal', 'selection') }}
-                    initial-coverage="1"
+                    data-action="change->crop-modal#limitSelection"
+                    resizable
                 >
+                    <cropper-grid role="grid" bordered covered></cropper-grid>
                     <cropper-handle action="move" theme-color="rgba(255, 255, 255, 0)"></cropper-handle>
+                    <cropper-handle action="n-resize"></cropper-handle>
+                    <cropper-handle action="e-resize"></cropper-handle>
+                    <cropper-handle action="s-resize"></cropper-handle>
+                    <cropper-handle action="w-resize"></cropper-handle>
+                    <cropper-handle action="ne-resize"></cropper-handle>
+                    <cropper-handle action="nw-resize"></cropper-handle>
+                    <cropper-handle action="se-resize"></cropper-handle>
+                    <cropper-handle action="sw-resize"></cropper-handle>
                 </cropper-selection>
             </cropper-canvas>
+            <p hidden {{ stimulus_target('crop-modal', 'error') }}>
+                <twig:Typography variant="body-sm" textColor="error" bold element="span">Le chargement de l’image a échoué — fermez puis rouvrez la fenêtre pour réessayer.</twig:Typography>
+            </p>
             <div class="flex justify-center items-center gap-4">
                 <button type="button" class="{{ buttonCva.apply({}) }}" data-action="click->crop-modal#rotateLeft">
                     <twig:Icon name="arrow-counter-clockwise" class="w-8 h-8"/>
@@ -65,6 +93,7 @@
                 </button>
             </div>
             <div class="flex justify-center gap-4 mt-8">
+                <twig:Button type="button" variant="outline" data-action="click->crop-modal#reset">{{ 'form.crop.reset'|trans }}</twig:Button>
                 <twig:Button type="button" variant="outline" data-action="click->crop-modal#cancel">{{ 'global.cancel'|trans }}</twig:Button>
                 <twig:Button type="button" data-action="click->crop-modal#save">{{ 'global.validate_save'|trans }}</twig:Button>
             </div>

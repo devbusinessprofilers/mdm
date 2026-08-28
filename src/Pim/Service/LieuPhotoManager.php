@@ -19,6 +19,7 @@ use App\Pim\Enum\TypeFiche;
 use App\Pim\Message\IndexFiche;
 use App\Shared\Message\MediaUploaded;
 use App\Shared\Outbox\OutboxPublisherInterface;
+use App\Shared\Service\ParametreProviderInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
@@ -30,6 +31,7 @@ final readonly class LieuPhotoManager
         private PhotoObligations $photoObligations,
         private EntityManagerInterface $entityManager,
         private OutboxPublisherInterface $outbox,
+        private ParametreProviderInterface $parametres,
     ) {}
 
     /** @return list<RessourceLieu> */
@@ -126,6 +128,14 @@ final readonly class LieuPhotoManager
         $resource->changeSalle($salle);
         $keys = ['crop_x', 'crop_y', 'crop_width', 'crop_height'];
         $crop = array_map(static fn (string $key): ?int => '' === (string) ($data[$key] ?? '') ? null : (int) $data[$key], $keys);
+        // Le rognage ne doit pas produire une image sous les minima imposés à
+        // l'upload — même plancher que celui appliqué par la modale de recadrage.
+        if (null !== $crop[2] && $crop[2] < $this->parametres->int('dam.image_largeur_min')) {
+            throw new \DomainException(sprintf('La zone recadrée doit faire au moins %d px de large.', $this->parametres->int('dam.image_largeur_min')));
+        }
+        if (null !== $crop[3] && $crop[3] < $this->parametres->int('dam.image_hauteur_min')) {
+            throw new \DomainException(sprintf('La zone recadrée doit faire au moins %d px de haut.', $this->parametres->int('dam.image_hauteur_min')));
+        }
         $rotation = (int) ($data['rotation'] ?? 0);
         $changed = $resource->crop() !== (null === $crop[0] ? null : ['x' => $crop[0], 'y' => $crop[1], 'width' => $crop[2], 'height' => $crop[3]]) || $resource->rotation() !== $rotation;
         $resource->changeCrop(...$crop);

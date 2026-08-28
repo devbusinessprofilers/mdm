@@ -2,7 +2,7 @@
    la fiche Lieu (_medias_modales) : servies par app_pim_gamme_photo_modales et
    préchargées en arrière-plan par le contrôleur lieu-media, le clic sur une
    vignette reste instantané. Pas d'association de salle hors fiche Lieu.
-   Variables : gamme, entite_id, photos. #}
+   Variables : gamme, entite_id, photos, image_min_width, image_min_height. #}
 {% for photo in photos %}
     <twig:Modal identifier="photo-{{ photo.resource.id }}">
         <div class="flex flex-col gap-4 w-[min(560px,80vw)]">
@@ -14,21 +14,20 @@
                 <img src="{{ photo.thumbnail_url }}" alt="{{ photo.resource.legende ?: (photo.asset ? photo.asset.originalFilename : 'Photo') }}"
                      class="w-full max-h-[240px] object-cover rounded-xs" loading="lazy">
             {% endif %}
+            {% if photo.asset %}
+                <button type="button" data-controller="modal-trigger-button"
+                        data-modal-trigger-button-modal-identifier-value="crop-photo-{{ photo.resource.id }}"
+                        data-action="modal-trigger-button#open"
+                        class="self-start cursor-pointer"><twig:Typography variant="body-sm" textColor="primary-3" bold element="span">Recadrer et pivoter</twig:Typography></button>
+            {% endif %}
+            {# Les champs cachés crop_x/y/width/height et rotation sont rendus
+               par form_end (form_rest) et alimentés par la modale de recadrage. #}
             {{ form_start(photo.metadata_form, {attr: {'data-action': 'submit->lieu-media#save', 'data-url': photo.metadata_form.vars.action, class: 'flex flex-col gap-3'}}) }}
                 {{ form_row(photo.metadata_form.usage) }}
                 {{ form_row(photo.metadata_form.legende) }}
                 {{ form_row(photo.metadata_form.source) }}
                 {{ form_row(photo.metadata_form.keywords) }}
                 {{ form_row(photo.metadata_form.rights_expires_at) }}
-                <details><summary><twig:Typography variant="body-sm" bold element="span">Recadrage et rotation</twig:Typography></summary>
-                    <div class="lieu-crop-fields flex flex-col gap-3 pt-3">
-                        {{ form_row(photo.metadata_form.crop_x) }}
-                        {{ form_row(photo.metadata_form.crop_y) }}
-                        {{ form_row(photo.metadata_form.crop_width) }}
-                        {{ form_row(photo.metadata_form.crop_height) }}
-                        {{ form_row(photo.metadata_form.rotation) }}
-                    </div>
-                </details>
                 <div class="flex justify-end pt-1">{{ form_widget(photo.metadata_form.save, {attr: {'data-full': false, 'data-size': 'md'}}) }}</div>
             {{ form_end(photo.metadata_form) }}
             <div class="flex flex-wrap items-center gap-3 pt-2 border-t border-neutral-200">
@@ -43,4 +42,13 @@
             </div>
         </div>
     </twig:Modal>
+    {% if photo.asset %}
+        <twig:Media:CropModal
+            identifier="crop-photo-{{ photo.resource.id }}"
+            originalUrl="{{ photo.original_url }}"
+            formName="photo_metadata_{{ photo.resource.id }}"
+            :minWidth="image_min_width"
+            :minHeight="image_min_height"
+        />
+    {% endif %}
 {% endfor %}

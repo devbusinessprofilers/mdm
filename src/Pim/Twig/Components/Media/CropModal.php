@@ -9,9 +9,21 @@ class CropModal
 {
     public string $identifier;
 
-    public float $scaleStep;
+    /** Route de redirection vers l'original présigné, chargée à l'ouverture. */
+    public string $originalUrl;
 
-    public float $minScale;
+    /** Nom du formulaire de métadonnées dont les champs cachés reçoivent le crop. */
+    public string $formName;
 
-    public float $maxScale;
+    /** Dimensions minimales de la zone recadrée, en pixels réels de l'image. */
+    public int $minWidth;
+
+    public int $minHeight;
+
+    public float $scaleStep = 0.1;
+
+    /** 1 = pas de dézoom sous le cadrage initial « contain ». */
+    public float $minScale = 1;
+
+    public float $maxScale = 3;
 }

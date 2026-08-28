@@ -6,8 +6,10 @@ namespace App\Pim\Controller;
 
 use App\Account\Security\FicheVoter;
 use App\Account\Service\CurrentActorProvider;
+use App\Dam\Repository\MediaAssetRepository;
 use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Repository\RessourceLieuRepository;
+use App\Shared\Service\PrivateObjectStorageInterface;
 use App\Pim\Service\InternalFicheMutationPolicy;
 use App\Pim\Service\LieuMediaCsrfGuard;
 use App\Pim\Service\LieuPhotoManager;
@@ -16,6 +18,7 @@ use App\Pim\Enum\TypeFiche;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -74,6 +77,22 @@ final class LieuPhotoController extends AbstractController
             return $this->json(['updated' => true]);
         }
         catch (\DomainException $exception) { return $this->json(['error' => $exception->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY); }
+    }
+
+    /**
+     * Redirige vers une URL présignée fraîche de l'original : la modale de
+     * recadrage charge l'image à l'ouverture, jamais au préchargement, pour
+     * que le lien ne soit pas expiré quand l'utilisateur clique.
+     */
+    #[Route('/{resourceId}/original', name: 'original', methods: ['GET'], requirements: ['resourceId' => '[0-9A-HJKMNP-TV-Z]{26}'])]
+    public function original(Lieu $lieu, string $resourceId, RessourceLieuRepository $resources, MediaAssetRepository $assets, PrivateObjectStorageInterface $storage): RedirectResponse
+    {
+        $this->denyAccessUnlessGranted(FicheVoter::VIEW, $lieu->fiche());
+        $resource = $resources->findPhotoForFiche($lieu->fiche(), $resourceId);
+        if (null === $resource || $resource->lieu() !== $lieu) { throw $this->createNotFoundException('Photo introuvable pour ce lieu.'); }
+        $asset = $assets->find($resource->damAssetId()) ?? throw $this->createNotFoundException('Fichier DAM introuvable.');
+
+        return $this->redirect($storage->temporaryUrl($asset->originalStorageKey(), new \DateTimeImmutable('+10 minutes')));
     }
 
     #[Route('/{resourceId}/remplacer', name: 'replace', methods: ['POST'])]

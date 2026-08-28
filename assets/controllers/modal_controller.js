@@ -12,10 +12,12 @@ export default class extends Controller {
 
     open() {
         this.modalTarget.style.display = 'flex';
+        this.dispatch('opened');
     }
 
     close() {
         this.modalTarget.style.display = 'none';
+        this.dispatch('closed');
     }
 
     // Clic sur le voile (et pas sur le panneau, dont les clics ne remontent
@@ -27,8 +29,15 @@ export default class extends Controller {
     }
 
     // Échap ferme la modale ouverte ; les modales fermées ignorent l'événement.
+    // Deux modales peuvent être empilées (paramètres photo + recadrage) : seule
+    // celle du dessus se ferme — à z-index égal, l'ordre du document fait foi.
     escape() {
-        if (this.modalTarget.style.display === 'flex') {
+        if (this.modalTarget.style.display !== 'flex') {
+            return;
+        }
+        const ouvertes = Array.from(document.querySelectorAll('[data-modal]'))
+            .filter(element => element.style.display === 'flex');
+        if (ouvertes[ouvertes.length - 1] === this.modalTarget) {
             this.close();
         }
     }

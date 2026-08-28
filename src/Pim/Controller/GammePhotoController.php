@@ -6,6 +6,7 @@ namespace App\Pim\Controller;
 
 use App\Account\Security\FicheVoter;
 use App\Account\Service\CurrentActorProvider;
+use App\Dam\Repository\MediaAssetRepository;
 use App\Dam\Service\FichePhotoPresenter;
 use App\Pim\Form\LieuPhotoMetadataType;
 use App\Pim\Form\LieuPhotoReplaceType;
@@ -14,10 +15,13 @@ use App\Pim\Service\GammeEntiteResolver;
 use App\Pim\Service\InternalFicheMutationPolicy;
 use App\Pim\Service\LieuMediaCsrfGuard;
 use App\Pim\Service\LieuPhotoManager;
+use App\Shared\Service\ParametreProviderInterface;
+use App\Shared\Service\PrivateObjectStorageInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -180,11 +184,33 @@ final class GammePhotoController extends AbstractController
     }
 
     /**
+     * Redirige vers une URL présignée fraîche de l'original : la modale de
+     * recadrage charge l'image à l'ouverture, jamais au préchargement, pour
+     * que le lien ne soit pas expiré quand l'utilisateur clique.
+     */
+    #[Route('/photos/{resourceId}/original', name: 'original', methods: ['GET'], requirements: ['resourceId' => '[0-9A-HJKMNP-TV-Z]{26}'])]
+    public function original(string $gamme, string $id, string $resourceId, GammeEntiteResolver $resolver, RessourceLieuRepository $resources, MediaAssetRepository $assets, PrivateObjectStorageInterface $storage): RedirectResponse
+    {
+        $entite = $resolver->resolve($gamme, $id);
+        if (null === $entite) {
+            throw $this->createNotFoundException('Fiche introuvable.');
+        }
+        $this->denyAccessUnlessGranted(FicheVoter::VIEW, $entite->fiche());
+        $resource = $resources->findPhotoForFiche($entite->fiche(), $resourceId);
+        if (null === $resource) {
+            throw $this->createNotFoundException('Photo introuvable pour cette fiche.');
+        }
+        $asset = $assets->find($resource->damAssetId()) ?? throw $this->createNotFoundException('Fichier DAM introuvable.');
+
+        return $this->redirect($storage->temporaryUrl($asset->originalStorageKey(), new \DateTimeImmutable('+10 minutes')));
+    }
+
+    /**
      * Modales de paramètres des photos, préchargées en arrière-plan par le
      * contrôleur Stimulus lieu-media — même mécanique que la fiche Lieu.
      */
     #[Route('/medias/modales', name: 'modales', methods: ['GET'])]
-    public function modales(string $gamme, string $id, GammeEntiteResolver $resolver, FichePhotoPresenter $presenter, FormFactoryInterface $forms, UrlGeneratorInterface $urls): Response
+    public function modales(string $gamme, string $id, GammeEntiteResolver $resolver, FichePhotoPresenter $presenter, FormFactoryInterface $forms, UrlGeneratorInterface $urls, ParametreProviderInterface $parametres): Response
     {
         $entite = $resolver->resolve($gamme, $id);
         if (null === $entite) {
@@ -207,6 +233,7 @@ final class GammePhotoController extends AbstractController
             $photo['replace_form'] = $forms->createNamed('photo_replace_'.$resource->id(), LieuPhotoReplaceType::class, null, [
                 'action' => $urls->generate('app_pim_gamme_photo_replace', $params), 'method' => 'POST',
             ])->createView();
+            $photo['original_url'] = $urls->generate('app_pim_gamme_photo_original', $params);
         }
         unset($photo);
 
@@ -214,6 +241,8 @@ final class GammePhotoController extends AbstractController
             'gamme' => $gamme,
             'entite_id' => $id,
             'photos' => $photos,
+            'image_min_width' => $parametres->int('dam.image_largeur_min'),
+            'image_min_height' => $parametres->int('dam.image_hauteur_min'),
         ]);
     }
 }

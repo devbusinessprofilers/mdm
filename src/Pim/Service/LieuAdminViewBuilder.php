@@ -15,6 +15,7 @@ use App\Pim\Form\LieuPhotoMetadataType;
 use App\Pim\Form\LieuPhotoReplaceType;
 use App\Pim\Form\LieuPhotoUploadType;
 use App\Shared\Form\ActionType;
+use App\Shared\Service\ParametreProviderInterface;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
@@ -28,6 +29,7 @@ final readonly class LieuAdminViewBuilder
         private LieuPhotoPresenter $photos,
         private LieuDocumentPresenter $documents,
         private CsrfTokenManagerInterface $csrfTokens,
+        private ParametreProviderInterface $parametres,
     ) {}
 
     /** @param FormInterface<mixed> $form
@@ -95,6 +97,7 @@ final readonly class LieuAdminViewBuilder
             $photo['replace_form'] = $this->forms->createNamed('photo_replace_'.$resource->id(), LieuPhotoReplaceType::class, null, [
                 'action' => $this->urls->generate('app_pim_lieu_photo_replace', $params), 'method' => 'POST',
             ])->createView();
+            $photo['original_url'] = $this->urls->generate('app_pim_lieu_photo_original', $params);
         }
         unset($photo);
 
@@ -124,6 +127,10 @@ final readonly class LieuAdminViewBuilder
             ];
         }
 
-        return ['lieu' => $lieu, 'photos' => $photos, 'documents' => $documents];
+        return [
+            'lieu' => $lieu, 'photos' => $photos, 'documents' => $documents,
+            'image_min_width' => $this->parametres->int('dam.image_largeur_min'),
+            'image_min_height' => $this->parametres->int('dam.image_hauteur_min'),
+        ];
     }
 }

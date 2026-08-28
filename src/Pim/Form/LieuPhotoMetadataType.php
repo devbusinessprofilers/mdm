@@ -9,7 +9,7 @@ use App\Pim\Service\PhotoUsageCatalog;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
-use Symfony\Component\Form\Extension\Core\Type\IntegerType;
+use Symfony\Component\Form\Extension\Core\Type\HiddenType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
@@ -38,12 +38,14 @@ final class LieuPhotoMetadataType extends AbstractType
         if ($options['avec_salles']) {
             $builder->add('salle_id', EntityType::class, ['label' => 'Salle', 'class' => Salle::class, 'choices' => $options['salles'], 'choice_value' => 'id', 'choice_label' => static fn (Salle $salle): string => $salle->nom() ?: 'Salle sans nom', 'placeholder' => 'Aucune', 'required' => false]);
         }
+        // Recadrage et rotation : valeurs posées par la modale de recadrage
+        // visuel (contrôleur Stimulus crop-modal), plus de saisie manuelle.
         $builder
-            ->add('crop_x', IntegerType::class, ['label' => 'X', 'required' => false, 'attr' => ['min' => 0]])
-            ->add('crop_y', IntegerType::class, ['label' => 'Y', 'required' => false, 'attr' => ['min' => 0]])
-            ->add('crop_width', IntegerType::class, ['label' => 'Largeur', 'required' => false, 'attr' => ['min' => 1]])
-            ->add('crop_height', IntegerType::class, ['label' => 'Hauteur', 'required' => false, 'attr' => ['min' => 1]])
-            ->add('rotation', ChoiceType::class, ['label' => 'Rotation', 'choices' => ['0°' => 0, '90°' => 90, '180°' => 180, '270°' => 270]])
+            ->add('crop_x', HiddenType::class, ['required' => false])
+            ->add('crop_y', HiddenType::class, ['required' => false])
+            ->add('crop_width', HiddenType::class, ['required' => false])
+            ->add('crop_height', HiddenType::class, ['required' => false])
+            ->add('rotation', HiddenType::class, ['required' => false, 'empty_data' => '0'])
             ->add('save', SubmitType::class, ['label' => 'Enregistrer', 'attr' => ['class' => 'btn']]);
     }
 
