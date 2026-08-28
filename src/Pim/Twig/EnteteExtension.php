@@ -100,35 +100,30 @@ final class EnteteExtension extends AbstractExtension
     /**
      * Le menu d'administration, ouvert au survol du profil.
      *
-     * Reprend l'intégralité des écrans d'administration de l'ancienne
-     * navigation, avec les mêmes gardes de rôle. Libellé, glyphe, route.
+     * Seul point d'entrée vers les écrans /admin restant dans l'interface,
+     * réservé aux super administrateurs. Libellé, glyphe, route.
      *
      * @return list<array{string, string, string}>
      */
     public function administration(): array
     {
-        $entrees = [];
-
-        if ($this->security->isGranted('ROLE_ADMIN')) {
-            $entrees = [
-                ['Sommaire', 'squares-four', 'app_pim_admin'],
-                ['Statistiques détaillées', 'trend-up', 'app_dashboard_index'],
-                ['Performance & monitoring', 'desktop', 'app_performance_index'],
-                ['Traitements en échec', 'warning', 'app_dashboard_traitements_en_echec'],
-                ['Relances de complétude', 'paper-plane', 'app_pim_relance_completude_index'],
-                ['Listes de valeurs', 'list', 'app_pim_lov_index'],
-                ['Sites de diffusion', 'rocket', 'app_pim_site_diffusion_index'],
-                ['Médiathèque (DAM)', 'image', 'app_dam_dashboard'],
-                ['Paramètres', 'gear', 'app_parametre_index'],
-            ];
+        if (!$this->security->isGranted('ROLE_SUPER_ADMIN')) {
+            return [];
         }
 
-        if ($this->security->isGranted('ROLE_SUPER_ADMIN')) {
-            $entrees[] = ['Utilisateurs (gestion)', 'users', 'app_account_admin_index'];
-            $entrees[] = ['Collaborateurs', 'user', 'app_account_user_admin_index'];
-        }
-
-        return $entrees;
+        return [
+            ['Sommaire', 'squares-four', 'app_pim_admin'],
+            ['Statistiques détaillées', 'trend-up', 'app_dashboard_index'],
+            ['Performance & monitoring', 'desktop', 'app_performance_index'],
+            ['Traitements en échec', 'warning', 'app_dashboard_traitements_en_echec'],
+            ['Relances de complétude', 'paper-plane', 'app_pim_relance_completude_index'],
+            ['Listes de valeurs', 'list', 'app_pim_lov_index'],
+            ['Sites de diffusion', 'rocket', 'app_pim_site_diffusion_index'],
+            ['Médiathèque (DAM)', 'image', 'app_dam_dashboard'],
+            ['Paramètres', 'gear', 'app_parametre_index'],
+            ['Utilisateurs (gestion)', 'users', 'app_account_admin_index'],
+            ['Collaborateurs', 'user', 'app_account_user_admin_index'],
+        ];
     }
 
     private function fonction(): ?string

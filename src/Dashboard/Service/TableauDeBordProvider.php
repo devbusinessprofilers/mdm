@@ -132,7 +132,9 @@ final readonly class TableauDeBordProvider
                 'volume' => $comptes['echecs'],
                 // Un échec est un état : toute occurrence est critique.
                 'severite' => $comptes['echecs'] > 0 ? 'critique' : 'normale',
-                'url' => $this->urls->generate('app_dashboard_traitements_en_echec'),
+                // Le journal des traitements filtré sur les erreurs : la page
+                // d'administration (rejeu DLQ) reste accessible par le menu.
+                'url' => $this->urls->generate('app_mdm_outils', ['erreurs' => 1]),
             ],
         ];
     }

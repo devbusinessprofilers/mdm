@@ -123,20 +123,39 @@ final class TraitementsEnEchecControllerTest extends WebTestCase
         self::assertGreaterThan(0, $crawler->filter('a[href="/admin/dam?filter=failed"]')->count());
     }
 
-    public function testLeTableauDeBordReserveLesActionsTraiterAuxAdmins(): void
+    public function testLaCarteDesEchecsRenvoieAuJournalPourTous(): void
     {
         $client = self::createClient();
         $client->loginUser($this->persistUser('validator-tdb@example.test', ['ROLE_BP_VALIDATOR']));
+        // Sans file non vide le tableau de bord affiche « Rien à traiter »
+        // sans aucune carte : une fiche à valider fait apparaître la rangée.
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $aValider = new Lieu();
+        $aValider->changeLabel('Fiche en attente');
+        $aValider->fiche()->submitForValidation('editor');
+        $entityManager->persist($aValider);
+        $entityManager->flush();
         $crawler = $client->request('GET', '/');
         self::assertResponseIsSuccessful();
-        // Les cartes de file sont les liens ; celle des échecs (route admin)
-        // n'est cliquable que pour les admins.
-        self::assertSame(0, $crawler->filter('a[href="/admin/traitements-en-echec"]')->count());
+        // La carte des échecs mène au journal /outils filtré sur les erreurs ;
+        // plus aucun lien /admin hors du menu d'administration.
+        self::assertGreaterThan(0, $crawler->filter('a[href="/outils?erreurs=1"]')->count());
+        self::assertSame(0, $crawler->filter('a[href^="/admin"]')->count());
 
+        // Même un administrateur n'a plus de lien /admin hors menu ; le menu
+        // d'administration du profil est réservé aux super administrateurs.
+        // clear() : persistUser purge les tables en SQL, l'entité fiche encore
+        // suivie ferait échouer le flush suivant.
+        $entityManager->clear();
         $client->loginUser($this->persistUser('admin-tdb@example.test', ['ROLE_ADMIN']));
         $crawler = $client->request('GET', '/');
         self::assertResponseIsSuccessful();
-        self::assertGreaterThan(0, $crawler->filter('a[href="/admin/traitements-en-echec"]')->count());
+        self::assertSame(0, $crawler->filter('a[href^="/admin"]')->count());
+
+        $client->loginUser($this->persistUser('super-tdb@example.test', ['ROLE_SUPER_ADMIN']));
+        $crawler = $client->request('GET', '/');
+        self::assertResponseIsSuccessful();
+        self::assertGreaterThan(0, $crawler->filter('a[href^="/admin"]')->count());
     }
 
     /** @param list<string> $roles */

@@ -1,13 +1,13 @@
 {% set dam_alerts = dam_anomaly_counts(fiche) %}
 {% if dam_alerts.total > 0 %}
-    {# La supervision DAM (/admin/dam) est réservée aux admins : les autres voient les compteurs sans lien. #}
-    {% set lien_dam = is_granted('ROLE_ADMIN') %}
+    {# Compteurs sans lien : la supervision DAM (/admin/dam) n'est atteignable
+       que par le menu d'administration, réservé aux super administrateurs. #}
     <aside class="dam-inline-alerts" aria-label="Alertes DAM">
         <strong>{{ dam_alerts.total }} anomalie{{ dam_alerts.total > 1 ? 's' : '' }} DAM</strong>
-        {% if dam_alerts.duplicates > 0 %}{% set libelle %}{{ dam_alerts.duplicates }} doublon{{ dam_alerts.duplicates > 1 ? 's' : '' }}{% endset %}{% if lien_dam %}<a class="badge badge-warning" href="{{ path('app_dam_dashboard', {filter: 'duplicates', type: fiche.type.value}) }}">{{ libelle }}</a>{% else %}<span class="badge badge-warning">{{ libelle }}</span>{% endif %}{% endif %}
-        {% if dam_alerts.rights_missing > 0 %}{% set libelle %}{{ dam_alerts.rights_missing }} droit{{ dam_alerts.rights_missing > 1 ? 's' : '' }} non validé{{ dam_alerts.rights_missing > 1 ? 's' : '' }}{% endset %}{% if lien_dam %}<a class="badge badge-neutral" href="{{ path('app_dam_dashboard', {filter: 'rights_missing', type: fiche.type.value}) }}">{{ libelle }}</a>{% else %}<span class="badge badge-neutral">{{ libelle }}</span>{% endif %}{% endif %}
-        {% if dam_alerts.rights_expiring > 0 %}{% set libelle %}{{ dam_alerts.rights_expiring }} droit{{ dam_alerts.rights_expiring > 1 ? 's' : '' }} à J-30{% endset %}{% if lien_dam %}<a class="badge badge-warning" href="{{ path('app_dam_dashboard', {filter: 'rights_expiring', type: fiche.type.value}) }}">{{ libelle }}</a>{% else %}<span class="badge badge-warning">{{ libelle }}</span>{% endif %}{% endif %}
-        {% if dam_alerts.rights_expired > 0 %}{% set libelle %}{{ dam_alerts.rights_expired }} expiré{{ dam_alerts.rights_expired > 1 ? 's' : '' }}{% endset %}{% if lien_dam %}<a class="badge badge-danger" href="{{ path('app_dam_dashboard', {filter: 'rights_expired', type: fiche.type.value}) }}">{{ libelle }}</a>{% else %}<span class="badge badge-danger">{{ libelle }}</span>{% endif %}{% endif %}
-        {% if dam_alerts.failed > 0 %}{% set libelle %}{{ dam_alerts.failed }} échec{{ dam_alerts.failed > 1 ? 's' : '' }}{% endset %}{% if lien_dam %}<a class="badge badge-danger" href="{{ path('app_dam_dashboard', {filter: 'failed'}) }}">{{ libelle }}</a>{% else %}<span class="badge badge-danger">{{ libelle }}</span>{% endif %}{% endif %}
+        {% if dam_alerts.duplicates > 0 %}<span class="badge badge-warning">{{ dam_alerts.duplicates }} doublon{{ dam_alerts.duplicates > 1 ? 's' : '' }}</span>{% endif %}
+        {% if dam_alerts.rights_missing > 0 %}<span class="badge badge-neutral">{{ dam_alerts.rights_missing }} droit{{ dam_alerts.rights_missing > 1 ? 's' : '' }} non validé{{ dam_alerts.rights_missing > 1 ? 's' : '' }}</span>{% endif %}
+        {% if dam_alerts.rights_expiring > 0 %}<span class="badge badge-warning">{{ dam_alerts.rights_expiring }} droit{{ dam_alerts.rights_expiring > 1 ? 's' : '' }} à J-30</span>{% endif %}
+        {% if dam_alerts.rights_expired > 0 %}<span class="badge badge-danger">{{ dam_alerts.rights_expired }} expiré{{ dam_alerts.rights_expired > 1 ? 's' : '' }}</span>{% endif %}
+        {% if dam_alerts.failed > 0 %}<span class="badge badge-danger">{{ dam_alerts.failed }} échec{{ dam_alerts.failed > 1 ? 's' : '' }}</span>{% endif %}
     </aside>
 {% endif %}

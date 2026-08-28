@@ -47,7 +47,8 @@ final class OutilsFilesMessengerTest extends WebTestCase
         foreach (['En file', 'En cours', 'Planifiés', 'En erreur', 'Outbox'] as $libelle) {
             self::assertStringContainsString($libelle, $contenu);
         }
-        self::assertStringContainsString('/admin/traitements-en-echec', $contenu);
+        // L'indicateur « En erreur » renvoie au journal filtré, pas à l'admin.
+        self::assertStringContainsString('/outils?erreurs=1', $contenu);
         // Files non vides : les icônes tournent pour signaler l'activité.
         self::assertStringContainsString('animate-spin', $contenu);
     }

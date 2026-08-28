@@ -31,13 +31,9 @@
     {{ _self.indicateur('En cours', etat_files.en_cours, 'pris par un worker', 'spinner', 'bg-primary-4',
         etat_files.en_cours > 0 ? 'animate-spin [animation-duration:1s]' : '') }}
     {{ _self.indicateur('Planifiés', etat_files.planifies, 'retry programmé', 'arrow-clockwise', 'bg-peach-pastel') }}
-    {% if is_granted('ROLE_ADMIN') %}
-        <a href="{{ path('app_dashboard_traitements_en_echec') }}"
-           class="contents [&>div]:hover:bg-primary-5 [&>div]:transition-colors">
-            {{ _self.indicateur('En erreur', etat_files.echecs, 'voir le détail', 'warning', 'bg-error-pastel') }}
-        </a>
-    {% else %}
-        {{ _self.indicateur('En erreur', etat_files.echecs, 'détail réservé aux admins', 'warning', 'bg-error-pastel') }}
-    {% endif %}
+    <a href="{{ path('app_mdm_outils', { erreurs: 1 }) }}" data-turbo-frame="_top"
+       class="contents [&>div]:hover:bg-primary-5 [&>div]:transition-colors">
+        {{ _self.indicateur('En erreur', etat_files.echecs, 'voir le détail', 'warning', 'bg-error-pastel') }}
+    </a>
     {{ _self.indicateur('Outbox', outbox_en_attente, 'en attente de départ', 'paper-plane', 'bg-primary-5') }}
 </turbo-frame>

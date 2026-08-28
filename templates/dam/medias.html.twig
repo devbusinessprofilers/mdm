@@ -195,9 +195,6 @@
         </div>
 
         <div class="flex items-center gap-2.5 shrink-0 flex-wrap justify-end">
-            {% if is_granted('ROLE_ADMIN') %}
-                <twig:Button variant="outline" size="md" asLink href="{{ path('app_dam_dashboard') }}">Supervision classique</twig:Button>
-            {% endif %}
             {% if onglet_actif == 'biblio' %}
                 <span title="{{ a_venir }}" class="inline-flex"><twig:Button variant="outline" size="md" disabled icon="upload-simple" class="opacity-60 [&>:first-child]:size-5">Importer des médias</twig:Button></span>
                 <span title="{{ a_venir }}" class="inline-flex"><twig:Button variant="primary" size="md" disabled icon="rocket" class="opacity-60 [&>:first-child]:size-5">Classer par lot</twig:Button></span>
