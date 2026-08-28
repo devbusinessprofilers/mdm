@@ -729,6 +729,10 @@
                         s'écrivent qu'après validation des suggestions, ligne par ligne ci-dessous.</twig:Typography>
                     {% if lancement_reco_masse_form is defined and lancement_reco_masse_form %}
                         <div class="[&_button]:w-auto!">{{ form(lancement_reco_masse_form) }}</div>
+                    {% else %}
+                        <div title="Activez l'IA (paramètre « openai.actif ») pour lancer la reconnaissance en masse.">
+                            <twig:Button variant="outline" size="md" disabled>Lancer sur les photos sans mots-clés</twig:Button>
+                        </div>
                     {% endif %}
                 </div>
                 <div class="{{ carte }} flex-1 basis-80 min-w-0">
