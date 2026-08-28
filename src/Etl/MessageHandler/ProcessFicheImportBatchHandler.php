@@ -21,7 +21,12 @@ use Symfony\Component\Uid\Ulid;
 #[AsMessageHandler]
 final readonly class ProcessFicheImportBatchHandler
 {
-    public const BATCH_SIZE = 50;
+    // Compromis relecture/mémoire : le reader ré-itère la feuille depuis le
+    // début à chaque batch (openspout ne sait pas sauter à une ligne), un
+    // batch plus grand limite ce re-parcours ; l'identity map porte jusqu'à
+    // BATCH_SIZE agrégats (flush par ligne, purge entre messages) — 250
+    // reste très loin du memory_limit 512M des workers.
+    public const BATCH_SIZE = 250;
 
     public function __construct(
         private EntityManagerInterface $entityManager,
