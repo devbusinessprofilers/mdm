@@ -8,7 +8,9 @@ use App\Dam\Entity\MediaAsset;
 use App\Dam\Service\DamFicheLinkResolver;
 use App\Dam\Service\PublicMediaUrlGenerator;
 use App\Pim\Entity\Fiche;
+use App\Pim\Repository\RessourceLieuRepository;
 use App\Vision\Enum\EnhancementStatus;
+use App\Vision\Enum\RecognitionStatus;
 use App\Vision\Repository\ImageEnhancementRepository;
 use App\Vision\Repository\ImageRecognitionRepository;
 
@@ -20,9 +22,27 @@ final readonly class VisionDashboardProvider
     public function __construct(
         private ImageEnhancementRepository $enhancements,
         private ImageRecognitionRepository $recognitions,
+        private RessourceLieuRepository $resources,
         private DamFicheLinkResolver $ficheLinks,
         private PublicMediaUrlGenerator $urlGenerator,
     ) {
+    }
+
+    /**
+     * Cartes de l'onglet Reconnaissance IA : couverture des mots-clés et état
+     * de la file.
+     *
+     * @return array{photos: int, sans_mots_cles: int, a_valider: int, en_file: int, echecs: int}
+     */
+    public function recoStats(): array
+    {
+        return [
+            'photos' => $this->resources->countPhotosAvecMedia(),
+            'sans_mots_cles' => $this->resources->countPhotosSansMotsCles(),
+            'a_valider' => $this->recognitions->countAwaitingReview(),
+            'en_file' => $this->recognitions->countByStatus(RecognitionStatus::Queued, RecognitionStatus::Processing),
+            'echecs' => $this->recognitions->countByStatus(RecognitionStatus::Failed),
+        ];
     }
 
     /** @return array{items: list<array<string, mixed>>, total: int, page: int, pages: int} */

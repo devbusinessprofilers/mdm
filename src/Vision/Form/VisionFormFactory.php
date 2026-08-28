@@ -34,6 +34,20 @@ final readonly class VisionFormFactory
         ]);
     }
 
+    /**
+     * Bouton du lancement en masse sur les photos sans mots-clés (onglet Reconnaissance IA).
+     *
+     * @return FormInterface<mixed>
+     */
+    public function lancementRecoMasse(): FormInterface
+    {
+        return $this->forms->createNamed('reco_masse', ActionType::class, null, [
+            'action' => $this->urls->generate('app_mdm_reco_lancer_masse'),
+            'csrf_token_id' => 'vision-reco-lancer-masse',
+            'button_label' => 'Lancer sur les photos sans mots-clés',
+        ]);
+    }
+
     /** @return FormInterface<mixed> */
     public function lancementReco(): FormInterface
     {

@@ -55,6 +55,43 @@ final class VisionRecoController extends AbstractController
         return $this->redirectToRoute('app_mdm_medias', ['onglet' => 'ia']);
     }
 
+    /**
+     * Lancement en masse sur les photos sans mots-clés : un seul clic place la
+     * chaîne en tâche de fond, LancerRecoEnMasseHandler traite vague après
+     * vague jusqu'à épuisement du stock.
+     */
+    #[Route('/lancer-masse', name: 'lancer_masse', methods: ['POST'])]
+    #[IsGranted('ROLE_BP_EDITOR')]
+    public function lancerMasse(Request $request, VisionFormFactory $forms, ImageRecognitionRepository $recognitions, ImageRecognitionManager $manager, CurrentActorProvider $actor, ParametreProviderInterface $parametres): RedirectResponse
+    {
+        if (!$parametres->bool('openai.actif')) {
+            throw $this->createNotFoundException();
+        }
+        $form = $forms->lancementRecoMasse();
+        $form->handleRequest($request);
+        if (!$form->isSubmitted() || !$form->isValid()) {
+            $this->addFlash('error', 'Action invalide.');
+
+            return $this->redirectToRoute('app_mdm_medias', ['onglet' => 'ia']);
+        }
+        $restantes = $recognitions->countPhotosSansMotsClesSansAnalyse();
+        if (0 === $restantes) {
+            $this->addFlash('error', 'Aucune photo sans mots-clés à analyser : tout est déjà couvert ou en file.');
+        } else {
+            $manager->scheduleMassLaunch($actor->id());
+            $this->addFlash('success', sprintf(
+                'Lancement en masse placé en tâche de fond : %d photo%s sans mots-clés ser%s analysée%s par vagues de %d.',
+                $restantes,
+                $restantes > 1 ? 's' : '',
+                $restantes > 1 ? 'ont' : 'a',
+                $restantes > 1 ? 's' : '',
+                ImageRecognitionManager::VAGUE_MASSE,
+            ));
+        }
+
+        return $this->redirectToRoute('app_mdm_medias', ['onglet' => 'ia']);
+    }
+
     #[Route('/{id}/valider', name: 'valider', requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'], methods: ['POST'])]
     #[IsGranted('ROLE_BP_VALIDATOR')]
     public function valider(string $id, Request $request, ImageRecognitionRepository $recognitions, VisionFormFactory $forms, ImageRecognitionApplier $applier, CurrentActorProvider $actor, ParametreProviderInterface $parametres): RedirectResponse

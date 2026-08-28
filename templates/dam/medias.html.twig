@@ -150,10 +150,12 @@
 {% block rail %}
     <nav class="flex flex-col shrink-0 box-border w-[328px] pl-5 pr-3 py-4 gap-4 overflow-y-auto scrollbar"
          aria-label="Onglets de la bibliothèque de médias">
+        {% for groupe, groupe_cles in groupes %}
         <div class="flex flex-col gap-1">
-            <twig:Typography variant="body" bold class="pl-2 pr-4">Médias — DAM</twig:Typography>
+            <twig:Typography variant="body" bold class="pl-2 pr-4">{{ groupe }}</twig:Typography>
             <div class="flex flex-col">
-                {% for cle, libelle in onglets %}
+                {% for cle in groupe_cles %}
+                    {% set libelle = onglets[cle] %}
                     <a href="{{ path('app_mdm_medias', { onglet: cle }) }}"
                        class="group/onglet flex items-center gap-2 box-border px-4 py-2
                               rounded-xs overflow-hidden cursor-pointer
@@ -175,6 +177,7 @@
                 {% endfor %}
             </div>
         </div>
+        {% endfor %}
 
     </nav>
 {% endblock %}
@@ -709,6 +712,52 @@
 
     {# ------------------------------------------------- Onglet Reconnaissance IA #}
     {% if onglet_actif == 'ia' and reco is not null %}
+        {% if reco_stats is defined and reco_stats %}
+            <div class="shrink-0 flex flex-row gap-4 flex-wrap">
+                <div class="{{ carte }} flex-1 basis-80 min-w-0">
+                    <div class="flex items-center gap-3">
+                        <twig:Icon name="note" aria-hidden="true"
+                                   class="shrink-0 w-6 h-6 {{ reco_stats.sans_mots_cles > 0 ? 'text-error' : 'text-primary' }}" />
+                        <twig:Typography variant="subtitle" ellipsis
+                                         class="flex-1 min-w-0 text-[1.125rem]! leading-[1.625rem]! font-[700]!">Photos sans mots-clés</twig:Typography>
+                        <span class="inline-flex shrink-0"><twig:Tag label="{{ reco_stats.sans_mots_cles|number_format(0, ',', ' ') }}" size="sm"
+                                  variant="{{ reco_stats.sans_mots_cles > 0 ? 'error' : 'success-pastel' }}" class="whitespace-nowrap" /></span>
+                    </div>
+                    <twig:Typography variant="body" textColor="neutral-500" class="text-pretty">Sur
+                        {{ reco_stats.photos|number_format(0, ',', ' ') }} photos rattachées à une fiche. Un seul clic
+                        les envoie toutes en reconnaissance, par vagues successives en tâche de fond — les mots-clés ne
+                        s'écrivent qu'après validation des suggestions, ligne par ligne ci-dessous.</twig:Typography>
+                    {% if lancement_reco_masse_form is defined and lancement_reco_masse_form %}
+                        <div class="[&_button]:w-auto!">{{ form(lancement_reco_masse_form) }}</div>
+                    {% endif %}
+                </div>
+                <div class="{{ carte }} flex-1 basis-80 min-w-0">
+                    <div class="flex items-center gap-3">
+                        <twig:Icon name="ok-circle" aria-hidden="true"
+                                   class="shrink-0 w-6 h-6 {{ reco_stats.a_valider > 0 ? 'text-error' : 'text-primary' }}" />
+                        <twig:Typography variant="subtitle" ellipsis
+                                         class="flex-1 min-w-0 text-[1.125rem]! leading-[1.625rem]! font-[700]!">Suggestions à valider</twig:Typography>
+                        <span class="inline-flex shrink-0"><twig:Tag label="{{ reco_stats.a_valider|number_format(0, ',', ' ') }}" size="sm"
+                                  variant="{{ reco_stats.a_valider > 0 ? 'error' : 'success-pastel' }}" class="whitespace-nowrap" /></span>
+                    </div>
+                    <twig:Typography variant="body" textColor="neutral-500" class="text-pretty">Analyses terminées en
+                        attente d'une décision humaine : accepter, corriger ou rejeter chaque champ proposé. Rien n'est
+                        écrit sur la fiche sans cette revue.</twig:Typography>
+                </div>
+                <div class="{{ carte }} flex-1 basis-80 min-w-0">
+                    <div class="flex items-center gap-3">
+                        <twig:Icon name="spinner" aria-hidden="true"
+                                   class="shrink-0 w-6 h-6 {{ reco_stats.echecs > 0 ? 'text-error' : 'text-primary' }}" />
+                        <twig:Typography variant="subtitle" ellipsis
+                                         class="flex-1 min-w-0 text-[1.125rem]! leading-[1.625rem]! font-[700]!">File d'analyse</twig:Typography>
+                        <span class="inline-flex shrink-0"><twig:Tag label="{{ reco_stats.en_file|number_format(0, ',', ' ') }}" size="sm"
+                                  variant="{{ reco_stats.en_file > 0 ? 'primary-3' : 'neutral' }}" class="whitespace-nowrap" /></span>
+                    </div>
+                    <twig:Typography variant="body" textColor="neutral-500" class="text-pretty">Photos en file ou en
+                        cours d'analyse par les workers{{ reco_stats.echecs > 0 ? ', et ' ~ reco_stats.echecs|number_format(0, ',', ' ') ~ ' en échec à relancer depuis la liste ci-dessous' : ' — aucun échec à relancer' }}.</twig:Typography>
+                </div>
+            </div>
+        {% endif %}
         {% if ia_active %}
             <div class="shrink-0 {{ carte }}">
                 <div class="flex items-center gap-3">

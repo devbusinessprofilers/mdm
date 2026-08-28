@@ -53,6 +53,37 @@ final class RessourceLieuRepository extends ServiceEntityRepository
         return $this->findOneBy(['id' => $id, 'fiche' => $fiche, 'nature' => NatureRessource::Photo]);
     }
 
+    /** Photos rattachées à une fiche et adossées à un média DAM — l'assiette de la reconnaissance IA. */
+    public function countPhotosAvecMedia(): int
+    {
+        return (int) $this->photosAvecMediaQuery()
+            ->select('COUNT(resource.id)')
+            ->getQuery()->getSingleScalarResult();
+    }
+
+    /** Photos dont le champ mots-clés est vide : candidates à la reconnaissance en masse. */
+    public function countPhotosSansMotsCles(): int
+    {
+        return (int) $this->photosSansMotsClesQuery()
+            ->select('COUNT(resource.id)')
+            ->getQuery()->getSingleScalarResult();
+    }
+
+    private function photosAvecMediaQuery(): \Doctrine\ORM\QueryBuilder
+    {
+        return $this->createQueryBuilder('resource')
+            ->join('resource.fiche', 'fiche')
+            ->andWhere('resource.nature = :photo')
+            ->andWhere("resource.damAssetId <> ''")
+            ->setParameter('photo', NatureRessource::Photo);
+    }
+
+    private function photosSansMotsClesQuery(): \Doctrine\ORM\QueryBuilder
+    {
+        return $this->photosAvecMediaQuery()
+            ->andWhere("resource.keywords IS NULL OR TRIM(resource.keywords) = ''");
+    }
+
     /**
      * @param list<string> $mediaIds
      *

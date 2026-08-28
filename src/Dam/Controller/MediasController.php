@@ -43,6 +43,12 @@ final class MediasController extends AbstractController
         'sync' => 'Synchronisation PIM',
     ];
 
+    /** Groupes du rail : le DAM proprement dit, puis les fonctions IA. */
+    public const GROUPES = [
+        'Médias — DAM' => ['biblio', 'meta', 'formats', 'droits', 'doublons', 'sync'],
+        'Intelligence artificielle' => ['import', 'ia'],
+    ];
+
     /** Filtre du provider affiché par défaut quand on ouvre l'onglet. */
     private const FILTRE_PAR_DEFAUT = [
         'biblio' => DamDashboardProvider::FILTER_IMAGES,
@@ -82,6 +88,7 @@ final class MediasController extends AbstractController
 
         return $this->render('dam/medias.html.twig', [
             'onglets' => self::ONGLETS,
+            'groupes' => self::GROUPES,
             'onglet_actif' => $onglet,
             'contenu_charge' => false,
             'contenu_url' => $this->generateUrl('app_mdm_medias_contenu', array_filter([
@@ -146,9 +153,11 @@ final class MediasController extends AbstractController
             $reco = $vision->recoPage($pageVision);
             $reco['items'] = $visionForms->addRecoActions($reco['items'], $reco['page']);
         }
+        $recoStats = 'ia' === $onglet ? $vision->recoStats() : null;
 
         return $this->render('dam/medias.html.twig', [
             'onglets' => self::ONGLETS,
+            'groupes' => self::GROUPES,
             'onglet_actif' => $onglet,
             'contenu_charge' => true,
             'stockage' => 'biblio' === $onglet ? $assets->storageStats() : null,
@@ -165,6 +174,8 @@ final class MediasController extends AbstractController
             'reco' => $reco,
             'lancement_retouche_form' => 'import' === $onglet && $iaActive ? $visionForms->lancementRetouche()->createView() : null,
             'lancement_reco_form' => 'ia' === $onglet && $iaActive ? $visionForms->lancementReco()->createView() : null,
+            'reco_stats' => $recoStats,
+            'lancement_reco_masse_form' => 'ia' === $onglet && $iaActive ? $visionForms->lancementRecoMasse()->createView() : null,
         ] + $vue);
     }
 

@@ -15,12 +15,16 @@ use App\Pim\Repository\RessourceLieuRepository;
 use App\Shared\Outbox\OutboxPublisherInterface;
 use App\Shared\Service\ParametreProviderInterface;
 use App\Vision\Entity\ImageRecognition;
+use App\Vision\Message\LancerRecoEnMasse;
 use App\Vision\Message\RecognizeImage;
 use App\Vision\Repository\ImageRecognitionRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
 final readonly class ImageRecognitionManager
 {
+    /** Taille d'une vague du lancement en masse : borne chaque passage du worker. */
+    public const VAGUE_MASSE = 500;
+
     public function __construct(
         private ImageRecognitionRepository $recognitions,
         private RessourceLieuRepository $resources,
@@ -56,6 +60,56 @@ final readonly class ImageRecognitionManager
                     ++$launched;
                 }
             }
+        }
+        $this->entityManager->flush();
+
+        return $launched;
+    }
+
+    /** Place la chaîne du lancement en masse en tâche de fond (une vague par message). */
+    public function scheduleMassLaunch(string $actor): void
+    {
+        if (!$this->parametres->bool('openai.actif')) {
+            throw new \DomainException('La reconnaissance IA est désactivée (OPENAI_ENABLED).');
+        }
+        $this->outbox->enqueue(new LancerRecoEnMasse($actor));
+        $this->entityManager->flush();
+    }
+
+    /**
+     * Une vague du lancement en masse : les photos dont le champ mots-clés est
+     * vide, bornée pour garder chaque passage court. L'enchaînement des vagues
+     * est porté par LancerRecoEnMasseHandler.
+     *
+     * Balayage par fenêtres : les photos non lançables (média manquant, non
+     * image ou pas encore traité) restent dans l'assiette de la requête,
+     * l'offset les enjambe pour que la vague atteigne les photos lançables
+     * suivantes.
+     *
+     * @return int nombre de reconnaissances lancées
+     */
+    public function launchForPhotosSansMotsCles(string $actor, int $limit): int
+    {
+        if (!$this->parametres->bool('openai.actif')) {
+            throw new \DomainException('La reconnaissance IA est désactivée (OPENAI_ENABLED).');
+        }
+        $launched = 0;
+        $offset = 0;
+        while ($launched < $limit) {
+            $batch = $this->recognitions->findPhotosSansMotsClesSansAnalyse($limit, $offset);
+            if ([] === $batch) {
+                break;
+            }
+            foreach ($batch as $resource) {
+                $media = '' === $resource->damAssetId() ? null : $this->mediaRepository->find($resource->damAssetId());
+                if (null === $media || MediaKind::Image !== $media->kind() || MediaStatus::Processed !== $media->status()) {
+                    continue;
+                }
+                if (null !== $this->queue($resource, $media, $actor) && ++$launched >= $limit) {
+                    break;
+                }
+            }
+            $offset += count($batch);
         }
         $this->entityManager->flush();
 
