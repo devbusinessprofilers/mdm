@@ -60,9 +60,12 @@ final readonly class FicheTranslationManager
         $this->entityManager->flush();
     }
 
-    public function retry(Fiche $fiche): void
+    public function retry(Fiche $fiche): int
     {
-        $this->scheduler->schedule($fiche);
+        // Relance manuelle : on traduit même une fiche non publiée.
+        $scheduled = $this->scheduler->schedule($fiche, memeNonPubliee: true);
         $this->entityManager->flush();
+
+        return $scheduled;
     }
 }

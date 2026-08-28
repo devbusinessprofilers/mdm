@@ -10,7 +10,6 @@ use App\Enrichment\Message\TranslatePublishedFiche;
 use App\Enrichment\Repository\FicheTranslationRepository;
 use App\Enrichment\Service\TranslationProviderInterface;
 use App\Pim\Entity\Fiche;
-use App\Pim\Enum\StatutFiche;
 use App\Pim\Repository\FicheRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
@@ -31,7 +30,10 @@ final readonly class TranslatePublishedFicheHandler
     {
         $fiche = $this->fiches->find(Ulid::fromString($message->ficheId));
         $locale = SupportedLocale::from($message->locale);
-        if (!$fiche instanceof Fiche || StatutFiche::Publiee !== $fiche->status()) { return; }
+        // Pas de garde sur le statut : la relance manuelle traduit aussi les
+        // fiches non publiées, et seules des lignes déjà planifiées (jeton
+        // valide) sont traitées ici.
+        if (!$fiche instanceof Fiche) { return; }
         $rows = $this->translations->requested($fiche, $locale, $message->requestToken);
         if ([] === $rows) { return; }
         $translated = $this->provider->translate(

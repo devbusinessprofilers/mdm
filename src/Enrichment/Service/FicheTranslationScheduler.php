@@ -23,9 +23,9 @@ final readonly class FicheTranslationScheduler
         private OutboxPublisherInterface $outbox,
     ) {}
 
-    public function schedule(Fiche $fiche): int
+    public function schedule(Fiche $fiche, bool $memeNonPubliee = false): int
     {
-        if (StatutFiche::Publiee !== $fiche->status()) { return 0; }
+        if (!$memeNonPubliee && StatutFiche::Publiee !== $fiche->status()) { return 0; }
         $sources = $this->extractor->extract($fiche);
         $paths = array_fill_keys(array_map(static fn (TranslationSource $source): string => $source->path, $sources), true);
         // Une seule requête : les traductions existantes, indexées par champ et locale.

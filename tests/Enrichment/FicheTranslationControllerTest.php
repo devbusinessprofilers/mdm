@@ -7,6 +7,7 @@ namespace App\Tests\Enrichment;
 use App\Account\Entity\User;
 use App\Enrichment\Entity\FicheTranslation;
 use App\Enrichment\Enum\SupportedLocale;
+use App\Enrichment\Enum\TranslationStatus;
 use App\Pim\Entity\Lieu\Lieu;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
@@ -75,5 +76,35 @@ final class FicheTranslationControllerTest extends WebTestCase
         ]);
         self::assertInstanceOf(FicheTranslation::class, $translation);
         self::assertSame('Venue to translate', $translation->translatedText());
+    }
+
+    public function testRetrySchedulesTranslationsEvenWhenFicheIsNotPublished(): void
+    {
+        $client = self::createClient();
+        $this->connection = self::getContainer()->get(Connection::class);
+        $this->entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $validator = new User('translation-retry-validator@example.test', ['ROLE_BP_VALIDATOR']);
+        $validator->setPassword('not-used-by-login-user');
+        $lieu = new Lieu();
+        $lieu->changeLabel('Lieu non publié');
+        $lieu->changeDescGenerale('Description à traduire');
+        $this->entityManager->persist($validator);
+        $this->entityManager->persist($lieu);
+        $this->entityManager->flush();
+        $client->loginUser($validator);
+
+        $crawler = $client->request('GET', '/referentiel/fiche/'.$lieu->id().'/traductions');
+        self::assertResponseIsSuccessful();
+        $client->submit($crawler->selectButton('Relancer les traductions')->form());
+
+        self::assertResponseRedirects('/referentiel/fiche/'.$lieu->id().'/traductions');
+        $this->entityManager->clear();
+        $translation = $this->entityManager->getRepository(FicheTranslation::class)->findOneBy([
+            'fiche' => $lieu->fiche()->id(),
+            'fieldPath' => 'nom',
+            'locale' => SupportedLocale::En,
+        ]);
+        self::assertInstanceOf(FicheTranslation::class, $translation);
+        self::assertSame(TranslationStatus::Pending, $translation->status());
     }
 }

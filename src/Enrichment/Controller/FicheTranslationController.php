@@ -87,8 +87,12 @@ final class FicheTranslationController extends AbstractController
         $form = $forms->retry($fiche);
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
-            $manager->retry($fiche);
-            $this->addFlash('success', 'Traductions planifiées.');
+            $scheduled = $manager->retry($fiche);
+            if ($scheduled > 0) {
+                $this->addFlash('success', sprintf('Traductions planifiées pour %d langue(s).', $scheduled));
+            } else {
+                $this->addFlash('success', 'Traductions déjà à jour : rien à relancer.');
+            }
         }
 
         return $this->redirectToRoute('app_enrichment_fiche_translation_show', ['id' => $id]);
