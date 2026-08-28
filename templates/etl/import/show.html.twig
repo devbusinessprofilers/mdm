@@ -4,12 +4,7 @@
 
 {% block corps %}
 <main class="page page-narrow">
-    {# L'écran d'upload par modèle reste sous /admin ; les autres reviennent à l'onglet Outils. #}
-    {% if is_granted('ROLE_ADMIN') and not job.estEcrasement %}
-        <a class="back-link" href="{{ path('app_etl_import_index') }}">← Retour aux imports</a>
-    {% else %}
-        <a class="back-link" href="{{ path('app_etl_import_masse') }}">← Retour à l'import en masse</a>
-    {% endif %}
+    <a class="back-link" href="{{ path('app_etl_import_masse') }}">← Retour à l'import en masse</a>
     <header class="page-header">
         <div>
             <p class="page-kicker">Import de fiches — {{ job.type.value }}</p>
@@ -36,6 +31,32 @@
             <p role="status">Traitement en cours : rechargez la page pour actualiser la progression.</p>
         {% endif %}
     </section>
+
+    {% if errorSummary is not empty %}
+        <section class="card table-wrapper">
+            <h2>Résumé des erreurs</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Colonne</th>
+                        <th>Message</th>
+                        <th>Occurrences</th>
+                        <th>Lignes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for groupe in errorSummary %}
+                    <tr>
+                        <td>{% if groupe.columnName %}<code>{{ groupe.columnName }}</code>{% else %}—{% endif %}</td>
+                        <td>{{ groupe.message }}</td>
+                        <td>{{ groupe.occurrences }}</td>
+                        <td>{{ groupe.lignes|join(', ') }}{% if groupe.occurrences > groupe.lignes|length %}…{% endif %}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </section>
+    {% endif %}
 
     <section class="card table-wrapper">
         <h2>Erreurs ({{ errorTotal }})</h2>

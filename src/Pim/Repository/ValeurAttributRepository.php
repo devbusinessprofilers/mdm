@@ -16,6 +16,9 @@ use Doctrine\Persistence\ManagerRegistry;
 /** @extends ServiceEntityRepository<ValeurAttribut> */
 final class ValeurAttributRepository extends ServiceEntityRepository
 {
+    /** @var list<string>|null cache de listePrestataireLabels() */
+    private ?array $prestataireLabels = null;
+
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, ValeurAttribut::class);
@@ -93,6 +96,24 @@ final class ValeurAttributRepository extends ServiceEntityRepository
 
         // Libellé ambigu (deux prestataires homonymes) : ne pas deviner.
         return 1 === count($resultats) ? $resultats[0] : null;
+    }
+
+    /**
+     * Libellés prestataires pour les suggestions du rapport d'erreurs
+     * d'import — mémoïsés : appelé au plus une fois par ligne en erreur, le
+     * référentiel est stable pendant un import.
+     *
+     * @return list<string>
+     */
+    public function listePrestataireLabels(): array
+    {
+        return $this->prestataireLabels ??= array_values(array_map(
+            strval(...),
+            $this->createPrestataireQueryBuilder()
+                ->select('value.label')
+                ->getQuery()
+                ->getSingleColumnResult(),
+        ));
     }
 
     public function createPrestataireQueryBuilder(): QueryBuilder

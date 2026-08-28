@@ -36,11 +36,13 @@ final class FicheImportDetailController extends AbstractController
 
         $page = max(1, $request->query->getInt('page', 1));
         $limit = 100;
+        $errorTotal = $errors->countForJob($job);
 
         return $this->render('etl/import/show.html.twig', [
             'job' => $job,
             'errors' => $errors->findPageForJob($job, $limit, ($page - 1) * $limit),
-            'errorTotal' => $errors->countForJob($job),
+            'errorTotal' => $errorTotal,
+            'errorSummary' => $errorTotal > 0 ? $errors->summarizeForJob($job) : [],
             'page' => $page,
             'limit' => $limit,
         ]);
