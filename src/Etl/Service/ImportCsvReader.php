@@ -10,41 +10,21 @@ use OpenSpout\Reader\XLSX\Options;
 use OpenSpout\Reader\XLSX\Reader;
 
 /**
- * Lit les fichiers d'import de fiches : XLSX (première feuille par défaut,
- * ou une feuille nommée — l'import en masse lit la feuille de sa gamme) ou
- * CSV. Les numéros de lignes sont des numéros d'enregistrement (1 = en-têtes) :
- * en CSV, un champ quoté multiligne compte pour un seul enregistrement, le
- * numéro peut donc différer du numéro de ligne physique du fichier. Les
- * lignes vides et celles commençant par # sont ignorées.
+ * Lit les classeurs XLSX de l'import en masse : chaque job lit la feuille
+ * nommée de sa gamme. Les numéros de lignes sont les numéros de lignes
+ * physiques de la feuille (1 = en-têtes). Les lignes vides et celles
+ * commençant par # sont ignorées.
  */
 final class ImportCsvReader
 {
     /** @return list<string> en-têtes de la ligne 1 */
     public function headers(string $path, ?string $sheet = null): array
     {
-        if (self::isXlsx($path)) {
-            foreach ($this->xlsxCells($path, $sheet) as $cells) {
-                return array_map(static fn (string $cell): string => trim($cell), $cells);
-            }
-
-            throw new \RuntimeException('Impossible de lire la ligne d’en-têtes.');
+        foreach ($this->xlsxCells($path, $sheet) as $cells) {
+            return array_map(static fn (string $cell): string => trim($cell), $cells);
         }
 
-        $handle = $this->open($path);
-
-        try {
-            $cells = fgetcsv($handle, null, FicheImportTemplateGenerator::SEPARATOR, '"', '');
-            if (!is_array($cells)) {
-                throw new \RuntimeException('Impossible de lire la ligne d’en-têtes.');
-            }
-
-            $headers = array_map(static fn (?string $cell): string => trim((string) $cell), $cells);
-            $headers[0] = ltrim($headers[0], "\u{FEFF}");
-
-            return $headers;
-        } finally {
-            fclose($handle);
-        }
+        throw new \RuntimeException('Impossible de lire la ligne d’en-têtes.');
     }
 
     /**
@@ -54,7 +34,13 @@ final class ImportCsvReader
      */
     public function rows(string $path, array $headers, int $fromLine, ?string $sheet = null): \Generator
     {
-        return self::isXlsx($path) ? $this->xlsxRows($path, $headers, $fromLine, $sheet) : $this->csvRows($path, $headers, $fromLine);
+        foreach ($this->xlsxCells($path, $sheet) as $lineNumber => $cells) {
+            if ($lineNumber < max(2, $fromLine) || !self::isDataCells($cells)) {
+                continue;
+            }
+
+            yield new RawCsvRow($lineNumber, self::combine($headers, $cells));
+        }
     }
 
     /** @param list<string> $headers */
@@ -66,22 +52,6 @@ final class ImportCsvReader
         }
 
         return $count;
-    }
-
-    /**
-     * @param list<string> $headers
-     *
-     * @return \Generator<RawCsvRow>
-     */
-    private function xlsxRows(string $path, array $headers, int $fromLine, ?string $sheet = null): \Generator
-    {
-        foreach ($this->xlsxCells($path, $sheet) as $lineNumber => $cells) {
-            if ($lineNumber < max(2, $fromLine) || !self::isDataCells($cells)) {
-                continue;
-            }
-
-            yield new RawCsvRow($lineNumber, self::combine($headers, $cells));
-        }
     }
 
     /**
@@ -115,7 +85,7 @@ final class ImportCsvReader
                     yield $lineNumber => array_values(array_map(self::stringify(...), $row->toArray()));
                 }
 
-                // Une seule feuille par lecture (« Données », ou la gamme demandée).
+                // Une seule feuille par lecture : la gamme demandée.
                 break;
             }
             if (!$trouvee) {
@@ -123,35 +93,6 @@ final class ImportCsvReader
             }
         } finally {
             $reader->close();
-        }
-    }
-
-    /**
-     * @param list<string> $headers
-     *
-     * @return \Generator<RawCsvRow>
-     */
-    private function csvRows(string $path, array $headers, int $fromLine): \Generator
-    {
-        $handle = $this->open($path);
-
-        try {
-            $lineNumber = 0;
-            while (false !== ($cells = fgetcsv($handle, null, FicheImportTemplateGenerator::SEPARATOR, '"', ''))) {
-                ++$lineNumber;
-                if ($lineNumber < max(2, $fromLine)) {
-                    continue;
-                }
-
-                $values = array_map(static fn (?string $cell): string => (string) $cell, $cells);
-                if (!self::isDataCells($values)) {
-                    continue;
-                }
-
-                yield new RawCsvRow($lineNumber, self::combine($headers, $values));
-            }
-        } finally {
-            fclose($handle);
         }
     }
 
@@ -214,21 +155,5 @@ final class ImportCsvReader
         }
 
         throw new \RuntimeException('Cellule de type non pris en charge dans la feuille de données.');
-    }
-
-    private static function isXlsx(string $path): bool
-    {
-        return str_ends_with(strtolower($path), '.xlsx');
-    }
-
-    /** @return resource */
-    private function open(string $path)
-    {
-        $handle = @fopen($path, 'rb');
-        if (false === $handle) {
-            throw new \RuntimeException('Fichier d’import illisible.');
-        }
-
-        return $handle;
     }
 }

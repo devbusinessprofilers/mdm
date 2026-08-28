@@ -120,10 +120,9 @@ final class ImportMasseTest extends WebTestCase
         $client->followRedirect();
         self::assertSelectorTextContains('body', 'Import en masse lancé : 2 gamme(s) en file (Lieux, Restaurants).');
 
-        // Un job en écrasement par gamme, traité par les handlers.
-        $jobs = $this->connection->fetchAllAssociative("SELECT id, type, mode FROM etl_import_job ORDER BY type");
+        // Un job par gamme, traité par les handlers.
+        $jobs = $this->connection->fetchAllAssociative('SELECT id, type FROM etl_import_job ORDER BY type');
         self::assertCount(2, $jobs);
-        self::assertSame(['ecrasement', 'ecrasement'], array_column($jobs, 'mode'));
 
         $start = self::getContainer()->get(StartFicheImportHandler::class);
         $process = self::getContainer()->get(ProcessFicheImportBatchHandler::class);
@@ -230,6 +229,90 @@ final class ImportMasseTest extends WebTestCase
         self::assertSame(['GENERALE_TYPOLOGIE_1'], $lieuMaj->generaleTypologie());
         self::assertSame('Atout conservé', $lieuMaj->atout1());
         self::assertSame('Seul champ modifié', $lieuMaj->atout2());
+    }
+
+    public function testDesColonnesInconnuesEchouentAvecSuggestions(): void
+    {
+        $client = self::createClient();
+        $client->disableReboot();
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $this->connection = self::getContainer()->get(Connection::class);
+
+        $user = new User('import-masse-colonnes@example.test', ['ROLE_BP_VALIDATOR']);
+        $user->setPassword('not-used-by-login-user');
+        $entityManager->persist($user);
+        $entityManager->flush();
+        $client->loginUser($user);
+
+        // Deux en-têtes typo : chacun doit ressortir avec sa suggestion.
+        $this->fichier = sys_get_temp_dir().'/mdm-import-masse-colonnes-'.uniqid().'.xlsx';
+        $writer = new Writer();
+        $writer->openToFile($this->fichier);
+        $writer->getCurrentSheet()->setName('Lieux');
+        $writer->addRow(Row::fromValues(['code', 'labell', 'atou1']));
+        $writer->addRow(Row::fromValues(['', 'Château typo', 'Un atout']));
+        $writer->close();
+
+        $crawler = $client->request('GET', '/outils/import-masse');
+        $form = $crawler->selectButton('Lancer l\'import en masse')->form();
+        $form['import_masse_upload[file]']->upload($this->fichier);
+        $client->submit($form);
+        self::assertResponseRedirects();
+
+        $jobId = (string) Ulid::fromBinary((string) $this->connection->fetchOne('SELECT id FROM etl_import_job'));
+        $start = self::getContainer()->get(StartFicheImportHandler::class);
+        $start(new StartFicheImport($jobId));
+        $entityManager->flush();
+
+        $etat = $this->connection->fetchAssociative('SELECT status, failure_message FROM etl_import_job');
+        self::assertIsArray($etat);
+        self::assertSame(ImportJobStatus::Echoue->value, (string) $etat['status']);
+        $message = (string) $etat['failure_message'];
+        self::assertStringContainsString('labell (proche de : label)', $message);
+        self::assertStringContainsString('atou1 (proche de : atout1)', $message);
+        self::assertStringContainsString('export du référentiel', $message);
+        self::assertStringNotContainsString('modèle', $message);
+
+        // La page détail porte le message complet.
+        $client->request('GET', '/outils/imports/'.$jobId);
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('body', 'labell (proche de : label)');
+    }
+
+    public function testLaPageDetailResumeLesErreursGroupees(): void
+    {
+        $client = self::createClient();
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $this->connection = self::getContainer()->get(Connection::class);
+
+        $user = new User('import-masse-resume@example.test', ['ROLE_BP_VALIDATOR']);
+        $user->setPassword('not-used-by-login-user');
+        $entityManager->persist($user);
+
+        $job = new FicheImportJob(\App\Pim\Enum\TypeFiche::Lieu, 'resume.xlsx', 'import-masse-resume@example.test');
+        $entityManager->persist($job);
+        // 7 occurrences du même couple colonne/message (aperçu tronqué à 5), 2 d'un autre.
+        foreach ([4, 6, 9, 12, 15, 21, 30] as $ligne) {
+            $entityManager->persist(new \App\Etl\Entity\FicheImportJobError($job, $ligne, 'generale_typologie', 'Code LOV inconnu pour GENERALE_TYPOLOGIE : « Pizzeria ».'));
+        }
+        foreach ([5, 8] as $ligne) {
+            $entityManager->persist(new \App\Etl\Entity\FicheImportJobError($job, $ligne, 'atout1', 'Une autre erreur.'));
+        }
+        $entityManager->flush();
+        $client->loginUser($user);
+
+        $crawler = $client->request('GET', '/outils/imports/'.$job->idString());
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('body', 'Résumé des erreurs');
+        // Groupe majoritaire en premier, aperçu limité aux 5 premières lignes.
+        // La carte « Résumé des erreurs » précède la carte « Erreurs ».
+        $lignesResume = $crawler->filter('section.card.table-wrapper')->first()->filter('tbody tr');
+        self::assertSame(2, $lignesResume->count());
+        $premiere = $lignesResume->first()->text(null, true);
+        self::assertStringContainsString('generale_typologie', $premiere);
+        self::assertStringContainsString('7', $premiere);
+        self::assertStringContainsString('4, 6, 9, 12, 15…', $premiere);
+        self::assertStringContainsString('atout1', $lignesResume->last()->text(null, true));
     }
 
     public function testUnClasseurSansFeuilleDeGammeEstRefuse(): void

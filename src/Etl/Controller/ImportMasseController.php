@@ -63,7 +63,7 @@ final class ImportMasseController extends AbstractController
 
         return $this->render('etl/import/masse.html.twig', [
             'form' => $form->createView(),
-            'jobs' => $imports->findRecentEcrasement(),
+            'jobs' => $imports->findRecent(),
             // Rail Outils partagé (l'onglet Import en masse est courant) et
             // cartes de synthèse des files Messenger, comme sur le journal.
             'familles' => JournalTraitementsRepository::FAMILLES,

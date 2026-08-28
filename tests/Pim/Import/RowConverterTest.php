@@ -81,6 +81,46 @@ final class RowConverterTest extends KernelTestCase
         foreach ($converted->errors as $error) {
             self::assertSame(7, $error->lineNumber);
         }
+
+        // Le rapport montre la valeur lue ; trop éloignée de tout candidat,
+        // elle ne déclenche pas de suggestion.
+        $messagesParColonne = [];
+        foreach ($converted->errors as $error) {
+            $messagesParColonne[$error->column] = $error->message;
+        }
+        self::assertStringContainsString('« CODE_INCONNU »', $messagesParColonne['generale_typologie']);
+        self::assertStringNotContainsString('Vouliez-vous dire', $messagesParColonne['generale_typologie']);
+    }
+
+    public function testSuggereLeCodeLovLePlusProche(): void
+    {
+        [$converter, $schema] = $this->services();
+
+        $converted = $converter->convert($schema, new RawCsvRow(5, [
+            'generale_typologie' => 'GENERALE_TYPOLOGIE_1X',
+        ]));
+
+        self::assertCount(1, $converted->errors);
+        self::assertStringContainsString('« GENERALE_TYPOLOGIE_1X »', $converted->errors[0]->message);
+        self::assertStringContainsString('Vouliez-vous dire « GENERALE_TYPOLOGIE_1 » ?', $converted->errors[0]->message);
+    }
+
+    public function testSuggereLeLibelleLovLePlusProche(): void
+    {
+        [$converter, $schema] = $this->services();
+
+        // Le fichier d'export porte les libellés : la suggestion privilégie
+        // le libellé exact du jeu de valeurs.
+        $choices = $schema->lovChoices()['GENERALE_TYPOLOGIE'] ?? [];
+        self::assertNotSame([], $choices, 'Le schéma Lieu doit exposer la LOV GENERALE_TYPOLOGIE.');
+        $libelle = (string) reset($choices);
+
+        $converted = $converter->convert($schema, new RawCsvRow(6, [
+            'generale_typologie' => $libelle.'x',
+        ]));
+
+        self::assertCount(1, $converted->errors);
+        self::assertStringContainsString(sprintf('Vouliez-vous dire « %s » ?', $libelle), $converted->errors[0]->message);
     }
 
     public function testNullSentinelIsRejectedOnNonNullableColumns(): void

@@ -21,6 +21,12 @@ use PHPUnit\Framework\Attributes\Group;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Uid\Ulid;
 
+/**
+ * Moteur de l'import (StartFicheImport puis ProcessFicheImportBatch) sur un
+ * classeur au format d'export : création, mise à jour écrasante (cellule
+ * vide = champ vidé, sites remis aux obligatoires), rapport d'erreurs et
+ * garde d'idempotence à la redélivrance.
+ */
 #[Group('database')]
 final class FicheImportProcessTest extends KernelTestCase
 {
@@ -54,38 +60,7 @@ final class FicheImportProcessTest extends KernelTestCase
         parent::tearDown();
     }
 
-    public function testCsvImportCreatesUpdatesAndReportsErrorsIdempotently(): void
-    {
-        $this->runImportScenario('csv', function (string $path, int $existingCode): void {
-            file_put_contents($path, implode("\n", [
-                'code;label;localisation_ville;generale_typologie;attribution_visibilite;salle_1_nom;salle_1_capacite_theatre',
-                // Sites résolus par libellé (accents) ou code, insensible à la casse.
-                ';Nouveau Lieu Import;Paris;GENERALE_TYPOLOGIE_1;Séminaire PARIS|LYON;Salle Alpha;120',
-                $existingCode.';Lieu Existant Modifié;;;;;',
-                ';Lieu Erreur;;CODE_INCONNU;;;',
-            ]));
-        }, 'Salle Alpha');
-    }
-
-    public function testXlsxImportReadsTheFirstSheetWithNormalizedCells(): void
-    {
-        $this->runImportScenario('xlsx', function (string $path, int $existingCode): void {
-            $writer = new Writer();
-            $writer->openToFile($path);
-            $writer->getCurrentSheet()->setName('Données');
-            $writer->addRow(Row::fromValues(['code', 'label', 'localisation_ville', 'generale_typologie', 'attribution_visibilite', 'salle_1_nom', 'salle_1_capacite_theatre']));
-            $writer->addRow(Row::fromValues(['', 'Nouveau Lieu Import', 'Paris', 'GENERALE_TYPOLOGIE_1', "Séminaire PARIS\nLYON", 'Salle Alpha', 120]));
-            $writer->addRow(Row::fromValues([$existingCode, 'Lieu Existant Modifié', '', '', '', '', '']));
-            $writer->addRow(Row::fromValues(['', 'Lieu Erreur', '', 'CODE_INCONNU', '', '', '']));
-            // Une seconde feuille de notice ne doit jamais être importée.
-            $writer->addNewSheetAndMakeItCurrent()->setName('Notice & LOV');
-            $writer->addRow(Row::fromValues(['code', 'label']));
-            $writer->addRow(Row::fromValues(['', 'Fiche fantôme de la notice']));
-            $writer->close();
-        }, 'Salle Alpha');
-    }
-
-    private function runImportScenario(string $extension, callable $writeFixture, string $expectedSalle): void
+    public function testImportCreatesUpdatesAndReportsErrorsIdempotently(): void
     {
         self::bootKernel();
         $container = self::getContainer();
@@ -110,12 +85,28 @@ final class FicheImportProcessTest extends KernelTestCase
 
         /** @var string $projectDir */
         $projectDir = $container->getParameter('kernel.project_dir');
-        $job = new FicheImportJob(TypeFiche::Lieu, 'import-test.'.$extension, 'import-test@example.test', $extension);
+        $job = new FicheImportJob(TypeFiche::Lieu, 'import-test.xlsx', 'import-test@example.test');
         $this->importFile = $projectDir.'/var/import/'.$job->storagePath();
         if (!is_dir(dirname($this->importFile))) {
             mkdir(dirname($this->importFile), 0775, true);
         }
-        $writeFixture($this->importFile, $existingCode);
+
+        $writer = new Writer();
+        $writer->openToFile($this->importFile);
+        $writer->getCurrentSheet()->setName('Lieux');
+        $writer->addRow(Row::fromValues(['code', 'label', 'localisation_ville', 'generale_typologie', 'attribution_visibilite', 'salle_1_nom', 'salle_1_capacite_theatre']));
+        // Sites résolus par libellé (accents, un par ligne) ou code, insensible à la casse.
+        $writer->addRow(Row::fromValues(['', 'Nouveau Lieu Import', 'Paris', 'GENERALE_TYPOLOGIE_1', "Séminaire PARIS\nLYON", 'Salle Alpha', 120]));
+        // Mise à jour écrasante : les cellules vides vident les champs, la
+        // visibilité revient aux sites obligatoires seuls.
+        $writer->addRow(Row::fromValues([$existingCode, 'Lieu Existant Modifié', '', '', '', '', '']));
+        $writer->addRow(Row::fromValues(['', 'Lieu Erreur', '', 'CODE_INCONNU', '', '', '']));
+        // Une feuille LOV ne doit jamais être importée.
+        $writer->addNewSheetAndMakeItCurrent()->setName('LOV');
+        $writer->addRow(Row::fromValues(['code', 'label']));
+        $writer->addRow(Row::fromValues(['', 'Fiche fantôme de la notice']));
+        $writer->close();
+
         $entityManager->persist($job);
         $entityManager->flush();
         $jobId = $job->idString();
@@ -137,15 +128,16 @@ final class FicheImportProcessTest extends KernelTestCase
         self::assertSame(1, $job->errorCount());
         self::assertSame(4, $job->lastProcessedLine());
 
-        $errors = $this->connection->fetchAllAssociative('SELECT line_number, column_name FROM etl_import_job_error ORDER BY id');
+        $errors = $this->connection->fetchAllAssociative('SELECT line_number, column_name, message FROM etl_import_job_error ORDER BY id');
         self::assertCount(1, $errors);
         self::assertSame(4, (int) $errors[0]['line_number']);
         self::assertSame('generale_typologie', $errors[0]['column_name']);
+        self::assertStringContainsString('« CODE_INCONNU »', (string) $errors[0]['message']);
 
         self::assertSame(2, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM pim_fiche'));
         $updatedLabel = $this->connection->fetchOne('SELECT label FROM pim_fiche WHERE id = ?', [Ulid::fromString($existingId)->toBinary()]);
         self::assertSame('Lieu Existant Modifié', $updatedLabel);
-        self::assertSame($expectedSalle, $this->connection->fetchOne('SELECT nom FROM pim_salle'));
+        self::assertSame('Salle Alpha', $this->connection->fetchOne('SELECT nom FROM pim_salle'));
         self::assertSame(120, (int) $this->connection->fetchOne('SELECT capacite_theatre FROM pim_salle'));
         // Attribution visibilité : les 2 sites listés + l'obligatoire réappliqué.
         $sitesRetenus = $this->connection->fetchFirstColumn(
@@ -156,11 +148,15 @@ final class FicheImportProcessTest extends KernelTestCase
             ['Nouveau Lieu Import'],
         );
         self::assertSame(['lyon', 'marketplace_bp', 'seminaire_paris'], $sitesRetenus);
-        // Cellule vide sur la fiche mise à jour : la sélection reste intacte.
-        self::assertSame(0, (int) $this->connection->fetchOne(
-            'SELECT COUNT(*) FROM pim_fiche_site_diffusion WHERE fiche_id = ?',
+        // Cellule vide sur la fiche mise à jour : le fichier fait foi, la
+        // sélection revient aux sites obligatoires seuls.
+        $sitesExistant = $this->connection->fetchFirstColumn(
+            'SELECT s.code FROM pim_fiche_site_diffusion l
+             INNER JOIN pim_site_diffusion s ON s.id = l.site_id
+             WHERE l.fiche_id = ? ORDER BY s.code',
             [Ulid::fromString($existingId)->toBinary()],
-        ));
+        );
+        self::assertSame(['marketplace_bp'], $sitesExistant);
         self::assertGreaterThan(0, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM outbox_message'));
 
         // Redélivrance du même batch : la garde lastProcessedLine évite tout retraitement.

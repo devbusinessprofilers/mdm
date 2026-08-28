@@ -16,23 +16,13 @@ final class FicheImportJobRepository extends ServiceEntityRepository
         parent::__construct($registry, FicheImportJob::class);
     }
 
-    /** @return list<FicheImportJob> */
-    public function findRecent(int $limit = 50): array
-    {
-        return $this->findBy([], ['createdAt' => 'DESC'], max(1, min(200, $limit)));
-    }
-
     /**
-     * Historique de l'onglet Import en masse : ses seuls imports (écrasement).
+     * Historique de l'onglet Import en masse.
      *
      * @return list<FicheImportJob>
      */
-    public function findRecentEcrasement(int $limit = 50): array
+    public function findRecent(int $limit = 50): array
     {
-        return $this->findBy(
-            ['mode' => FicheImportJob::MODE_ECRASEMENT],
-            ['createdAt' => 'DESC'],
-            max(1, min(200, $limit)),
-        );
+        return $this->findBy([], ['createdAt' => 'DESC'], max(1, min(200, $limit)));
     }
 }

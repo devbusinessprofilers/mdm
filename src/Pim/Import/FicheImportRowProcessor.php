@@ -43,13 +43,13 @@ final readonly class FicheImportRowProcessor
      * Traite une ligne dans la transaction du message courant : les lignes valides
      * sont flushées, les lignes invalides déclenchent un clear() de l'EntityManager
      * pour purger les mutations en mémoire (l'appelant doit recharger ses entités).
-     * En mode écrasement (import en masse), le fichier fait foi : cellules vides
-     * = champs vidés, libellés LOV acceptés (voir RowConverter).
+     * Le fichier d'export fait foi : cellules vides = champs vidés, libellés LOV
+     * acceptés (voir RowConverter).
      */
-    public function process(TypeFiche $type, RawCsvRow $row, bool $ecrasement = false): RowOutcome
+    public function process(TypeFiche $type, RawCsvRow $row): RowOutcome
     {
         $schema = $this->schemas->for($type);
-        $converted = $this->converter->convert($schema, $row, $ecrasement);
+        $converted = $this->converter->convert($schema, $row);
         $errors = $converted->errors;
 
         if (null !== $converted->code) {
@@ -77,7 +77,7 @@ final readonly class FicheImportRowProcessor
         }
 
         $fiche = $schema->ficheOf($aggregate);
-        $this->applyFields($schema->type(), $aggregate, $fiche, $converted->fields, $row->lineNumber, $errors, $ecrasement);
+        $this->applyFields($schema->type(), $aggregate, $fiche, $converted->fields, $row->lineNumber, $errors);
         $this->applyCollections($schema->collections(), $aggregate, $converted->collections, $row->lineNumber, $errors);
 
         if ([] === $errors) {
@@ -105,7 +105,7 @@ final readonly class FicheImportRowProcessor
      * @param list<ConvertedValue> $fields
      * @param list<RowError>       $errors
      */
-    private function applyFields(TypeFiche $type, object $aggregate, Fiche $fiche, array $fields, int $line, array &$errors, bool $ecrasement = false): void
+    private function applyFields(TypeFiche $type, object $aggregate, Fiche $fiche, array $fields, int $line, array &$errors): void
     {
         $localisation = null;
 
@@ -117,11 +117,16 @@ final readonly class FicheImportRowProcessor
 
             $value = $field->value;
             if (ColumnKind::Prestataire === $column->kind && !$field->clear) {
+                // Le fichier d'export porte le libellé du prestataire, un code est accepté aussi.
                 $value = $this->prestataires->findPrestataireByCode(strtoupper((string) $field->value))
-                    // Écrasement : le fichier d'export porte le libellé du prestataire.
-                    ?? ($ecrasement ? $this->prestataires->findPrestataireByLabel((string) $field->value) : null);
+                    ?? $this->prestataires->findPrestataireByLabel((string) $field->value);
                 if (null === $value) {
-                    $errors[] = new RowError($line, $column->header, 'Code prestataire inconnu.');
+                    $message = sprintf('Prestataire inconnu : « %s ».', trim((string) $field->value));
+                    $suggestion = SuggestionProche::trouver((string) $field->value, $this->prestataires->listePrestataireLabels());
+                    if (null !== $suggestion) {
+                        $message .= sprintf(' Vouliez-vous dire « %s » ?', $suggestion);
+                    }
+                    $errors[] = new RowError($line, $column->header, $message);
                     continue;
                 }
             }
@@ -174,7 +179,17 @@ final readonly class FicheImportRowProcessor
         foreach ($libelles as $libelle) {
             $site = $parCle[mb_strtolower($libelle)] ?? null;
             if (null === $site) {
-                $errors[] = new RowError($line, $column, sprintf('Site de diffusion inconnu : %s.', $libelle));
+                $message = sprintf('Site de diffusion inconnu : « %s ».', $libelle);
+                $candidats = [];
+                foreach ($referentiel as $connu) {
+                    $candidats[] = $connu->label();
+                    $candidats[] = $connu->code();
+                }
+                $suggestion = SuggestionProche::trouver($libelle, $candidats);
+                if (null !== $suggestion) {
+                    $message .= sprintf(' Vouliez-vous dire « %s » ?', $suggestion);
+                }
+                $errors[] = new RowError($line, $column, $message);
 
                 return;
             }

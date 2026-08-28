@@ -50,7 +50,7 @@ final readonly class ProcessFicheImportBatchHandler
         }
 
         $path = $this->importDir.'/'.$job->storagePath();
-        $sheet = $job->estEcrasement() ? FicheExportXlsxGenerator::nomFeuille($job->type()) : null;
+        $sheet = FicheExportXlsxGenerator::nomFeuille($job->type());
 
         try {
             $headers = $this->reader->headers($path, $sheet);
@@ -74,7 +74,7 @@ final readonly class ProcessFicheImportBatchHandler
             }
             ++$count;
 
-            $outcome = $this->rowProcessor->process($job->type(), $row, $job->estEcrasement());
+            $outcome = $this->rowProcessor->process($job->type(), $row);
             if (RowAction::Failed === $outcome->action) {
                 // Le processeur a pu vider l'EntityManager : recharger le job avant d'y rattacher les erreurs.
                 $job = $this->findJob($message->jobId) ?? throw new \RuntimeException('Job d’import disparu en cours de traitement.');

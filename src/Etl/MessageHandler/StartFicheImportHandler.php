@@ -12,6 +12,7 @@ use App\Etl\Repository\FicheImportJobRepository;
 use App\Etl\Service\ImportCsvReader;
 use App\Pim\Export\FicheExportXlsxGenerator;
 use App\Pim\Import\FicheImportTemplateGenerator;
+use App\Pim\Import\SuggestionProche;
 use App\Shared\Outbox\OutboxPublisherInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Uid\Ulid;
@@ -41,9 +42,9 @@ final readonly class StartFicheImportHandler
         }
 
         $path = $this->importDir.'/'.$job->storagePath();
-        // Import en masse : le fichier d'export est multi-feuilles, chaque
-        // job lit la feuille de sa gamme.
-        $sheet = $job->estEcrasement() ? FicheExportXlsxGenerator::nomFeuille($job->type()) : null;
+        // Le fichier d'export est multi-feuilles : chaque job lit la feuille
+        // de sa gamme.
+        $sheet = FicheExportXlsxGenerator::nomFeuille($job->type());
 
         try {
             $headers = $this->reader->headers($path, $sheet);
@@ -54,9 +55,20 @@ final readonly class StartFicheImportHandler
         }
 
         $expected = $this->templates->headers($job->type());
-        $unknown = array_diff($headers, $expected);
+        $unknown = array_values(array_diff($headers, $expected));
         if ([] !== $unknown) {
-            $job->fail(sprintf('Colonnes inconnues : %s. Téléchargez le modèle à jour.', implode(', ', array_slice(array_values($unknown), 0, 10))));
+            // Liste complète, chaque colonne avec l'en-tête attendu le plus
+            // proche : le fichier se corrige en une passe. Message mono-ligne,
+            // affiché en tooltip dans l'historique.
+            $details = array_map(static function (string $colonne) use ($expected): string {
+                $proche = SuggestionProche::trouver($colonne, $expected);
+
+                return null === $proche ? $colonne : sprintf('%s (proche de : %s)', $colonne, $proche);
+            }, $unknown);
+            $job->fail(sprintf(
+                'Colonnes inconnues : %s. Repartez du fichier d’export du référentiel sans renommer ni ajouter de colonnes.',
+                implode(', ', $details),
+            ));
 
             return;
         }
@@ -68,17 +80,13 @@ final readonly class StartFicheImportHandler
 
             return;
         }
-        // Import en masse : le fichier peut ne porter que la colonne code et
-        // les colonnes à modifier — `label` n'est exigé que par les lignes de
-        // création, contrôlées ligne à ligne. L'import par modèle garde ses
-        // deux colonnes obligatoires.
-        $required = $job->estEcrasement() ? ['code'] : ['code', 'label'];
-        foreach ($required as $colonne) {
-            if (!in_array($colonne, $headers, true)) {
-                $job->fail(sprintf('La colonne %s est obligatoire.', $colonne));
+        // Le fichier peut ne porter que la colonne code et les colonnes à
+        // modifier — `label` n'est exigé que par les lignes de création,
+        // contrôlées ligne à ligne.
+        if (!in_array('code', $headers, true)) {
+            $job->fail('La colonne code est obligatoire.');
 
-                return;
-            }
+            return;
         }
 
         $total = $this->reader->countDataLines($path, $headers, $sheet);
