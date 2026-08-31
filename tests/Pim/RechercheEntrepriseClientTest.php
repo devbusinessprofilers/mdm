@@ -201,6 +201,54 @@ final class RechercheEntrepriseClientTest extends TestCase
         self::assertCount(2, $suggestions);
     }
 
+    public function testLEtablissementQuiFaitMatcherLaRequetePrimeSurLeSiege(): void
+    {
+        // Hôtel exploité par une holding : le siège est à Lyon, l'enseigne
+        // cherchée est sur l'établissement de Vineuil-Saint-Firmin.
+        $httpClient = new MockHttpClient(static fn (): MockResponse => new MockResponse(json_encode(['results' => [[
+            'nom_complet' => 'GRAND HOTEL DE LA ROUTE DE SENLIS',
+            'siege' => [
+                'adresse' => '67 QUAI CHARLES DE GAULLE 69006 LYON',
+                'code_postal' => '69006',
+                'libelle_commune' => 'LYON',
+                'departement' => '69',
+                'latitude' => '45.78',
+                'longitude' => '4.85',
+            ],
+            'matching_etablissements' => [
+                // Fermé : ignoré au profit du suivant.
+                ['adresse' => '9 RUE FERMEE 60500 CHANTILLY', 'etat_administratif' => 'F'],
+                [
+                    'adresse' => '4 ROUTE DE SENLIS 60500 VINEUIL-SAINT-FIRMIN',
+                    'code_postal' => '60500',
+                    'libelle_commune' => 'VINEUIL-SAINT-FIRMIN',
+                    'nom_commercial' => 'LE GRAND PAVILLON CHANTILLY',
+                    'liste_enseignes' => ['LE GRAND PAVILLON CHANTILLY'],
+                    'latitude' => '49.198233611',
+                    'longitude' => '2.5097649021',
+                    'etat_administratif' => 'A',
+                ],
+            ],
+        ]]], JSON_THROW_ON_ERROR)));
+        $client = new RechercheEntrepriseClient($httpClient, new NullLogger(), 'https://recherche.example');
+
+        self::assertSame([[
+            // L'enseigne parle plus que la raison sociale de l'exploitant.
+            'label' => 'LE GRAND PAVILLON CHANTILLY — 4 Route de Senlis 60500 Vineuil-Saint-Firmin',
+            // Voie non découpée sur l'établissement : déduite de l'adresse complète.
+            'ruePostale' => '4 Route de Senlis',
+            'codePostal' => '60500',
+            'ville' => 'Vineuil-Saint-Firmin',
+            'region' => null,
+            // Département absent de l'établissement : déduit du code postal.
+            'departement' => 'Oise',
+            'pays' => 'France',
+            'countryCode' => 'FR',
+            'latitude' => '49.198233611',
+            'longitude' => '2.5097649021',
+        ]], $client->suggestionsAdresse('Le grand pavillon chantilly'));
+    }
+
     public function testFindStatutRendEtatInconnuQuandLeSiretNEstPasDansLaReponse(): void
     {
         // Siège fermé mais SIRET demandé absent de la réponse : ne pas

@@ -79,8 +79,11 @@ final class RechercheEntrepriseClient
     /**
      * Suggestions d'adresses d'entreprises actives pour la recherche du tunnel
      * de création (la BAN et Geoapify ne connaissent pas les raisons sociales).
-     * Les clés suivent les champs de Localisation, comme les suggestions
-     * Geoapify ; la région INSEE n'est fournie qu'en code, elle reste vide.
+     * L'établissement qui a fait matcher la requête prime sur le siège — un
+     * hôtel exploité par une holding a son siège ailleurs, l'enseigne cherchée
+     * est sur l'établissement. Les clés suivent les champs de Localisation,
+     * comme les suggestions Geoapify ; la région INSEE n'est fournie qu'en
+     * code, elle reste vide.
      *
      * @return list<array{label: string, ruePostale: ?string, codePostal: ?string, ville: ?string, region: ?string, departement: ?string, pays: ?string, countryCode: ?string, latitude: ?string, longitude: ?string}>
      *
@@ -105,33 +108,98 @@ final class RechercheEntrepriseClient
             }
             /** @var array<string, mixed> $siege */
             $siege = \is_array($result['siege'] ?? null) ? $result['siege'] : [];
+            $etablissement = self::etablissementCorrespondant($result);
+            $lieu = $etablissement ?? $siege;
             $denomination = self::string($result['nom_complet'] ?? null) ?? self::string($result['nom_raison_sociale'] ?? null);
-            $adresse = self::string($siege['adresse'] ?? null);
+            $adresse = self::string($lieu['adresse'] ?? null);
             if (null === $denomination || null === $adresse) {
                 continue;
             }
-            $departement = self::string($siege['departement'] ?? null);
-            $rue = self::nomPropre(self::rue($siege));
-            $codePostal = self::string($siege['code_postal'] ?? null);
-            $ville = self::nomPropre(self::string($siege['libelle_commune'] ?? null));
+            $codePostal = self::string($lieu['code_postal'] ?? null);
+            $ville = self::nomPropre(self::string($lieu['libelle_commune'] ?? null));
+            // L'établissement ne porte pas la voie découpée : elle se déduit de
+            // l'adresse complète, amputée du suffixe « code postal ville ».
+            $rue = self::nomPropre(null !== $etablissement
+                ? self::rueSansCodePostalVille($adresse, self::string($lieu['code_postal'] ?? null), self::string($lieu['libelle_commune'] ?? null))
+                : self::rue($siege));
+            $departement = self::string($lieu['departement'] ?? null);
+            $departement = null !== $departement
+                ? ReferentielGeographiqueFrancais::libelleDepartement($departement)
+                : self::departementDepuisCodePostal($codePostal);
+            // L'enseigne (« LE GRAND PAVILLON CHANTILLY ») parle plus que la
+            // raison sociale de l'exploitant quand l'établissement a la sienne.
+            $enseignes = $lieu['liste_enseignes'] ?? null;
+            $enseigne = self::string($lieu['nom_commercial'] ?? null)
+                ?? (\is_array($enseignes) ? self::string($enseignes[0] ?? null) : null)
+                ?? $denomination;
             // Libellé composé champ par champ : formater l'adresse d'un bloc
             // abaisserait l'article des communes (« 78170 la Celle-Saint-Cloud »).
             $affichage = trim(implode(' ', array_filter([$rue, trim(($codePostal ?? '').' '.($ville ?? ''))])));
             $suggestions[] = [
-                'label' => $denomination.' — '.('' === $affichage ? self::nomPropre($adresse) : $affichage),
+                'label' => $enseigne.' — '.('' === $affichage ? self::nomPropre($adresse) : $affichage),
                 'ruePostale' => $rue,
                 'codePostal' => $codePostal,
                 'ville' => $ville,
                 'region' => null,
-                'departement' => null === $departement ? null : ReferentielGeographiqueFrancais::libelleDepartement($departement),
+                'departement' => $departement,
                 'pays' => 'France',
                 'countryCode' => 'FR',
-                'latitude' => self::string($siege['latitude'] ?? null),
-                'longitude' => self::string($siege['longitude'] ?? null),
+                'latitude' => self::string($lieu['latitude'] ?? null),
+                'longitude' => self::string($lieu['longitude'] ?? null),
             ];
         }
 
         return $suggestions;
+    }
+
+    /**
+     * Premier établissement actif ayant fait matcher la requête, s'il y en a un.
+     *
+     * @param array<array-key, mixed> $result
+     *
+     * @return array<string, mixed>|null
+     */
+    private static function etablissementCorrespondant(array $result): ?array
+    {
+        $etablissements = $result['matching_etablissements'] ?? null;
+        if (!\is_array($etablissements)) {
+            return null;
+        }
+        foreach ($etablissements as $etablissement) {
+            if (\is_array($etablissement) && 'A' === ($etablissement['etat_administratif'] ?? null)) {
+                return $etablissement;
+            }
+        }
+
+        return null;
+    }
+
+    /** « 4 ROUTE DE SENLIS 60500 VINEUIL-SAINT-FIRMIN » → « 4 ROUTE DE SENLIS » ; suffixe introuvable = rue inconnue. */
+    private static function rueSansCodePostalVille(string $adresse, ?string $codePostal, ?string $ville): ?string
+    {
+        $suffixe = trim(($codePostal ?? '').' '.($ville ?? ''));
+        if ('' === $suffixe || !str_ends_with(mb_strtoupper($adresse), mb_strtoupper($suffixe))) {
+            return null;
+        }
+        $rue = trim(mb_substr($adresse, 0, mb_strlen($adresse) - mb_strlen($suffixe)));
+
+        return '' === $rue ? null : $rue;
+    }
+
+    /**
+     * Département déduit du code postal (« 60500 » → « Oise », « 97400 » →
+     * « La Réunion ») ; la Corse reste indécidable (2A/2B partagent « 20 »).
+     */
+    private static function departementDepuisCodePostal(?string $codePostal): ?string
+    {
+        if (null === $codePostal || 1 !== preg_match('/^\d{5}$/', $codePostal) || str_starts_with($codePostal, '20')) {
+            return null;
+        }
+        $numero = str_starts_with($codePostal, '97') || str_starts_with($codePostal, '98')
+            ? substr($codePostal, 0, 3)
+            : substr($codePostal, 0, 2);
+
+        return ReferentielGeographiqueFrancais::libelleDepartement($numero);
     }
 
     private function search(string $query, ?string $codePostal, bool $actifsSeulement = true, ?string $siretAttendu = null, bool $replisSansCodePostal = false): ?EntrepriseInfo
