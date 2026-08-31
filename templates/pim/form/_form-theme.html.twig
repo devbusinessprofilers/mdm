@@ -13,8 +13,18 @@
 
 {%- block form_row -%}
     <div class="flex flex-col gap-2{% if row_attr.class is defined %} {{ row_attr.class }}{% endif %}">
-        {{- form_label(form) -}}
-        {{- form_errors(form) -}}
+        {#- L'erreur se pose sur la ligne du libellé : rendue entre le libellé
+            et le champ, elle décalait le champ par rapport à ses voisins dans
+            les grilles à deux colonnes. -#}
+        {%- if label is not same as(false) and errors|length > 0 -%}
+            <div class="flex items-baseline justify-between gap-x-3">
+                {{- form_label(form) -}}
+                <div class="min-w-0 text-right">{{- form_errors(form) -}}</div>
+            </div>
+        {%- else -%}
+            {{- form_label(form) -}}
+            {{- form_errors(form) -}}
+        {%- endif -%}
         {{- form_widget(form) -}}
         {{- form_help(form) -}}
     </div>
