@@ -117,6 +117,30 @@ final class FicheCreationControllerIntegrationTest extends WebTestCase
         self::assertSame(0, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM pim_fiche'));
     }
 
+    public function testLaPageDeCreationPorteLaRechercheDAdresse(): void
+    {
+        $client = $this->createClientWithUser();
+        $client->request('GET', '/referentiel/fiche/nouvelle');
+        self::assertResponseIsSuccessful();
+        self::assertSelectorExists('[data-controller="adresse-autocomplete"]');
+        // Le sélecteur de pays démarre sur la France et reste hors soumission.
+        self::assertSelectorExists('select[name="adresse-recherche-pays"][form="hors-soumission"] option[value="FR"][selected]');
+        // type="button" : « Appliquer le choix » ne doit jamais soumettre la création.
+        self::assertSelectorExists('button[type="button"][data-action="adresse-autocomplete#appliquer"]');
+    }
+
+    public function testLAutocompletionDAdresseRepondUneListeVideSansCleGeoapify(): void
+    {
+        $client = $this->createClientWithUser();
+        // En test la clé Geoapify est vide : client désactivé, aucun appel réseau.
+        $client->request('GET', '/referentiel/fiche/adresse-autocomplete', ['q' => 'Château de Chantilly', 'pays' => 'fr']);
+        self::assertResponseIsSuccessful();
+        self::assertSame(
+            ['suggestions' => []],
+            json_decode((string) $client->getResponse()->getContent(), true),
+        );
+    }
+
     public function testPrefillsFacturationEtPartenariatFromAnnuaire(): void
     {
         $client = $this->createClientWithUser();

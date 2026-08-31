@@ -10,7 +10,8 @@ use Symfony\Contracts\HttpClient\ResponseInterface;
 
 /**
  * Client Geoapify (géocodage mondial sur données OpenStreetMap) pour les
- * adresses hors de France. Une adresse passe par l'endpoint simple ; un lot
+ * adresses hors de France — et pour la recherche d'adresse du tunnel de
+ * création, tous pays. Une adresse passe par l'endpoint simple ; un lot
  * passe par l'API batch asynchrone (~moitié du coût en crédits) : un job par
  * pays — le filtre countrycode borne la recherche et écarte les homonymes —
  * soumis puis interrogé jusqu'au résultat. Clé absente = client désactivé.
@@ -177,6 +178,61 @@ final class GeoapifyClient implements GeocodeurEtrangerInterface
         }
 
         return 'no' === $valeur ? false : null;
+    }
+
+    /**
+     * Suggestions d'adresses pendant la frappe (recherche du tunnel de
+     * création), bornées à un pays. Les clés suivent les champs de
+     * Localisation : le client applique la suggestion telle quelle.
+     *
+     * @return list<array{label: string, ruePostale: ?string, codePostal: ?string, ville: ?string, region: ?string, departement: ?string, pays: ?string, countryCode: ?string, latitude: ?string, longitude: ?string}>
+     */
+    public function autocomplete(string $texte, string $pays, int $limite = 5): array
+    {
+        $texte = trim($texte);
+        $pays = strtolower(trim($pays));
+        if (!$this->isConfigured() || '' === $texte || '' === $pays) {
+            return [];
+        }
+        $donnees = $this->requete('GET', '/v1/geocode/autocomplete', [
+            'text' => $texte,
+            'filter' => 'countrycode:'.$pays,
+            'limit' => (string) max(1, $limite),
+            'lang' => 'fr',
+            'format' => 'json',
+        ], attendus: [200]);
+        $suggestions = [];
+        foreach ($donnees['results'] ?? [] as $resultat) {
+            if (!is_array($resultat)) {
+                continue;
+            }
+            // Même garde que mapper() : le filtre pays a des trous sur certains types.
+            $paysResultat = $resultat['country_code'] ?? null;
+            if (!is_string($paysResultat) || strtolower($paysResultat) !== $pays) {
+                continue;
+            }
+            // housenumber sort parfois en numérique du JSON Geoapify.
+            $champ = static fn (string $cle): ?string => is_scalar($resultat[$cle] ?? null) && '' !== trim((string) $resultat[$cle]) ? trim((string) $resultat[$cle]) : null;
+            $label = $champ('formatted');
+            if (null === $label) {
+                continue;
+            }
+            $rue = trim(sprintf('%s %s', $champ('housenumber') ?? '', $champ('street') ?? ''));
+            $suggestions[] = [
+                'label' => $label,
+                'ruePostale' => '' === $rue ? null : $rue,
+                'codePostal' => $champ('postcode'),
+                'ville' => $champ('city'),
+                'region' => $champ('state'),
+                'departement' => $champ('county'),
+                'pays' => $champ('country'),
+                'countryCode' => strtoupper($paysResultat),
+                'latitude' => is_numeric($resultat['lat'] ?? null) ? (string) $resultat['lat'] : null,
+                'longitude' => is_numeric($resultat['lon'] ?? null) ? (string) $resultat['lon'] : null,
+            ];
+        }
+
+        return $suggestions;
     }
 
     public function verifierLot(array $lignes): array

@@ -114,6 +114,58 @@ final class GeoapifyClientTest extends TestCase
         self::assertSame(3, $appels, 'Soumission puis deux interrogations du job.');
     }
 
+    public function testLAutocompletionMappeLesSuggestionsSurLesChampsDeLocalisation(): void
+    {
+        $http = new MockHttpClient(static function (string $method, string $url): MockResponse {
+            self::assertStringContainsString('/v1/geocode/autocomplete', $url);
+            self::assertStringContainsString('filter=countrycode:fr', $url);
+            self::assertStringContainsString('lang=fr', $url);
+
+            return new MockResponse((string) json_encode(['results' => [
+                [
+                    'formatted' => 'Château de Chantilly, 7 Rue du Connétable, 60500 Chantilly, France',
+                    // housenumber sort parfois en numérique du JSON Geoapify.
+                    'housenumber' => 7,
+                    'street' => 'Rue du Connétable',
+                    'postcode' => '60500',
+                    'city' => 'Chantilly',
+                    'state' => 'Hauts-de-France',
+                    'county' => 'Oise',
+                    'country' => 'France',
+                    'country_code' => 'fr',
+                    'lat' => 49.194,
+                    'lon' => 2.4712,
+                ],
+                // Hors du pays demandé (le filtre a des trous) : écartée.
+                ['formatted' => 'Chantilly, VA, United States', 'country_code' => 'us'],
+            ]]));
+        });
+        $client = new GeoapifyClient($http, 'https://api.geoapify.test', 'cle-de-test', 0);
+
+        self::assertSame([[
+            'label' => 'Château de Chantilly, 7 Rue du Connétable, 60500 Chantilly, France',
+            'ruePostale' => '7 Rue du Connétable',
+            'codePostal' => '60500',
+            'ville' => 'Chantilly',
+            'region' => 'Hauts-de-France',
+            'departement' => 'Oise',
+            'pays' => 'France',
+            'countryCode' => 'FR',
+            'latitude' => '49.194',
+            'longitude' => '2.4712',
+        ]], $client->autocomplete('Château de Chantilly', 'FR'));
+    }
+
+    public function testLAutocompletionSansCleConfigureeNAppelleRien(): void
+    {
+        $http = new MockHttpClient(static function (): MockResponse {
+            throw new \LogicException('Aucune requête HTTP attendue sans clé.');
+        });
+        $client = new GeoapifyClient($http, 'https://api.geoapify.test', '', 0);
+
+        self::assertSame([], $client->autocomplete('Château de Chantilly', 'FR'));
+    }
+
     public function testUneLigneSansPaysEstIgnoree(): void
     {
         $http = new MockHttpClient(static function (): MockResponse {

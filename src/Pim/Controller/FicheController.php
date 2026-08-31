@@ -18,12 +18,14 @@ use App\Pim\Repository\SiteDiffusionRepository;
 use App\Pim\Service\FicheCreationManager;
 use App\Pim\Service\FicheDuplicateDetector;
 use App\Pim\Service\FicheRouteResolver;
+use App\Pim\Service\GeoapifyClient;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Form\FormError;
 use Symfony\Component\Form\SubmitButton;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use Symfony\Component\Intl\Countries;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
@@ -59,6 +61,7 @@ final class FicheController extends AbstractController
                 return $this->render('pim/fiche/new.html.twig', [
                     'form' => $form->createView(),
                     'duplicates' => $duplicates,
+                    'paysRecherche' => self::paysRecherche(),
                 ], new Response(null, Response::HTTP_UNPROCESSABLE_ENTITY));
             }
             try {
@@ -82,9 +85,42 @@ final class FicheController extends AbstractController
 
         return $this->render(
             'pim/fiche/new.html.twig',
-            ['form' => $form->createView(), 'duplicates' => []],
+            ['form' => $form->createView(), 'duplicates' => [], 'paysRecherche' => self::paysRecherche()],
             new Response(null, $form->isSubmitted() ? Response::HTTP_UNPROCESSABLE_ENTITY : Response::HTTP_OK),
         );
     }
 
+    /** Suggestions d'adresses (Geoapify) pour la recherche du tunnel de création. */
+    #[Route('/adresse-autocomplete', name: 'adresse_autocomplete', methods: ['GET'])]
+    public function adresseAutocomplete(Request $request, GeoapifyClient $geocodeur): Response
+    {
+        $q = trim($request->query->getString('q'));
+        $pays = trim($request->query->getString('pays'));
+        if (mb_strlen($q) < 3 || 1 !== preg_match('/^[a-zA-Z]{2}$/', $pays)) {
+            return $this->json(['suggestions' => []]);
+        }
+        try {
+            $suggestions = $geocodeur->autocomplete($q, $pays);
+        } catch (\RuntimeException) {
+            // L'autocomplétion est un confort : API indisponible = pas de suggestion.
+            $suggestions = [];
+        }
+
+        return $this->json(['suggestions' => $suggestions]);
+    }
+
+    /**
+     * Choix du sélecteur de pays de la recherche d'adresse (libellés français).
+     *
+     * @return list<array{value: string, label: string}>
+     */
+    private static function paysRecherche(): array
+    {
+        $choix = [];
+        foreach (Countries::getNames('fr') as $code => $nom) {
+            $choix[] = ['value' => $code, 'label' => $nom];
+        }
+
+        return $choix;
+    }
 }

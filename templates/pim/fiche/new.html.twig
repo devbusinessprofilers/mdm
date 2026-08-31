@@ -4,9 +4,11 @@
 
     Sept blocs sur une seule page : la gamme (bloc 1) débloque les six autres
     (verrouillage visuel côté client, les champs restent de vrais inputs).
-    Écarts assumés : pas d'autocomplétion d'adresse (champs structurés réels),
-    pas de brouillon ni de « créer et enchaîner » (désactivés + infobulle),
-    voile de création sans fil d'étapes factice (le POST est synchrone).
+    La recherche d'adresse (pays + texte, Geoapify) propose des suggestions et
+    les recopie dans les champs structurés sur « Appliquer le choix ».
+    Écarts assumés : pas de brouillon ni de « créer et enchaîner »
+    (désactivés + infobulle), voile de création sans fil d'étapes factice
+    (le POST est synchrone).
 #}
 {% extends 'mdm/base.html.twig' %}
 {% form_theme form 'pim/form/_form-theme-creation.html.twig' %}
@@ -231,6 +233,47 @@
                             <twig:Typography variant="input" element="span" class="text-[0.875rem]! leading-[1.375rem]!">Référence MDM</twig:Typography>
                             {{ _self.boite_lecture('Attribuée automatiquement à la création') }}
                         </div>
+
+                        {# Recherche d'adresse (Geoapify) : pays + texte + application
+                           manuelle. Champs hors soumission (form= pointe hors du
+                           formulaire) : seuls les champs structurés partent au POST. #}
+                        <div class="w-full flex flex-col gap-2.5"
+                             data-controller="adresse-autocomplete"
+                             data-adresse-autocomplete-url-value="{{ path('app_pim_fiche_adresse_autocomplete') }}"
+                             data-adresse-autocomplete-label-id-value="{{ form.label.vars.id }}"
+                             data-adresse-autocomplete-prefixe-value="{{ form.localisation.vars.id }}"
+                             data-action="select:change->adresse-autocomplete#changerPays">
+                            <div class="flex items-end gap-3">
+                                <div class="w-[220px] shrink-0 flex flex-col gap-1">
+                                    <twig:Typography variant="input" element="span" class="text-[0.875rem]! leading-[1.375rem]!">Pays de recherche</twig:Typography>
+                                    <twig:Form:Select id="adresse-recherche-pays" name="adresse-recherche-pays"
+                                                      :choices="paysRecherche" value="FR"
+                                                      :selectAttributes="{ form: 'hors-soumission', 'data-adresse-autocomplete-target': 'pays' }" />
+                                </div>
+                                <div class="relative flex-1 min-w-0 flex flex-col gap-1">
+                                    <twig:Typography variant="input" element="span" class="text-[0.875rem]! leading-[1.375rem]!">Rechercher l’adresse</twig:Typography>
+                                    <twig:Form:TextInput id="adresse-recherche" name="adresse-recherche" value=""
+                                                         leftIcon="magnifying-glass"
+                                                         placeholder="Complétez le nom de la fiche : rue, ville…"
+                                                         :inputAttributes="{ form: 'hors-soumission', autocomplete: 'off', role: 'combobox', 'aria-expanded': 'false',
+                                                             'data-adresse-autocomplete-target': 'champ',
+                                                             'data-action': 'input->adresse-autocomplete#saisir focus->adresse-autocomplete#saisir keydown->adresse-autocomplete#clavier' }" />
+                                    <div data-adresse-autocomplete-target="liste" hidden role="listbox"
+                                         aria-label="Suggestions d'adresses"
+                                         class="absolute left-0 right-0 top-full z-20 mt-1 p-1.5 rounded-[14px] bg-neutral-100
+                                                shadow-[0_16px_40px_rgba(3,74,94,0.22)] flex flex-col gap-px max-h-72 overflow-y-auto"></div>
+                                </div>
+                                <twig:Button variant="outline" size="md" type="button" class="shrink-0"
+                                             data-action="adresse-autocomplete#appliquer">Appliquer le choix</twig:Button>
+                            </div>
+                            <twig:Typography variant="body-sm" textColor="neutral-500" class="text-pretty"
+                                             aria-live="polite" data-adresse-autocomplete-target="etat">
+                                La recherche combine le nom de la fiche et le texte saisi, dans le pays choisi.
+                                Sélectionnez une suggestion puis appliquez-la aux champs ci-dessous.
+                                Données © Geoapify / OpenStreetMap.
+                            </twig:Typography>
+                        </div>
+
                         {{ form_row(form.localisation.ruePostale, { row_attr: { class: demi }, help: prefill_help }) }}
                         {{ form_row(form.localisation.codePostal, { row_attr: { class: demi }, help: 'Utilisé avec le nom pour retrouver l’entreprise dans l’annuaire et fiabiliser le pré-remplissage.', attr: { 'data-action': 'input->fiche-creation#majRail' } }) }}
                         {{ form_row(form.localisation.ville, { row_attr: { class: demi }, help: prefill_help }) }}
