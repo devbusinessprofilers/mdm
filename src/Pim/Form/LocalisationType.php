@@ -11,7 +11,6 @@ use Symfony\Component\Form\Exception\TransformationFailedException;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
-use Symfony\Component\Validator\Constraints\NotBlank;
 
 /** @extends AbstractType<Localisation> */
 final class LocalisationType extends AbstractType
@@ -31,11 +30,9 @@ final class LocalisationType extends AbstractType
             'latitude' => ['Latitude', 'latitude', 'changeLatitude'],
             'longitude' => ['Longitude', 'longitude', 'changeLongitude'],
         ] as $name => [$label, $getter, $setter]) {
-            $requis = 'codePostal' === $name && $options['code_postal_requis'];
             $builder->add($name, TextType::class, [
                 'label' => $label,
-                'required' => $requis,
-                'constraints' => $requis ? [new NotBlank(message: 'Le code postal est obligatoire.')] : [],
+                'required' => false,
                 'getter' => static fn (Localisation $localisation): mixed => $localisation->{$getter}(),
                 'setter' => static function (Localisation &$localisation, mixed $value) use ($setter): void {
                     $localisation->{$setter}($value);
@@ -68,9 +65,6 @@ final class LocalisationType extends AbstractType
     {
         $resolver->setDefaults([
             'data_class' => Localisation::class,
-            // Le code postal ne s'impose qu'à la création (clé de la recherche annuaire).
-            'code_postal_requis' => false,
         ]);
-        $resolver->setAllowedTypes('code_postal_requis', 'bool');
     }
 }

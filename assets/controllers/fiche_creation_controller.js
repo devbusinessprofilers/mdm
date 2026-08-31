@@ -152,7 +152,7 @@ export default class extends Controller {
         const envoyer = this.element.querySelector('#fiche_creation_envoyerAcces');
         const remplis = [
             choisie,
-            rempli('#fiche_creation_label') && rempli('#fiche_creation_localisation_codePostal'),
+            rempli('#fiche_creation_label'),
             this.groupeClasseTargets.some((groupe) => !groupe.closest('[hidden]') && groupe.querySelector('input:checked')),
             true,
             this.siteTargets.some((site) => site.querySelector('input').checked),

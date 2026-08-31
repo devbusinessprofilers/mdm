@@ -104,17 +104,18 @@ final class FicheCreationControllerIntegrationTest extends WebTestCase
         }
     }
 
-    public function testRejectsCreationWithoutCodePostal(): void
+    public function testCreatesAFicheWithOnlyGammeAndLabel(): void
     {
+        // Seuls la gamme et le nom sont obligatoires : l'adresse s'enrichit
+        // ensuite (recherche d'adresse, annuaire, fiche complète).
         $client = $this->createClientWithUser();
         $client->request('GET', '/referentiel/fiche/nouvelle');
         $client->submitForm('Créer la fiche', [
             'fiche_creation[type]' => 'lieu',
             'fiche_creation[label]' => 'Sans code postal',
         ]);
-        self::assertResponseStatusCodeSame(422);
-        self::assertSelectorTextContains('main', 'Le code postal est obligatoire.');
-        self::assertSame(0, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM pim_fiche'));
+        self::assertResponseRedirects();
+        self::assertSame(1, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM pim_fiche'));
     }
 
     public function testLaPageDeCreationPorteLaRechercheDAdresse(): void

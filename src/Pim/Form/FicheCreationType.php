@@ -64,7 +64,6 @@ final class FicheCreationType extends AbstractType
             ->add('localisation', LocalisationType::class, [
                 'label' => false,
                 'required' => false,
-                'code_postal_requis' => true,
             ])
             ->add('modeIntervention', ChoiceType::class, [
                 'label' => 'Adresse',
