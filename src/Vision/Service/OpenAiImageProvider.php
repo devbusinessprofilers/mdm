@@ -39,6 +39,10 @@ final class OpenAiImageProvider implements ImageEnhancementProviderInterface, Im
         $response = $this->request('POST', '/v1/images/edits', [
             'headers' => $form->getPreparedHeaders()->toArray(),
             'body' => $form->bodyToIterable(),
+            // La génération est silencieuse jusqu'à la réponse complète (souvent
+            // plus d'une minute) : le timeout d'inactivité par défaut (60 s)
+            // couperait systématiquement l'appel.
+            'timeout' => 300,
         ]);
         $payload = $this->json($response, 'retouche');
         $encoded = $payload['data'][0]['b64_json'] ?? null;
