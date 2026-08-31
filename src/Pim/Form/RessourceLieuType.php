@@ -61,7 +61,6 @@ final class RessourceLieuType extends AbstractType
             'choice_value' => static fn (?NatureRessource $nature): ?string => $nature?->value,
         ]);
         $this->field($builder, 'usage', ChoiceType::class, 'Champ de la Bible', ['choices' => [
-            'Photo principale' => 'PHOTO_PRINCIPALE',
             'Façade' => 'PHOTO_FACADE',
             'Chambre' => 'PHOTO_CHAMBRE',
             'Restauration' => 'PHOTO_RESTAURATION',

@@ -1,0 +1,21 @@
+{% set selectCva = cva({
+    base: 'w-full appearance-none rounded-xs pl-3 pr-9 py-2 antialiased font-sans cursor-pointer focus:outline-none',
+    variants: {
+        dark: {
+            true: 'bg-neutral-900/75 border-0 text-neutral-100 text-[0.875rem] leading-[1.25rem] font-[700]',
+            false: 'bg-neutral-100 border border-primary text-base-text text-[0.75rem] leading-[1.25rem] focus:bg-primary-5',
+        },
+    },
+}) %}
+<div class="relative {{ class }}">
+    <select
+        {{ attributes }}
+        {% if name %}name="{{ name }}"{% endif %}
+        class="{{ selectCva.apply({ dark }) }}"
+    >
+        {% for code, libelle in choices %}
+            <option value="{{ code }}" {% if code == selected %}selected{% endif %}>{{ libelle }}</option>
+        {% endfor %}
+    </select>
+    <twig:Icon name="caret-down" class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 {{ dark ? 'text-neutral-100' : 'text-neutral-900' }}" />
+</div>

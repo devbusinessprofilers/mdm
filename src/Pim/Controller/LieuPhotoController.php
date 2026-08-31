@@ -81,6 +81,34 @@ final class LieuPhotoController extends AbstractController
     }
 
     /**
+     * Select de catégorie inline de la galerie : seule la catégorie change,
+     * les autres métadonnées (légende, source, crop…) restent intactes.
+     */
+    #[Route('/{resourceId}/categorie', name: 'categorie', methods: ['PATCH'])]
+    public function categorie(Request $request, Lieu $lieu, string $resourceId, LieuMediaCsrfGuard $csrf, RessourceLieuRepository $resources, LieuPhotoManager $manager, InternalFicheMutationPolicy $mutationPolicy): JsonResponse
+    {
+        $this->denyAccessUnlessGranted(FicheVoter::EDIT, $lieu->fiche());
+        $csrf->assertValid($lieu, (string) $request->headers->get('X-CSRF-TOKEN', $request->request->getString('_token')));
+        $resource = $resources->findPhotoForFiche($lieu->fiche(), $resourceId);
+        if (null === $resource || $resource->lieu() !== $lieu) { throw $this->createNotFoundException('Photo introuvable pour ce lieu.'); }
+        try {
+            $mutationPolicy->execute($lieu->fiche(), static function () use ($manager, $resource, $lieu, $request): void {
+                // La barre de salle envoie salle_id seul : l'usage courant est conservé.
+                $payload = $request->getPayload();
+                $manager->changeCategorie(
+                    $resource,
+                    $lieu,
+                    (string) $payload->get('usage', $resource->usage()),
+                    $payload->has('salle_id') ? (string) $payload->get('salle_id') : null,
+                );
+            });
+
+            return $this->json(['updated' => true]);
+        }
+        catch (\DomainException $exception) { return $this->json(['error' => $exception->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY); }
+    }
+
+    /**
      * Redirige vers une URL présignée fraîche de l'original : la modale de
      * recadrage charge l'image à l'ouverture, jamais au préchargement, pour
      * que le lien ne soit pas expiré quand l'utilisateur clique.

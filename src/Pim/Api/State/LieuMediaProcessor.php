@@ -25,9 +25,12 @@ use App\Pim\Enum\NatureRessource;
 use App\Pim\Enum\TypeFiche;
 use App\Pim\Repository\RessourceLieuRepository;
 use App\Pim\Service\PhotoObligations;
+use App\Pim\Service\PhotoPrincipale;
+use App\Pim\Service\PhotoUsageCatalog;
 use App\Shared\Message\MediaUploaded;
 use App\Shared\Outbox\OutboxPublisherInterface;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
@@ -36,7 +39,6 @@ use Symfony\Component\HttpFoundation\Response;
 final readonly class LieuMediaProcessor implements ProcessorInterface
 {
     private const USAGES = [
-        'PHOTO_PRINCIPALE',
         'PHOTO_FACADE',
         'PHOTO_CHAMBRE',
         'PHOTO_RESTAURATION',
@@ -57,6 +59,7 @@ final readonly class LieuMediaProcessor implements ProcessorInterface
         private OutboxPublisherInterface $outbox,
         private RequestStack $requests,
         private ExternalScopeGuard $scopes,
+        private LoggerInterface $logger,
     ) {
     }
 
@@ -139,8 +142,12 @@ final readonly class LieuMediaProcessor implements ProcessorInterface
         if (!($file instanceof UploadedFile)) {
             throw new ApiProblemException(Response::HTTP_UNPROCESSABLE_ENTITY, 'photo_required', 'Le champ multipart photo est obligatoire.');
         }
-        $usage = $request->request->getString('usage', 'PHOTO_DIVERSE');
-        $this->assertUsage($lieu, $usage);
+        $usage = $request->request->getString('usage', PhotoUsageCatalog::DEFAUT);
+        $enTete = $this->usagePrincipaleDeprecie($usage);
+        if ($enTete) {
+            $usage = PhotoUsageCatalog::DEFAUT;
+        }
+        $this->assertUsage($usage);
         try {
             $asset = $this->uploader->upload($file, $lieu);
         } catch (\DomainException $exception) {
@@ -154,6 +161,9 @@ final readonly class LieuMediaProcessor implements ProcessorInterface
         $resource->changeLegende(is_string($legende) ? $legende : null);
         $resource->changePosition(count($this->photos($lieu)));
         $lieu->addRessource($resource);
+        if ($enTete) {
+            PhotoPrincipale::placerEnTete($lieu->ressources(), $resource);
+        }
         try {
             $this->entityManager->persist($asset);
             $this->outbox->enqueue(
@@ -214,8 +224,13 @@ final readonly class LieuMediaProcessor implements ProcessorInterface
             if (!is_string($input->usage)) {
                 throw new ApiProblemException(Response::HTTP_UNPROCESSABLE_ENTITY, 'invalid_media_usage', 'La catégorie de photo est invalide.');
             }
-            $this->assertUsage($lieu, $input->usage, $resource);
-            $resource->changeUsage($input->usage);
+            if ($this->usagePrincipaleDeprecie($input->usage)) {
+                // La catégorie de la photo est conservée, seule sa place change.
+                PhotoPrincipale::placerEnTete($lieu->ressources(), $resource);
+            } else {
+                $this->assertUsage($input->usage);
+                $resource->changeUsage($input->usage);
+            }
         }
         if (array_key_exists('legende', $requestData)) {
             $resource->changeLegende($input->legende);
@@ -326,22 +341,26 @@ final readonly class LieuMediaProcessor implements ProcessorInterface
         );
     }
 
-    private function assertUsage(
-        Lieu $lieu,
-        string $usage,
-        ?RessourceLieu $current = null,
-    ): void {
+    private function assertUsage(string $usage): void
+    {
         if (!in_array($usage, self::USAGES, true)) {
             throw new ApiProblemException(Response::HTTP_UNPROCESSABLE_ENTITY, 'invalid_media_usage', 'La catégorie de photo est invalide.');
         }
+    }
+
+    /**
+     * Rétrocompat portail : PHOTO_PRINCIPALE n'est plus une catégorie, la
+     * principale est la première photo de l'ordre. Un client qui envoie
+     * encore cet usage demande en réalité un placement en tête.
+     */
+    private function usagePrincipaleDeprecie(string $usage): bool
+    {
         if ('PHOTO_PRINCIPALE' !== $usage) {
-            return;
+            return false;
         }
-        foreach ($this->photos($lieu) as $photo) {
-            if ($photo !== $current && 'PHOTO_PRINCIPALE' === $photo->usage()) {
-                throw new ApiProblemException(Response::HTTP_UNPROCESSABLE_ENTITY, 'main_media_exists', 'Une seule photo principale est autorisée par lieu.');
-            }
-        }
+        $this->logger->notice('Usage déprécié PHOTO_PRINCIPALE reçu par l’API médias : photo placée en tête.');
+
+        return true;
     }
 
     private function changed(Lieu $lieu): void

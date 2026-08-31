@@ -1,0 +1,76 @@
+{#
+    Volet Médias de l'éditeur : onglets internes Photos / Plans / Supports
+    commerciaux / Vidéo / Documents (maquette). Le shell (nav + panneaux
+    statiques) vit HORS du wrapper medias-bloc rafraîchi en AJAX : l'onglet
+    actif survit aux re-rendus (media_tabs_controller#panelTargetConnected).
+
+    Les panneaux Vidéo et Supports (gammes) rendent des champs du formulaire
+    principal APRÈS son form_end : l'attribut HTML natif form="form-fiche"
+    les rattache au formulaire — ils partent avec « Enregistrer les
+    modifications », validation et thème inchangés.
+
+    Contexte : medias (FicheEditeurEcran::medias), form (formulaire principal).
+#}
+{% set onglets_medias = [
+    { cle: 'photos', titre: 'Photos' },
+    { cle: 'plans', titre: 'Plans' },
+    { cle: 'supports', titre: 'Supports commerciaux' },
+    { cle: 'video', titre: 'Vidéo' },
+    { cle: 'documents', titre: 'Documents' },
+] %}
+{% set onglets_actifs = medias.onglets_actifs|default({}) %}
+<div class="flex flex-col gap-6" data-controller="media-tabs">
+    <nav class="flex flex-row items-center gap-8 border-b border-neutral-200 overflow-x-auto" aria-label="Types de médias">
+        {% for o in onglets_medias %}
+            {# `??` et pas `|default` : false est « vide » pour default(). #}
+            {% set disponible = onglets_actifs[o.cle] ?? true %}
+            <button type="button" role="tab"
+                    data-media-tabs-target="onglet" data-action="media-tabs#activer"
+                    data-media-tabs-onglet-param="{{ o.cle }}"
+                    aria-selected="{{ loop.first ? 'true' : 'false' }}"
+                    {% if not disponible %}disabled title="Aucun contenu de ce type pour cette gamme"{% endif %}
+                    class="group shrink-0 pb-3 -mb-px cursor-pointer border-b-2 border-transparent
+                           aria-selected:border-primary disabled:cursor-not-allowed disabled:opacity-40">
+                <span class="antialiased text-[1rem] leading-6 font-sans font-[700]
+                             text-neutral-400 group-aria-selected:text-neutral-900">{{ o.titre }}</span>
+            </button>
+        {% endfor %}
+    </nav>
+
+    {# Zone rafraîchie en AJAX : galerie photos, tuiles de documents par
+       onglet, modales. Les panneaux internes portent data-media-tabs-target. #}
+    <div data-controller="medias-bloc"
+         data-medias-bloc-url-value="{{ medias.bloc_url }}"
+         data-action="submit->medias-bloc#intercepter lieu-media:updated->medias-bloc#rafraichir">
+        {% if medias.gamme == 'lieu' %}
+            {% include 'pim/lieu/_medias.html.twig' with medias.vars %}
+        {% else %}
+            {% include 'pim/_medias_gamme.html.twig' with medias.vars %}
+        {% endif %}
+    </div>
+
+    {# ---- Vidéo : le champ Lien vidéo du formulaire principal. ---- #}
+    <div data-media-tabs-target="panel" data-onglet="video" hidden class="flex flex-col gap-4 max-w-[560px]">
+        <twig:Typography variant="body-sm" textColor="neutral-500">
+            Lien vers une vidéo de présentation (YouTube, Vimeo…) — enregistré avec la fiche.
+        </twig:Typography>
+        {% set champ_video = medias.gamme == 'lieu' ? form.visibilite.generaleYoutube : form.youtubeUrl %}
+        {{ form_row(champ_video, { attr: champ_video.vars.attr|merge({ form: 'form-fiche' }) }) }}
+    </div>
+
+    {# ---- Supports commerciaux (gammes) : dépôt par le formulaire principal. ---- #}
+    {% if medias.gamme != 'lieu' %}
+        <div data-media-tabs-target="panel" data-onglet="supports" hidden class="flex flex-col gap-4">
+            <twig:Typography variant="body-sm" textColor="neutral-500">
+                Les fichiers déposés ici partent avec « Enregistrer les modifications ».
+            </twig:Typography>
+            {% set champs_depot = ['menus', 'supportsCommerciaux', 'documentTitle', 'documentSource', 'supportTitle', 'supportSource'] %}
+            {% for nom in champs_depot %}
+                {% if form.children[nom] is defined %}
+                    {% set champ = form.children[nom] %}
+                    {{ form_row(champ, { attr: champ.vars.attr|merge({ form: 'form-fiche' }) }) }}
+                {% endif %}
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>

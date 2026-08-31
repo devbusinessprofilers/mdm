@@ -35,7 +35,7 @@ php bin/console app:legacy:import-restaurants
 php bin/console app:legacy:import-photos --seed-only  # 5a. semis du suivi, UNE seule fois
 php bin/console app:legacy:import-photos --shard=0/4  # 5b. ×4 terminaux (0/4 … 3/4), aucun semis
 php bin/console app:legacy:import-photos --retry-errors   # reprise si besoin
-php bin/console app:fiches:conformite-photos --appliquer  # 5c. rattrapage : principales activités/services + rétrogradation des publiées sans les photos requises
+php bin/console app:fiches:conformite-photos --appliquer  # 5c. rattrapage : rétrogradation des publiées sans les photos requises
 php bin/console app:legacy:import-translations        # 6. traductions (dump SQL)
 # 7. Nettoyage : supprimer var/tmp/import/ et le dossier tmp/ du bucket privé
 #    (déposer d'abord le XLSX de l'étape 8 s'il n'y est pas encore)
@@ -51,7 +51,7 @@ run() { docker compose exec -e DATABASE_URL="$DBURL" -e APP_DEBUG=0 php php bin/
 run app:legacy:import-photos --images-dir=/var/legacy-images --dry-run   # contrôle complet sur la copie locale
 ```
 
-Options communes des imports de fiches : `--file`, `--dry-run`, `--limit`, `--from`, `--batch-size`, `--only-syspad`. Statut : publié CSV `true` **et** photos annoncées par photos_json satisfaisant les obligations (minimum du type + photo principale, `ImportPublicationPolicy`) → fiche publiée (`publishForImport`) ; publié CSV `true` sans les photos requises → brouillon, compté « publication différée (photos) » ; sinon brouillon. Les fichiers absents ou invalides découverts par `app:legacy:import-photos` sont rattrapés en fin de pipeline par `app:fiches:conformite-photos` (dry-run sans option, `--appliquer` pour écrire), qui pose aussi la première photo en PHOTO_PRINCIPALE pour les activités/services sans principale puis rétrograde en cours toute fiche publiée non conforme (avec dépublication marketplace). Les valeurs non mappables produisent des **warnings agrégés** (jamais d'échec de ligne) ; seuls un Id syspad ou un nom invalides rejettent une ligne.
+Options communes des imports de fiches : `--file`, `--dry-run`, `--limit`, `--from`, `--batch-size`, `--only-syspad`. Statut : publié CSV `true` **et** photos annoncées par photos_json satisfaisant les obligations (minimum du type, plancher à une photo, `ImportPublicationPolicy` — la principale est la première photo de l'ordre) → fiche publiée (`publishForImport`) ; publié CSV `true` sans les photos requises → brouillon, compté « publication différée (photos) » ; sinon brouillon. Les fichiers absents ou invalides découverts par `app:legacy:import-photos` sont rattrapés en fin de pipeline par `app:fiches:conformite-photos` (dry-run sans option, `--appliquer` pour écrire), qui rétrograde en cours toute fiche publiée non conforme (avec dépublication marketplace). Les valeurs non mappables produisent des **warnings agrégés** (jamais d'échec de ligne) ; seuls un Id syspad ou un nom invalides rejettent une ligne.
 
 ## Mapping Lieu (`LegacyLieuRowMapper`)
 
@@ -154,11 +154,11 @@ importées.
 
 Sources : chemins relatifs du JSON « Photos », fichiers dans `/var/legacy-images`. Original → S3 privé, 7 variantes WebP générées **inline** (`MediaProcessingService`, pas d'outbox) → S3 public. Validations : ≥ 960×480, ≤ 25 Mo, JPEG/PNG/WebP.
 
+La photo principale est la première photo de l'ordre : les master gardent la tête de priorité (positions basses) mais portent une catégorie neutre.
+
 | Catégorie legacy | Usage (fiches Lieu) | Usage (fiches Activité) |
 |---|---|---|
-| master (1ʳᵉ) | PHOTO_PRINCIPALE | PHOTO_PRINCIPALE |
-| master (suivantes) | PHOTO_DIVERSE | PHOTO_DIVERSE |
-| (aucun master) | — | 1ʳᵉ photo → PHOTO_PRINCIPALE (activités/services/restaurants) |
+| master | PHOTO_DIVERSE (en tête de l'ordre) | PHOTO_DIVERSE (en tête de l'ordre) |
 | facade | PHOTO_FACADE | PHOTO_DIVERSE |
 | chambre | PHOTO_CHAMBRE | PHOTO_DIVERSE |
 | restaurant | PHOTO_RESTAURATION | PHOTO_DIVERSE |

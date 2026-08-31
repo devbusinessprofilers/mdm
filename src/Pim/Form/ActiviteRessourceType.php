@@ -55,7 +55,6 @@ final class ActiviteRessourceType extends AbstractType
             ->add('usage', ChoiceType::class, [
                 'label' => 'Catégorie',
                 'choices' => [
-                    'Photo principale' => 'PHOTO_PRINCIPALE',
                     'Photo diverse' => 'PHOTO_DIVERSE',
                 ],
                 'getter' => static fn (

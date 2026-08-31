@@ -44,6 +44,19 @@ enum DocumentUsage: string
         return self::RoomPlan === $this;
     }
 
+    /**
+     * Onglet du volet Médias où le document s'affiche : plans, supports
+     * commerciaux, ou documents administratifs.
+     */
+    public function ongletMedia(): string
+    {
+        return match ($this) {
+            self::RoomPlan, self::GeneralPlan => 'plans',
+            self::CommercialSupport, self::RestaurantMenu => 'supports',
+            default => 'documents',
+        };
+    }
+
     /** @return array<string, self> */
     public static function choices(): array
     {

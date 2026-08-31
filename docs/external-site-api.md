@@ -129,15 +129,19 @@ sur `/referentiel/services/fiche/{ULID}/historique`. La commande `app:services:v
 - `POST /api/v1/lieux/{ULID}/medias/{mediaId}/fichier` : remplacement multipart avec `photo` ;
 - `DELETE /api/v1/lieux/{ULID}/medias/{mediaId}` : suppression.
 
+La photo principale est la première photo de l’ordre (`PUT /medias/ordre`) : il
+n’existe plus d’usage `PHOTO_PRINCIPALE`. Pour compatibilité, un client qui envoie
+encore `usage=PHOTO_PRINCIPALE` (upload ou PATCH) voit sa photo placée en tête de
+l’ordre, avec la catégorie `PHOTO_DIVERSE` à l’upload — cet alias est déprécié.
+
 Les mêmes cinq opérations existent sous `/api/v1/activites/{ULID}/medias`.
-Une Activité accepte de une à dix photos, les usages `PHOTO_PRINCIPALE` et
-`PHOTO_DIVERSE`, et exactement une photo principale avant soumission.
+Une Activité accepte de une à dix photos et l’usage `PHOTO_DIVERSE`.
 
 Elles existent aussi sous `/api/v1/services/{ULID}/medias`, avec la même limite
-de une à dix photos et exactement une photo principale avant soumission.
+de une à dix photos.
 
 Les mêmes opérations existent sous `/api/v1/restaurants/{ULID}/medias`. Les usages
-autorisés sont `PHOTO_PRINCIPALE`, `PHOTO_DIVERSE` et `CONFIG_SALLE_PHOTO`. Une
+autorisés sont `PHOTO_DIVERSE` et `CONFIG_SALLE_PHOTO`. Une
 photo de salle reçoit `salleId`, qui doit désigner une salle du même restaurant.
 
 Chaque mutation requiert également `If-Match`, conserve le statut de la fiche, demande

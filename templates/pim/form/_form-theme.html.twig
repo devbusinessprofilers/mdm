@@ -78,12 +78,16 @@
             :maxFileCount="attr['data-max-files']|default(5)"
             fileMaxSize="{{ attr['data-max-size']|default('5M') }}"
             :disabled="disabled"
+            form="{{ attr.form|default('') }}"
         />
     {%- elseif type in ['hidden', 'file'] -%}
         {#- champs sans composant dédié : rendu Symfony standard -#}
         {{- parent() -}}
     {%- else -%}
         {%- set attrs_entree = { 'type': type == 'text' ? 'text' : type } -%}
+        {#- Un champ rendu hors du <form> (volet Médias) s'y rattache par
+            l'attribut HTML natif `form` (attr: { form: 'form-fiche' }). -#}
+        {%- if attr.form is defined -%}{%- set attrs_entree = attrs_entree|merge({ 'form': attr.form }) -%}{%- endif -%}
         {%- if attr.autocomplete is defined -%}{%- set attrs_entree = attrs_entree|merge({ 'autocomplete': attr.autocomplete }) -%}{%- endif -%}
         {%- if attr.autofocus is defined and attr.autofocus -%}{%- set attrs_entree = attrs_entree|merge({ 'autofocus': 'autofocus' }) -%}{%- endif -%}
         <twig:Form:TextInput

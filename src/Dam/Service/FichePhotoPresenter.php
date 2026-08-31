@@ -8,7 +8,7 @@ use App\Dam\Entity\MediaAsset;
 use App\Dam\Repository\MediaAssetRepository;
 use App\Pim\Entity\Fiche;
 use App\Pim\Entity\Lieu\RessourceLieu;
-use App\Pim\Enum\NatureRessource;
+use App\Pim\Service\PhotoPrincipale;
 use App\Pim\Service\PhotoUsageCatalog;
 use App\Shared\Service\PrivateObjectStorageInterface;
 use League\Flysystem\FilesystemException;
@@ -25,27 +25,8 @@ final readonly class FichePhotoPresenter
     /** @return list<array{resource:RessourceLieu,asset:MediaAsset|null,url:string|null,thumbnail_url:string|null,variants:list<array{name:string,width:int,height:int,url:string|null}>,usage_label:string}> */
     public function photos(Fiche $fiche): array
     {
-        $resources = array_values(
-            array_filter(
-                $fiche->resources()->toArray(),
-                static fn (RessourceLieu $r): bool => NatureRessource::Photo ===
-                    $r->nature(),
-            ),
-        );
-        // La photo principale s'affiche toujours en premier, même si sa
-        // position en base ne la place pas en tête (données historiques).
-        usort(
-            $resources,
-            static fn (RessourceLieu $a, RessourceLieu $b): int => [
-                PhotoUsageCatalog::PRINCIPALE === $a->usage() ? 0 : 1,
-                $a->position(),
-                $a->id(),
-            ] <=> [
-                PhotoUsageCatalog::PRINCIPALE === $b->usage() ? 0 : 1,
-                $b->position(),
-                $b->id(),
-            ],
-        );
+        // Ordre canonique : la première photo est la principale.
+        $resources = PhotoPrincipale::photosTriees($fiche->resources());
         $assets = [];
         foreach (
             $this->assets->findByStringIds(

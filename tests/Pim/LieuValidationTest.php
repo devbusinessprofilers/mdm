@@ -26,17 +26,13 @@ final class LieuValidationTest extends KernelTestCase
             ValidationGroups::DRAFT,
             ValidationGroups::SUBMISSION,
         ]);
-        self::assertGreaterThanOrEqual(3, count($submission));
+        self::assertGreaterThanOrEqual(2, count($submission));
         self::assertStringContainsString(
             'nom du lieu est obligatoire',
             (string) $submission,
         );
         self::assertStringContainsString(
             'entre 4 et 25 photos',
-            (string) $submission,
-        );
-        self::assertStringContainsString(
-            'exactement une photo principale',
             (string) $submission,
         );
     }

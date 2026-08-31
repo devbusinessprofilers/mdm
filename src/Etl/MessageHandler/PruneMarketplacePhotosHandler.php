@@ -113,7 +113,7 @@ final readonly class PruneMarketplacePhotosHandler
         if (
             $result['removed'] + $result['remaining'] > 0
             && MarketplaceSyncStatus::Removed !== $tracked->status()
-            && !$this->photoPolicy->satisfiedByRemote($fiche->type(), $result['remaining'], $result['principaleRemaining'])
+            && !$this->photoPolicy->satisfiedByRemote($fiche->type(), $result['remaining'])
         ) {
             $this->outbox->enqueue(new RemoveFicheFromMarketplace($fiche->idString()));
         }

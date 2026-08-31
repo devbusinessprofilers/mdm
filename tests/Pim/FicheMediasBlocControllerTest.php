@@ -60,6 +60,11 @@ final class FicheMediasBlocControllerTest extends WebTestCase
         $photo->changeNature(NatureRessource::Photo);
         $photo->changeUsage('PHOTO_DIVERSE');
         $lieu->addRessource($photo);
+        $plan = new RessourceLieu();
+        $plan->configureDocument(DocumentUsage::GeneralPlan);
+        $plan->changeDamAssetId((string) new \Symfony\Component\Uid\Ulid());
+        $plan->changeLegende('Plan général');
+        $lieu->addRessource($plan);
         $entityManager->persist($lieu);
 
         $restaurant = new Restaurant();
@@ -68,24 +73,106 @@ final class FicheMediasBlocControllerTest extends WebTestCase
         $entityManager->flush();
         $client->loginUser($user);
 
-        // La page fiche branche le wrapper medias-bloc sur l'URL du bloc.
+        // La page fiche branche le shell des onglets internes et le wrapper
+        // medias-bloc sur l'URL du bloc.
         $client->request('GET', '/referentiel/lieux/fiche/'.$lieu->id().'?section=11');
         self::assertResponseIsSuccessful();
+        self::assertSelectorExists('[data-controller="media-tabs"]');
+        self::assertSelectorExists('button[data-media-tabs-onglet-param="photos"]');
+        self::assertSelectorExists('button[data-media-tabs-onglet-param="video"]:not([disabled])');
+        self::assertSelectorExists('button[data-media-tabs-onglet-param="plans"]:not([disabled])');
+        // Le lien vidéo du Lieu vit dans l'onglet Vidéo, rattaché au
+        // formulaire principal par l'attribut HTML natif form.
+        self::assertSelectorExists('[data-onglet="video"] [form="form-fiche"]');
         self::assertSelectorExists('[data-controller="medias-bloc"]');
         self::assertSelectorExists('[data-medias-bloc-url-value="/referentiel/lieux/fiche/'.$lieu->id().'/medias/bloc"]');
 
-        // L'endpoint lieu rend le bloc complet : galerie pilotée par lieu-media
-        // et vignette de la photo.
+        // L'endpoint lieu rend le bloc complet : galerie pilotée par
+        // lieu-media, panneaux par onglet et documents répartis (le plan
+        // général dans Plans, absent des Documents administratifs).
         $client->request('GET', '/referentiel/lieux/fiche/'.$lieu->id().'/medias/bloc');
         self::assertResponseIsSuccessful();
         self::assertSelectorExists('[data-controller="lieu-media"]');
         self::assertSelectorExists('[data-modal-trigger-button-modal-identifier-value="photo-'.$photo->id().'"]');
+        self::assertSelectorExists('[data-onglet="plans"] [data-modal-trigger-button-modal-identifier-value="document-'.$plan->id().'"]');
+        $documentsAdmin = $client->getCrawler()->filter('[data-onglet="documents"] [data-modal-trigger-button-modal-identifier-value="document-'.$plan->id().'"]');
+        self::assertCount(0, $documentsAdmin);
 
         // L'endpoint gamme rend les deux cartes (photos + documents).
         $client->request('GET', '/referentiel/restaurants/fiche/'.$restaurant->id().'/medias/bloc');
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('section', 'Photos de la fiche');
         self::assertSelectorExists('[data-controller="lieu-media"]');
+    }
+
+    public function testOngletsSansObjetSontGrisesPourUnService(): void
+    {
+        $client = self::createClient();
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $this->connection = self::getContainer()->get(Connection::class);
+        $this->clearTables();
+
+        $user = new User('onglets-service@example.test', ['ROLE_BP_EDITOR']);
+        $user->setPassword('not-used-by-login-user');
+        $entityManager->persist($user);
+        $service = new ServiceEvenementiel();
+        $service->changeLabel('Service des onglets');
+        $entityManager->persist($service);
+        $entityManager->flush();
+        $client->loginUser($user);
+
+        // Section Médias d'un Service : Plans et Documents grisés (aucun
+        // usage documentaire possible), Supports et Vidéo actifs.
+        $client->request('GET', '/referentiel/services/fiche/'.$service->id().'?section=6');
+        self::assertResponseIsSuccessful();
+        self::assertSelectorExists('button[data-media-tabs-onglet-param="plans"][disabled]');
+        self::assertSelectorExists('button[data-media-tabs-onglet-param="documents"][disabled]');
+        self::assertSelectorExists('button[data-media-tabs-onglet-param="supports"]:not([disabled])');
+        self::assertSelectorExists('[data-onglet="video"] [form="form-fiche"]');
+    }
+
+    public function testLeSelectInlineChangeLaCategorieSansToucherLesMetadonnees(): void
+    {
+        $client = self::createClient();
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $this->connection = self::getContainer()->get(Connection::class);
+        $this->clearTables();
+
+        $user = new User('categorie-inline@example.test', ['ROLE_BP_EDITOR']);
+        $user->setPassword('not-used-by-login-user');
+        $entityManager->persist($user);
+        $lieu = new Lieu();
+        $lieu->changeLabel('Manoir des catégories');
+        $photo = new RessourceLieu();
+        $photo->changeDamAssetId('asset-categorie');
+        $photo->changeNature(NatureRessource::Photo);
+        $photo->changeUsage('PHOTO_DIVERSE');
+        $photo->changeLegende('Vue du parc');
+        $lieu->addRessource($photo);
+        $entityManager->persist($lieu);
+        $entityManager->flush();
+        $client->loginUser($user);
+
+        // Le jeton CSRF du bloc médias protège aussi l'endpoint catégorie.
+        $crawler = $client->request('GET', '/referentiel/lieux/fiche/'.$lieu->id().'/medias/bloc');
+        self::assertResponseIsSuccessful();
+        $token = (string) $crawler->filter('[data-lieu-media-token-value]')->attr('data-lieu-media-token-value');
+
+        $client->request('PATCH', '/referentiel/lieux/fiche/'.$lieu->id().'/photos/'.$photo->id().'/categorie', [], [], [
+            'HTTP_X_CSRF_TOKEN' => $token,
+            'CONTENT_TYPE' => 'application/json',
+        ], json_encode(['usage' => 'PHOTO_FACADE'], JSON_THROW_ON_ERROR));
+        self::assertResponseIsSuccessful();
+        self::assertSame('PHOTO_FACADE', $this->connection->fetchOne('SELECT usage_code FROM pim_ressource_lieu'));
+        self::assertSame('Vue du parc', $this->connection->fetchOne('SELECT legende FROM pim_ressource_lieu'));
+
+        // Catégorie inconnue : 422, rien n'est écrit.
+        $client->request('PATCH', '/referentiel/lieux/fiche/'.$lieu->id().'/photos/'.$photo->id().'/categorie', [], [], [
+            'HTTP_X_CSRF_TOKEN' => $token,
+            'CONTENT_TYPE' => 'application/json',
+        ], json_encode(['usage' => 'CATEGORIE_INCONNUE'], JSON_THROW_ON_ERROR));
+        self::assertResponseStatusCodeSame(422);
+        self::assertSame('PHOTO_FACADE', $this->connection->fetchOne('SELECT usage_code FROM pim_ressource_lieu'));
     }
 
     public function testActionsDocumentsRepondentEnJsonQuandAjax(): void

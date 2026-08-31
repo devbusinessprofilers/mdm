@@ -13,7 +13,7 @@ use App\Shared\Outbox\OutboxPublisherInterface;
 
 /**
  * Invariant de publication : une fiche au statut publié doit satisfaire les
- * obligations photos (minimum du type et photo principale). Contrairement à
+ * obligations photos (minimum du type, plancher à une photo). Contrairement à
  * la politique de diffusion, aucune exemption « imagerie legacy » : une fiche
  * sans photo PIM n'est pas conforme. Appliqué à chaque convergence de
  * mutation (IndexFicheHandler) et par la commande de rattrapage

@@ -58,7 +58,7 @@ final class FicheValiderPublierController extends AbstractController
         if ($publiee) {
             $this->addFlash('success', 'Fiche validée et publiée.');
         } else {
-            $this->addFlash('warning', 'Fiche validée, mais non publiée : obligations photos non satisfaites (minimum de photos du type et photo principale).');
+            $this->addFlash('warning', 'Fiche validée, mais non publiée : obligations photos non satisfaites (minimum de photos du type).');
         }
 
         return $retour;

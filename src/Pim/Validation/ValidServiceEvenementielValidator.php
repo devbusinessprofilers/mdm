@@ -122,22 +122,6 @@ final class ValidServiceEvenementielValidator extends ConstraintValidator
                 "ressources",
             );
         }
-        if (
-            count(
-                array_filter(
-                    $photos,
-                    static fn(
-                        RessourceLieu $resource,
-                    ): bool => "PHOTO_PRINCIPALE" === $resource->usage(),
-                ),
-            ) > 1
-        ) {
-            $this->violation(
-                "Un Service ne peut avoir qu’une seule photo principale.",
-                "ressources",
-            );
-        }
-
         if (ValidationGroups::SUBMISSION === $this->context->getGroup()) {
             $this->submission($value, $photos);
         }
@@ -225,27 +209,13 @@ final class ValidServiceEvenementielValidator extends ConstraintValidator
             }
         }
 
-        $minimum = $this->photoObligations->minimum(TypeFiche::ServiceEvenementiel);
+        // La principale étant la première photo de l'ordre, la soumission
+        // exige toujours au moins une photo même si le minimum est surchargé à 0.
+        $minimum = max(1, $this->photoObligations->minimum(TypeFiche::ServiceEvenementiel));
         $maximum = $this->photoObligations->maximum(TypeFiche::ServiceEvenementiel);
         if (count($photos) < $minimum || count($photos) > $maximum) {
             $this->violation(
                 sprintf("Une fiche Service doit contenir entre %d et %d photos.", $minimum, $maximum),
-                "ressources",
-            );
-        }
-        if (
-            1 !==
-            count(
-                array_filter(
-                    $photos,
-                    static fn(
-                        RessourceLieu $resource,
-                    ): bool => "PHOTO_PRINCIPALE" === $resource->usage(),
-                ),
-            )
-        ) {
-            $this->violation(
-                "Une fiche Service doit avoir exactement une photo principale.",
                 "ressources",
             );
         }

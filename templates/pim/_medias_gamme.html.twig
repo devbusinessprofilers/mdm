@@ -1,157 +1,142 @@
-{# Médias d'une fiche de gamme (Restaurant, Activité, Service) — même
-   présentation que la fiche Lieu : vignettes de photos, tuiles de documents
-   et paramètres en modale. Les photos sont déposées par le portail
-   prestataire (API) : la galerie les montre, le dépôt back-office arrivera.
+{# Médias d'une fiche de gamme (Restaurant, Activité, Service), répartis dans
+   les onglets internes du volet Médias (shell mdm/fiche/_medias_onglets) :
+   Photos, Plans, Supports commerciaux. Le dépôt de documents passe par les
+   champs du formulaire principal (panneau statique du shell) ; les plans de
+   salle Restaurant se déposent depuis la matrice des salles.
    Variables : photos (FichePhotoPresenter), documents (ViewBuilder de la
-   gamme + asset), entite_id, download_route. #}
+   gamme + asset + `onglet`), entite_id, download_route, gamme_slug,
+   media_upload_form, media_csrf_token, photo_usages. #}
 
-{# Toute la carte est la zone de dépôt (maquette) : les actions de
-   glisser-déposer vivent sur la section, pas sur une bande dédiée. #}
-<section
-    class="card lieu-media-manager"
-    data-controller="lieu-media"
-    data-lieu-media-upload-url-value="{{ path('app_pim_gamme_photo_upload', {gamme: gamme_slug, id: entite_id}) }}"
-    data-lieu-media-order-url-value="{{ path('app_pim_gamme_photo_order', {gamme: gamme_slug, id: entite_id}) }}"
-    data-lieu-media-modales-url-value="{{ path('app_pim_gamme_photo_modales', {gamme: gamme_slug, id: entite_id}) }}"
-    data-lieu-media-token-value="{{ media_csrf_token }}"
-    data-lieu-media-target="dropzone"
-    data-action="dragover->lieu-media#dragover dragleave->lieu-media#dragleave drop->lieu-media#drop"
->
-    <div class="flex items-center gap-3 pb-3">
-        <div class="flex flex-col">
-            <twig:Typography variant="body-xs" textColor="neutral-500" bold class="uppercase tracking-[0.8px]">DAM</twig:Typography>
-            <twig:Typography variant="heading-3" element="h2" bold>Photos de la fiche</twig:Typography>
+{% macro tuile_document(document) %}
+    <button type="button" title="Modifier les paramètres du document"
+            data-controller="modal-trigger-button"
+            data-modal-trigger-button-modal-identifier-value="document-{{ document.resource.id }}"
+            data-action="modal-trigger-button#open"
+            class="relative w-[250px] h-[170px] shrink-0 box-border flex flex-col items-center justify-center gap-1.5
+                   px-2 rounded-xs overflow-hidden cursor-pointer bg-primary-5 inset-ring-1 inset-ring-neutral-300
+                   hover:inset-ring-primary">
+        <twig:Icon name="file-pdf" class="w-7 h-7 shrink-0 text-primary-3" />
+        <twig:Typography variant="body-xs" bold center class="w-full truncate">
+            {{- document.resource.legende ?: (document.asset ? document.asset.originalFilename : 'Document') -}}
+        </twig:Typography>
+        <twig:Typography variant="body-xs" textColor="neutral-500" center class="w-full truncate">
+            {{ document.asset
+                ? (document.asset.sizeBytes / 1024 / 1024)|number_format(2, ',', ' ') ~ ' Mo'
+                : 'fichier introuvable'
+            }}
+        </twig:Typography>
+    </button>
+{% endmacro %}
+
+{% macro panneau_documents(onglet, titre, description, documents) %}
+    <section class="card" data-media-tabs-target="panel" data-onglet="{{ onglet }}" hidden>
+        <div class="flex items-center gap-3 pb-3">
+            <div class="flex flex-col">
+                <twig:Typography variant="body-xs" textColor="neutral-500" bold class="uppercase tracking-[0.8px]">DAM</twig:Typography>
+                <twig:Typography variant="heading-3" element="h2" bold>{{ titre }}</twig:Typography>
+            </div>
+            <span class="inline-flex"><twig:Tag label="{{ documents|length }}" variant="neutral" size="sm" /></span>
         </div>
-        <span class="inline-flex"><twig:Tag label="{{ photos|length }}" variant="primary-3" size="sm" /></span>
-        <span class="flex-1"></span>
-        <twig:Typography variant="body-xs" textColor="neutral-400">déposées ici ou par le prestataire via le portail</twig:Typography>
-    </div>
-    <twig:Typography variant="body-sm" textColor="neutral-500" element="p" class="pb-3">
-        Déposez une ou plusieurs images n'importe où sur cette carte, glissez les vignettes pour les réordonner
-        — la première est la photo principale — et cliquez sur une photo pour renseigner ses informations
-        (usage, légende, source…).
-    </twig:Typography>
-    {# L'input (sr-only) reste dans la page : la tuile « Ajouter un média »
-       l'ouvre par son libellé, le dépôt se fait sur la carte. #}
-    {{ form_start(media_upload_form) }}
-        {{ form_widget(media_upload_form.photos) }}
-    {{ form_end(media_upload_form) }}
-    <div class="lieu-media-progress" hidden data-lieu-media-target="progress"><span data-lieu-media-target="progressBar"></span></div>
-    <p class="form-error" hidden data-lieu-media-target="error"></p>
-
-    {# Galerie maquette : les vignettes sont les éléments réels — on les
-       réordonne au glisser-déposer, et UN CLIC ouvre les paramètres de la
-       photo en modale (préchargée en arrière-plan, comme le Lieu). #}
-    <div class="flex flex-row flex-wrap gap-4 py-4" data-lieu-media-target="list">
-        {% for photo in photos %}
-            {% set principale = photo.resource.usage == 'PHOTO_PRINCIPALE' %}
-            <button type="button" title="Modifier les paramètres de la photo"
-                    data-lieu-media-target="item" data-id="{{ photo.resource.id }}" draggable="true"
-                    data-controller="modal-trigger-button"
-                    data-modal-trigger-button-modal-identifier-value="photo-{{ photo.resource.id }}"
-                    data-action="modal-trigger-button#open dragstart->lieu-media#dragstart dragover->lieu-media#dragoverItem drop->lieu-media#dropItem"
-                    class="relative w-[152px] h-[104px] shrink-0 flex items-center justify-center rounded-xs
-                           overflow-hidden cursor-pointer bg-primary-5 inset-ring-1
-                           {{ principale ? 'inset-ring-primary' : 'inset-ring-neutral-300' }}">
-                {% if photo.usage_label %}
-                    {# La vraie catégorie de la photo ; la principale garde sa mise en avant. #}
-                    <span class="absolute top-2 left-2 z-1 px-2 py-0.5 rounded-full {{ principale ? 'bg-primary' : 'bg-neutral-100/85' }}">
-                        <twig:Typography variant="body-xs" textColor="{{ principale ? 'neutral-100' : 'neutral-500' }}" bold>{{ photo.usage_label }}</twig:Typography>
-                    </span>
-                {% endif %}
-                {% if photo.thumbnail_url %}
-                    <img src="{{ photo.thumbnail_url }}" alt="{{ photo.resource.legende ?: (photo.asset ? photo.asset.originalFilename : 'Photo') }}"
-                         class="w-full h-full object-cover pointer-events-none" loading="lazy">
-                {% else %}
-                    <twig:Icon name="images" class="w-7 h-7 text-neutral-400" />
-                {% endif %}
-                {% if photo.asset and photo.asset.errorMessage %}
-                    <span class="absolute bottom-2 right-2 z-1 w-[18px] h-[18px] flex items-center justify-center rounded-full bg-error"
-                          title="{{ photo.asset.errorMessage }}">
-                        <twig:Icon name="warning" class="w-3 h-3 text-neutral-100" />
-                    </span>
-                {% endif %}
-            </button>
-        {% endfor %}
-        <label for="{{ media_upload_form.photos.vars.id }}"
-               class="w-[152px] h-[104px] shrink-0 flex flex-col items-center justify-center gap-1.5
-                      rounded-xs cursor-pointer bg-neutral-100 inset-ring-1 inset-ring-primary">
-            <twig:Icon name="plus" class="w-[22px] h-[22px] text-primary" />
-            <twig:Typography variant="body-sm" textColor="primary-3" bold>Ajouter un média</twig:Typography>
-        </label>
-    </div>
-</section>
-
-<section class="card">
-    <div class="flex items-center gap-3 pb-3">
-        <div class="flex flex-col">
-            <twig:Typography variant="body-xs" textColor="neutral-500" bold class="uppercase tracking-[0.8px]">DAM</twig:Typography>
-            <twig:Typography variant="heading-3" element="h2" bold>Documents</twig:Typography>
+        <twig:Typography variant="body-sm" textColor="neutral-500">{{ description }}</twig:Typography>
+        <div class="flex flex-row flex-wrap gap-4 py-4">
+            {% for document in documents %}
+                {{ _self.tuile_document(document) }}
+            {% else %}
+                <twig:Typography variant="body-sm" textColor="neutral-500">Aucun document de ce type sur cette fiche.</twig:Typography>
+            {% endfor %}
         </div>
-        <span class="inline-flex"><twig:Tag label="{{ documents|length }}" variant="neutral" size="sm" /></span>
-    </div>
-    <twig:Typography variant="body-sm" textColor="neutral-500">Les originaux restent privés. Une copie publique
-        n'est créée qu'après validation des droits. Le dépôt se fait par les champs de la section
-        (menus, supports commerciaux).</twig:Typography>
+    </section>
+{% endmacro %}
 
-    {# Même système que le lieu : une tuile par document, le clic ouvre ses paramètres en modale. #}
-    <div class="flex flex-row flex-wrap gap-4 py-4">
-        {% for document in documents %}
-            <button type="button" title="Modifier les paramètres du document"
-                    data-controller="modal-trigger-button"
-                    data-modal-trigger-button-modal-identifier-value="document-{{ document.resource.id }}"
-                    data-action="modal-trigger-button#open"
-                    class="relative w-[152px] h-[104px] shrink-0 box-border flex flex-col items-center justify-center gap-1.5
-                           px-2 rounded-xs overflow-hidden cursor-pointer bg-primary-5 inset-ring-1 inset-ring-neutral-300
-                           hover:inset-ring-primary">
-                <twig:Icon name="file-pdf" class="w-7 h-7 shrink-0 text-primary-3" />
-                <twig:Typography variant="body-xs" bold center class="w-full truncate">
+{# ---- Photos : toute la carte est la zone de dépôt (maquette). ---- #}
+<div data-controller="lieu-media"
+     data-lieu-media-upload-url-value="{{ path('app_pim_gamme_photo_upload', {gamme: gamme_slug, id: entite_id}) }}"
+     data-lieu-media-order-url-value="{{ path('app_pim_gamme_photo_order', {gamme: gamme_slug, id: entite_id}) }}"
+     data-lieu-media-modales-url-value="{{ path('app_pim_gamme_photo_modales', {gamme: gamme_slug, id: entite_id}) }}"
+     data-lieu-media-token-value="{{ media_csrf_token }}">
+
+    <section class="card lieu-media-manager"
+             data-media-tabs-target="panel" data-onglet="photos"
+             data-lieu-media-target="dropzone"
+             data-action="dragover->lieu-media#dragover dragleave->lieu-media#dragleave drop->lieu-media#drop">
+        <div class="flex items-center gap-3 pb-3">
+            <div class="flex flex-col">
+                <twig:Typography variant="body-xs" textColor="neutral-500" bold class="uppercase tracking-[0.8px]">DAM</twig:Typography>
+                <twig:Typography variant="heading-3" element="h2" bold>Photos de la fiche</twig:Typography>
+            </div>
+            <span class="inline-flex"><twig:Tag label="{{ photos|length }}" variant="primary-3" size="sm" /></span>
+            <span class="flex-1"></span>
+            <twig:Typography variant="body-xs" textColor="neutral-400">déposées ici ou par le prestataire via le portail</twig:Typography>
+        </div>
+        <twig:Typography variant="body-sm" textColor="neutral-500" element="p" class="pb-3">
+            Déposez une ou plusieurs images n'importe où sur cette carte, glissez les vignettes pour les
+            réordonner — la première est la photo principale — et choisissez la catégorie de chaque photo
+            sous sa vignette. Au survol d'une vignette : recadrer, informations, supprimer.
+        </twig:Typography>
+        {# L'input (sr-only) reste dans la page : la tuile « Ajouter un média »
+           l'ouvre par son libellé, le dépôt se fait sur la carte. #}
+        {{ form_start(media_upload_form) }}
+            {{ form_widget(media_upload_form.photos) }}
+        {{ form_end(media_upload_form) }}
+        <div class="lieu-media-progress" hidden data-lieu-media-target="progress"><span data-lieu-media-target="progressBar"></span></div>
+        <p class="form-error" hidden data-lieu-media-target="error"></p>
+
+        {% include 'pim/_medias_galerie_photos.html.twig' with {
+            photos: photos,
+            media_upload_form: media_upload_form,
+            photo_usages: photo_usages,
+            salles: {},
+            routes: { categorie: 'app_pim_gamme_photo_categorie', delete: 'app_pim_gamme_photo_delete' },
+            route_params: { gamme: gamme_slug, id: entite_id },
+        } only %}
+    </section>
+</div>
+
+{# ---- Documents, répartis par onglet maquette (dépôt par le formulaire
+       principal — panneau statique du shell — ou la matrice des salles). ---- #}
+{{ _self.panneau_documents('plans', 'Plans',
+    'Plans de salle déposés depuis la matrice des salles. Les originaux restent privés, une copie publique n’est créée qu’après validation des droits.',
+    documents|filter(d => d.onglet == 'plans')) }}
+{{ _self.panneau_documents('supports', 'Supports commerciaux',
+    'Menus et supports de présentation. Les originaux restent privés, une copie publique n’est créée qu’après validation des droits. Le dépôt se fait par les champs ci-dessous.',
+    documents|filter(d => d.onglet == 'supports')) }}
+{{ _self.panneau_documents('documents', 'Documents administratifs',
+    'Pièces administratives de la fiche — toujours privées.',
+    documents|filter(d => d.onglet == 'documents')) }}
+
+{# Paramètres de chaque document : modales rendues avec le bloc, quel que
+   soit l'onglet actif. #}
+{% for document in documents %}
+    <twig:Modal identifier="document-{{ document.resource.id }}">
+        <div class="flex flex-col gap-4 w-[min(560px,80vw)]">
+            <div class="flex items-center gap-3">
+                <twig:Typography variant="heading-3" bold class="grow" ellipsis>
                     {{- document.resource.legende ?: (document.asset ? document.asset.originalFilename : 'Document') -}}
                 </twig:Typography>
-                <twig:Typography variant="body-xs" textColor="neutral-500" center class="w-full truncate">
-                    {{ document.asset
-                        ? (document.asset.sizeBytes / 1024 / 1024)|number_format(2, ',', ' ') ~ ' Mo'
-                        : 'fichier introuvable'
-                    }}
-                </twig:Typography>
-            </button>
-        {% else %}
-            <twig:Typography variant="body-sm" textColor="neutral-500">Aucun document sur cette fiche.</twig:Typography>
-        {% endfor %}
-    </div>
-
-    {% for document in documents %}
-        <twig:Modal identifier="document-{{ document.resource.id }}">
-            <div class="flex flex-col gap-4 w-[min(560px,80vw)]">
-                <div class="flex items-center gap-3">
-                    <twig:Typography variant="heading-3" bold class="grow" ellipsis>
-                        {{- document.resource.legende ?: (document.asset ? document.asset.originalFilename : 'Document') -}}
-                    </twig:Typography>
-                    <span class="inline-flex shrink-0"><twig:Tag label="{{ document.resource.publicationStatus ? document.resource.publicationStatus.value : 'privé' }}" variant="neutral" size="sm" /></span>
-                </div>
-                {{ form_start(document.metadata_form, {attr: {class: 'flex flex-col gap-3'}}) }}
-                    {% for champ in document.metadata_form.children|filter(c => 'submit' not in c.vars.block_prefixes and 'hidden' not in c.vars.block_prefixes) %}
-                        {{ form_row(champ) }}
-                    {% endfor %}
-                    <div class="flex justify-end pt-1">{{ form_widget(document.metadata_form.submit, {attr: {'data-full': false, 'data-size': 'md'}}) }}</div>
-                {{ form_end(document.metadata_form) }}
-                {{ form_start(document.replace_form, {attr: {class: 'flex flex-wrap items-end gap-3'}}) }}
-                    <div class="grow">{{ form_row(document.replace_form.document) }}</div>
-                    {{ form_widget(document.replace_form.submit, {attr: {'data-full': false, 'data-size': 'md', 'data-variant': 'outline'}}) }}
-                {{ form_end(document.replace_form) }}
-                <p>
-                    <a href="{{ path(download_route, {id: entite_id, resourceId: document.resource.id}) }}" class="hover:underline">
-                        <twig:Typography variant="body-sm" textColor="primary-3" bold element="span">Télécharger l'original</twig:Typography>
-                    </a>
-                </p>
-                <div class="flex flex-wrap items-center gap-3 pt-2 border-t border-neutral-200">
-                    {% if is_granted('ROLE_BP_VALIDATOR') %}
-                        {{ form_start(document.publication_form) }}{{ form_widget(document.publication_form.submit, {attr: {'data-full': false, 'data-size': 'sm'}}) }}{{ form_end(document.publication_form) }}
-                    {% endif %}
-                    <span class="flex-1"></span>
-                    <span class="[&_button]:bg-error! [&_button_span]:text-neutral-100!">{{ form_start(document.delete_form) }}{{ form_widget(document.delete_form.submit, {attr: {'data-full': false, 'data-size': 'sm'}}) }}{{ form_end(document.delete_form) }}</span>
-                </div>
+                <span class="inline-flex shrink-0"><twig:Tag label="{{ document.resource.publicationStatus ? document.resource.publicationStatus.value : 'privé' }}" variant="neutral" size="sm" /></span>
             </div>
-        </twig:Modal>
-    {% endfor %}
-</section>
+            {{ form_start(document.metadata_form, {attr: {class: 'flex flex-col gap-3'}}) }}
+                {% for champ in document.metadata_form.children|filter(c => 'submit' not in c.vars.block_prefixes and 'hidden' not in c.vars.block_prefixes) %}
+                    {{ form_row(champ) }}
+                {% endfor %}
+                <div class="flex justify-end pt-1">{{ form_widget(document.metadata_form.submit, {attr: {'data-full': false, 'data-size': 'md'}}) }}</div>
+            {{ form_end(document.metadata_form) }}
+            {{ form_start(document.replace_form, {attr: {class: 'flex flex-wrap items-end gap-3'}}) }}
+                <div class="grow">{{ form_row(document.replace_form.document) }}</div>
+                {{ form_widget(document.replace_form.submit, {attr: {'data-full': false, 'data-size': 'md', 'data-variant': 'outline'}}) }}
+            {{ form_end(document.replace_form) }}
+            <p>
+                <a href="{{ path(download_route, {id: entite_id, resourceId: document.resource.id}) }}" class="hover:underline">
+                    <twig:Typography variant="body-sm" textColor="primary-3" bold element="span">Télécharger l'original</twig:Typography>
+                </a>
+            </p>
+            <div class="flex flex-wrap items-center gap-3 pt-2 border-t border-neutral-200">
+                {% if is_granted('ROLE_BP_VALIDATOR') %}
+                    {{ form_start(document.publication_form) }}{{ form_widget(document.publication_form.submit, {attr: {'data-full': false, 'data-size': 'sm'}}) }}{{ form_end(document.publication_form) }}
+                {% endif %}
+                <span class="flex-1"></span>
+                <span class="[&_button]:bg-error! [&_button_span]:text-neutral-100!">{{ form_start(document.delete_form) }}{{ form_widget(document.delete_form.submit, {attr: {'data-full': false, 'data-size': 'sm'}}) }}{{ form_end(document.delete_form) }}</span>
+            </div>
+        </div>
+    </twig:Modal>
+{% endfor %}

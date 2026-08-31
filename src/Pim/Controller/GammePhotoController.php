@@ -110,6 +110,34 @@ final class GammePhotoController extends AbstractController
         }
     }
 
+    /**
+     * Select de catégorie inline de la galerie : seule la catégorie change,
+     * les autres métadonnées (légende, source, crop…) restent intactes.
+     */
+    #[Route('/photos/{resourceId}/categorie', name: 'categorie', methods: ['PATCH'])]
+    public function categorie(Request $request, string $gamme, string $id, string $resourceId, GammeEntiteResolver $resolver, LieuMediaCsrfGuard $csrf, RessourceLieuRepository $resources, LieuPhotoManager $manager, InternalFicheMutationPolicy $mutationPolicy): JsonResponse
+    {
+        $entite = $resolver->resolve($gamme, $id);
+        if (null === $entite) {
+            throw $this->createNotFoundException('Fiche introuvable.');
+        }
+        $this->denyAccessUnlessGranted(FicheVoter::EDIT, $entite->fiche());
+        $csrf->assertValid($entite, (string) $request->headers->get('X-CSRF-TOKEN', $request->request->getString('_token')));
+        $resource = $resources->findPhotoForFiche($entite->fiche(), $resourceId);
+        if (null === $resource) {
+            throw $this->createNotFoundException('Photo introuvable pour cette fiche.');
+        }
+        try {
+            $mutationPolicy->execute($entite->fiche(), static function () use ($manager, $resource, $entite, $request): void {
+                $manager->changeCategorie($resource, $entite, (string) $request->getPayload()->get('usage', $resource->usage()));
+            });
+
+            return $this->json(['updated' => true]);
+        } catch (\DomainException $exception) {
+            return $this->json(['error' => $exception->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+    }
+
     #[Route('/photos/{resourceId}/remplacer', name: 'replace', methods: ['POST'])]
     public function replace(Request $request, string $gamme, string $id, string $resourceId, GammeEntiteResolver $resolver, LieuMediaCsrfGuard $csrf, RessourceLieuRepository $resources, LieuPhotoManager $manager, InternalFicheMutationPolicy $mutationPolicy): JsonResponse
     {

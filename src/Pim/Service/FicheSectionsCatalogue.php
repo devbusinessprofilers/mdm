@@ -157,18 +157,22 @@ final class FicheSectionsCatalogue
                 'groupe' => 'ma_fiche',
             ],
             [
+                // Le lien vidéo (visibilite.generaleYoutube) est rendu dans
+                // l'onglet interne Vidéo du volet (shell _medias_onglets),
+                // rattaché au formulaire principal par form="form-fiche".
                 'titre' => 'Médias',
                 'champs' => [],
-                'proprietes' => ['ressources'],
+                'proprietes' => ['ressources', 'generaleYoutube'],
                 'blocs' => ['medias'],
                 'groupe' => 'ma_fiche',
             ],
             [
                 // Formules maquette (désactivées, pas d'entité back) + les
                 // réglages réels de visibilité et les sites de diffusion.
+                // Feuilles pointées : generaleYoutube vit dans Médias › Vidéo.
                 'titre' => 'Booster ma visibilité',
-                'champs' => ['visibilite'],
-                'proprietes' => array_keys(LieuFormCatalog::visibility()),
+                'champs' => ['visibilite.miceStatut', 'visibilite.afficherContact', 'visibilite.modePaiementCarteListe'],
+                'proprietes' => ['miceStatut', 'afficherContact', 'modePaiementCarteListe'],
                 'blocs' => ['formules', 'sites'],
                 'groupe' => 'ma_fiche',
             ],
@@ -256,16 +260,20 @@ final class FicheSectionsCatalogue
                 'groupe' => 'ma_fiche',
             ],
             [
+                // Champs de dépôt (menus, supports, titre/source) et lien
+                // vidéo rendus dans les onglets internes du volet (shell
+                // _medias_onglets), rattachés au formulaire principal par
+                // form="form-fiche".
                 'titre' => 'Médias & menus',
-                'champs' => ['menus', 'supportsCommerciaux', 'documentTitle', 'documentSource'],
-                'proprietes' => ['ressources', 'menus'],
+                'champs' => [],
+                'proprietes' => ['ressources', 'menus', 'youtubeUrl'],
                 'blocs' => ['medias'],
                 'groupe' => 'ma_fiche',
             ],
             [
                 'titre' => 'Booster ma visibilité',
-                'champs' => ['youtubeUrl'],
-                'proprietes' => ['youtubeUrl'],
+                'champs' => [],
+                'proprietes' => [],
                 'blocs' => ['formules', 'sites'],
                 'groupe' => 'ma_fiche',
             ],
@@ -340,16 +348,18 @@ final class FicheSectionsCatalogue
                 'groupe' => 'ma_fiche',
             ],
             [
+                // Champs de dépôt et lien vidéo rendus dans les onglets
+                // internes du volet (shell _medias_onglets).
                 'titre' => 'Médias',
-                'champs' => ['supportsCommerciaux', 'supportTitle', 'supportSource'],
-                'proprietes' => ['ressources'],
+                'champs' => [],
+                'proprietes' => ['ressources', 'youtubeUrl'],
                 'blocs' => ['medias'],
                 'groupe' => 'ma_fiche',
             ],
             [
                 'titre' => 'Booster ma visibilité',
-                'champs' => ['youtubeUrl'],
-                'proprietes' => ['youtubeUrl'],
+                'champs' => [],
+                'proprietes' => [],
                 'blocs' => ['formules', 'sites'],
                 'groupe' => 'ma_fiche',
             ],
@@ -417,16 +427,18 @@ final class FicheSectionsCatalogue
                 'groupe' => 'ma_fiche',
             ],
             [
+                // Champs de dépôt et lien vidéo rendus dans les onglets
+                // internes du volet (shell _medias_onglets).
                 'titre' => 'Médias',
-                'champs' => ['supportsCommerciaux', 'supportTitle', 'supportSource'],
-                'proprietes' => ['ressources'],
+                'champs' => [],
+                'proprietes' => ['ressources', 'youtubeUrl'],
                 'blocs' => ['medias'],
                 'groupe' => 'ma_fiche',
             ],
             [
                 'titre' => 'Booster ma visibilité',
-                'champs' => ['youtubeUrl'],
-                'proprietes' => ['youtubeUrl'],
+                'champs' => [],
+                'proprietes' => [],
                 'blocs' => ['formules', 'sites'],
                 'groupe' => 'ma_fiche',
             ],

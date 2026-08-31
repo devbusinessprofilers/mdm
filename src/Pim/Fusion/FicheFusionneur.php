@@ -186,12 +186,9 @@ final readonly class FicheFusionneur
     {
         $presents = [];
         $position = -1;
-        $principalePresente = false;
         foreach ($survivante->resources() as $resource) {
             $presents[$resource->damAssetId().'|'.$resource->nature()->value] = true;
             $position = max($position, $resource->position());
-            $principalePresente = $principalePresente
-                || (NatureRessource::Photo === $resource->nature() && PhotoUsageCatalog::PRINCIPALE === $resource->usage());
         }
 
         foreach ($absorbee->resources() as $resource) {
@@ -204,13 +201,9 @@ final readonly class FicheFusionneur
             $clone = new RessourceLieu();
             $clone->changeDamAssetId($resource->damAssetId());
             $clone->changeNature($resource->nature());
-            // Deux photos principales sont impossibles : celle de la
-            // survivante prime, la clonée redescend en catégorie neutre.
-            $usage = $resource->usage();
-            if (NatureRessource::Photo === $resource->nature() && PhotoUsageCatalog::PRINCIPALE === $usage && $principalePresente) {
-                $usage = PhotoUsageCatalog::DEFAUT;
-            }
-            $clone->changeUsage($usage);
+            // Les clones sont ajoutés en fin de position : la principale de la
+            // survivante (première photo de l'ordre) prime naturellement.
+            $clone->changeUsage($resource->usage());
             $clone->changeLegende($resource->legende());
             $clone->changeSource($resource->source());
             $clone->changeKeywords($resource->keywords());

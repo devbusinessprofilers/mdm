@@ -166,21 +166,6 @@ final class ValidActiviteValidator extends ConstraintValidator
                 'ressources',
             );
         }
-        if (
-            count(
-                array_filter(
-                    $photos,
-                    static fn (
-                        RessourceLieu $resource,
-                    ): bool => 'PHOTO_PRINCIPALE' === $resource->usage(),
-                ),
-            ) > 1
-        ) {
-            $this->violation(
-                'Une activité ne peut avoir qu’une seule photo principale.',
-                'ressources',
-            );
-        }
         foreach ($value->sousThematiques() as $sousThematique) {
             try {
                 $parent = ActiviteLovCatalog::parentOf($sousThematique);
@@ -300,27 +285,13 @@ final class ValidActiviteValidator extends ConstraintValidator
                 ): bool => NatureRessource::Photo === $resource->nature(),
             ),
         );
-        $minimum = $this->photoObligations->minimum(TypeFiche::Activite);
+        // La principale étant la première photo de l'ordre, la soumission
+        // exige toujours au moins une photo même si le minimum est surchargé à 0.
+        $minimum = max(1, $this->photoObligations->minimum(TypeFiche::Activite));
         $maximum = $this->photoObligations->maximum(TypeFiche::Activite);
         if (count($photos) < $minimum || count($photos) > $maximum) {
             $this->violation(
                 sprintf('La soumission exige entre %d et %d photos.', $minimum, $maximum),
-                'ressources',
-            );
-        }
-        if (
-            1 !==
-            count(
-                array_filter(
-                    $photos,
-                    static fn (
-                        RessourceLieu $resource,
-                    ): bool => 'PHOTO_PRINCIPALE' === $resource->usage(),
-                ),
-            )
-        ) {
-            $this->violation(
-                'La soumission exige exactement une photo principale.',
                 'ressources',
             );
         }

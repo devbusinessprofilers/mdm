@@ -34,5 +34,8 @@ class Dropzone
 
     public ?int $imageMinHeight = null;
 
+    /** Attribut HTML `form` de l'input : rattache le champ à un formulaire rendu ailleurs. */
+    public string $form = '';
+
     public string $class = '';
 }

@@ -130,7 +130,7 @@ final readonly class ReferentielActionGroupee
                 }
                 // Publication de masse (publier une fiche validée, republier une
                 // fiche archivée) : une fiche qui ne satisfait pas les obligations
-                // photos (minimum du type + photo principale) n'est pas publiée,
+                // photos (minimum du type, plancher à une photo) n'est pas publiée,
                 // comme à l'import et au fil de l'eau (garde photos).
                 if (in_array($action, ['publier', 'republier'], true) && !$this->photoGuard->compliant($fiche)) {
                     ++$ignorees;

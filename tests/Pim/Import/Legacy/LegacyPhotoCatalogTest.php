@@ -21,9 +21,11 @@ final class LegacyPhotoCatalogTest extends TestCase
         $result = $this->catalog->entries($this->photosJson(), 'Hôtel');
 
         self::assertSame([], $result['skipped']);
+        // La principale est la première photo de l'ordre : master garde la
+        // tête de priorité mais porte une catégorie neutre.
         $usages = array_map(static fn (array $entry): string => $entry['usage'], $result['entries']);
         self::assertSame(
-            ['PHOTO_PRINCIPALE', 'PHOTO_DIVERSE', 'PHOTO_FACADE', 'PHOTO_CHAMBRE', 'PHOTO_RESTAURATION', 'PHOTO_DIVERSE', 'PHOTO_DIVERSE'],
+            ['PHOTO_DIVERSE', 'PHOTO_DIVERSE', 'PHOTO_FACADE', 'PHOTO_CHAMBRE', 'PHOTO_RESTAURATION', 'PHOTO_DIVERSE', 'PHOTO_DIVERSE'],
             $usages,
         );
         self::assertSame(range(0, 6), array_map(static fn (array $entry): int => $entry['position'], $result['entries']));
@@ -31,15 +33,15 @@ final class LegacyPhotoCatalogTest extends TestCase
         self::assertSame('x/divers/1.jpg', $result['entries'][6]['path']);
     }
 
-    public function testActiviteUsesOnlyPrincipaleAndDiverse(): void
+    public function testActiviteUsesOnlyDiverse(): void
     {
         $result = $this->catalog->entries($this->photosJson(), 'Idée');
 
         $usages = array_unique(array_map(static fn (array $entry): string => $entry['usage'], $result['entries']));
-        sort($usages);
-        self::assertSame(['PHOTO_DIVERSE', 'PHOTO_PRINCIPALE'], $usages);
-        self::assertSame('PHOTO_PRINCIPALE', $result['entries'][0]['usage']);
-        self::assertCount(1, array_filter($result['entries'], static fn (array $entry): bool => 'PHOTO_PRINCIPALE' === $entry['usage']));
+        self::assertSame(['PHOTO_DIVERSE'], $usages);
+        // La priorité master est conservée : la première photo (principale
+        // dérivée de l'ordre) reste celle de la catégorie master.
+        self::assertSame('x/master/1.jpg', $result['entries'][0]['path']);
     }
 
     public function testActiviteIsCappedAtTenPhotos(): void
@@ -54,8 +56,7 @@ final class LegacyPhotoCatalogTest extends TestCase
     {
         $result = $this->catalog->entries($this->photosJson(), 'Prestataires de service');
         $usages = array_unique(array_map(static fn (array $entry): string => $entry['usage'], $result['entries']));
-        sort($usages);
-        self::assertSame(['PHOTO_DIVERSE', 'PHOTO_PRINCIPALE'], $usages);
+        self::assertSame(['PHOTO_DIVERSE'], $usages);
 
         $paths = array_map(static fn (int $index): string => sprintf('x/divers/%d.jpg', $index), range(1, 12));
         $capped = $this->catalog->entries(json_encode(['divers' => $paths], JSON_THROW_ON_ERROR), 'Prestataires de service');
@@ -91,27 +92,16 @@ final class LegacyPhotoCatalogTest extends TestCase
         self::assertSame([], $this->catalog->entries('pas du json', 'Lieu')['entries']);
     }
 
-    public function testFirstPhotoBecomesPrincipaleForFicheGammesWithoutMaster(): void
+    public function testWithoutMasterTheFirstPriorityCategoryLeadsTheOrder(): void
     {
-        $json = json_encode(['divers' => ['x/divers/1.jpg', 'x/divers/2.jpg']], JSON_THROW_ON_ERROR);
-        foreach (['Idée', 'Prestataires de service', 'Restaurant'] as $gamme) {
-            $result = $this->catalog->entries($json, $gamme);
-            $usages = array_map(static fn (array $entry): string => $entry['usage'], $result['entries']);
-            self::assertSame(['PHOTO_PRINCIPALE', 'PHOTO_DIVERSE'], $usages, $gamme);
-        }
-    }
-
-    public function testFirstPhotoBecomesPrincipaleForLieuWithoutMaster(): void
-    {
-        // Sans master, la première photo (la façade, prioritaire) devient la
-        // principale — même règle que les autres gammes.
+        // La principale est la première photo de l'ordre : sans master, la
+        // façade (prioritaire pour les Lieux) prend la position 0.
         $json = json_encode([
             'divers' => ['x/divers/1.jpg'],
             'facade' => ['x/facade/1.jpg'],
         ], JSON_THROW_ON_ERROR);
         $entries = $this->catalog->entries($json, 'Lieu')['entries'];
-        $usages = array_map(static fn (array $entry): string => $entry['usage'], $entries);
-        self::assertSame(['PHOTO_PRINCIPALE', 'PHOTO_DIVERSE'], $usages);
         self::assertSame('x/facade/1.jpg', $entries[0]['path']);
+        self::assertSame(0, $entries[0]['position']);
     }
 }

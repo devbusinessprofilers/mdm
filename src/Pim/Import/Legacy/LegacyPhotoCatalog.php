@@ -20,9 +20,13 @@ final class LegacyPhotoCatalog
     public const GAMME_SERVICE = 'Prestataires de service';
     public const GAMME_RESTAURANT = 'Restaurant';
 
-    /** Ordre de priorité des catégories et usage PIM associé (fiches Lieu). */
+    /**
+     * Ordre de priorité des catégories et usage PIM associé (fiches Lieu).
+     * La principale est la première photo de l'ordre : master garde la tête
+     * de priorité (position 0) mais porte une catégorie neutre.
+     */
     private const LIEU_USAGES = [
-        'master' => 'PHOTO_PRINCIPALE',
+        'master' => 'PHOTO_DIVERSE',
         'facade' => 'PHOTO_FACADE',
         'chambre' => 'PHOTO_CHAMBRE',
         'restaurant' => 'PHOTO_RESTAURATION',
@@ -30,9 +34,9 @@ final class LegacyPhotoCatalog
         'divers' => 'PHOTO_DIVERSE',
     ];
 
-    /** Les activités et services n'acceptent que PHOTO_PRINCIPALE / PHOTO_DIVERSE. */
+    /** Les activités et services n'acceptent que PHOTO_DIVERSE. */
     private const FICHE_USAGES = [
-        'master' => 'PHOTO_PRINCIPALE',
+        'master' => 'PHOTO_DIVERSE',
         'facade' => 'PHOTO_DIVERSE',
         'chambre' => 'PHOTO_DIVERSE',
         'restaurant' => 'PHOTO_DIVERSE',
@@ -58,7 +62,6 @@ final class LegacyPhotoCatalog
         }
         $ordered = [];
         $seen = [];
-        $isFirstMaster = true;
         foreach ($usages as $category => $usage) {
             $paths = $decoded[$category] ?? [];
             if (!is_array($paths)) {
@@ -73,24 +76,8 @@ final class LegacyPhotoCatalog
                     continue;
                 }
                 $seen[$path] = true;
-                if ('master' === $category) {
-                    // Une seule PHOTO_PRINCIPALE autorisée par fiche.
-                    $ordered[] = ['path' => $path, 'category' => $category, 'usage' => $isFirstMaster ? 'PHOTO_PRINCIPALE' : 'PHOTO_DIVERSE'];
-                    $isFirstMaster = false;
-                } else {
-                    $ordered[] = ['path' => $path, 'category' => $category, 'usage' => $usage];
-                }
+                $ordered[] = ['path' => $path, 'category' => $category, 'usage' => $usage];
             }
-        }
-        // Les exports legacy n'ont pas toujours de catégorie master, Lieux
-        // compris — la première photo (façade en tête de priorité pour les
-        // Lieux) devient alors la principale, exigée par la soumission et la
-        // diffusion marketplace.
-        if (
-            [] !== $ordered
-            && !in_array('PHOTO_PRINCIPALE', array_column($ordered, 'usage'), true)
-        ) {
-            $ordered[0]['usage'] = 'PHOTO_PRINCIPALE';
         }
         $entries = [];
         $skipped = [];

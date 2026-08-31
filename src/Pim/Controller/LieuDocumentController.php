@@ -7,6 +7,7 @@ namespace App\Pim\Controller;
 use App\Account\Security\FicheVoter;
 use App\Account\Service\CurrentActorProvider;
 use App\Dam\Enum\DocumentAccess;
+use App\Dam\Enum\DocumentUsage;
 use App\Dam\Repository\MediaAssetRepository;
 use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Form\LieuDocumentMetadataType;
@@ -32,7 +33,22 @@ final class LieuDocumentController extends AbstractController
     public function upload(Request $request, Lieu $lieu, FormFactoryInterface $forms, LieuDocumentManager $manager, CurrentActorProvider $actor, MediasBlocReponse $reponse): Response
     {
         $this->denyAccessUnlessGranted(FicheVoter::EDIT, $lieu->fiche());
-        $form = $forms->createNamed('document_upload', LieuDocumentUploadType::class, null, ['salles' => $lieu->salles()->toArray()]);
+        // Un formulaire de dépôt par onglet du volet Médias (usages filtrés),
+        // plus le nom historique employé par la matrice des salles.
+        $usagesParNom = [
+            'document_upload_plans' => [DocumentUsage::RoomPlan, DocumentUsage::GeneralPlan],
+            'document_upload_supports' => [DocumentUsage::CommercialSupport],
+            'document_upload_documents' => [DocumentUsage::RseEvidence, DocumentUsage::Urssaf, DocumentUsage::LiabilityInsurance, DocumentUsage::BankDetails, DocumentUsage::FactoringBankDetails, DocumentUsage::Terms, DocumentUsage::Convention],
+            'document_upload' => [],
+        ];
+        $nom = 'document_upload';
+        foreach (array_keys($usagesParNom) as $candidat) {
+            if ($request->request->has($candidat) || $request->files->has($candidat)) {
+                $nom = $candidat;
+                break;
+            }
+        }
+        $form = $forms->createNamed($nom, LieuDocumentUploadType::class, null, ['salles' => $lieu->salles()->toArray(), 'usages' => $usagesParNom[$nom]]);
         $form->handleRequest($request);
         if (!$form->isSubmitted() || !$form->isValid()) {
             return $reponse->repondre($request, $lieu->fiche(), 'Le formulaire documentaire est invalide.', '');
@@ -46,7 +62,7 @@ final class LieuDocumentController extends AbstractController
         $succes = '';
         try {
             /** @var array{usage: \App\Dam\Enum\DocumentUsage, salle: \App\Pim\Entity\Lieu\Salle|null, title: string|null, source: string|null} $data */
-            $data = $form->getData();
+            $data = $form->getData() + ['salle' => null];
             $count = $manager->upload($lieu, $files, $data, $actor->id());
             $succes = $count.' document(s) ajouté(s).';
         } catch (\DomainException|\App\Dam\Service\DocumentUploadException $exception) {

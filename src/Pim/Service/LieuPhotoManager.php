@@ -77,19 +77,39 @@ final readonly class LieuPhotoManager
         }
         $byId = [];
         foreach ($photos as $photo) { $byId[$photo->id()] = $photo; }
+        // La principale est la première photo de l'ordre : réordonner suffit.
         foreach ($ids as $position => $id) { $byId[$id]->changePosition($position); }
-        // Mettre une photo en premier la désigne photo principale : l'ancienne
-        // principale redescend en catégorie neutre, l'invariant « une seule
-        // principale » est préservé.
-        if ([] !== $ids && PhotoUsageCatalog::PRINCIPALE !== $byId[$ids[0]]->usage()) {
-            foreach ($photos as $photo) {
-                if (PhotoUsageCatalog::PRINCIPALE === $photo->usage()) { $photo->changeUsage(PhotoUsageCatalog::DEFAUT); }
-            }
-            $byId[$ids[0]]->changeUsage(PhotoUsageCatalog::PRINCIPALE);
-        }
         $this->changed($lieu);
 
         return count($ids);
+    }
+
+    /**
+     * Change la catégorie de la photo (select inline de la galerie) et, pour
+     * une photo de salle, la salle rattachée — sans toucher aux autres
+     * métadonnées. Sans salle transmise, la salle courante est conservée,
+     * sinon la première salle du lieu sert de rattachement par défaut (la
+     * barre posée sur la photo permet ensuite d'en changer).
+     */
+    public function changeCategorie(RessourceLieu $resource, Lieu|Restaurant|Activite|ServiceEvenementiel $lieu, string $usage, ?string $salleId = null): void
+    {
+        if (!isset(PhotoUsageCatalog::LABELS[$usage])) { throw new \DomainException('Catégorie de photo invalide.'); }
+        if ('CONFIG_PHOTO_SALLE' === $usage) {
+            if (!$lieu instanceof Lieu) { throw new \DomainException('Les photos de salle sont réservées aux fiches Lieu.'); }
+            $salle = null;
+            if (null !== $salleId && '' !== $salleId) {
+                foreach ($lieu->salles() as $candidate) { if ($candidate->id() === $salleId) { $salle = $candidate; break; } }
+                if (null === $salle) { throw new \DomainException("La salle n'appartient pas à ce lieu."); }
+            } else {
+                $salle = $resource->salle() ?? ($lieu->salles()->first() ?: null);
+            }
+            if (null === $salle) { throw new \DomainException('Créez d’abord une salle de réunion pour y rattacher cette photo.'); }
+            $resource->changeSalle($salle);
+        } else {
+            $resource->changeSalle(null);
+        }
+        $resource->changeUsage($usage);
+        $this->changed($lieu);
     }
 
     /** @param array<string, mixed> $data */
@@ -97,13 +117,6 @@ final readonly class LieuPhotoManager
     {
         $usage = (string) ($data['usage'] ?? '');
         if (!isset(PhotoUsageCatalog::LABELS[$usage])) { throw new \DomainException('Catégorie de photo invalide.'); }
-        if (PhotoUsageCatalog::PRINCIPALE === $usage) {
-            // Désigner une nouvelle principale rétrograde l'ancienne en
-            // catégorie neutre : une seule principale par fiche, sans erreur.
-            foreach ($this->photos($lieu) as $other) {
-                if ($other !== $resource && PhotoUsageCatalog::PRINCIPALE === $other->usage()) { $other->changeUsage(PhotoUsageCatalog::DEFAUT); }
-            }
-        }
         $salle = null;
         $salleId = (string) ($data['salle_id'] ?? '');
         if (!$lieu instanceof Lieu && ('' !== $salleId || 'CONFIG_PHOTO_SALLE' === $usage)) {

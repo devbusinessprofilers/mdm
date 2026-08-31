@@ -505,14 +505,17 @@ final readonly class FicheEditeurEcran
             return [
                 'gamme' => 'lieu',
                 'bloc_url' => $this->urls->generate('app_pim_lieu_medias_bloc', ['id' => $entite->id()]),
+                'onglets_actifs' => self::ongletsMediasActifs(TypeFiche::Lieu),
                 'vars' => [
                     'lieu' => $entite,
                     'creation' => false,
                     'photos' => $vue['photos'],
                     'documents' => $vue['documents'],
-                    'document_upload_form' => $vue['document_upload_form'],
+                    'salles' => $vue['salles'],
+                    'document_upload_forms' => $vue['document_upload_forms'],
                     'media_upload_form' => $vue['media_upload_form'],
                     'media_csrf_token' => $vue['media_csrf_token'],
+                    'photo_usages' => self::photoUsagesInline(),
                 ],
             ];
         }
@@ -533,7 +536,10 @@ final readonly class FicheEditeurEcran
         }
         $documents = [];
         foreach ($documentsVue as $document) {
-            $documents[] = $document + ['asset' => $assets[$document['resource']->damAssetId()] ?? null];
+            $documents[] = $document + [
+                'asset' => $assets[$document['resource']->damAssetId()] ?? null,
+                'onglet' => $document['resource']->documentUsage()?->ongletMedia() ?? 'documents',
+            ];
         }
 
         $slug = self::slug($entite->fiche()->type());
@@ -541,6 +547,7 @@ final readonly class FicheEditeurEcran
         return [
             'gamme' => $entite->fiche()->type()->value,
             'bloc_url' => $this->urls->generate('app_pim_gamme_medias_bloc', ['gamme' => $slug, 'id' => (string) $entite->id()]),
+            'onglets_actifs' => self::ongletsMediasActifs($entite->fiche()->type()),
             'vars' => [
                 'photos' => $this->fichePhotos->photos($entite->fiche()),
                 'documents' => $documents,
@@ -553,8 +560,38 @@ final readonly class FicheEditeurEcran
                     'method' => 'POST',
                 ])->createView(),
                 'media_csrf_token' => $this->csrfTokens->getToken('lieu-media-'.$entite->id())->getValue(),
+                'photo_usages' => self::photoUsagesInline(),
             ],
         ];
+    }
+
+    /**
+     * Onglets internes du volet Médias disponibles par gamme — les onglets
+     * sans aucun usage documentaire possible sont grisés dans le shell.
+     *
+     * @return array<string, bool>
+     */
+    public static function ongletsMediasActifs(TypeFiche $type): array
+    {
+        return [
+            'photos' => true,
+            'plans' => in_array($type, [TypeFiche::Lieu, TypeFiche::Restaurant], true),
+            'supports' => true,
+            'video' => true,
+            'documents' => TypeFiche::Lieu === $type,
+        ];
+    }
+
+    /**
+     * Catégories proposées par le select inline sous chaque vignette.
+     * « Salle de réunion » fait apparaître la barre de choix de salle sur la
+     * photo ; « Plan de salle » reste réservé à la modale de paramètres.
+     *
+     * @return array<string, string>
+     */
+    public static function photoUsagesInline(): array
+    {
+        return array_diff_key(PhotoUsageCatalog::LABELS, ['CONFIG_PLAN_SALLE' => true]);
     }
 
     /**

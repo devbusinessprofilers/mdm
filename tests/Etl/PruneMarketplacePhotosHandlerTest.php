@@ -97,8 +97,11 @@ final class PruneMarketplacePhotosHandlerTest extends KernelTestCase
         self::assertSame(1, $this->outboxCount(RemoveFicheFromMarketplace::class));
     }
 
-    public function testFicheIsDepublishedWhenPrincipaleIsGone(): void
+    public function testMissingRemoteMainAloneDoesNotDepublish(): void
     {
+        // La principale est la première photo de l'ordre : le drapeau `main`
+        // du snapshot distant n'entre plus en compte — tant qu'il reste assez
+        // de photos, le prochain sync complet repousse la nouvelle principale.
         $fiche = $this->draftedFicheWithPhotos(5);
         $this->track($fiche);
         $this->deletePhoto(0);
@@ -107,7 +110,7 @@ final class PruneMarketplacePhotosHandlerTest extends KernelTestCase
         $this->handler()(new PruneMarketplacePhotos($fiche->idString()));
         $this->entityManager->flush();
 
-        self::assertSame(1, $this->outboxCount(RemoveFicheFromMarketplace::class));
+        self::assertSame(0, $this->outboxCount(RemoveFicheFromMarketplace::class));
     }
 
     public function testLegacyFicheWithoutPimPhotosIsNotDepublished(): void

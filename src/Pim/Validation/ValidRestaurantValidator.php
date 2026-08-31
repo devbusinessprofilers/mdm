@@ -136,13 +136,6 @@ final class ValidRestaurantValidator extends ConstraintValidator
             );
         }
 
-        if (count($this->mainPhotos($photos)) > 1) {
-            $this->violation(
-                'Un Restaurant ne peut avoir qu’une photo principale.',
-                'ressources',
-            );
-        }
-
         foreach ($value->ressources() as $resource) {
             if (null !== $resource->lieu() || null !== $resource->salle()) {
                 $this->violation(
@@ -304,18 +297,13 @@ final class ValidRestaurantValidator extends ConstraintValidator
             );
         }
 
-        $minimum = $this->photoObligations->minimum(TypeFiche::Restaurant);
+        // La principale étant la première photo de l'ordre, la soumission
+        // exige toujours au moins une photo même si le minimum est surchargé à 0.
+        $minimum = max(1, $this->photoObligations->minimum(TypeFiche::Restaurant));
         $maximum = $this->photoObligations->maximum(TypeFiche::Restaurant);
         if (count($photos) < $minimum || count($photos) > $maximum) {
             $this->violation(
                 sprintf('Une fiche Restaurant doit contenir entre %d et %d photos.', $minimum, $maximum),
-                'ressources',
-            );
-        }
-
-        if (1 !== count($this->mainPhotos($photos))) {
-            $this->violation(
-                'Une fiche Restaurant doit avoir exactement une photo principale.',
                 'ressources',
             );
         }
@@ -350,20 +338,6 @@ final class ValidRestaurantValidator extends ConstraintValidator
                 $value->ressources()->toArray(),
                 static fn (RessourceLieu $resource): bool =>
                     NatureRessource::Photo === $resource->nature(),
-            ),
-        );
-    }
-
-    /** @param list<RessourceLieu> $photos
-     *  @return list<RessourceLieu>
-     */
-    private function mainPhotos(array $photos): array
-    {
-        return array_values(
-            array_filter(
-                $photos,
-                static fn (RessourceLieu $resource): bool =>
-                    'PHOTO_PRINCIPALE' === $resource->usage(),
             ),
         );
     }

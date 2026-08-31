@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Pim\Service;
 
+use App\Dam\Enum\DocumentUsage;
 use App\Dam\Service\LieuDocumentPresenter;
 use App\Dam\Service\LieuPhotoPresenter;
 use App\Pim\Entity\Lieu\Lieu;
@@ -38,7 +39,7 @@ final readonly class LieuAdminViewBuilder
     public function form(FormInterface $form, Lieu $lieu, bool $creation): array
     {
         return ['form' => $form, 'lieu' => $lieu, 'creation' => $creation] + ($creation
-            ? ['photos' => [], 'documents' => [], 'document_upload_form' => null, 'media_upload_form' => null, 'media_csrf_token' => null]
+            ? ['photos' => [], 'documents' => [], 'document_upload_forms' => [], 'media_upload_form' => null, 'media_csrf_token' => null]
             : $this->mediasVars($lieu));
     }
 
@@ -58,14 +59,30 @@ final readonly class LieuAdminViewBuilder
         $documents = [];
         foreach ($lieu->ressources() as $resource) {
             if (NatureRessource::Document !== $resource->nature() || null === $resource->documentUsage()) { continue; }
-            $documents[] = ['view' => $this->documents->resource($resource)];
+            $documents[] = ['view' => $this->documents->resource($resource), 'onglet' => $resource->documentUsage()->ongletMedia()];
         }
+
+        // Un formulaire de dépôt par onglet du volet Médias : les usages
+        // proposés sont filtrés selon l'onglet (plans, supports, autres).
+        $uploadForms = [];
+        foreach ([
+            'plans' => [DocumentUsage::RoomPlan, DocumentUsage::GeneralPlan],
+            'supports' => [DocumentUsage::CommercialSupport],
+            'documents' => [DocumentUsage::RseEvidence, DocumentUsage::Urssaf, DocumentUsage::LiabilityInsurance, DocumentUsage::BankDetails, DocumentUsage::FactoringBankDetails, DocumentUsage::Terms, DocumentUsage::Convention],
+        ] as $onglet => $usages) {
+            $uploadForms[$onglet] = $this->forms->createNamed('document_upload_'.$onglet, LieuDocumentUploadType::class, null, [
+                'action' => $this->urls->generate('app_pim_lieu_document_upload', ['id' => $lieu->id()]), 'method' => 'POST',
+                'salles' => $lieu->salles()->toArray(), 'usages' => $usages,
+            ])->createView();
+        }
+
+        $salles = [];
+        foreach ($lieu->salles() as $salle) { $salles[$salle->id()] = $salle->nom(); }
 
         return [
             'photos' => $this->photos->photos($lieu), 'documents' => $documents,
-            'document_upload_form' => $this->forms->createNamed('document_upload', LieuDocumentUploadType::class, null, [
-                'action' => $this->urls->generate('app_pim_lieu_document_upload', ['id' => $lieu->id()]), 'method' => 'POST', 'salles' => $lieu->salles()->toArray(),
-            ])->createView(),
+            'salles' => $salles,
+            'document_upload_forms' => $uploadForms,
             'media_upload_form' => $this->forms->createNamed('lieu_photo_upload', LieuPhotoUploadType::class, null, [
                 'action' => $this->urls->generate('app_pim_lieu_photo_upload', ['id' => $lieu->id()]), 'method' => 'POST',
             ])->createView(),

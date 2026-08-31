@@ -46,7 +46,7 @@ final readonly class IndexFicheHandler
             }
             // Invariant photos avant indexation et diffusion : une fiche
             // publiée qui ne satisfait plus les obligations (suppression de
-            // photo, retrait de la principale) repasse en cours et quitte la
+            // photos sous le minimum) repasse en cours et quitte la
             // marketplace.
             $this->photoGuard->enforce($fiche);
             $this->indexer->index($fiche);

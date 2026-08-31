@@ -42,12 +42,19 @@ final class LieuDocumentUploadType extends AbstractType
                 ],
             ])
             ->add('usage', ChoiceType::class, [
-                'choices' => DocumentUsage::choices(),
+                'choices' => [] === $options['usages']
+                    ? DocumentUsage::choices()
+                    : array_filter(DocumentUsage::choices(), static fn (DocumentUsage $usage): bool => in_array($usage, $options['usages'], true)),
                 'choice_value' => static fn (
                     ?DocumentUsage $usage,
                 ): ?string => $usage?->value,
-            ])
-            ->add('salle', EntityType::class, [
+            ]);
+        // Le champ salle n'a de sens que si un usage proposé peut s'y
+        // rattacher (plan de salle) — sinon il disparaît du formulaire.
+        $salleUtile = [] === $options['usages']
+            || [] !== array_filter($options['usages'], static fn (DocumentUsage $usage): bool => $usage->requiresRoom());
+        if ($salleUtile) {
+            $builder->add('salle', EntityType::class, [
                 'class' => Salle::class,
                 'choices' => $options['salles'],
                 'choice_label' => static fn (
@@ -55,7 +62,9 @@ final class LieuDocumentUploadType extends AbstractType
                 ): string => $salle->nom(),
                 'placeholder' => 'Aucune',
                 'required' => false,
-            ])
+            ]);
+        }
+        $builder
             ->add('title', TextType::class, [
                 'label' => 'Titre',
                 'required' => false,
@@ -68,7 +77,8 @@ final class LieuDocumentUploadType extends AbstractType
 
     public function configureOptions(OptionsResolver $resolver): void
     {
-        $resolver->setDefaults(['data_class' => null, 'salles' => []]);
+        $resolver->setDefaults(['data_class' => null, 'salles' => [], 'usages' => []]);
         $resolver->setAllowedTypes('salles', 'array');
+        $resolver->setAllowedTypes('usages', 'array');
     }
 }

@@ -64,13 +64,14 @@ final class FicheFusionneurTest extends KernelTestCase
         $lieuA->changeLabel('Château des Deux');
         $lieuA->changeGeneraleWebsiteUrl('https://ancien.example.test');
         $lieuA->changeGeneraleTypologie(['GENERALE_TYPOLOGIE_1']);
-        $this->photo($lieuA, 'asset-commun', PhotoUsageCatalog::PRINCIPALE);
+        $this->photo($lieuA, 'asset-commun', 'PHOTO_FACADE');
         $this->salle($lieuA, 'Salle Bleue', 80);
         $lieuA->fiche()->publishForImport();
         $this->entityManager->persist($lieuA);
 
         // Absorbée : Business Premium actif, site internet plus récent, photo
-        // commune (dédoublonnée) + photo propre marquée principale (rétrogradée),
+        // commune (dédoublonnée) + photo propre (clonée en fin de position :
+        // la principale de la survivante — sa première photo — prime),
         // salle commune + salle propre, collaborateur commun + propre, site propre.
         $lieuB = new Lieu();
         $lieuB->changeLabel('Château des Deux (doublon)');
@@ -78,7 +79,7 @@ final class FicheFusionneurTest extends KernelTestCase
         $lieuB->fiche()->changeBusinessPremium(true);
         $lieuB->changeGeneraleTypologie(['GENERALE_TYPOLOGIE_5']);
         $this->photo($lieuB, 'asset-commun', PhotoUsageCatalog::DEFAUT);
-        $this->photo($lieuB, 'asset-propre', PhotoUsageCatalog::PRINCIPALE);
+        $this->photo($lieuB, 'asset-propre', 'PHOTO_CHAMBRE');
         $this->salle($lieuB, 'Salle Bleue', 80);
         $this->salle($lieuB, 'Salle Rouge', 40);
         $this->entityManager->persist($lieuB);
@@ -129,16 +130,20 @@ final class FicheFusionneurTest extends KernelTestCase
         self::assertTrue($survivante->id()->equals($absorbee->mergedIntoId()));
         self::assertSame('Château des Deux (doublon)', $absorbee->label());
 
-        // Photos : la commune n'est pas dupliquée, la propre est clonée et sa
-        // catégorie « principale » rétrogradée (celle de la survivante prime).
+        // Photos : la commune n'est pas dupliquée, la propre est clonée avec
+        // sa catégorie, en fin de position — la première photo de la
+        // survivante reste la principale.
         $photos = [];
+        $positions = [];
         foreach ($survivante->resources() as $resource) {
             $photos[$resource->damAssetId()] = $resource->usage();
+            $positions[$resource->damAssetId()] = $resource->position();
         }
         self::assertSame(
-            ['asset-commun' => PhotoUsageCatalog::PRINCIPALE, 'asset-propre' => PhotoUsageCatalog::DEFAUT],
+            ['asset-commun' => 'PHOTO_FACADE', 'asset-propre' => 'PHOTO_CHAMBRE'],
             $photos,
         );
+        self::assertLessThan($positions['asset-propre'], $positions['asset-commun']);
         self::assertCount(2, $absorbee->resources());
 
         // Salles : union par signature, la commune n'est pas dupliquée.

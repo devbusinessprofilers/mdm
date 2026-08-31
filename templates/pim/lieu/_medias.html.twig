@@ -1,20 +1,88 @@
-{# Gestion des photos et documents d'un lieu (DAM). Extrait de l'ancienne
-   vue « modifier » ; inclus par l'éditeur MDM, section Médias.
-   Variables : lieu, creation, photos, documents, media_upload_form,
-   media_csrf_token, document_upload_form. #}
-    {% if not creation %}
-        {# Toute la carte est la zone de dépôt (maquette) : les actions de
-           glisser-déposer vivent sur la section, pas sur une bande dédiée. #}
-        <section
-            class="card lieu-media-manager"
-            data-controller="lieu-media"
-            data-lieu-media-upload-url-value="{{ path('app_pim_lieu_photo_upload', {id: lieu.id}) }}"
-            data-lieu-media-order-url-value="{{ path('app_pim_lieu_photo_order', {id: lieu.id}) }}"
-            data-lieu-media-modales-url-value="{{ path('app_pim_lieu_media_modales', {id: lieu.id}) }}"
-            data-lieu-media-token-value="{{ media_csrf_token }}"
-            data-lieu-media-target="dropzone"
-            data-action="dragover->lieu-media#dragover dragleave->lieu-media#dragleave drop->lieu-media#drop"
-        >
+{# Gestion des photos et documents d'un lieu (DAM), répartie dans les onglets
+   internes du volet Médias (shell mdm/fiche/_medias_onglets) : Photos, Plans,
+   Supports commerciaux, Documents. Chaque panneau porte
+   data-media-tabs-target="panel" — le shell (hors de la zone AJAX) ré-applique
+   l'onglet actif après chaque re-rendu du bloc.
+   Variables : lieu, creation, photos, documents (avec `onglet`),
+   media_upload_form, media_csrf_token, document_upload_forms, photo_usages. #}
+
+{% macro tuile_document(document) %}
+    <button type="button" title="Modifier les paramètres du document"
+            data-controller="modal-trigger-button"
+            data-modal-trigger-button-modal-identifier-value="document-{{ document.view.id }}"
+            data-action="modal-trigger-button#open"
+            class="relative w-[250px] h-[170px] shrink-0 box-border flex flex-col items-center justify-center gap-1.5
+                   px-2 rounded-xs overflow-hidden cursor-pointer bg-primary-5 inset-ring-1 inset-ring-neutral-300
+                   hover:inset-ring-primary">
+        <twig:Icon name="file-pdf" class="w-7 h-7 shrink-0 text-primary-3" />
+        <twig:Typography variant="body-xs" bold center class="w-full truncate">{{ document.view.title ?: document.view.filename }}</twig:Typography>
+        <twig:Typography variant="body-xs" textColor="neutral-500" center class="w-full truncate">
+            {{ document.view.sizeBytes
+                ? (document.view.sizeBytes / 1024 / 1024)|number_format(2, ',', ' ') ~ ' Mo'
+                : 'fichier introuvable'
+            }}
+        </twig:Typography>
+    </button>
+{% endmacro %}
+
+{% macro panneau_documents(onglet, titre, description, documents, upload_form) %}
+    <section class="card" data-media-tabs-target="panel" data-onglet="{{ onglet }}" hidden>
+        <div class="flex items-center gap-3 pb-3">
+            <div class="flex flex-col">
+                <twig:Typography variant="body-xs" textColor="neutral-500" bold class="uppercase tracking-[0.8px]">DAM</twig:Typography>
+                <twig:Typography variant="heading-3" element="h2" bold>{{ titre }}</twig:Typography>
+            </div>
+            <span class="inline-flex"><twig:Tag label="{{ documents|length }}" variant="neutral" size="sm" /></span>
+        </div>
+        <twig:Typography variant="body-sm" textColor="neutral-500">{{ description }}</twig:Typography>
+
+        {# Le dépôt vit dans sa modale, ouverte par la tuile « Ajouter ». #}
+        <twig:Modal identifier="document-ajout-{{ onglet }}">
+            <div class="flex flex-col gap-4 w-[min(560px,80vw)]">
+                <twig:Typography variant="heading-3" bold>Ajouter — {{ titre }}</twig:Typography>
+                <twig:Typography variant="body-sm" textColor="neutral-500">
+                    PDF, JPEG ou PNG. Les originaux restent privés tant que les droits ne sont pas validés.
+                </twig:Typography>
+                {{ form_start(upload_form, {attr: {class: 'flex flex-col gap-3'}}) }}
+                    {{ form_widget(upload_form) }}
+                {{ form_end(upload_form) }}
+                <div class="flex justify-end">
+                    <twig:Modal:TriggerButton variant="text" size="sm" modalIdentifier="document-ajout-{{ onglet }}"
+                                              data-action="modal-trigger-button#close">Fermer</twig:Modal:TriggerButton>
+                </div>
+            </div>
+        </twig:Modal>
+        {# Même système que les photos : une tuile par document, le clic
+           ouvre ses paramètres en modale (préchargée avec celles des photos). #}
+        <div class="flex flex-row flex-wrap gap-4 py-4">
+            {% for document in documents %}
+                {{ _self.tuile_document(document) }}
+            {% endfor %}
+            <button type="button"
+                    data-controller="modal-trigger-button"
+                    data-modal-trigger-button-modal-identifier-value="document-ajout-{{ onglet }}"
+                    data-action="modal-trigger-button#open"
+                    class="w-[250px] h-[170px] shrink-0 flex flex-col items-center justify-center gap-1.5
+                           rounded-xs cursor-pointer bg-neutral-100 inset-ring-1 inset-ring-primary">
+                <twig:Icon name="plus" class="w-[22px] h-[22px] text-primary" />
+                <twig:Typography variant="body-sm" textColor="primary-3" bold>Ajouter un document</twig:Typography>
+            </button>
+        </div>
+    </section>
+{% endmacro %}
+
+{% if not creation %}
+    <div data-controller="lieu-media"
+         data-lieu-media-upload-url-value="{{ path('app_pim_lieu_photo_upload', {id: lieu.id}) }}"
+         data-lieu-media-order-url-value="{{ path('app_pim_lieu_photo_order', {id: lieu.id}) }}"
+         data-lieu-media-modales-url-value="{{ path('app_pim_lieu_media_modales', {id: lieu.id}) }}"
+         data-lieu-media-token-value="{{ media_csrf_token }}">
+
+        {# ---- Photos : toute la carte est la zone de dépôt (maquette). ---- #}
+        <section class="card lieu-media-manager"
+                 data-media-tabs-target="panel" data-onglet="photos"
+                 data-lieu-media-target="dropzone"
+                 data-action="dragover->lieu-media#dragover dragleave->lieu-media#dragleave drop->lieu-media#drop">
             <div class="flex items-center gap-3 pb-3">
                 <div class="flex flex-col">
                     <twig:Typography variant="body-xs" textColor="neutral-500" bold class="uppercase tracking-[0.8px]">DAM</twig:Typography>
@@ -25,9 +93,9 @@
                 <twig:Typography variant="body-xs" textColor="neutral-400">25 Mo max · 960 × 480 px · format paysage</twig:Typography>
             </div>
             <twig:Typography variant="body-sm" textColor="neutral-500" element="p" class="pb-3">
-                Déposez une ou plusieurs images n'importe où sur cette carte, glissez les vignettes pour les réordonner
-                — la première est la photo principale — et cliquez sur une photo pour renseigner ses informations
-                (usage, légende, source…).
+                Déposez une ou plusieurs images n'importe où sur cette carte, glissez les vignettes pour les
+                réordonner — la première est la photo principale — et choisissez la catégorie de chaque photo
+                sous sa vignette. Au survol d'une vignette : recadrer, informations, supprimer.
             </twig:Typography>
             {# L'input (sr-only) reste dans la page : la tuile « Ajouter un
                média » l'ouvre par son libellé, le dépôt se fait sur la carte. #}
@@ -37,122 +105,31 @@
             <div class="lieu-media-progress" hidden data-lieu-media-target="progress"><span data-lieu-media-target="progressBar"></span></div>
             <p class="form-error" hidden data-lieu-media-target="error"></p>
 
-            {#
-                Galerie maquette : les vignettes sont les éléments réels — on les
-                réordonne au glisser-déposer, et UN CLIC ouvre les paramètres de
-                la photo en modale. La tuile « Ajouter » ouvre le sélecteur ;
-                elle reste présente même sans photo.
-            #}
-                <div class="flex flex-row flex-wrap gap-4 py-4" data-lieu-media-target="list">
-                    {% for photo in photos %}
-                        {% set principale = photo.resource.usage == 'PHOTO_PRINCIPALE' %}
-                        <button type="button" title="Modifier les paramètres de la photo"
-                                data-lieu-media-target="item" data-id="{{ photo.resource.id }}" draggable="true"
-                                data-controller="modal-trigger-button"
-                                data-modal-trigger-button-modal-identifier-value="photo-{{ photo.resource.id }}"
-                                data-action="modal-trigger-button#open dragstart->lieu-media#dragstart dragover->lieu-media#dragoverItem drop->lieu-media#dropItem"
-                                class="relative w-[152px] h-[104px] shrink-0 flex items-center justify-center rounded-xs
-                                       overflow-hidden cursor-pointer bg-primary-5 inset-ring-1
-                                       {{ principale ? 'inset-ring-primary' : 'inset-ring-neutral-300' }}">
-                            {% if photo.usage_label %}
-                                {# La vraie catégorie de la photo ; la principale garde sa mise en avant. #}
-                                <span class="absolute top-2 left-2 z-1 px-2 py-0.5 rounded-full {{ principale ? 'bg-primary' : 'bg-neutral-100/85' }}">
-                                    <twig:Typography variant="body-xs" textColor="{{ principale ? 'neutral-100' : 'neutral-500' }}" bold>{{ photo.usage_label }}</twig:Typography>
-                                </span>
-                            {% endif %}
-                            {% if photo.thumbnail_url %}
-                                <img src="{{ photo.thumbnail_url }}" alt="{{ photo.resource.legende ?: photo.asset.originalFilename }}"
-                                     class="w-full h-full object-cover pointer-events-none" loading="lazy">
-                            {% else %}
-                                <twig:Icon name="images" class="w-7 h-7 text-neutral-400" />
-                            {% endif %}
-                            {% if photo.asset and photo.asset.errorMessage %}
-                                <span class="absolute bottom-2 right-2 z-1 w-[18px] h-[18px] flex items-center justify-center rounded-full bg-error"
-                                      title="{{ photo.asset.errorMessage }}">
-                                    <twig:Icon name="warning" class="w-3 h-3 text-neutral-100" />
-                                </span>
-                            {% endif %}
-                        </button>
-                    {% endfor %}
-                    <label for="{{ media_upload_form.photos.vars.id }}"
-                           class="w-[152px] h-[104px] shrink-0 flex flex-col items-center justify-center gap-1.5
-                                  rounded-xs cursor-pointer bg-neutral-100 inset-ring-1 inset-ring-primary">
-                        <twig:Icon name="plus" class="w-[22px] h-[22px] text-primary" />
-                        <twig:Typography variant="body-sm" textColor="primary-3" bold>Ajouter un média</twig:Typography>
-                    </label>
-                </div>
+            {% include 'pim/_medias_galerie_photos.html.twig' with {
+                photos: photos,
+                media_upload_form: media_upload_form,
+                photo_usages: photo_usages,
+                salles: salles,
+                routes: { categorie: 'app_pim_lieu_photo_categorie', delete: 'app_pim_lieu_photo_delete' },
+                route_params: { id: lieu.id },
+            } only %}
 
-                {# Paramètres de chaque photo : une modale par vignette, dans
-                   _medias_modales.html.twig — préchargée en arrière-plan après
-                   le chargement de la page (lieu-media#connect). #}
+            {# Paramètres de chaque photo : une modale par vignette, dans
+               _medias_modales.html.twig — préchargée en arrière-plan après
+               le chargement de la page (lieu-media#connect). #}
         </section>
-    {% else %}
-        <section class="card"><h2>Photos du lieu</h2><p>Enregistrez d’abord le lieu, puis vous pourrez ajouter plusieurs images et leurs métadonnées.</p></section>
-    {% endif %}
 
-    {% if not creation %}
-        <section class="card">
-            <div class="flex items-center gap-3 pb-3">
-                <div class="flex flex-col">
-                    <twig:Typography variant="body-xs" textColor="neutral-500" bold class="uppercase tracking-[0.8px]">DAM</twig:Typography>
-                    <twig:Typography variant="heading-3" element="h2" bold>Documents</twig:Typography>
-                </div>
-                <span class="inline-flex"><twig:Tag label="{{ documents|length }}" variant="neutral" size="sm" /></span>
-            </div>
-            <twig:Typography variant="body-sm" textColor="neutral-500">Les originaux restent privés. Une copie publique n’est créée qu’après validation des droits et traitement par le worker.</twig:Typography>
-
-            {# Le dépôt vit dans sa modale, ouverte par la tuile « Ajouter un document ». #}
-            <twig:Modal identifier="document-ajout">
-                <div class="flex flex-col gap-4 w-[min(560px,80vw)]">
-                    <twig:Typography variant="heading-3" bold>Ajouter un document</twig:Typography>
-                    <twig:Typography variant="body-sm" textColor="neutral-500">
-                        PDF, JPEG ou PNG. Les originaux restent privés tant que les droits ne sont pas validés.
-                    </twig:Typography>
-                    {{ form_start(document_upload_form, {attr: {class: 'flex flex-col gap-3'}}) }}
-                        {{ form_widget(document_upload_form) }}
-                    {{ form_end(document_upload_form) }}
-                    <div class="flex justify-end">
-                        <twig:Modal:TriggerButton variant="text" size="sm" modalIdentifier="document-ajout"
-                                                  data-action="modal-trigger-button#close">Fermer</twig:Modal:TriggerButton>
-                    </div>
-                </div>
-            </twig:Modal>
-            {# Même système que les photos : une tuile par document, le clic
-               ouvre ses paramètres en modale. #}
-            <div class="flex flex-row flex-wrap gap-4 py-4">
-            {% for document in documents %}
-                <button type="button" title="Modifier les paramètres du document"
-                        data-controller="modal-trigger-button"
-                        data-modal-trigger-button-modal-identifier-value="document-{{ document.view.id }}"
-                        data-action="modal-trigger-button#open"
-                        class="relative w-[152px] h-[104px] shrink-0 box-border flex flex-col items-center justify-center gap-1.5
-                               px-2 rounded-xs overflow-hidden cursor-pointer bg-primary-5 inset-ring-1 inset-ring-neutral-300
-                               hover:inset-ring-primary">
-                    <twig:Icon name="file-pdf" class="w-7 h-7 shrink-0 text-primary-3" />
-                    <twig:Typography variant="body-xs" bold center class="w-full truncate">{{ document.view.title ?: document.view.filename }}</twig:Typography>
-                    <twig:Typography variant="body-xs" textColor="neutral-500" center class="w-full truncate">
-                        {{ document.view.sizeBytes
-                            ? (document.view.sizeBytes / 1024 / 1024)|number_format(2, ',', ' ') ~ ' Mo'
-                            : 'fichier introuvable'
-                        }}
-                    </twig:Typography>
-                </button>
-            {% endfor %}
-                <button type="button"
-                        data-controller="modal-trigger-button"
-                        data-modal-trigger-button-modal-identifier-value="document-ajout"
-                        data-action="modal-trigger-button#open"
-                        class="w-[152px] h-[104px] shrink-0 flex flex-col items-center justify-center gap-1.5
-                               rounded-xs cursor-pointer bg-neutral-100 inset-ring-1 inset-ring-primary">
-                    <twig:Icon name="plus" class="w-[22px] h-[22px] text-primary" />
-                    <twig:Typography variant="body-sm" textColor="primary-3" bold>Ajouter un document</twig:Typography>
-                </button>
-            </div>
-
-            {# Paramètres de chaque document : modales dans
-               _medias_modales.html.twig, préchargées avec celles des photos. #}
-        </section>
-    {% else %}
-        <section class="card"><h2>Documents</h2><p>Enregistrez d’abord le lieu pour déposer des documents.</p></section>
-    {% endif %}
-
+        {# ---- Documents, répartis par onglet maquette. ---- #}
+        {{ _self.panneau_documents('plans', 'Plans',
+            'Plans de salle et plan général du lieu. Les originaux restent privés, une copie publique n’est créée qu’après validation des droits.',
+            documents|filter(d => d.onglet == 'plans'), document_upload_forms.plans) }}
+        {{ _self.panneau_documents('supports', 'Supports commerciaux',
+            'Plaquettes et supports de présentation du lieu. Les originaux restent privés, une copie publique n’est créée qu’après validation des droits.',
+            documents|filter(d => d.onglet == 'supports'), document_upload_forms.supports) }}
+        {{ _self.panneau_documents('documents', 'Documents administratifs',
+            'Pièces administratives et légales (RIB, attestations, conditions générales…) — toujours privées.',
+            documents|filter(d => d.onglet == 'documents'), document_upload_forms.documents) }}
+    </div>
+{% else %}
+    <section class="card"><h2>Photos du lieu</h2><p>Enregistrez d’abord le lieu, puis vous pourrez ajouter plusieurs images, leurs métadonnées et les documents de la fiche.</p></section>
+{% endif %}

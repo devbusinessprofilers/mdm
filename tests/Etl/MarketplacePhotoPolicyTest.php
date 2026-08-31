@@ -46,9 +46,9 @@ final class MarketplacePhotoPolicyTest extends TestCase
         self::assertTrue($this->policy->allowsPublication($fiche));
     }
 
-    public function testLieuWithFourPhotosAndPrincipaleIsSatisfied(): void
+    public function testLieuWithFourPhotosIsSatisfied(): void
     {
-        $fiche = $this->lieuFiche(photos: 4, withPrincipale: true);
+        $fiche = $this->lieuFiche(photos: 4);
 
         self::assertTrue($this->policy->appliesTo($fiche));
         self::assertTrue($this->policy->satisfiedByResources($fiche));
@@ -57,17 +57,27 @@ final class MarketplacePhotoPolicyTest extends TestCase
 
     public function testLieuBelowMinimumIsNotPublishable(): void
     {
-        $fiche = $this->lieuFiche(photos: 3, withPrincipale: true);
+        $fiche = $this->lieuFiche(photos: 3);
 
         self::assertTrue($this->policy->appliesTo($fiche));
         self::assertFalse($this->policy->allowsPublication($fiche));
     }
 
-    public function testLieuWithoutPrincipaleIsNotPublishable(): void
+    public function testMinimumOverriddenToZeroStillRequiresOnePhoto(): void
     {
-        $fiche = $this->lieuFiche(photos: 4, withPrincipale: false);
+        // La principale est la première photo de l'ordre : la diffusion exige
+        // toujours au moins une photo, même avec un minimum surchargé à 0.
+        $policy = new MarketplacePhotoPolicy(new PhotoObligations(new ParametresFixes([
+            'photos.min_lieu' => '0',
+            'photos.max_lieu' => '25',
+            'photos.min_autres' => '0',
+            'photos.max_autres' => '10',
+        ])));
+        $unePhoto = $this->lieuFiche(photos: 1);
 
-        self::assertFalse($this->policy->allowsPublication($fiche));
+        self::assertTrue($policy->satisfiedByResources($unePhoto));
+        self::assertFalse($policy->satisfiedByRemote(TypeFiche::Lieu, 0));
+        self::assertTrue($policy->satisfiedByRemote(TypeFiche::Lieu, 1));
     }
 
     public function testDocumentsDoNotCountAsPhotos(): void
@@ -85,14 +95,13 @@ final class MarketplacePhotoPolicyTest extends TestCase
 
     public function testRemoteStateFollowsTheSameThresholds(): void
     {
-        self::assertTrue($this->policy->satisfiedByRemote(TypeFiche::Lieu, 4, true));
-        self::assertFalse($this->policy->satisfiedByRemote(TypeFiche::Lieu, 3, true));
-        self::assertFalse($this->policy->satisfiedByRemote(TypeFiche::Lieu, 4, false));
-        self::assertTrue($this->policy->satisfiedByRemote(TypeFiche::Restaurant, 1, true));
-        self::assertFalse($this->policy->satisfiedByRemote(TypeFiche::Restaurant, 0, false));
+        self::assertTrue($this->policy->satisfiedByRemote(TypeFiche::Lieu, 4));
+        self::assertFalse($this->policy->satisfiedByRemote(TypeFiche::Lieu, 3));
+        self::assertTrue($this->policy->satisfiedByRemote(TypeFiche::Restaurant, 1));
+        self::assertFalse($this->policy->satisfiedByRemote(TypeFiche::Restaurant, 0));
     }
 
-    private function lieuFiche(int $photos, bool $withPrincipale = true): Fiche
+    private function lieuFiche(int $photos): Fiche
     {
         $lieu = new Lieu();
         $lieu->changeLabel('Château des tests');
@@ -101,8 +110,8 @@ final class MarketplacePhotoPolicyTest extends TestCase
             $resource = new RessourceLieu();
             $resource->changeDamAssetId((string) new Ulid());
             $resource->changeNature(NatureRessource::Photo);
-            $resource->changeUsage(0 === $i && $withPrincipale ? 'PHOTO_PRINCIPALE' : 'PHOTO_DIVERSE');
-            $resource->changePosition($i + 1);
+            $resource->changeUsage('PHOTO_DIVERSE');
+            $resource->changePosition($i);
             $fiche->addResource($resource);
         }
 

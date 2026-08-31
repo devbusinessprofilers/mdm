@@ -13,8 +13,9 @@ use App\Pim\Service\PhotoObligations;
 /**
  * Obligations photos de la diffusion, mêmes seuils que la soumission
  * (PhotoObligations, surchargeable dans /admin/parametres) : au moins le
- * minimum de photos du type et une photo principale. Une fiche qui ne les
- * respecte plus ne doit plus être servie : elle est dépubliée de la
+ * minimum de photos du type, plancher à une photo — la principale étant la
+ * première de l'ordre, toute fiche avec une photo en a une. Une fiche qui ne
+ * les respecte plus ne doit plus être servie : elle est dépubliée de la
  * marketplace jusqu'à sa republication PIM.
  *
  * Transition legacy : tant que le PIM ne possède aucune photo de la fiche
@@ -25,9 +26,6 @@ use App\Pim\Service\PhotoObligations;
  */
 final readonly class MarketplacePhotoPolicy
 {
-    /** Usage métier de la photo principale exigée à la soumission. */
-    private const USAGE_PRINCIPALE = 'PHOTO_PRINCIPALE';
-
     public function __construct(private PhotoObligations $obligations)
     {
     }
@@ -46,13 +44,9 @@ final readonly class MarketplacePhotoPolicy
     /** Les photos courantes de la fiche suffisent-elles à la diffusion ? */
     public function satisfiedByResources(Fiche $fiche): bool
     {
-        $photos = $this->photoResources($fiche);
-        $principales = array_filter(
-            $photos,
-            static fn (RessourceLieu $resource): bool => self::USAGE_PRINCIPALE === $resource->usage(),
-        );
-
-        return count($photos) >= $this->minimumFor($fiche->type()) && [] !== $principales;
+        // Plancher à 1 : le minimum est surchargeable (il pourrait valoir 0)
+        // mais la diffusion exige toujours une principale, donc une photo.
+        return count($this->photoResources($fiche)) >= max(1, $this->minimumFor($fiche->type()));
     }
 
     /**
@@ -66,12 +60,12 @@ final readonly class MarketplacePhotoPolicy
 
     /**
      * L'état marketplace après purge suffit-il encore à la diffusion ?
-     * `principaleRemaining` est le drapeau `main` marketplace, c'est-à-dire la
-     * photo principale du snapshot publié (la première poussée).
+     * Le drapeau `main` du snapshot n'entre plus en compte : la principale est
+     * la première photo de l'ordre, le prochain sync complet la repousse.
      */
-    public function satisfiedByRemote(TypeFiche $type, int $remaining, bool $principaleRemaining): bool
+    public function satisfiedByRemote(TypeFiche $type, int $remaining): bool
     {
-        return $remaining >= $this->minimumFor($type) && $principaleRemaining;
+        return $remaining >= max(1, $this->minimumFor($type));
     }
 
     /** @return list<RessourceLieu> */

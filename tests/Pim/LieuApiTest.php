@@ -197,7 +197,10 @@ final class LieuApiTest extends WebTestCase
         );
         self::assertResponseStatusCodeSame(201);
         $media = $this->json($client);
-        self::assertSame('PHOTO_PRINCIPALE', $media['usage']);
+        // Rétrocompat : l'usage déprécié PHOTO_PRINCIPALE place la photo en
+        // tête de l'ordre (principale dérivée) avec la catégorie neutre.
+        self::assertSame('PHOTO_DIVERSE', $media['usage']);
+        self::assertSame(0, (int) $this->connection->fetchOne('SELECT position FROM pim_ressource_lieu'));
         self::assertSame('Façade', $media['legende']);
         self::assertCount(7, $media['variants']);
         self::assertSame(['hd', 'large', 'medium_2', 'medium', 'small', 'map', 'cart'], array_column($media['variants'], 'name'));

@@ -11,14 +11,11 @@ namespace App\Pim\Service;
  */
 final class PhotoUsageCatalog
 {
-    public const PRINCIPALE = 'PHOTO_PRINCIPALE';
-
-    /** Rétrogradation d'une ancienne principale : catégorie neutre, comme à l'upload. */
+    /** Catégorie neutre appliquée à l'upload quand aucune n'est fournie. */
     public const DEFAUT = 'PHOTO_DIVERSE';
 
     /** @var array<string, string> code => libellé, dans l'ordre du formulaire */
     public const LABELS = [
-        'PHOTO_PRINCIPALE' => 'Photo principale',
         'PHOTO_FACADE' => 'Façade',
         'PHOTO_CHAMBRE' => 'Chambre',
         'PHOTO_RESTAURATION' => 'Restauration',

@@ -137,7 +137,6 @@ use App\Pim\Api\State\ServiceEvenementielPatchProcessor;
                                         "usage" => [
                                             "type" => "string",
                                             "enum" => [
-                                                "PHOTO_PRINCIPALE",
                                                 "PHOTO_DIVERSE",
                                             ],
                                         ],

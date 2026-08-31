@@ -26,9 +26,12 @@ use App\Pim\Enum\NatureRessource;
 use App\Pim\Enum\TypeFiche;
 use App\Pim\Repository\RessourceLieuRepository;
 use App\Pim\Service\PhotoObligations;
+use App\Pim\Service\PhotoPrincipale;
+use App\Pim\Service\PhotoUsageCatalog;
 use App\Shared\Message\MediaUploaded;
 use App\Shared\Outbox\OutboxPublisherInterface;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -47,6 +50,7 @@ final readonly class RestaurantMediaProcessor implements ProcessorInterface
         private OutboxPublisherInterface $outbox,
         private RequestStack $requests,
         private ExternalScopeGuard $scopes,
+        private LoggerInterface $logger,
     ) {
     }
 
@@ -146,8 +150,12 @@ final readonly class RestaurantMediaProcessor implements ProcessorInterface
             );
         }
 
-        $usage = $request->request->getString('usage', 'PHOTO_DIVERSE');
-        $this->assertUsage($restaurant, $usage);
+        $usage = $request->request->getString('usage', PhotoUsageCatalog::DEFAUT);
+        $enTete = $this->usagePrincipaleDeprecie($usage);
+        if ($enTete) {
+            $usage = PhotoUsageCatalog::DEFAUT;
+        }
+        $this->assertUsage($usage);
         $room = $this->room(
             $restaurant,
             $request->request->getString('salleId'),
@@ -182,6 +190,9 @@ final readonly class RestaurantMediaProcessor implements ProcessorInterface
         try {
             $this->entityManager->persist($asset);
             $restaurant->addRessource($resource);
+            if ($enTete) {
+                PhotoPrincipale::placerEnTete($restaurant->ressources(), $resource);
+            }
             $this->outbox->enqueue(
                 new MediaUploaded(
                     $asset->id(),
@@ -248,8 +259,13 @@ final readonly class RestaurantMediaProcessor implements ProcessorInterface
                     'La catégorie est invalide.',
                 );
             }
-            $this->assertUsage($restaurant, $input->usage, $resource);
-            $resource->changeUsage($input->usage);
+            if ($this->usagePrincipaleDeprecie($input->usage)) {
+                // La catégorie de la photo est conservée, seule sa place change.
+                PhotoPrincipale::placerEnTete($restaurant->ressources(), $resource);
+            } else {
+                $this->assertUsage($input->usage);
+                $resource->changeUsage($input->usage);
+            }
         }
         if (array_key_exists('salleId', $payload)) {
             $resource->changeRestaurantSalle(
@@ -409,14 +425,11 @@ final readonly class RestaurantMediaProcessor implements ProcessorInterface
         );
     }
 
-    private function assertUsage(
-        Restaurant $restaurant,
-        string $usage,
-        ?RessourceLieu $current = null,
-    ): void {
+    private function assertUsage(string $usage): void
+    {
         if (!in_array(
             $usage,
-            ['PHOTO_PRINCIPALE', 'PHOTO_DIVERSE', 'CONFIG_SALLE_PHOTO'],
+            ['PHOTO_DIVERSE', 'CONFIG_SALLE_PHOTO'],
             true,
         )) {
             throw new ApiProblemException(
@@ -425,20 +438,21 @@ final readonly class RestaurantMediaProcessor implements ProcessorInterface
                 'La catégorie est invalide.',
             );
         }
-        if ('PHOTO_PRINCIPALE' === $usage) {
-            foreach ($this->photos($restaurant) as $resource) {
-                if (
-                    $resource !== $current
-                    && 'PHOTO_PRINCIPALE' === $resource->usage()
-                ) {
-                    throw new ApiProblemException(
-                        422,
-                        'main_media_exists',
-                        'Une seule photo principale est autorisée.',
-                    );
-                }
-            }
+    }
+
+    /**
+     * Rétrocompat portail : PHOTO_PRINCIPALE n'est plus une catégorie, la
+     * principale est la première photo de l'ordre. Un client qui envoie
+     * encore cet usage demande en réalité un placement en tête.
+     */
+    private function usagePrincipaleDeprecie(string $usage): bool
+    {
+        if ('PHOTO_PRINCIPALE' !== $usage) {
+            return false;
         }
+        $this->logger->notice('Usage déprécié PHOTO_PRINCIPALE reçu par l’API médias : photo placée en tête.');
+
+        return true;
     }
 
     private function changed(Restaurant $restaurant): void

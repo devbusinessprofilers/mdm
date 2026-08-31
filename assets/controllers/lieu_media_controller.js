@@ -63,6 +63,18 @@ export default class extends Controller {
     }
     retry(event) { this.fetch(event.currentTarget.dataset.url, { method: 'POST' }) }
 
+    // Select de catégorie sous la vignette : la catégorie seule est modifiée
+    // (endpoint dédié — le PATCH complet effacerait légende, source, crop…).
+    changerCategorie(event) {
+        this.fetch(event.currentTarget.dataset.url, { method: 'PATCH', body: JSON.stringify({ usage: event.currentTarget.value }), headers: { 'Content-Type': 'application/json' } })
+    }
+
+    // Barre de salle posée sur une photo « Salle de réunion » : la salle
+    // rattachée change, la catégorie courante est conservée par le serveur.
+    changerSalle(event) {
+        this.fetch(event.currentTarget.dataset.url, { method: 'PATCH', body: JSON.stringify({ salle_id: event.currentTarget.value }), headers: { 'Content-Type': 'application/json' } })
+    }
+
     // Lance la reconnaissance IA de la photo. Le retour se fait dans le bouton
     // lui-même : la modale recouvre la zone d'erreur de la carte, et les
     // suggestions n'arrivent que plus tard dans Médias › Reconnaissance IA.
@@ -93,7 +105,9 @@ export default class extends Controller {
     saveOrder() {
         if (!this.hasListTarget) return
         const ids = Array.from(this.listTarget.querySelectorAll('[data-id]')).map(item => item.dataset.id)
-        this.fetch(this.orderUrlValue, { method: 'POST', body: JSON.stringify({ ids }), headers: { 'Content-Type': 'application/json' }, reload: false })
+        // Le bloc est re-rendu après l'enregistrement : numéros, badge
+        // « Photo principale » et selects reviennent du serveur, à jour.
+        this.fetch(this.orderUrlValue, { method: 'POST', body: JSON.stringify({ ids }), headers: { 'Content-Type': 'application/json' } })
     }
 
     async fetch(url, options = {}) {

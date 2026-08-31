@@ -25,9 +25,12 @@ use App\Pim\Enum\NatureRessource;
 use App\Pim\Enum\TypeFiche;
 use App\Pim\Repository\RessourceLieuRepository;
 use App\Pim\Service\PhotoObligations;
+use App\Pim\Service\PhotoPrincipale;
+use App\Pim\Service\PhotoUsageCatalog;
 use App\Shared\Message\MediaUploaded;
 use App\Shared\Outbox\OutboxPublisherInterface;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\RequestStack;
 
@@ -45,6 +48,7 @@ final readonly class ServiceEvenementielMediaProcessor implements
         private OutboxPublisherInterface $outbox,
         private RequestStack $requests,
         private ExternalScopeGuard $scopes,
+        private LoggerInterface $logger,
     ) {}
 
     public function process(
@@ -140,8 +144,12 @@ final readonly class ServiceEvenementielMediaProcessor implements
                 "Le champ multipart photo est obligatoire.",
             );
         }
-        $usage = $request->request->getString("usage", "PHOTO_DIVERSE");
-        $this->assertUsage($a, $usage);
+        $usage = $request->request->getString("usage", PhotoUsageCatalog::DEFAUT);
+        $enTete = $this->usagePrincipaleDeprecie($usage);
+        if ($enTete) {
+            $usage = PhotoUsageCatalog::DEFAUT;
+        }
+        $this->assertUsage($usage);
         try {
             $asset = $this->uploader->upload($file, $a->fiche());
         } catch (\DomainException $e) {
@@ -159,6 +167,9 @@ final readonly class ServiceEvenementielMediaProcessor implements
         $r->changeLegende(is_string($legend) ? $legend : null);
         $r->changePosition(count($this->photos($a)));
         $a->addRessource($r);
+        if ($enTete) {
+            PhotoPrincipale::placerEnTete($a->ressources(), $r);
+        }
         try {
             $this->em->persist($asset);
             $this->outbox->enqueue(
@@ -226,8 +237,13 @@ final readonly class ServiceEvenementielMediaProcessor implements
                     "La catégorie est invalide.",
                 );
             }
-            $this->assertUsage($a, $input->usage, $r);
-            $r->changeUsage($input->usage);
+            if ($this->usagePrincipaleDeprecie($input->usage)) {
+                // La catégorie de la photo est conservée, seule sa place change.
+                PhotoPrincipale::placerEnTete($a->ressources(), $r);
+            } else {
+                $this->assertUsage($input->usage);
+                $r->changeUsage($input->usage);
+            }
         }
         if (array_key_exists("legende", $raw)) {
             $r->changeLegende($input->legende);
@@ -351,29 +367,30 @@ final readonly class ServiceEvenementielMediaProcessor implements
         );
     }
 
-    private function assertUsage(
-        ServiceEvenementiel $a,
-        string $usage,
-        ?RessourceLieu $current = null,
-    ): void {
-        if (!in_array($usage, ["PHOTO_PRINCIPALE", "PHOTO_DIVERSE"], true)) {
+    private function assertUsage(string $usage): void
+    {
+        if ("PHOTO_DIVERSE" !== $usage) {
             throw new ApiProblemException(
                 422,
                 "invalid_media_usage",
                 "La catégorie est invalide.",
             );
         }
-        if ("PHOTO_PRINCIPALE" === $usage) {
-            foreach ($this->photos($a) as $r) {
-                if ($r !== $current && "PHOTO_PRINCIPALE" === $r->usage()) {
-                    throw new ApiProblemException(
-                        422,
-                        "main_media_exists",
-                        "Une seule photo principale est autorisée.",
-                    );
-                }
-            }
+    }
+
+    /**
+     * Rétrocompat portail : PHOTO_PRINCIPALE n'est plus une catégorie, la
+     * principale est la première photo de l'ordre. Un client qui envoie
+     * encore cet usage demande en réalité un placement en tête.
+     */
+    private function usagePrincipaleDeprecie(string $usage): bool
+    {
+        if ("PHOTO_PRINCIPALE" !== $usage) {
+            return false;
         }
+        $this->logger->notice("Usage déprécié PHOTO_PRINCIPALE reçu par l’API médias : photo placée en tête.");
+
+        return true;
     }
 
     private function changed(ServiceEvenementiel $a): void

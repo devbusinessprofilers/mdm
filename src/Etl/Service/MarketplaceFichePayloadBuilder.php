@@ -20,13 +20,13 @@ use App\Pim\Entity\Lieu\PeriodeFermeture;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Entity\Service\ServiceEvenementiel;
-use App\Pim\Enum\NatureRessource;
 use App\Pim\Lov\ActiviteLovCatalog;
 use App\Pim\Lov\ServiceLovCatalog;
 use App\Pim\Repository\ActiviteRepository;
 use App\Pim\Repository\LieuRepository;
 use App\Pim\Repository\RestaurantRepository;
 use App\Pim\Repository\ServiceEvenementielRepository;
+use App\Pim\Service\PhotoPrincipale;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
 /**
@@ -637,14 +637,9 @@ final readonly class MarketplaceFichePayloadBuilder
      */
     private function locatedPhotos(Fiche $fiche): array
     {
-        $resources = array_values(array_filter(
-            $fiche->resources()->toArray(),
-            static fn (RessourceLieu $r): bool => NatureRessource::Photo === $r->nature(),
-        ));
-        usort(
-            $resources,
-            static fn (RessourceLieu $a, RessourceLieu $b): int => [$a->position(), $a->id()] <=> [$b->position(), $b->id()],
-        );
+        // Ordre canonique : la première photo localisée porte le drapeau
+        // `principale` marketplace.
+        $resources = PhotoPrincipale::photosTriees($fiche->resources());
         $assets = [];
         foreach ($this->assets->findByStringIds(array_map(
             static fn (RessourceLieu $r): string => $r->damAssetId(),

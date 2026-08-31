@@ -55,7 +55,7 @@ final readonly class SyncFicheMarketplaceHandler
         ) {
             return;
         }
-        // Sous les obligations photos (minimum du type, photo principale), le
+        // Sous les obligations photos (minimum du type, plancher à une photo), le
         // snapshot ne doit pas être poussé : les photos supprimées sont
         // purgées puis la fiche est dépubliée jusqu'au rétablissement. Les
         // fiches encore sur imagerie legacy (aucune photo PIM) ne sont pas

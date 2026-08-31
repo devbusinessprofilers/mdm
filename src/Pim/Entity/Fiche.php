@@ -489,8 +489,8 @@ class Fiche
     }
 
     /**
-     * Dépublication technique : les obligations photos (minimum du type et
-     * photo principale) ne sont plus satisfaites, la fiche retourne en cours
+     * Dépublication technique : les obligations photos (minimum du type,
+     * plancher à une photo) ne sont plus satisfaites, la fiche retourne en cours
      * jusqu'à remise en conformité puis republication par le circuit normal.
      */
     public function unpublishForInsufficientPhotos(): void

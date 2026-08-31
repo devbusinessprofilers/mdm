@@ -47,8 +47,8 @@ final class PhotosConformiteCommandTest extends KernelTestCase
 
     public function testDryRunReportsWithoutWriting(): void
     {
-        $this->publishedLieu('Lieu incomplet', photos: 2, withPrincipale: true);
-        $this->publishedActivite('Activité sans principale', photos: 2, withPrincipale: false);
+        $this->publishedLieu('Lieu incomplet', photos: 2);
+        $this->publishedActivite('Activité conforme', photos: 2);
 
         $tester = $this->tester();
         $tester->execute([]);
@@ -57,52 +57,30 @@ final class PhotosConformiteCommandTest extends KernelTestCase
         self::assertStringContainsString('Dry-run', $tester->getDisplay());
         // Rien n'a bougé en base.
         self::assertSame(2, (int) $this->connection->fetchOne("SELECT COUNT(*) FROM pim_fiche WHERE status = 'publiee'"));
-        self::assertSame(0, (int) $this->connection->fetchOne("SELECT COUNT(*) FROM pim_ressource_lieu WHERE usage_code = 'PHOTO_PRINCIPALE' AND fiche_id IN (SELECT id FROM pim_fiche WHERE type = 'activite')"));
     }
 
-    public function testApplyFixesPrincipalesThenDemotesNonCompliant(): void
+    public function testApplyDemotesNonCompliant(): void
     {
-        $conforme = $this->publishedLieu('Lieu conforme', photos: 4, withPrincipale: true);
-        $incomplet = $this->publishedLieu('Lieu incomplet', photos: 2, withPrincipale: true);
-        $lieuSansPrincipale = $this->publishedLieu('Lieu sans principale', photos: 4, withPrincipale: false);
-        $activite = $this->publishedActivite('Activité sans principale', photos: 2, withPrincipale: false);
-        $restaurant = $this->publishedRestaurant('Restaurant sans principale', photos: 1, withPrincipale: false);
+        // La principale est la première photo de l'ordre : seul le minimum de
+        // photos compte, aucune passe de « pose de principale » n'existe plus.
+        $conforme = $this->publishedLieu('Lieu conforme', photos: 4);
+        $incomplet = $this->publishedLieu('Lieu incomplet', photos: 2);
+        $activite = $this->publishedActivite('Activité conforme', photos: 2);
+        $restaurant = $this->publishedRestaurant('Restaurant conforme', photos: 1);
+        $sansPhoto = $this->publishedActivite('Activité sans photo', photos: 0);
 
         $tester = $this->tester();
         $tester->execute(['--appliquer' => true]);
         self::assertSame(0, $tester->getStatusCode(), $tester->getDisplay());
 
-        // Le lieu sans principale reçoit la sienne (première photo) et reste publié.
-        self::assertSame('publiee', $this->statutEnBase($lieuSansPrincipale));
-        self::assertSame(
-            1,
-            (int) $this->connection->fetchOne(
-                "SELECT COUNT(*) FROM pim_ressource_lieu WHERE usage_code = 'PHOTO_PRINCIPALE' AND fiche_id = ?",
-                [$lieuSansPrincipale->id()->toBinary()],
-            ),
-        );
-
-        // L'activité a reçu sa principale (première photo) et reste publiée.
-        self::assertSame('publiee', $this->statutEnBase($activite));
-        self::assertSame(
-            1,
-            (int) $this->connection->fetchOne(
-                "SELECT COUNT(*) FROM pim_ressource_lieu WHERE usage_code = 'PHOTO_PRINCIPALE' AND fiche_id = ?",
-                [$activite->id()->toBinary()],
-            ),
-        );
-        // Le restaurant reçoit aussi sa principale et reste publié.
-        self::assertSame('publiee', $this->statutEnBase($restaurant));
-        self::assertSame(
-            1,
-            (int) $this->connection->fetchOne(
-                "SELECT COUNT(*) FROM pim_ressource_lieu WHERE usage_code = 'PHOTO_PRINCIPALE' AND fiche_id = ?",
-                [$restaurant->id()->toBinary()],
-            ),
-        );
-        // Le lieu sous le minimum est rétrogradé, le conforme reste publié.
+        // Le lieu sous le minimum est rétrogradé, les conformes restent publiés.
         self::assertSame('en_cours', $this->statutEnBase($incomplet));
         self::assertSame('publiee', $this->statutEnBase($conforme));
+        self::assertSame('publiee', $this->statutEnBase($activite));
+        self::assertSame('publiee', $this->statutEnBase($restaurant));
+        // Le rattrapage n'applique pas l'exemption « imagerie legacy » : une
+        // fiche publiée sans aucune photo PIM est rétrogradée.
+        self::assertSame('en_cours', $this->statutEnBase($sansPhoto));
     }
 
     private function statutEnBase(Fiche $fiche): string
@@ -110,12 +88,12 @@ final class PhotosConformiteCommandTest extends KernelTestCase
         return (string) $this->connection->fetchOne('SELECT status FROM pim_fiche WHERE id = ?', [$fiche->id()->toBinary()]);
     }
 
-    private function publishedLieu(string $label, int $photos, bool $withPrincipale): Fiche
+    private function publishedLieu(string $label, int $photos): Fiche
     {
         $lieu = new Lieu();
         $lieu->changeLabel($label);
         $fiche = $lieu->fiche();
-        $this->addPhotos($fiche, $photos, $withPrincipale);
+        $this->addPhotos($fiche, $photos);
         $fiche->publishForImport();
         $this->entityManager->persist($lieu);
         $this->entityManager->flush();
@@ -123,12 +101,12 @@ final class PhotosConformiteCommandTest extends KernelTestCase
         return $fiche;
     }
 
-    private function publishedActivite(string $label, int $photos, bool $withPrincipale): Fiche
+    private function publishedActivite(string $label, int $photos): Fiche
     {
         $activite = new Activite();
         $activite->changeLabel($label);
         $fiche = $activite->fiche();
-        $this->addPhotos($fiche, $photos, $withPrincipale);
+        $this->addPhotos($fiche, $photos);
         $fiche->publishForImport();
         $this->entityManager->persist($activite);
         $this->entityManager->flush();
@@ -136,12 +114,12 @@ final class PhotosConformiteCommandTest extends KernelTestCase
         return $fiche;
     }
 
-    private function publishedRestaurant(string $label, int $photos, bool $withPrincipale): Fiche
+    private function publishedRestaurant(string $label, int $photos): Fiche
     {
         $restaurant = new Restaurant();
         $restaurant->changeLabel($label);
         $fiche = $restaurant->fiche();
-        $this->addPhotos($fiche, $photos, $withPrincipale);
+        $this->addPhotos($fiche, $photos);
         $fiche->publishForImport();
         $this->entityManager->persist($restaurant);
         $this->entityManager->flush();
@@ -149,14 +127,14 @@ final class PhotosConformiteCommandTest extends KernelTestCase
         return $fiche;
     }
 
-    private function addPhotos(Fiche $fiche, int $photos, bool $withPrincipale): void
+    private function addPhotos(Fiche $fiche, int $photos): void
     {
         for ($i = 0; $i < $photos; ++$i) {
             $resource = new RessourceLieu();
             $resource->changeDamAssetId((string) new Ulid());
             $resource->changeNature(NatureRessource::Photo);
-            $resource->changeUsage(0 === $i && $withPrincipale ? 'PHOTO_PRINCIPALE' : 'PHOTO_DIVERSE');
-            $resource->changePosition($i + 1);
+            $resource->changeUsage('PHOTO_DIVERSE');
+            $resource->changePosition($i);
             $fiche->addResource($resource);
         }
     }

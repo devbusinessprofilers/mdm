@@ -26,6 +26,40 @@ final class LieuPhotoManagerTest extends KernelTestCase
         }
     }
 
+    public function testChangeCategorieNeToucheQueLaCategorie(): void
+    {
+        self::bootKernel();
+        $manager = self::getContainer()->get(LieuPhotoManager::class);
+
+        $lieu = new Lieu();
+        $lieu->changeLabel('Manoir des catégories');
+        $salle = new \App\Pim\Entity\Lieu\Salle();
+        $salle->changeNom('Salle 1');
+        $lieu->addSalle($salle);
+        $resource = new RessourceLieu();
+        $resource->changeDamAssetId('asset-categorie');
+        $resource->changeNature(NatureRessource::Photo);
+        $resource->changeUsage('PHOTO_DIVERSE');
+        $resource->changeLegende('Vue du parc');
+        $lieu->addRessource($resource);
+
+        $manager->changeCategorie($resource, $lieu, 'PHOTO_FACADE');
+        self::assertSame('PHOTO_FACADE', $resource->usage());
+        self::assertSame('Vue du parc', $resource->legende());
+        self::assertNull($resource->salle());
+
+        // Salle de réunion sans salle transmise : première salle du lieu.
+        $manager->changeCategorie($resource, $lieu, 'CONFIG_PHOTO_SALLE');
+        self::assertSame($salle, $resource->salle());
+
+        // Repasser en catégorie simple détache la salle.
+        $manager->changeCategorie($resource, $lieu, 'PHOTO_DIVERSE');
+        self::assertNull($resource->salle());
+
+        $this->expectException(\DomainException::class);
+        $manager->changeCategorie($resource, $lieu, 'CATEGORIE_INCONNUE');
+    }
+
     public function testUnCropSousLePlancherEstRefuse(): void
     {
         self::bootKernel();

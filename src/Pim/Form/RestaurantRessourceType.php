@@ -56,7 +56,6 @@ final class RestaurantRessourceType extends AbstractType
             ->add('usage', ChoiceType::class, [
                 'label' => 'Catégorie',
                 'choices' => [
-                    'Photo principale' => 'PHOTO_PRINCIPALE',
                     'Photo diverse' => 'PHOTO_DIVERSE',
                     'Photo de salle' => 'CONFIG_SALLE_PHOTO',
                 ],

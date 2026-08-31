@@ -383,21 +383,6 @@ final class ValidLieuValidator extends ConstraintValidator
                 'ressources',
             );
         }
-        if (
-            count(
-                array_filter(
-                    $photos,
-                    static fn (
-                        RessourceLieu $resource,
-                    ): bool => 'PHOTO_PRINCIPALE' === $resource->usage(),
-                ),
-            ) > 1
-        ) {
-            $this->violation(
-                'Un lieu ne peut avoir qu’une seule photo principale.',
-                'ressources',
-            );
-        }
     }
 
     private function submission(Lieu $lieu): void
@@ -416,27 +401,13 @@ final class ValidLieuValidator extends ConstraintValidator
                 ): bool => NatureRessource::Photo === $resource->nature(),
             ),
         );
-        $minimum = $this->photoObligations->minimum(TypeFiche::Lieu);
+        // La principale étant la première photo de l'ordre, la soumission
+        // exige toujours au moins une photo même si le minimum est surchargé à 0.
+        $minimum = max(1, $this->photoObligations->minimum(TypeFiche::Lieu));
         $maximum = $this->photoObligations->maximum(TypeFiche::Lieu);
         if (count($photos) < $minimum || count($photos) > $maximum) {
             $this->violation(
                 sprintf('La soumission exige entre %d et %d photos.', $minimum, $maximum),
-                'ressources',
-            );
-        }
-        if (
-            1 !==
-            count(
-                array_filter(
-                    $photos,
-                    static fn (
-                        RessourceLieu $resource,
-                    ): bool => 'PHOTO_PRINCIPALE' === $resource->usage(),
-                ),
-            )
-        ) {
-            $this->violation(
-                'La soumission exige exactement une photo principale.',
                 'ressources',
             );
         }
