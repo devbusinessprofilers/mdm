@@ -181,20 +181,31 @@ final class GeoapifyClient implements GeocodeurEtrangerInterface
     }
 
     /**
-     * Autocomplétion pour la recherche du tunnel de création, avec repli.
-     * Le nom de la fiche affine quand l'établissement est connu d'OSM, mais un
-     * nom inconnu peut étouffer la requête (« Nom Paris » ne trouve plus
-     * Paris) : dans ce cas le texte saisi est rejoué seul.
+     * Autocomplétion pour la recherche du tunnel de création. Le texte saisi
+     * et le nom de la fiche sont cherchés SÉPARÉMENT puis fusionnés (texte
+     * d'abord : c'est le signal le plus fort) : les concaténer étouffe le
+     * géocodeur — « The Landmark London 222 » sort un homonyme de Canary Wharf
+     * et jamais le 222 Marylebone Road, que le texte seul trouve avec son
+     * numéro. Le nom seul, lui, sait trouver l'établissement quand OSM le
+     * connaît.
      *
      * @return list<array{label: string, ruePostale: ?string, codePostal: ?string, ville: ?string, region: ?string, departement: ?string, pays: ?string, countryCode: ?string, latitude: ?string, longitude: ?string}>
      */
     public function autocompleteFiche(string $nom, string $texte, string $pays, int $limite = 5): array
     {
+        $nom = trim($nom);
         $texte = trim($texte);
-        $combine = trim(trim($nom).' '.$texte);
-        $suggestions = $this->autocomplete($combine, $pays, $limite);
-        if ([] === $suggestions && '' !== $texte && $texte !== $combine) {
-            $suggestions = $this->autocomplete($texte, $pays, $limite);
+        if ('' === $texte) {
+            return $this->autocomplete($nom, $pays, $limite);
+        }
+        $suggestions = $this->autocomplete($texte, $pays, $limite);
+        if ('' !== $nom) {
+            $labels = array_column($suggestions, 'label');
+            foreach ($this->autocomplete($nom, $pays, $limite) as $suggestion) {
+                if (!in_array($suggestion['label'], $labels, true)) {
+                    $suggestions[] = $suggestion;
+                }
+            }
         }
 
         return $suggestions;

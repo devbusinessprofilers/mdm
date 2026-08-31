@@ -156,33 +156,46 @@ final class GeoapifyClientTest extends TestCase
         ]], $client->autocomplete('Château de Chantilly', 'FR'));
     }
 
-    public function testLAutocompletionFicheRejoueLeTexteSeulQuandLeNomEtouffeLaRequete(): void
+    public function testLAutocompletionFicheChercheLeTexteEtLeNomSeparement(): void
     {
-        // « Nom inconnu d'OSM + Paris » ne trouve rien alors que « Paris » seul
-        // trouve : le repli doit rejouer le texte saisi sans le nom.
+        // Concaténer nom et adresse étouffe le géocodeur : le texte saisi et
+        // le nom partent en deux requêtes, texte d'abord, doublons écartés.
         $urls = [];
         $http = new MockHttpClient(static function (string $method, string $url) use (&$urls): MockResponse {
             $urls[] = $url;
+            $adresse = [
+                'formatted' => '222 Marylebone Road, Londres, NW1 5QE, Royaume-Uni',
+                'housenumber' => '222',
+                'street' => 'Marylebone Road',
+                'city' => 'Londres',
+                'country_code' => 'gb',
+                'lat' => 51.5219,
+                'lon' => -0.1633,
+            ];
+            $hotel = [
+                'formatted' => 'The Landmark London, Lisson Grove, Londres, Royaume-Uni',
+                'city' => 'Londres',
+                'country_code' => 'gb',
+                'lat' => 51.5217,
+                'lon' => -0.1631,
+            ];
 
             return 1 === count($urls)
-                ? new MockResponse((string) json_encode(['results' => []]))
-                : new MockResponse((string) json_encode(['results' => [[
-                    'formatted' => 'Paris, France',
-                    'city' => 'Paris',
-                    'country' => 'France',
-                    'country_code' => 'fr',
-                    'lat' => 48.8566,
-                    'lon' => 2.3522,
-                ]]]));
+                ? new MockResponse((string) json_encode(['results' => [$adresse]]))
+                // Le nom retrouve l'hôtel ET la même adresse : dédoublonnée.
+                : new MockResponse((string) json_encode(['results' => [$hotel, $adresse]]));
         });
         $client = new GeoapifyClient($http, 'https://api.geoapify.test', 'cle-de-test', 0);
 
-        $suggestions = $client->autocompleteFiche('Business Profilers', 'Paris', 'fr');
+        $suggestions = $client->autocompleteFiche('The Landmark London', '222 Marylebone Rd', 'gb');
 
         self::assertCount(2, $urls);
-        self::assertStringContainsString('text=Business%20Profilers%20Paris', $urls[0]);
-        self::assertStringContainsString('text=Paris', $urls[1]);
-        self::assertSame('Paris, France', $suggestions[0]['label'] ?? null);
+        self::assertStringContainsString('text=222%20Marylebone%20Rd', $urls[0]);
+        self::assertStringContainsString('text=The%20Landmark%20London', $urls[1]);
+        self::assertSame([
+            '222 Marylebone Road, Londres, NW1 5QE, Royaume-Uni',
+            'The Landmark London, Lisson Grove, Londres, Royaume-Uni',
+        ], array_column($suggestions, 'label'));
     }
 
     public function testLAutocompletionFicheSansTexteSaisiNEssaieQueLeNom(): void
@@ -196,7 +209,7 @@ final class GeoapifyClientTest extends TestCase
         $client = new GeoapifyClient($http, 'https://api.geoapify.test', 'cle-de-test', 0);
 
         self::assertSame([], $client->autocompleteFiche('Business Profilers', '', 'fr'));
-        self::assertSame(1, $appels, 'Sans texte saisi, pas de second essai possible.');
+        self::assertSame(1, $appels, 'Sans texte saisi, seule la requête sur le nom part.');
     }
 
     public function testLAutocompletionSansCleConfigureeNAppelleRien(): void
