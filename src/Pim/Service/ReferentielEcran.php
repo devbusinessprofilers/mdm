@@ -173,16 +173,18 @@ final readonly class ReferentielEcran
      */
     public static function actions(): array
     {
-        $action = static fn (string $code, string $label, string $icone, ?string $modale = null): array => [
+        $action = static fn (string $code, string $label, string $icone, ?string $modale = null, ?string $route = null, ?int $plafond = null): array => [
             'code' => $code,
             'label' => $label,
             'icone' => $icone,
             // L'export (modale) n'est pas plafonné : la vue d'attente absorbe
             // la durée ; les autres actions gardent les plafonds de la maquette.
-            'plafond' => null === $modale ? ReferentielActionGroupee::plafond($code) : null,
+            'plafond' => $plafond ?? (null === $modale ? ReferentielActionGroupee::plafond($code) : null),
             'irreversible' => 'acces' === $code,
             // Identifiant de modale : le bouton ouvre la modale au lieu de soumettre.
             'modale' => $modale,
+            // Route dédiée : le bouton poste la sélection ailleurs que /actions.
+            'route' => $route,
         ];
 
         return [
@@ -201,6 +203,9 @@ final readonly class ReferentielEcran
                 $action('desarchiver', 'Désarchiver', 'arrow-counter-clockwise'),
                 $action('republier', 'Republier', 'paper-plane'),
                 $action('exporter', 'Exporter Excel', 'clipboard', 'export-colonnes'),
+                // Deux doublons d'une même gamme : l'écran de comparaison
+                // décide champ par champ, la sélection est plafonnée à 2.
+                $action('fusionner', 'Fusionner les doublons', 'git-branch', route: 'app_mdm_referentiel_fusionner', plafond: 2),
                 $action('salesforce', 'Envoyer à Salesforce', 'cloud-arrow-up'),
                 $action('acces', 'Envoyer les accès extranet', 'lock'),
             ],

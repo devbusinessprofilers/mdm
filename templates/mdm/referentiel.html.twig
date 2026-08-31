@@ -397,6 +397,12 @@
                                         <twig:Modal:TriggerButton variant="text" size="sm" type="button"
                                                                   modalIdentifier="{{ action.modale }}"
                                                                   class="flex-1 min-w-0 justify-start! px-0! whitespace-nowrap font-black">{{ action.label }}</twig:Modal:TriggerButton>
+                                    {% elseif action.route %}
+                                        {# Route dédiée : la sélection part vers son propre flux (écran de fusion). #}
+                                        <twig:Button variant="text" size="sm" type="submit"
+                                                     formaction="{{ path(action.route, parametres_filtre) }}"
+                                                     data-plafond="{{ action.plafond }}"
+                                                     class="flex-1 min-w-0 justify-start! px-0! whitespace-nowrap font-black">{{ action.label }}</twig:Button>
                                     {% else %}
                                         <twig:Button variant="text" size="sm" type="submit"
                                                      name="selection[action]" value="{{ action.code }}"
@@ -566,7 +572,8 @@
                             <td class="pr-2.5" style="width: 130px">
                                 {# `inline-flex` : sans lui, le Tag (div flex) s'étire sur la cellule. #}
                                 <span class="inline-flex">
-                                    <twig:Tag label="{{ statut_libelles[ligne.status.value] ?? ligne.status.value }}"
+                                    {# Une fiche absorbée par une fusion est techniquement archivée : le libellé dit pourquoi. #}
+                                    <twig:Tag label="{{ ligne.mergedInto ? 'Fusionnée' : (statut_libelles[ligne.status.value] ?? ligne.status.value) }}"
                                               variant="{{ _self.ton_statut(ligne.status.value) }}" size="sm" />
                                 </span>
                             </td>

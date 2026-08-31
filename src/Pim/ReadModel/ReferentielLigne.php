@@ -28,6 +28,8 @@ final readonly class ReferentielLigne
         public ?string $pays,
         public bool $actif,
         public bool $premium,
+        // Fiche absorbée par une fusion : la ligne s'affiche « Fusionnée ».
+        public ?string $mergedInto = null,
     ) {
     }
 }

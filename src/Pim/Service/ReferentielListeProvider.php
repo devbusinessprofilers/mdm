@@ -184,6 +184,7 @@ final readonly class ReferentielListeProvider
                 // la seule éteinte du point de vue du référentiel.
                 actif: StatutFiche::Archivee !== $status,
                 premium: (bool) ($row['premium'] ?? false),
+                mergedInto: null === ($row['merged_into'] ?? null) ? null : (string) Ulid::fromBinary((string) $row['merged_into']),
             );
         }
 

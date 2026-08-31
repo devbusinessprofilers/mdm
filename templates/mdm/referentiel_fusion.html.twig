@@ -1,0 +1,132 @@
+{% extends 'mdm/base.html.twig' %}
+
+{#
+    Écran de fusion de deux fiches doublons : choix de la fiche survivante,
+    comparaison champ par champ des valeurs divergentes (la plus récente est
+    présélectionnée — règle « la plus récente l'emporte », corrigeable), et
+    résumé des collections fusionnées en union. Un seul formulaire : les
+    radios a/b portent tous les choix.
+#}
+
+{% block title %}Fusion de fiches — MDM Business Profilers{% endblock %}
+
+{% set cotes = [
+    { cle: 'a', fiche: fiche_a },
+    { cle: 'b', fiche: fiche_b },
+] %}
+
+{% block contenu %}
+    <div class="flex-1 min-h-0 overflow-y-auto">
+        <div class="max-w-[1080px] mx-auto px-8 py-8 flex flex-col gap-6">
+
+            <div class="flex items-center justify-between gap-4">
+                <div class="flex flex-col gap-1">
+                    <twig:Typography variant="heading-2" bold>Fusionner deux fiches</twig:Typography>
+                    <twig:Typography variant="body-sm" textColor="neutral-500">
+                        La fiche survivante garde son code et son historique et reçoit les valeurs retenues ;
+                        l'autre est archivée avec la mention «&nbsp;Fusionnée&nbsp;». Photos, documents, salles,
+                        collaborateurs et sélections multiples sont rassemblés sans doublon.
+                    </twig:Typography>
+                </div>
+                <a href="{{ url_retour }}" class="shrink-0">
+                    <twig:Typography variant="body-sm" textColor="neutral-500" bold>Retour au référentiel</twig:Typography>
+                </a>
+            </div>
+
+            {{ form_start(form_fusion, { attr: { class: 'flex flex-col gap-6' } }) }}
+
+            {# ------------------------------------------------ Fiche survivante #}
+            <div class="flex flex-col gap-3 p-5 rounded-[20px] bg-neutral-100 shadow-(--shadow)">
+                <twig:Typography variant="subtitle" bold>Quelle fiche survit&nbsp;?</twig:Typography>
+                <div class="grid grid-cols-2 gap-4">
+                    {% for cote in cotes %}
+                        {% set index = loop.index0 %}
+                        <label for="{{ form_fusion.survivant[index].vars.id }}"
+                               class="flex items-start gap-3 p-4 rounded-[14px] bg-neutral-0 inset-ring-1 inset-ring-neutral-200 cursor-pointer
+                                      has-checked:inset-ring-2 has-checked:inset-ring-primary-3">
+                            {{ form_widget(form_fusion.survivant[index]) }}
+                            <span class="flex flex-col gap-0.5 min-w-0">
+                                <twig:Typography variant="body" bold>{{ cote.fiche.label ?? 'Sans libellé' }}</twig:Typography>
+                                <twig:Typography variant="body-xs" textColor="neutral-500">
+                                    Code {{ cote.fiche.code }} · modifiée le {{ cote.fiche.updatedAt|date('d/m/Y à H:i') }}
+                                </twig:Typography>
+                            </span>
+                        </label>
+                    {% endfor %}
+                </div>
+                <twig:Typography variant="body-xs" textColor="neutral-500">
+                    Le contributeur assigné, le code et l'historique de la fiche survivante sont conservés.
+                    La fiche fusionnée repart «&nbsp;En cours&nbsp;» pour revalidation.
+                </twig:Typography>
+            </div>
+
+            {# --------------------------------------------- Champs divergents #}
+            {% if groupes is empty %}
+                <div class="p-5 rounded-[20px] bg-neutral-100 shadow-(--shadow)">
+                    <twig:Typography variant="body-sm" textColor="neutral-500">
+                        Aucun champ ne diverge entre les deux fiches : la fusion rassemblera les photos,
+                        documents, salles, collaborateurs et sélections multiples.
+                    </twig:Typography>
+                </div>
+            {% endif %}
+            {% for groupe in groupes %}
+                <div class="flex flex-col gap-3 p-5 rounded-[20px] bg-neutral-100 shadow-(--shadow)">
+                    <twig:Typography variant="subtitle" bold>{{ groupe.titre }}</twig:Typography>
+                    <div class="flex flex-col divide-y divide-neutral-200">
+                        {% for champ in groupe.champs %}
+                            {% set field = form_fusion.children['champ_' ~ champ.nom] %}
+                            <div class="grid grid-cols-[220px_1fr_1fr] gap-4 py-3 items-start">
+                                <twig:Typography variant="body-sm" bold class="break-words">{{ champ.libelle }}</twig:Typography>
+                                {% for cote in cotes %}
+                                    {% set index = loop.index0 %}
+                                    {% set date = index == 0 ? champ.date_a : champ.date_b %}
+                                    <label for="{{ field[index].vars.id }}"
+                                           class="flex items-start gap-2.5 p-3 rounded-[10px] bg-neutral-0 inset-ring-1 inset-ring-neutral-200 cursor-pointer
+                                                  has-checked:inset-ring-2 has-checked:inset-ring-primary-3">
+                                        {{ form_widget(field[index]) }}
+                                        <span class="flex flex-col gap-0.5 min-w-0">
+                                            <twig:Typography variant="body-sm" class="break-words">{{ index == 0 ? champ.valeur_a : champ.valeur_b }}</twig:Typography>
+                                            <twig:Typography variant="body-xs" textColor="neutral-500">
+                                                {{ cote.fiche.label ?? 'Sans libellé' }}{% if date %} · modifié le {{ date|date('d/m/Y') }}{% endif %}
+                                            </twig:Typography>
+                                        </span>
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endfor %}
+
+            {# ------------------------------------ Collections fusionnées (union) #}
+            <div class="flex flex-col gap-3 p-5 rounded-[20px] bg-neutral-100 shadow-(--shadow)">
+                <twig:Typography variant="subtitle" bold>Rassemblé automatiquement</twig:Typography>
+                <twig:Typography variant="body-sm" textColor="neutral-500">
+                    Ces éléments des deux fiches sont réunis sans doublon — rien ne se perd.
+                </twig:Typography>
+                <div class="grid grid-cols-2 gap-x-8 gap-y-1.5">
+                    {% for union in unions %}
+                        {% if union.a + union.b > 0 %}
+                            <div class="flex items-center justify-between gap-3">
+                                <twig:Typography variant="body-sm">{{ union.libelle }}</twig:Typography>
+                                <twig:Typography variant="body-sm" textColor="neutral-500">{{ union.a }} + {{ union.b }}</twig:Typography>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end gap-3 pb-8">
+                <a href="{{ url_retour }}">
+                    <twig:Typography variant="body-sm" textColor="neutral-500" bold>Annuler</twig:Typography>
+                </a>
+                <twig:Button variant="primary" type="submit"
+                             data-controller="confirm"
+                             data-confirm-message-value="La fiche non retenue sera archivée avec la mention « Fusionnée » et les valeurs choisies appliquées à la survivante. Continuer ?"
+                             data-action="confirm#submit">Fusionner les fiches</twig:Button>
+            </div>
+
+            {{ form_end(form_fusion) }}
+        </div>
+    </div>
+{% endblock %}

@@ -32,6 +32,7 @@ use App\Pim\Form\RestaurantType;
 use App\Pim\Form\ServiceEvenementielType;
 use App\Pim\Repository\CompletenessFieldConfigurationRepository;
 use App\Pim\Repository\FicheAffiliationRepository;
+use App\Pim\Repository\FicheRepository;
 use App\Pim\Repository\FicheSuggestionRepository;
 use App\Pim\Repository\SiteDiffusionRepository;
 use App\Shared\Service\ParametreProviderInterface;
@@ -107,6 +108,7 @@ final readonly class FicheEditeurEcran
         private FichePhotoPresenter $fichePhotos,
         private MediaAssetRepository $mediaAssets,
         private CsrfTokenManagerInterface $csrfTokens,
+        private FicheRepository $fiches,
     ) {
     }
 
@@ -287,6 +289,8 @@ final readonly class FicheEditeurEcran
                 'completude' => $entite->completeness(),
                 'completude_canaux' => $entite->completenessByChannel(),
                 'message_refus' => $fiche->validationFeedback(),
+                // Fiche absorbée par une fusion : bandeau avec le lien vers la survivante.
+                'fusion' => $this->fusion($fiche),
             ],
             'liens' => [
                 // Le dépôt et la revue vivent dans la section extraction de l'éditeur.
@@ -550,6 +554,31 @@ final readonly class FicheEditeurEcran
                 ])->createView(),
                 'media_csrf_token' => $this->csrfTokens->getToken('lieu-media-'.$entite->id())->getValue(),
             ],
+        ];
+    }
+
+    /**
+     * Bandeau « Fusionnée » d'une fiche absorbée : libellé et lien vers la
+     * fiche survivante (lien absent si elle a disparu depuis).
+     *
+     * @return array{label: string, url: ?string}|null
+     */
+    private function fusion(\App\Pim\Entity\Fiche $fiche): ?array
+    {
+        $survivantId = $fiche->mergedIntoId();
+        if (null === $survivantId) {
+            return null;
+        }
+        $survivante = $this->fiches->find($survivantId);
+        if (!$survivante instanceof \App\Pim\Entity\Fiche) {
+            return ['label' => (string) $survivantId, 'url' => null];
+        }
+
+        return [
+            'label' => $survivante->label() ?? sprintf('fiche %d', $survivante->code()),
+            'url' => TypeFiche::Lieu === $survivante->type()
+                ? $this->urls->generate('app_mdm_fiche_lieu', ['id' => $survivante->idString()])
+                : $this->urls->generate('app_mdm_fiche_gamme', ['gamme' => self::slug($survivante->type()), 'id' => $survivante->idString()]),
         ];
     }
 

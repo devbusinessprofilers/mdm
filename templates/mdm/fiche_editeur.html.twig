@@ -173,7 +173,7 @@
                        de heading-2 pousse à 32/40 et bold donne 900). #}
                     <twig:Typography variant="heading-2" element="h1"
                                      class="sm:text-[1.625rem]! sm:leading-[2.125rem]! font-[700]!">{{ fiche.label ?? 'Sans libellé' }}</twig:Typography>
-                    <twig:Tag label="{{ statut_libelles[entete.statut] ?? entete.statut }}" variant="{{ statut_variante[entete.statut] ?? 'neutral' }}" size="sm" />
+                    <twig:Tag label="{{ entete.fusion ? 'Fusionnée' : (statut_libelles[entete.statut] ?? entete.statut) }}" variant="{{ statut_variante[entete.statut] ?? 'neutral' }}" size="sm" />
                     <twig:Tag label="{{ entete.reference }} · v{{ entete.version }}" variant="neutral" size="sm" />
                 </div>
                 <div class="flex flex-row items-center gap-4">
@@ -183,6 +183,18 @@
                 {# Motif de refus : visible tant que la fiche n'est pas re-soumise ni validée. #}
                 {% if entete.message_refus %}
                     <twig:Typography variant="body-sm" textColor="error" bold class="mt-1">Fiche refusée : {{ entete.message_refus }}</twig:Typography>
+                {% endif %}
+                {# Fiche absorbée par une fusion : archivée, avec le pourquoi et la survivante. #}
+                {% if entete.fusion %}
+                    <twig:Typography variant="body-sm" bold class="mt-1">
+                        Fiche fusionnée dans
+                        {% if entete.fusion.url %}
+                            <a href="{{ entete.fusion.url }}" class="underline text-primary-3">{{ entete.fusion.label }}</a>.
+                        {% else %}
+                            «&nbsp;{{ entete.fusion.label }}&nbsp;».
+                        {% endif %}
+                        Désarchiver cette fiche efface cette mention.
+                    </twig:Typography>
                 {% endif %}
                 {# Référence en clair : point d'ancrage des tests, hors mise en page maquette. #}
                 <p class="page-description sr-only">{{ entete.reference }} · v{{ entete.version }} · {{ statut_libelles[entete.statut] ?? entete.statut }} · Complété à {{ entete.completude }} %</p>

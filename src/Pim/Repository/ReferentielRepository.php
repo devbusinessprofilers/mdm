@@ -337,6 +337,7 @@ final readonly class ReferentielRepository
                     au.email AS contributeur,
                     loc.pays AS pays,
                     f.business_premium AS premium,
+                    f.merged_into_id AS merged_into,
                     %s AS typologie,
                     f.updated_at
                 FROM pim_fiche f

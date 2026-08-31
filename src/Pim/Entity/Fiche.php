@@ -43,6 +43,7 @@ use Symfony\Component\Uid\Ulid;
     ),
 ]
 #[ORM\Index(name: 'IDX_PIM_FICHE_UPDATED', columns: ['updated_at', 'id'])]
+#[ORM\Index(name: 'IDX_PIM_FICHE_MERGED_INTO', columns: ['merged_into_id'])]
 #[ORM\Index(name: 'FTX_PIM_FICHE_LABEL', columns: ['label'], flags: ['fulltext'])]
 #[ORM\HasLifecycleCallbacks]
 class Fiche
@@ -81,6 +82,9 @@ class Fiche
     private ?\DateTimeImmutable $publishedAt = null;
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $archivedAt = null;
+    /** Fiche survivante d'une fusion : posé quand cette fiche a été absorbée (statut Archivee, affichée « Fusionnée »). */
+    #[ORM\Column(type: 'ulid', nullable: true)]
+    private ?Ulid $mergedIntoId = null;
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $validationRequestedAt = null;
     #[ORM\Column(length: 26, nullable: true)]
@@ -426,6 +430,33 @@ class Fiche
         $this->touch();
     }
 
+    public function mergedIntoId(): ?Ulid
+    {
+        return $this->mergedIntoId;
+    }
+
+    /**
+     * Absorption par une fusion : même effet qu'un archivage (dépublication et
+     * retrait des flux décidés en aval), la fiche survivante étant mémorisée
+     * pour que l'interface affiche « Fusionnée » avec le lien. Le retour en
+     * circulation passe par le désarchivage normal, qui efface la trace.
+     */
+    public function markMergedInto(Ulid $survivantId, string $actorId): void
+    {
+        if ($survivantId->equals($this->id)) {
+            throw new \DomainException('Une fiche ne peut pas être fusionnée dans elle-même.');
+        }
+        if (StatutFiche::Archivee === $this->status) {
+            throw new \DomainException('La fiche est déjà archivée.');
+        }
+        $this->status = StatutFiche::Archivee;
+        $this->archivedAt = new \DateTimeImmutable();
+        $this->validationReviewedAt = new \DateTimeImmutable();
+        $this->validationReviewedBy = $actorId;
+        $this->mergedIntoId = $survivantId;
+        $this->touch();
+    }
+
     /**
      * Désarchivage : une fiche archivée n'est pas un cul-de-sac, elle revient
      * en cours pour être reprise puis renvoyée dans le workflow normal
@@ -438,6 +469,7 @@ class Fiche
         }
         $this->status = StatutFiche::EnCours;
         $this->archivedAt = null;
+        $this->mergedIntoId = null;
         $this->validationReviewedAt = new \DateTimeImmutable();
         $this->validationReviewedBy = $actorId;
         $this->touch();
@@ -456,6 +488,7 @@ class Fiche
         $this->status = StatutFiche::Publiee;
         $this->publishedAt = new \DateTimeImmutable();
         $this->archivedAt = null;
+        $this->mergedIntoId = null;
         $this->validationReviewedAt = new \DateTimeImmutable();
         $this->validationReviewedBy = $actorId;
         $this->touch();
@@ -467,6 +500,7 @@ class Fiche
         $this->status = StatutFiche::Publiee;
         $this->publishedAt = new \DateTimeImmutable();
         $this->archivedAt = null;
+        $this->mergedIntoId = null;
         $this->validationFeedback = null;
         $this->validationReviewedAt = null;
         $this->validationReviewedBy = null;
@@ -631,6 +665,7 @@ class Fiche
         if (StatutFiche::EnCours !== $this->status) {
             $this->status = StatutFiche::EnCours;
             $this->archivedAt = null;
+            $this->mergedIntoId = null;
             $this->validationRequestedAt = null;
             $this->validationRequestedBy = null;
             $this->validationReviewedAt = null;
