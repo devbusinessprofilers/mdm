@@ -31,21 +31,18 @@ export default class extends Controller {
         this.controleurFetch?.abort()
     }
 
-    requete() {
-        const nom = document.getElementById(this.labelIdValue)?.value.trim() ?? ''
-
-        return `${nom} ${this.champTarget.value.trim()}`.trim()
+    nom() {
+        return document.getElementById(this.labelIdValue)?.value.trim() ?? ''
     }
 
     saisir() {
         this.choix = null
         window.clearTimeout(this.minuterie)
-        const q = this.requete()
-        if (q.length < this.minValue) {
+        if (`${this.nom()} ${this.champTarget.value.trim()}`.trim().length < this.minValue) {
             this.fermer()
             return
         }
-        this.minuterie = window.setTimeout(() => this.charger(q), this.delaiValue)
+        this.minuterie = window.setTimeout(() => this.charger(), this.delaiValue)
     }
 
     changerPays() {
@@ -53,7 +50,7 @@ export default class extends Controller {
         this.fermer()
     }
 
-    async charger(q) {
+    async charger() {
         this.controleurFetch?.abort()
         this.controleurFetch = new AbortController()
         const pays = this.paysTarget.value
@@ -61,8 +58,15 @@ export default class extends Controller {
             this.fermer()
             return
         }
+        // Nom et texte séparés : le serveur essaie « nom + texte » puis, faute
+        // de résultat, le texte seul (un nom inconnu d'OSM étouffe la requête).
+        const params = new URLSearchParams({
+            nom: this.nom(),
+            q: this.champTarget.value.trim(),
+            pays,
+        })
         try {
-            const response = await window.fetch(`${this.urlValue}?q=${encodeURIComponent(q)}&pays=${encodeURIComponent(pays)}`, {
+            const response = await window.fetch(`${this.urlValue}?${params}`, {
                 headers: { 'X-Requested-With': 'XMLHttpRequest' },
                 signal: this.controleurFetch.signal,
             })
@@ -81,7 +85,12 @@ export default class extends Controller {
         this.listeTarget.replaceChildren()
         this.indexActif = -1
         if (suggestions.length === 0) {
-            this.fermer()
+            // Un silence ressemble à une panne : afficher l'absence de résultat.
+            const vide = document.createElement('div')
+            vide.textContent = 'Aucune adresse trouvée : précisez la rue ou la ville.'
+            vide.className = 'px-3 py-2 text-sm text-neutral-500'
+            this.listeTarget.append(vide)
+            this.ouvrir()
             return
         }
         for (const suggestion of suggestions) {
@@ -95,6 +104,10 @@ export default class extends Controller {
             option.dataset.action = 'mousedown->adresse-autocomplete#choisir'
             this.listeTarget.append(option)
         }
+        this.ouvrir()
+    }
+
+    ouvrir() {
         this.listeTarget.hidden = false
         this.champTarget.setAttribute('aria-expanded', 'true')
         document.addEventListener('mousedown', this.fermerSiExterieur)
@@ -114,7 +127,13 @@ export default class extends Controller {
 
     clavier(event) {
         if (this.listeTarget.hidden) return
-        const options = [...this.listeTarget.children]
+        if (event.key === 'Escape') {
+            this.fermer()
+            return
+        }
+        // La ligne « aucune adresse » n'est pas une option navigable.
+        const options = [...this.listeTarget.querySelectorAll('button')]
+        if (options.length === 0) return
         if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
             event.preventDefault()
             const pas = event.key === 'ArrowDown' ? 1 : -1
@@ -122,8 +141,6 @@ export default class extends Controller {
         } else if (event.key === 'Enter' && this.indexActif >= 0) {
             event.preventDefault()
             this.retenir(options[this.indexActif])
-        } else if (event.key === 'Escape') {
-            this.fermer()
         }
     }
 

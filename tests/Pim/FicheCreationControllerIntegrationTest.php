@@ -133,7 +133,7 @@ final class FicheCreationControllerIntegrationTest extends WebTestCase
     {
         $client = $this->createClientWithUser();
         // En test la clé Geoapify est vide : client désactivé, aucun appel réseau.
-        $client->request('GET', '/referentiel/fiche/adresse-autocomplete', ['q' => 'Château de Chantilly', 'pays' => 'fr']);
+        $client->request('GET', '/referentiel/fiche/adresse-autocomplete', ['nom' => 'Château de Chantilly', 'q' => 'Chantilly', 'pays' => 'fr']);
         self::assertResponseIsSuccessful();
         self::assertSame(
             ['suggestions' => []],

@@ -156,6 +156,49 @@ final class GeoapifyClientTest extends TestCase
         ]], $client->autocomplete('Château de Chantilly', 'FR'));
     }
 
+    public function testLAutocompletionFicheRejoueLeTexteSeulQuandLeNomEtouffeLaRequete(): void
+    {
+        // « Nom inconnu d'OSM + Paris » ne trouve rien alors que « Paris » seul
+        // trouve : le repli doit rejouer le texte saisi sans le nom.
+        $urls = [];
+        $http = new MockHttpClient(static function (string $method, string $url) use (&$urls): MockResponse {
+            $urls[] = $url;
+
+            return 1 === count($urls)
+                ? new MockResponse((string) json_encode(['results' => []]))
+                : new MockResponse((string) json_encode(['results' => [[
+                    'formatted' => 'Paris, France',
+                    'city' => 'Paris',
+                    'country' => 'France',
+                    'country_code' => 'fr',
+                    'lat' => 48.8566,
+                    'lon' => 2.3522,
+                ]]]));
+        });
+        $client = new GeoapifyClient($http, 'https://api.geoapify.test', 'cle-de-test', 0);
+
+        $suggestions = $client->autocompleteFiche('Business Profilers', 'Paris', 'fr');
+
+        self::assertCount(2, $urls);
+        self::assertStringContainsString('text=Business%20Profilers%20Paris', $urls[0]);
+        self::assertStringContainsString('text=Paris', $urls[1]);
+        self::assertSame('Paris, France', $suggestions[0]['label'] ?? null);
+    }
+
+    public function testLAutocompletionFicheSansTexteSaisiNEssaieQueLeNom(): void
+    {
+        $appels = 0;
+        $http = new MockHttpClient(static function () use (&$appels): MockResponse {
+            ++$appels;
+
+            return new MockResponse((string) json_encode(['results' => []]));
+        });
+        $client = new GeoapifyClient($http, 'https://api.geoapify.test', 'cle-de-test', 0);
+
+        self::assertSame([], $client->autocompleteFiche('Business Profilers', '', 'fr'));
+        self::assertSame(1, $appels, 'Sans texte saisi, pas de second essai possible.');
+    }
+
     public function testLAutocompletionSansCleConfigureeNAppelleRien(): void
     {
         $http = new MockHttpClient(static function (): MockResponse {

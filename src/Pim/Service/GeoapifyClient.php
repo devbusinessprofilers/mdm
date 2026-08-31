@@ -181,6 +181,26 @@ final class GeoapifyClient implements GeocodeurEtrangerInterface
     }
 
     /**
+     * Autocomplétion pour la recherche du tunnel de création, avec repli.
+     * Le nom de la fiche affine quand l'établissement est connu d'OSM, mais un
+     * nom inconnu peut étouffer la requête (« Nom Paris » ne trouve plus
+     * Paris) : dans ce cas le texte saisi est rejoué seul.
+     *
+     * @return list<array{label: string, ruePostale: ?string, codePostal: ?string, ville: ?string, region: ?string, departement: ?string, pays: ?string, countryCode: ?string, latitude: ?string, longitude: ?string}>
+     */
+    public function autocompleteFiche(string $nom, string $texte, string $pays, int $limite = 5): array
+    {
+        $texte = trim($texte);
+        $combine = trim(trim($nom).' '.$texte);
+        $suggestions = $this->autocomplete($combine, $pays, $limite);
+        if ([] === $suggestions && '' !== $texte && $texte !== $combine) {
+            $suggestions = $this->autocomplete($texte, $pays, $limite);
+        }
+
+        return $suggestions;
+    }
+
+    /**
      * Suggestions d'adresses pendant la frappe (recherche du tunnel de
      * création), bornées à un pays. Les clés suivent les champs de
      * Localisation : le client applique la suggestion telle quelle.

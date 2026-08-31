@@ -94,13 +94,14 @@ final class FicheController extends AbstractController
     #[Route('/adresse-autocomplete', name: 'adresse_autocomplete', methods: ['GET'])]
     public function adresseAutocomplete(Request $request, GeoapifyClient $geocodeur): Response
     {
+        $nom = trim($request->query->getString('nom'));
         $q = trim($request->query->getString('q'));
         $pays = trim($request->query->getString('pays'));
-        if (mb_strlen($q) < 3 || 1 !== preg_match('/^[a-zA-Z]{2}$/', $pays)) {
+        if (mb_strlen(trim($nom.' '.$q)) < 3 || 1 !== preg_match('/^[a-zA-Z]{2}$/', $pays)) {
             return $this->json(['suggestions' => []]);
         }
         try {
-            $suggestions = $geocodeur->autocomplete($q, $pays);
+            $suggestions = $geocodeur->autocompleteFiche($nom, $q, $pays);
         } catch (\RuntimeException) {
             // L'autocomplétion est un confort : API indisponible = pas de suggestion.
             $suggestions = [];
