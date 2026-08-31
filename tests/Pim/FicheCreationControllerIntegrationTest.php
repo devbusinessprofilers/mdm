@@ -169,8 +169,8 @@ final class FicheCreationControllerIntegrationTest extends WebTestCase
         self::assertResponseIsSuccessful();
         $donnees = json_decode((string) $client->getResponse()->getContent(), true);
         self::assertIsArray($donnees);
-        self::assertSame('BUSINESS PROFILERS — 1 AVENUE DU GENERAL DE GAULLE 60500 CHANTILLY', $donnees['suggestions'][0]['label'] ?? null);
-        self::assertSame('1 AVENUE DU GENERAL DE GAULLE', $donnees['suggestions'][0]['ruePostale'] ?? null);
+        self::assertSame('BUSINESS PROFILERS — 1 Avenue du General de Gaulle 60500 Chantilly', $donnees['suggestions'][0]['label'] ?? null);
+        self::assertSame('1 Avenue du General de Gaulle', $donnees['suggestions'][0]['ruePostale'] ?? null);
         self::assertSame('Oise', $donnees['suggestions'][0]['departement'] ?? null);
         self::assertSame('FR', $donnees['suggestions'][0]['countryCode'] ?? null);
     }

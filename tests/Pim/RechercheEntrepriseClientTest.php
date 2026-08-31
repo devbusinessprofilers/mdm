@@ -159,17 +159,31 @@ final class RechercheEntrepriseClientTest extends TestCase
                         'longitude' => '2.4623',
                     ],
                 ],
+                [
+                    'nom_complet' => 'AUBERGE DE L\'ECLUSE',
+                    'siege' => [
+                        'adresse' => 'CHEMIN DE L\'ECLUSE 78170 LA CELLE-SAINT-CLOUD',
+                        'type_voie' => 'CHEMIN',
+                        'libelle_voie' => 'DE L\'ECLUSE',
+                        'code_postal' => '78170',
+                        'libelle_commune' => 'LA CELLE-SAINT-CLOUD',
+                        'departement' => '78',
+                    ],
+                ],
                 // Sans adresse de siège : inutilisable pour remplir la fiche.
                 ['nom_complet' => 'SANS ADRESSE', 'siege' => []],
             ]], JSON_THROW_ON_ERROR));
         });
         $client = new RechercheEntrepriseClient($httpClient, new NullLogger(), 'https://recherche.example');
 
-        self::assertSame([[
-            'label' => 'BUSINESS PROFILERS — 1 AVENUE DU GENERAL DE GAULLE 60500 CHANTILLY',
-            'ruePostale' => '1 AVENUE DU GENERAL DE GAULLE',
+        $suggestions = $client->suggestionsAdresse('Business Profilers');
+
+        // Capitales de l'annuaire remises en nom propre (particules minuscules).
+        self::assertSame([
+            'label' => 'BUSINESS PROFILERS — 1 Avenue du General de Gaulle 60500 Chantilly',
+            'ruePostale' => '1 Avenue du General de Gaulle',
             'codePostal' => '60500',
-            'ville' => 'CHANTILLY',
+            'ville' => 'Chantilly',
             'region' => null,
             // Numéro INSEE traduit en libellé ; la région ne sort qu'en code.
             'departement' => 'Oise',
@@ -177,7 +191,13 @@ final class RechercheEntrepriseClientTest extends TestCase
             'countryCode' => 'FR',
             'latitude' => '49.1974',
             'longitude' => '2.4623',
-        ]], $client->suggestionsAdresse('Business Profilers'));
+        ], $suggestions[0] ?? null);
+        self::assertSame('Chemin de l\'Ecluse', $suggestions[1]['ruePostale'] ?? null);
+        self::assertSame('La Celle-Saint-Cloud', $suggestions[1]['ville'] ?? null);
+        // Libellé composé champ par champ : l'article de la commune garde sa majuscule.
+        self::assertSame('AUBERGE DE L\'ECLUSE — Chemin de l\'Ecluse 78170 La Celle-Saint-Cloud', $suggestions[1]['label'] ?? null);
+        self::assertSame('Yvelines', $suggestions[1]['departement'] ?? null);
+        self::assertCount(2, $suggestions);
     }
 
     public function testFindStatutRendEtatInconnuQuandLeSiretNEstPasDansLaReponse(): void

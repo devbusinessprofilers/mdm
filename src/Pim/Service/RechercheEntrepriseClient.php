@@ -111,11 +111,17 @@ final class RechercheEntrepriseClient
                 continue;
             }
             $departement = self::string($siege['departement'] ?? null);
+            $rue = self::nomPropre(self::rue($siege));
+            $codePostal = self::string($siege['code_postal'] ?? null);
+            $ville = self::nomPropre(self::string($siege['libelle_commune'] ?? null));
+            // Libellé composé champ par champ : formater l'adresse d'un bloc
+            // abaisserait l'article des communes (« 78170 la Celle-Saint-Cloud »).
+            $affichage = trim(implode(' ', array_filter([$rue, trim(($codePostal ?? '').' '.($ville ?? ''))])));
             $suggestions[] = [
-                'label' => $denomination.' — '.$adresse,
-                'ruePostale' => self::rue($siege),
-                'codePostal' => self::string($siege['code_postal'] ?? null),
-                'ville' => self::string($siege['libelle_commune'] ?? null),
+                'label' => $denomination.' — '.('' === $affichage ? self::nomPropre($adresse) : $affichage),
+                'ruePostale' => $rue,
+                'codePostal' => $codePostal,
+                'ville' => $ville,
                 'region' => null,
                 'departement' => null === $departement ? null : ReferentielGeographiqueFrancais::libelleDepartement($departement),
                 'pays' => 'France',
@@ -271,6 +277,29 @@ final class RechercheEntrepriseClient
         }
 
         return null;
+    }
+
+    /**
+     * L'annuaire livre tout en capitales : « 1 AVENUE DU GENERAL DE GAULLE » →
+     * « 1 Avenue du General de Gaulle » (particules en minuscules sauf en
+     * tête). Les accents absents de la source ne sont pas restitués.
+     */
+    private static function nomPropre(?string $valeur): ?string
+    {
+        if (null === $valeur) {
+            return null;
+        }
+        $resultat = (string) preg_replace_callback(
+            "/(^|[\s\-'’])(\p{L})/u",
+            static fn (array $trouve): string => $trouve[1].mb_strtoupper($trouve[2]),
+            mb_strtolower($valeur),
+        );
+
+        return (string) preg_replace_callback(
+            "/(?<=[\s\-'’])(De|Du|Des|La|Le|Les|L|D|Et|Sur|Sous|Au|Aux|En|Lès)(?=[\s\-'’]|$)/u",
+            static fn (array $trouve): string => mb_strtolower($trouve[1]),
+            $resultat,
+        );
     }
 
     /** @param array<string, mixed> $siege */
