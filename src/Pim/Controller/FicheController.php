@@ -34,6 +34,9 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('ROLE_BP_EDITOR')]
 final class FicheController extends AbstractController
 {
+    /** Une liste de suggestions d'adresses plus longue noie le bon résultat. */
+    private const MAX_SUGGESTIONS_ADRESSE = 6;
+
     // Route déclarée dans config/routes.yaml : /referentiel/fiche/nouvelle (app_mdm_creation_fiche).
     public function new(
         Request $request,
@@ -113,7 +116,7 @@ final class FicheController extends AbstractController
         $suggestions = [];
         if ('fr' === strtolower($pays)) {
             try {
-                $suggestions = $annuaire->suggestionsAdresse(trim($nom.' '.$q));
+                $suggestions = $annuaire->suggestionsAdresse(trim($nom.' '.$q), $nom);
             } catch (\RuntimeException) {
                 // L'autocomplétion est un confort : API indisponible = pas de suggestion.
             }
@@ -123,7 +126,7 @@ final class FicheController extends AbstractController
         } catch (\RuntimeException) {
         }
 
-        return $this->json(['suggestions' => $suggestions]);
+        return $this->json(['suggestions' => array_slice($suggestions, 0, self::MAX_SUGGESTIONS_ADRESSE)]);
     }
 
     /**

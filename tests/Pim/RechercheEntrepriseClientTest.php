@@ -192,6 +192,7 @@ final class RechercheEntrepriseClientTest extends TestCase
             'countryCode' => 'FR',
             'latitude' => '49.1974',
             'longitude' => '2.4623',
+            'source' => 'entreprise',
         ], $suggestions[0] ?? null);
         self::assertSame('Chemin de l\'Ecluse', $suggestions[1]['ruePostale'] ?? null);
         self::assertSame('La Celle-Saint-Cloud', $suggestions[1]['ville'] ?? null);
@@ -246,7 +247,42 @@ final class RechercheEntrepriseClientTest extends TestCase
             'countryCode' => 'FR',
             'latitude' => '49.198233611',
             'longitude' => '2.5097649021',
+            'source' => 'entreprise',
         ]], $client->suggestionsAdresse('Le grand pavillon chantilly'));
+    }
+
+    public function testLesResultatsSansRapportAvecLeNomDeFicheSontEcartes(): void
+    {
+        // L'annuaire matche flou : « Château de Chantilly » sort PAWLOS
+        // CHANTILLY. Un nom partiel reste rattrapé par l'inclusion (enseigne).
+        $httpClient = new MockHttpClient(static fn (): MockResponse => new MockResponse(json_encode(['results' => [
+            [
+                'nom_complet' => 'PAWLOS CHANTILLY',
+                'siege' => [
+                    'adresse' => '47 RUE DU CONNETABLE 60500 CHANTILLY',
+                    'code_postal' => '60500',
+                    'libelle_commune' => 'CHANTILLY',
+                    'departement' => '60',
+                ],
+            ],
+            [
+                'nom_complet' => 'GRAND HOTEL DE LA ROUTE DE SENLIS',
+                'siege' => ['adresse' => '67 QUAI CHARLES DE GAULLE 69006 LYON'],
+                'matching_etablissements' => [[
+                    'adresse' => '4 ROUTE DE SENLIS 60500 VINEUIL-SAINT-FIRMIN',
+                    'code_postal' => '60500',
+                    'libelle_commune' => 'VINEUIL-SAINT-FIRMIN',
+                    'nom_commercial' => 'LE GRAND PAVILLON CHANTILLY',
+                    'etat_administratif' => 'A',
+                ]],
+            ],
+        ]], JSON_THROW_ON_ERROR)));
+        $client = new RechercheEntrepriseClient($httpClient, new NullLogger(), 'https://recherche.example');
+
+        $suggestions = $client->suggestionsAdresse('grand pavillon chantilly', 'grand pavillon');
+
+        self::assertCount(1, $suggestions);
+        self::assertSame('LE GRAND PAVILLON CHANTILLY — 4 Route de Senlis 60500 Vineuil-Saint-Firmin', $suggestions[0]['label']);
     }
 
     public function testFindStatutRendEtatInconnuQuandLeSiretNEstPasDansLaReponse(): void

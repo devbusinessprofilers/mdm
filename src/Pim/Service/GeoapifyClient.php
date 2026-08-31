@@ -8,6 +8,8 @@ use Symfony\Contracts\HttpClient\Exception\ExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Contracts\HttpClient\ResponseInterface;
 
+use function Symfony\Component\String\u;
+
 /**
  * Client Geoapify (géocodage mondial sur données OpenStreetMap) pour les
  * adresses hors de France — et pour la recherche d'adresse du tunnel de
@@ -180,28 +182,36 @@ final class GeoapifyClient implements GeocodeurEtrangerInterface
         return 'no' === $valeur ? false : null;
     }
 
+    /** Adresses (flux texte) retenues au plus par recherche. */
+    private const LIMITE_ADRESSES = 4;
+    /** Établissements (flux nom) retenus au plus par recherche. */
+    private const LIMITE_ETABLISSEMENTS = 3;
+    /** Confiance Geoapify en deçà de laquelle une adresse est écartée. */
+    private const CONFIANCE_PLANCHER = 0.4;
+
     /**
      * Autocomplétion pour la recherche du tunnel de création. Le texte saisi
      * et le nom de la fiche sont cherchés SÉPARÉMENT puis fusionnés (texte
      * d'abord : c'est le signal le plus fort) : les concaténer étouffe le
      * géocodeur — « The Landmark London 222 » sort un homonyme de Canary Wharf
      * et jamais le 222 Marylebone Road, que le texte seul trouve avec son
-     * numéro. Le nom seul, lui, sait trouver l'établissement quand OSM le
-     * connaît.
+     * numéro. Les adresses sont triées par confiance ; les établissements dont
+     * le nom OSM ne correspond pas à la fiche (homonymes) sont écartés.
      *
-     * @return list<array{label: string, ruePostale: ?string, codePostal: ?string, ville: ?string, region: ?string, departement: ?string, pays: ?string, countryCode: ?string, latitude: ?string, longitude: ?string}>
+     * @return list<array{label: string, ruePostale: ?string, codePostal: ?string, ville: ?string, region: ?string, departement: ?string, pays: ?string, countryCode: ?string, latitude: ?string, longitude: ?string, source: string}>
      */
     public function autocompleteFiche(string $nom, string $texte, string $pays, int $limite = 5): array
     {
         $nom = trim($nom);
         $texte = trim($texte);
         if ('' === $texte) {
-            return $this->autocomplete($nom, $pays, $limite);
+            return self::livrer(self::fluxEtablissements($this->autocomplete($nom, $pays, $limite), $nom), 'etablissement');
         }
-        $suggestions = $this->autocomplete($texte, $pays, $limite);
+        $suggestions = self::livrer(self::fluxAdresses($this->autocomplete($texte, $pays, $limite)), 'adresse');
         if ('' !== $nom) {
             $labels = array_column($suggestions, 'label');
-            foreach ($this->autocomplete($nom, $pays, $limite) as $suggestion) {
+            $etablissements = self::fluxEtablissements($this->autocomplete($nom, $pays, $limite), $nom);
+            foreach (self::livrer($etablissements, 'etablissement') as $suggestion) {
                 if (!in_array($suggestion['label'], $labels, true)) {
                     $suggestions[] = $suggestion;
                 }
@@ -212,11 +222,76 @@ final class GeoapifyClient implements GeocodeurEtrangerInterface
     }
 
     /**
+     * Flux texte : adresses au-dessus du plancher de confiance (une confiance
+     * inconnue passe), triées de la plus sûre à la moins sûre, plafonnées.
+     *
+     * @param list<array{label: string, ruePostale: ?string, codePostal: ?string, ville: ?string, region: ?string, departement: ?string, pays: ?string, countryCode: ?string, latitude: ?string, longitude: ?string, score: ?float, nom: ?string}> $suggestions
+     *
+     * @return list<array{label: string, ruePostale: ?string, codePostal: ?string, ville: ?string, region: ?string, departement: ?string, pays: ?string, countryCode: ?string, latitude: ?string, longitude: ?string, score: ?float, nom: ?string}>
+     */
+    private static function fluxAdresses(array $suggestions): array
+    {
+        $suggestions = array_values(array_filter(
+            $suggestions,
+            static fn (array $suggestion): bool => null === $suggestion['score'] || $suggestion['score'] >= self::CONFIANCE_PLANCHER,
+        ));
+        usort($suggestions, static fn (array $a, array $b): int => ($b['score'] ?? 0.0) <=> ($a['score'] ?? 0.0));
+
+        return array_slice($suggestions, 0, self::LIMITE_ADRESSES);
+    }
+
+    /**
+     * Flux nom : seuls les résultats dont le nom OSM correspond à la fiche
+     * restent — similarité suffisante, ou nom de fiche contenu dans le nom du
+     * résultat. Une seule direction d'inclusion : l'inverse garderait
+     * l'homonyme (« The Landmark » ⊂ « The Landmark London »).
+     *
+     * @param list<array{label: string, ruePostale: ?string, codePostal: ?string, ville: ?string, region: ?string, departement: ?string, pays: ?string, countryCode: ?string, latitude: ?string, longitude: ?string, score: ?float, nom: ?string}> $suggestions
+     *
+     * @return list<array{label: string, ruePostale: ?string, codePostal: ?string, ville: ?string, region: ?string, departement: ?string, pays: ?string, countryCode: ?string, latitude: ?string, longitude: ?string, score: ?float, nom: ?string}>
+     */
+    private static function fluxEtablissements(array $suggestions, string $nom): array
+    {
+        $fiche = u($nom)->trim()->lower()->ascii()->toString();
+        $suggestions = array_values(array_filter($suggestions, static function (array $suggestion) use ($nom, $fiche): bool {
+            $nomResultat = $suggestion['nom'];
+            if (null === $nomResultat || '' === $fiche) {
+                return false;
+            }
+            if (NomSimilarite::score($nom, $nomResultat) >= NomSimilarite::SEUIL_DEFAUT) {
+                return true;
+            }
+
+            return str_contains(u($nomResultat)->trim()->lower()->ascii()->toString(), $fiche);
+        }));
+
+        return array_slice($suggestions, 0, self::LIMITE_ETABLISSEMENTS);
+    }
+
+    /**
+     * Retire les clés internes de filtrage et étiquette la source (badge de la
+     * liste de suggestions).
+     *
+     * @param list<array{label: string, ruePostale: ?string, codePostal: ?string, ville: ?string, region: ?string, departement: ?string, pays: ?string, countryCode: ?string, latitude: ?string, longitude: ?string, score: ?float, nom: ?string}> $suggestions
+     *
+     * @return list<array{label: string, ruePostale: ?string, codePostal: ?string, ville: ?string, region: ?string, departement: ?string, pays: ?string, countryCode: ?string, latitude: ?string, longitude: ?string, source: string}>
+     */
+    private static function livrer(array $suggestions, string $source): array
+    {
+        return array_map(static function (array $suggestion) use ($source): array {
+            unset($suggestion['score'], $suggestion['nom']);
+
+            return $suggestion + ['source' => $source];
+        }, $suggestions);
+    }
+
+    /**
      * Suggestions d'adresses pendant la frappe (recherche du tunnel de
      * création), bornées à un pays. Les clés suivent les champs de
-     * Localisation : le client applique la suggestion telle quelle.
+     * Localisation ; `score` (confiance Geoapify) et `nom` (nom OSM) sont des
+     * clés internes de filtrage, retirées avant livraison par livrer().
      *
-     * @return list<array{label: string, ruePostale: ?string, codePostal: ?string, ville: ?string, region: ?string, departement: ?string, pays: ?string, countryCode: ?string, latitude: ?string, longitude: ?string}>
+     * @return list<array{label: string, ruePostale: ?string, codePostal: ?string, ville: ?string, region: ?string, departement: ?string, pays: ?string, countryCode: ?string, latitude: ?string, longitude: ?string, score: ?float, nom: ?string}>
      */
     public function autocomplete(string $texte, string $pays, int $limite = 5): array
     {
@@ -260,6 +335,8 @@ final class GeoapifyClient implements GeocodeurEtrangerInterface
                 'countryCode' => strtoupper($paysResultat),
                 'latitude' => is_numeric($resultat['lat'] ?? null) ? (string) $resultat['lat'] : null,
                 'longitude' => is_numeric($resultat['lon'] ?? null) ? (string) $resultat['lon'] : null,
+                'score' => is_numeric($resultat['rank']['confidence'] ?? null) ? (float) $resultat['rank']['confidence'] : null,
+                'nom' => $champ('name') ?? $champ('address_line1'),
             ];
         }
 

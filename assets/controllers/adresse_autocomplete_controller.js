@@ -97,11 +97,25 @@ export default class extends Controller {
             const option = document.createElement('button')
             option.type = 'button'
             option.setAttribute('role', 'option')
-            option.textContent = suggestion.label
             option.dataset.suggestion = JSON.stringify(suggestion)
-            option.className = 'w-full px-3 py-2 rounded-xs text-left text-sm cursor-pointer truncate hover:bg-primary-4'
+            option.className = 'w-full px-3 py-2 rounded-xs text-left text-sm cursor-pointer hover:bg-primary-4 flex items-center gap-2'
             // mousedown : le clic doit gagner contre le blur du champ.
             option.dataset.action = 'mousedown->adresse-autocomplete#choisir'
+
+            const libelle = document.createElement('span')
+            libelle.className = 'flex-1 min-w-0 truncate'
+            libelle.textContent = suggestion.label
+            option.append(libelle)
+
+            // Badge d'origine, mêmes classes que les badges du rail de la page.
+            const origine = { entreprise: 'Entreprise', adresse: 'Adresse', etablissement: 'Établissement' }[suggestion.source]
+            if (origine) {
+                const badge = document.createElement('span')
+                badge.className = 'shrink-0 px-[7px] rounded-full text-[10px] font-black leading-[1.25rem] bg-neutral-200 text-neutral-400'
+                badge.textContent = origine
+                option.append(badge)
+            }
+
             this.listeTarget.append(option)
         }
         this.ouvrir()

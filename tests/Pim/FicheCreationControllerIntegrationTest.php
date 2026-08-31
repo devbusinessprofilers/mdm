@@ -173,6 +173,8 @@ final class FicheCreationControllerIntegrationTest extends WebTestCase
         self::assertSame('1 Avenue du General de Gaulle', $donnees['suggestions'][0]['ruePostale'] ?? null);
         self::assertSame('Oise', $donnees['suggestions'][0]['departement'] ?? null);
         self::assertSame('FR', $donnees['suggestions'][0]['countryCode'] ?? null);
+        // La source alimente le badge de la liste de suggestions.
+        self::assertSame('entreprise', $donnees['suggestions'][0]['source'] ?? null);
     }
 
     public function testPrefillsFacturationEtPartenariatFromAnnuaire(): void

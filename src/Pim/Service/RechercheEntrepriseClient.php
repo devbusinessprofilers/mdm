@@ -9,6 +9,8 @@ use Psr\Log\LoggerInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Contracts\HttpClient\ResponseInterface;
 
+use function Symfony\Component\String\u;
+
 /**
  * Interroge l'annuaire public des entreprises (recherche-entreprises.api.gouv.fr)
  * pour pré-remplir une fiche à la création et contrôler l'état des
@@ -83,13 +85,15 @@ final class RechercheEntrepriseClient
      * hôtel exploité par une holding a son siège ailleurs, l'enseigne cherchée
      * est sur l'établissement. Les clés suivent les champs de Localisation,
      * comme les suggestions Geoapify ; la région INSEE n'est fournie qu'en
-     * code, elle reste vide.
+     * code, elle reste vide. Avec un nom de fiche, les résultats dont ni
+     * l'enseigne ni la dénomination ne s'en rapprochent sont écartés —
+     * l'annuaire matche flou et sort volontiers des sociétés sans rapport.
      *
-     * @return list<array{label: string, ruePostale: ?string, codePostal: ?string, ville: ?string, region: ?string, departement: ?string, pays: ?string, countryCode: ?string, latitude: ?string, longitude: ?string}>
+     * @return list<array{label: string, ruePostale: ?string, codePostal: ?string, ville: ?string, region: ?string, departement: ?string, pays: ?string, countryCode: ?string, latitude: ?string, longitude: ?string, source: string}>
      *
      * @throws EnrichissementIndisponibleException
      */
-    public function suggestionsAdresse(string $query, int $limite = 3): array
+    public function suggestionsAdresse(string $query, string $nomFiche = '', int $limite = 3): array
     {
         $query = trim($query);
         if ('' === $query) {
@@ -132,6 +136,9 @@ final class RechercheEntrepriseClient
             $enseigne = self::string($lieu['nom_commercial'] ?? null)
                 ?? (\is_array($enseignes) ? self::string($enseignes[0] ?? null) : null)
                 ?? $denomination;
+            if ('' !== trim($nomFiche) && !self::correspondALaFiche($nomFiche, [$enseigne, $denomination])) {
+                continue;
+            }
             // Libellé composé champ par champ : formater l'adresse d'un bloc
             // abaisserait l'article des communes (« 78170 la Celle-Saint-Cloud »).
             $affichage = trim(implode(' ', array_filter([$rue, trim(($codePostal ?? '').' '.($ville ?? ''))])));
@@ -146,10 +153,38 @@ final class RechercheEntrepriseClient
                 'countryCode' => 'FR',
                 'latitude' => self::string($lieu['latitude'] ?? null),
                 'longitude' => self::string($lieu['longitude'] ?? null),
+                'source' => 'entreprise',
             ];
         }
 
         return $suggestions;
+    }
+
+    /**
+     * Le nom de la fiche se rapproche-t-il d'un des noms candidats ?
+     * Similarité suffisante, ou inclusion dans les deux sens — côté annuaire
+     * les deux sont légitimes : « grand pavillon » saisi partiellement, ou
+     * enseigne « AUBERGE DU JEU DE PAUME » plus courte que le nom de fiche.
+     *
+     * @param list<?string> $candidats
+     */
+    private static function correspondALaFiche(string $nomFiche, array $candidats): bool
+    {
+        $fiche = u($nomFiche)->trim()->lower()->ascii()->toString();
+        foreach ($candidats as $candidat) {
+            if (null === $candidat) {
+                continue;
+            }
+            if (NomSimilarite::score($nomFiche, $candidat) >= NomSimilarite::SEUIL_DEFAUT) {
+                return true;
+            }
+            $normalise = u($candidat)->trim()->lower()->ascii()->toString();
+            if ('' !== $fiche && '' !== $normalise && (str_contains($normalise, $fiche) || str_contains($fiche, $normalise))) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

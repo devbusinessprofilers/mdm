@@ -153,17 +153,22 @@ final class GeoapifyClientTest extends TestCase
             'countryCode' => 'FR',
             'latitude' => '49.194',
             'longitude' => '2.4712',
+            // Clés internes de filtrage, retirées par autocompleteFiche().
+            'score' => null,
+            'nom' => null,
         ]], $client->autocomplete('Château de Chantilly', 'FR'));
     }
 
     public function testLAutocompletionFicheChercheLeTexteEtLeNomSeparement(): void
     {
         // Concaténer nom et adresse étouffe le géocodeur : le texte saisi et
-        // le nom partent en deux requêtes, texte d'abord, doublons écartés.
+        // le nom partent en deux requêtes. Les adresses sont triées par
+        // confiance (plancher 0,4) ; les établissements homonymes dont le nom
+        // OSM ne correspond pas à la fiche sont écartés, doublons dédoublonnés.
         $urls = [];
         $http = new MockHttpClient(static function (string $method, string $url) use (&$urls): MockResponse {
             $urls[] = $url;
-            $adresse = [
+            $adresseSure = [
                 'formatted' => '222 Marylebone Road, Londres, NW1 5QE, Royaume-Uni',
                 'housenumber' => '222',
                 'street' => 'Marylebone Road',
@@ -171,19 +176,41 @@ final class GeoapifyClientTest extends TestCase
                 'country_code' => 'gb',
                 'lat' => 51.5219,
                 'lon' => -0.1633,
+                'rank' => ['confidence' => 0.75],
+            ];
+            $adresseMoyenne = [
+                'formatted' => '222 Marylebone Road, Londres, W1G 6BW, Royaume-Uni',
+                'street' => 'Marylebone Road',
+                'city' => 'Londres',
+                'country_code' => 'gb',
+                'rank' => ['confidence' => 0.5],
+            ];
+            $adresseDouteuse = [
+                'formatted' => 'Marylebone, Londres, Royaume-Uni',
+                'city' => 'Londres',
+                'country_code' => 'gb',
+                'rank' => ['confidence' => 0.2],
             ];
             $hotel = [
                 'formatted' => 'The Landmark London, Lisson Grove, Londres, Royaume-Uni',
+                'name' => 'The Landmark London',
                 'city' => 'Londres',
                 'country_code' => 'gb',
                 'lat' => 51.5217,
                 'lon' => -0.1631,
             ];
+            $homonyme = [
+                'formatted' => 'The Landmark, Canary Wharf, Londres, Royaume-Uni',
+                'name' => 'The Landmark',
+                'city' => 'Londres',
+                'country_code' => 'gb',
+            ];
 
             return 1 === count($urls)
-                ? new MockResponse((string) json_encode(['results' => [$adresse]]))
-                // Le nom retrouve l'hôtel ET la même adresse : dédoublonnée.
-                : new MockResponse((string) json_encode(['results' => [$hotel, $adresse]]));
+                // Flux texte livré dans le désordre de confiance, avec une douteuse.
+                ? new MockResponse((string) json_encode(['results' => [$adresseMoyenne, $adresseDouteuse, $adresseSure]]))
+                // Flux nom : l'homonyme, l'hôtel, et un doublon du flux texte.
+                : new MockResponse((string) json_encode(['results' => [$homonyme, $hotel, $adresseSure + ['name' => 'The Landmark London']]]));
         });
         $client = new GeoapifyClient($http, 'https://api.geoapify.test', 'cle-de-test', 0);
 
@@ -194,8 +221,13 @@ final class GeoapifyClientTest extends TestCase
         self::assertStringContainsString('text=The%20Landmark%20London', $urls[1]);
         self::assertSame([
             '222 Marylebone Road, Londres, NW1 5QE, Royaume-Uni',
+            '222 Marylebone Road, Londres, W1G 6BW, Royaume-Uni',
             'The Landmark London, Lisson Grove, Londres, Royaume-Uni',
         ], array_column($suggestions, 'label'));
+        self::assertSame(['adresse', 'adresse', 'etablissement'], array_column($suggestions, 'source'));
+        // Les clés internes de filtrage ne sortent pas du service.
+        self::assertArrayNotHasKey('score', $suggestions[0]);
+        self::assertArrayNotHasKey('nom', $suggestions[0]);
     }
 
     public function testLAutocompletionFicheSansTexteSaisiNEssaieQueLeNom(): void
