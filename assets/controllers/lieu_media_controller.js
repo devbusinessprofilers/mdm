@@ -65,14 +65,20 @@ export default class extends Controller {
 
     // Select de catégorie sous la vignette : la catégorie seule est modifiée
     // (endpoint dédié — le PATCH complet effacerait légende, source, crop…).
-    changerCategorie(event) {
-        this.fetch(event.currentTarget.dataset.url, { method: 'PATCH', body: JSON.stringify({ usage: event.currentTarget.value }), headers: { 'Content-Type': 'application/json' } })
+    // Sur refus serveur, le select revient à sa valeur d'origine au lieu
+    // d'afficher un état jamais enregistré.
+    async changerCategorie(event) {
+        const select = event.currentTarget
+        const ok = await this.fetch(select.dataset.url, { method: 'PATCH', body: JSON.stringify({ usage: select.value }), headers: { 'Content-Type': 'application/json' } })
+        if (!ok) select.value = Array.from(select.options).find(option => option.defaultSelected)?.value ?? select.value
     }
 
     // Barre de salle posée sur une photo « Salle de réunion » : la salle
     // rattachée change, la catégorie courante est conservée par le serveur.
-    changerSalle(event) {
-        this.fetch(event.currentTarget.dataset.url, { method: 'PATCH', body: JSON.stringify({ salle_id: event.currentTarget.value }), headers: { 'Content-Type': 'application/json' } })
+    async changerSalle(event) {
+        const select = event.currentTarget
+        const ok = await this.fetch(select.dataset.url, { method: 'PATCH', body: JSON.stringify({ salle_id: select.value }), headers: { 'Content-Type': 'application/json' } })
+        if (!ok) select.value = Array.from(select.options).find(option => option.defaultSelected)?.value ?? select.value
     }
 
     // Lance la reconnaissance IA de la photo. Le retour se fait dans le bouton
@@ -114,10 +120,11 @@ export default class extends Controller {
         this.showError('')
         const headers = { ...(options.headers || {}), 'X-CSRF-TOKEN': this.tokenValue }
         const response = await window.fetch(url, { ...options, headers })
-        if (!response.ok) { const result = await response.json().catch(() => ({})); this.showError(result.error || 'Une erreur est survenue.'); return }
+        if (!response.ok) { const result = await response.json().catch(() => ({})); this.showError(result.error || 'Une erreur est survenue.'); return false }
         // Plus de rechargement : le wrapper medias-bloc écoute cet événement
         // et re-rend le bloc seul — la saisie du formulaire principal survit.
         if (options.reload !== false) this.dispatch('updated')
+        return true
     }
 
     requestWithProgress(url, body) {

@@ -81,11 +81,16 @@
                 {% endif %}
             </div>
             {# Catégorie de la photo — enregistrée à la volée au changement.
-               Une catégorie hors liste inline (plan de salle) reste visible
-               comme option, sa gestion fine passant par la modale d'infos. #}
-            {% set choix_categories = photo.resource.usage in photo_usages|keys
+               « Salle de réunion » n'est proposée que si la fiche a des salles
+               (elle ferait un rejet serveur sinon) ; une catégorie hors liste
+               inline (plan de salle) reste visible comme option, sa gestion
+               fine passant par la modale d'infos. #}
+            {% set usages_proposables = salles|default({}) is not empty
                 ? photo_usages
-                : photo_usages|merge({ (photo.resource.usage): photo.usage_label }) %}
+                : photo_usages|filter((libelle, code) => code != 'CONFIG_PHOTO_SALLE') %}
+            {% set choix_categories = photo.resource.usage in usages_proposables|keys
+                ? usages_proposables
+                : usages_proposables|merge({ (photo.resource.usage): photo.usage_label }) %}
             <twig:Form:NativeSelect
                 :choices="choix_categories"
                 selected="{{ photo.resource.usage }}"
