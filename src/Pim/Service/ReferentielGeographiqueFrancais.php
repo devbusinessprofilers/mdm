@@ -102,6 +102,12 @@ final class ReferentielGeographiqueFrancais
         return self::numerosParDepartement()[self::cle($departement)] ?? null;
     }
 
+    /** Libellé canonique du département par son numéro INSEE (« 60 » → « Oise »). */
+    public static function libelleDepartement(string $numero): ?string
+    {
+        return self::DEPARTEMENTS[strtoupper(trim($numero))] ?? null;
+    }
+
     /**
      * Répare un code postal français amputé de son zéro initial par un
      * tableur (« 6130 » → « 06130 ») : uniquement 4 chiffres dont le zéro

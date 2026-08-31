@@ -132,13 +132,47 @@ final class FicheCreationControllerIntegrationTest extends WebTestCase
     public function testLAutocompletionDAdresseRepondUneListeVideSansCleGeoapify(): void
     {
         $client = $this->createClientWithUser();
-        // En test la clé Geoapify est vide : client désactivé, aucun appel réseau.
-        $client->request('GET', '/referentiel/fiche/adresse-autocomplete', ['nom' => 'Château de Chantilly', 'q' => 'Chantilly', 'pays' => 'fr']);
+        // Hors de France, seul Geoapify répond ; en test sa clé est vide :
+        // client désactivé, aucun appel réseau.
+        $client->request('GET', '/referentiel/fiche/adresse-autocomplete', ['nom' => 'Château de Chantilly', 'q' => 'Chantilly', 'pays' => 'be']);
         self::assertResponseIsSuccessful();
         self::assertSame(
             ['suggestions' => []],
             json_decode((string) $client->getResponse()->getContent(), true),
         );
+    }
+
+    public function testLAutocompletionDAdresseSertLAnnuaireDesEntreprisesEnFrance(): void
+    {
+        $client = $this->createClientWithUser();
+        // Sans cela le kernel reboote entre les requêtes et la réponse simulée est perdue.
+        $client->disableReboot();
+        $mock = self::getContainer()->get('test.recherche_entreprises.mock_http_client');
+        self::assertInstanceOf(MockHttpClient::class, $mock);
+        $mock->setResponseFactory([new MockResponse((string) json_encode(['results' => [[
+            'nom_complet' => 'BUSINESS PROFILERS',
+            'siege' => [
+                'adresse' => '1 AVENUE DU GENERAL DE GAULLE 60500 CHANTILLY',
+                'numero_voie' => '1',
+                'type_voie' => 'AVENUE',
+                'libelle_voie' => 'DU GENERAL DE GAULLE',
+                'code_postal' => '60500',
+                'libelle_commune' => 'CHANTILLY',
+                'departement' => '60',
+                'latitude' => '49.1974',
+                'longitude' => '2.4623',
+            ],
+        ]]], JSON_THROW_ON_ERROR))]);
+
+        $client->request('GET', '/referentiel/fiche/adresse-autocomplete', ['nom' => 'Business Profilers', 'q' => '', 'pays' => 'fr']);
+
+        self::assertResponseIsSuccessful();
+        $donnees = json_decode((string) $client->getResponse()->getContent(), true);
+        self::assertIsArray($donnees);
+        self::assertSame('BUSINESS PROFILERS — 1 AVENUE DU GENERAL DE GAULLE 60500 CHANTILLY', $donnees['suggestions'][0]['label'] ?? null);
+        self::assertSame('1 AVENUE DU GENERAL DE GAULLE', $donnees['suggestions'][0]['ruePostale'] ?? null);
+        self::assertSame('Oise', $donnees['suggestions'][0]['departement'] ?? null);
+        self::assertSame('FR', $donnees['suggestions'][0]['countryCode'] ?? null);
     }
 
     public function testPrefillsFacturationEtPartenariatFromAnnuaire(): void

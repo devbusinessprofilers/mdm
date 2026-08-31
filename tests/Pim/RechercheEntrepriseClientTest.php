@@ -137,6 +137,49 @@ final class RechercheEntrepriseClientTest extends TestCase
         self::assertSame('48067410000031', $info->siret);
     }
 
+    public function testLesSuggestionsDAdresseSuiventLesChampsDeLocalisation(): void
+    {
+        $httpClient = new MockHttpClient(static function (string $method, string $url): MockResponse {
+            self::assertStringContainsString('etat_administratif=A', $url);
+            self::assertStringContainsString('per_page=3', $url);
+
+            return new MockResponse(json_encode(['results' => [
+                [
+                    'nom_complet' => 'BUSINESS PROFILERS',
+                    'siege' => [
+                        'adresse' => '1 AVENUE DU GENERAL DE GAULLE 60500 CHANTILLY',
+                        'numero_voie' => '1',
+                        'type_voie' => 'AVENUE',
+                        'libelle_voie' => 'DU GENERAL DE GAULLE',
+                        'code_postal' => '60500',
+                        'libelle_commune' => 'CHANTILLY',
+                        'departement' => '60',
+                        'region' => '32',
+                        'latitude' => '49.1974',
+                        'longitude' => '2.4623',
+                    ],
+                ],
+                // Sans adresse de siège : inutilisable pour remplir la fiche.
+                ['nom_complet' => 'SANS ADRESSE', 'siege' => []],
+            ]], JSON_THROW_ON_ERROR));
+        });
+        $client = new RechercheEntrepriseClient($httpClient, new NullLogger(), 'https://recherche.example');
+
+        self::assertSame([[
+            'label' => 'BUSINESS PROFILERS — 1 AVENUE DU GENERAL DE GAULLE 60500 CHANTILLY',
+            'ruePostale' => '1 AVENUE DU GENERAL DE GAULLE',
+            'codePostal' => '60500',
+            'ville' => 'CHANTILLY',
+            'region' => null,
+            // Numéro INSEE traduit en libellé ; la région ne sort qu'en code.
+            'departement' => 'Oise',
+            'pays' => 'France',
+            'countryCode' => 'FR',
+            'latitude' => '49.1974',
+            'longitude' => '2.4623',
+        ]], $client->suggestionsAdresse('Business Profilers'));
+    }
+
     public function testFindStatutRendEtatInconnuQuandLeSiretNEstPasDansLaReponse(): void
     {
         // Siège fermé mais SIRET demandé absent de la réponse : ne pas

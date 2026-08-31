@@ -76,6 +76,58 @@ final class RechercheEntrepriseClient
         return $this->search($siret, null, actifsSeulement: false, siretAttendu: $siret);
     }
 
+    /**
+     * Suggestions d'adresses d'entreprises actives pour la recherche du tunnel
+     * de création (la BAN et Geoapify ne connaissent pas les raisons sociales).
+     * Les clés suivent les champs de Localisation, comme les suggestions
+     * Geoapify ; la région INSEE n'est fournie qu'en code, elle reste vide.
+     *
+     * @return list<array{label: string, ruePostale: ?string, codePostal: ?string, ville: ?string, region: ?string, departement: ?string, pays: ?string, countryCode: ?string, latitude: ?string, longitude: ?string}>
+     *
+     * @throws EnrichissementIndisponibleException
+     */
+    public function suggestionsAdresse(string $query, int $limite = 3): array
+    {
+        $query = trim($query);
+        if ('' === $query) {
+            return [];
+        }
+        $payload = $this->requete([
+            'q' => $query,
+            'page' => 1,
+            'per_page' => max(1, $limite),
+            'etat_administratif' => 'A',
+        ]);
+        $suggestions = [];
+        foreach ($payload['results'] ?? [] as $result) {
+            if (!\is_array($result)) {
+                continue;
+            }
+            /** @var array<string, mixed> $siege */
+            $siege = \is_array($result['siege'] ?? null) ? $result['siege'] : [];
+            $denomination = self::string($result['nom_complet'] ?? null) ?? self::string($result['nom_raison_sociale'] ?? null);
+            $adresse = self::string($siege['adresse'] ?? null);
+            if (null === $denomination || null === $adresse) {
+                continue;
+            }
+            $departement = self::string($siege['departement'] ?? null);
+            $suggestions[] = [
+                'label' => $denomination.' — '.$adresse,
+                'ruePostale' => self::rue($siege),
+                'codePostal' => self::string($siege['code_postal'] ?? null),
+                'ville' => self::string($siege['libelle_commune'] ?? null),
+                'region' => null,
+                'departement' => null === $departement ? null : ReferentielGeographiqueFrancais::libelleDepartement($departement),
+                'pays' => 'France',
+                'countryCode' => 'FR',
+                'latitude' => self::string($siege['latitude'] ?? null),
+                'longitude' => self::string($siege['longitude'] ?? null),
+            ];
+        }
+
+        return $suggestions;
+    }
+
     private function search(string $query, ?string $codePostal, bool $actifsSeulement = true, ?string $siretAttendu = null, bool $replisSansCodePostal = false): ?EntrepriseInfo
     {
         $parameters = ['q' => $query, 'page' => 1, 'per_page' => 1];

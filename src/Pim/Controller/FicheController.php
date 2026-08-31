@@ -19,6 +19,7 @@ use App\Pim\Service\FicheCreationManager;
 use App\Pim\Service\FicheDuplicateDetector;
 use App\Pim\Service\FicheRouteResolver;
 use App\Pim\Service\GeoapifyClient;
+use App\Pim\Service\RechercheEntrepriseClient;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Form\FormError;
 use Symfony\Component\Form\SubmitButton;
@@ -90,21 +91,36 @@ final class FicheController extends AbstractController
         );
     }
 
-    /** Suggestions d'adresses (Geoapify) pour la recherche du tunnel de création. */
+    /**
+     * Suggestions pour la recherche d'adresse du tunnel de création. En France,
+     * l'annuaire des entreprises répond d'abord (lui seul connaît les raisons
+     * sociales — « Business Profilers » n'existe ni dans la BAN ni dans OSM),
+     * puis Geoapify complète avec des adresses ; ailleurs, Geoapify seul.
+     * Les deux sources sont indépendantes : l'une en panne n'éteint pas l'autre.
+     */
     #[Route('/adresse-autocomplete', name: 'adresse_autocomplete', methods: ['GET'])]
-    public function adresseAutocomplete(Request $request, GeoapifyClient $geocodeur): Response
-    {
+    public function adresseAutocomplete(
+        Request $request,
+        GeoapifyClient $geocodeur,
+        RechercheEntrepriseClient $annuaire,
+    ): Response {
         $nom = trim($request->query->getString('nom'));
         $q = trim($request->query->getString('q'));
         $pays = trim($request->query->getString('pays'));
         if (mb_strlen(trim($nom.' '.$q)) < 3 || 1 !== preg_match('/^[a-zA-Z]{2}$/', $pays)) {
             return $this->json(['suggestions' => []]);
         }
+        $suggestions = [];
+        if ('fr' === strtolower($pays)) {
+            try {
+                $suggestions = $annuaire->suggestionsAdresse(trim($nom.' '.$q));
+            } catch (\RuntimeException) {
+                // L'autocomplétion est un confort : API indisponible = pas de suggestion.
+            }
+        }
         try {
-            $suggestions = $geocodeur->autocompleteFiche($nom, $q, $pays);
+            $suggestions = array_merge($suggestions, $geocodeur->autocompleteFiche($nom, $q, $pays));
         } catch (\RuntimeException) {
-            // L'autocomplétion est un confort : API indisponible = pas de suggestion.
-            $suggestions = [];
         }
 
         return $this->json(['suggestions' => $suggestions]);
