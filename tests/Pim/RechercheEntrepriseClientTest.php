@@ -51,12 +51,13 @@ final class RechercheEntrepriseClientTest extends TestCase
         self::assertNotNull($info);
         // Résultat obtenu en repli France entière : le flag le signale.
         self::assertTrue($info->rapprochementSansCodePostal);
-        self::assertSame('1 AVENUE DU GENERAL DE GAULLE', $info->rue);
+        // Adresse et personnes en nom propre ; la raison sociale reste en capitales (Sirene).
+        self::assertSame('1 Avenue du General de Gaulle', $info->rue);
         self::assertSame('FR39480674100', $info->numeroTva);
         self::assertSame('BUSINESS PROFILERS', $info->raisonSociale);
         // Seul le premier dirigeant personne physique est retenu, avec son prénom usuel.
-        self::assertSame('JEAN', $info->dirigeantPrenom);
-        self::assertSame('DURAND', $info->dirigeantNom);
+        self::assertSame('Jean', $info->dirigeantPrenom);
+        self::assertSame('Durand', $info->dirigeantNom);
     }
 
     public function testReturnsNullOnTransportError(): void

@@ -153,19 +153,22 @@ final class RechercheEntrepriseClient
         $dirigeant = self::dirigeantPrincipal($result['dirigeants'] ?? null);
         $etat = self::etatAdministratif($result, $siege, $siretAttendu);
 
+        // Adresse et personnes en nom propre (l'annuaire livre tout en
+        // capitales) ; les raisons sociales restent telles quelles (convention
+        // Sirene, et NomSimilarite compare sans tenir compte de la casse).
         return new EntrepriseInfo(
             denomination: self::string($result['nom_complet'] ?? null) ?? self::string($result['nom_raison_sociale'] ?? null),
             raisonSociale: self::string($result['nom_raison_sociale'] ?? null) ?? self::string($result['nom_complet'] ?? null),
             siren: $siren,
             siret: self::string($siege['siret'] ?? null),
             numeroTva: self::numeroTva($siren),
-            rue: self::rue($siege),
+            rue: self::nomPropre(self::rue($siege)),
             codePostal: self::string($siege['code_postal'] ?? null),
-            ville: self::string($siege['libelle_commune'] ?? null),
+            ville: self::nomPropre(self::string($siege['libelle_commune'] ?? null)),
             latitude: self::string($siege['latitude'] ?? null),
             longitude: self::string($siege['longitude'] ?? null),
-            dirigeantPrenom: $dirigeant['prenom'] ?? null,
-            dirigeantNom: $dirigeant['nom'] ?? null,
+            dirigeantPrenom: self::nomPropre($dirigeant['prenom'] ?? null),
+            dirigeantNom: self::nomPropre($dirigeant['nom'] ?? null),
             formeJuridique: FormeJuridiqueInsee::libelle(self::string($result['nature_juridique'] ?? null)),
             etatAdministratif: $etat,
             rapprochementSansCodePostal: $replisSansCodePostal,

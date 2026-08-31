@@ -212,21 +212,22 @@ final class FicheCreationControllerIntegrationTest extends WebTestCase
 
         $administratif = $this->connection->fetchAssociative('SELECT * FROM pim_lieu_administratif');
         self::assertNotFalse($administratif);
+        // Raison sociale en capitales (Sirene) ; adresse et signataire en nom propre.
         self::assertSame('CHATEAU DES TESTS', $administratif['info_legale_nom']);
-        self::assertSame('1 AVENUE DU GENERAL DE GAULLE', $administratif['info_legale_rue_postal']);
+        self::assertSame('1 Avenue du General de Gaulle', $administratif['info_legale_rue_postal']);
         self::assertSame('60500', $administratif['info_legale_code_postal']);
-        self::assertSame('CHANTILLY', $administratif['info_legale_ville']);
+        self::assertSame('Chantilly', $administratif['info_legale_ville']);
         self::assertSame('France', $administratif['infor_legale_pays']);
         self::assertSame('48067410000031', $administratif['info_legale_siret']);
         self::assertSame('FR39480674100', $administratif['info_legale_num_tva']);
         self::assertSame('CHATEAU DES TESTS', $administratif['adresse_facturation_nom']);
-        self::assertSame('1 AVENUE DU GENERAL DE GAULLE', $administratif['adresse_facturation_rue_postal']);
+        self::assertSame('1 Avenue du General de Gaulle', $administratif['adresse_facturation_rue_postal']);
         self::assertSame('60500', $administratif['adresse_facturation_code_postal']);
-        self::assertSame('CHANTILLY', $administratif['adresse_facturation_ville']);
+        self::assertSame('Chantilly', $administratif['adresse_facturation_ville']);
         self::assertSame('France', $administratif['adresse_facturation_pays']);
         self::assertSame('FR39480674100', $administratif['adresse_facturation_num_tva']);
-        self::assertSame('JEAN', $administratif['signataire_prenom']);
-        self::assertSame('DURAND', $administratif['signataire_nom']);
+        self::assertSame('Jean', $administratif['signataire_prenom']);
+        self::assertSame('Durand', $administratif['signataire_nom']);
         // La saisie utilisateur reste prioritaire sur l'annuaire.
         self::assertSame('Chantilly', $this->connection->fetchOne('SELECT ville FROM pim_localisation'));
     }
