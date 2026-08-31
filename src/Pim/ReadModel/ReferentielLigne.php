@@ -30,6 +30,8 @@ final readonly class ReferentielLigne
         public bool $premium,
         // Fiche absorbée par une fusion : la ligne s'affiche « Fusionnée ».
         public ?string $mergedInto = null,
+        // Score de correspondance à la recherche, clé du curseur sous ce tri.
+        public ?int $pertinence = null,
     ) {
     }
 }

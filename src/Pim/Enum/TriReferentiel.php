@@ -11,6 +11,9 @@ namespace App\Pim\Enum;
  */
 enum TriReferentiel: string
 {
+    // Score de correspondance à la recherche texte, meilleur en premier.
+    // Défaut contextuel quand une recherche est active (ReferentielFiltres).
+    case Pertinence = 'pertinence';
     case ModifDesc = 'modif_desc';
     case ModifAsc = 'modif_asc';
     case NomAsc = 'nom_asc';
@@ -41,14 +44,10 @@ enum TriReferentiel: string
         return str_ends_with($this->value, '_asc') ? 'ASC' : 'DESC';
     }
 
-    public function estDefaut(): bool
-    {
-        return self::DEFAUT === $this;
-    }
-
     public function libelle(): string
     {
         return match ($this) {
+            self::Pertinence => 'pertinence',
             self::ModifDesc => 'dernière modification',
             self::ModifAsc => 'modification la plus ancienne',
             self::NomAsc => 'nom (A → Z)',

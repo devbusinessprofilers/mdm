@@ -72,6 +72,17 @@ final class ReferentielFiltres
         return 1 === count($this->gammes) ? $this->gammes[0] : null;
     }
 
+    /**
+     * Ordre implicite : la pertinence dès qu'une recherche texte est active,
+     * la dernière modification sinon. Un tri explicite (f[tri]) le supplante.
+     */
+    public function triDefaut(): TriReferentiel
+    {
+        return null !== $this->q && '' !== trim($this->q)
+            ? TriReferentiel::Pertinence
+            : TriReferentiel::DEFAUT;
+    }
+
     /** Représentation sérialisable, réutilisée par les vues enregistrées et les URL. */
     /** @return array<string, mixed> */
     public function toArray(): array
@@ -92,7 +103,7 @@ final class ReferentielFiltres
             'premium' => $this->premium ?: null,
             'valeurs' => $this->valeurs,
             // Omis au défaut : URL et vues enregistrées existantes inchangées.
-            'tri' => $this->tri->estDefaut() ? null : $this->tri->value,
+            'tri' => $this->tri === $this->triDefaut() ? null : $this->tri->value,
         ], static fn (mixed $value): bool => null !== $value && [] !== $value);
     }
 
@@ -117,7 +128,12 @@ final class ReferentielFiltres
             static fn (mixed $v): int => (int) $v,
             is_array($data['valeurs'] ?? null) ? $data['valeurs'] : [],
         ), static fn (int $v): bool => $v > 0));
-        $filtres->tri = TriReferentiel::tryFrom(is_string($data['tri'] ?? null) ? $data['tri'] : '') ?? TriReferentiel::DEFAUT;
+        $tri = TriReferentiel::tryFrom(is_string($data['tri'] ?? null) ? $data['tri'] : '');
+        if (TriReferentiel::Pertinence === $tri && '' === trim((string) $filtres->q)) {
+            // Pertinence forgée sans recherche : aucun score à calculer.
+            $tri = null;
+        }
+        $filtres->tri = $tri ?? $filtres->triDefaut();
 
         return $filtres;
     }

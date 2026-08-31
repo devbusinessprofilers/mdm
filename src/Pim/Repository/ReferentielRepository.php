@@ -218,17 +218,18 @@ final readonly class ReferentielRepository
     /** @return list<string> Identifiants (ULID texte) de toutes les fiches du filtre, pour les actions groupées. */
     public function idsPourFiltre(ReferentielFiltres $filtres, int $plafond): array
     {
-        [$conditions, $params, $types, $joins] = $this->conditions($filtres, null, $this->specTri($filtres->tri)['jointures']);
+        $spec = $this->specTri($filtres);
+        [$conditions, $params, $types, $joins] = $this->conditions($filtres, null, $spec['jointures']);
         $rows = $this->connection->fetchFirstColumn(
             sprintf(
                 'SELECT f.id FROM pim_fiche f %s WHERE %s %s LIMIT %d',
                 $joins,
                 implode("\n  AND ", $conditions),
-                $this->ordre($filtres->tri),
+                $this->ordre($filtres),
                 max(1, $plafond),
             ),
-            $params,
-            $types,
+            array_merge($params, $spec['params']),
+            array_merge($types, $spec['types']),
         );
 
         return array_map(static fn (string $id): string => (string) Ulid::fromBinary($id), $rows);
@@ -242,20 +243,22 @@ final readonly class ReferentielRepository
      */
     public function voisines(ReferentielFiltres $filtres, string $ficheId): array
     {
-        $spec = $this->specTri($filtres->tri);
+        $spec = $this->specTri($filtres);
         $reference = $this->connection->fetchOne(
             sprintf(
                 'SELECT %s FROM pim_fiche f %s WHERE f.id = :id',
                 $spec['expr'],
                 $this->jointures(array_fill_keys($spec['jointures'], true)),
             ),
-            ['id' => Ulid::fromString($ficheId)->toBinary()],
-            ['id' => ParameterType::BINARY],
+            array_merge(['id' => Ulid::fromString($ficheId)->toBinary()], $spec['params']),
+            array_merge(['id' => ParameterType::BINARY], $spec['types']),
         );
         if (false === $reference || null === $reference) {
             return ['precedente' => null, 'suivante' => null];
         }
         [$conditions, $params, $types, $joins] = $this->conditions($filtres, null, $spec['jointures']);
+        $params = array_merge($params, $spec['params']);
+        $types = array_merge($types, $spec['types']);
         $params['ref_cle'] = ParameterType::INTEGER === $spec['type'] ? (int) $reference : (string) $reference;
         $params['ref_id'] = Ulid::fromString($ficheId)->toBinary();
         $types['ref_cle'] = $spec['type'];
@@ -313,10 +316,13 @@ final readonly class ReferentielRepository
      */
     public function pageRows(ReferentielFiltres $filtres, ?ReferentielCursor $cursor, int $limit): array
     {
+        $spec = $this->specTri($filtres);
         [$conditions, $params, $types, $joins] = $this->conditions($filtres, null, ['loc', 'completude', 'sd']);
+        $params = array_merge($params, $spec['params']);
+        $types = array_merge($types, $spec['types']);
         $joins .= "\nLEFT JOIN account_user au ON au.id = f.assignee_id";
         if (null !== $cursor) {
-            $conditions[] = $this->conditionCursor($filtres->tri, $cursor, $params, $types);
+            $conditions[] = $this->conditionCursor($filtres, $cursor, $params, $types);
         }
         $rows = $this->connection->fetchAllAssociative(
             sprintf(
@@ -339,6 +345,7 @@ final readonly class ReferentielRepository
                     f.business_premium AS premium,
                     f.merged_into_id AS merged_into,
                     %s AS typologie,
+                    %s AS pertinence,
                     f.updated_at
                 FROM pim_fiche f
                 %s
@@ -348,9 +355,10 @@ final readonly class ReferentielRepository
                 SQL,
                 self::COMPLETENESS,
                 self::TYPOLOGIE,
+                TriReferentiel::Pertinence === $filtres->tri ? $spec['expr'] : 'NULL',
                 $joins,
                 implode("\n  AND ", $conditions),
-                $this->ordre($filtres->tri),
+                $this->ordre($filtres),
                 $limit + 1,
             ),
             $params,
@@ -577,30 +585,92 @@ final readonly class ReferentielRepository
     }
 
     /**
-     * Expression SQL de la clé du tri donné, jointures qu'elle requiert dans
-     * les requêtes bâties sur conditions(), et type de binding de sa valeur.
+     * Expression SQL de la clé du tri porté par les filtres, jointures qu'elle
+     * requiert dans les requêtes bâties sur conditions(), type de binding de
+     * sa valeur et paramètres propres à l'expression (score de pertinence).
      * Les clés nullables sont COALESCE-ées pour garder un keyset comparable.
+     * Déterministe à filtres égaux : chaque requête peut la reconstruire et
+     * fusionner ses paramètres sans divergence.
      *
-     * @return array{expr: string, jointures: list<string>, type: ParameterType}
+     * @return array{expr: string, jointures: list<string>, type: ParameterType, params: array<string, mixed>, types: array<string, mixed>}
      */
-    private function specTri(TriReferentiel $tri): array
+    private function specTri(ReferentielFiltres $filtres): array
     {
-        return match ($tri->colonne()) {
+        $q = trim((string) $filtres->q);
+        if (TriReferentiel::Pertinence === $filtres->tri && '' !== $q) {
+            return $this->specPertinence($q);
+        }
+
+        return match ($filtres->tri->colonne()) {
             'nom' => ['expr' => "COALESCE(f.label, '')", 'jointures' => [], 'type' => ParameterType::STRING],
             'gamme' => ['expr' => 'f.type', 'jointures' => [], 'type' => ParameterType::STRING],
             'pays' => ['expr' => "COALESCE(loc.pays, '')", 'jointures' => ['loc'], 'type' => ParameterType::STRING],
             'statut' => ['expr' => 'f.status', 'jointures' => [], 'type' => ParameterType::STRING],
             'completude' => ['expr' => 'COALESCE('.self::COMPLETENESS.', -1)', 'jointures' => ['completude'], 'type' => ParameterType::INTEGER],
             'diffusion' => ['expr' => 'COALESCE(sd.nb, 0)', 'jointures' => ['sd'], 'type' => ParameterType::INTEGER],
+            // Couvre aussi Pertinence sans recherche : rien à scorer.
             default => ['expr' => 'f.updated_at', 'jointures' => [], 'type' => ParameterType::STRING],
-        };
+        } + ['params' => [], 'types' => []];
     }
 
-    private function ordre(TriReferentiel $tri): string
+    /**
+     * Score entier de correspondance du libellé à la recherche : libellé égal,
+     * puis préfixe, puis phrase contenue, puis compte de mots présents ; les
+     * libellés courts départagent. Les apostrophes typographiques sont
+     * ramenées à l'apostrophe droite des deux côtés — la collation unicode_ci
+     * absorbe accents et casse, pas les apostrophes. Borné à ~1,6 M pour
+     * rester dans la clé de curseur entière (ReferentielCursor::cleValide).
+     *
+     * @return array{expr: string, jointures: list<string>, type: ParameterType, params: array<string, mixed>, types: array<string, mixed>}
+     */
+    private function specPertinence(string $q): array
     {
-        $spec = $this->specTri($tri);
+        $phrase = str_replace(['’', '‘'], "'", $q);
+        $label = "REPLACE(COALESCE(f.label, ''), '’', '''')";
+        $composantes = [
+            sprintf('(%s = :p_exact) * 1000000', $label),
+            sprintf('(%s LIKE :p_prefixe) * 100000', $label),
+            sprintf('(%s LIKE :p_phrase) * 10000', $label),
+        ];
+        $params = [
+            'p_exact' => $phrase,
+            'p_prefixe' => addcslashes($phrase, '%_\\').'%',
+            'p_phrase' => '%'.addcslashes($phrase, '%_\\').'%',
+        ];
+        $types = [
+            'p_exact' => ParameterType::STRING,
+            'p_prefixe' => ParameterType::STRING,
+            'p_phrase' => ParameterType::STRING,
+        ];
+        if (ctype_digit($q) && strlen($q) <= 10 && (int) $q <= 4_294_967_295) {
+            $composantes[] = '(f.code = :p_code) * 500000';
+            $params['p_code'] = (int) $q;
+            $types['p_code'] = ParameterType::INTEGER;
+        }
+        $mots = [];
+        foreach (BooleanQueryFactory::tokens($q) as $i => $token) {
+            $mots[] = sprintf('(f.label LIKE :p_mot_%d)', $i);
+            $params['p_mot_'.$i] = '%'.addcslashes($token, '%_\\').'%';
+            $types['p_mot_'.$i] = ParameterType::STRING;
+        }
+        if ([] !== $mots) {
+            $composantes[] = '('.implode(' + ', $mots).') * 100';
+        }
 
-        return sprintf('ORDER BY %s %s, f.id %s', $spec['expr'], $tri->direction(), $tri->direction());
+        return [
+            'expr' => sprintf("(%s - LEAST(CHAR_LENGTH(COALESCE(f.label, '')), 99))", implode(' + ', $composantes)),
+            'jointures' => [],
+            'type' => ParameterType::INTEGER,
+            'params' => $params,
+            'types' => $types,
+        ];
+    }
+
+    private function ordre(ReferentielFiltres $filtres): string
+    {
+        $spec = $this->specTri($filtres);
+
+        return sprintf('ORDER BY %s %s, f.id %s', $spec['expr'], $filtres->tri->direction(), $filtres->tri->direction());
     }
 
     /**
@@ -611,14 +681,15 @@ final readonly class ReferentielRepository
      * @param array<string, mixed> $params
      * @param array<string, mixed> $types
      */
-    private function conditionCursor(TriReferentiel $tri, ReferentielCursor $cursor, array &$params, array &$types): string
+    private function conditionCursor(ReferentielFiltres $filtres, ReferentielCursor $cursor, array &$params, array &$types): string
     {
-        $spec = $this->specTri($tri);
+        $tri = $filtres->tri;
+        $spec = $this->specTri($filtres);
         $op = 'ASC' === $tri->direction() ? '>' : '<';
         $params['cursor_cle'] = match ($tri->colonne()) {
             // Seconde près, comme la colonne — comportement historique.
             'modif' => substr($cursor->cle, 0, 19),
-            'completude', 'diffusion' => (int) $cursor->cle,
+            'completude', 'diffusion', 'pertinence' => (int) $cursor->cle,
             default => $cursor->cle,
         };
         $params['cursor_id'] = $cursor->id->toBinary();

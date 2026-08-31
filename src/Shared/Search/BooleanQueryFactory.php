@@ -18,11 +18,16 @@ final class BooleanQueryFactory
 
     public static function fromText(string $text): string
     {
+        return implode(' ', array_map(static fn (string $t): string => '+'.$t.'*', self::tokens($text)));
+    }
+
+    /** @return list<string> Mots de la saisie assez longs pour l'index, dédupliqués. */
+    public static function tokens(string $text): array
+    {
         $tokens = preg_split('/[^\p{L}\p{N}]+/u', $text, -1, PREG_SPLIT_NO_EMPTY);
         $tokens = false === $tokens ? [] : array_values(array_unique($tokens));
-        $tokens = array_filter($tokens, static fn (string $t): bool => mb_strlen($t) >= self::MIN_TOKEN_SIZE);
 
-        return implode(' ', array_map(static fn (string $t): string => '+'.$t.'*', $tokens));
+        return array_values(array_filter($tokens, static fn (string $t): bool => mb_strlen($t) >= self::MIN_TOKEN_SIZE));
     }
 
     /** Motif LIKE de repli quand aucun mot n'est assez long pour l'index. */

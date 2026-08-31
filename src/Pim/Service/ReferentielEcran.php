@@ -282,7 +282,10 @@ final readonly class ReferentielEcran
                 $cible = TriReferentiel::pourColonne($colonne, $filtres->tri);
                 $filtre = $base;
                 unset($filtre['tri']);
-                if (!$cible->estDefaut()) {
+                // Comparé au défaut contextuel : avec une recherche active, un
+                // clic vers modif_desc doit s'émettre explicitement, sinon il
+                // serait réinterprété en pertinence.
+                if ($cible !== $filtres->triDefaut()) {
                     $filtre['tri'] = $cible->value;
                 }
             }

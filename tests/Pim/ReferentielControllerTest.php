@@ -560,6 +560,82 @@ final class ReferentielControllerTest extends WebTestCase
         self::assertSelectorTextContains('table', 'Le Grand Pavillon Chantilly');
     }
 
+    public function testLaRechercheTrieParPertinence(): void
+    {
+        $client = self::createClient();
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $this->connection = self::getContainer()->get(Connection::class);
+        $this->clearTables();
+
+        $user = new User('recherche-pertinence@example.test', ['ROLE_BP_EDITOR']);
+        $user->setPassword('not-used-by-login-user');
+        $entityManager->persist($user);
+        // La fiche exacte est créée en premier : sous le tri par défaut
+        // (modification décroissante) elle sortirait en dernier. Apostrophe
+        // typographique dans le libellé, droite dans la saisie.
+        $labels = [
+            'Le Grand Hôtel de l’Univers',
+            'Grand Hôtel Univers Palace',
+            'Résidence Grand Standing de l’Univers Hôtel',
+        ];
+        $fiches = [];
+        foreach ($labels as $label) {
+            $lieu = new Lieu();
+            $lieu->changeLabel($label);
+            $lieu->fiche()->publishForImport();
+            $entityManager->persist($lieu);
+            $entityManager->flush();
+            self::getContainer()->get(FicheSearchIndexer::class)->index($lieu->fiche());
+            $fiches[] = $lieu->fiche();
+        }
+        $client->loginUser($user);
+
+        // Sans tri explicite, la recherche trie par pertinence : la fiche au
+        // libellé exact sort en tête malgré son ancienneté.
+        $crawler = $client->request('GET', '/referentiel', ['f' => ['q' => "le grand hotel de l'univers"]]);
+        self::assertResponseIsSuccessful();
+        self::assertStringContainsString('Tri : pertinence', $crawler->text(null, true));
+        self::assertStringContainsString('Le Grand Hôtel de l’Univers', $crawler->filter('tbody tr')->first()->text(null, true));
+        // L'en-tête « Dernière modification » émet son tri explicitement :
+        // omis de l'URL, il serait réinterprété en pertinence.
+        self::assertStringContainsString(
+            'modif_desc',
+            (string) $crawler->filter('thead a[aria-label="Trier par dernière modification"]')->attr('href'),
+        );
+
+        // Un tri explicite gagne sur la pertinence.
+        $crawler = $client->request('GET', '/referentiel', ['f' => ['q' => "le grand hotel de l'univers", 'tri' => 'nom_asc']]);
+        self::assertStringContainsString('Tri : nom (A → Z)', $crawler->text(null, true));
+        self::assertStringContainsString('Grand Hôtel Univers Palace', $crawler->filter('tbody tr')->first()->text(null, true));
+
+        // Pagination keyset sous pertinence : pages de 1, ni doublon ni trou,
+        // du meilleur score au moins bon.
+        $provider = self::getContainer()->get(ReferentielListeProvider::class);
+        $filtres = ReferentielFiltres::fromArray(['q' => "le grand hotel de l'univers"]);
+        $parcourus = [];
+        $cursor = null;
+        do {
+            $vue = $provider->vue($filtres, $cursor, 1);
+            foreach ($vue->lignes as $ligne) {
+                $parcourus[] = $ligne->label;
+            }
+            $cursor = ReferentielCursor::decode($vue->nextCursor);
+        } while (null !== $cursor);
+        self::assertSame($labels, $parcourus);
+
+        // Un curseur forgé sous un autre tri est rejeté comme invalide.
+        $client->request('GET', '/referentiel', [
+            'f' => ['q' => "le grand hotel de l'univers"],
+            'cursor' => (new ReferentielCursor(TriReferentiel::ModifDesc, '2026-07-29 12:34:56.123456', new Ulid()))->encode(),
+        ]);
+        self::assertResponseStatusCodeSame(404);
+
+        // Recherche numérique : la fiche au code exact sort en tête.
+        $crawler = $client->request('GET', '/referentiel', ['f' => ['q' => (string) $fiches[1]->code()]]);
+        self::assertResponseIsSuccessful();
+        self::assertStringContainsString('Grand Hôtel Univers Palace', $crawler->filter('tbody tr')->first()->text(null, true));
+    }
+
     public function testLaRechercheCorrigeLesFautesQuandLaSaisieStricteNeDonneRien(): void
     {
         $client = self::createClient();

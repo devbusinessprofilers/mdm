@@ -144,6 +144,7 @@ final readonly class ReferentielListeProvider
             'statut' => $ligne->status->value,
             'completude' => (string) ($ligne->completeness ?? -1),
             'diffusion' => (string) $ligne->canaux,
+            'pertinence' => (string) ($ligne->pertinence ?? 0),
             default => $ligne->updatedAt->format('Y-m-d H:i:s.u'),
         };
     }
@@ -185,6 +186,7 @@ final readonly class ReferentielListeProvider
                 actif: StatutFiche::Archivee !== $status,
                 premium: (bool) ($row['premium'] ?? false),
                 mergedInto: null === ($row['merged_into'] ?? null) ? null : (string) Ulid::fromBinary((string) $row['merged_into']),
+                pertinence: null === ($row['pertinence'] ?? null) ? null : (int) $row['pertinence'],
             );
         }
 

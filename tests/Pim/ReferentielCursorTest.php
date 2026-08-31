@@ -46,6 +46,25 @@ final class ReferentielCursorTest extends TestCase
         ))->encode());
     }
 
+    public function testLaCleDePertinenceEstUnEntierValide(): void
+    {
+        $cursor = new ReferentielCursor(
+            TriReferentiel::Pertinence,
+            '1109958',
+            Ulid::fromString('01K1C18C3X5YD4QSVSRQSDFD7Y'),
+        );
+        $decoded = ReferentielCursor::decode($cursor->encode());
+        self::assertNotNull($decoded);
+        self::assertSame('1109958', $decoded->cle);
+
+        $this->expectException(\InvalidArgumentException::class);
+        ReferentielCursor::decode((new ReferentielCursor(
+            TriReferentiel::Pertinence,
+            'pas-un-score',
+            Ulid::fromString('01K1C18C3X5YD4QSVSRQSDFD7Y'),
+        ))->encode());
+    }
+
     public function testLAncienFormatDeCurseurEstRejete(): void
     {
         // Format d'avant le tri configurable : {u, i} — plus décodable.

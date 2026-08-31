@@ -52,7 +52,7 @@ final readonly class ReferentielCursor
     {
         return match ($tri->colonne()) {
             'modif' => false !== \DateTimeImmutable::createFromFormat('!Y-m-d H:i:s.u', $cle),
-            'completude', 'diffusion' => 1 === preg_match('/^-?\d{1,10}$/', $cle),
+            'completude', 'diffusion', 'pertinence' => 1 === preg_match('/^-?\d{1,10}$/', $cle),
             default => strlen($cle) <= 255,
         };
     }

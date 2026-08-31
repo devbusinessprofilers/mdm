@@ -13,12 +13,36 @@ final class TriReferentielTest extends TestCase
     public function testLeDefautEstLaModificationDecroissante(): void
     {
         self::assertSame(TriReferentiel::ModifDesc, TriReferentiel::DEFAUT);
-        self::assertTrue(TriReferentiel::ModifDesc->estDefaut());
-        self::assertFalse(TriReferentiel::NomAsc->estDefaut());
         self::assertSame('modif', TriReferentiel::ModifDesc->colonne());
         self::assertSame('DESC', TriReferentiel::ModifDesc->direction());
         self::assertSame('nom', TriReferentiel::NomAsc->colonne());
         self::assertSame('ASC', TriReferentiel::NomAsc->direction());
+    }
+
+    public function testLaPertinenceEstUnTriDescendantHorsColonnes(): void
+    {
+        self::assertSame('pertinence', TriReferentiel::Pertinence->colonne());
+        self::assertSame('DESC', TriReferentiel::Pertinence->direction());
+        // Depuis la pertinence, chaque en-tête part sur son sens naturel.
+        self::assertSame(TriReferentiel::NomAsc, TriReferentiel::pourColonne('nom', TriReferentiel::Pertinence));
+        self::assertSame(TriReferentiel::ModifDesc, TriReferentiel::pourColonne('modif', TriReferentiel::Pertinence));
+    }
+
+    public function testLaRechercheActiveBasculeLeDefautSurLaPertinence(): void
+    {
+        // Sans tri explicite, une recherche implique la pertinence…
+        self::assertSame(TriReferentiel::Pertinence, ReferentielFiltres::fromArray(['q' => 'hotel'])->tri);
+        self::assertSame(TriReferentiel::DEFAUT, ReferentielFiltres::fromArray([])->tri);
+        // … et la pertinence forgée sans recherche retombe sur le défaut.
+        self::assertSame(TriReferentiel::DEFAUT, ReferentielFiltres::fromArray(['tri' => 'pertinence'])->tri);
+        self::assertSame(TriReferentiel::Pertinence, ReferentielFiltres::fromArray(['q' => 'hotel', 'tri' => 'pertinence'])->tri);
+
+        // Le défaut contextuel est omis des URL et vues enregistrées ; un tri
+        // explicite sous recherche est émis, même modif_desc.
+        $filtres = ReferentielFiltres::fromArray(['q' => 'hotel']);
+        self::assertArrayNotHasKey('tri', $filtres->toArray());
+        $filtres->tri = TriReferentiel::ModifDesc;
+        self::assertSame('modif_desc', $filtres->toArray()['tri']);
     }
 
     public function testUnClicSurUneColonneInactivePrendSonSensNaturel(): void
