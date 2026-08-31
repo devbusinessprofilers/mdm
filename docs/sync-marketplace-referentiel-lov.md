@@ -105,7 +105,7 @@ intouché » :
 | `participants` (service) | `Prestataire.capaciteMin/Max` | nouveaux champs PIM (CDC) |
 | `couverture.departements` (activité + service) | `departements` | résolution par numéro puis par nom |
 | `couverture` (activité) | `Activite.rayonActionFr` | « Toute la France » ou liste régions + départements |
-| `telephone` (toutes gammes) | `Produit.telephone` | nouveau champ `pim_fiche.telephone`, colonne CSV « Téléphone » reprise à l'import ; espaces retirés, 14 car. max |
+| *(pas de clé `telephone`)* | `Produit.telephone` | numéro interne géré par la marketplace : le MDM ne porte plus ce champ (retiré 2026-08-31) et n'envoie pas la clé, l'upsert marketplace ne touche la colonne que si elle est présente |
 | `adresse.arrondissement` (toutes gammes) | `Produit.arrondissement` (`bp_arrondissement`) | valeur PIM, sinon déduit du code postal pour Paris/Lyon/Marseille (règle legacy) ; ligne créée au besoin |
 | `prestataireEsat` / `demarcheRse` (service) | `Prestataire.categories` (`bp_categorie` : « ESAT / STPA », « RSE ») | reconstruit depuis les deux radios PIM |
 | photos (sync + prune) | `Produit.nb_photos` | compteur legacy maintenu (il ne l'était plus — régression corrigée) |

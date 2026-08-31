@@ -27,7 +27,7 @@ final class FusionChampsCatalogueTest extends KernelTestCase
             }
             self::assertSame(count($headers), count(array_unique($headers)), sprintf('En-têtes dupliqués pour %s.', $type->value));
             // Les propriétés portées par la Fiche, absentes des schémas d'import.
-            foreach (['telephone', 'business_premium', 'partenaire_bp'] as $supplement) {
+            foreach (['business_premium', 'partenaire_bp'] as $supplement) {
                 self::assertContains($supplement, $headers, sprintf('Supplément Fiche manquant pour %s.', $type->value));
             }
             foreach ($catalogue->champsUnion($type) as $column) {

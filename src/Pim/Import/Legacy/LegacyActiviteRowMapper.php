@@ -47,7 +47,6 @@ final readonly class LegacyActiviteRowMapper
         $activite = new Activite();
         $activite->fiche()->assignImportedCode((int) $syspadId);
         $activite->changeLabel(mb_substr($label, 0, 255));
-        $activite->fiche()->changeTelephone(self::nullable($row->cell('Téléphone')));
         // Règle legacy : colonne « Tag » vide = partenaire BP (icône marketplace).
         $activite->fiche()->changePartenaireBp('' === $row->cell('Tag'));
 

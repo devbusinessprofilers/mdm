@@ -32,7 +32,9 @@ final class LieuAttributsVerifierTest extends TestCase
         self::assertSame('GENERALE_TYPOLOGIE', $parChamp['lieu_lov_typologie']->payload['attribut'] ?? null);
         self::assertSame('Mercure', $parChamp['lieu_chaine']->valeurProposee ?? null);
         self::assertSame('https://hotel.example', $parChamp['lieu_website']->valeurProposee ?? null);
-        self::assertSame('+33 1 23 45 67 89', $parChamp['lieu_telephone']->valeurProposee ?? null);
+        // Le téléphone OSM n'est plus proposé : le numéro affiché sur la
+        // marketplace est interne, le MDM ne porte plus ce champ.
+        self::assertArrayNotHasKey('lieu_telephone', $parChamp);
     }
 
     public function testNeProposeRienQuandDejaRenseigne(): void
@@ -41,7 +43,6 @@ final class LieuAttributsVerifierTest extends TestCase
         $lieu->changeGeneraleTypologie(['GENERALE_TYPOLOGIE_5']);
         $lieu->changeGeneraleChainesGroupeHot(['GENERALE_CHAINES_GROUPE_HOT_40']);
         $lieu->changeGeneraleWebsiteUrl('https://deja.example');
-        $lieu->fiche()->changeTelephone('01 02 03 04 05');
 
         $propositions = self::verifier([
             'stars' => '4',

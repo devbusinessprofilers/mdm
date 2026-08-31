@@ -59,7 +59,6 @@ final readonly class LegacyLieuRowMapper
         // Le code fiche reprend l'Id syspad legacy (pivot des reprises i18n/photos).
         $lieu->fiche()->assignImportedCode((int) $syspadId);
         $lieu->changeLabel(mb_substr($label, 0, 255));
-        $lieu->fiche()->changeTelephone(self::nullable($row->cell('Téléphone')));
         // Règle legacy : colonne « Tag » vide = partenaire BP (icône marketplace).
         $lieu->fiche()->changePartenaireBp('' === $row->cell('Tag'));
         $lieu->changeGeneraleGammeLibelle($gamme);

@@ -69,12 +69,6 @@ final class ServiceEvenementielType extends AbstractType
                 "getter" => static fn (ServiceEvenementiel $service): bool => $service->fiche()->partenaireBp(),
                 "setter" => static function (ServiceEvenementiel &$service, mixed $value): void { $service->fiche()->changePartenaireBp((bool) $value); },
             ])
-            ->add("telephone", TextType::class, [
-                "label" => "Téléphone",
-                "required" => false,
-                "getter" => static fn (ServiceEvenementiel $service): ?string => $service->fiche()->telephone(),
-                "setter" => static function (ServiceEvenementiel &$service, mixed $value): void { $service->fiche()->changeTelephone(null === $value ? null : (string) $value); },
-            ])
             ->add(
                 "prestations",
                 ChoiceType::class,

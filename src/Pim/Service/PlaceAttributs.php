@@ -24,7 +24,6 @@ final readonly class PlaceAttributs
         public ?bool $climatisation = null,
         public ?bool $wifi = null,
         public ?string $siteWeb = null,
-        public ?string $telephone = null,
         /** Enseigne OSM (`brand`), casse d'origine conservée. */
         public ?string $marque = null,
         /** Classement OSM `stars`, borné 1..5 (null hors bornes ou absent). */
@@ -41,7 +40,6 @@ final readonly class PlaceAttributs
             && null === $this->climatisation
             && null === $this->wifi
             && null === $this->siteWeb
-            && null === $this->telephone
             && null === $this->marque
             && null === $this->etoiles;
     }

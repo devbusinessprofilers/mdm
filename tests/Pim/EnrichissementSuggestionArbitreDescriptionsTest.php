@@ -150,7 +150,6 @@ final class EnrichissementSuggestionArbitreDescriptionsTest extends KernelTestCa
         $lieu->changeLabel('Hôtel enrichi de partout');
         $em->persist($lieu);
         $suggestions = [
-            ['lieu_telephone', 'Téléphone', '+33 1 23 45 67 89', null],
             ['lieu_website', 'Site web', 'https://hotel.example', null],
             ['lieu_lov_typologie', 'Typologie', 'Hôtel 4 étoiles', ['attribut' => 'GENERALE_TYPOLOGIE', 'codes' => ['GENERALE_TYPOLOGIE_3']]],
             ['info_legale_forme_juridique', 'Forme juridique', 'Société par actions simplifiée (SAS)', null],
@@ -169,7 +168,6 @@ final class EnrichissementSuggestionArbitreDescriptionsTest extends KernelTestCa
         $em->clear();
         $recharge = $em->find(Lieu::class, $lieu->id());
         self::assertInstanceOf(Lieu::class, $recharge);
-        self::assertSame('+33 1 23 45 67 89', $recharge->fiche()->telephone());
         self::assertSame('https://hotel.example', $recharge->generaleWebsiteUrl());
         self::assertContains('GENERALE_TYPOLOGIE_3', $recharge->generaleTypologie());
         self::assertSame('Société par actions simplifiée (SAS)', $recharge->administratif()->infoLegaleFormeJuridique());

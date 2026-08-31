@@ -46,7 +46,6 @@ final readonly class LegacyServiceRowMapper
         $service = new ServiceEvenementiel();
         $service->fiche()->assignImportedCode((int) $syspadId);
         $service->changeLabel(mb_substr($label, 0, 255));
-        $service->fiche()->changeTelephone(self::nullable($row->cell('Téléphone')));
         // Règle legacy : colonne « Tag » vide = partenaire BP (icône marketplace).
         $service->fiche()->changePartenaireBp('' === $row->cell('Tag'));
 

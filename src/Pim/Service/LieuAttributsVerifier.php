@@ -11,9 +11,9 @@ use App\Pim\Lov\LieuLovCatalog;
 /**
  * Confronte un lieu (hôtel, salle…) à Geoapify Place Details (tags
  * OpenStreetMap) pour proposer des attributs manquants, sans rien persister :
- * classement en étoiles (→ typologie), enseigne (→ chaîne / groupe hôtelier),
- * site web et téléphone. Backfill seulement : on ne propose que des valeurs
- * absentes de la fiche. Tous pays dès qu'un GPS est présent.
+ * classement en étoiles (→ typologie), enseigne (→ chaîne / groupe hôtelier)
+ * et site web. Backfill seulement : on ne propose que des valeurs absentes de
+ * la fiche. Tous pays dès qu'un GPS est présent.
  */
 final readonly class LieuAttributsVerifier
 {
@@ -87,20 +87,6 @@ final readonly class LieuAttributsVerifier
                 score: null,
             );
         }
-        // Téléphone public de la fiche (colonne bornée à 20 caractères).
-        if (null !== $attributs->telephone
-            && null === $lieu->fiche()->telephone()
-            && mb_strlen($attributs->telephone) <= 20) {
-            $propositions[] = new SuggestionProposee(
-                action: SuggestionAction::RemplirChamp,
-                champ: 'lieu_telephone',
-                label: 'Téléphone',
-                valeurActuelle: null,
-                valeurProposee: $attributs->telephone,
-                score: null,
-            );
-        }
-
         return $propositions;
     }
 }

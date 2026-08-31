@@ -74,7 +74,7 @@ final class FicheSectionsCatalogue
         return [
             [
                 'titre' => 'Informations générales',
-                'champs' => ['label', 'generaleTypologie', 'informationsGenerales', 'generaleWebsiteUrl', 'telephone', 'businessPremium', 'partenaireBp', 'disponibilites', 'periodesFermeture'],
+                'champs' => ['label', 'generaleTypologie', 'informationsGenerales', 'generaleWebsiteUrl', 'businessPremium', 'partenaireBp', 'disponibilites', 'periodesFermeture'],
                 // Les quatre horaires globaux restent des propriétés de la
                 // section (dérivés des horaires par jour, complétude/audit).
                 'proprietes' => ['label', 'generaleTypologie', 'generaleWebsiteUrl', 'periodesFermeture', ...array_keys(LieuFormCatalog::general()), ...array_keys(LieuFormCatalog::availability()), 'dispoHeureOuvertureHeure', 'dispoHeureOuvertureMinutes', 'dispoHeureFermetureHeure', 'dispoHeureFermetureMinutes'],
@@ -204,7 +204,7 @@ final class FicheSectionsCatalogue
         return [
             [
                 'titre' => 'Informations générales',
-                'champs' => ['label', 'lieu', 'siteOfficiel', 'telephone', 'businessPremium', 'partenaireBp', 'privatisationTotale', 'privatisationPartielle', 'heureOuverture', 'heureFermeture', 'joursOuverture', 'periodesFermeture'],
+                'champs' => ['label', 'lieu', 'siteOfficiel', 'businessPremium', 'partenaireBp', 'privatisationTotale', 'privatisationPartielle', 'heureOuverture', 'heureFermeture', 'joursOuverture', 'periodesFermeture'],
                 'proprietes' => ['label', 'lieu', 'siteOfficiel', 'privatisationTotale', 'privatisationPartielle', 'heureOuverture', 'heureFermeture', 'joursOuverture', 'periodesFermeture'],
                 'blocs' => ['disponibilites'],
                 'groupe' => 'ma_fiche',
@@ -292,7 +292,7 @@ final class FicheSectionsCatalogue
         return [
             [
                 'titre' => 'Informations générales',
-                'champs' => ['label', 'prestataire', 'types', 'langues', 'telephone', 'businessPremium', 'partenaireBp'],
+                'champs' => ['label', 'prestataire', 'types', 'langues', 'businessPremium', 'partenaireBp'],
                 'proprietes' => ['label', 'prestataire', 'types', 'langues'],
                 'blocs' => [],
                 'groupe' => 'ma_fiche',
@@ -376,7 +376,7 @@ final class FicheSectionsCatalogue
         return [
             [
                 'titre' => 'Informations générales',
-                'champs' => ['label', 'prestations', ...array_values(ServiceLovCatalog::SOUS_PRESTATION_FIELDS), 'telephone', 'businessPremium', 'partenaireBp', 'prestataireEsat'],
+                'champs' => ['label', 'prestations', ...array_values(ServiceLovCatalog::SOUS_PRESTATION_FIELDS), 'businessPremium', 'partenaireBp', 'prestataireEsat'],
                 'proprietes' => ['label', 'prestations', 'sousPrestations', 'prestataireEsat'],
                 'blocs' => [],
                 'groupe' => 'ma_fiche',

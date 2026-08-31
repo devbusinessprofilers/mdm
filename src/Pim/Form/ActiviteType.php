@@ -64,12 +64,6 @@ final class ActiviteType extends AbstractType
                 'getter' => static fn (Activite $activite): bool => $activite->fiche()->partenaireBp(),
                 'setter' => static function (Activite &$activite, mixed $value): void { $activite->fiche()->changePartenaireBp((bool) $value); },
             ])
-            ->add('telephone', TextType::class, [
-                'label' => 'Téléphone',
-                'required' => false,
-                'getter' => static fn (Activite $activite): ?string => $activite->fiche()->telephone(),
-                'setter' => static function (Activite &$activite, mixed $value): void { $activite->fiche()->changeTelephone(null === $value ? null : (string) $value); },
-            ])
             ->add(
                 'prestataire',
                 PrestataireAutocompleteType::class,

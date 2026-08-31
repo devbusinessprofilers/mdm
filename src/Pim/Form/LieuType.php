@@ -56,12 +56,6 @@ final class LieuType extends AbstractType
                 'getter' => static fn (Lieu $lieu): bool => $lieu->fiche()->partenaireBp(),
                 'setter' => static function (Lieu &$lieu, mixed $value): void { $lieu->fiche()->changePartenaireBp((bool) $value); },
             ])
-            ->add('telephone', TextType::class, [
-                'label' => 'Téléphone',
-                'required' => false,
-                'getter' => static fn (Lieu $lieu): ?string => $lieu->fiche()->telephone(),
-                'setter' => static function (Lieu &$lieu, mixed $value): void { $lieu->fiche()->changeTelephone(null === $value ? null : (string) $value); },
-            ])
             ->add('generaleTypologie', ChoiceType::class, $this->field('Typologie', 'generaleTypologie', 'changeGeneraleTypologie', false) + [
                 'choices' => array_flip(LieuLovCatalog::choicesFor('GENERALE_TYPOLOGIE')),
                 'multiple' => true,

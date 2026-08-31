@@ -41,8 +41,9 @@ final class RestaurantAttributsVerifierTest extends TestCase
         self::assertTrue($parChamp['restaurant_acces_pmr']->payload['bool'] ?? null);
         self::assertArrayHasKey('restaurant_site_officiel', $parChamp);
         self::assertSame('https://trattoria.example', $parChamp['restaurant_site_officiel']->valeurProposee);
-        self::assertArrayHasKey('restaurant_telephone', $parChamp);
-        self::assertSame('+33 1 23 45 67 89', $parChamp['restaurant_telephone']->valeurProposee);
+        // Le téléphone OSM n'est plus proposé : le numéro affiché sur la
+        // marketplace est interne, le MDM ne porte plus ce champ.
+        self::assertArrayNotHasKey('restaurant_telephone', $parChamp);
     }
 
     public function testNeProposeRienQuandDejaRenseigne(): void
@@ -50,7 +51,6 @@ final class RestaurantAttributsVerifierTest extends TestCase
         $restaurant = self::restaurant();
         $restaurant->changeAccesPmr(true);
         $restaurant->changeSiteOfficiel('https://deja.example');
-        $restaurant->fiche()->changeTelephone('01 02 03 04 05');
 
         // OSM ne renvoie que des champs déjà remplis → aucune proposition.
         $propositions = self::verifier([

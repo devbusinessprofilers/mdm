@@ -137,7 +137,6 @@ final class GeoapifyClient implements GeocodeurEtrangerInterface
             climatisation: self::triState($tag('air_conditioning'), ['yes']),
             wifi: self::triState($tag('internet_access'), ['yes', 'wlan', 'wifi']),
             siteWeb: self::premiereChaine($raw, ['website', 'contact:website', 'url']),
-            telephone: self::premiereChaine($raw, ['phone', 'contact:phone']),
             // `brand` seulement : `operator` est l'exploitant, pas l'enseigne.
             marque: self::premiereChaine($raw, ['brand']),
             etoiles: self::etoiles($tag('stars')),

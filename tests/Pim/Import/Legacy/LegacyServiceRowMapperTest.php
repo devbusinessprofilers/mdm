@@ -50,7 +50,6 @@ final class LegacyServiceRowMapperTest extends TestCase
         $service = $mapped->service;
         self::assertSame(5100, $service->fiche()->code());
         self::assertSame('Traiteur des Halles', $service->fiche()->label());
-        self::assertSame('01 23 45 67 89', $service->fiche()->telephone());
         self::assertTrue($service->fiche()->partenaireBp(), 'Tag vide = partenaire BP (règle legacy).');
         self::assertSame(['TS_TRAITEUR'], $service->prestations());
         self::assertSame(['TS_TRAITEUR_SS_1'], $service->sousPrestations());

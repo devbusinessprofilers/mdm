@@ -98,9 +98,6 @@ class Fiche
     /** Adhérent Business Premium (interrupteur de la maquette, bloc « Statut et référencement »). */
     #[ORM\Column(name: 'business_premium', options: ['default' => false])]
     private bool $businessPremium = false;
-    /** Téléphone public de l'établissement (affiché sur la marketplace). */
-    #[ORM\Column(length: 20, nullable: true)]
-    private ?string $telephone = null;
     /**
      * Partenaire BP (icône partenaire de la marketplace, bp_produit.is_partenaire).
      * Distinct de businessPremium, qui pilote les relances de complétude.
@@ -339,22 +336,6 @@ class Fiche
             return;
         }
         $this->partenaireBp = $partenaireBp;
-        $this->markChanged();
-    }
-
-    public function telephone(): ?string
-    {
-        return $this->telephone;
-    }
-
-    public function changeTelephone(?string $telephone): void
-    {
-        $telephone = null === $telephone ? null : trim($telephone);
-        $telephone = '' === $telephone ? null : $telephone;
-        if ($telephone === $this->telephone) {
-            return;
-        }
-        $this->telephone = $telephone;
         $this->markChanged();
     }
 

@@ -63,20 +63,19 @@ final class FicheFusionneurTest extends KernelTestCase
         $lieuA = new Lieu();
         $lieuA->changeLabel('Château des Deux');
         $lieuA->changeGeneraleWebsiteUrl('https://ancien.example.test');
-        $lieuA->fiche()->changeTelephone(null);
         $lieuA->changeGeneraleTypologie(['GENERALE_TYPOLOGIE_1']);
         $this->photo($lieuA, 'asset-commun', PhotoUsageCatalog::PRINCIPALE);
         $this->salle($lieuA, 'Salle Bleue', 80);
         $lieuA->fiche()->publishForImport();
         $this->entityManager->persist($lieuA);
 
-        // Absorbée : téléphone renseigné, site internet plus récent, photo
+        // Absorbée : Business Premium actif, site internet plus récent, photo
         // commune (dédoublonnée) + photo propre marquée principale (rétrogradée),
         // salle commune + salle propre, collaborateur commun + propre, site propre.
         $lieuB = new Lieu();
         $lieuB->changeLabel('Château des Deux (doublon)');
         $lieuB->changeGeneraleWebsiteUrl('https://nouveau.example.test');
-        $lieuB->fiche()->changeTelephone('0102030405');
+        $lieuB->fiche()->changeBusinessPremium(true);
         $lieuB->changeGeneraleTypologie(['GENERALE_TYPOLOGIE_5']);
         $this->photo($lieuB, 'asset-commun', PhotoUsageCatalog::DEFAUT);
         $this->photo($lieuB, 'asset-propre', PhotoUsageCatalog::PRINCIPALE);
@@ -105,7 +104,7 @@ final class FicheFusionneurTest extends KernelTestCase
         self::getContainer()->get(FicheFusionneur::class)->fusionner(
             $survivante,
             $absorbee,
-            ['generale_website_url', 'telephone'],
+            ['generale_website_url', 'business_premium'],
             $acteur,
         );
         $this->entityManager->clear();
@@ -117,7 +116,7 @@ final class FicheFusionneurTest extends KernelTestCase
 
         // Champs choisis copiés, le reste conservé ; la survivante repart en cours.
         self::assertSame('Château des Deux', $survivante->label());
-        self::assertSame('0102030405', $survivante->telephone());
+        self::assertTrue($survivante->businessPremium());
         self::assertSame(StatutFiche::EnCours, $survivante->status());
         $lieuSurvivant = self::getContainer()->get(\App\Pim\Repository\LieuRepository::class)->findOneBy(['fiche' => $survivante]);
         self::assertInstanceOf(Lieu::class, $lieuSurvivant);

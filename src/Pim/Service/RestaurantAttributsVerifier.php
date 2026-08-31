@@ -87,20 +87,6 @@ final readonly class RestaurantAttributsVerifier
                 score: null,
             );
         }
-        // Téléphone public de la fiche (colonne bornée à 20 caractères).
-        if (null !== $attributs->telephone
-            && null === $restaurant->fiche()->telephone()
-            && mb_strlen($attributs->telephone) <= 20) {
-            $propositions[] = new SuggestionProposee(
-                action: SuggestionAction::RemplirChamp,
-                champ: 'restaurant_telephone',
-                label: 'Téléphone',
-                valeurActuelle: null,
-                valeurProposee: $attributs->telephone,
-                score: null,
-            );
-        }
-
         return $propositions;
     }
 

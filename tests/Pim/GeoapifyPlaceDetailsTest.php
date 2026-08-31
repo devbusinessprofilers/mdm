@@ -42,7 +42,6 @@ final class GeoapifyPlaceDetailsTest extends TestCase
         self::assertTrue($attributs->wifi);
         self::assertNull($attributs->climatisation);
         self::assertSame('https://trattoria.example', $attributs->siteWeb);
-        self::assertSame('+33 1 23 45 67 89', $attributs->telephone);
         // `brand` seulement : `operator` est l'exploitant, pas l'enseigne.
         self::assertSame('Big Mamma', $attributs->marque);
         // « 4S » = 4 étoiles supérieur.

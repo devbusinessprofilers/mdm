@@ -53,15 +53,14 @@ final readonly class FusionChampsCatalogue
 
     /**
      * Propriétés de la Fiche absentes des schémas d'import : mêmes conventions
-     * getter/setter (`telephone()` / `changeTelephone()`), cible résolue par
-     * l'accesseur `fiche()` de l'agrégat de gamme.
+     * getter/setter (`businessPremium()` / `changeBusinessPremium()`), cible
+     * résolue par l'accesseur `fiche()` de l'agrégat de gamme.
      *
      * @return list<ColumnDefinition>
      */
     public static function supplementFiche(): array
     {
         return [
-            new ColumnDefinition('telephone', ColumnKind::Text, 'telephone', maxLength: 20, targetPath: self::CIBLE_FICHE),
             new ColumnDefinition('business_premium', ColumnKind::Bool, 'businessPremium', targetPath: self::CIBLE_FICHE, nullable: false),
             new ColumnDefinition('partenaire_bp', ColumnKind::Bool, 'partenaireBp', targetPath: self::CIBLE_FICHE, nullable: false),
         ];

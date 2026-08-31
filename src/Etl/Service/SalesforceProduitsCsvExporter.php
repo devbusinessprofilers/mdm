@@ -154,7 +154,7 @@ final class SalesforceProduitsCsvExporter
             $loc?->ruePostale() ?? '',                                  // S_PRODUCT_ADRESSE
             $loc?->codePostal() ?? '',                                  // S_PRODUCT_CODEPOSTAL
             $loc?->ville() ?? '',                                       // S_PRODUCT_VILLE
-            $fiche->telephone() ?? '',                                  // S_PRODUCT_TEL
+            '',                                                         // S_PRODUCT_TEL (numéro interne marketplace, plus porté par le MDM)
             $lieu?->generaleWebsiteUrl() ?? '',                         // S_PRODUCT_WEB
             self::coord($loc?->latitude()),                             // S_PRODUCT_LATTITUDE
             self::coord($loc?->longitude()),                            // S_PRODUCT_LONGITUDE

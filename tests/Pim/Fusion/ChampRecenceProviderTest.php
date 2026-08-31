@@ -78,7 +78,7 @@ final class ChampRecenceProviderTest extends KernelTestCase
         // Règle 3 : seule A est auditée sur ce champ, elle gagne.
         self::assertSame('a', $provider->preselection($ficheA, $ficheB, 'lieu.generaleDescription', 'texte A', 'texte B'));
         // Règle 4 : aucun audit, la fiche modifiée en dernier (B) gagne.
-        self::assertSame('b', $provider->preselection($ficheA, $ficheB, 'fiche.telephone', '01', '02'));
+        self::assertSame('b', $provider->preselection($ficheA, $ficheB, 'fiche.businessPremium', '0', '1'));
         // Dates exposées pour l'affichage de l'écran.
         self::assertNotNull($provider->derniereModification($ficheA, 'nom'));
         self::assertNull($provider->derniereModification($ficheB, 'lieu.generaleDescription'));

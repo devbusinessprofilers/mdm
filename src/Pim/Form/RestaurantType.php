@@ -70,12 +70,6 @@ final class RestaurantType extends AbstractType
                 'label_attr' => $partenaireGereParSf ? ['data-autorite' => \App\Pim\Enum\Autorite::Salesforce->value] : [],
                 'getter' => static fn (Restaurant $restaurant): bool => $restaurant->fiche()->partenaireBp(),
                 'setter' => static function (Restaurant &$restaurant, mixed $value): void { $restaurant->fiche()->changePartenaireBp((bool) $value); },
-            ])
-            ->add('telephone', TextType::class, [
-                'label' => 'Téléphone',
-                'required' => false,
-                'getter' => static fn (Restaurant $restaurant): ?string => $restaurant->fiche()->telephone(),
-                'setter' => static function (Restaurant &$restaurant, mixed $value): void { $restaurant->fiche()->changeTelephone(null === $value ? null : (string) $value); },
             ]);
 
         $this->selection(

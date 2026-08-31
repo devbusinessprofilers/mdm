@@ -132,7 +132,6 @@ final readonly class EnrichissementSuggestionArbitre
             'info_legale_nom' => [$lieu->administratif()->infoLegaleNom(), fn () => $lieu->administratif()->changeInfoLegaleNom($suggestion->valeurProposee())],
             'lieu_desc_generale' => [$lieu->descGenerale(), fn () => $lieu->changeDescGenerale(self::texte($payload))],
             'lieu_website' => [$lieu->generaleWebsiteUrl(), fn () => $lieu->changeGeneraleWebsiteUrl($suggestion->valeurProposee())],
-            'lieu_telephone' => [$lieu->fiche()->telephone(), fn () => $lieu->fiche()->changeTelephone($suggestion->valeurProposee())],
             default => throw new \DomainException(sprintf('Champ « %s » non applicable.', $champ)),
         };
         $this->assertFraicheur($courante, $suggestion);
@@ -224,12 +223,6 @@ final readonly class EnrichissementSuggestionArbitre
         if ('restaurant_desc_generale' === $suggestion->champ()) {
             $this->assertFraicheur($restaurant->descriptionGenerale(), $suggestion);
             $restaurant->changeDescriptionGenerale(self::texte($payload));
-
-            return;
-        }
-        if ('restaurant_telephone' === $suggestion->champ()) {
-            $this->assertFraicheur($restaurant->fiche()->telephone(), $suggestion);
-            $restaurant->fiche()->changeTelephone($suggestion->valeurProposee());
 
             return;
         }

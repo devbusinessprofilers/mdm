@@ -25,7 +25,7 @@ use Symfony\Component\DependencyInjection\Attribute\Autowire;
  * Enrichit les lieux (tous pays, dès qu'un GPS est présent) à partir de
  * Geoapify Place Details (tags OpenStreetMap) et en tire des suggestions à
  * arbitrer : classement en étoiles (typologie), enseigne (chaîne / groupe
- * hôtelier), site web, téléphone. On ne propose que des valeurs absentes.
+ * hôtelier), site web. On ne propose que des valeurs absentes.
  *
  *  - par défaut, RAPPORT seul — aucune écriture, un CSV dans var/tmp ;
  *  - --appliquer : crée/rafraîchit les suggestions.
@@ -36,7 +36,7 @@ use Symfony\Component\DependencyInjection\Attribute\Autowire;
  * s'arrête au quota (échecs consécutifs) et REPREND au prochain run là où elle
  * s'était arrêtée (scan-tracking) — la relancer sur plusieurs jours.
  */
-#[AsCommand(name: 'app:pim:enrichir-lieux', description: 'Propose typologie (étoiles), chaîne, site et téléphone des lieux depuis Geoapify (OpenStreetMap).')]
+#[AsCommand(name: 'app:pim:enrichir-lieux', description: 'Propose typologie (étoiles), chaîne et site des lieux depuis Geoapify (OpenStreetMap).')]
 final class EnrichirLieuxCommand extends Command
 {
     /** Échecs API consécutifs avant abandon du run (quota épuisé : inutile d'insister). */

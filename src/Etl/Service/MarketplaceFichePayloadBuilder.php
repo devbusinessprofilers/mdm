@@ -94,7 +94,8 @@ final readonly class MarketplaceFichePayloadBuilder
     {
         $data = [
             'nom' => $fiche->label(),
-            'telephone' => $fiche->telephone(),
+            // Pas de clé 'telephone' : bp_produit.telephone est un numéro
+            // interne géré par la marketplace, le MDM ne le porte plus.
             'businessPremium' => $fiche->businessPremium(),
             'partenaireBp' => $fiche->partenaireBp(),
             'adresse' => $this->adresse($fiche),
