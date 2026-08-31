@@ -20,7 +20,7 @@
 ] %}
 {% set onglets_actifs = medias.onglets_actifs|default({}) %}
 <div class="flex flex-col gap-6" data-controller="media-tabs">
-    <nav class="flex flex-row items-center gap-8 border-b border-neutral-200 overflow-x-auto" aria-label="Types de médias">
+    <nav class="flex flex-row items-center gap-8 flex-wrap border-b border-neutral-200" aria-label="Types de médias">
         {% for o in onglets_medias %}
             {# `??` et pas `|default` : false est « vide » pour default(). #}
             {% set disponible = onglets_actifs[o.cle] ?? true %}
