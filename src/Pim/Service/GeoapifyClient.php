@@ -101,6 +101,93 @@ final class GeoapifyClient implements GeocodeurEtrangerInterface
     }
 
     /**
+     * POI autour d'un point (Places) : gares, stations de métro ou de
+     * tramway… dans le rayon donné, du plus proche au plus lointain (biais
+     * de proximité). Les features sans nom sont écartés — une suggestion
+     * d'accès anonyme n'aide personne.
+     *
+     * @param list<string> $categories catégories Geoapify (public_transport.train…)
+     *
+     * @return list<array{nom: string, latitude: string, longitude: string, distanceMetres: ?int, categories: list<string>}>
+     *
+     * @throws EnrichissementIndisponibleException quand l'API est injoignable
+     *                                             ou sous quota
+     */
+    public function poisProches(string $latitude, string $longitude, array $categories, int $rayonMetres, int $limite = 20): array
+    {
+        $lat = trim($latitude);
+        $lon = trim($longitude);
+        if (!$this->isConfigured() || '' === $lat || '' === $lon || [] === $categories) {
+            return [];
+        }
+        try {
+            $donnees = $this->requete('GET', '/v2/places', [
+                'categories' => implode(',', $categories),
+                'filter' => sprintf('circle:%s,%s,%d', $lon, $lat, $rayonMetres),
+                'bias' => sprintf('proximity:%s,%s', $lon, $lat),
+                'limit' => (string) max(1, $limite),
+                'lang' => 'fr',
+            ], attendus: [200]);
+        } catch (\RuntimeException $exception) {
+            throw new EnrichissementIndisponibleException('Geoapify Places est indisponible.', 0, $exception);
+        }
+        $pois = [];
+        foreach ($donnees['features'] ?? [] as $feature) {
+            $props = is_array($feature) ? ($feature['properties'] ?? null) : null;
+            if (!is_array($props)) {
+                continue;
+            }
+            $nom = is_string($props['name'] ?? null) ? trim($props['name']) : '';
+            if ('' === $nom || !is_numeric($props['lat'] ?? null) || !is_numeric($props['lon'] ?? null)) {
+                continue;
+            }
+            $pois[] = [
+                'nom' => $nom,
+                'latitude' => (string) $props['lat'],
+                'longitude' => (string) $props['lon'],
+                'distanceMetres' => is_numeric($props['distance'] ?? null) ? (int) round((float) $props['distance']) : null,
+                'categories' => array_values(array_filter((array) ($props['categories'] ?? []), is_string(...))),
+            ];
+        }
+
+        return $pois;
+    }
+
+    /**
+     * Itinéraire d'un point à un autre (Routing) : distance routière et durée
+     * pour un mode (`drive`, `walk`…). Null quand aucun itinéraire n'existe —
+     * Geoapify répond alors 400, accepté ici comme un résultat vide.
+     *
+     * @return array{distanceMetres: int, dureeSecondes: int}|null
+     *
+     * @throws EnrichissementIndisponibleException quand l'API est injoignable
+     *                                             ou sous quota
+     */
+    public function itineraire(string $deLatitude, string $deLongitude, string $versLatitude, string $versLongitude, string $mode = 'drive'): ?array
+    {
+        if (!$this->isConfigured()) {
+            return null;
+        }
+        try {
+            $donnees = $this->requete('GET', '/v1/routing', [
+                'waypoints' => sprintf('%s,%s|%s,%s', trim($deLatitude), trim($deLongitude), trim($versLatitude), trim($versLongitude)),
+                'mode' => $mode,
+            ], attendus: [200, 400]);
+        } catch (\RuntimeException $exception) {
+            throw new EnrichissementIndisponibleException('Geoapify Routing est indisponible.', 0, $exception);
+        }
+        $props = $donnees['features'][0]['properties'] ?? null;
+        if (!is_array($props) || !is_numeric($props['distance'] ?? null) || !is_numeric($props['time'] ?? null)) {
+            return null;
+        }
+
+        return [
+            'distanceMetres' => (int) round((float) $props['distance']),
+            'dureeSecondes' => (int) round((float) $props['time']),
+        ];
+    }
+
+    /**
      * @param array<array-key, mixed> $feature
      * @param array<array-key, mixed> $brut
      */

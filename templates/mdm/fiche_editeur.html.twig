@@ -45,14 +45,27 @@
 {# Titre en `subtitle` gras + bouton d'ajout sur la même rangée, sans encadré :
    c'est la hiérarchie de la maquette (« Périodes de fermeture », « Accès »…). #}
 {% macro collection(field, title) %}
+    {# Le bloc Accès embarque en plus le bouton « Suggérer les accès »
+       (contrôleur acces-suggestion, porté par la rangée d'en-tête : la policy
+       fige `data-controller="form-collection"` sur le fieldset) : les entrées
+       trouvées autour du GPS de la fiche arrivent comme lignes pré-remplies
+       de la collection. #}
+    {% set avec_suggestion = field.vars.name == 'acces' %}
     <fieldset class="flex flex-col gap-4 border-0 p-0 m-0"
         data-controller="form-collection"
         data-form-collection-index-value="{{ field|length }}"
         data-form-collection-prototype-value="{{ form_widget(field.vars.prototype)|e('html_attr') }}"
     >
-        <div class="flex flex-row items-center gap-6">
+        <div class="flex flex-row items-center gap-6"{% if avec_suggestion %} data-controller="acces-suggestion"{% endif %}>
             <legend class="contents"><twig:Typography variant="subtitle" bold element="span">{{ title }}</twig:Typography></legend>
             <span class="flex-1"></span>
+            {% if avec_suggestion %}
+                <span data-acces-suggestion-target="statut" class="hidden antialiased text-[0.625rem] leading-[1rem] font-sans text-red-600"></span>
+                <twig:Button variant="outline" size="sm" type="button"
+                    data-acces-suggestion-target="bouton"
+                    data-action="acces-suggestion#suggerer"
+                    data-remove-label="Retirer">Suggérer les accès</twig:Button>
+            {% endif %}
             <twig:Button variant="outline" size="sm" icon="plus" type="button" data-action="form-collection#add" data-remove-label="Retirer">Ajouter</twig:Button>
         </div>
         {% if field.vars.help|default(null) %}
@@ -253,6 +266,8 @@
         'data-fiche-id': fiche.idString,
         'data-fiche-suggerer-url': path('app_pim_fiche_suggerer'),
         'data-fiche-suggerer-csrf': suggestion_csrf,
+        'data-fiche-suggerer-acces-url': path('app_pim_fiche_suggerer_acces'),
+        'data-fiche-suggerer-acces-csrf': acces_suggestion_csrf,
         'data-ia-suggestion-active': ia_suggestion_active ? '1' : '0',
     } }) }}
         {% for i, s in sections %}
