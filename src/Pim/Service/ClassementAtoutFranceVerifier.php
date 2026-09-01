@@ -15,8 +15,11 @@ use App\Pim\Repository\ClassementAtoutFranceRepository;
  * nombre de chambres — la source autoritative pour les hébergements français,
  * là où le tag OSM `stars` est déclaratif. Le fichier ne portant pas de SIRET,
  * le rapprochement se fait par nom (NomSimilarite) borné au code postal ; le
- * score de similarité accompagne la suggestion. Backfill seulement, France
- * uniquement.
+ * score de similarité accompagne la suggestion. Source autoritative oblige,
+ * elle signale aussi les CONFLITS : une gamme d'étoiles saisie qui diffère du
+ * classement officiel est proposée en remplacement (le Palace, distinction
+ * au-dessus des 5 étoiles, n'est jamais rétrogradé), un nombre de chambres
+ * divergent est proposé en correction. France uniquement.
  */
 final readonly class ClassementAtoutFranceVerifier
 {
@@ -69,23 +72,30 @@ final readonly class ClassementAtoutFranceVerifier
             : (self::TYPOLOGIE_TYPE[$meilleur['typeEtablissement']] ?? null);
         // Garde référentiel : le code doit exister dans la liste effective.
         $code = null === $code ? null : LovValeurResolution::codePour(LieuLovCatalog::choicesFor('GENERALE_TYPOLOGIE'), $code);
-        if (null !== $code && [] === $lieu->generaleTypologie()) {
+        $choix = LieuLovCatalog::choicesFor('GENERALE_TYPOLOGIE');
+        $codesActuels = $lieu->generaleTypologie();
+        // Gamme d'étoiles en place divergente = conflit à signaler : le code
+        // erroné part en retrait, le code officiel en ajout. Un Palace
+        // (GENERALE_TYPOLOGIE_5) prime sur le classement 5 étoiles : rien à dire.
+        $etoilesActuelles = array_values(array_intersect($codesActuels, self::TYPOLOGIE_HOTEL));
+        if (null !== $code && !in_array($code, $codesActuels, true) && !in_array('GENERALE_TYPOLOGIE_5', $codesActuels, true)) {
+            $libelles = static fn (array $codes): string => implode(', ', array_map(static fn (string $c): string => $choix[$c] ?? $c, $codes));
             $propositions[] = new SuggestionProposee(
                 action: SuggestionAction::RemplirChamp,
                 champ: 'lieu_lov_typologie',
                 label: 'Typologie',
-                valeurActuelle: null,
-                valeurProposee: LieuLovCatalog::choicesFor('GENERALE_TYPOLOGIE')[$code] ?? $code,
+                valeurActuelle: [] === $etoilesActuelles ? null : $libelles($etoilesActuelles),
+                valeurProposee: $choix[$code] ?? $code,
                 score: $meilleurScore,
-                payload: ['attribut' => 'GENERALE_TYPOLOGIE', 'codes' => [$code]],
+                payload: ['attribut' => 'GENERALE_TYPOLOGIE', 'codes' => [$code], 'retirer' => $etoilesActuelles],
             );
         }
-        if (null !== $meilleur['nombreChambres'] && $meilleur['nombreChambres'] > 0 && null === $lieu->chambreNbTotal()) {
+        if (null !== $meilleur['nombreChambres'] && $meilleur['nombreChambres'] > 0 && $lieu->chambreNbTotal() !== $meilleur['nombreChambres']) {
             $propositions[] = new SuggestionProposee(
                 action: SuggestionAction::RemplirChamp,
                 champ: 'lieu_chambre_nb_total',
                 label: 'Nombre total de chambres',
-                valeurActuelle: null,
+                valeurActuelle: null === $lieu->chambreNbTotal() ? null : (string) $lieu->chambreNbTotal(),
                 valeurProposee: (string) $meilleur['nombreChambres'],
                 score: $meilleurScore,
                 payload: ['int' => $meilleur['nombreChambres']],

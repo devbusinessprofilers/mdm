@@ -49,7 +49,7 @@ final class ClassementAtoutFranceVerifierTest extends TestCase
         self::assertSame([], $propositions);
     }
 
-    public function testUneTypologieRemplieNeLaisseQueLesChambres(): void
+    public function testUnPalaceNestJamaisRetrogradeEnEtoiles(): void
     {
         $lieu = self::lieuFrancais('Auberge du Jeu de Paume');
         $lieu->changeGeneraleTypologie(['GENERALE_TYPOLOGIE_5']);
@@ -60,6 +60,41 @@ final class ClassementAtoutFranceVerifierTest extends TestCase
 
         self::assertCount(1, $propositions);
         self::assertSame('lieu_chambre_nb_total', $propositions[0]->champ);
+    }
+
+    public function testUneGammeDEtoilesDivergenteEstProposeeEnRemplacement(): void
+    {
+        $lieu = self::lieuFrancais('Auberge du Jeu de Paume');
+        $lieu->changeGeneraleTypologie(['GENERALE_TYPOLOGIE_2']);
+        $lieu->changeChambreNbTotal(92);
+
+        $propositions = $this->verifier([
+            ['nom' => 'AUBERGE DU JEU DE PAUME', 'typeEtablissement' => 'HÔTEL DE TOURISME', 'etoiles' => 5, 'nombreChambres' => 92],
+        ])->analyser($lieu);
+
+        self::assertCount(1, $propositions);
+        // Conflit signalé : « Hôtel 3 étoiles » saisi vs 5 étoiles au
+        // classement officiel — le code erroné part en retrait.
+        self::assertSame('lieu_lov_typologie', $propositions[0]->champ);
+        self::assertSame('Hôtel 3 étoiles', $propositions[0]->valeurActuelle);
+        self::assertSame(['GENERALE_TYPOLOGIE_4'], $propositions[0]->payload['codes'] ?? null);
+        self::assertSame(['GENERALE_TYPOLOGIE_2'], $propositions[0]->payload['retirer'] ?? null);
+    }
+
+    public function testUnNombreDeChambresDivergentEstProposeEnCorrection(): void
+    {
+        $lieu = self::lieuFrancais('Auberge du Jeu de Paume');
+        $lieu->changeGeneraleTypologie(['GENERALE_TYPOLOGIE_4']);
+        $lieu->changeChambreNbTotal(40);
+
+        $propositions = $this->verifier([
+            ['nom' => 'AUBERGE DU JEU DE PAUME', 'typeEtablissement' => 'HÔTEL DE TOURISME', 'etoiles' => 5, 'nombreChambres' => 92],
+        ])->analyser($lieu);
+
+        self::assertCount(1, $propositions);
+        self::assertSame('lieu_chambre_nb_total', $propositions[0]->champ);
+        self::assertSame('40', $propositions[0]->valeurActuelle);
+        self::assertSame('92', $propositions[0]->valeurProposee);
     }
 
     public function testUnLieuEtrangerNeConsultePasLeReferentiel(): void

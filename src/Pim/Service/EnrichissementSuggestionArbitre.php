@@ -111,13 +111,18 @@ final readonly class EnrichissementSuggestionArbitre
         }
         if (str_starts_with($champ, 'lieu_lov_')) {
             $attribut = $payload['attribut'] ?? null;
-            $codes = self::fusion(match ($attribut) {
+            $actuels = match ($attribut) {
                 'BIEN_ETRE' => $lieu->bienEtre(),
                 'INSTALLATION' => $lieu->installation(),
                 'DISPO_JOUR_OUVERTURE' => $lieu->joursOuverture(),
                 'GENERALE_TYPOLOGIE' => $lieu->generaleTypologie(),
                 default => throw new \DomainException('Attribut LOV Lieu non applicable.'),
-            }, $payload, LieuLovCatalog::choicesFor((string) $attribut));
+            };
+            // Correction d'une source autoritative (étoiles Atout France) :
+            // les codes explicitement listés en retrait s'effacent avant
+            // l'union — un retrait déjà absent est simplement sans effet.
+            $retraits = array_values(array_filter((array) ($payload['retirer'] ?? []), is_string(...)));
+            $codes = self::fusion([] === $retraits ? $actuels : array_values(array_diff($actuels, $retraits)), $payload, LieuLovCatalog::choicesFor((string) $attribut));
             match ($attribut) {
                 'BIEN_ETRE' => $lieu->changeBienEtre($codes),
                 'INSTALLATION' => $lieu->changeInstallation($codes),
@@ -141,9 +146,9 @@ final readonly class EnrichissementSuggestionArbitre
             return;
         }
         if ('lieu_chambre_nb_total' === $champ) {
-            if (null !== $lieu->chambreNbTotal()) {
-                throw new \DomainException('Le nombre de chambres a été saisi depuis le scan : suggestion périmée.');
-            }
+            // Backfill ET correction (Atout France) : la garde de fraîcheur
+            // compare la valeur au moment du scan, comme un champ texte.
+            $this->assertFraicheur(null === $lieu->chambreNbTotal() ? null : (string) $lieu->chambreNbTotal(), $suggestion);
             if (!is_numeric($payload['int'] ?? null)) {
                 throw new \DomainException('Suggestion sans nombre de chambres exploitable.');
             }

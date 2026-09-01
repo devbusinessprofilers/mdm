@@ -194,10 +194,15 @@ final readonly class StatutEtablissementVerifier
         return $propositions;
     }
 
-    /** Complète le n° de TVA uniquement s'il est absent de la fiche et déductible du SIREN. */
+    /**
+     * N° de TVA déduit du SIREN (calcul exact) : proposé quand le champ est
+     * vide, et aussi quand la valeur saisie DIFFÈRE — la TVA se calcule, une
+     * divergence est une erreur de saisie à signaler, pas une variante.
+     */
     private function propositionTva(Lieu $lieu, EntrepriseInfo $info): ?SuggestionProposee
     {
-        if (null === $info->numeroTva || null !== $lieu->administratif()->infoLegaleNumTva()) {
+        $actuelle = $lieu->administratif()->infoLegaleNumTva();
+        if (null === $info->numeroTva || strtoupper(trim((string) $actuelle)) === $info->numeroTva) {
             return null;
         }
 
@@ -205,7 +210,7 @@ final readonly class StatutEtablissementVerifier
             action: SuggestionAction::RemplirChamp,
             champ: 'info_legale_num_tva',
             label: 'N° TVA intracommunautaire',
-            valeurActuelle: null,
+            valeurActuelle: $actuelle,
             valeurProposee: $info->numeroTva,
             score: null,
         );

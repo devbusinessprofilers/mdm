@@ -280,6 +280,34 @@ final class EnrichissementSuggestionArbitreDescriptionsTest extends KernelTestCa
         self::assertContains('DISPO_JOUR_OUVERTURE_6', $restaurantRecharge->joursOuverture());
     }
 
+    public function testAccepterUneCorrectionDEtoilesRetireLeCodeErrone(): void
+    {
+        $em = self::getContainer()->get(EntityManagerInterface::class);
+        $lieu = new Lieu();
+        $lieu->changeLabel('Hôtel mal étoilé');
+        $lieu->changeGeneraleTypologie(['GENERALE_TYPOLOGIE_2']);
+        $lieu->changeChambreNbTotal(40);
+        $em->persist($lieu);
+        $typologie = new FicheSuggestion($lieu->fiche(), SuggestionSource::AtoutFrance, SuggestionAction::RemplirChamp, 'lieu_lov_typologie', 'Typologie', 'Hôtel 3 étoiles', 'Hôtel 5 étoiles', 0.95, [
+            'attribut' => 'GENERALE_TYPOLOGIE', 'codes' => ['GENERALE_TYPOLOGIE_4'], 'retirer' => ['GENERALE_TYPOLOGIE_2'],
+        ]);
+        $chambres = new FicheSuggestion($lieu->fiche(), SuggestionSource::AtoutFrance, SuggestionAction::RemplirChamp, 'lieu_chambre_nb_total', 'Nombre total de chambres', '40', '92', 0.95, ['int' => 92]);
+        $em->persist($typologie);
+        $em->persist($chambres);
+        $em->flush();
+
+        $arbitre = self::getContainer()->get(EnrichissementSuggestionArbitre::class);
+        $arbitre->accepter($typologie, 'testeur');
+        $arbitre->accepter($chambres, 'testeur');
+
+        $em->clear();
+        $recharge = $em->find(Lieu::class, $lieu->id());
+        self::assertInstanceOf(Lieu::class, $recharge);
+        self::assertContains('GENERALE_TYPOLOGIE_4', $recharge->generaleTypologie());
+        self::assertNotContains('GENERALE_TYPOLOGIE_2', $recharge->generaleTypologie());
+        self::assertSame(92, $recharge->chambreNbTotal());
+    }
+
     public function testUneSuggestionDeChambresSaisiesDepuisLeScanEstPerimee(): void
     {
         $em = self::getContainer()->get(EntityManagerInterface::class);
