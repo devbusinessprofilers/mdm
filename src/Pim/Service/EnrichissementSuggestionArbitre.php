@@ -151,6 +151,31 @@ final readonly class EnrichissementSuggestionArbitre
 
             return;
         }
+        if ('lieu_atouts' === $champ) {
+            $saisis = array_filter(
+                [$lieu->atout1(), $lieu->atout2(), $lieu->atout3(), $lieu->atout4(), $lieu->atout5()],
+                static fn (?string $atout): bool => null !== $atout && '' !== trim($atout),
+            );
+            if ([] !== $saisis) {
+                throw new \DomainException('Des atouts ont été saisis depuis le scan : suggestion périmée.');
+            }
+            // Re-validation de la borne : la colonne atout_N est limitée en base.
+            $atouts = array_values(array_filter(self::liste($payload), static fn (string $atout): bool => mb_strlen($atout) <= Lieu::ATOUT_MAX_LENGTH));
+            if ([] === $atouts) {
+                throw new \DomainException('Les atouts proposés dépassent la longueur du champ : suggestion périmée.');
+            }
+            foreach (array_slice($atouts, 0, 5) as $index => $atout) {
+                match ($index) {
+                    0 => $lieu->changeAtout1($atout),
+                    1 => $lieu->changeAtout2($atout),
+                    2 => $lieu->changeAtout3($atout),
+                    3 => $lieu->changeAtout4($atout),
+                    default => $lieu->changeAtout5($atout),
+                };
+            }
+
+            return;
+        }
         if ('lieu_horaires_jours' === $champ) {
             // Le getter replie sur l'amplitude globale historique : tout
             // non-null (saisie par jour OU repli) compte comme renseigné.
@@ -225,6 +250,14 @@ final readonly class EnrichissementSuggestionArbitre
 
     private function appliquerActivite(Activite $activite, FicheSuggestion $suggestion): void
     {
+        if ('activite_plus' === $suggestion->champ()) {
+            if ([] !== $activite->plus()) {
+                throw new \DomainException('Des atouts ont été saisis depuis le scan : suggestion périmée.');
+            }
+            $activite->changePlus(self::liste($suggestion->payload() ?? []));
+
+            return;
+        }
         if ('activite_desc_generale' !== $suggestion->champ()) {
             throw new \DomainException(sprintf('Champ « %s » non applicable.', $suggestion->champ()));
         }
@@ -245,6 +278,29 @@ final readonly class EnrichissementSuggestionArbitre
     private static function texte(array $payload): ?string
     {
         return is_string($payload['text'] ?? null) ? $payload['text'] : null;
+    }
+
+    /**
+     * Liste de chaînes du payload (`liste`), nettoyée — une suggestion sans
+     * aucune entrée exploitable est périmée.
+     *
+     * @param array<string, mixed> $payload
+     *
+     * @return list<string>
+     */
+    private static function liste(array $payload): array
+    {
+        $entrees = [];
+        foreach (is_array($payload['liste'] ?? null) ? $payload['liste'] : [] as $entree) {
+            if (is_string($entree) && '' !== trim($entree)) {
+                $entrees[] = trim($entree);
+            }
+        }
+        if ([] === $entrees) {
+            throw new \DomainException('Suggestion sans valeurs exploitables.');
+        }
+
+        return $entrees;
     }
 
     /**
@@ -293,6 +349,14 @@ final readonly class EnrichissementSuggestionArbitre
             [$ouverture, $fermeture] = [self::heureDuPayload($payload, 'ouverture'), self::heureDuPayload($payload, 'fermeture')];
             $restaurant->changeHeureOuverture(new \DateTimeImmutable($ouverture));
             $restaurant->changeHeureFermeture(new \DateTimeImmutable($fermeture));
+
+            return;
+        }
+        if ('restaurant_atouts' === $suggestion->champ()) {
+            if ([] !== $restaurant->atouts()) {
+                throw new \DomainException('Des atouts ont été saisis depuis le scan : suggestion périmée.');
+            }
+            $restaurant->changeAtouts(array_slice(self::liste($payload), 0, 5));
 
             return;
         }

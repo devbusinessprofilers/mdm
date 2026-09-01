@@ -314,6 +314,7 @@ services:
                 openai.retouche_prompt: '%env(OPENAI_RETOUCHE_PROMPT)%'
                 openai.suggestion_modele: '%env(OPENAI_SUGGESTION_MODEL)%'
                 openai.suggestion_prompt: '%env(OPENAI_SUGGESTION_PROMPT)%'
+                openai.atouts_prompt: '%env(OPENAI_ATOUTS_PROMPT)%'
                 ocr.pdf_poids_max_mo: '%env(OCR_PDF_MAX_MB)%'
                 ocr.seuil_application_auto: '%env(OCR_AUTO_APPLY_THRESHOLD)%'
                 pim.longueur_min_texte_doublon: '%env(PIM_TEXT_MIN_LENGTH)%'

@@ -196,6 +196,47 @@ final class EnrichissementSuggestionArbitreDescriptionsTest extends KernelTestCa
         self::assertSame(45, $recharge->chambreNbTotal());
     }
 
+    public function testAccepterLesAtoutsSurLesTroisGammes(): void
+    {
+        $em = self::getContainer()->get(EntityManagerInterface::class);
+        $arbitre = self::getContainer()->get(EnrichissementSuggestionArbitre::class);
+        $lieu = new Lieu();
+        $lieu->changeLabel('Château aux atouts');
+        $em->persist($lieu);
+        $restaurant = new Restaurant();
+        $restaurant->changeLabel('Table aux atouts');
+        $em->persist($restaurant);
+        $activite = new \App\Pim\Entity\Activite\Activite();
+        $activite->changeLabel('Activité aux atouts');
+        $em->persist($activite);
+        $suggestions = [
+            new FicheSuggestion($lieu->fiche(), SuggestionSource::Ia, SuggestionAction::RemplirChamp, 'lieu_atouts', 'Atouts', null, 'Parc · Spa', null, ['liste' => ['Parc de 5 hectares', 'Spa sur place']]),
+            new FicheSuggestion($restaurant->fiche(), SuggestionSource::Ia, SuggestionAction::RemplirChamp, 'restaurant_atouts', 'Atouts', null, 'Terrasse', null, ['liste' => ['Terrasse ombragée']]),
+            new FicheSuggestion($activite->fiche(), SuggestionSource::Ia, SuggestionAction::RemplirChamp, 'activite_plus', 'Atouts', null, 'Encadrement', null, ['liste' => ['Encadrement bilingue', 'Matériel fourni']]),
+        ];
+        foreach ($suggestions as $suggestion) {
+            $em->persist($suggestion);
+        }
+        $em->flush();
+
+        foreach ($suggestions as $suggestion) {
+            $arbitre->accepter($suggestion, 'testeur');
+        }
+
+        $em->clear();
+        $lieuRecharge = $em->find(Lieu::class, $lieu->id());
+        self::assertInstanceOf(Lieu::class, $lieuRecharge);
+        self::assertSame('Parc de 5 hectares', $lieuRecharge->atout1());
+        self::assertSame('Spa sur place', $lieuRecharge->atout2());
+        self::assertNull($lieuRecharge->atout3());
+        $restaurantRecharge = $em->find(Restaurant::class, $restaurant->id());
+        self::assertInstanceOf(Restaurant::class, $restaurantRecharge);
+        self::assertSame(['Terrasse ombragée'], $restaurantRecharge->atouts());
+        $activiteRecharge = $em->find(\App\Pim\Entity\Activite\Activite::class, $activite->id());
+        self::assertInstanceOf(\App\Pim\Entity\Activite\Activite::class, $activiteRecharge);
+        self::assertSame(['Encadrement bilingue', 'Matériel fourni'], $activiteRecharge->plus());
+    }
+
     public function testAccepterLesHorairesLieuEtRestaurant(): void
     {
         $em = self::getContainer()->get(EntityManagerInterface::class);
@@ -316,6 +357,7 @@ final class EnrichissementSuggestionArbitreDescriptionsTest extends KernelTestCa
             'pim_fiche_search',
             'pim_fiche_attribute_value',
             'pim_restaurant',
+            'pim_activite',
             'pim_service_evenementiel',
             'pim_lieu_administratif',
             'pim_lieu_tarification',

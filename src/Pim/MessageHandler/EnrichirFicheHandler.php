@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Pim\MessageHandler;
 
 use App\Pim\Entity\Fiche;
+use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Enum\SuggestionSource;
 use App\Pim\Enum\TypeFiche;
 use App\Pim\Message\EnrichirFiche;
@@ -16,6 +17,7 @@ use App\Pim\Repository\FicheRepository;
 use App\Pim\Repository\LieuRepository;
 use App\Pim\Repository\RestaurantRepository;
 use App\Pim\Repository\ServiceEvenementielRepository;
+use App\Pim\Service\AtoutsIaVerifier;
 use App\Pim\Service\ChaineHoteliereVerifier;
 use App\Pim\Service\DataTourisme\DataTourismeFluxReader;
 use App\Pim\Service\DataTourisme\DataTourismeIndex;
@@ -63,6 +65,7 @@ final readonly class EnrichirFicheHandler
         private DataTourismeVerifier $dataTourisme,
         private ChaineHoteliereVerifier $chainesHotelieres,
         private DescriptionIaVerifier $descriptionsIa,
+        private AtoutsIaVerifier $atoutsIa,
         private DataTourismeFluxReader $flux,
         private WikidataChaineClient $wikidata,
         private GeoapifyClient $geoapify,
@@ -138,9 +141,25 @@ final readonly class EnrichirFicheHandler
             null !== $service => ['service_desc_generale', $service->descriptionGenerale()],
             default => [null, null],
         };
+        // Atouts par gamme (le Service n'en a pas) : générés depuis la
+        // description ACTUELLE de la fiche — une description encore en
+        // suggestion non arbitrée ne compte pas, les atouts suivront au
+        // prochain scan une fois la description acceptée.
+        [$champAtouts, $atoutsActuels, $atoutsMax, $atoutsLongueurMax] = match (true) {
+            null !== $lieu => ['lieu_atouts', array_values(array_filter(
+                [$lieu->atout1(), $lieu->atout2(), $lieu->atout3(), $lieu->atout4(), $lieu->atout5()],
+                static fn (?string $atout): bool => null !== $atout && '' !== trim($atout),
+            )), 5, Lieu::ATOUT_MAX_LENGTH],
+            null !== $restaurant => ['restaurant_atouts', $restaurant->atouts(), 5, 80],
+            null !== $activite => ['activite_plus', $activite->plus(), 4, 80],
+            default => [null, [], 0, 0],
+        };
         if (null !== $champIa) {
             $resultat['ia'] = $this->parametres->bool('openai.actif')
-                ? $this->executer($fiche, SuggestionSource::Ia, fn (): array => $this->descriptionsIa->analyser($fiche, $description, $champIa))
+                ? $this->executer($fiche, SuggestionSource::Ia, fn (): array => [
+                    ...$this->descriptionsIa->analyser($fiche, $description, $champIa),
+                    ...(null === $champAtouts ? [] : $this->atoutsIa->analyser($fiche, $description, $champAtouts, $atoutsActuels, $atoutsMax, $atoutsLongueurMax)),
+                ])
                 : 'inactif';
         }
 

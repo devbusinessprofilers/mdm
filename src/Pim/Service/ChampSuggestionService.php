@@ -44,6 +44,28 @@ final readonly class ChampSuggestionService
         return $this->provider->suggerer($prompt, $this->parametres->string('openai.suggestion_modele'));
     }
 
+    /**
+     * Suggestion des atouts d'une fiche à partir de sa description (la seule
+     * matière première fiable) : réponse attendue en un atout par ligne, que
+     * l'appelant re-valide.
+     *
+     * @throws OpenAiProviderException
+     */
+    public function suggererAtouts(Fiche $fiche, string $description, int $max, int $longueurMax): string
+    {
+        if (!$this->parametres->bool('openai.actif')) {
+            throw new OpenAiProviderException('Suggestion IA désactivée.', false);
+        }
+        $prompt = strtr($this->parametres->string('openai.atouts_prompt'), [
+            '{contexte}' => $this->contexte($fiche),
+            '{description}' => mb_substr(trim($description), 0, self::VALEUR_MAX),
+            '{max}' => (string) $max,
+            '{longueur_max}' => (string) $longueurMax,
+        ]);
+
+        return $this->provider->suggerer($prompt, $this->parametres->string('openai.suggestion_modele'));
+    }
+
     private function contexte(Fiche $fiche): string
     {
         $elements = array_filter([
