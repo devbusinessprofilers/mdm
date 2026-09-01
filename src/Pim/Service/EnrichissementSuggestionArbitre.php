@@ -114,12 +114,14 @@ final readonly class EnrichissementSuggestionArbitre
             $codes = self::fusion(match ($attribut) {
                 'BIEN_ETRE' => $lieu->bienEtre(),
                 'INSTALLATION' => $lieu->installation(),
+                'DISPO_JOUR_OUVERTURE' => $lieu->joursOuverture(),
                 'GENERALE_TYPOLOGIE' => $lieu->generaleTypologie(),
                 default => throw new \DomainException('Attribut LOV Lieu non applicable.'),
             }, $payload, LieuLovCatalog::choicesFor((string) $attribut));
             match ($attribut) {
                 'BIEN_ETRE' => $lieu->changeBienEtre($codes),
                 'INSTALLATION' => $lieu->changeInstallation($codes),
+                'DISPO_JOUR_OUVERTURE' => $lieu->changeJoursOuverture($codes),
                 default => $lieu->changeGeneraleTypologie($codes),
             };
 
@@ -146,6 +148,16 @@ final readonly class EnrichissementSuggestionArbitre
                 throw new \DomainException('Suggestion sans nombre de chambres exploitable.');
             }
             $lieu->changeChambreNbTotal((int) $payload['int']);
+
+            return;
+        }
+        if ('lieu_horaires_jours' === $champ) {
+            // Le getter replie sur l'amplitude globale historique : tout
+            // non-null (saisie par jour OU repli) compte comme renseigné.
+            if (null !== $lieu->dispoHorairesJours()) {
+                throw new \DomainException('Des horaires ont été saisis depuis le scan : suggestion périmée.');
+            }
+            $lieu->changeDispoHorairesJours(self::horairesDuPayload($payload));
 
             return;
         }
@@ -235,9 +247,55 @@ final readonly class EnrichissementSuggestionArbitre
         return is_string($payload['text'] ?? null) ? $payload['text'] : null;
     }
 
+    /**
+     * Horaires par jour du payload, validés (HH:MM) — une suggestion sans
+     * aucune ligne exploitable est périmée.
+     *
+     * @param array<string, mixed> $payload
+     *
+     * @return array<string, array{ouverture: string, fermeture: string}>
+     */
+    private static function horairesDuPayload(array $payload): array
+    {
+        $valides = [];
+        foreach (is_array($payload['horaires'] ?? null) ? $payload['horaires'] : [] as $jour => $heures) {
+            $ouverture = is_array($heures) && is_string($heures['ouverture'] ?? null) ? $heures['ouverture'] : '';
+            $fermeture = is_array($heures) && is_string($heures['fermeture'] ?? null) ? $heures['fermeture'] : '';
+            if (1 === preg_match('/^\d{2}:\d{2}$/', $ouverture) && 1 === preg_match('/^\d{2}:\d{2}$/', $fermeture)) {
+                $valides[(string) $jour] = ['ouverture' => $ouverture, 'fermeture' => $fermeture];
+            }
+        }
+        if ([] === $valides) {
+            throw new \DomainException('Suggestion sans horaires exploitables.');
+        }
+
+        return $valides;
+    }
+
+    /** @param array<string, mixed> $payload */
+    private static function heureDuPayload(array $payload, string $cle): string
+    {
+        $heure = is_string($payload[$cle] ?? null) ? $payload[$cle] : '';
+        if (1 !== preg_match('/^\d{2}:\d{2}$/', $heure)) {
+            throw new \DomainException('Suggestion sans horaires exploitables.');
+        }
+
+        return $heure;
+    }
+
     private function appliquerRestaurant(Restaurant $restaurant, FicheSuggestion $suggestion): void
     {
         $payload = $suggestion->payload() ?? [];
+        if ('restaurant_horaires' === $suggestion->champ()) {
+            if (null !== $restaurant->heureOuverture() || null !== $restaurant->heureFermeture()) {
+                throw new \DomainException('Des horaires ont été saisis depuis le scan : suggestion périmée.');
+            }
+            [$ouverture, $fermeture] = [self::heureDuPayload($payload, 'ouverture'), self::heureDuPayload($payload, 'fermeture')];
+            $restaurant->changeHeureOuverture(new \DateTimeImmutable($ouverture));
+            $restaurant->changeHeureFermeture(new \DateTimeImmutable($fermeture));
+
+            return;
+        }
         if ('restaurant_site_officiel' === $suggestion->champ()) {
             $this->assertFraicheur($restaurant->siteOfficiel(), $suggestion);
             $restaurant->changeSiteOfficiel($suggestion->valeurProposee());
@@ -254,6 +312,7 @@ final readonly class EnrichissementSuggestionArbitre
             'restaurant_types_cuisine' => $restaurant->changeTypesCuisine(self::fusion($restaurant->typesCuisine(), $payload, RestaurantLovCatalog::values('TYPE_CUISINE'))),
             'restaurant_specificites' => $restaurant->changeSpecificitesAlimentaires(self::fusion($restaurant->specificitesAlimentaires(), $payload, RestaurantLovCatalog::values('SPECIFICITE_ALIMENTAIRE'))),
             'restaurant_equipements' => $restaurant->changeEquipements(self::fusion($restaurant->equipements(), $payload, RestaurantLovCatalog::values('EQUIPEMENT_RESTAURANT'))),
+            'restaurant_lov_jours_ouverture' => $restaurant->changeJoursOuverture(self::fusion($restaurant->joursOuverture(), $payload, RestaurantLovCatalog::values('DISPO_JOUR_OUVERTURE'))),
             'restaurant_acces_pmr' => $restaurant->changeAccesPmr((bool) ($payload['bool'] ?? false)),
             'restaurant_toilettes_pmr' => $restaurant->changeToilettesPmr((bool) ($payload['bool'] ?? false)),
             default => throw new \DomainException(sprintf('Champ « %s » non applicable.', $suggestion->champ())),

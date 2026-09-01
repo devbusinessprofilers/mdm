@@ -75,6 +75,30 @@ final readonly class RestaurantAttributsVerifier
         $this->ajouterBool($propositions, 'restaurant_acces_pmr', 'Accès PMR', $attributs->accesPmr, $restaurant->accesPmr());
         $this->ajouterBool($propositions, 'restaurant_toilettes_pmr', 'Toilettes PMR', $attributs->toilettesPmr, $restaurant->toilettesPmr());
 
+        // Horaires OSM : jours en union ; l'amplitude (deux champs globaux
+        // seulement) n'est proposée que si elle est uniforme sur la semaine.
+        $horairesOsm = null === $attributs->horairesOuverture ? null : HorairesOsm::parser($attributs->horairesOuverture);
+        if (null !== $horairesOsm) {
+            $this->ajouterLov($propositions, 'restaurant_lov_jours_ouverture', 'DISPO_JOUR_OUVERTURE', 'Jours d\'ouverture',
+                $horairesOsm['jours'], $restaurant->joursOuverture());
+            $plages = array_values(array_unique(array_map(
+                static fn (array $heures): string => $heures['ouverture'].'-'.$heures['fermeture'],
+                $horairesOsm['horaires'],
+            )));
+            if (1 === count($plages) && null === $restaurant->heureOuverture() && null === $restaurant->heureFermeture()) {
+                [$ouverture, $fermeture] = explode('-', $plages[0]);
+                $propositions[] = new SuggestionProposee(
+                    action: SuggestionAction::RemplirChamp,
+                    champ: 'restaurant_horaires',
+                    label: 'Horaires d\'ouverture',
+                    valeurActuelle: null,
+                    valeurProposee: sprintf('%s – %s', $ouverture, $fermeture),
+                    score: null,
+                    payload: ['ouverture' => $ouverture, 'fermeture' => $fermeture],
+                );
+            }
+        }
+
         if (null !== $attributs->siteWeb
             && null === $restaurant->siteOfficiel()
             && mb_strlen($attributs->siteWeb) <= Restaurant::WEBSITE_MAX_LENGTH) {

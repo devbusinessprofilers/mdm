@@ -196,6 +196,49 @@ final class EnrichissementSuggestionArbitreDescriptionsTest extends KernelTestCa
         self::assertSame(45, $recharge->chambreNbTotal());
     }
 
+    public function testAccepterLesHorairesLieuEtRestaurant(): void
+    {
+        $em = self::getContainer()->get(EntityManagerInterface::class);
+        $arbitre = self::getContainer()->get(EnrichissementSuggestionArbitre::class);
+        $lieu = new Lieu();
+        $lieu->changeLabel('Hôtel aux horaires');
+        $em->persist($lieu);
+        $restaurant = new Restaurant();
+        $restaurant->changeLabel('Table aux horaires');
+        $em->persist($restaurant);
+        $horairesLieu = new FicheSuggestion($lieu->fiche(), SuggestionSource::Geoapify, SuggestionAction::RemplirChamp, 'lieu_horaires_jours', 'Horaires par jour', null, 'Lun-Ven 09:00-18:00', null, [
+            'horaires' => ['DISPO_JOUR_OUVERTURE_1' => ['ouverture' => '09:00', 'fermeture' => '18:00']],
+        ]);
+        $joursLieu = new FicheSuggestion($lieu->fiche(), SuggestionSource::Geoapify, SuggestionAction::RemplirChamp, 'lieu_lov_jours_ouverture', 'Jours d\'ouverture', null, 'Lundi', null, [
+            'attribut' => 'DISPO_JOUR_OUVERTURE', 'codes' => ['DISPO_JOUR_OUVERTURE_1'],
+        ]);
+        $horairesRestaurant = new FicheSuggestion($restaurant->fiche(), SuggestionSource::Geoapify, SuggestionAction::RemplirChamp, 'restaurant_horaires', 'Horaires d\'ouverture', null, '10:00 – 22:00', null, [
+            'ouverture' => '10:00', 'fermeture' => '22:00',
+        ]);
+        $joursRestaurant = new FicheSuggestion($restaurant->fiche(), SuggestionSource::Geoapify, SuggestionAction::RemplirChamp, 'restaurant_lov_jours_ouverture', 'Jours d\'ouverture', null, 'Samedi', null, [
+            'codes' => ['DISPO_JOUR_OUVERTURE_6'],
+        ]);
+        foreach ([$horairesLieu, $joursLieu, $horairesRestaurant, $joursRestaurant] as $suggestion) {
+            $em->persist($suggestion);
+        }
+        $em->flush();
+
+        foreach ([$horairesLieu, $joursLieu, $horairesRestaurant, $joursRestaurant] as $suggestion) {
+            $arbitre->accepter($suggestion, 'testeur');
+        }
+
+        $em->clear();
+        $lieuRecharge = $em->find(Lieu::class, $lieu->id());
+        self::assertInstanceOf(Lieu::class, $lieuRecharge);
+        self::assertSame(['ouverture' => '09:00', 'fermeture' => '18:00'], $lieuRecharge->dispoHorairesJours()['DISPO_JOUR_OUVERTURE_1'] ?? null);
+        self::assertContains('DISPO_JOUR_OUVERTURE_1', $lieuRecharge->joursOuverture());
+        $restaurantRecharge = $em->find(Restaurant::class, $restaurant->id());
+        self::assertInstanceOf(Restaurant::class, $restaurantRecharge);
+        self::assertSame('10:00', $restaurantRecharge->heureOuverture()?->format('H:i'));
+        self::assertSame('22:00', $restaurantRecharge->heureFermeture()?->format('H:i'));
+        self::assertContains('DISPO_JOUR_OUVERTURE_6', $restaurantRecharge->joursOuverture());
+    }
+
     public function testUneSuggestionDeChambresSaisiesDepuisLeScanEstPerimee(): void
     {
         $em = self::getContainer()->get(EntityManagerInterface::class);

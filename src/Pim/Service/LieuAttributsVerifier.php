@@ -114,6 +114,25 @@ final readonly class LieuAttributsVerifier
                 payload: ['int' => $attributs->chambres],
             );
         }
+        // Horaires OSM : seuls les motifs sans ambiguïté sont traduits — un
+        // tag complexe ne produit simplement rien.
+        $horairesOsm = null === $attributs->horairesOuverture ? null : HorairesOsm::parser($attributs->horairesOuverture);
+        if (null !== $horairesOsm) {
+            $this->ajouterLov($propositions, 'lieu_lov_jours_ouverture', 'DISPO_JOUR_OUVERTURE', 'Jours d\'ouverture', $horairesOsm['jours'], $lieu->joursOuverture());
+            // Le getter replie sur l'amplitude globale historique : un repli
+            // non nul compte comme renseigné, on ne propose qu'au vrai vide.
+            if ([] !== $horairesOsm['horaires'] && null === $lieu->dispoHorairesJours()) {
+                $propositions[] = new SuggestionProposee(
+                    action: SuggestionAction::RemplirChamp,
+                    champ: 'lieu_horaires_jours',
+                    label: 'Horaires par jour',
+                    valeurActuelle: null,
+                    valeurProposee: HorairesOsm::resume($horairesOsm['horaires']),
+                    score: null,
+                    payload: ['horaires' => $horairesOsm['horaires']],
+                );
+            }
+        }
 
         return $propositions;
     }

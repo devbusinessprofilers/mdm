@@ -99,6 +99,25 @@ final class LieuAttributsVerifierTest extends TestCase
         self::assertSame('Sauna', $propositions[0]->valeurActuelle);
     }
 
+    public function testProposeJoursEtHorairesDepuisOpeningHours(): void
+    {
+        $propositions = self::verifier(['opening_hours' => 'Mo-Fr 09:00-18:00'])->analyser(self::lieu());
+
+        $parChamp = [];
+        foreach ($propositions as $proposition) {
+            $parChamp[$proposition->champ] = $proposition;
+        }
+        self::assertSame('DISPO_JOUR_OUVERTURE', $parChamp['lieu_lov_jours_ouverture']->payload['attribut'] ?? null);
+        self::assertCount(5, $parChamp['lieu_lov_jours_ouverture']->payload['codes'] ?? []);
+        self::assertSame('Lun-Ven 09:00-18:00', $parChamp['lieu_horaires_jours']->valeurProposee ?? null);
+        self::assertSame(['ouverture' => '09:00', 'fermeture' => '18:00'], $parChamp['lieu_horaires_jours']->payload['horaires']['DISPO_JOUR_OUVERTURE_1'] ?? null);
+    }
+
+    public function testUnOpeningHoursComplexeNeProposeRien(): void
+    {
+        self::assertSame([], self::verifier(['opening_hours' => 'Mo-Fr 09:00-12:00,14:00-18:00'])->analyser(self::lieu()));
+    }
+
     public function testUnePiscineSansTypeNeProposeRien(): void
     {
         // `swimming_pool=yes` : intérieure ou extérieure ? Indécidable, on s'abstient.

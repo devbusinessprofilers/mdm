@@ -38,6 +38,8 @@ final readonly class PlaceAttributs
         public ?bool $ascenseur = null,
         /** Nombre de chambres OSM (`rooms`), borné 1..2000 (null hors bornes ou absent). */
         public ?int $chambres = null,
+        /** Tag OSM `opening_hours` brut — à traduire par HorairesOsm::parser(). */
+        public ?string $horairesOuverture = null,
     ) {}
 
     public function estVide(): bool
@@ -59,6 +61,7 @@ final readonly class PlaceAttributs
             && null === $this->jardin
             && null === $this->parking
             && null === $this->ascenseur
-            && null === $this->chambres;
+            && null === $this->chambres
+            && null === $this->horairesOuverture;
     }
 }

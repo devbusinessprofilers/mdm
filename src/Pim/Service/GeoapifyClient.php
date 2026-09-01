@@ -239,6 +239,7 @@ final class GeoapifyClient implements GeocodeurEtrangerInterface
             parking: null === $tag('parking') ? null : 'no' !== $tag('parking'),
             ascenseur: self::triState($tag('elevator'), ['yes']),
             chambres: self::chambres($tag('rooms')),
+            horairesOuverture: self::premiereChaine($raw, ['opening_hours']),
         );
     }
 
