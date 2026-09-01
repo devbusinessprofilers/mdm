@@ -46,6 +46,21 @@ final class StatutEtablissementVerifierTest extends TestCase
         self::assertSame([], $propositions);
     }
 
+    public function testProposeLaTvaCalculeeQuandLeSiretEstActifEtLaTvaVide(): void
+    {
+        $lieu = self::lieuFrancais('Hôtel actif');
+        $lieu->administratif()->changeInfoLegaleSiret('48067410000031');
+
+        $propositions = self::verifier([[
+            'siren' => '480674100',
+            'matching_etablissements' => [['siret' => '48067410000031', 'etat_administratif' => 'A']],
+        ]])->analyser($lieu);
+
+        self::assertCount(1, $propositions);
+        self::assertSame('info_legale_num_tva', $propositions[0]->champ);
+        self::assertSame('FR39480674100', $propositions[0]->valeurProposee);
+    }
+
     public function testProposeLeBackfillSiretQuandLeNomConcordeSansSiret(): void
     {
         $lieu = self::lieuFrancais('BUSINESS PROFILERS');
