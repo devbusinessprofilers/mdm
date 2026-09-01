@@ -139,6 +139,11 @@ final readonly class FicheFusionneur
                 $cible = $aggregatSurvivant->{$column->targetPath}();
             }
 
+            // Colonne horaire : le setter d'écrasement jour par jour attend le
+            // jour visé avec les heures (même contrat que l'import en masse).
+            if (ColumnKind::Horaire === $column->kind) {
+                $valeur = ['jour' => (string) $column->horaireJour, 'heures' => $valeur];
+            }
             $this->callSetter($cible, $column->setter(), $valeur, $column->header, $erreurs);
         }
         if ($localisation instanceof Localisation && $localisation !== $survivante->localisation()) {

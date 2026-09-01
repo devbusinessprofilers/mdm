@@ -12,6 +12,7 @@ use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Enum\NatureRessource;
 use App\Pim\Enum\TypeAccesRestaurant;
 use App\Pim\Enum\TypeFiche;
+use App\Pim\Lov\RestaurantLovCatalog;
 use App\Pim\Service\PhotoObligations;
 use Symfony\Component\Validator\Constraint;
 use Symfony\Component\Validator\ConstraintValidator;
@@ -57,13 +58,16 @@ final class ValidRestaurantValidator extends ConstraintValidator
             }
         }
 
-        $opening = $value->heureOuverture();
-        $closing = $value->heureFermeture();
-        if (null !== $opening && null !== $closing && $closing <= $opening) {
-            $this->violation(
-                'La fermeture doit être postérieure à l’ouverture.',
-                'heureFermeture',
-            );
+        $libellesJours = RestaurantLovCatalog::values('DISPO_JOUR_OUVERTURE');
+        foreach ($value->horairesJours() ?? [] as $jour => $heures) {
+            $ouverture = $heures['ouverture'] ?? null;
+            $fermeture = $heures['fermeture'] ?? null;
+            if (null !== $ouverture && null !== $fermeture && $fermeture <= $ouverture) {
+                $this->violation(
+                    sprintf('%s : la fermeture doit être postérieure à l’ouverture.', $libellesJours[$jour] ?? $jour),
+                    'horairesJours',
+                );
+            }
         }
 
         foreach ($value->periodesFermeture() as $index => $period) {
@@ -195,8 +199,7 @@ final class ValidRestaurantValidator extends ConstraintValidator
             [
                 'label' => $value->label(),
                 'siteOfficiel' => $value->siteOfficiel(),
-                'heureOuverture' => $value->heureOuverture(),
-                'heureFermeture' => $value->heureFermeture(),
+                'horairesJours' => $value->amplitudeOuverture(),
                 'descriptionGenerale' => $value->descriptionGenerale(),
                 'capaciteAssiseMax' => $value->capaciteAssiseMax(),
                 'capaciteEspacePrivatisable' => $value->capaciteEspacePrivatisable(),

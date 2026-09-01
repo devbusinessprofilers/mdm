@@ -53,17 +53,19 @@ final class RestaurantValidationTest extends KernelTestCase
     public function testInvalidClosingTimeIsRejectedInDraft(): void
     {
         $restaurant = new Restaurant();
-        $restaurant->changeHeureOuverture(new \DateTimeImmutable('18:00'));
-        $restaurant->changeHeureFermeture(new \DateTimeImmutable('17:59'));
+        $restaurant->changeHorairesJours([
+            'LUNDI' => ['ouverture' => '18:00', 'fermeture' => '17:59'],
+        ]);
 
         $violations = $this->validator->validate($restaurant, null, [
             ValidationGroups::DRAFT,
         ]);
 
         self::assertSame(
-            'heureFermeture',
+            'horairesJours',
             $violations->get(0)->getPropertyPath(),
         );
+        self::assertStringContainsString('fermeture doit être postérieure', (string) $violations->get(0)->getMessage());
     }
 
     public function testNegativeCapacityIsRejectedInDraft(): void

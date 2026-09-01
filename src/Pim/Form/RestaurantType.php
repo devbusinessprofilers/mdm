@@ -23,7 +23,6 @@ use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
-use Symfony\Component\Form\Extension\Core\Type\TimeType;
 use Symfony\Component\Form\Extension\Core\Type\UrlType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -141,28 +140,16 @@ final class RestaurantType extends AbstractType
 
         $builder
             ->add(
-                'heureOuverture',
-                TimeType::class,
-                $this->field(
-                    "Heure d'ouverture",
-                    'heureOuverture',
-                    'changeHeureOuverture',
-                ) + [
-                    'input' => 'datetime_immutable',
-                    'widget' => 'single_text',
-                ],
-            )
-            ->add(
-                'heureFermeture',
-                TimeType::class,
-                $this->field(
-                    'Heure de fermeture',
-                    'heureFermeture',
-                    'changeHeureFermeture',
-                ) + [
-                    'input' => 'datetime_immutable',
-                    'widget' => 'single_text',
-                ],
+                'horairesJours',
+                HorairesJoursType::class,
+                [
+                    'label' => false,
+                    'jours' => RestaurantLovCatalog::values('DISPO_JOUR_OUVERTURE'),
+                ] + $this->field(
+                    "Horaires d'ouverture",
+                    'horairesJours',
+                    'changeHorairesJours',
+                ),
             )
             ->add('periodesFermeture', CollectionType::class, [
                 'label' => 'Périodes de fermeture',

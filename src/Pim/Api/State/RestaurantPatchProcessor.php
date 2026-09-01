@@ -11,7 +11,9 @@ use App\Pim\Api\Dto\RestaurantResource;
 use App\Pim\Api\Exception\ApiProblemException;
 use App\Pim\Api\ExternalScopeGuard;
 use App\Pim\Api\RestaurantApiMapper;
+use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Form\RestaurantType;
+use App\Pim\Lov\RestaurantLovCatalog;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\Form\FormInterface;
 
@@ -41,10 +43,12 @@ final readonly class RestaurantPatchProcessor implements ProcessorInterface
             'csrf_protection' => false,
         ]);
 
+        $payload = self::traduireHorairesLegacy($data->payload(), $restaurant);
+
         try {
             return $restaurant->fiche()->preserveWorkflowDuring(
-                function () use ($data, $form, $restaurant): RestaurantResource {
-                    $form->submit($data->payload(), false);
+                function () use ($payload, $form, $restaurant): RestaurantResource {
+                    $form->submit($payload, false);
                     if (!$form->isValid()) {
                         throw new ApiProblemException(
                             422,
@@ -69,6 +73,44 @@ final readonly class RestaurantPatchProcessor implements ProcessorInterface
                 $exception->getMessage(),
             );
         }
+    }
+
+    /**
+     * Rétrocompat portail (accepter-et-traduire) : une amplitude PATCHée via
+     * les clés historiques heureOuverture/heureFermeture est traduite en
+     * horaires par jour — appliquée aux jours d'ouverture (ceux du PATCH,
+     * sinon ceux de la fiche), les autres jours étant vidés. Un
+     * `horairesJours` natif dans le même PATCH prime.
+     *
+     * @param array<string, mixed> $payload
+     *
+     * @return array<string, mixed>
+     */
+    private static function traduireHorairesLegacy(array $payload, Restaurant $restaurant): array
+    {
+        if (!array_key_exists('heureOuverture', $payload) && !array_key_exists('heureFermeture', $payload)) {
+            return $payload;
+        }
+        $ouverture = is_string($payload['heureOuverture'] ?? null) ? $payload['heureOuverture'] : null;
+        $fermeture = is_string($payload['heureFermeture'] ?? null) ? $payload['heureFermeture'] : null;
+        unset($payload['heureOuverture'], $payload['heureFermeture']);
+        if (array_key_exists('horairesJours', $payload)) {
+            return $payload;
+        }
+        $jours = is_array($payload['joursOuverture'] ?? null)
+            ? $payload['joursOuverture']
+            : $restaurant->joursOuverture();
+        $horaires = [];
+        foreach (array_keys(RestaurantLovCatalog::values('DISPO_JOUR_OUVERTURE')) as $code) {
+            $ouvert = in_array($code, $jours, true);
+            $horaires[$code] = [
+                'ouverture' => $ouvert ? $ouverture : null,
+                'fermeture' => $ouvert ? $fermeture : null,
+            ];
+        }
+        $payload['horairesJours'] = $horaires;
+
+        return $payload;
     }
 
     /**

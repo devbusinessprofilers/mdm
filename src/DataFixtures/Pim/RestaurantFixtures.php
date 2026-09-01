@@ -77,12 +77,10 @@ final class RestaurantFixtures extends Fixture implements FixtureGroupInterface
                 'JEUDI',
                 'VENDREDI',
             ]);
-            $restaurant->changeHeureOuverture(
-                new \DateTimeImmutable('12:00'),
-            );
-            $restaurant->changeHeureFermeture(
-                new \DateTimeImmutable('23:00'),
-            );
+            $restaurant->changeHorairesJours(array_fill_keys(
+                ['LUNDI', 'MARDI', 'MERCREDI', 'JEUDI', 'VENDREDI'],
+                ['ouverture' => '12:00', 'fermeture' => '23:00'],
+            ));
             $restaurant->changeLocalisation($this->location($offset));
             $restaurant->changeAccesPmr(true);
             $restaurant->changeToilettesPmr(true);

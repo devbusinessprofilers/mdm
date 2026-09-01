@@ -28,9 +28,8 @@ final class LieuFormCatalog
     /** @return array<string, array<string, mixed>> */
     public static function availability(): array
     {
-        // Les quatre champs globaux historiques ne se saisissent plus : ils
-        // sont dérivés de l'amplitude des horaires par jour (contrat
-        // marketplace inchangé).
+        // L'amplitude globale n'est plus stockée : elle est dérivée des
+        // horaires par jour au build du payload marketplace.
         return [
             'dispoLieuPrivatisable' => ['label' => 'Lieu privatisable'],
             'joursOuverture' => self::choice('DISPO_JOUR_OUVERTURE', "Jours d'ouverture", true, etendu: true),

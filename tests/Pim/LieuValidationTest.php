@@ -45,8 +45,7 @@ final class LieuValidationTest extends KernelTestCase
         $lieu->changeLabel(str_repeat('a', 69));
         $lieu->changeAtout1(str_repeat('b', 35));
         $lieu->changeDescGenerale(str_repeat('c', 1000));
-        $lieu->changeDispoHeureOuvertureHeure(9);
-        $lieu->changeDispoHeureFermetureHeure(18);
+        $lieu->changeDispoHorairesJours(['DISPO_JOUR_OUVERTURE_1' => ['ouverture' => '09:00', 'fermeture' => '18:00']]);
         $salle = new Salle();
         $salle->changeNom('Plénière');
         $salle->changeCapaciteTheatre(999999);
@@ -58,7 +57,7 @@ final class LieuValidationTest extends KernelTestCase
         $lieu->changeLabel(str_repeat('a', 70).',');
         $lieu->changeAtout1(str_repeat('b', 36));
         $lieu->changeDescGenerale(str_repeat('c', 1001));
-        $lieu->changeDispoHeureFermetureHeure(8);
+        $lieu->changeDispoHorairesJours(['DISPO_JOUR_OUVERTURE_1' => ['ouverture' => '09:00', 'fermeture' => '08:00']]);
         $salle->changeCapaciteTheatre(1000000);
         $period = new PeriodeFermeture();
         $period->changeNom('Inversée');

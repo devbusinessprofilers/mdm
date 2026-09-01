@@ -333,27 +333,14 @@ final readonly class EnrichissementSuggestionArbitre
         return $valides;
     }
 
-    /** @param array<string, mixed> $payload */
-    private static function heureDuPayload(array $payload, string $cle): string
-    {
-        $heure = is_string($payload[$cle] ?? null) ? $payload[$cle] : '';
-        if (1 !== preg_match('/^\d{2}:\d{2}$/', $heure)) {
-            throw new \DomainException('Suggestion sans horaires exploitables.');
-        }
-
-        return $heure;
-    }
-
     private function appliquerRestaurant(Restaurant $restaurant, FicheSuggestion $suggestion): void
     {
         $payload = $suggestion->payload() ?? [];
-        if ('restaurant_horaires' === $suggestion->champ()) {
-            if (null !== $restaurant->heureOuverture() || null !== $restaurant->heureFermeture()) {
+        if ('restaurant_horaires_jours' === $suggestion->champ()) {
+            if (null !== $restaurant->horairesJours()) {
                 throw new \DomainException('Des horaires ont été saisis depuis le scan : suggestion périmée.');
             }
-            [$ouverture, $fermeture] = [self::heureDuPayload($payload, 'ouverture'), self::heureDuPayload($payload, 'fermeture')];
-            $restaurant->changeHeureOuverture(new \DateTimeImmutable($ouverture));
-            $restaurant->changeHeureFermeture(new \DateTimeImmutable($fermeture));
+            $restaurant->changeHorairesJours(self::horairesDuPayload($payload));
 
             return;
         }

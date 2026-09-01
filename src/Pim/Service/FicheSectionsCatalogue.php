@@ -75,9 +75,7 @@ final class FicheSectionsCatalogue
             [
                 'titre' => 'Informations générales',
                 'champs' => ['label', 'generaleTypologie', 'informationsGenerales', 'generaleWebsiteUrl', 'businessPremium', 'partenaireBp', 'disponibilites', 'periodesFermeture'],
-                // Les quatre horaires globaux restent des propriétés de la
-                // section (dérivés des horaires par jour, complétude/audit).
-                'proprietes' => ['label', 'generaleTypologie', 'generaleWebsiteUrl', 'periodesFermeture', ...array_keys(LieuFormCatalog::general()), ...array_keys(LieuFormCatalog::availability()), 'dispoHeureOuvertureHeure', 'dispoHeureOuvertureMinutes', 'dispoHeureFermetureHeure', 'dispoHeureFermetureMinutes'],
+                'proprietes' => ['label', 'generaleTypologie', 'generaleWebsiteUrl', 'periodesFermeture', ...array_keys(LieuFormCatalog::general()), ...array_keys(LieuFormCatalog::availability())],
                 'blocs' => ['disponibilites'],
                 'groupe' => 'ma_fiche',
             ],
@@ -208,8 +206,8 @@ final class FicheSectionsCatalogue
         return [
             [
                 'titre' => 'Informations générales',
-                'champs' => ['label', 'lieu', 'siteOfficiel', 'businessPremium', 'partenaireBp', 'privatisationTotale', 'privatisationPartielle', 'heureOuverture', 'heureFermeture', 'joursOuverture', 'periodesFermeture'],
-                'proprietes' => ['label', 'lieu', 'siteOfficiel', 'privatisationTotale', 'privatisationPartielle', 'heureOuverture', 'heureFermeture', 'joursOuverture', 'periodesFermeture'],
+                'champs' => ['label', 'lieu', 'siteOfficiel', 'businessPremium', 'partenaireBp', 'privatisationTotale', 'privatisationPartielle', 'horairesJours', 'joursOuverture', 'periodesFermeture'],
+                'proprietes' => ['label', 'lieu', 'siteOfficiel', 'privatisationTotale', 'privatisationPartielle', 'horairesJours', 'joursOuverture', 'periodesFermeture'],
                 'blocs' => ['disponibilites'],
                 'groupe' => 'ma_fiche',
             ],

@@ -125,7 +125,7 @@ final class CompletenessFieldCatalog
             'SPECIFICITE_ALIMENTAIRE' => ['Spécificités alimentaires', 'specificitesAlimentaires'], 'TYPE_EVENEMENT' => ["Types d’événements", 'typesEvenement'],
             'GENERALE_WEBSITE_URL' => ['Site officiel', 'siteOfficiel'], 'DISPO_PRIVATISATION_TOTALE' => ['Privatisation totale', 'privatisationTotale'],
             'DISPO_PRIVATISATION_PARTIELLE' => ['Privatisation partielle', 'privatisationPartielle'], 'DISPO_JOUR_OUVERTURE' => ["Jours d’ouverture", 'joursOuverture'],
-            'DISPO_HEURE_OUVERTURE' => ["Heure d’ouverture", 'heureOuverture'], 'DISPO_HEURE_FERMETURE' => ['Heure de fermeture', 'heureFermeture'],
+            'DISPO_HEURE_OUVERTURE' => ["Heure d’ouverture", 'amplitudeOuverture'], 'DISPO_HEURE_FERMETURE' => ['Heure de fermeture', 'amplitudeFermeture'],
             'PMR_ACCES' => ['Accès PMR', 'accesPmr'], 'PMR_TOILETTE' => ['Toilettes PMR', 'toilettesPmr'],
             'GENERALE_DESC' => ['Description générale', 'descriptionGenerale'], 'RESTAURANT_PLUS' => ['Atouts', 'atouts'],
             'CAP_ASSISE_MAX' => ['Capacité assise maximale', 'capaciteAssiseMax'], 'CAP_ASSISE_SALLE_PRIVATISABLE' => ['Capacité privatisable', 'capaciteEspacePrivatisable'],

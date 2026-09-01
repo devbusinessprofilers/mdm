@@ -24,13 +24,13 @@ final class ImportSchemaCoverageTest extends KernelTestCase
     private const CLASS_EXCLUSIONS = [
         \App\Pim\Entity\Lieu\Lieu::class => [
             'changeGeneraleGamme',      // colonne de repli dépréciée
-            'changeDispoJourOuverture', // colonne de repli dépréciée
             'changeDemarcheRse',        // déduit du thème « RSE » par le row mapper legacy, pas une colonne CSV
-            'changeDispoHorairesJours', // saisi dans l'éditeur — le legacy n'a qu'un horaire global (importé)
+            'changeDispoHorairesJours', // tableau complet — l'import passe par les colonnes horaires_* (changeHoraireJour)
             'changeRestaurant',         // liaison entre fiches saisie dans l'éditeur, inconnue du legacy
         ],
         \App\Pim\Entity\Restaurant\Restaurant::class => [
             'changeLieu',               // liaison entre fiches saisie dans l'éditeur, inconnue du legacy
+            'changeHorairesJours',      // tableau complet — l'import passe par les colonnes horaires_* (changeHoraireJour)
         ],
     ];
 

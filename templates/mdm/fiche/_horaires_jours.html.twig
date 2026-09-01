@@ -1,0 +1,37 @@
+{#
+    Horaires par jour — une colonne par jour (les choix réels de la LOV
+    DISPO_JOUR_OUVERTURE de la gamme) avec son interrupteur et ses heures
+    d'ouverture/fermeture (champs `time` du HorairesJoursType). Comme la
+    maquette, les heures d'un jour ne se montrent que s'il est ouvert — en pur
+    CSS (`group-has`), sans contrôleur ; les valeurs d'un jour refermé sont
+    conservées.
+
+    Variables : `jours` — le champ choix multiple joursOuverture (étendu) ;
+    `horaires` — le sous-formulaire composé des horaires par jour.
+#}
+<div class="flex flex-col gap-4">
+    <twig:Typography variant="subtitle" bold>Horaires</twig:Typography>
+
+    <div class="flex flex-row gap-6 items-start flex-wrap">
+        {% for jour in jours %}
+            <div class="group/jour flex flex-col gap-2 flex-1 basis-32 min-w-0">
+                <label class="flex flex-row items-center gap-2 shrink-0 cursor-pointer" for="{{ jour.vars.id }}">
+                    <twig:Form:SwitchButton id="{{ jour.vars.id }}" name="{{ jour.vars.full_name }}"
+                                            value="{{ jour.vars.value }}" :checked="jour.vars.checked" class="shrink-0" />
+                    <twig:Typography variant="input" element="span"
+                                     class="text-[0.875rem]! leading-[1.375rem]! whitespace-nowrap">{{ jour.vars.label }}</twig:Typography>
+                </label>
+
+                {% set horaires_jour = attribute(horaires, jour.vars.value)|default(null) %}
+                {% if horaires_jour %}
+                    <div class="hidden group-has-[:checked]/jour:flex flex-row gap-2 flex-wrap">
+                        <div class="w-[104px]">{{ form_row(horaires_jour.ouverture) }}</div>
+                        <div class="w-[104px]">{{ form_row(horaires_jour.fermeture) }}</div>
+                    </div>
+                {% endif %}
+            </div>
+        {% endfor %}
+    </div>
+    {% do jours.setRendered %}
+    {% do horaires.setRendered %}
+</div>

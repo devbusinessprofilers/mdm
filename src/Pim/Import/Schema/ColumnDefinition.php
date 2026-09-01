@@ -18,6 +18,8 @@ final readonly class ColumnDefinition
         public string $help = '',
         public ?string $targetPath = null,
         public bool $nullable = true,
+        /** Code LOV du jour visé (colonnes ColumnKind::Horaire uniquement). */
+        public ?string $horaireJour = null,
     ) {
     }
 

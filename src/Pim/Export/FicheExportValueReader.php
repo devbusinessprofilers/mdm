@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Pim\Export;
 
+use App\Pim\Entity\AvecHorairesJours;
 use App\Pim\Entity\Fiche;
 use App\Pim\Entity\ValeurAttribut;
 use App\Pim\Import\Schema\ColumnDefinition;
@@ -42,6 +43,15 @@ final class FicheExportValueReader
         }
         if (ColumnKind::SitesDiffusion === $column->kind) {
             return [$this->libellesSites($fiche)];
+        }
+        if (ColumnKind::Horaire === $column->kind) {
+            $heures = $porteur instanceof AvecHorairesJours
+                ? ($porteur->horairesJours()[$column->horaireJour ?? ''] ?? null)
+                : null;
+            $ouverture = $heures['ouverture'] ?? null;
+            $fermeture = $heures['fermeture'] ?? null;
+
+            return [null === $ouverture && null === $fermeture ? null : sprintf('%s-%s', (string) $ouverture, (string) $fermeture)];
         }
 
         $cible = $this->cible($column, $porteur, $fiche);

@@ -13,6 +13,7 @@ enum ColumnKind
     case Float;
     case Date;
     case Time;
+    case Horaire;
     case Enum;
     case LovMono;
     case LovMulti;

@@ -221,8 +221,7 @@ final class SyncFicheMarketplaceHandlerTest extends KernelTestCase
         $localisation->changeVille('Paris');
         $lieu->changeLocalisation($localisation);
         $lieu->changeGeneraleTypologie(['GENERALE_TYPOLOGIE_3']);
-        $lieu->changeDispoHeureOuvertureHeure(8);
-        $lieu->changeDispoHeureOuvertureMinutes(30);
+        $lieu->changeDispoHorairesJours(['DISPO_JOUR_OUVERTURE_1' => ['ouverture' => '08:30', 'fermeture' => null]]);
         $lieu->tarification()->changeSeminaireJourneeJourneeEtude('120.50');
         $lieu->administratif()->changeInfoLegaleSiret('12345678900012');
         $acces = new AccesLieu();

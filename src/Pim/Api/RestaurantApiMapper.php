@@ -8,6 +8,7 @@ use App\Dam\Service\FichePhotoPresenter;
 use App\Pim\Api\Dto\LieuMediaResource;
 use App\Pim\Api\Dto\RestaurantListResource;
 use App\Pim\Api\Dto\RestaurantResource;
+use App\Pim\Entity\HorairesJours;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Entity\Localisation;
 use App\Pim\Entity\Restaurant\Restaurant;
@@ -38,6 +39,7 @@ final readonly class RestaurantApiMapper
     public function restaurant(Restaurant $restaurant): RestaurantResource
     {
         $fiche = $restaurant->fiche();
+        $amplitude = HorairesJours::amplitude($restaurant->horairesJours());
 
         return new RestaurantResource(
             $restaurant->id(),
@@ -58,8 +60,9 @@ final readonly class RestaurantApiMapper
             $restaurant->privatisationTotale(),
             $restaurant->privatisationPartielle(),
             $restaurant->joursOuverture(),
-            $restaurant->heureOuverture()?->format('H:i'),
-            $restaurant->heureFermeture()?->format('H:i'),
+            $amplitude['ouverture'],
+            $amplitude['fermeture'],
+            $restaurant->horairesJours(),
             array_values(array_map(
                 static fn ($period): array => [
                     'id' => $period->id(),

@@ -186,6 +186,14 @@ final class RowConverter
                 }
 
                 return $value;
+            case ColumnKind::Horaire:
+                if (1 !== preg_match('/^\s*(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})\s*$/', $raw, $m)) {
+                    $error = 'Horaires attendus au format HH:MM-HH:MM.';
+
+                    return null;
+                }
+
+                return ['jour' => (string) $column->horaireJour, 'heures' => ['ouverture' => $m[1], 'fermeture' => $m[2]]];
             case ColumnKind::Enum:
                 $enumClass = $column->enumClass;
                 if (null === $enumClass) {
@@ -290,6 +298,8 @@ final class RowConverter
     {
         return match ($column->kind) {
             ColumnKind::LovMulti, ColumnKind::StringList, ColumnKind::SitesDiffusion => [],
+            // Le jour visé reste nécessaire pour vider la bonne entrée du JSON.
+            ColumnKind::Horaire => ['jour' => (string) $column->horaireJour, 'heures' => null],
             default => null,
         };
     }

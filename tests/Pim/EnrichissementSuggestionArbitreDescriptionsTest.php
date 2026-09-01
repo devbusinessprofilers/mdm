@@ -253,8 +253,8 @@ final class EnrichissementSuggestionArbitreDescriptionsTest extends KernelTestCa
         $joursLieu = new FicheSuggestion($lieu->fiche(), SuggestionSource::Geoapify, SuggestionAction::RemplirChamp, 'lieu_lov_jours_ouverture', 'Jours d\'ouverture', null, 'Lundi', null, [
             'attribut' => 'DISPO_JOUR_OUVERTURE', 'codes' => ['DISPO_JOUR_OUVERTURE_1'],
         ]);
-        $horairesRestaurant = new FicheSuggestion($restaurant->fiche(), SuggestionSource::Geoapify, SuggestionAction::RemplirChamp, 'restaurant_horaires', 'Horaires d\'ouverture', null, '10:00 – 22:00', null, [
-            'ouverture' => '10:00', 'fermeture' => '22:00',
+        $horairesRestaurant = new FicheSuggestion($restaurant->fiche(), SuggestionSource::Geoapify, SuggestionAction::RemplirChamp, 'restaurant_horaires_jours', 'Horaires par jour', null, 'Sam 10:00-22:00', null, [
+            'horaires' => ['SAMEDI' => ['ouverture' => '10:00', 'fermeture' => '22:00']],
         ]);
         $joursRestaurant = new FicheSuggestion($restaurant->fiche(), SuggestionSource::Geoapify, SuggestionAction::RemplirChamp, 'restaurant_lov_jours_ouverture', 'Jours d\'ouverture', null, 'Samedi', null, [
             'codes' => ['DISPO_JOUR_OUVERTURE_6'],
@@ -275,8 +275,7 @@ final class EnrichissementSuggestionArbitreDescriptionsTest extends KernelTestCa
         self::assertContains('DISPO_JOUR_OUVERTURE_1', $lieuRecharge->joursOuverture());
         $restaurantRecharge = $em->find(Restaurant::class, $restaurant->id());
         self::assertInstanceOf(Restaurant::class, $restaurantRecharge);
-        self::assertSame('10:00', $restaurantRecharge->heureOuverture()?->format('H:i'));
-        self::assertSame('22:00', $restaurantRecharge->heureFermeture()?->format('H:i'));
+        self::assertSame(['ouverture' => '10:00', 'fermeture' => '22:00'], $restaurantRecharge->horairesJours()['SAMEDI'] ?? null);
         self::assertContains('DISPO_JOUR_OUVERTURE_6', $restaurantRecharge->joursOuverture());
     }
 

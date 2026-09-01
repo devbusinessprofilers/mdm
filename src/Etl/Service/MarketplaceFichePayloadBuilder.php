@@ -12,6 +12,7 @@ use App\Enrichment\Enum\TranslationStatus;
 use App\Enrichment\Repository\FicheTranslationRepository;
 use App\Pim\Entity\Activite\Activite;
 use App\Pim\Entity\Fiche;
+use App\Pim\Entity\HorairesJours;
 use App\Pim\Entity\Lieu\AccesLieu;
 use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Entity\Lieu\LieuAdministratif;
@@ -198,13 +199,7 @@ final readonly class MarketplaceFichePayloadBuilder
             'youtube' => $lieu->generaleYoutube(),
             'privatisable' => $lieu->dispoLieuPrivatisable(),
             'joursOuverture' => $lieu->joursOuverture(),
-            'joursOuvertureDetails' => $lieu->dispoJourOuverture(),
-            'horaires' => [
-                'ouverture' => self::horaire($lieu->dispoHeureOuvertureHeure(), $lieu->dispoHeureOuvertureMinutes()),
-                'fermeture' => self::horaire($lieu->dispoHeureFermetureHeure(), $lieu->dispoHeureFermetureMinutes()),
-                // Détail par jour (additif) — l'amplitude globale ci-dessus reste servie.
-                'parJour' => $lieu->dispoHorairesJours(),
-            ],
+            'horaires' => self::horaires($lieu->dispoHorairesJours()),
             'periodesFermeture' => array_values(array_map(static fn (PeriodeFermeture $periode): array => [
                 'nom' => $periode->nom(),
                 'dateDebut' => $periode->dateDebut()?->format('Y-m-d'),
@@ -319,10 +314,7 @@ final readonly class MarketplaceFichePayloadBuilder
                 'totale' => $restaurant->privatisationTotale(),
                 'partielle' => $restaurant->privatisationPartielle(),
             ],
-            'horaires' => [
-                'ouverture' => $restaurant->heureOuverture()?->format('H:i'),
-                'fermeture' => $restaurant->heureFermeture()?->format('H:i'),
-            ],
+            'horaires' => self::horaires($restaurant->horairesJours()),
             'pmr' => [
                 'acces' => $restaurant->accesPmr(),
                 'toilettes' => $restaurant->toilettesPmr(),
@@ -439,13 +431,17 @@ final readonly class MarketplaceFichePayloadBuilder
         ];
     }
 
-    private static function horaire(?int $heure, ?int $minutes): ?string
+    /**
+     * Bloc horaires du payload : amplitude dérivée (contrat historique de la
+     * marketplace) + détail par jour.
+     *
+     * @param array<string, array{ouverture: ?string, fermeture: ?string}>|null $parJour
+     *
+     * @return array{ouverture: ?string, fermeture: ?string, parJour: ?array<string, array{ouverture: ?string, fermeture: ?string}>}
+     */
+    private static function horaires(?array $parJour): array
     {
-        if (null === $heure) {
-            return null;
-        }
-
-        return sprintf('%02d:%02d', $heure, $minutes ?? 0);
+        return HorairesJours::amplitude($parJour) + ['parJour' => $parJour];
     }
 
     /**

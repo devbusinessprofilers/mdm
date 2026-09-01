@@ -89,6 +89,31 @@ abstract class AbstractFicheImportSchema implements FicheImportSchemaInterface
         return new ColumnDefinition(self::snake($target), ColumnKind::StringList, $target, help: $help);
     }
 
+    /**
+     * Une colonne d'horaires par jour d'ouverture (format HH:MM-HH:MM,
+     * cellule vide = jour fermé), sur les codes LOV DISPO_JOUR_OUVERTURE de la
+     * gamme.
+     *
+     * @param array<string, string> $jours code LOV → libellé (Lundi…Dimanche)
+     *
+     * @return list<ColumnDefinition>
+     */
+    protected function horairesJours(array $jours): array
+    {
+        $colonnes = [];
+        foreach ($jours as $code => $libelle) {
+            $colonnes[] = new ColumnDefinition(
+                'horaires_'.mb_strtolower($libelle),
+                ColumnKind::Horaire,
+                'horaireJour',
+                help: 'format HH:MM-HH:MM, vide = fermé',
+                horaireJour: (string) $code,
+            );
+        }
+
+        return $colonnes;
+    }
+
     private static function prefixed(?string $targetPath, string $target): string
     {
         $prefix = match ($targetPath) {

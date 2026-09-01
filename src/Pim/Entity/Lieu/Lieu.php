@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Pim\Entity\Lieu;
 
 use App\Pim\Attribute\CompletenessTarget;
+use App\Pim\Entity\AvecHorairesJours;
 use App\Pim\Entity\CompletenessScoresTrait;
+use App\Pim\Entity\HorairesJours;
 use App\Pim\Entity\Fiche;
 use App\Pim\Entity\Localisation;
 use App\Pim\Entity\Restaurant\Restaurant;
@@ -26,7 +28,7 @@ use Symfony\Component\Uid\Ulid;
 #[ORM\HasLifecycleCallbacks]
 #[ValidLieu(groups: ['Draft'])]
 #[ValidLieu(groups: ['Submission'])]
-class Lieu
+class Lieu implements AvecHorairesJours
 {
     use TimestampableTrait { touch as touchDetail; }
     use CompletenessScoresTrait;
@@ -103,29 +105,9 @@ class Lieu
     #[ORM\Column(name: 'dispo_lieu_privatisable', options: ['default' => false])]
     private bool $dispoLieuPrivatisable = false;
 
-    // Jours d'ouverture (Bible row 12)
-    #[ORM\Column(name: 'dispo_jour_ouverture', length: 255, nullable: true)]
-    private ?string $dispoJourOuverture = null;
-
-    // Ouverture heure (Bible row 13)
-    #[ORM\Column(name: 'dispo_heure_ouverture_heure', nullable: true)]
-    private ?int $dispoHeureOuvertureHeure = null;
-
-    // Ouverture minutes (Bible row 14)
-    #[ORM\Column(name: 'dispo_heure_ouverture_minutes', nullable: true)]
-    private ?int $dispoHeureOuvertureMinutes = null;
-
-    // Fermeture heure (Bible row 15)
-    #[ORM\Column(name: 'dispo_heure_fermeture_heure', nullable: true)]
-    private ?int $dispoHeureFermetureHeure = null;
-
-    // Fermeture minutes (Bible row 16)
-    #[ORM\Column(name: 'dispo_heure_fermeture_minutes', nullable: true)]
-    private ?int $dispoHeureFermetureMinutes = null;
-
-    // Horaires par jour (éditeur maquette) — {jour: {ouverture: 'HH:MM', fermeture: 'HH:MM'}}.
-    // Les quatre champs globaux ci-dessus restent le contrat marketplace : ils
-    // suivent l'amplitude (première ouverture, dernière fermeture).
+    // Horaires par jour (Bible rows 12-16) — {jour: {ouverture: 'HH:MM', fermeture: 'HH:MM'}}.
+    // Source de vérité unique ; l'amplitude marketplace est dérivée au build du
+    // payload (HorairesJours::amplitude).
     /** @var array<string, array{ouverture: ?string, fermeture: ?string}>|null */
     #[ORM\Column(name: 'dispo_horaires_jours', type: Types::JSON, nullable: true)]
     private ?array $dispoHorairesJours = null;
@@ -676,124 +658,33 @@ class Lieu
         $this->replaceLovValues('DISPO_JOUR_OUVERTURE', $values);
     }
 
-    /** @deprecated Colonne de repli conservée pendant la migration. */
-    public function dispoJourOuverture(): ?string
-    {
-        return $this->dispoJourOuverture;
-    }
-
-    public function changeDispoJourOuverture(?string $value): void
-    {
-        LieuLovCatalog::assertValid('DISPO_JOUR_OUVERTURE', $value);
-        $value = self::normalizeNullableString($value);
-        $this->dispoJourOuverture = $value;
-        $this->touch();
-    }
-
-    public function dispoHeureOuvertureHeure(): ?int
-    {
-        return $this->dispoHeureOuvertureHeure;
-    }
-
-    public function changeDispoHeureOuvertureHeure(?int $value): void
-    {
-        $this->dispoHeureOuvertureHeure = $value;
-        $this->touch();
-    }
-
-    public function dispoHeureOuvertureMinutes(): ?int
-    {
-        return $this->dispoHeureOuvertureMinutes;
-    }
-
-    public function changeDispoHeureOuvertureMinutes(?int $value): void
-    {
-        $this->dispoHeureOuvertureMinutes = $value;
-        $this->touch();
-    }
-
-    public function dispoHeureFermetureHeure(): ?int
-    {
-        return $this->dispoHeureFermetureHeure;
-    }
-
-    public function changeDispoHeureFermetureHeure(?int $value): void
-    {
-        $this->dispoHeureFermetureHeure = $value;
-        $this->touch();
-    }
-
-    public function dispoHeureFermetureMinutes(): ?int
-    {
-        return $this->dispoHeureFermetureMinutes;
-    }
-
-    public function changeDispoHeureFermetureMinutes(?int $value): void
-    {
-        $this->dispoHeureFermetureMinutes = $value;
-        $this->touch();
-    }
-
-    /**
-     * Horaires par jour ; repli sur l'horaire global historique décliné sur
-     * les jours d'ouverture tant qu'aucune saisie par jour n'existe.
-     *
-     * @return array<string, array{ouverture: ?string, fermeture: ?string}>|null
-     */
+    /** @return array<string, array{ouverture: ?string, fermeture: ?string}>|null */
     public function dispoHorairesJours(): ?array
     {
-        if (null !== $this->dispoHorairesJours) {
-            return $this->dispoHorairesJours;
-        }
-        $ouverture = self::heureTexte($this->dispoHeureOuvertureHeure, $this->dispoHeureOuvertureMinutes);
-        $fermeture = self::heureTexte($this->dispoHeureFermetureHeure, $this->dispoHeureFermetureMinutes);
-        if (null === $ouverture && null === $fermeture) {
-            return null;
-        }
-        $jours = [];
-        foreach ($this->joursOuverture() as $jour) {
-            $jours[$jour] = ['ouverture' => $ouverture, 'fermeture' => $fermeture];
-        }
+        return $this->dispoHorairesJours;
+    }
 
-        return [] === $jours ? null : $jours;
+    public function horairesJours(): ?array
+    {
+        return $this->dispoHorairesJours;
     }
 
     /** @param array<string, array{ouverture?: ?string, fermeture?: ?string}>|null $value */
     public function changeDispoHorairesJours(?array $value): void
     {
-        $nettoye = [];
-        foreach ($value ?? [] as $jour => $heures) {
-            $ouverture = self::normalizeNullableString($heures['ouverture'] ?? null);
-            $fermeture = self::normalizeNullableString($heures['fermeture'] ?? null);
-            if (null !== $ouverture || null !== $fermeture) {
-                $nettoye[(string) $jour] = ['ouverture' => $ouverture, 'fermeture' => $fermeture];
-            }
-        }
-        $this->dispoHorairesJours = [] === $nettoye ? null : $nettoye;
-        if ([] !== $nettoye) {
-            // Dérive l'amplitude globale (contrat marketplace inchangé). Sans
-            // saisie par jour, les champs globaux historiques sont conservés.
-            $ouvertures = array_filter(array_column($nettoye, 'ouverture'));
-            $fermetures = array_filter(array_column($nettoye, 'fermeture'));
-            [$this->dispoHeureOuvertureHeure, $this->dispoHeureOuvertureMinutes] = self::heureMinute([] === $ouvertures ? null : min($ouvertures));
-            [$this->dispoHeureFermetureHeure, $this->dispoHeureFermetureMinutes] = self::heureMinute([] === $fermetures ? null : max($fermetures));
-        }
+        $this->dispoHorairesJours = HorairesJours::nettoie($value);
         $this->touch();
     }
 
-    private static function heureTexte(?int $heure, ?int $minutes): ?string
+    public function changeHoraireJour(array $valeur): void
     {
-        return null === $heure ? null : sprintf('%02d:%02d', $heure, $minutes ?? 0);
-    }
-
-    /** @return array{0: ?int, 1: ?int} */
-    private static function heureMinute(?string $heure): array
-    {
-        if (null === $heure || 1 !== preg_match('/^(\d{1,2}):(\d{2})/', $heure, $m)) {
-            return [null, null];
+        $jours = $this->dispoHorairesJours ?? [];
+        if (null === ($valeur['heures'] ?? null)) {
+            unset($jours[$valeur['jour']]);
+        } else {
+            $jours[$valeur['jour']] = $valeur['heures'];
         }
-
-        return [(int) $m[1], (int) $m[2]];
+        $this->changeDispoHorairesJours($jours);
     }
 
     public function pmrAcces(): bool

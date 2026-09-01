@@ -30,8 +30,9 @@ final class LieuMappingTest extends KernelTestCase
         $mediaMetadata = $entityManager->getClassMetadata(MediaAsset::class);
 
         // Les champs communs, les LOV, les champs répétables et les fichiers ne sont plus dans la table large.
-        // 64 = 63 champs Bible + les horaires par jour (dispoHorairesJours, JSON).
-        self::assertCount(64, $lieuMetadata->getFieldNames());
+        // 59 = 58 champs Bible + les horaires par jour (dispoHorairesJours, JSON,
+        // source unique — l'amplitude globale et le jour texte legacy ont disparu).
+        self::assertCount(59, $lieuMetadata->getFieldNames());
         foreach (['completenessGlobal', 'completenessMarketplace', 'completenessThematicSites', 'completenessSalesforce', 'completenessProviderPortal', 'completenessCalculatedAt', 'completenessRevision'] as $field) {
             self::assertTrue($lieuMetadata->hasField($field));
         }

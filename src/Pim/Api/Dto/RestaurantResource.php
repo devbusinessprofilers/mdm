@@ -225,8 +225,11 @@ final readonly class RestaurantResource
         public ?bool $privatisationTotale,
         public ?bool $privatisationPartielle,
         public array $joursOuverture,
+        /** Amplitude dérivée des horaires par jour (rétrocompat portail). */
         public ?string $heureOuverture,
         public ?string $heureFermeture,
+        /** @var array<string, array{ouverture: ?string, fermeture: ?string}>|null */
+        public ?array $horairesJours,
         public array $periodesFermeture,
         public ?array $localisation,
         public array $acces,

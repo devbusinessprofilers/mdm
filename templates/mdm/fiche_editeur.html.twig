@@ -301,7 +301,7 @@
                         {# Disponibilités et périodes de fermeture : sous la grille, comme
                            la carte annexe de la maquette. Les noms couvrent le compound
                            du Lieu et les champs à plat du Restaurant. #}
-                        {% set noms_annexes = ['disponibilites', 'periodesFermeture', 'privatisationTotale', 'privatisationPartielle', 'heureOuverture', 'heureFermeture', 'joursOuverture'] %}
+                        {% set noms_annexes = ['disponibilites', 'periodesFermeture', 'privatisationTotale', 'privatisationPartielle', 'horairesJours', 'joursOuverture'] %}
                         {% set widgets_annexes = 'disponibilites' in s.blocs
                             ? widgets_section|filter(w => w.vars.name in noms_annexes)
                             : [] %}
@@ -364,12 +364,18 @@
                         {% if w_dispo is not null %}
                             {% include 'mdm/fiche/_disponibilites.html.twig' with { widget: w_dispo, periodes: w_periodes } only %}
                         {% else %}
-                            {% set annexes_simples = widgets_annexes|filter(w => w.vars.name != 'periodesFermeture') %}
+                            {# Jours + horaires par jour (champs à plat du Restaurant) :
+                               même partial que la carte du Lieu. #}
+                            {% set w_jours = widgets_annexes|reduce((acc, w) => w.vars.name == 'joursOuverture' ? w : acc, null) %}
+                            {% set w_horaires = widgets_annexes|reduce((acc, w) => w.vars.name == 'horairesJours' ? w : acc, null) %}
+                            {% set horaires_partages = w_jours is not null and w_horaires is not null %}
+                            {% set annexes_simples = widgets_annexes|filter(w => w.vars.name != 'periodesFermeture'
+                                and (not horaires_partages or w.vars.name not in ['joursOuverture', 'horairesJours'])) %}
                             <div class="flex flex-row flex-wrap gap-x-6 gap-y-5">
                                 {% for widget in annexes_simples|filter(w => 'checkbox' not in w.vars.block_prefixes) %}
                                     {% if widget.vars.expanded|default(false) %}
-                                        {# Choix multiples (jours d'ouverture) : interrupteurs en
-                                           rangée, comme la carte Disponibilités du Lieu. #}
+                                        {# Choix multiples : interrupteurs en rangée, comme la
+                                           carte Disponibilités du Lieu. #}
                                         <div class="w-full flex flex-col gap-2">
                                             {{ form_label(widget) }}
                                             <div class="flex flex-row gap-x-6 gap-y-3 items-center flex-wrap">
@@ -392,6 +398,9 @@
                                     {{ form_row(widget, { row_attr: { class: 'w-[calc(50%-12px)]' } }) }}
                                 {% endfor %}
                             </div>
+                            {% if horaires_partages %}
+                                {% include 'mdm/fiche/_horaires_jours.html.twig' with { jours: w_jours, horaires: w_horaires } only %}
+                            {% endif %}
                             {% if w_periodes is not null %}
                                 {% include 'mdm/fiche/_periodes_fermeture.html.twig' with { periodes: w_periodes } only %}
                             {% endif %}

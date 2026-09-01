@@ -28,7 +28,7 @@ final class RestaurantMappingTest extends KernelTestCase
         self::assertTrue($restaurant->hasAssociation('salles'));
         self::assertTrue($restaurant->hasAssociation('acces'));
         self::assertTrue($restaurant->hasAssociation('periodesFermeture'));
-        self::assertSame('time_immutable', $restaurant->getTypeOfField('heureOuverture'));
+        self::assertSame('json', $restaurant->getTypeOfField('horairesJours'));
 
         foreach (
             [

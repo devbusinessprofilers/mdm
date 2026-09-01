@@ -63,6 +63,11 @@ final class RestaurantPatchInput
     {
         $this->payload['heureFermeture'] = $value;
     }
+    /** @param array<string, array<string, mixed>>|null $value */
+    public function setHorairesJours(?array $value): void
+    {
+        $this->payload['horairesJours'] = $value ?? [];
+    }
     /** @param list<array<string, mixed>> $value */
     public function setPeriodesFermeture(array $value): void
     {

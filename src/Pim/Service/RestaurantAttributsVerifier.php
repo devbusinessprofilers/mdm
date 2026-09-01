@@ -6,6 +6,7 @@ namespace App\Pim\Service;
 
 use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Enum\SuggestionAction;
+use App\Pim\Lov\LieuLovCatalog;
 use App\Pim\Lov\RestaurantLovCatalog;
 
 /**
@@ -75,26 +76,22 @@ final readonly class RestaurantAttributsVerifier
         $this->ajouterBool($propositions, 'restaurant_acces_pmr', 'Accès PMR', $attributs->accesPmr, $restaurant->accesPmr());
         $this->ajouterBool($propositions, 'restaurant_toilettes_pmr', 'Toilettes PMR', $attributs->toilettesPmr, $restaurant->toilettesPmr());
 
-        // Horaires OSM : jours en union ; l'amplitude (deux champs globaux
-        // seulement) n'est proposée que si elle est uniforme sur la semaine.
+        // Horaires OSM : jours en union ; le détail par jour est proposé comme
+        // côté Lieu, re-clé sur les codes jours de la gamme.
         $horairesOsm = null === $attributs->horairesOuverture ? null : HorairesOsm::parser($attributs->horairesOuverture);
         if (null !== $horairesOsm) {
             $this->ajouterLov($propositions, 'restaurant_lov_jours_ouverture', 'DISPO_JOUR_OUVERTURE', 'Jours d\'ouverture',
                 $horairesOsm['jours'], $restaurant->joursOuverture());
-            $plages = array_values(array_unique(array_map(
-                static fn (array $heures): string => $heures['ouverture'].'-'.$heures['fermeture'],
-                $horairesOsm['horaires'],
-            )));
-            if (1 === count($plages) && null === $restaurant->heureOuverture() && null === $restaurant->heureFermeture()) {
-                [$ouverture, $fermeture] = explode('-', $plages[0]);
+            $horairesJours = self::horairesJoursGamme($horairesOsm['horaires']);
+            if ([] !== $horairesJours && null === $restaurant->horairesJours()) {
                 $propositions[] = new SuggestionProposee(
                     action: SuggestionAction::RemplirChamp,
-                    champ: 'restaurant_horaires',
-                    label: 'Horaires d\'ouverture',
+                    champ: 'restaurant_horaires_jours',
+                    label: 'Horaires par jour',
                     valeurActuelle: null,
-                    valeurProposee: sprintf('%s – %s', $ouverture, $fermeture),
+                    valeurProposee: HorairesOsm::resume($horairesOsm['horaires']),
                     score: null,
-                    payload: ['ouverture' => $ouverture, 'fermeture' => $fermeture],
+                    payload: ['horaires' => $horairesJours],
                 );
             }
         }
@@ -165,6 +162,30 @@ final readonly class RestaurantAttributsVerifier
             score: null,
             payload: ['bool' => $propose],
         );
+    }
+
+    /**
+     * Horaires OSM (codes jours du Lieu, DISPO_JOUR_OUVERTURE_1..7) re-clés
+     * sur les codes jours de la gamme Restaurant via les libellés ; un jour
+     * non résolu est écarté plutôt que proposé sous un code inconnu.
+     *
+     * @param array<string, array{ouverture: string, fermeture: string}> $horaires
+     *
+     * @return array<string, array{ouverture: string, fermeture: string}>
+     */
+    private static function horairesJoursGamme(array $horaires): array
+    {
+        $valeurs = RestaurantLovCatalog::values('DISPO_JOUR_OUVERTURE');
+        $libelles = LieuLovCatalog::choicesFor('DISPO_JOUR_OUVERTURE');
+        $resultat = [];
+        foreach ($horaires as $jour => $heures) {
+            $code = LovValeurResolution::codePour($valeurs, $libelles[$jour] ?? $jour);
+            if (null !== $code) {
+                $resultat[$code] = $heures;
+            }
+        }
+
+        return $resultat;
     }
 
     /**

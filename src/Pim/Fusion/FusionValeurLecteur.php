@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Pim\Fusion;
 
 use App\Audit\ValueNormalizer;
+use App\Pim\Entity\AvecHorairesJours;
 use App\Pim\Entity\Fiche;
 use App\Pim\Import\Schema\ColumnDefinition;
+use App\Pim\Import\Schema\ColumnKind;
 
 /**
  * Lecture des valeurs NATIVES d'un champ du catalogue de fusion (l'écran de
@@ -26,6 +28,11 @@ final readonly class FusionValeurLecteur
         $cible = $this->cible($column, $aggregate, $fiche);
         if (null === $cible) {
             return null;
+        }
+        if (ColumnKind::Horaire === $column->kind) {
+            return $cible instanceof AvecHorairesJours
+                ? ($cible->horairesJours()[$column->horaireJour ?? ''] ?? null)
+                : null;
         }
         if (!method_exists($cible, $column->target)) {
             throw new \LogicException(sprintf('Getter %s absent sur %s (colonne %s).', $column->target, $cible::class, $column->header));

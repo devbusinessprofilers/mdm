@@ -237,19 +237,6 @@ final class ValidLieuValidator extends ConstraintValidator
 
     private function businessCollections(Lieu $lieu): void
     {
-        $openingHour = $lieu->dispoHeureOuvertureHeure();
-        $closingHour = $lieu->dispoHeureFermetureHeure();
-        if (
-            null !== $openingHour
-            && null !== $closingHour
-            && 60 * $closingHour + ($lieu->dispoHeureFermetureMinutes() ?? 0) <=
-                60 * $openingHour + ($lieu->dispoHeureOuvertureMinutes() ?? 0)
-        ) {
-            $this->violation(
-                "L'heure de fermeture doit être postérieure à l'heure d'ouverture.",
-                'disponibilites.dispoHeureFermetureHeure',
-            );
-        }
         $libellesJours = LieuLovCatalog::choicesFor('DISPO_JOUR_OUVERTURE');
         foreach ($lieu->dispoHorairesJours() ?? [] as $jour => $heures) {
             $ouverture = $heures['ouverture'] ?? null;

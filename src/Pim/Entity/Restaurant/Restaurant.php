@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Pim\Entity\Restaurant;
 
 use App\Pim\Attribute\CompletenessTarget;
+use App\Pim\Entity\AvecHorairesJours;
 use App\Pim\Entity\CompletenessScoresTrait;
 use App\Pim\Entity\Fiche;
+use App\Pim\Entity\HorairesJours;
 use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Entity\Localisation;
@@ -27,7 +29,7 @@ use Symfony\Component\Uid\Ulid;
 #[ORM\HasLifecycleCallbacks]
 #[ValidRestaurant(groups: ['Draft'])]
 #[ValidRestaurant(groups: ['Submission'])]
-class Restaurant
+class Restaurant implements AvecHorairesJours
 {
     use TimestampableTrait {
         touch as touchDetail;
@@ -62,11 +64,12 @@ class Restaurant
     #[ORM\Column(nullable: true)]
     private ?bool $privatisationPartielle = null;
 
-    #[ORM\Column(type: Types::TIME_IMMUTABLE, nullable: true)]
-    private ?\DateTimeImmutable $heureOuverture = null;
-
-    #[ORM\Column(type: Types::TIME_IMMUTABLE, nullable: true)]
-    private ?\DateTimeImmutable $heureFermeture = null;
+    // Horaires par jour — {jour: {ouverture: 'HH:MM', fermeture: 'HH:MM'}},
+    // clés = codes LOV DISPO_JOUR_OUVERTURE de la gamme. L'amplitude globale
+    // (contrat marketplace/Salesforce) est dérivée via HorairesJours::amplitude.
+    /** @var array<string, array{ouverture: ?string, fermeture: ?string}>|null */
+    #[ORM\Column(name: 'horaires_jours', type: Types::JSON, nullable: true)]
+    private ?array $horairesJours = null;
 
     #[ORM\Column(nullable: true)]
     private ?bool $accesPmr = null;
@@ -325,14 +328,22 @@ class Restaurant
         return $this->privatisationPartielle;
     }
 
-    public function heureOuverture(): ?\DateTimeImmutable
+    /** @return array<string, array{ouverture: ?string, fermeture: ?string}>|null */
+    public function horairesJours(): ?array
     {
-        return $this->heureOuverture;
+        return $this->horairesJours;
     }
 
-    public function heureFermeture(): ?\DateTimeImmutable
+    /** Première ouverture de la semaine (amplitude dérivée — complétude, API). */
+    public function amplitudeOuverture(): ?string
     {
-        return $this->heureFermeture;
+        return HorairesJours::amplitude($this->horairesJours)['ouverture'];
+    }
+
+    /** Dernière fermeture de la semaine (amplitude dérivée — complétude, API). */
+    public function amplitudeFermeture(): ?string
+    {
+        return HorairesJours::amplitude($this->horairesJours)['fermeture'];
     }
 
     public function accesPmr(): ?bool
@@ -396,14 +407,21 @@ class Restaurant
         $this->set('privatisationPartielle', $value);
     }
 
-    public function changeHeureOuverture(?\DateTimeImmutable $value): void
+    /** @param array<string, array{ouverture?: ?string, fermeture?: ?string}>|null $value */
+    public function changeHorairesJours(?array $value): void
     {
-        $this->set('heureOuverture', $value);
+        $this->set('horairesJours', HorairesJours::nettoie($value));
     }
 
-    public function changeHeureFermeture(?\DateTimeImmutable $value): void
+    public function changeHoraireJour(array $valeur): void
     {
-        $this->set('heureFermeture', $value);
+        $jours = $this->horairesJours ?? [];
+        if (null === ($valeur['heures'] ?? null)) {
+            unset($jours[$valeur['jour']]);
+        } else {
+            $jours[$valeur['jour']] = $valeur['heures'];
+        }
+        $this->changeHorairesJours($jours);
     }
 
     public function changeAccesPmr(?bool $value): void

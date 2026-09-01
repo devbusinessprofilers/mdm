@@ -26,12 +26,17 @@ final readonly class FicheExportColonnesCatalogue
      * du catalogue.
      */
     private const RATTACHEMENTS = [
-        'lieu' => ['generaleGammeLibelle' => 'Informations générales'],
+        'lieu' => [
+            'generaleGammeLibelle' => 'Informations générales',
+            // Colonnes horaires_* (une par jour) : la carte Disponibilités.
+            'horaireJour' => 'Informations générales',
+        ],
         'restaurant' => [
             'capaciteAssiseMax' => 'Salles & capacités',
             'capaciteEspacePrivatisable' => 'Salles & capacités',
             'capaciteBanquet' => 'Salles & capacités',
             'capaciteCocktail' => 'Salles & capacités',
+            'horaireJour' => 'Informations générales',
         ],
         'activite' => ['touteFrance' => 'Localisation & zone d\'intervention'],
     ];
