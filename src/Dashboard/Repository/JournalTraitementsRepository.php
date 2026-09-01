@@ -31,6 +31,7 @@ final readonly class JournalTraitementsRepository
         'datatourisme' => 'DATAtourisme',
         'wikidata' => 'Wikidata',
         'ia' => 'IA',
+        'atout_france' => 'Atout France',
     ];
 
     /** Familles sans journal propre, visibles uniquement dans la vue des échecs. */

@@ -237,8 +237,8 @@
                 {% for s in [
                     {
                         nom: 'Sirene / Recherche-entreprises', etat: 'Actif',
-                        declenchement: 'Batch mensuel automatique (1er du mois, si le paramètre est activé) ; lancement manuel possible.',
-                        porte: 'Statut d\'activité des lieux, SIRET et TVA manquants.',
+                        declenchement: 'Batch mensuel automatique (1er du mois, si le paramètre est activé) ; bouton « Enrichir ce qui manque » de la fiche.',
+                        porte: 'Statut d\'activité des lieux, SIRET, forme juridique et raison sociale manquants, typologie déduite du code NAF, n° de TVA (complété, ou corrigé s\'il diverge du calcul depuis le SIREN).',
                         apport: 'Détecte les établissements cessés (proposition d\'archivage) et complète les identifiants légaux.',
                         couverture: 'France uniquement.',
                         prerequis: 'Fiche Lieu avec SIRET (contrôle exact) ou rapprochement par nom + code postal.',
@@ -257,13 +257,33 @@
                     },
                     {
                         nom: 'Geoapify Places', etat: 'Actif',
-                        declenchement: 'Lancement manuel (commande d\'enrichissement des restaurants) — pas de tâche planifiée (volume d\'appels).',
-                        porte: 'Attributs des restaurants : type de cuisine, spécificités alimentaires, équipements (wifi, terrasse, climatisation), accessibilité PMR, site officiel.',
-                        apport: 'Complète les champs vides depuis OpenStreetMap (n\'écrase jamais une saisie).',
+                        declenchement: 'Bouton « Enrichir ce qui manque » de la fiche ; commandes batch manuelles — pas de tâche planifiée (volume d\'appels).',
+                        porte: 'Restaurants : cuisine, spécificités alimentaires, équipements, PMR, site officiel. Lieux : bien-être et installations, PMR, nombre de chambres, typologie, site web. Les deux : jours et horaires d\'ouverture.',
+                        apport: 'Complète les champs vides depuis OpenStreetMap (n\'écrase jamais une saisie ; les listes s\'ajoutent sans retirer).',
                         couverture: 'Tous pays, dès qu\'un GPS est présent sur la fiche.',
-                        prerequis: 'Restaurant géolocalisé, clé GEOAPIFY_API_KEY et paramètre activé.',
-                        contrainte: 'Couverture OpenStreetMap inégale selon les zones. Horaires non repris (format trop complexe). Plan gratuit : 3 000 requêtes/jour.',
+                        prerequis: 'Fiche géolocalisée, clé GEOAPIFY_API_KEY et paramètre activé.',
+                        contrainte: 'Couverture OpenStreetMap inégale selon les zones. Seuls les horaires simples sont repris (les grilles complexes sont ignorées). Plan gratuit : 3 000 requêtes/jour.',
                         licence: 'Gratuit, données © OpenStreetMap.'
+                    },
+                    {
+                        nom: 'Classement Atout France', etat: 'Actif',
+                        declenchement: 'Bouton « Enrichir ce qui manque » de la fiche ; référentiel local rechargé chaque 1er du mois depuis data.gouv.fr.',
+                        porte: 'Typologie des lieux dérivée du classement officiel en étoiles, nombre de chambres.',
+                        apport: 'Source autoritative : complète les champs vides ET signale les divergences (une gamme d\'étoiles erronée est proposée en remplacement — un Palace n\'est jamais rétrogradé).',
+                        couverture: 'France uniquement (hébergements classés : hôtels, campings, résidences, villages de vacances).',
+                        prerequis: 'Fiche Lieu en France avec code postal ; rapprochement par nom (le fichier officiel ne porte pas de SIRET).',
+                        contrainte: 'Établissements non classés absents du fichier. Le rapprochement par nom peut être incertain (le score accompagne la suggestion).',
+                        licence: 'Open data Atout France, Licence Ouverte.'
+                    },
+                    {
+                        nom: 'IA (OpenAI)', etat: 'Selon paramètre',
+                        declenchement: 'Bouton « Enrichir ce qui manque » de la fiche (si le paramètre openai.actif est activé).',
+                        porte: 'Description générale absente ; atouts absents (rédigés à partir de la description existante).',
+                        apport: 'Comble les textes vides — jamais de réécriture d\'une saisie (la pilule « Suggérer » du champ sert à ça), jamais d\'atouts sans description comme matière première.',
+                        couverture: 'Toutes gammes pour la description ; Lieux, Restaurants et Activités pour les atouts.',
+                        prerequis: 'Paramètre openai.actif et clé API OpenAI.',
+                        contrainte: 'Texte généré : à relire avant d\'accepter. Service payant à l\'appel.',
+                        licence: 'API OpenAI (payante).'
                     },
                     {
                         nom: 'Wikidata', etat: 'Actif',
