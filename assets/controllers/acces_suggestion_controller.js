@@ -73,7 +73,18 @@ export default class extends Controller {
         for (const [champ, valeur] of Object.entries(entree)) {
             if (valeur === null || valeur === undefined) continue
             const widget = [...ligne.querySelectorAll('select, input')].find((el) => el.name.endsWith(`[${champ}]`))
-            if (widget) widget.value = String(valeur)
+            if (!widget) continue
+            // Le Type passe par le composant Form:Select : son contrôleur
+            // Stimulus `select` (pas encore connecté, la ligne vient d'être
+            // insérée) dérive la sélection de data-…-default-selection-value
+            // au branchement — poser la valeur sur le <select> caché serait
+            // écrasé à ce moment-là.
+            const composant = widget.closest('[data-controller~="select"]')
+            if (composant) {
+                composant.setAttribute('data-select-default-selection-value', JSON.stringify([String(valeur)]))
+            } else {
+                widget.value = String(valeur)
+            }
         }
     }
 
