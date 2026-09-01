@@ -14,6 +14,7 @@ use App\Shared\Outbox\OutboxPublisherInterface;
 use App\Shared\Service\ParametreProviderInterface;
 use App\Shared\Service\PrivateObjectStorageInterface;
 use App\Vision\Entity\ImageEnhancement;
+use App\Vision\Enum\EnhancementProvider;
 use App\Vision\Message\ApplyImageEnhancement;
 use App\Vision\Message\EnhanceImage;
 use App\Vision\Repository\ImageEnhancementRepository;
@@ -45,13 +46,19 @@ final readonly class ImageEnhancementManager
      *
      * @return int nombre de retouches lancées
      */
-    public function launchForFiches(array $fiches, string $actor): int
+    public function launchForFiches(array $fiches, string $actor, EnhancementProvider $provider = EnhancementProvider::OpenAi): int
     {
-        if (!$this->parametres->bool('openai.actif')) {
-            throw new \DomainException('La retouche IA est désactivée (OPENAI_ENABLED).');
+        if (EnhancementProvider::OpenAi === $provider) {
+            if (!$this->parametres->bool('openai.actif')) {
+                throw new \DomainException('La retouche IA est désactivée (OPENAI_ENABLED).');
+            }
+            $prompt = $this->parametres->string('openai.retouche_prompt');
+            $model = $this->parametres->string('openai.retouche_modele');
+        } else {
+            // Retouche locale : gratuite et sans service tiers, donc sans gate.
+            $prompt = ImageMagickEnhancementProvider::DESCRIPTION;
+            $model = ImageMagickEnhancementProvider::MODEL;
         }
-        $prompt = $this->parametres->string('openai.retouche_prompt');
-        $model = $this->parametres->string('openai.retouche_modele');
         $launched = 0;
         foreach ($fiches as $fiche) {
             $photos = $this->resources->findBy(['fiche' => $fiche, 'nature' => NatureRessource::Photo]);
@@ -63,7 +70,7 @@ final readonly class ImageEnhancementManager
                 if ($this->enhancements->hasActiveForMedia($media->id())) {
                     continue;
                 }
-                $enhancement = new ImageEnhancement($fiche, $media, $resource, $prompt, $model, $actor);
+                $enhancement = new ImageEnhancement($fiche, $media, $resource, $prompt, $model, $actor, $provider);
                 $this->entityManager->persist($enhancement);
                 $this->outbox->enqueue(new EnhanceImage($enhancement->id()));
                 ++$launched;

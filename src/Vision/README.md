@@ -1,21 +1,33 @@
 # Vision — retouche & reconnaissance IA des photos
 
 Le module Vision alimente les onglets « Import & retouche » et
-« Reconnaissance IA » de l'écran `/medias`. Fournisseur : OpenAI
+« Reconnaissance IA » de l'écran `/medias`. Fournisseurs : OpenAI
 (`OpenAiImageProvider`, derrière `ImageEnhancementProviderInterface` et
-`ImageRecognitionProviderInterface`). Tout est inactif tant que
-`OPENAI_ENABLED` vaut 0 (paramètre `openai.actif`, surchargeable à chaud dans
-/admin/parametres) : les onglets restent visibles, les actions répondent 404.
+`ImageRecognitionProviderInterface`) et, pour la seule retouche, ImageMagick
+en local (`ImageMagickEnhancementProvider`). Le volet OpenAI est inactif tant
+que `OPENAI_ENABLED` vaut 0 (paramètre `openai.actif`, surchargeable à chaud
+dans /admin/parametres) : les onglets restent visibles, les actions OpenAI
+répondent 404 — la retouche automatique ImageMagick, gratuite et locale,
+reste disponible.
 
 ## Retouche (`ImageEnhancement`)
 
 Lancement manuel uniquement : un éditeur sélectionne des fiches, chaque photo
 traitée part en amélioration globale (luminosité, contraste, couleurs,
-netteté — prompt paramétrable `openai.retouche_prompt`, modèle
-`openai.retouche_modele`). L'appel `images/edits` est **génératif** : la
-candidate est stockée dans le bucket S3 privé
-(`…/retouche/{id}.png`, prévisualisée par URL temporaire) et un validateur la
-compare à l'original en avant/après.
+netteté). Deux moteurs, portés par `EnhancementProvider` sur chaque retouche :
+
+- **openai** — appel `images/edits` **génératif** (prompt paramétrable
+  `openai.retouche_prompt`, modèle `openai.retouche_modele`), gaté par
+  `openai.actif` ;
+- **imagemagick** — correction locale **déterministe** (étirement de
+  l'histogramme, courbe en S, saturation +13 %, netteté — pas d'auto-gamma :
+  il éteint les photos déjà travaillées), gratuite et sans gate : aucun pixel
+  inventé, la sortie garde le format de l'original.
+
+Dans les deux cas la candidate est stockée dans le bucket S3 privé
+(`…/retouche/{id}.png|jpg|webp`, prévisualisée par URL temporaire) et un
+validateur la compare à l'original en avant/après — l'onglet « Import &
+retouche » affiche un tableau par moteur.
 
 - **Accepter** : le média bascule sa « source active » (`enhancedStorageKey`
   sur `MediaAsset`) sans toucher l'original ni son checksum (le dédoublonnage

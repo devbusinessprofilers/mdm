@@ -34,6 +34,16 @@ final readonly class VisionFormFactory
         ]);
     }
 
+    /** @return FormInterface<mixed> */
+    public function lancementRetoucheAuto(): FormInterface
+    {
+        return $this->forms->createNamed('retouche_auto_lancement', VisionLancementType::class, null, [
+            'action' => $this->urls->generate('app_mdm_retouche_lancer_auto'),
+            'csrf_token_id' => 'vision-retouche-auto-lancer',
+            'button_label' => 'Lancer la retouche automatique',
+        ]);
+    }
+
     /**
      * Bouton du lancement en masse sur les photos sans mots-clés (onglet Reconnaissance IA).
      *
@@ -65,14 +75,14 @@ final readonly class VisionFormFactory
      *
      * @return list<array<string, mixed>>
      */
-    public function addRetoucheActions(array $items, int $page): array
+    public function addRetoucheActions(array $items, int $page, string $pageParam = 'page'): array
     {
         foreach ($items as &$item) {
             $enhancement = $item['enhancement'];
             if (!$enhancement instanceof \App\Vision\Entity\ImageEnhancement) {
                 throw new \LogicException('Retouche attendue pour les formulaires d’action.');
             }
-            $query = ['onglet' => 'import', 'page' => $page];
+            $query = ['onglet' => 'import', $pageParam => $page];
             if (EnhancementStatus::Ready === $enhancement->status()) {
                 $item['accept_form'] = $this->action('app_mdm_retouche_accepter', ['id' => $enhancement->id()] + $query, 'vision-retouche-accepter-'.$enhancement->id(), 'Accepter', ['class' => 'btn btn-secondary']);
                 $item['reject_form'] = $this->action(

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Vision\Repository;
 
 use App\Vision\Entity\ImageEnhancement;
+use App\Vision\Enum\EnhancementProvider;
 use App\Vision\Enum\EnhancementStatus;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -27,14 +28,16 @@ final class ImageEnhancementRepository extends ServiceEntityRepository
     }
 
     /** @return list<ImageEnhancement> */
-    public function recent(int $page, int $perPage): array
+    public function recent(int $page, int $perPage, ?EnhancementProvider $provider = null): array
     {
-        return $this->findBy([], ['createdAt' => 'DESC'], $perPage, max(0, $page - 1) * $perPage);
+        $criteria = null === $provider ? [] : ['provider' => $provider];
+
+        return $this->findBy($criteria, ['createdAt' => 'DESC'], $perPage, max(0, $page - 1) * $perPage);
     }
 
-    public function countAll(): int
+    public function countAll(?EnhancementProvider $provider = null): int
     {
-        return $this->count([]);
+        return $this->count(null === $provider ? [] : ['provider' => $provider]);
     }
 
     public function countByStatus(EnhancementStatus ...$statuses): int

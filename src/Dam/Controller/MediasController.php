@@ -14,6 +14,7 @@ use App\Dam\Service\ImageVariantRegistry;
 use App\Pim\Repository\RessourceLieuRepository;
 use App\Shared\Form\ActionType;
 use App\Shared\Service\ParametreProviderInterface;
+use App\Vision\Enum\EnhancementProvider;
 use App\Vision\Form\VisionFormFactory;
 use App\Vision\Service\VisionDashboardProvider;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -145,10 +146,13 @@ final class MediasController extends AbstractController
         $iaActive = $parametres->bool('openai.actif');
         $pageVision = $request->query->getInt('page', 1);
         $retouche = null;
+        $retoucheAuto = null;
         $reco = null;
         if ('import' === $onglet) {
-            $retouche = $vision->retouchePage($pageVision);
+            $retouche = $vision->retouchePage($pageVision, EnhancementProvider::OpenAi);
             $retouche['items'] = $visionForms->addRetoucheActions($retouche['items'], $retouche['page']);
+            $retoucheAuto = $vision->retouchePage($request->query->getInt('page_auto', 1), EnhancementProvider::ImageMagick);
+            $retoucheAuto['items'] = $visionForms->addRetoucheActions($retoucheAuto['items'], $retoucheAuto['page'], 'page_auto');
         } elseif ('ia' === $onglet) {
             $reco = $vision->recoPage($pageVision);
             $reco['items'] = $visionForms->addRecoActions($reco['items'], $reco['page']);
@@ -172,8 +176,10 @@ final class MediasController extends AbstractController
             'reco_auto_active' => $iaActive && $parametres->bool('openai.reco_auto_active'),
             'vision_badges' => $vision->badges(),
             'retouche' => $retouche,
+            'retouche_auto' => $retoucheAuto,
             'reco' => $reco,
             'lancement_retouche_form' => 'import' === $onglet && $iaActive ? $visionForms->lancementRetouche()->createView() : null,
+            'lancement_retouche_auto_form' => 'import' === $onglet ? $visionForms->lancementRetoucheAuto()->createView() : null,
             'lancement_reco_form' => 'ia' === $onglet && $iaActive ? $visionForms->lancementReco()->createView() : null,
             'reco_stats' => $recoStats,
             'retouche_stats' => $retoucheStats,

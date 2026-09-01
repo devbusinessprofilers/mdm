@@ -7,10 +7,12 @@ namespace App\Vision\MessageHandler;
 use App\Dam\Enum\MediaStatus;
 use App\Shared\Service\PrivateObjectStorageInterface;
 use App\Vision\Entity\ImageEnhancement;
+use App\Vision\Enum\EnhancementProvider;
 use App\Vision\Enum\EnhancementStatus;
 use App\Vision\Message\EnhanceImage;
 use App\Vision\Repository\ImageEnhancementRepository;
 use App\Vision\Service\ImageEnhancementProviderInterface;
+use App\Vision\Service\ImageMagickEnhancementProvider;
 use App\Vision\Service\OpenAiProviderException;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Messenger\Exception\RecoverableMessageHandlingException;
@@ -21,6 +23,7 @@ final readonly class EnhanceImageHandler
     public function __construct(
         private ImageEnhancementRepository $enhancements,
         private ImageEnhancementProviderInterface $provider,
+        private ImageMagickEnhancementProvider $imageMagick,
         private PrivateObjectStorageInterface $storage,
     ) {
     }
@@ -62,8 +65,14 @@ final readonly class EnhanceImageHandler
                 throw new \DomainException('L’empreinte de l’original ne correspond plus au lancement de la retouche.');
             }
             $enhancement->start();
-            $result = $this->provider->enhance($temp, $media->mimeType(), $enhancement->prompt(), $enhancement->providerModel());
-            $key = \dirname($media->originalStorageKey()).'/retouche/'.$enhancement->id().'.png';
+            $provider = EnhancementProvider::ImageMagick === $enhancement->provider() ? $this->imageMagick : $this->provider;
+            $result = $provider->enhance($temp, $media->mimeType(), $enhancement->prompt(), $enhancement->providerModel());
+            $extension = match ($result->mimeType) {
+                'image/jpeg' => 'jpg',
+                'image/webp' => 'webp',
+                default => 'png',
+            };
+            $key = \dirname($media->originalStorageKey()).'/retouche/'.$enhancement->id().'.'.$extension;
             $this->storage->write($key, $result->bytes, ['ContentType' => $result->mimeType]);
             $enhancement->complete($key, hash('sha256', $result->bytes), strlen($result->bytes), $result->raw);
         } catch (OpenAiProviderException $error) {

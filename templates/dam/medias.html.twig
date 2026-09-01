@@ -119,6 +119,103 @@
     </div>
 {% endmacro %}
 
+{# Tableau avant/après d'une file de retouche (IA ou automatique) : mêmes
+   colonnes et décisions, seuls changent la liste, la disponibilité des
+   actions et le paramètre de pagination. #}
+{% macro retouche_tableau(liste, grille, actions_actives, page_param) %}
+    {% set jetons = {
+        'queued': ['En file', 'bg-primary-4'],
+        'processing': ['En traitement', 'bg-primary-4'],
+        'ready': ['À valider', 'bg-peach-pastel'],
+        'accepted': ['Appliquée', 'bg-success-pastel'],
+        'rejected': ['Rejetée', 'bg-neutral-200'],
+        'failed': ['En échec', 'bg-error-pastel'],
+    } %}
+    <div class="shrink-0 flex flex-col rounded-sm overflow-hidden bg-neutral-100 shadow-(--shadow)">
+        {{ _self.entete([['Média'], ['Fiche'], ['Statut'], ['Avant'], ['Après'], ['Actions', 'text-right']], grille) }}
+        <div class="flex flex-col">
+            {% for item in liste.items %}
+                {% set e = item.enhancement %}
+                <div role="row" class="{{ grille }} w-full min-h-[64px] py-2 box-border hover:bg-primary-5
+                                       {{ loop.first ? '' : 'border-t border-neutral-200' }}">
+                    {{ _self.duo(e.media.originalFilename, e.createdAt|date('d/m/Y H:i')) }}
+                    <span class="flex flex-col min-w-0">
+                        {% if item.fiche_url %}
+                            <a href="{{ item.fiche_url }}" class="hover:underline decoration-primary-3 min-w-0">
+                                <twig:Typography variant="body-sm" bold textColor="primary-3" ellipsis>{{ item.fiche_label }}</twig:Typography>
+                            </a>
+                        {% else %}
+                            <twig:Typography variant="body-sm" textColor="neutral-400" ellipsis>{{ item.fiche_label }}</twig:Typography>
+                        {% endif %}
+                    </span>
+                    <span class="flex flex-col gap-0.5 min-w-0">
+                        {% set jeton = jetons[e.status.value]|default([e.status.value, 'bg-neutral-200']) %}
+                        {{ _self.jeton(jeton.0, jeton.1) }}
+                        {% if e.status.value == 'failed' and e.errorMessage %}
+                            <twig:Typography variant="body-xs" textColor="error" ellipsis>{{ e.errorMessage }}</twig:Typography>
+                        {% endif %}
+                    </span>
+                    <span class="flex items-center min-w-0">
+                        {% if item.avant_url and actions_actives %}
+                            <a href="{{ path('app_mdm_retouche_apercu_avant', { id: e.id }) }}" target="_blank" rel="noopener"
+                               title="Ouvrir l'original en taille réelle pour comparer avec l'après">
+                                <img src="{{ item.avant_url }}" alt="Avant retouche" loading="lazy"
+                                     class="h-12 w-20 rounded-xs object-cover bg-neutral-200">
+                            </a>
+                        {% elseif item.avant_url %}
+                            <img src="{{ item.avant_url }}" alt="Avant retouche" loading="lazy"
+                                 class="h-12 w-20 rounded-xs object-cover bg-neutral-200">
+                        {% else %}
+                            <twig:Typography variant="body-sm" textColor="neutral-400">—</twig:Typography>
+                        {% endif %}
+                    </span>
+                    <span class="flex items-center min-w-0">
+                        {% if actions_actives and e.resultStorageKey and e.status.value in ['ready', 'accepted'] %}
+                            <a href="{{ path('app_mdm_retouche_apercu', { id: e.id }) }}" target="_blank" rel="noopener"
+                               title="Ouvrir l'aperçu de la version retouchée en taille réelle">
+                                <img src="{{ path('app_mdm_retouche_apercu', { id: e.id }) }}" alt="Après retouche" loading="lazy"
+                                     class="h-12 w-20 rounded-xs object-cover bg-neutral-200">
+                            </a>
+                        {% else %}
+                            <twig:Typography variant="body-sm" textColor="neutral-400">—</twig:Typography>
+                        {% endif %}
+                    </span>
+                    <span class="flex items-center justify-end gap-2 min-w-0 flex-wrap [&_form]:contents [&_button]:w-auto!">
+                        {% if actions_actives and is_granted('ROLE_BP_VALIDATOR') %}
+                            {% if item.accept_form is defined %}{{ form(item.accept_form) }}{% endif %}
+                            {% if item.reject_form is defined %}{{ form(item.reject_form) }}{% endif %}
+                            {% if item.revert_form is defined %}{{ form(item.revert_form) }}{% endif %}
+                        {% elseif e.status.value == 'ready' %}
+                            <twig:Typography variant="body-sm" textColor="neutral-400">Décision validateur</twig:Typography>
+                        {% endif %}
+                        {% if actions_actives and item.retry_form is defined %}{{ form(item.retry_form) }}{% endif %}
+                    </span>
+                </div>
+            {% endfor %}
+        </div>
+        {% if liste.items is empty %}
+            <div class="flex items-center gap-3 px-4 min-h-[56px]">
+                <twig:Icon name="ok-circle" aria-hidden="true" class="shrink-0 w-5 h-5 text-success" />
+                <twig:Typography variant="body-sm" textColor="neutral-500">Aucune retouche lancée pour le moment.</twig:Typography>
+            </div>
+        {% endif %}
+        <div class="shrink-0 flex items-center gap-3 h-[50px] px-4 border-t border-neutral-200">
+            <twig:Typography variant="body-sm" textColor="neutral-500">
+                {{- liste.items|length }} affichée{{ liste.items|length > 1 ? 's' : '' }} sur {{ liste.total|number_format(0, ',', ' ') }} · page {{ liste.page }} / {{ max(liste.pages, 1) -}}
+            </twig:Typography>
+            <span class="flex-1"></span>
+            {% if liste.page > 1 %}
+                <twig:Button variant="text" size="sm" asLink class="inset-ring-1 inset-ring-neutral-200 rounded-full!"
+                             href="{{ path('app_mdm_medias', { onglet: 'import', (page_param): liste.page - 1 }) }}">Précédent</twig:Button>
+            {% endif %}
+            {% if liste.page < liste.pages %}
+                <twig:Button variant="text" size="sm" asLink class="inset-ring-1 inset-ring-neutral-200 rounded-full!"
+                             href="{{ path('app_mdm_medias', { onglet: 'import', (page_param): liste.page + 1 }) }}">Suivant</twig:Button>
+            {% endif %}
+        </div>
+    </div>
+{% endmacro %}
+
 {% block title %}{{ onglets[onglet_actif] }} · Médias{% endblock %}
 
 {% set onglet_meta = {
@@ -661,91 +758,26 @@
             </div>
         {% endif %}
 
-        {% set retouche_jetons = {
-            'queued': ['En file', 'bg-primary-4'],
-            'processing': ['En traitement', 'bg-primary-4'],
-            'ready': ['À valider', 'bg-peach-pastel'],
-            'accepted': ['Appliquée', 'bg-success-pastel'],
-            'rejected': ['Rejetée', 'bg-neutral-200'],
-            'failed': ['En échec', 'bg-error-pastel'],
-        } %}
-        <div class="shrink-0 flex flex-col rounded-sm overflow-hidden bg-neutral-100 shadow-(--shadow)">
-            {{ _self.entete([['Média'], ['Fiche'], ['Statut'], ['Avant'], ['Après'], ['Actions', 'text-right']], grille) }}
-            <div class="flex flex-col">
-                {% for item in retouche.items %}
-                    {% set e = item.enhancement %}
-                    <div role="row" class="{{ grille }} w-full min-h-[64px] py-2 box-border hover:bg-primary-5
-                                           {{ loop.first ? '' : 'border-t border-neutral-200' }}">
-                        {{ _self.duo(e.media.originalFilename, e.createdAt|date('d/m/Y H:i')) }}
-                        <span class="flex flex-col min-w-0">
-                            {% if item.fiche_url %}
-                                <a href="{{ item.fiche_url }}" class="hover:underline decoration-primary-3 min-w-0">
-                                    <twig:Typography variant="body-sm" bold textColor="primary-3" ellipsis>{{ item.fiche_label }}</twig:Typography>
-                                </a>
-                            {% else %}
-                                <twig:Typography variant="body-sm" textColor="neutral-400" ellipsis>{{ item.fiche_label }}</twig:Typography>
-                            {% endif %}
-                        </span>
-                        <span class="flex flex-col gap-0.5 min-w-0">
-                            {% set jeton = retouche_jetons[e.status.value]|default([e.status.value, 'bg-neutral-200']) %}
-                            {{ _self.jeton(jeton.0, jeton.1) }}
-                            {% if e.status.value == 'failed' and e.errorMessage %}
-                                <twig:Typography variant="body-xs" textColor="error" ellipsis>{{ e.errorMessage }}</twig:Typography>
-                            {% endif %}
-                        </span>
-                        <span class="flex items-center min-w-0">
-                            {% if item.avant_url %}
-                                <img src="{{ item.avant_url }}" alt="Avant retouche" loading="lazy"
-                                     class="h-12 w-20 rounded-xs object-cover bg-neutral-200">
-                            {% else %}
-                                <twig:Typography variant="body-sm" textColor="neutral-400">—</twig:Typography>
-                            {% endif %}
-                        </span>
-                        <span class="flex items-center min-w-0">
-                            {% if ia_active and e.resultStorageKey and e.status.value in ['ready', 'accepted'] %}
-                                <a href="{{ path('app_mdm_retouche_apercu', { id: e.id }) }}" target="_blank" rel="noopener"
-                                   title="Ouvrir l'aperçu de la version retouchée en taille réelle">
-                                    <img src="{{ path('app_mdm_retouche_apercu', { id: e.id }) }}" alt="Après retouche" loading="lazy"
-                                         class="h-12 w-20 rounded-xs object-cover bg-neutral-200">
-                                </a>
-                            {% else %}
-                                <twig:Typography variant="body-sm" textColor="neutral-400">—</twig:Typography>
-                            {% endif %}
-                        </span>
-                        <span class="flex items-center justify-end gap-2 min-w-0 flex-wrap [&_form]:contents [&_button]:w-auto!">
-                            {% if ia_active and is_granted('ROLE_BP_VALIDATOR') %}
-                                {% if item.accept_form is defined %}{{ form(item.accept_form) }}{% endif %}
-                                {% if item.reject_form is defined %}{{ form(item.reject_form) }}{% endif %}
-                                {% if item.revert_form is defined %}{{ form(item.revert_form) }}{% endif %}
-                            {% elseif e.status.value == 'ready' %}
-                                <twig:Typography variant="body-sm" textColor="neutral-400">Décision validateur</twig:Typography>
-                            {% endif %}
-                            {% if ia_active and item.retry_form is defined %}{{ form(item.retry_form) }}{% endif %}
-                        </span>
-                    </div>
-                {% endfor %}
-            </div>
-            {% if retouche.items is empty %}
-                <div class="flex items-center gap-3 px-4 min-h-[56px]">
-                    <twig:Icon name="ok-circle" aria-hidden="true" class="shrink-0 w-5 h-5 text-success" />
-                    <twig:Typography variant="body-sm" textColor="neutral-500">Aucune retouche lancée pour le moment.</twig:Typography>
+        {{ _self.retouche_tableau(retouche, grille, ia_active, 'page') }}
+
+        {# ------------------- Retouche automatique locale (ImageMagick) #}
+        {% if retouche_auto is defined and retouche_auto is not null %}
+            <div class="shrink-0 {{ carte }}">
+                <div class="flex items-center gap-3">
+                    <twig:Icon name="images" aria-hidden="true" class="shrink-0 w-6 h-6 text-primary" />
+                    <twig:Typography variant="subtitle" class="flex-1 min-w-0 text-[1.125rem]! leading-[1.625rem]! font-[700]!">Lancer une retouche automatique</twig:Typography>
+                    <span class="inline-flex shrink-0"><twig:Tag label="Sans IA — gratuite" variant="success-pastel" size="sm" /></span>
                 </div>
-            {% endif %}
-            <div class="shrink-0 flex items-center gap-3 h-[50px] px-4 border-t border-neutral-200">
-                <twig:Typography variant="body-sm" textColor="neutral-500">
-                    {{- retouche.items|length }} affichée{{ retouche.items|length > 1 ? 's' : '' }} sur {{ retouche.total|number_format(0, ',', ' ') }} · page {{ retouche.page }} / {{ max(retouche.pages, 1) -}}
-                </twig:Typography>
-                <span class="flex-1"></span>
-                {% if retouche.page > 1 %}
-                    <twig:Button variant="text" size="sm" asLink class="inset-ring-1 inset-ring-neutral-200 rounded-full!"
-                                 href="{{ path('app_mdm_medias', { onglet: 'import', page: retouche.page - 1 }) }}">Précédent</twig:Button>
-                {% endif %}
-                {% if retouche.page < retouche.pages %}
-                    <twig:Button variant="text" size="sm" asLink class="inset-ring-1 inset-ring-neutral-200 rounded-full!"
-                                 href="{{ path('app_mdm_medias', { onglet: 'import', page: retouche.page + 1 }) }}">Suivant</twig:Button>
+                <twig:Typography variant="body" textColor="neutral-500" class="text-pretty">Correction locale et
+                    déterministe par ImageMagick — exposition, contraste, couleurs, netteté. Contrairement à la
+                    retouche IA, aucun pixel n'est inventé : visages, textes et contenus restent strictement ceux de
+                    l'original. La proposition s'examine ci-dessous en avant/après, comme une retouche IA.</twig:Typography>
+                {% if lancement_retouche_auto_form is defined and lancement_retouche_auto_form %}
+                    <div class="max-w-[560px] [&_button]:w-auto!">{{ form(lancement_retouche_auto_form) }}</div>
                 {% endif %}
             </div>
-        </div>
+            {{ _self.retouche_tableau(retouche_auto, grille, true, 'page_auto') }}
+        {% endif %}
     {% endif %}
 
     {# ------------------------------------------------- Onglet Reconnaissance IA #}

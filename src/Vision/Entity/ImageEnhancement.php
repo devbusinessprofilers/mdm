@@ -8,6 +8,7 @@ use App\Dam\Entity\MediaAsset;
 use App\Pim\Entity\Fiche;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Shared\Entity\TimestampableTrait;
+use App\Vision\Enum\EnhancementProvider;
 use App\Vision\Enum\EnhancementStatus;
 use App\Vision\Repository\ImageEnhancementRepository;
 use Doctrine\DBAL\Types\Types;
@@ -25,6 +26,7 @@ use Symfony\Component\Uid\Ulid;
 #[ORM\Index(name: 'IDX_VISION_ENHANCEMENT_STATUS', columns: ['status', 'updated_at'])]
 #[ORM\Index(name: 'IDX_VISION_ENHANCEMENT_MEDIA', columns: ['media_asset_id'])]
 #[ORM\Index(name: 'IDX_VISION_ENHANCEMENT_RESOURCE', columns: ['resource_id'])]
+#[ORM\Index(name: 'IDX_VISION_ENHANCEMENT_PROVIDER_CREATED', columns: ['provider', 'created_at'])]
 #[ORM\HasLifecycleCallbacks]
 class ImageEnhancement
 {
@@ -51,6 +53,9 @@ class ImageEnhancement
 
     #[ORM\Column(type: Types::TEXT)]
     private string $prompt;
+
+    #[ORM\Column(length: 32, enumType: EnhancementProvider::class, options: ['default' => 'openai'])]
+    private EnhancementProvider $provider = EnhancementProvider::OpenAi;
 
     #[ORM\Column(length: 100)]
     private string $providerModel;
@@ -92,9 +97,10 @@ class ImageEnhancement
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $decidedAt = null;
 
-    public function __construct(Fiche $fiche, MediaAsset $media, ?RessourceLieu $resource, string $prompt, string $providerModel, string $actor)
+    public function __construct(Fiche $fiche, MediaAsset $media, ?RessourceLieu $resource, string $prompt, string $providerModel, string $actor, EnhancementProvider $provider = EnhancementProvider::OpenAi)
     {
         $this->id = new Ulid();
+        $this->provider = $provider;
         $this->fiche = $fiche;
         $this->media = $media;
         $this->resource = $resource;
@@ -111,6 +117,7 @@ class ImageEnhancement
     public function resource(): ?RessourceLieu { return $this->resource; }
     public function sourceChecksum(): string { return $this->sourceChecksum; }
     public function prompt(): string { return $this->prompt; }
+    public function provider(): EnhancementProvider { return $this->provider; }
     public function providerModel(): string { return $this->providerModel; }
     public function status(): EnhancementStatus { return $this->status; }
     public function resultStorageKey(): ?string { return $this->resultStorageKey; }

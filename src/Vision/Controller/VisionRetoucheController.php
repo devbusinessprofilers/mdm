@@ -8,6 +8,7 @@ use App\Account\Service\CurrentActorProvider;
 use App\Shared\Service\ParametreProviderInterface;
 use App\Shared\Service\PrivateObjectStorageInterface;
 use App\Vision\Entity\ImageEnhancement;
+use App\Vision\Enum\EnhancementProvider;
 use App\Vision\Form\VisionFormFactory;
 use App\Vision\Repository\ImageEnhancementRepository;
 use App\Vision\Service\ImageEnhancementManager;
@@ -55,11 +56,42 @@ final class VisionRetoucheController extends AbstractController
         return $this->redirectToRoute('app_mdm_medias', ['onglet' => 'import']);
     }
 
+    /**
+     * Même sélection de fiches, moteur local ImageMagick : correction
+     * déterministe gratuite, disponible même quand OpenAI est coupé.
+     */
+    #[Route('/lancer-auto', name: 'lancer_auto', methods: ['POST'])]
+    #[IsGranted('ROLE_BP_EDITOR')]
+    public function lancerAuto(Request $request, VisionFormFactory $forms, ImageEnhancementManager $manager, CurrentActorProvider $actor): RedirectResponse
+    {
+        $form = $forms->lancementRetoucheAuto();
+        $form->handleRequest($request);
+        if (!$form->isSubmitted() || !$form->isValid()) {
+            $this->addFlash('error', 'La sélection de fiches est invalide.');
+
+            return $this->redirectToRoute('app_mdm_medias', ['onglet' => 'import']);
+        }
+        $fiches = iterator_to_array($form->get('fiches')->getData() ?? [], false);
+        try {
+            $launched = $manager->launchForFiches($fiches, $actor->id(), EnhancementProvider::ImageMagick);
+            $this->addFlash(
+                $launched > 0 ? 'success' : 'error',
+                $launched > 0
+                    ? sprintf('%d retouche%s automatique%s placée%s dans la file.', $launched, $launched > 1 ? 's' : '', $launched > 1 ? 's' : '', $launched > 1 ? 's' : '')
+                    : 'Aucune photo exploitable : les photos doivent être traitées et sans retouche en cours.',
+            );
+        } catch (\DomainException $error) {
+            $this->addFlash('error', $error->getMessage());
+        }
+
+        return $this->redirectToRoute('app_mdm_medias', ['onglet' => 'import']);
+    }
+
     #[Route('/{id}/accepter', name: 'accepter', requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'], methods: ['POST'])]
     #[IsGranted('ROLE_BP_VALIDATOR')]
-    public function accepter(string $id, Request $request, ImageEnhancementManager $manager, CurrentActorProvider $actor, ParametreProviderInterface $parametres): RedirectResponse
+    public function accepter(string $id, Request $request, ImageEnhancementManager $manager, CurrentActorProvider $actor, ParametreProviderInterface $parametres, ImageEnhancementRepository $enhancements): RedirectResponse
     {
-        $this->garde($parametres, $request, 'vision-retouche-accepter-'.$id);
+        $this->garde($parametres, $enhancements, $id, $request, 'vision-retouche-accepter-'.$id);
         try {
             $manager->accept($id, $actor->id());
             $this->addFlash('success', 'Retouche acceptée : les variantes vont être régénérées et la fiche resynchronisée.');
@@ -72,9 +104,9 @@ final class VisionRetoucheController extends AbstractController
 
     #[Route('/{id}/rejeter', name: 'rejeter', requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'], methods: ['POST'])]
     #[IsGranted('ROLE_BP_VALIDATOR')]
-    public function rejeter(string $id, Request $request, ImageEnhancementManager $manager, CurrentActorProvider $actor, ParametreProviderInterface $parametres): RedirectResponse
+    public function rejeter(string $id, Request $request, ImageEnhancementManager $manager, CurrentActorProvider $actor, ParametreProviderInterface $parametres, ImageEnhancementRepository $enhancements): RedirectResponse
     {
-        $this->garde($parametres, $request, 'vision-retouche-rejeter-'.$id);
+        $this->garde($parametres, $enhancements, $id, $request, 'vision-retouche-rejeter-'.$id);
         try {
             $manager->reject($id, $actor->id());
             $this->addFlash('success', 'Retouche rejetée : la version proposée a été supprimée.');
@@ -87,9 +119,9 @@ final class VisionRetoucheController extends AbstractController
 
     #[Route('/{id}/relancer', name: 'relancer', requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'], methods: ['POST'])]
     #[IsGranted('ROLE_BP_EDITOR')]
-    public function relancer(string $id, Request $request, ImageEnhancementManager $manager, ParametreProviderInterface $parametres): RedirectResponse
+    public function relancer(string $id, Request $request, ImageEnhancementManager $manager, ParametreProviderInterface $parametres, ImageEnhancementRepository $enhancements): RedirectResponse
     {
-        $this->garde($parametres, $request, 'vision-retouche-relancer-'.$id);
+        $this->garde($parametres, $enhancements, $id, $request, 'vision-retouche-relancer-'.$id);
         try {
             $manager->retry($id);
             $this->addFlash('success', 'La retouche a été replacée dans la file.');
@@ -104,7 +136,7 @@ final class VisionRetoucheController extends AbstractController
     #[IsGranted('ROLE_BP_VALIDATOR')]
     public function revenir(string $id, Request $request, ImageEnhancementRepository $enhancements, ImageEnhancementManager $manager, ParametreProviderInterface $parametres): RedirectResponse
     {
-        $this->garde($parametres, $request, 'vision-retouche-revenir-'.$id);
+        $this->garde($parametres, $enhancements, $id, $request, 'vision-retouche-revenir-'.$id);
         $enhancement = $enhancements->find($id);
         if (!$enhancement instanceof ImageEnhancement) {
             throw $this->createNotFoundException('Retouche introuvable.');
@@ -119,14 +151,26 @@ final class VisionRetoucheController extends AbstractController
         return $this->retour($request);
     }
 
+    /** Prévisualisation « avant » : l'original en taille réelle, pour ouvrir côte à côte avec l'après. */
+    #[Route('/{id}/apercu-avant', name: 'apercu_avant', requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'], methods: ['GET'])]
+    #[IsGranted('ROLE_BP_EDITOR')]
+    public function apercuAvant(string $id, ImageEnhancementRepository $enhancements, PrivateObjectStorageInterface $storage, ParametreProviderInterface $parametres): RedirectResponse
+    {
+        $this->gate($parametres, $enhancements, $id);
+        $enhancement = $enhancements->find($id);
+        if (!$enhancement instanceof ImageEnhancement) {
+            throw $this->createNotFoundException('Retouche introuvable.');
+        }
+
+        return new RedirectResponse($storage->temporaryUrl($enhancement->media()->originalStorageKey(), new \DateTimeImmutable('+15 minutes')));
+    }
+
     /** Prévisualisation « après » : URL S3 privée temporaire, jamais publique. */
     #[Route('/{id}/apercu', name: 'apercu', requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'], methods: ['GET'])]
     #[IsGranted('ROLE_BP_EDITOR')]
     public function apercu(string $id, ImageEnhancementRepository $enhancements, PrivateObjectStorageInterface $storage, ParametreProviderInterface $parametres): RedirectResponse
     {
-        if (!$parametres->bool('openai.actif')) {
-            throw $this->createNotFoundException();
-        }
+        $this->gate($parametres, $enhancements, $id);
         $enhancement = $enhancements->find($id);
         $key = $enhancement instanceof ImageEnhancement ? $enhancement->resultStorageKey() : null;
         if (null === $key) {
@@ -136,18 +180,34 @@ final class VisionRetoucheController extends AbstractController
         return new RedirectResponse($storage->temporaryUrl($key, new \DateTimeImmutable('+15 minutes')));
     }
 
-    public function garde(ParametreProviderInterface $parametres, Request $request, string $csrfTokenId): void
+    public function garde(ParametreProviderInterface $parametres, ImageEnhancementRepository $enhancements, string $id, Request $request, string $csrfTokenId): void
     {
-        if (!$parametres->bool('openai.actif')) {
-            throw $this->createNotFoundException();
-        }
+        $this->gate($parametres, $enhancements, $id);
         if (!$this->isCsrfTokenValid($csrfTokenId, $request->request->getString('_token'))) {
             throw $this->createAccessDeniedException('Jeton CSRF invalide.');
         }
     }
 
+    /** Seules les retouches du moteur OpenAI sont verrouillées par openai.actif. */
+    public function gate(ParametreProviderInterface $parametres, ImageEnhancementRepository $enhancements, string $id): void
+    {
+        $enhancement = $enhancements->find($id);
+        if ($enhancement instanceof ImageEnhancement && EnhancementProvider::ImageMagick === $enhancement->provider()) {
+            return;
+        }
+        if (!$parametres->bool('openai.actif')) {
+            throw $this->createNotFoundException();
+        }
+    }
+
     public function retour(Request $request): RedirectResponse
     {
-        return $this->redirectToRoute('app_mdm_medias', ['onglet' => 'import', 'page' => $request->query->getInt('page', 1)]);
+        $query = ['onglet' => 'import', 'page' => $request->query->getInt('page', 1)];
+        $pageAuto = $request->query->getInt('page_auto', 1);
+        if ($pageAuto > 1) {
+            $query['page_auto'] = $pageAuto;
+        }
+
+        return $this->redirectToRoute('app_mdm_medias', $query);
     }
 }

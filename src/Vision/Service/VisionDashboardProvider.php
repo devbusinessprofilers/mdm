@@ -9,6 +9,7 @@ use App\Dam\Service\DamFicheLinkResolver;
 use App\Dam\Service\PublicMediaUrlGenerator;
 use App\Pim\Entity\Fiche;
 use App\Pim\Repository\RessourceLieuRepository;
+use App\Vision\Enum\EnhancementProvider;
 use App\Vision\Enum\EnhancementStatus;
 use App\Vision\Enum\RecognitionStatus;
 use App\Vision\Repository\ImageEnhancementRepository;
@@ -62,11 +63,11 @@ final readonly class VisionDashboardProvider
     }
 
     /** @return array{items: list<array<string, mixed>>, total: int, page: int, pages: int} */
-    public function retouchePage(int $page): array
+    public function retouchePage(int $page, ?EnhancementProvider $provider = null): array
     {
         $page = max(1, $page);
         $items = [];
-        foreach ($this->enhancements->recent($page, self::PER_PAGE) as $enhancement) {
+        foreach ($this->enhancements->recent($page, self::PER_PAGE, $provider) as $enhancement) {
             $items[] = [
                 'enhancement' => $enhancement,
                 'fiche_label' => $this->ficheLabel($enhancement->fiche()),
@@ -74,7 +75,7 @@ final readonly class VisionDashboardProvider
                 'avant_url' => $this->apercuUrl($enhancement->media()),
             ];
         }
-        $total = $this->enhancements->countAll();
+        $total = $this->enhancements->countAll($provider);
 
         return ['items' => $items, 'total' => $total, 'page' => $page, 'pages' => (int) ceil($total / self::PER_PAGE)];
     }

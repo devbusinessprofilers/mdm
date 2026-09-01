@@ -15,11 +15,13 @@ use App\Shared\Outbox\OutboxPublisherInterface;
 use App\Shared\Service\ParametreProviderInterface;
 use App\Shared\Service\PrivateObjectStorageInterface;
 use App\Vision\Entity\ImageEnhancement;
+use App\Vision\Enum\EnhancementProvider;
 use App\Vision\Enum\EnhancementStatus;
 use App\Vision\Message\ApplyImageEnhancement;
 use App\Vision\Message\EnhanceImage;
 use App\Vision\Repository\ImageEnhancementRepository;
 use App\Vision\Service\ImageEnhancementManager;
+use App\Vision\Service\ImageMagickEnhancementProvider;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\Group;
@@ -81,6 +83,20 @@ final class ImageEnhancementManagerTest extends KernelTestCase
         $this->parametres->actif = false;
         $this->expectException(\DomainException::class);
         $this->manager()->launchForFiches([$this->ficheWithPhotos()], 'editor');
+    }
+
+    public function testImageMagickLaunchIgnoresOpenAiGateAndRecordsProvider(): void
+    {
+        $this->parametres->actif = false;
+        $manager = $this->manager();
+
+        self::assertSame(1, $manager->launchForFiches([$this->ficheWithPhotos()], 'editor', EnhancementProvider::ImageMagick));
+
+        $enhancement = $this->repository()->findAll()[0];
+        self::assertSame(EnhancementProvider::ImageMagick, $enhancement->provider());
+        self::assertSame(ImageMagickEnhancementProvider::MODEL, $enhancement->providerModel());
+        self::assertSame(ImageMagickEnhancementProvider::DESCRIPTION, $enhancement->prompt());
+        self::assertCount(1, $this->outbox->ofType(EnhanceImage::class));
     }
 
     public function testAcceptAppliesEnhancedSourceResetsCropAndSchedulesRegeneration(): void

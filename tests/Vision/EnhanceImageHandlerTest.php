@@ -16,6 +16,7 @@ use App\Vision\MessageHandler\EnhanceImageHandler;
 use App\Vision\Repository\ImageEnhancementRepository;
 use App\Vision\Service\EnhancedImageResult;
 use App\Vision\Service\ImageEnhancementProviderInterface;
+use App\Vision\Service\ImageMagickEnhancementProvider;
 use App\Vision\Service\OpenAiProviderException;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
@@ -121,6 +122,7 @@ final class EnhanceImageHandlerTest extends KernelTestCase
         return new EnhanceImageHandler(
             self::getContainer()->get(ImageEnhancementRepository::class),
             $provider,
+            new ImageMagickEnhancementProvider(),
             $this->storage,
         );
     }
