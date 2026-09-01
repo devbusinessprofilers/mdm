@@ -70,6 +70,14 @@ class Schedule implements ScheduleProviderInterface
             // privé 30 jours après génération (l'historique /outils le dit).
             ->add(RecurringMessage::cron('35 4 * * *', new RunCommandMessage('app:referentiel:purger-exports'), new \DateTimeZone('Europe/Paris')))
 
+            // Rafraîchissement mensuel des référentiels statiques du bloc
+            // Accès (OurAirports, GeoNames cities15000) : ces jeux de données
+            // bougent très peu, un remplacement en bloc par mois suffit. En
+            // cas d'échec (téléchargement, source malformée), la table en
+            // place reste servie telle quelle.
+            ->add(RecurringMessage::cron('40 4 1 * *', new RunCommandMessage('app:acces:importer-aeroports'), new \DateTimeZone('Europe/Paris')))
+            ->add(RecurringMessage::cron('45 4 1 * *', new RunCommandMessage('app:acces:importer-grandes-villes'), new \DateTimeZone('Europe/Paris')))
+
             // Contrôle mensuel d'état d'activité des lieux (Sirene) : cadence des
             // radiations d'entreprises. No-op tant que sirene.verif_statut_actif
             // est désactivé. Portée par défaut (lieux avec SIRET stocké) = léger,
