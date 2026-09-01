@@ -54,6 +54,57 @@ final class LieuAttributsVerifierTest extends TestCase
         self::assertSame([], $propositions);
     }
 
+    public function testProposeBienEtreInstallationsPmrEtChambres(): void
+    {
+        $propositions = self::verifier([
+            'swimming_pool' => 'outdoor',
+            'sauna' => 'yes',
+            'garden' => 'yes',
+            'parking' => 'surface',
+            'elevator' => 'yes',
+            'wheelchair' => 'yes',
+            'rooms' => '45',
+        ])->analyser(self::lieu());
+
+        $parChamp = [];
+        foreach ($propositions as $proposition) {
+            $parChamp[$proposition->champ] = $proposition;
+        }
+        self::assertSame(['BIEN_ETRE_3', 'BIEN_ETRE_5'], $parChamp['lieu_lov_bien_etre']->payload['codes'] ?? null);
+        self::assertSame('BIEN_ETRE', $parChamp['lieu_lov_bien_etre']->payload['attribut'] ?? null);
+        self::assertSame(['INSTALLATION_3', 'INSTALLATION_10', 'INSTALLATION_12'], $parChamp['lieu_lov_installation']->payload['codes'] ?? null);
+        self::assertSame(['bool' => true], $parChamp['lieu_pmr_acces']->payload ?? null);
+        self::assertSame(['int' => 45], $parChamp['lieu_chambre_nb_total']->payload ?? null);
+        self::assertSame('45', $parChamp['lieu_chambre_nb_total']->valeurProposee ?? null);
+    }
+
+    public function testLUnionLovNeProposeQueLeDeltaEtRespecteLeDejaRenseigne(): void
+    {
+        $lieu = self::lieu();
+        $lieu->changeBienEtre(['BIEN_ETRE_5']);
+        $lieu->changePmrAcces(true);
+        $lieu->changeChambreNbTotal(30);
+
+        $propositions = self::verifier([
+            'swimming_pool' => 'outdoor',
+            'sauna' => 'yes',
+            'wheelchair' => 'yes',
+            'rooms' => '45',
+        ])->analyser($lieu);
+
+        self::assertCount(1, $propositions);
+        self::assertSame('lieu_lov_bien_etre', $propositions[0]->champ);
+        // Le sauna déjà coché ne revient pas : seul le delta est proposé.
+        self::assertSame(['BIEN_ETRE_3'], $propositions[0]->payload['codes'] ?? null);
+        self::assertSame('Sauna', $propositions[0]->valeurActuelle);
+    }
+
+    public function testUnePiscineSansTypeNeProposeRien(): void
+    {
+        // `swimming_pool=yes` : intérieure ou extérieure ? Indécidable, on s'abstient.
+        self::assertSame([], self::verifier(['swimming_pool' => 'yes'])->analyser(self::lieu()));
+    }
+
     public function testUneEtoileHorsListeNeProposePasDeTypologie(): void
     {
         // La liste commence à « Hôtel 2 étoiles » : 1 étoile n'a pas d'équivalent.

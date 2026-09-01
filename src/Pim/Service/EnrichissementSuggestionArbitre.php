@@ -125,6 +125,30 @@ final readonly class EnrichissementSuggestionArbitre
 
             return;
         }
+        // Champs non textuels : la garde de fraîcheur par chaîne ne s'applique
+        // pas, une garde métier « encore vide » la remplace.
+        if ('lieu_pmr_acces' === $champ) {
+            if ($lieu->pmrAcces()) {
+                throw new \DomainException('La case Accès PMR est déjà cochée : suggestion périmée.');
+            }
+            if (true !== ($payload['bool'] ?? null)) {
+                throw new \DomainException('Suggestion PMR sans valeur exploitable.');
+            }
+            $lieu->changePmrAcces(true);
+
+            return;
+        }
+        if ('lieu_chambre_nb_total' === $champ) {
+            if (null !== $lieu->chambreNbTotal()) {
+                throw new \DomainException('Le nombre de chambres a été saisi depuis le scan : suggestion périmée.');
+            }
+            if (!is_numeric($payload['int'] ?? null)) {
+                throw new \DomainException('Suggestion sans nombre de chambres exploitable.');
+            }
+            $lieu->changeChambreNbTotal((int) $payload['int']);
+
+            return;
+        }
         [$courante, $appliquer] = match ($champ) {
             'info_legale_siret' => [$lieu->administratif()->infoLegaleSiret(), fn () => $lieu->administratif()->changeInfoLegaleSiret($suggestion->valeurProposee())],
             'info_legale_num_tva' => [$lieu->administratif()->infoLegaleNumTva(), fn () => $lieu->administratif()->changeInfoLegaleNumTva($suggestion->valeurProposee())],

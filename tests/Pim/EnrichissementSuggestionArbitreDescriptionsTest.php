@@ -173,6 +173,44 @@ final class EnrichissementSuggestionArbitreDescriptionsTest extends KernelTestCa
         self::assertSame('Société par actions simplifiée (SAS)', $recharge->administratif()->infoLegaleFormeJuridique());
     }
 
+    public function testAccepterLaCasePmrEtLeNombreDeChambres(): void
+    {
+        $em = self::getContainer()->get(EntityManagerInterface::class);
+        $arbitre = self::getContainer()->get(EnrichissementSuggestionArbitre::class);
+        $lieu = new Lieu();
+        $lieu->changeLabel('Hôtel accessible');
+        $em->persist($lieu);
+        $pmr = new FicheSuggestion($lieu->fiche(), SuggestionSource::Geoapify, SuggestionAction::RemplirChamp, 'lieu_pmr_acces', 'Accès PMR', null, 'Oui', null, ['bool' => true]);
+        $chambres = new FicheSuggestion($lieu->fiche(), SuggestionSource::Geoapify, SuggestionAction::RemplirChamp, 'lieu_chambre_nb_total', 'Nombre total de chambres', null, '45', null, ['int' => 45]);
+        $em->persist($pmr);
+        $em->persist($chambres);
+        $em->flush();
+
+        $arbitre->accepter($pmr, 'testeur');
+        $arbitre->accepter($chambres, 'testeur');
+
+        $em->clear();
+        $recharge = $em->find(Lieu::class, $lieu->id());
+        self::assertInstanceOf(Lieu::class, $recharge);
+        self::assertTrue($recharge->pmrAcces());
+        self::assertSame(45, $recharge->chambreNbTotal());
+    }
+
+    public function testUneSuggestionDeChambresSaisiesDepuisLeScanEstPerimee(): void
+    {
+        $em = self::getContainer()->get(EntityManagerInterface::class);
+        $lieu = new Lieu();
+        $lieu->changeLabel('Hôtel déjà compté');
+        $lieu->changeChambreNbTotal(30);
+        $em->persist($lieu);
+        $suggestion = new FicheSuggestion($lieu->fiche(), SuggestionSource::Geoapify, SuggestionAction::RemplirChamp, 'lieu_chambre_nb_total', 'Nombre total de chambres', null, '45', null, ['int' => 45]);
+        $em->persist($suggestion);
+        $em->flush();
+
+        $this->expectException(\DomainException::class);
+        self::getContainer()->get(EnrichissementSuggestionArbitre::class)->accepter($suggestion, 'testeur');
+    }
+
     public function testAccepterUnCodeDUnAutreSchemaCocheLaBonneCaseDuReferentiel(): void
     {
         $em = self::getContainer()->get(EntityManagerInterface::class);

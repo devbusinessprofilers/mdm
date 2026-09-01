@@ -28,6 +28,16 @@ final readonly class PlaceAttributs
         public ?string $marque = null,
         /** Classement OSM `stars`, borné 1..5 (null hors bornes ou absent). */
         public ?int $etoiles = null,
+        /** Piscines : seul `swimming_pool=indoor|outdoor` est décidable — un simple « yes » reste null. */
+        public ?bool $piscineInterieure = null,
+        public ?bool $piscineExterieure = null,
+        public ?bool $sauna = null,
+        public ?bool $spa = null,
+        public ?bool $jardin = null,
+        public ?bool $parking = null,
+        public ?bool $ascenseur = null,
+        /** Nombre de chambres OSM (`rooms`), borné 1..2000 (null hors bornes ou absent). */
+        public ?int $chambres = null,
     ) {}
 
     public function estVide(): bool
@@ -41,6 +51,14 @@ final readonly class PlaceAttributs
             && null === $this->wifi
             && null === $this->siteWeb
             && null === $this->marque
-            && null === $this->etoiles;
+            && null === $this->etoiles
+            && null === $this->piscineInterieure
+            && null === $this->piscineExterieure
+            && null === $this->sauna
+            && null === $this->spa
+            && null === $this->jardin
+            && null === $this->parking
+            && null === $this->ascenseur
+            && null === $this->chambres;
     }
 }

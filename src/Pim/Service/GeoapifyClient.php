@@ -227,7 +227,30 @@ final class GeoapifyClient implements GeocodeurEtrangerInterface
             // `brand` seulement : `operator` est l'exploitant, pas l'enseigne.
             marque: self::premiereChaine($raw, ['brand']),
             etoiles: self::etoiles($tag('stars')),
+            // Un `swimming_pool=yes` sans type ne permet pas de choisir entre
+            // les deux entrées de la liste bien-être : on s'abstient.
+            piscineInterieure: 'indoor' === $tag('swimming_pool') ? true : null,
+            piscineExterieure: 'outdoor' === $tag('swimming_pool') ? true : null,
+            sauna: self::triState($tag('sauna'), ['yes']),
+            spa: self::triState($tag('spa'), ['yes']),
+            jardin: 'garden' === $tag('leisure') ? true : self::triState($tag('garden'), ['yes']),
+            // `parking` porte le type d'aire (surface, underground…) : toute
+            // valeur autre que « no » signale une offre de stationnement.
+            parking: null === $tag('parking') ? null : 'no' !== $tag('parking'),
+            ascenseur: self::triState($tag('elevator'), ['yes']),
+            chambres: self::chambres($tag('rooms')),
         );
+    }
+
+    /** Nombre de chambres OSM `rooms` : entier plausible 1..2000, sinon null. */
+    private static function chambres(?string $valeur): ?int
+    {
+        if (null === $valeur || 1 !== preg_match('/^\d{1,4}$/', $valeur)) {
+            return null;
+        }
+        $nombre = (int) $valeur;
+
+        return $nombre >= 1 && $nombre <= 2000 ? $nombre : null;
     }
 
     /** Classement OSM `stars` : « 4 » ou « 4S » (supérieur) → 4 ; hors 1..5 → null. */

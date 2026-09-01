@@ -19,7 +19,7 @@ final readonly class SuggestionsEcran
     public const SOURCES = [
         'adresses' => 'Adresses & GPS',
         'sirene' => 'Statut & SIRET',
-        'geoapify' => 'Attributs restaurants',
+        'geoapify' => 'Attributs & horaires',
         'datatourisme' => 'Descriptions & équipements',
         'wikidata' => 'Chaîne hôtelière',
     ];
