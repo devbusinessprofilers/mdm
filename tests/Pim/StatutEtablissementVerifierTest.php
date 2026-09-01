@@ -77,6 +77,41 @@ final class StatutEtablissementVerifierTest extends TestCase
         self::assertContains('info_legale_num_tva', $champs);
     }
 
+    public function testProposeUneTypologieDepuisLeCodeNaf(): void
+    {
+        $lieu = self::lieuFrancais('CAMPING DES FLOTS');
+
+        $propositions = self::verifier([[
+            'nom_complet' => 'CAMPING DES FLOTS',
+            'nom_raison_sociale' => 'CAMPING DES FLOTS',
+            'siren' => '480674100',
+            'siege' => ['siret' => '48067410000031', 'etat_administratif' => 'A', 'activite_principale' => '55.30Z'],
+        ]])->analyser($lieu);
+
+        $parChamp = [];
+        foreach ($propositions as $proposition) {
+            $parChamp[$proposition->champ] = $proposition;
+        }
+        // 55.30Z (terrains de camping) → Village vacances / Camping, score plafonné.
+        self::assertSame(['GENERALE_TYPOLOGIE_33'], $parChamp['lieu_lov_typologie']->payload['codes'] ?? null);
+        self::assertLessThanOrEqual(0.5, $parChamp['lieu_lov_typologie']->score);
+    }
+
+    public function testUnNafHorsTableOuUneTypologieRemplieNeProposentRien(): void
+    {
+        $lieu = self::lieuFrancais('HOTEL DES FLOTS');
+        $lieu->changeGeneraleTypologie(['GENERALE_TYPOLOGIE_2']);
+
+        $propositions = self::verifier([[
+            'nom_complet' => 'HOTEL DES FLOTS',
+            'nom_raison_sociale' => 'HOTEL DES FLOTS',
+            'siren' => '480674100',
+            'siege' => ['siret' => '48067410000031', 'etat_administratif' => 'A', 'activite_principale' => '55.30Z'],
+        ]])->analyser($lieu);
+
+        self::assertNotContains('lieu_lov_typologie', array_map(static fn ($p): string => $p->champ, $propositions));
+    }
+
     public function testProposeLaFormeJuridiqueEtLaRaisonSocialeManquantes(): void
     {
         $lieu = self::lieuFrancais('BUSINESS PROFILERS');

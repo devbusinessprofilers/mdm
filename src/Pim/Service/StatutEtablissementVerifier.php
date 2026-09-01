@@ -6,6 +6,7 @@ namespace App\Pim\Service;
 
 use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Enum\SuggestionAction;
+use App\Pim\Lov\LieuLovCatalog;
 
 /**
  * Confronte un lieu à l'annuaire des entreprises (Sirene) pour produire des
@@ -26,6 +27,22 @@ final readonly class StatutEtablissementVerifier
 
     /** Pénalité de score quand le rapprochement n'a abouti qu'en repli France entière (sans code postal). */
     private const PENALITE_SANS_CODE_POSTAL = 0.9;
+
+    /**
+     * Code NAF → typologie de lieu, pour un backfill grossier quand la fiche
+     * n'en a pas. Table volontairement courte : seuls les NAF sans ambiguïté —
+     * 55.10Z (hôtels, codes indexés par étoiles) et 55.20Z (hébergements de
+     * courte durée, trop large) sont exclus.
+     */
+    private const NAF_TYPOLOGIE = [
+        '55.30Z' => 'GENERALE_TYPOLOGIE_33', // terrains de camping
+        '92.00Z' => 'GENERALE_TYPOLOGIE_18', // jeux de hasard → casino
+        '91.02Z' => 'GENERALE_TYPOLOGIE_26', // musées
+        '93.21Z' => 'GENERALE_TYPOLOGIE_27', // parcs d'attractions
+        '59.14Z' => 'GENERALE_TYPOLOGIE_36', // projection de films → cinéma
+        '90.04Z' => 'GENERALE_TYPOLOGIE_31', // gestion de salles de spectacles
+        '93.11Z' => 'GENERALE_TYPOLOGIE_30', // gestion d'installations sportives
+    ];
 
     public function __construct(private RechercheEntrepriseClient $client)
     {
@@ -73,6 +90,7 @@ final readonly class StatutEtablissementVerifier
         return [
             ...(null === ($tva = $this->propositionTva($lieu, $info)) ? [] : [$tva]),
             ...$this->propositionsLegales($lieu, $info, null),
+            ...(null === ($typologie = $this->propositionTypologie($lieu, $info, null)) ? [] : [$typologie]),
         ];
     }
 
@@ -110,7 +128,37 @@ final readonly class StatutEtablissementVerifier
             $propositions[] = $tva;
         }
 
-        return [...$propositions, ...$this->propositionsLegales($lieu, $info, $score)];
+        return [
+            ...$propositions,
+            ...$this->propositionsLegales($lieu, $info, $score),
+            ...(null === ($typologie = $this->propositionTypologie($lieu, $info, $score)) ? [] : [$typologie]),
+        ];
+    }
+
+    /**
+     * Backfill grossier de la typologie depuis le code NAF — uniquement quand
+     * la fiche n'en a aucune ; score plafonné pour signaler l'approximation.
+     */
+    private function propositionTypologie(Lieu $lieu, EntrepriseInfo $info, ?float $score): ?SuggestionProposee
+    {
+        if (null === $info->naf || [] !== $lieu->generaleTypologie()) {
+            return null;
+        }
+        $code = self::NAF_TYPOLOGIE[$info->naf] ?? null;
+        $code = null === $code ? null : LovValeurResolution::codePour(LieuLovCatalog::choicesFor('GENERALE_TYPOLOGIE'), $code);
+        if (null === $code) {
+            return null;
+        }
+
+        return new SuggestionProposee(
+            action: SuggestionAction::RemplirChamp,
+            champ: 'lieu_lov_typologie',
+            label: 'Typologie',
+            valeurActuelle: null,
+            valeurProposee: LieuLovCatalog::choicesFor('GENERALE_TYPOLOGIE')[$code] ?? $code,
+            score: min(0.5, $score ?? 0.5),
+            payload: ['attribut' => 'GENERALE_TYPOLOGIE', 'codes' => [$code]],
+        );
     }
 
     /**

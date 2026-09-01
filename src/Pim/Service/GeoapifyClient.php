@@ -240,6 +240,7 @@ final class GeoapifyClient implements GeocodeurEtrangerInterface
             ascenseur: self::triState($tag('elevator'), ['yes']),
             chambres: self::chambres($tag('rooms')),
             horairesOuverture: self::premiereChaine($raw, ['opening_hours']),
+            categorie: $tag('tourism') ?? $tag('amenity'),
         );
     }
 

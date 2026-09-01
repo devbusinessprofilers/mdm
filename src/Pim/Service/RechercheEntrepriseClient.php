@@ -275,6 +275,7 @@ final class RechercheEntrepriseClient
             formeJuridique: FormeJuridiqueInsee::libelle(self::string($result['nature_juridique'] ?? null)),
             etatAdministratif: $etat,
             rapprochementSansCodePostal: $replisSansCodePostal,
+            naf: self::string($siege['activite_principale'] ?? null) ?? self::string($result['activite_principale'] ?? null),
         );
     }
 

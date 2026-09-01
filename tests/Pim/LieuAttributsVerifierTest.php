@@ -99,6 +99,32 @@ final class LieuAttributsVerifierTest extends TestCase
         self::assertSame('Sauna', $propositions[0]->valeurActuelle);
     }
 
+    public function testLaCategorieOsmProposeUneTypologieSansEtoiles(): void
+    {
+        $propositions = self::verifier(['tourism' => 'guest_house'])->analyser(self::lieu());
+
+        self::assertCount(1, $propositions);
+        self::assertSame('lieu_lov_typologie', $propositions[0]->champ);
+        // Maison d'hôte / Gîte / Ferme, avec un score modeste (catégorie grossière).
+        self::assertSame(['GENERALE_TYPOLOGIE_25'], $propositions[0]->payload['codes'] ?? null);
+        self::assertSame(0.5, $propositions[0]->score);
+    }
+
+    public function testLesEtoilesPrimentSurLaCategorieOsm(): void
+    {
+        $propositions = self::verifier(['stars' => '4', 'tourism' => 'guest_house'])->analyser(self::lieu());
+
+        self::assertCount(1, $propositions);
+        self::assertSame(['GENERALE_TYPOLOGIE_3'], $propositions[0]->payload['codes'] ?? null);
+        self::assertNull($propositions[0]->score);
+    }
+
+    public function testUnHotelSansEtoilesNeProposePasDeTypologie(): void
+    {
+        // Les codes hôtel sont indexés par gamme d'étoiles : indécidable.
+        self::assertSame([], self::verifier(['tourism' => 'hotel'])->analyser(self::lieu()));
+    }
+
     public function testProposeJoursEtHorairesDepuisOpeningHours(): void
     {
         $propositions = self::verifier(['opening_hours' => 'Mo-Fr 09:00-18:00'])->analyser(self::lieu());

@@ -26,6 +26,31 @@ final readonly class LieuAttributsVerifier
         5 => 'GENERALE_TYPOLOGIE_4',
     ];
 
+    /**
+     * Catégorie OSM (`tourism`/`amenity`) → typologie, pour les lieux sans
+     * étoiles. Table volontairement courte : seules les correspondances sans
+     * ambiguïté — hotel/hostel/motel absents (les codes hôtel sont indexés
+     * par gamme d'étoiles, indécidable sans le tag `stars`).
+     */
+    private const CATEGORIE = [
+        'guest_house' => 'GENERALE_TYPOLOGIE_25',
+        'apartment' => 'GENERALE_TYPOLOGIE_13',
+        'camp_site' => 'GENERALE_TYPOLOGIE_33',
+        'caravan_site' => 'GENERALE_TYPOLOGIE_33',
+        'museum' => 'GENERALE_TYPOLOGIE_26',
+        'gallery' => 'GENERALE_TYPOLOGIE_26',
+        'theme_park' => 'GENERALE_TYPOLOGIE_27',
+        'casino' => 'GENERALE_TYPOLOGIE_18',
+        'cinema' => 'GENERALE_TYPOLOGIE_36',
+        'theatre' => 'GENERALE_TYPOLOGIE_31',
+        'conference_centre' => 'GENERALE_TYPOLOGIE_20',
+        'exhibition_centre' => 'GENERALE_TYPOLOGIE_20',
+        'coworking_space' => 'GENERALE_TYPOLOGIE_23',
+        'bar' => 'GENERALE_TYPOLOGIE_15',
+        'pub' => 'GENERALE_TYPOLOGIE_15',
+        'nightclub' => 'GENERALE_TYPOLOGIE_22',
+    ];
+
     public function __construct(private GeoapifyClient $geoapify)
     {
     }
@@ -51,7 +76,10 @@ final readonly class LieuAttributsVerifier
         }
         $propositions = [];
 
-        $codeTypologie = null === $attributs->etoiles ? null : (self::ETOILES[$attributs->etoiles] ?? null);
+        $codeEtoiles = null === $attributs->etoiles ? null : (self::ETOILES[$attributs->etoiles] ?? null);
+        // À défaut d'étoiles, la catégorie OSM donne une typologie plus
+        // grossière — score modeste pour le signaler à l'arbitre.
+        $codeTypologie = $codeEtoiles ?? (null === $attributs->categorie ? null : (self::CATEGORIE[$attributs->categorie] ?? null));
         // Garde référentiel : le code doit exister dans la liste effective.
         $codeTypologie = null === $codeTypologie ? null : LovValeurResolution::codePour(LieuLovCatalog::choicesFor('GENERALE_TYPOLOGIE'), $codeTypologie);
         if (null !== $codeTypologie && [] === $lieu->generaleTypologie()) {
@@ -61,7 +89,7 @@ final readonly class LieuAttributsVerifier
                 label: 'Typologie',
                 valeurActuelle: null,
                 valeurProposee: LieuLovCatalog::choicesFor('GENERALE_TYPOLOGIE')[$codeTypologie] ?? $codeTypologie,
-                score: null,
+                score: null === $codeEtoiles ? 0.5 : null,
                 payload: ['attribut' => 'GENERALE_TYPOLOGIE', 'codes' => [$codeTypologie]],
             );
         }
