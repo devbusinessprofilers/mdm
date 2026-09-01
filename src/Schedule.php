@@ -77,6 +77,9 @@ class Schedule implements ScheduleProviderInterface
             // place reste servie telle quelle.
             ->add(RecurringMessage::cron('40 4 1 * *', new RunCommandMessage('app:acces:importer-aeroports'), new \DateTimeZone('Europe/Paris')))
             ->add(RecurringMessage::cron('45 4 1 * *', new RunCommandMessage('app:acces:importer-grandes-villes'), new \DateTimeZone('Europe/Paris')))
+            // Classement Atout France (étoiles) : même logique, fichier
+            // republié régulièrement sur data.gouv.fr.
+            ->add(RecurringMessage::cron('50 4 1 * *', new RunCommandMessage('app:pim:importer-classements-atout-france'), new \DateTimeZone('Europe/Paris')))
 
             // Contrôle mensuel d'état d'activité des lieux (Sirene) : cadence des
             // radiations d'entreprises. No-op tant que sirene.verif_statut_actif

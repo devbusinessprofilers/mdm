@@ -19,6 +19,7 @@ use App\Pim\Repository\RestaurantRepository;
 use App\Pim\Repository\ServiceEvenementielRepository;
 use App\Pim\Service\AtoutsIaVerifier;
 use App\Pim\Service\ChaineHoteliereVerifier;
+use App\Pim\Service\ClassementAtoutFranceVerifier;
 use App\Pim\Service\DataTourisme\DataTourismeFluxReader;
 use App\Pim\Service\DataTourisme\DataTourismeIndex;
 use App\Pim\Service\DataTourismeVerifier;
@@ -64,6 +65,7 @@ final readonly class EnrichirFicheHandler
         private LieuAttributsVerifier $attributsLieu,
         private DataTourismeVerifier $dataTourisme,
         private ChaineHoteliereVerifier $chainesHotelieres,
+        private ClassementAtoutFranceVerifier $classementsAtoutFrance,
         private DescriptionIaVerifier $descriptionsIa,
         private AtoutsIaVerifier $atoutsIa,
         private DataTourismeFluxReader $flux,
@@ -132,6 +134,11 @@ final readonly class EnrichirFicheHandler
         if (null !== $lieu) {
             $resultat['wikidata'] = $this->parametres->bool('wikidata.detection_chaine')
                 ? $this->executer($fiche, SuggestionSource::Wikidata, fn (): array => $this->chainesHotelieres->analyser($lieu, ChaineDictionnaire::depuis($this->wikidata->chaines())))
+                : 'inactif';
+            // Classement officiel Atout France (référentiel local, jamais
+            // « indisponible ») : étoiles → typologie, nombre de chambres.
+            $resultat['atout_france'] = $this->parametres->bool('atout_france.classement_actif')
+                ? $this->executer($fiche, SuggestionSource::AtoutFrance, fn (): array => $this->classementsAtoutFrance->analyser($lieu))
                 : 'inactif';
         }
         [$champIa, $description] = match (true) {

@@ -20,6 +20,7 @@ enum SuggestionSource: string
     case DataTourisme = 'datatourisme';
     case Wikidata = 'wikidata';
     case Ia = 'ia';
+    case AtoutFrance = 'atout_france';
 
     /** Libellé affiché dans le tag de la ligne de suggestion. */
     public function label(): string
@@ -30,6 +31,7 @@ enum SuggestionSource: string
             self::DataTourisme => 'DATAtourisme',
             self::Wikidata => 'Wikidata',
             self::Ia => 'IA',
+            self::AtoutFrance => 'Atout France',
         };
     }
 }

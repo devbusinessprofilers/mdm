@@ -22,6 +22,7 @@ final readonly class SuggestionsEcran
         'geoapify' => 'Attributs & horaires',
         'datatourisme' => 'Descriptions & équipements',
         'wikidata' => 'Chaîne hôtelière',
+        'atout_france' => 'Classement en étoiles',
     ];
 
     /** Nom de la source affiché comme provenance sous le nom de la fiche (BAN/Geoapify côté adresses = par ligne). */
@@ -31,6 +32,7 @@ final readonly class SuggestionsEcran
         'geoapify' => 'Geoapify',
         'datatourisme' => 'DATAtourisme',
         'wikidata' => 'Wikidata',
+        'atout_france' => 'Atout France',
     ];
 
     public const PAR_PAGE = 20;
