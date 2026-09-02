@@ -560,6 +560,9 @@
                         <twig:Typography variant="subtitle" element="h3" bold>Sites de diffusion</twig:Typography>
                         <twig:Typography variant="body-sm" textColor="neutral-500">Les sites obligatoires restent cochés ; les sites payants sont signalés.</twig:Typography>
                         {{ form(form_sites) }}
+                        {# Attribution géographique à la demande : ajout seul, selon les critères de l'admin des sites. #}
+                        <twig:Typography variant="body-sm" textColor="neutral-500">« Appliquer les sites automatiques » ajoute les sites dont la zone géographique couvre l'adresse de la fiche, sans rien retirer.</twig:Typography>
+                        {{ form(form_sites_geo) }}
                     </div>
                 {% endif %}
 

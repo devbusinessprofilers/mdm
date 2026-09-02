@@ -57,9 +57,19 @@ final class FicheGammeController extends AbstractController
 
         $form = $ecran->formSection($entite);
         $formSites = $ecran->formSites($entite);
+        $formSitesGeo = $ecran->formSitesGeo($entite);
         if ($request->isMethod('POST')) {
             $this->denyAccessUnlessGranted(FicheVoter::EDIT, $entite->fiche());
-            if ($request->request->has('sites_diffusion')) {
+            if ($request->request->has('sites_geo')) {
+                $ajoutes = $ecran->soumettreSitesGeo($request, $entite, $formSitesGeo);
+                if (null !== $ajoutes) {
+                    $this->addFlash('success', $ajoutes > 0
+                        ? sprintf('%d site(s) ajouté(s) selon les critères géographiques.', $ajoutes)
+                        : 'Aucun site à ajouter : la fiche est déjà couverte.');
+
+                    return $this->redirectToRoute('app_mdm_fiche_gamme', ['gamme' => $gamme, 'id' => $id, 'section' => $section]);
+                }
+            } elseif ($request->request->has('sites_diffusion')) {
                 if ($ecran->soumettreSites($request, $entite, $formSites)) {
                     $this->addFlash('success', 'Diffusion mise à jour.');
 
@@ -74,12 +84,14 @@ final class FicheGammeController extends AbstractController
 
         // 422 : Turbo Drive ignore une réponse 200 à un POST de formulaire.
         $soumisInvalide = ($form->isSubmitted() && !$form->isValid())
-            || ($formSites->isSubmitted() && !$formSites->isValid());
+            || ($formSites->isSubmitted() && !$formSites->isValid())
+            || ($formSitesGeo->isSubmitted() && !$formSitesGeo->isValid());
 
         return $this->render('mdm/fiche_editeur.html.twig', [
             'fiche' => $entite->fiche(),
             'form' => $form->createView(),
             'form_sites' => $formSites->createView(),
+            'form_sites_geo' => $formSitesGeo->createView(),
         ] + $ecran->variables($entite, $section, $form), new Response(null, $soumisInvalide ? Response::HTTP_UNPROCESSABLE_ENTITY : Response::HTTP_OK));
     }
 }

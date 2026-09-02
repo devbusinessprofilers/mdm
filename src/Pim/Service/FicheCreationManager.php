@@ -44,6 +44,7 @@ final readonly class FicheCreationManager
         private FicheCollaborateurRepository $collaborateurs,
         private RechercheEntrepriseClient $entreprises,
         private SiteDiffusionRepository $sitesDiffusion,
+        private SiteDiffusionGeoAttribueur $geoAttribueur,
     ) {
     }
 
@@ -80,6 +81,12 @@ final readonly class FicheCreationManager
             $this->applyClassification($entity, $data);
             $this->applyReferencement($entity, $fiche, $data);
             $this->applySitesDiffusion($fiche, $data);
+            // Visibilité géographique (CDC §10.1) : la fiche sort du tunnel
+            // déjà rattachée aux sites dont la zone couvre son adresse, comme
+            // le pré-remplissage annuaire. Seul point d'attribution
+            // automatique — ensuite, le bouton « Appliquer les sites
+            // automatiques » de la fiche prend le relais à la demande.
+            $this->geoAttribueur->attribuer($fiche);
             if ($entity instanceof Lieu && null !== $entreprise) {
                 self::enrichAdministratif($entity, $entreprise);
             }

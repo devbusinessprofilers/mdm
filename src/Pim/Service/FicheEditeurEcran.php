@@ -35,6 +35,7 @@ use App\Pim\Repository\FicheAffiliationRepository;
 use App\Pim\Repository\FicheRepository;
 use App\Pim\Repository\FicheSuggestionRepository;
 use App\Pim\Repository\SiteDiffusionRepository;
+use App\Shared\Form\ActionType;
 use App\Shared\Service\ParametreProviderInterface;
 use League\Flysystem\FilesystemException;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
@@ -109,6 +110,7 @@ final readonly class FicheEditeurEcran
         private MediaAssetRepository $mediaAssets,
         private CsrfTokenManagerInterface $csrfTokens,
         private FicheRepository $fiches,
+        private SiteDiffusionGeoAttribueur $geoAttribueur,
     ) {
     }
 
@@ -196,6 +198,41 @@ final readonly class FicheEditeurEcran
             ])
             ->add('enregistrer', SubmitType::class, ['label' => 'Enregistrer la diffusion'])
             ->getForm();
+    }
+
+    /**
+     * Bouton « Appliquer les sites automatiques » (section Visibilité) :
+     * rattache la fiche aux sites dont un critère géographique couvre son
+     * adresse. Ajout seul, à la demande — l'attribution automatique ne joue
+     * sinon qu'à la création, pour ne pas importuner l'éditeur.
+     *
+     * @return FormInterface<mixed>
+     */
+    public function formSitesGeo(Lieu|Restaurant|Activite|ServiceEvenementiel $entite): FormInterface
+    {
+        return $this->forms->createNamed('sites_geo', ActionType::class, null, [
+            'button_label' => 'Appliquer les sites automatiques',
+            'button_attr' => self::BOUTON_SOBRE,
+            'csrf_token_id' => 'sites-geo-'.$entite->fiche()->idString(),
+        ]);
+    }
+
+    /**
+     * @param FormInterface<mixed> $form
+     *
+     * @return ?int Nombre de sites ajoutés, null si le formulaire n'est pas soumis
+     */
+    public function soumettreSitesGeo(Request $request, Lieu|Restaurant|Activite|ServiceEvenementiel $entite, FormInterface $form): ?int
+    {
+        $form->handleRequest($request);
+        if (!$form->isSubmitted() || !$form->isValid()) {
+            return null;
+        }
+        $fiche = $entite->fiche();
+        $ajoutes = (int) $this->policy->execute($fiche, fn (): int => $this->geoAttribueur->attribuer($fiche));
+        $this->workflow->indexAndFlush($fiche);
+
+        return $ajoutes;
     }
 
     /** @param FormInterface<mixed> $form */
