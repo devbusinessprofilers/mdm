@@ -86,10 +86,10 @@ Options communes des imports de fiches : `--file`, `--dry-run`, `--limit`, `--fr
 
 **Offre spéciale + dates promotion (reprises le 2026-08-13)** : vers `pim_lieu_tarification` (`offre_speciale`, `promotion_debut/fin`, bloc « Tarifs & formules ») — les en-têtes exacts variant selon l'export, la résolution se fait par motif (`/^offre spéciale/`, `/début|fin .* promo/`) : à vérifier au retour du CSV dans `var/tmp/import`.
 
-**Depuis le 2026-08-13** : la colonne « Téléphone » est reprise sur toutes
-les gammes (`pim_fiche.telephone`, source du `bp_produit.telephone` de la
-marketplace) — relancer l'import (idempotent) pour peupler les fiches déjà
-importées.
+**Téléphone** : la colonne « Téléphone » du CSV est **ignorée**. Le champ
+`pim_fiche.telephone` (repris brièvement du 2026-08-13 au 2026-08-31) a été
+supprimé du PIM — `bp_produit.telephone` reste un numéro interne géré par la
+marketplace, jamais écrasé par la synchro.
 
 ## Mapping Activité (`LegacyActiviteRowMapper`)
 

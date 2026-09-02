@@ -218,7 +218,7 @@ final readonly class LegacyLieuRowMapper
             $lieu->tarification()->changeSeminaireNuiteeResidentiel($residentiel);
         }
         // Bloc promo : les intitulés exacts des colonnes varient selon
-        // l'export, résolution par motif (cf. docs/import-legacy.md).
+        // l'export, résolution par motif (cf. docs/architecture/import-legacy.md).
         $offreSpeciale = self::cellParMotif($row, '/^offre\s*sp[eé]ciale/iu');
         if ('' !== $offreSpeciale) {
             $lieu->tarification()->changeOffreSpeciale($offreSpeciale);

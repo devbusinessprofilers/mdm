@@ -9,7 +9,13 @@ par un JWT de service RS256.
 
 ## Authentification
 
-Variables à renseigner dans `.env.local` lors du raccordement :
+L'API est protégée par un JWT de service **RS256** : le site externe détient la
+clé privée et signe lui-même ses jetons ; le PIM ne connaît que la clé publique.
+Il n'y a donc ni endpoint de login ni refresh token — le site émet des jetons
+courts et les renouvelle de son côté.
+
+Variables à renseigner dans `.env.local` (variables Upsun en prod) lors du
+raccordement :
 
 ```dotenv
 EXTERNAL_SITE_JWT_ISSUER=external-site
@@ -18,8 +24,52 @@ EXTERNAL_SITE_JWT_SUBJECT=external-site
 EXTERNAL_SITE_JWT_PUBLIC_KEY=/chemin/vers/public.pem
 ```
 
-Le JWT transmis dans `Authorization: Bearer <token>` doit contenir `iss`, `aud`,
-`sub`, `iat`, `exp` et un `jti` non vide. L’identifiant fonctionnel d’une fiche est son ULID.
+`EXTERNAL_SITE_JWT_PUBLIC_KEY` accepte le contenu PEM inline (commençant par
+`-----BEGIN`) ou un chemin de fichier. **Vide = toute l'API répond 401.**
+
+Le jeton est transmis dans `Authorization: Bearer <token>` sur toutes les routes
+`/api/v1/` (`ExternalSiteJwtAuthenticator`). Contrôles effectués par
+`ExternalSiteJwtVerifier` :
+
+- signature RS256 contre la clé publique — tout autre `alg` est rejeté ;
+- claims obligatoires : `iss`, `aud`, `sub`, `iat`, `exp` et un `jti` non vide ;
+- `iss` et `sub` doivent valoir exactement les valeurs configurées ; `aud`
+  (chaîne ou tableau) doit contenir l'audience configurée ;
+- `exp` non expirée (aucune marge) et `iat` pas dans le futur (tolérance
+  d'horloge de 30 s sur `iat` uniquement) ;
+- claim `scope`/`scopes` (chaîne séparée par des espaces, ou tableau) : la
+  lecture n'exige aucun scope, les écritures oui — `fiches:write` pour les
+  PATCH, `medias:write` pour les mutations de médias, `documents:*` pour les
+  documents (détail dans les sections concernées).
+
+Tout échec répond `401 {"type": "invalid_token"}`, sans consommer de quota. Le
+rate limiting s'applique par client authentifié — la clé de comptage est le
+claim `sub` (`RATE_LIMIT_API_CLIENT`, 300 req/min). Un limiteur par IP
+(`RATE_LIMIT_API_IP`, 60 req/min) existe en repli, mais en pratique les
+requêtes sans jeton valide sont rejetées par le pare-feu avant de l'atteindre.
+
+En dev : paire de clés, script de génération et jeton longue durée dans
+`var/dev-jwt/` (non suivi par git — `make-token.sh`, `token.txt`).
+
+### Un seul site externe raccordable en l'état
+
+La configuration ne connaît **qu'une seule identité** : un triplet
+`issuer`/`audience`/`subject` et une unique clé publique. Brancher plusieurs
+sites aujourd'hui imposerait de leur faire partager la même paire de clés — ils
+seraient indiscernables (même `sub`, donc mêmes droits, même quota de rate
+limiting, même trace dans les logs) et une clé compromise obligerait à tous les
+re-raccorder. Pour raccorder plusieurs sites partenaires (à terme, les sites du
+référentiel « Sites de diffusion »), une évolution est nécessaire : un registre
+de clients — une clé publique et une identité par site, sélection par `iss` ou
+par `kid` d'en-tête, idéalement adossé au référentiel des sites de diffusion —
+et le rate limiting/l'audit par `sub` en profiteraient immédiatement.
+
+La **marketplace n'est pas concernée** par cette API : la synchronisation est
+poussée par le PIM vers la marketplace (outbox → PUT upsert, compte machine
+JWT côté marketplace), voir
+[sync-marketplace-referentiel-lov.md](sync-marketplace-referentiel-lov.md).
+
+L'identifiant fonctionnel d'une fiche est son ULID.
 
 ## Lecture et pagination
 
@@ -69,6 +119,11 @@ nombres flottants exprimés en euros.
 
 `PATCH /api/v1/restaurants/{ULID}` accepte les huit listes contrôlées Restaurant,
 les horaires, la localisation textuelle V1, les accès, les capacités et les salles.
+Depuis le 2026-09-01, les horaires par jour sont la source unique : le champ
+`horairesJours` est un objet `{codeJour: {ouverture, fermeture}}`.
+`heureOuverture`/`heureFermeture` restent exposés en lecture comme amplitude
+dérivée et sont toujours acceptés en écriture par rétrocompatibilité : le
+PATCH les traduit en horaires par jour (appliqués aux jours d'ouverture).
 Les propriétés absentes ne sont pas modifiées et le workflow est préservé. Les
 champs Bible 346 `TYPE_FORFAIT` et 347 `NOM_PERSONALISE` ne sont pas exposés :
 **champs à ajouter lors du passage au front**.

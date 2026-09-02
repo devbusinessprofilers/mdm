@@ -71,7 +71,7 @@ formulaires PIM sont construits avec les FormTypes Symfony et rendus par les
 helpers Twig ; aucun formulaire métier n’est écrit directement en HTML.
 
 Le contrat détaillé de l’API, du workflow, du DAM et de l’audit est documenté
-dans [docs/external-site-api.md](docs/external-site-api.md) et présenté dans la
+dans [docs/architecture/external-site-api.md](docs/architecture/external-site-api.md) et présenté dans la
 page `/admin`.
 
 ## 3. Démarrer le projet localement
@@ -695,7 +695,7 @@ charges. Légende : **Oui** = à faire ou à conserver, **Non** = écarté,
 ## 9. Documentation d'exploitation
 
 - [Architecture des modules](ARCHITECTURE.md)
-- [Workers et files Symfony Messenger](docs/runbooks/messenger.md)
+- [Workers et files Symfony Messenger](docs/exploitation/messenger.md)
 - [Module PIM](src/Pim/README.md)
 - [Module DAM](src/Dam/README.md)
 - [Module ETL](src/Etl/README.md)
@@ -706,6 +706,6 @@ charges. Légende : **Oui** = à faire ou à conserver, **Non** = écarté,
 - [Module Dashboard](src/Dashboard/README.md)
 - [Module Shared](src/Shared/README.md)
 - [Fixtures de démonstration](src/DataFixtures/README.md)
-- [Import legacy — mappings CSV production](docs/import-legacy.md)
-- [Configuration — paramètres applicatifs et variables d'environnement](docs/configuration.md)
-- [Gestion et rotation des secrets](docs/SECRETS.md)
+- [Import legacy — mappings CSV production](docs/architecture/import-legacy.md)
+- [Configuration — paramètres applicatifs et variables d'environnement](docs/exploitation/configuration.md)
+- [Gestion et rotation des secrets](docs/exploitation/secrets.md)

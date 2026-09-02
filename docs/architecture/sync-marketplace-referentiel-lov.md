@@ -1,7 +1,8 @@
 # Sync marketplace — référentiel LOV (dictionnaire des listes de valeurs)
 
-_État au 2026-08-12 — implémenté dans les deux repos (PIM + marketplace, branche
-`feature/pim-sync`), validé bout en bout en local, non commité._
+_Implémenté et committé le 2026-08-12 dans les deux repos (PIM sur `dev`,
+marketplace sur `feature/pim-sync`), validé bout en bout ; mappings complétés
+jusqu'au 2026-08-13, reprise Salesforce → PIM ajoutée ensuite (voir plus bas)._
 
 ## Principe
 
@@ -169,7 +170,7 @@ Le canal marketplace n'a plus besoin d'action de masse : depuis le
 par `app:sites-diffusion:sync` (38 sites, « Business Profilers » =
 `marketplace_bp`, présélectionné pour les nouvelles fiches). Sur
 `mdm_reel` : 26 612 fiches avec le canal marketplace, dont 20 127
-publiées. Voir `docs/import-legacy.md`.
+publiées. Voir `import-legacy.md`.
 
 ## Validation effectuée (local, 2026-08-12)
 
@@ -350,7 +351,7 @@ Salesforce ; la plomberie **transactionnelle** reste sur la marketplace.
 
 - **PIM** : `SalesforceApiClient` (OAuth JWT Bearer RS256 signé en openssl,
   SOQL paginée, env `SALESFORCE_LOGIN_URL/CLIENT_ID/USERNAME/PRIVATE_KEY` —
-  vide = désactivé, voir `docs/SECRETS.md`) ; entité `FicheSalesforce`
+  vide = désactivé, voir `../exploitation/secrets.md`) ; entité `FicheSalesforce`
   (`etl_fiche_salesforce`, migration `Version20260813210000`, une ligne par
   fiche connue de SF) ; `SalesforceFicheRefresher` (match
   `Fiche.code = intval(Product2.ID__c)`, garde-diff, `partenaireBp` écrasé
@@ -362,7 +363,7 @@ Salesforce ; la plomberie **transactionnelle** reste sur la marketplace.
   etl) ; **webhook entrant** `POST /api/salesforce/produits` (2026-08-20,
   `SalesforceWebhookController`) : Salesforce notifie les codes produit
   modifiés (`{"codes": [123, "456"]}`, 200 max, jeton Bearer
-  `SALESFORCE_WEBHOOK_TOKEN` — vide = 404, voir `docs/SECRETS.md`) et
+  `SALESFORCE_WEBHOOK_TOKEN` — vide = 404, voir `../exploitation/secrets.md`) et
   chaque code part en `RefreshFichesSalesforce(code)` sur la file etl
   (202) — les données ne sont jamais prises dans le payload, le refresher
   relit l'état chez Salesforce (mêmes règles que le cron, garde-diff,
@@ -436,9 +437,19 @@ marketplace continue de les résoudre en rôles à la réception.
 
 ## Points ouverts
 
+Clos :
+
 - Arbitrage des valeurs sans équivalent **clos le 2026-08-17** : 4 valeurs
   créées (incentive, résidence, salle/bureau, Insolites), le reste abandonné
   (voir la section dédiée). Types de prestataire résolus le 2026-08-13.
+- Reprise Salesforce → PIM **implémentée** (`app:salesforce:refresh-fiches`,
+  cron 3h + webhook entrant), anciennes commandes marketplace supprimées
+  (voir section dédiée) ; reste au go-live : configurer les secrets
+  `SALESFORCE_*` du PIM et vérifier le premier refresh dans la même fenêtre
+  que le déploiement marketplace.
+
+Encore ouverts :
+
 - Sous-prestations `TYPE_PRESTATAIRE` du CDC à implémenter dans le PIM
   (Photographe, Imprimeur, PLV / Signalétique…) pour retrouver la
   granularité des anciens types de prestataire.
@@ -446,8 +457,3 @@ marketplace continue de les résoudre en rôles à la réception.
   « première valeur » en place) : chantier décrit dans
   `docs/TODO-referentiels-multi-valeurs.md` du repo marketplace.
 - Maîtrise des traiteurs (PIM vs import Salesforce `app:pr-import-produits`).
-- Reprise Salesforce → PIM implémentée, anciennes commandes marketplace
-  supprimées (voir section dédiée) ; reste au go-live : configurer les
-  secrets `SALESFORCE_*` du PIM et vérifier le premier
-  `app:salesforce:refresh-fiches` dans la même fenêtre que le déploiement
-  marketplace.

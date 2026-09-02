@@ -4,6 +4,14 @@ _Mis en place le 2026-08-13. Trois niveaux : un référentiel statique appliqué
 partout, une vérification contre l'API Adresse (BAN) pour la France, et
 depuis le 2026-08-14 une vérification Geoapify pour l'étranger._
 
+_Périmètre : ce document couvre la **normalisation et la vérification** des
+adresses existantes. Geoapify sert aussi, depuis fin août 2026, à
+l'autocomplétion d'adresse dans le tunnel de création de fiche, aux
+suggestions d'enrichissement Places (attributs, horaires, typologie) et aux
+suggestions d'accès (transports) — ces usages partagent `GEOAPIFY_API_KEY`
+mais sont documentés avec leurs fonctionnalités respectives (cf.
+[configuration.md](../exploitation/configuration.md))._
+
 ## Référentiel géographique français (statique, sans API)
 
 `ReferentielGeographiqueFrancais` embarque les libellés canoniques INSEE des
@@ -120,7 +128,7 @@ sinon (source affichée dans le bloc et /qualite).
 
 - **Config** : `GEOAPIFY_API_KEY` (`.env.local`, vide = étranger désactivé,
   la France continue), `GEOAPIFY_API_ENDPOINT` (défaut api.geoapify.com).
-  Voir `docs/SECRETS.md`.
+  Voir `../exploitation/secrets.md`.
 - **Client** (`GeoapifyClient`) : une adresse → endpoint simple ; un lot →
   job batch asynchrone (1 000 max, ~0,5 crédit/adresse), **un job par pays**
   (filtre `countrycode`, garde anti-homonymes : un résultat hors du pays
