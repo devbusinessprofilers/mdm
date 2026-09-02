@@ -21,6 +21,8 @@ final readonly class JournalTraitementsRepository
         'media' => 'Médias',
         'enrichissement' => 'Enrichissements',
         'export' => 'Historique des exports',
+        'visibilite' => 'Visibilité géographique',
+        'marketplace' => 'Diffusion marketplace',
     ];
 
     /** Libellés des sources du détail d'une demande d'enrichissement. */
@@ -36,7 +38,6 @@ final readonly class JournalTraitementsRepository
 
     /** Familles sans journal propre, visibles uniquement dans la vue des échecs. */
     public const FAMILLES_ECHECS = [
-        'marketplace' => 'Diffusion marketplace',
         'outbox' => 'Outbox',
     ];
 
@@ -172,6 +173,51 @@ final readonly class JournalTraitementsRepository
                     'quand' => (string) ($row['finished_at'] ?? $row['requested_at']),
                     'lien' => ['route' => 'app_mdm_referentiel_export_suivi', 'params' => ['id' => self::ulid($row['id'])]],
                     'expire' => null === $row['expires_at'] ? null : (string) $row['expires_at'],
+                ];
+            }
+        }
+        if (null === $famille || 'visibilite' === $famille) {
+            // Attributions géographiques de visibilité : rattrapage global
+            // (commande), attribution à la création, clic « Appliquer les
+            // sites automatiques » — chaque traitement laisse sa trace.
+            foreach ($this->connection->fetchAllAssociative(
+                'SELECT r.declencheur, r.nb_fiches, r.nb_attributions, r.detail, r.executed_at, r.fiche_id, f.label, f.type
+                 FROM pim_visibilite_geo_run r
+                 LEFT JOIN pim_fiche f ON f.id = r.fiche_id
+                 ORDER BY r.executed_at DESC LIMIT '.$limit,
+            ) as $row) {
+                $lignes[] = [
+                    'famille' => 'visibilite',
+                    'sujet' => match ((string) $row['declencheur']) {
+                        'commande' => sprintf('Rattrapage géographique · %d fiche(s)', (int) $row['nb_fiches']),
+                        'creation' => sprintf('Attribution à la création · %s', (string) ($row['label'] ?? 'fiche supprimée')),
+                        default => sprintf('Sites automatiques · %s', (string) ($row['label'] ?? 'fiche supprimée')),
+                    },
+                    'statut' => 'termine',
+                    'erreur' => self::resumeVisibilite((string) $row['declencheur'], (int) $row['nb_attributions'], $row['detail']),
+                    'quand' => (string) $row['executed_at'],
+                    'lien' => null === $row['fiche_id'] ? null : self::lienFiche((string) $row['type'], self::ulid($row['fiche_id'])),
+                ];
+            }
+        }
+        if (null === $famille || 'marketplace' === $famille) {
+            // Diffusion marketplace : l'état courant de chaque fiche diffusée,
+            // du plus récemment traité au plus ancien (le worker met à jour la
+            // ligne à chaque synchronisation) ; tri porté par
+            // IDX_ETL_FICHE_MARKETPLACE_UPDATED.
+            foreach ($this->connection->fetchAllAssociative(
+                'SELECT m.code, m.status, m.last_error, m.updated_at, m.fiche_id, f.label, f.type
+                 FROM etl_fiche_marketplace m
+                 LEFT JOIN pim_fiche f ON f.id = m.fiche_id
+                 ORDER BY m.updated_at DESC LIMIT '.$limit,
+            ) as $row) {
+                $lignes[] = [
+                    'famille' => 'marketplace',
+                    'sujet' => sprintf('Diffusion · %s', (string) ($row['label'] ?? 'fiche '.$row['code'])),
+                    'statut' => (string) $row['status'],
+                    'erreur' => null === $row['last_error'] ? null : (string) $row['last_error'],
+                    'quand' => (string) $row['updated_at'],
+                    'lien' => null === $row['fiche_id'] || null === $row['type'] ? null : self::lienFiche((string) $row['type'], self::ulid($row['fiche_id'])),
                 ];
             }
         }
@@ -409,6 +455,30 @@ final readonly class JournalTraitementsRepository
         }
 
         return implode(' · ', $parts);
+    }
+
+    /**
+     * Résumé d'une attribution géographique : nombre de sites ajoutés, détaillé
+     * par site pour le rattrapage global. Zéro se dit explicitement — le
+     * traitement est passé et n'avait rien à faire.
+     */
+    private static function resumeVisibilite(string $declencheur, int $nbAttributions, mixed $detail): string
+    {
+        if (0 === $nbAttributions) {
+            return 'commande' === $declencheur ? 'Aucune attribution : tout le stock est déjà couvert.' : 'Aucun site à ajouter : la fiche est déjà couverte.';
+        }
+        $resume = sprintf('%d attribution%s', $nbAttributions, $nbAttributions > 1 ? 's' : '');
+        $parSite = is_string($detail) ? json_decode($detail, true) : null;
+        if (is_array($parSite) && [] !== $parSite) {
+            ksort($parSite);
+            $parts = [];
+            foreach ($parSite as $site => $nombre) {
+                $parts[] = sprintf('%s : %d', (string) $site, (int) $nombre);
+            }
+            $resume .= ' — '.implode(' · ', $parts);
+        }
+
+        return $resume;
     }
 
     /**

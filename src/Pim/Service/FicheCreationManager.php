@@ -15,6 +15,7 @@ use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Entity\Localisation;
 use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Entity\Service\ServiceEvenementiel;
+use App\Pim\Entity\VisibiliteGeoRun;
 use App\Pim\Enum\ModeInterventionActivite;
 use App\Pim\Enum\ModeInterventionService;
 use App\Pim\Enum\TypeFiche;
@@ -45,6 +46,7 @@ final readonly class FicheCreationManager
         private RechercheEntrepriseClient $entreprises,
         private SiteDiffusionRepository $sitesDiffusion,
         private SiteDiffusionGeoAttribueur $geoAttribueur,
+        private VisibiliteGeoJournal $journalGeo,
     ) {
     }
 
@@ -86,7 +88,10 @@ final readonly class FicheCreationManager
             // le pré-remplissage annuaire. Seul point d'attribution
             // automatique — ensuite, le bouton « Appliquer les sites
             // automatiques » de la fiche prend le relais à la demande.
-            $this->geoAttribueur->attribuer($fiche);
+            $ajoutes = $this->geoAttribueur->attribuer($fiche);
+            if ($ajoutes > 0) {
+                $this->journalGeo->traceFiche(VisibiliteGeoRun::DECLENCHEUR_CREATION, $fiche, $ajoutes);
+            }
             if ($entity instanceof Lieu && null !== $entreprise) {
                 self::enrichAdministratif($entity, $entreprise);
             }

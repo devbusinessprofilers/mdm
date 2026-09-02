@@ -9,6 +9,7 @@ use App\Pim\Message\IndexFiche;
 use App\Pim\Repository\FicheRepository;
 use App\Pim\Repository\SiteDiffusionRepository;
 use App\Pim\Service\SiteDiffusionGeoAttribueur;
+use App\Pim\Service\VisibiliteGeoJournal;
 use App\Shared\Outbox\OutboxPublisherInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -35,6 +36,7 @@ final class AttribuerVisibiliteGeoCommand extends Command
         private readonly SiteDiffusionRepository $sites,
         private readonly OutboxPublisherInterface $outbox,
         private readonly EntityManagerInterface $entityManager,
+        private readonly VisibiliteGeoJournal $journal,
     ) {
         parent::__construct();
     }
@@ -107,6 +109,17 @@ final class AttribuerVisibiliteGeoCommand extends Command
             $this->entityManager->clear();
         }
         $io->progressFinish();
+
+        if (!$dryRun) {
+            // Historique du journal /outils (famille Visibilité géographique) :
+            // une ligne récapitulative par rattrapage, même sans attribution.
+            $this->journal->traceCommande(
+                $fichesTouchees,
+                array_sum(array_column($parSite, 'nombre')),
+                array_map(static fn (array $ligne): int => $ligne['nombre'], $parSite),
+            );
+            $this->entityManager->flush();
+        }
 
         ksort($parSite);
         $io->table(

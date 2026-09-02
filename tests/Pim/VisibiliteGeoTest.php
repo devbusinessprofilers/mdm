@@ -121,6 +121,11 @@ final class VisibiliteGeoTest extends WebTestCase
             'SELECT s.code FROM pim_fiche_site_diffusion l JOIN pim_site_diffusion s ON s.id = l.site_id ORDER BY s.code',
         );
         self::assertSame(['GEO_TOURS_TEST'], $codes);
+        // L'attribution laisse son historique dans le journal des traitements.
+        self::assertSame(
+            [['declencheur' => 'creation', 'nb_attributions' => 1]],
+            $this->connection->fetchAllAssociative('SELECT declencheur, nb_attributions FROM pim_visibilite_geo_run'),
+        );
     }
 
     public function testLeBoutonAppliqueLesSitesSansDepublierLaFiche(): void
@@ -162,6 +167,16 @@ final class VisibiliteGeoTest extends WebTestCase
         $client->request($form->getMethod(), $form->getUri(), $form->getPhpValues());
         $client->followRedirect();
         self::assertSelectorTextContains('body', 'Aucun site à ajouter');
+
+        // Chaque clic laisse son historique, même sans effet, et le journal
+        // /outils l'affiche dans la famille Visibilité géographique.
+        self::assertSame(
+            [['declencheur' => 'bouton', 'nb_attributions' => 1], ['declencheur' => 'bouton', 'nb_attributions' => 0]],
+            $this->connection->fetchAllAssociative('SELECT declencheur, nb_attributions FROM pim_visibilite_geo_run ORDER BY executed_at, nb_attributions DESC'),
+        );
+        $client->request('GET', '/outils?famille=visibilite');
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('body', 'Sites automatiques · Château de Tours');
     }
 
     public function testLaCommandeDeRattrapageRespecteLeDryRun(): void
@@ -191,10 +206,20 @@ final class VisibiliteGeoTest extends WebTestCase
         self::assertStringContainsString('Manoir du rattrapage (Tours)', $tester->getDisplay());
         self::assertStringContainsString('1 fiche(s) concernée(s), 1 attribution(s)', $tester->getDisplay());
         self::assertSame(0, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM pim_fiche_site_diffusion'));
+        // Un dry-run n'écrit rien, pas même son historique.
+        self::assertSame(0, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM pim_visibilite_geo_run'));
 
         $tester->execute([]);
         $tester->assertCommandIsSuccessful();
         self::assertSame(1, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM pim_fiche_site_diffusion'));
+        // Le rattrapage réel laisse une ligne récapitulative dans le journal.
+        self::assertSame(
+            [['declencheur' => 'commande', 'nb_fiches' => 1, 'nb_attributions' => 1, 'detail' => ['GEO_TOURS_TEST' => 1]]],
+            array_map(
+                static fn (array $ligne): array => array_replace($ligne, ['detail' => json_decode((string) $ligne['detail'], true)]),
+                $this->connection->fetchAllAssociative('SELECT declencheur, nb_fiches, nb_attributions, detail FROM pim_visibilite_geo_run'),
+            ),
+        );
         // Rejouée, la commande ne trouve plus rien à ajouter (idempotence).
         $tester->execute([]);
         self::assertStringContainsString('0 fiche(s) concernée(s), 0 attribution(s)', $tester->getDisplay());
@@ -233,6 +258,7 @@ final class VisibiliteGeoTest extends WebTestCase
     {
         foreach ([
             'outbox_message',
+            'pim_visibilite_geo_run',
             'pim_fiche_search',
             'pim_fiche_site_diffusion',
             'pim_fiche_attribute_value',

@@ -21,6 +21,7 @@ use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Entity\Service\ServiceEvenementiel;
 use App\Pim\Entity\SiteDiffusion;
+use App\Pim\Entity\VisibiliteGeoRun;
 use App\Pim\Enum\TypeFiche;
 use App\Pim\Form\ActiviteType;
 use App\Pim\Form\AdresseSuggestionFormFactory;
@@ -111,6 +112,7 @@ final readonly class FicheEditeurEcran
         private CsrfTokenManagerInterface $csrfTokens,
         private FicheRepository $fiches,
         private SiteDiffusionGeoAttribueur $geoAttribueur,
+        private VisibiliteGeoJournal $journalGeo,
     ) {
     }
 
@@ -230,6 +232,9 @@ final readonly class FicheEditeurEcran
         }
         $fiche = $entite->fiche();
         $ajoutes = (int) $this->policy->execute($fiche, fn (): int => $this->geoAttribueur->attribuer($fiche));
+        // Historique du journal /outils : le clic laisse sa trace même sans
+        // effet — l'absence d'effet se lit sinon comme une absence de passage.
+        $this->journalGeo->traceFiche(VisibiliteGeoRun::DECLENCHEUR_BOUTON, $fiche, $ajoutes);
         $this->workflow->indexAndFlush($fiche);
 
         return $ajoutes;
