@@ -23,6 +23,7 @@ final readonly class JournalTraitementsRepository
         'export' => 'Historique des exports',
         'visibilite' => 'Visibilité géographique',
         'marketplace' => 'Diffusion marketplace',
+        'salesforce' => 'Synchronisation Salesforce',
     ];
 
     /** Libellés des sources du détail d'une demande d'enrichissement. */
@@ -221,6 +222,26 @@ final readonly class JournalTraitementsRepository
                 ];
             }
         }
+        if (null === $famille || 'salesforce' === $famille) {
+            // Synchro sortante Salesforce (CSV e-mail) : l'état de chaque fiche
+            // suivie — en attente d'envoi, en erreur (backoff), ou envoyée.
+            foreach ($this->connection->fetchAllAssociative(
+                'SELECT e.fiche_id, e.dirty_at, e.sent_at, e.last_error, e.failure_count, f.label, f.type
+                 FROM etl_fiche_salesforce_export e
+                 LEFT JOIN pim_fiche f ON f.id = e.fiche_id
+                 ORDER BY COALESCE(e.sent_at, e.dirty_at) DESC LIMIT '.$limit,
+            ) as $row) {
+                $enAttente = null === $row['sent_at'] || $row['sent_at'] < $row['dirty_at'];
+                $lignes[] = [
+                    'famille' => 'salesforce',
+                    'sujet' => sprintf('Salesforce · %s', (string) ($row['label'] ?? 'fiche supprimée')),
+                    'statut' => (int) $row['failure_count'] > 0 ? 'en_erreur' : ($enAttente ? 'en_attente' : 'termine'),
+                    'erreur' => null === $row['last_error'] ? null : (string) $row['last_error'],
+                    'quand' => (string) ($row['sent_at'] ?? $row['dirty_at']),
+                    'lien' => null === $row['type'] ? null : self::lienFiche((string) $row['type'], self::ulid($row['fiche_id'])),
+                ];
+            }
+        }
         if ($seulementErreurs) {
             $lignes = array_values(array_filter(
                 $lignes,
@@ -330,6 +351,24 @@ final readonly class JournalTraitementsRepository
                 'erreur' => null === $row['erreur'] ? null : (string) $row['erreur'],
                 'quand' => (string) $row['quand'],
                 'lien' => ['route' => 'app_mdm_referentiel_export_suivi', 'params' => ['id' => self::ulid($row['id'])]],
+            ];
+        }
+        // Envois Salesforce en backoff : le message d'erreur du dernier échec,
+        // la reprise est automatique (retry_at) une fois la cause corrigée.
+        foreach ($this->connection->fetchAllAssociative(
+            'SELECT e.fiche_id, e.last_error, e.failure_count, e.dirty_at, f.label, f.type
+             FROM etl_fiche_salesforce_export e
+             LEFT JOIN pim_fiche f ON f.id = e.fiche_id
+             WHERE e.failure_count > 0
+             ORDER BY e.dirty_at DESC LIMIT '.$limit,
+        ) as $row) {
+            $lignes[] = [
+                'famille' => 'salesforce',
+                'sujet' => sprintf('Salesforce · %s', (string) ($row['label'] ?? 'fiche supprimée')),
+                'statut' => 'en_erreur',
+                'erreur' => null === $row['last_error'] ? null : (string) $row['last_error'],
+                'quand' => (string) $row['dirty_at'],
+                'lien' => null === $row['type'] ? null : self::lienFiche((string) $row['type'], self::ulid($row['fiche_id'])),
             ];
         }
         // Fiches dont la diffusion marketplace a épuisé ses relances : la
