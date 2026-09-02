@@ -97,11 +97,50 @@ final class SalesforceProduitsCsvExporter
     }
 
     /**
+     * Pièce jointe visée sous les limites e-mail Salesforce (10 Mo par pièce
+     * jointe entrante) : 5 Mo laissent la marge de l'encodage de transfert.
+     */
+    public const TAILLE_MAX_PAQUET = 5_000_000;
+
+    /**
      * @param iterable<Fiche> $fiches
      */
     public function csv(iterable $fiches): string
     {
         return SalesforceCsvBuilder::build(self::ENTETES, $this->lignes($fiches));
+    }
+
+    /**
+     * Découpe l'export en paquets dont la pièce jointe reste sous le plafond :
+     * chaque paquet est un CSV complet (en-têtes répétés) accompagné des ids
+     * des fiches qu'il contient — une modification de masse part ainsi en une
+     * poignée d'e-mails au lieu d'un par fiche. Une ligne isolée plus grosse
+     * que le plafond part seule dans son paquet : mieux vaut un e-mail lourd
+     * qu'une fiche jamais synchronisée.
+     *
+     * @param iterable<Fiche> $fiches
+     *
+     * @return iterable<array{csv: string, ficheIds: list<string>}>
+     */
+    public function csvParPaquets(iterable $fiches, int $tailleMaxOctets = self::TAILLE_MAX_PAQUET): iterable
+    {
+        $entete = SalesforceCsvBuilder::ligne(self::ENTETES);
+        $csv = $entete;
+        $ficheIds = [];
+        foreach ($fiches as $fiche) {
+            $lieu = TypeFiche::Lieu === $fiche->type() ? $this->lieux->find($fiche->id()) : null;
+            $ligne = SalesforceCsvBuilder::ligne($this->ligne($fiche, $lieu instanceof Lieu ? $lieu : null));
+            if ([] !== $ficheIds && strlen($csv) + strlen($ligne) > $tailleMaxOctets) {
+                yield ['csv' => $csv, 'ficheIds' => $ficheIds];
+                $csv = $entete;
+                $ficheIds = [];
+            }
+            $csv .= $ligne;
+            $ficheIds[] = $fiche->idString();
+        }
+        if ([] !== $ficheIds) {
+            yield ['csv' => $csv, 'ficheIds' => $ficheIds];
+        }
     }
 
     /**

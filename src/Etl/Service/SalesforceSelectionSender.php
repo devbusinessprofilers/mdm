@@ -13,11 +13,12 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Uid\Ulid;
 
 /**
- * Envoi manuel groupé d'une sélection de fiches vers Salesforce : un unique
- * e-mail Produits (CSV multi-lignes) pour toute la sélection, et un unique
- * e-mail Salles pour les fiches qui en possèdent. Tous types et tous statuts,
- * sans tri (décision produit). Le suivi est marqué envoyé pour éviter un
- * doublon immédiat par la synchro automatique.
+ * Envoi manuel groupé d'une sélection de fiches vers Salesforce : e-mails
+ * Produits multi-lignes découpés par taille de pièce jointe (une grosse
+ * sélection part en quelques mails, pas en une pièce jointe démesurée), et un
+ * unique e-mail Salles pour les fiches qui en possèdent. Tous types et tous
+ * statuts, sans tri (décision produit). Le suivi est marqué envoyé pour
+ * éviter un doublon immédiat par la synchro automatique.
  */
 final readonly class SalesforceSelectionSender
 {
@@ -57,7 +58,9 @@ final readonly class SalesforceSelectionSender
             return 0;
         }
 
-        $this->mailer->envoyer(SalesforceCsvInterface::Produits, $this->produits->csv($fiches));
+        foreach ($this->produits->csvParPaquets($fiches) as $paquet) {
+            $this->mailer->envoyer(SalesforceCsvInterface::Produits, $paquet['csv']);
+        }
 
         $avecSalles = array_values(array_filter($fiches, fn (Fiche $f): bool => $this->salles->possedeDesSalles($f)));
         if ([] !== $avecSalles) {

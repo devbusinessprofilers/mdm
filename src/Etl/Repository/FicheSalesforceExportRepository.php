@@ -24,22 +24,30 @@ class FicheSalesforceExportRepository extends ServiceEntityRepository
 
     /**
      * Fiches modifiées depuis le dernier envoi Produits (ou jamais envoyées),
-     * hors lignes en backoff après échec (retryAt futur).
+     * hors lignes en backoff après échec (retryAt futur), en données scalaires
+     * (id de fiche → échéance dirtyAt) : l'envoi groupé hydrate par sous-lots
+     * avec des clear(), aucune entité ne doit y survivre.
      *
-     * @return list<FicheSalesforceExport>
+     * @return array<string, \DateTimeImmutable>
      */
-    public function dirtyProduits(int $limit): array
+    public function dirtyProduitsDonnees(int $limit): array
     {
-        return array_values(
-            $this->createQueryBuilder('e')
-                ->andWhere('e.sentAt IS NULL OR e.sentAt < e.dirtyAt')
-                ->andWhere('e.retryAt IS NULL OR e.retryAt <= :maintenant')
-                ->setParameter('maintenant', new \DateTimeImmutable())
-                ->orderBy('e.dirtyAt', 'ASC')
-                ->setMaxResults($limit)
-                ->getQuery()
-                ->getResult(),
-        );
+        /** @var list<array{ficheId: Ulid, dirtyAt: \DateTimeImmutable}> $rows */
+        $rows = $this->createQueryBuilder('e')
+            ->select('e.ficheId AS ficheId', 'e.dirtyAt AS dirtyAt')
+            ->andWhere('e.sentAt IS NULL OR e.sentAt < e.dirtyAt')
+            ->andWhere('e.retryAt IS NULL OR e.retryAt <= :maintenant')
+            ->setParameter('maintenant', new \DateTimeImmutable())
+            ->orderBy('e.dirtyAt', 'ASC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getArrayResult();
+        $donnees = [];
+        foreach ($rows as $row) {
+            $donnees[(string) $row['ficheId']] = $row['dirtyAt'];
+        }
+
+        return $donnees;
     }
 
     /**

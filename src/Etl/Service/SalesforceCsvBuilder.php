@@ -28,7 +28,7 @@ final class SalesforceCsvBuilder
     }
 
     /** @param list<string> $champs */
-    private static function ligne(array $champs): string
+    public static function ligne(array $champs): string
     {
         $quotes = array_map(
             static fn (string $champ): string => '"'.str_replace('"', '""', $champ).'"',
