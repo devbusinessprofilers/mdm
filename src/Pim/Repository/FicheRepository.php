@@ -95,6 +95,21 @@ final class FicheRepository extends ServiceEntityRepository
         return $fiches;
     }
 
+    /** @return list<Ulid> Ids des fiches non archivées, ordonnés (parcours par lots). */
+    public function findIdsNonArchivees(): array
+    {
+        /** @var list<array{id: Ulid}> $lignes */
+        $lignes = $this->createQueryBuilder('fiche')
+            ->select('fiche.id')
+            ->andWhere('fiche.status != :archivee')
+            ->setParameter('archivee', StatutFiche::Archivee)
+            ->orderBy('fiche.id', 'ASC')
+            ->getQuery()
+            ->getArrayResult();
+
+        return array_map(static fn (array $ligne): Ulid => $ligne['id'], $lignes);
+    }
+
     /** @return list<Fiche> Dernières fiches publiées, les plus récentes d'abord. */
     public function findDernieresPubliees(int $limit): array
     {
