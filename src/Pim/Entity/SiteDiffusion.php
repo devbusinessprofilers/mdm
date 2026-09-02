@@ -51,7 +51,18 @@ class SiteDiffusion
     #[ORM\Column(name: 'gammes_par_defaut', type: Types::JSON)]
     private array $gammesParDefaut = [];
 
-    /** @param list<TypeFiche> $gammesParDefaut */
+    /**
+     * @var list<array<string, string|int>> Critères géographiques (CritereGeo
+     *      sérialisés, OU logique) : zone dont les fiches sont rattachées
+     *      automatiquement au site. Vide = jamais attribué automatiquement.
+     */
+    #[ORM\Column(name: 'criteres_geo', type: Types::JSON)]
+    private array $criteresGeo = [];
+
+    /**
+     * @param list<TypeFiche>  $gammesParDefaut
+     * @param list<CritereGeo> $criteresGeo
+     */
     public function __construct(
         string $code,
         string $label,
@@ -60,6 +71,7 @@ class SiteDiffusion
         bool $payant = false,
         int $position = 0,
         array $gammesParDefaut = [],
+        array $criteresGeo = [],
     ) {
         $this->code = $code;
         $this->label = $label;
@@ -71,6 +83,7 @@ class SiteDiffusion
             static fn (TypeFiche $type): string => $type->value,
             $gammesParDefaut,
         )));
+        $this->changeCriteresGeo($criteresGeo);
     }
 
     public function id(): ?int
@@ -125,6 +138,24 @@ class SiteDiffusion
     public function estParDefautPour(TypeFiche $type): bool
     {
         return in_array($type->value, $this->gammesParDefaut, true);
+    }
+
+    /** @return list<CritereGeo> Les entrées sérialisées devenues illisibles sont ignorées. */
+    public function criteresGeo(): array
+    {
+        return array_values(array_filter(array_map(
+            static fn (array $critere): ?CritereGeo => CritereGeo::fromArray($critere),
+            $this->criteresGeo,
+        )));
+    }
+
+    /** @param list<CritereGeo> $criteres */
+    public function changeCriteresGeo(array $criteres): void
+    {
+        $this->criteresGeo = array_values(array_map(
+            static fn (CritereGeo $critere): array => $critere->toArray(),
+            $criteres,
+        ));
     }
 
     public function changeLabel(string $label): void

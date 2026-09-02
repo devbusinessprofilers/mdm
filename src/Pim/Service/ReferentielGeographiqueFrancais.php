@@ -84,6 +84,18 @@ final class ReferentielGeographiqueFrancais
     /** @var array<string, string>|null */
     private static ?array $numerosParDepartement = null;
 
+    /** @return list<string> Libellés canoniques des régions, pour les listes de choix. */
+    public static function regions(): array
+    {
+        return self::REGIONS;
+    }
+
+    /** @return list<string> Libellés canoniques des départements, pour les listes de choix. */
+    public static function departements(): array
+    {
+        return array_values(self::DEPARTEMENTS);
+    }
+
     /** Libellé canonique INSEE, ou la valeur d'origine si elle est inconnue du référentiel. */
     public static function normaliserRegion(string $region): string
     {
