@@ -17,7 +17,7 @@
         </div>
     </header>
     <section class="card table-wrapper"><table class="data-table">
-        <thead><tr><th>Position</th><th>Code</th><th>Libellé</th><th>Groupe</th><th>Mentions</th><th>Présélection</th><th>Actif</th><th></th></tr></thead>
+        <thead><tr><th>Position</th><th>Code</th><th>Libellé</th><th>Groupe</th><th>Mentions</th><th>Présélection</th><th>Critères géo</th><th>Actif</th><th></th></tr></thead>
         <tbody>
         {% for site in sites %}
             <tr>
@@ -32,11 +32,14 @@
                 <td>
                     {% for gamme in site.gammesParDefaut %}<span class="badge badge-neutral">{{ gamme.value }}</span>{% else %}—{% endfor %}
                 </td>
+                <td>
+                    {% for critere in site.criteresGeo %}<span class="badge badge-neutral">{{ critere.resume }}</span>{% else %}—{% endfor %}
+                </td>
                 <td>{{ site.actif ? 'Oui' : 'Non' }}</td>
                 <td><a class="btn btn-secondary btn-small" href="{{ path('app_pim_site_diffusion_edit', {id: site.id}) }}">Modifier</a></td>
             </tr>
         {% else %}
-            <tr><td class="empty-state" colspan="8">Aucun site. Lancez <code>app:sites-diffusion:sync</code> pour charger le catalogue provisoire.</td></tr>
+            <tr><td class="empty-state" colspan="9">Aucun site. Lancez <code>app:sites-diffusion:sync</code> pour charger le catalogue provisoire.</td></tr>
         {% endfor %}
         </tbody>
     </table></section>

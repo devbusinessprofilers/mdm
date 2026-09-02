@@ -1,5 +1,53 @@
 {% extends 'mdm/simple.html.twig' %}
 {% block title %}{{ site ? 'Modifier un site de diffusion' : 'Ajouter un site de diffusion' }}{% endblock %}
+
+{# Ligne de critère géographique : le contrôleur critere-geo montre les champs
+   du type choisi et propose les villes via le géocodeur (coordonnées cachées,
+   jamais saisies). La macro sert aussi de prototype aux lignes ajoutées. #}
+{% macro critere(item) %}
+    <fieldset data-form-collection-item data-controller="critere-geo"
+              data-critere-geo-url-value="{{ path('app_pim_site_diffusion_ville_autocomplete') }}"
+              class="flex flex-col gap-3 border border-neutral-200 rounded-md p-4 m-0">
+        <div class="flex flex-row items-end gap-4 flex-wrap">
+            <div class="flex-1 min-w-[200px]">
+                {{ form_row(item.type, { attr: {
+                    'data-critere-geo-target': 'type',
+                    'data-action': 'critere-geo#changerType',
+                } }) }}
+            </div>
+            <button type="button" class="btn btn-secondary btn-small mb-1" data-action="form-collection#remove">Retirer la zone</button>
+        </div>
+        <div data-critere-geo-target="sectionVille" class="flex flex-row items-start gap-4 flex-wrap">
+            <div class="flex-1 min-w-[180px]">
+                {{ form_row(item.villePays, { attr: { 'data-critere-geo-target': 'pays', 'data-action': 'critere-geo#changerPays' } }) }}
+            </div>
+            <div class="flex-[2] min-w-[240px] relative">
+                {{ form_row(item.ville, { attr: {
+                    'data-critere-geo-target': 'champ',
+                    'data-action': 'input->critere-geo#saisir keydown->critere-geo#clavier',
+                    autocomplete: 'off',
+                    role: 'combobox',
+                    'aria-expanded': 'false',
+                } }) }}
+                <div data-critere-geo-target="liste" role="listbox" hidden
+                     class="absolute z-10 top-full left-0 right-0 mt-1 max-h-64 overflow-y-auto rounded-md bg-white shadow-lg inset-ring-1 inset-ring-neutral-200 p-1"></div>
+                {{ form_widget(item.latitude, { attr: { 'data-critere-geo-target': 'latitude' } }) }}
+                {{ form_widget(item.longitude, { attr: { 'data-critere-geo-target': 'longitude' } }) }}
+            </div>
+            <div class="w-32">{{ form_row(item.rayonKm) }}</div>
+        </div>
+        <div data-critere-geo-target="sectionDepartement" hidden>
+            {{ form_row(item.departement) }}
+        </div>
+        <div data-critere-geo-target="sectionRegion" hidden>
+            {{ form_row(item.region) }}
+        </div>
+        <div data-critere-geo-target="sectionPays" hidden>
+            {{ form_row(item.countryCode) }}
+        </div>
+    </fieldset>
+{% endmacro %}
+
 {% block corps %}
 <main class="page">
     <a class="back-link" href="{{ path('app_pim_site_diffusion_index') }}">← Retour aux sites de diffusion</a>
@@ -10,7 +58,41 @@
         </div>
     </header>
     <section class="card">
-        {{ form(form) }}
+        {{ form_start(form) }}
+            {{ form_row(form.code) }}
+            {{ form_row(form.label) }}
+            {{ form_row(form.groupe) }}
+            {{ form_row(form.position) }}
+            {{ form_row(form.obligatoire) }}
+            {{ form_row(form.payant) }}
+            {{ form_row(form.actif) }}
+            {{ form_row(form.gammesParDefaut) }}
+            <fieldset class="flex flex-col gap-3 border-0 p-0 m-0"
+                data-controller="form-collection"
+                data-form-collection-index-value="{{ form.criteresGeo|length }}"
+                data-form-collection-prototype-value="{{ _self.critere(form.criteresGeo.vars.prototype)|e('html_attr') }}"
+            >
+                <div class="flex flex-row items-center gap-4">
+                    <legend class="contents"><strong>Critères géographiques</strong></legend>
+                    <span class="flex-1"></span>
+                    <button type="button" class="btn btn-secondary btn-small" data-action="form-collection#add" data-remove-label="Retirer la zone">Ajouter une zone</button>
+                </div>
+                <p class="text-sm text-neutral-500 m-0">
+                    Zones d'attribution automatique : une fiche localisée dans l'une d'elles est rattachée au site
+                    (à la création, via « Appliquer les sites automatiques » sur la fiche, et par la commande de rattrapage).
+                    Aucune zone = jamais attribué automatiquement.
+                </p>
+                {{ form_errors(form.criteresGeo) }}
+                <div class="flex flex-col gap-3" data-form-collection-target="items">
+                    {% for item in form.criteresGeo %}
+                        {{ _self.critere(item) }}
+                    {% endfor %}
+                </div>
+                {# Collection vide : marquer le champ rendu, sinon form_end le redessine. #}
+                {% do form.criteresGeo.setRendered %}
+            </fieldset>
+            {{ form_row(form.enregistrer) }}
+        {{ form_end(form) }}
     </section>
 </main>
 {% endblock %}

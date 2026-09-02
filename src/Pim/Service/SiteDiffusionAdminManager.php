@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Pim\Service;
 
+use App\Pim\Entity\CritereGeo;
 use App\Pim\Entity\SiteDiffusion;
 use App\Pim\Repository\SiteDiffusionRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -31,6 +32,7 @@ final readonly class SiteDiffusionAdminManager
             (bool) $data['payant'],
             (int) $data['position'],
             $data['gammesParDefaut'],
+            self::criteresGeo($data),
         );
         if (!$data['actif']) {
             $site->deactivate();
@@ -50,6 +52,7 @@ final readonly class SiteDiffusionAdminManager
         $site->changeObligatoire((bool) $data['obligatoire']);
         $site->changePayant((bool) $data['payant']);
         $site->changeGammesParDefaut($data['gammesParDefaut']);
+        $site->changeCriteresGeo(self::criteresGeo($data));
         $data['actif'] ? $site->activate() : $site->deactivate();
         $this->entityManager->flush();
     }
@@ -66,6 +69,42 @@ final readonly class SiteDiffusionAdminManager
             'payant' => $site->payant(),
             'actif' => $site->actif(),
             'gammesParDefaut' => $site->gammesParDefaut(),
+            'criteresGeo' => array_map(static fn (CritereGeo $critere): array => [
+                'type' => $critere->type,
+                'villePays' => 'FR',
+                'ville' => $critere->ville,
+                'latitude' => $critere->latitude,
+                'longitude' => $critere->longitude,
+                'rayonKm' => $critere->rayonKm,
+                'departement' => $critere->departement,
+                'region' => $critere->region,
+                'countryCode' => $critere->countryCode,
+            ], $site->criteresGeo()),
         ];
+    }
+
+    /**
+     * Lignes validées du formulaire → critères. La validation par ligne
+     * (CritereGeoType) garantit la complétude ; une ligne malgré tout
+     * inconstructible est écartée plutôt que de bloquer l'écran.
+     *
+     * @param array<string, mixed> $data
+     *
+     * @return list<CritereGeo>
+     */
+    private static function criteresGeo(array $data): array
+    {
+        $criteres = [];
+        foreach (is_array($data['criteresGeo'] ?? null) ? $data['criteresGeo'] : [] as $ligne) {
+            if (!is_array($ligne)) {
+                continue;
+            }
+            $critere = CritereGeo::fromArray($ligne);
+            if (null !== $critere) {
+                $criteres[] = $critere;
+            }
+        }
+
+        return $criteres;
     }
 }

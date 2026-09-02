@@ -8,6 +8,7 @@ use App\Pim\Enum\TypeFiche;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
+use Symfony\Component\Form\Extension\Core\Type\CollectionType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
@@ -76,6 +77,13 @@ final class SiteDiffusionType extends AbstractType
                     'Plateaux repas' => TypeFiche::Traiteur,
                 ],
                 'choice_value' => static fn (?TypeFiche $type): ?string => $type?->value,
+            ])
+            ->add('criteresGeo', CollectionType::class, [
+                'label' => 'Critères géographiques',
+                'entry_type' => CritereGeoType::class,
+                'allow_add' => true,
+                'allow_delete' => true,
+                'required' => false,
             ])
             ->add('enregistrer', SubmitType::class, ['label' => 'Enregistrer']);
     }

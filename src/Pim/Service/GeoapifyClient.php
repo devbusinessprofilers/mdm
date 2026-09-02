@@ -401,23 +401,26 @@ final class GeoapifyClient implements GeocodeurEtrangerInterface
      * création), bornées à un pays. Les clés suivent les champs de
      * Localisation ; `score` (confiance Geoapify) et `nom` (nom OSM) sont des
      * clés internes de filtrage, retirées avant livraison par livrer().
+     * `$type` restreint aux résultats d'un niveau Geoapify (`city`…) — la
+     * recherche de ville de référence des sites de diffusion s'en sert.
      *
      * @return list<array{label: string, ruePostale: ?string, codePostal: ?string, ville: ?string, region: ?string, departement: ?string, pays: ?string, countryCode: ?string, latitude: ?string, longitude: ?string, score: ?float, nom: ?string}>
      */
-    public function autocomplete(string $texte, string $pays, int $limite = 5): array
+    public function autocomplete(string $texte, string $pays, int $limite = 5, ?string $type = null): array
     {
         $texte = trim($texte);
         $pays = strtolower(trim($pays));
         if (!$this->isConfigured() || '' === $texte || '' === $pays) {
             return [];
         }
-        $donnees = $this->requete('GET', '/v1/geocode/autocomplete', [
+        $donnees = $this->requete('GET', '/v1/geocode/autocomplete', array_filter([
             'text' => $texte,
             'filter' => 'countrycode:'.$pays,
             'limit' => (string) max(1, $limite),
             'lang' => 'fr',
             'format' => 'json',
-        ], attendus: [200]);
+            'type' => $type,
+        ], static fn (?string $valeur): bool => null !== $valeur), attendus: [200]);
         $suggestions = [];
         foreach ($donnees['results'] ?? [] as $resultat) {
             if (!is_array($resultat)) {

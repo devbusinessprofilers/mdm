@@ -7,6 +7,7 @@ namespace App\Pim\Controller;
 use App\Pim\Entity\SiteDiffusion;
 use App\Pim\Form\SiteDiffusionType;
 use App\Pim\Repository\SiteDiffusionRepository;
+use App\Pim\Service\GeoapifyClient;
 use App\Pim\Service\SiteDiffusionAdminManager;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Form\FormError;
@@ -41,6 +42,7 @@ final class SiteDiffusionAdminController extends AbstractController
             'obligatoire' => false,
             'payant' => false,
             'gammesParDefaut' => [],
+            'criteresGeo' => [],
         ]);
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
@@ -90,5 +92,40 @@ final class SiteDiffusionAdminController extends AbstractController
             'form' => $form->createView(),
             'site' => $site,
         ]);
+    }
+
+    /**
+     * Suggestions de villes pour les critères géographiques (contrôleur
+     * critere-geo) : géocodage Geoapify restreint au niveau ville, borné à un
+     * pays. Les coordonnées retournées remplissent les champs cachés du
+     * critère — jamais de saisie manuelle.
+     */
+    #[Route('/ville-autocomplete', name: 'ville_autocomplete', methods: ['GET'])]
+    public function villeAutocomplete(Request $request, GeoapifyClient $geocodeur): Response
+    {
+        $q = trim($request->query->getString('q'));
+        $pays = trim($request->query->getString('pays'));
+        if (mb_strlen($q) < 2 || 1 !== preg_match('/^[a-zA-Z]{2}$/', $pays)) {
+            return $this->json(['suggestions' => []]);
+        }
+        try {
+            $resultats = $geocodeur->autocomplete($q, $pays, 6, type: 'city');
+        } catch (\RuntimeException) {
+            // L'autocomplétion est un confort : API indisponible = pas de suggestion.
+            $resultats = [];
+        }
+        $suggestions = [];
+        foreach ($resultats as $resultat) {
+            if (null === $resultat['latitude'] || null === $resultat['longitude']) {
+                continue;
+            }
+            $suggestions[] = [
+                'label' => $resultat['label'],
+                'latitude' => $resultat['latitude'],
+                'longitude' => $resultat['longitude'],
+            ];
+        }
+
+        return $this->json(['suggestions' => $suggestions]);
     }
 }
