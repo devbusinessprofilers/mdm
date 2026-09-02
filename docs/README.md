@@ -6,6 +6,7 @@
 - [configuration.md](exploitation/configuration.md) — paramètres applicatifs (`/admin/parametres`) et variables d'environnement, avec leur recouvrement
 - [secrets.md](exploitation/secrets.md) — gestion et rotation des secrets (`.env.local`, variables Upsun)
 - [deploiement-upsun.md](exploitation/deploiement-upsun.md) — déploiement en production (hooks, workers, mounts, procédures)
+- [go-live-marketplace.md](exploitation/go-live-marketplace.md) — runbook du jour J : brancher le PIM à la marketplace en production (comptes, variables, reprise, même fenêtre Salesforce/CDN)
 - [messenger.md](exploitation/messenger.md) — runbook des workers et files Symfony Messenger (transports, échecs, tâches planifiées)
 
 ## Architecture et fonctionnel

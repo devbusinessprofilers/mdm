@@ -144,6 +144,11 @@ clés — même principe que thématiques + cadres + ambiances → thèmes.
 
 ## Runbook go-live (ordre impératif)
 
+> Procédure opérationnelle complète du jour J (préparation des deux applis,
+> compte machine, variables, test de fumée, fenêtre Salesforce/CDN) :
+> [go-live-marketplace.md](../exploitation/go-live-marketplace.md). Cette
+> section garde le détail et la justification de l'ordre de reprise.
+
 1. Migrations marketplace, déploiement des deux applis, force-recreate des
    workers PIM.
 2. `app:marketplace:sync --lov` — le dictionnaire d'abord. Avec le mapping
