@@ -6,6 +6,7 @@ namespace App\Dashboard\Repository;
 
 use App\Dashboard\Journal\EtatTraitement;
 use App\Dashboard\Journal\FamilleTraitement;
+use App\Pim\Enum\ResultatSourceEnrichissement;
 use Doctrine\DBAL\Connection;
 use Symfony\Component\Uid\Ulid;
 
@@ -403,12 +404,7 @@ final readonly class JournalTraitementsRepository
             $parts[] = $libelle.' : '.match (true) {
                 null === $valeur => 'sans objet pour cette gamme',
                 is_int($valeur) || ctype_digit((string) $valeur) => 0 === (int) $valeur ? 'rien à proposer' : sprintf('%d suggestion%s', (int) $valeur, (int) $valeur > 1 ? 's' : ''),
-                'inactif' === $valeur => 'désactivée (/admin/parametres)',
-                'non_configuree' === $valeur => 'non configurée (clé API ou flux manquant)',
-                'sans_adresse' === $valeur => 'code postal manquant sur la fiche',
-                'indisponible' === $valeur => 'API indisponible',
-                'verification_enfilee' === $valeur => 'vérification enfilée',
-                default => (string) $valeur,
+                default => ResultatSourceEnrichissement::tryFrom((string) $valeur)?->libelle() ?? (string) $valeur,
             };
         }
         // Une source inconnue du libellé (ajoutée après coup) reste visible.

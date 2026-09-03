@@ -6,6 +6,7 @@ namespace App\Pim\MessageHandler;
 
 use App\Pim\Entity\Fiche;
 use App\Pim\Entity\Lieu\Lieu;
+use App\Pim\Enum\ResultatSourceEnrichissement;
 use App\Pim\Enum\SuggestionSource;
 use App\Pim\Enum\TypeFiche;
 use App\Pim\Message\EnrichirFiche;
@@ -102,18 +103,18 @@ final readonly class EnrichirFicheHandler
         // « inactif » (gate off), « non_configuree » (clé API ou flux manquant),
         // « sans_adresse » (code postal requis absent), « indisponible » (panne
         // API) ou nombre de suggestions créées/rafraîchies.
-        $resultat = ['adresse' => 'verification_enfilee'];
+        $resultat = ['adresse' => ResultatSourceEnrichissement::VerificationEnfilee->value];
         if (null !== $lieu) {
             // Le rapprochement sans SIRET (backfill) est inclus d'office : le
             // batch le réserve à une option, mais le clic demande tout.
             $resultat['sirene'] = $this->parametres->bool('sirene.verif_statut_actif')
                 ? $this->executer($fiche, SuggestionSource::Sirene, fn (): array => $this->statutsEtablissement->analyser($lieu))
-                : 'inactif';
+                : ResultatSourceEnrichissement::Inactif->value;
         }
         if (null !== $restaurant || null !== $lieu) {
             $resultat['geoapify'] = match (true) {
-                !$this->parametres->bool('geoapify.enrichissement_places') => 'inactif',
-                !$this->geoapify->isConfigured() => 'non_configuree',
+                !$this->parametres->bool('geoapify.enrichissement_places') => ResultatSourceEnrichissement::Inactif->value,
+                !$this->geoapify->isConfigured() => ResultatSourceEnrichissement::NonConfiguree->value,
                 null !== $restaurant => $this->executer($fiche, SuggestionSource::Geoapify, fn (): array => $this->attributsRestaurant->analyser($restaurant)),
                 default => $this->executer($fiche, SuggestionSource::Geoapify, fn (): array => $this->attributsLieu->analyser($lieu)),
             };
@@ -121,9 +122,9 @@ final readonly class EnrichirFicheHandler
         $codePostal = trim((string) $fiche->localisation()?->codePostal());
         if (null !== $lieu || null !== $activite) {
             $resultat['datatourisme'] = match (true) {
-                !$this->parametres->bool('datatourisme.import_actif') => 'inactif',
-                !$this->flux->isConfigured() => 'non_configuree',
-                '' === $codePostal => 'sans_adresse',
+                !$this->parametres->bool('datatourisme.import_actif') => ResultatSourceEnrichissement::Inactif->value,
+                !$this->flux->isConfigured() => ResultatSourceEnrichissement::NonConfiguree->value,
+                '' === $codePostal => ResultatSourceEnrichissement::SansAdresse->value,
                 default => $this->executer($fiche, SuggestionSource::DataTourisme, function () use ($lieu, $activite, $codePostal): array {
                     $index = DataTourismeIndex::depuis($this->flux->lire(), [$codePostal]);
 
@@ -134,12 +135,12 @@ final readonly class EnrichirFicheHandler
         if (null !== $lieu) {
             $resultat['wikidata'] = $this->parametres->bool('wikidata.detection_chaine')
                 ? $this->executer($fiche, SuggestionSource::Wikidata, fn (): array => $this->chainesHotelieres->analyser($lieu, ChaineDictionnaire::depuis($this->wikidata->chaines())))
-                : 'inactif';
+                : ResultatSourceEnrichissement::Inactif->value;
             // Classement officiel Atout France (référentiel local, jamais
             // « indisponible ») : étoiles → typologie, nombre de chambres.
             $resultat['atout_france'] = $this->parametres->bool('atout_france.classement_actif')
                 ? $this->executer($fiche, SuggestionSource::AtoutFrance, fn (): array => $this->classementsAtoutFrance->analyser($lieu))
-                : 'inactif';
+                : ResultatSourceEnrichissement::Inactif->value;
         }
         [$champIa, $description] = match (true) {
             null !== $lieu => ['lieu_desc_generale', $lieu->descGenerale()],
@@ -167,11 +168,11 @@ final readonly class EnrichirFicheHandler
                     ...$this->descriptionsIa->analyser($fiche, $description, $champIa),
                     ...(null === $champAtouts ? [] : $this->atoutsIa->analyser($fiche, $description, $champAtouts, $atoutsActuels, $atoutsMax, $atoutsLongueurMax)),
                 ])
-                : 'inactif';
+                : ResultatSourceEnrichissement::Inactif->value;
         }
 
         $this->terminerRun($message, $fiche, array_map(
-            static fn (int|string|null $valeur): int|string => $valeur ?? 'indisponible',
+            static fn (int|string|null $valeur): int|string => $valeur ?? ResultatSourceEnrichissement::Indisponible->value,
             $resultat,
         ));
         $this->entityManager->flush();
