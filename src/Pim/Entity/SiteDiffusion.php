@@ -152,10 +152,10 @@ class SiteDiffusion
     /** @param list<CritereGeo> $criteres */
     public function changeCriteresGeo(array $criteres): void
     {
-        $this->criteresGeo = array_values(array_map(
+        $this->criteresGeo = array_map(
             static fn (CritereGeo $critere): array => $critere->toArray(),
             $criteres,
-        ));
+        );
     }
 
     public function changeLabel(string $label): void

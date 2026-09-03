@@ -10,6 +10,7 @@ class MenuDTOSection extends MenuDTO
     ) {
     }
 
+    /** @param array<string, mixed> $currentRouteParameters */
     public function isActive(?string $currentRoute = null, array $currentRouteParameters = []): bool
     {
         if (!empty($this->items)) {

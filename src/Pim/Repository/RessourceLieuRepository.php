@@ -145,7 +145,7 @@ final class RessourceLieuRepository extends ServiceEntityRepository
 
     public function countByRightsStatus(RightsValidityStatus $status, ?TypeFiche $type = null, ?\DateTimeImmutable $today = null): int
     {
-        $cle = $status->value.'|'.($type?->value ?? '').'|'.($today?->format(\DateTimeInterface::ATOM) ?? '');
+        $cle = $status->value.'|'.($type->value ?? '').'|'.($today?->format(\DateTimeInterface::ATOM) ?? '');
 
         return $this->rightsCounts[$cle] ??= (int) $this->rightsQuery($status, $type, $today)
             ->select('COUNT(resource.id)')

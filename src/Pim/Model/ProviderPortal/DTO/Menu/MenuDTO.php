@@ -4,10 +4,10 @@ namespace App\Pim\Model\ProviderPortal\DTO\Menu;
 
 class MenuDTO
 {
-    /** @var MenuDTOItem[]|null */
+    /** @var list<MenuDTOItem> */
     public array $items = [];
 
-    /** @var MenuDTOSection[]|null */
+    /** @var list<MenuDTOSection> */
     public array $sections = [];
 
     public function addSection(MenuDTOSection $section): static
@@ -17,6 +17,7 @@ class MenuDTO
         return $this;
     }
 
+    /** @return list<MenuDTOSection> */
     public function getSections(): array
     {
         return $this->sections;
@@ -40,6 +41,7 @@ class MenuDTO
         return $this;
     }
 
+    /** @return list<MenuDTOItem> */
     public function getItems(): array
     {
         return $this->items;

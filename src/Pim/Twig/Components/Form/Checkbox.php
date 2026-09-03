@@ -21,5 +21,6 @@ class Checkbox
 
     public bool $disabled = false;
 
+    /** @var array<string, mixed> */
     public array $inputAttributes = [];
 }

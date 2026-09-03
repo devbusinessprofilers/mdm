@@ -107,10 +107,10 @@ final class RestaurantAttributsVerifierTest extends TestCase
         self::assertNotNull($proposition);
         $valeurs = \App\Pim\Lov\RestaurantLovCatalog::values($attribut);
 
-        return array_map(
+        return array_values(array_map(
             static fn (string $code): string => $valeurs[$code] ?? $code,
             $proposition->payload['codes'] ?? [],
-        );
+        ));
     }
 
     private static function restaurant(): Restaurant

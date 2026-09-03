@@ -199,7 +199,7 @@ final class VisibiliteGeoTest extends WebTestCase
         $this->entityManager->persist($sansGps);
         $this->entityManager->flush();
 
-        $tester = new CommandTester((new Application(self::$kernel))->find('app:pim:attribuer-visibilite-geo'));
+        $tester = new CommandTester((new Application(self::$kernel ?? throw new \LogicException('Kernel non démarré.')))->find('app:pim:attribuer-visibilite-geo'));
 
         $tester->execute(['--dry-run' => true]);
         $tester->assertCommandIsSuccessful();

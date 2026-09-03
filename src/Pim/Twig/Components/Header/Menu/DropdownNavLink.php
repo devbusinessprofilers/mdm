@@ -21,6 +21,7 @@ final class DropdownNavLink
 
     public string $currentRoute;
 
+    /** @var array<string, mixed> */
     public array $currentRouteParameters = [];
 
     public bool $isActive = false;

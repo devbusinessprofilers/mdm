@@ -1091,7 +1091,7 @@ final class ReferentielControllerTest extends WebTestCase
         // bucket et marque l'export expiré.
         $this->connection->executeStatement("UPDATE pim_referentiel_export SET expires_at = '2020-01-01 00:00:00'");
         $entityManager->clear();
-        $application = new \Symfony\Bundle\FrameworkBundle\Console\Application(self::$kernel);
+        $application = new \Symfony\Bundle\FrameworkBundle\Console\Application(self::$kernel ?? throw new \LogicException('Kernel non démarré.'));
         $tester = new \Symfony\Component\Console\Tester\CommandTester($application->find('app:referentiel:purger-exports'));
         $tester->execute([]);
         $tester->assertCommandIsSuccessful();

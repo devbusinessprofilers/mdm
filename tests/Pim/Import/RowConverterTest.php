@@ -86,7 +86,7 @@ final class RowConverterTest extends KernelTestCase
         // elle ne déclenche pas de suggestion.
         $messagesParColonne = [];
         foreach ($converted->errors as $error) {
-            $messagesParColonne[$error->column] = $error->message;
+            $messagesParColonne[$error->column ?? ''] = $error->message;
         }
         self::assertStringContainsString('« CODE_INCONNU »', $messagesParColonne['generale_typologie']);
         self::assertStringNotContainsString('Vouliez-vous dire', $messagesParColonne['generale_typologie']);

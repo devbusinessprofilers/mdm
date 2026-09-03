@@ -20,6 +20,7 @@ class TextInput
 
     public bool $readonly = false;
 
+    /** @var array<string, mixed> */
     public array $inputAttributes = [];
 
     public ?string $placeholder = null;

@@ -59,7 +59,7 @@ final class FusionChampsCatalogueTest extends KernelTestCase
                     self::assertTrue(method_exists(Fiche::class, $column->target), $path);
                     continue;
                 }
-                self::assertSame($prefixes[$type->value].$column->target, $path);
+                self::assertSame(($prefixes[$type->value] ?? self::fail('Préfixe manquant pour '.$type->value)).$column->target, $path);
             }
         }
     }

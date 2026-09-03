@@ -20,5 +20,6 @@ class SwitchButton
 
     public bool $inverted = false;
 
+    /** @var array<string, mixed> */
     public array $inputAttributes = [];
 }

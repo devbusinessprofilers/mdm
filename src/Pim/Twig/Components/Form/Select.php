@@ -33,6 +33,7 @@ class Select
 
     public bool $prototype = false;
 
+    /** @var array<string, mixed> */
     public array $selectAttributes = [];
 
     public ?string $placeholder = null;
@@ -47,6 +48,8 @@ class Select
 
     /**
      * Get selected value(s) as array.
+     *
+     * @return array<int|string, mixed>
      */
     public function getSelectedValues(): array
     {

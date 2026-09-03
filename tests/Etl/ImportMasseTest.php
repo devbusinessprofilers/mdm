@@ -114,7 +114,9 @@ final class ImportMasseTest extends WebTestCase
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('body', 'Import en masse');
         $form = $crawler->selectButton('Lancer l\'import en masse')->form();
-        $form['import_masse_upload[file]']->upload($this->fichier);
+        $champFichier = $form['import_masse_upload[file]'];
+        self::assertInstanceOf(\Symfony\Component\DomCrawler\Field\FileFormField::class, $champFichier);
+        $champFichier->upload($this->fichier);
         $client->submit($form);
         self::assertResponseRedirects();
         $client->followRedirect();
@@ -206,7 +208,9 @@ final class ImportMasseTest extends WebTestCase
 
         $crawler = $client->request('GET', '/outils/import-masse');
         $form = $crawler->selectButton('Lancer l\'import en masse')->form();
-        $form['import_masse_upload[file]']->upload($this->fichier);
+        $champFichier = $form['import_masse_upload[file]'];
+        self::assertInstanceOf(\Symfony\Component\DomCrawler\Field\FileFormField::class, $champFichier);
+        $champFichier->upload($this->fichier);
         $client->submit($form);
         self::assertResponseRedirects();
 
@@ -255,7 +259,9 @@ final class ImportMasseTest extends WebTestCase
 
         $crawler = $client->request('GET', '/outils/import-masse');
         $form = $crawler->selectButton('Lancer l\'import en masse')->form();
-        $form['import_masse_upload[file]']->upload($this->fichier);
+        $champFichier = $form['import_masse_upload[file]'];
+        self::assertInstanceOf(\Symfony\Component\DomCrawler\Field\FileFormField::class, $champFichier);
+        $champFichier->upload($this->fichier);
         $client->submit($form);
         self::assertResponseRedirects();
 
@@ -336,7 +342,9 @@ final class ImportMasseTest extends WebTestCase
 
         $crawler = $client->request('GET', '/outils/import-masse');
         $form = $crawler->selectButton('Lancer l\'import en masse')->form();
-        $form['import_masse_upload[file]']->upload($this->fichier);
+        $champFichier = $form['import_masse_upload[file]'];
+        self::assertInstanceOf(\Symfony\Component\DomCrawler\Field\FileFormField::class, $champFichier);
+        $champFichier->upload($this->fichier);
         $client->submit($form);
         self::assertResponseRedirects();
         $client->followRedirect();

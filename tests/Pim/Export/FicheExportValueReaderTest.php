@@ -41,26 +41,27 @@ final class FicheExportValueReaderTest extends TestCase
     public function testLesFormatsSimplesSontCeuxDeLImport(): void
     {
         $porteur = new class {
-            public function actif(): ?bool
+            public function actif(): bool
             {
                 return true;
             }
 
-            public function inactif(): ?bool
+            public function inactif(): null
             {
                 return null;
             }
 
-            public function debut(): ?\DateTimeImmutable
+            public function debut(): \DateTimeImmutable
             {
                 return new \DateTimeImmutable('2026-08-27 09:30');
             }
 
-            public function statut(): ?StatutTest
+            public function statut(): StatutTest
             {
                 return StatutTest::Ouvert;
             }
 
+            /** @return list<string> */
             public function tags(): array
             {
                 return ['a', 'b'];
@@ -80,16 +81,18 @@ final class FicheExportValueReaderTest extends TestCase
     public function testLesColonnesLovProduisentLesLibelles(): void
     {
         $porteur = new class {
-            public function couleur(): ?string
+            public function couleur(): string
             {
                 return 'ROUGE';
             }
 
+            /** @return list<string> */
             public function couleurs(): array
             {
                 return ['ROUGE', 'INCONNU'];
             }
 
+            /** @return list<string> */
             public function vide(): array
             {
                 return [];

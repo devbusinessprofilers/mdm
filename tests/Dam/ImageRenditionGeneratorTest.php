@@ -91,9 +91,9 @@ final class ImageRenditionGeneratorTest extends TestCase
         fclose($stream);
         $mean = $this->convert(['convert', '-', '-resize', '1x1!', '-depth', '8', 'txt:-'], $renditions[0]->contents);
         self::assertSame(1, preg_match('/\((\d+),(\d+),(\d+)/', $mean, $rgb), 'Couleur moyenne illisible : '.$mean);
-        self::assertLessThan(50, (int) $rgb[1], 'Canal rouge : '.$mean);
-        self::assertGreaterThan(200, (int) $rgb[2], 'Canal vert : '.$mean);
-        self::assertLessThan(50, (int) $rgb[3], 'Canal bleu : '.$mean);
+        self::assertLessThan(50, (int) ($rgb[1] ?? 0), 'Canal rouge : '.$mean);
+        self::assertGreaterThan(200, (int) ($rgb[2] ?? 0), 'Canal vert : '.$mean);
+        self::assertLessThan(50, (int) ($rgb[3] ?? 0), 'Canal bleu : '.$mean);
     }
 
     /** @param list<string> $command */

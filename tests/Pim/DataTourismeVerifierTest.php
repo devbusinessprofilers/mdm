@@ -27,12 +27,12 @@ final class DataTourismeVerifierTest extends TestCase
         $parChamp = self::parChamp((new DataTourismeVerifier())->analyserLieu($lieu, $index));
 
         self::assertArrayHasKey('lieu_desc_generale', $parChamp);
-        self::assertSame('Un château d\'exception au cœur de la Touraine.', $parChamp['lieu_desc_generale']->payload['text']);
+        self::assertSame('Un château d\'exception au cœur de la Touraine.', $parChamp['lieu_desc_generale']->payload['text'] ?? null);
         self::assertArrayHasKey('lieu_lov_BIEN_ETRE', $parChamp);
-        self::assertContains('BIEN_ETRE_4', $parChamp['lieu_lov_BIEN_ETRE']->payload['codes']);
-        self::assertContains('BIEN_ETRE_3', $parChamp['lieu_lov_BIEN_ETRE']->payload['codes']);
+        self::assertContains('BIEN_ETRE_4', $parChamp['lieu_lov_BIEN_ETRE']->payload['codes'] ?? []);
+        self::assertContains('BIEN_ETRE_3', $parChamp['lieu_lov_BIEN_ETRE']->payload['codes'] ?? []);
         self::assertArrayHasKey('lieu_lov_INSTALLATION', $parChamp);
-        self::assertSame(['INSTALLATION_10'], $parChamp['lieu_lov_INSTALLATION']->payload['codes']);
+        self::assertSame(['INSTALLATION_10'], $parChamp['lieu_lov_INSTALLATION']->payload['codes'] ?? []);
     }
 
     public function testProposeLaDescriptionDUneActivite(): void
@@ -54,7 +54,7 @@ final class DataTourismeVerifierTest extends TestCase
 
         self::assertCount(1, $propositions);
         self::assertSame('activite_desc_generale', $propositions[0]->champ);
-        self::assertSame('Une descente sportive sur le Cher.', $propositions[0]->payload['text']);
+        self::assertSame('Une descente sportive sur le Cher.', $propositions[0]->payload['text'] ?? null);
     }
 
     public function testAucunRapprochementSurCodePostalDifferent(): void

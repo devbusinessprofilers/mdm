@@ -10,6 +10,7 @@ final class LanguageSwitcher
 {
     public string $currentLocale;
 
+    /** @var list<string> */
     public array $availableLocales = ['fr', 'en'];
 
     public function __construct(

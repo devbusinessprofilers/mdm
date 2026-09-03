@@ -197,7 +197,7 @@ final class RechercheEntrepriseClientTest extends TestCase
         self::assertSame('Chemin de l\'Ecluse', $suggestions[1]['ruePostale'] ?? null);
         self::assertSame('La Celle-Saint-Cloud', $suggestions[1]['ville'] ?? null);
         // Libellé composé champ par champ : l'article de la commune garde sa majuscule.
-        self::assertSame('AUBERGE DE L\'ECLUSE — Chemin de l\'Ecluse 78170 La Celle-Saint-Cloud', $suggestions[1]['label'] ?? null);
+        self::assertSame('AUBERGE DE L\'ECLUSE — Chemin de l\'Ecluse 78170 La Celle-Saint-Cloud', $suggestions[1]['label']);
         self::assertSame('Yvelines', $suggestions[1]['departement'] ?? null);
         self::assertCount(2, $suggestions);
     }
