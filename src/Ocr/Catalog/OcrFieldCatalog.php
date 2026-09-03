@@ -20,7 +20,9 @@ final readonly class OcrFieldCatalog
         'administratif.affacturageBic', 'administratif.affacturageIban',
     ];
 
-    public function __construct(private FicheImportSchemaRegistry $schemas) {}
+    public function __construct(private FicheImportSchemaRegistry $schemas)
+    {
+    }
 
     /** @return list<OcrFieldDefinition> */
     public function definitions(TypeFiche $type): array
@@ -29,7 +31,9 @@ final readonly class OcrFieldCatalog
         $definitions = [];
         foreach ($schema->ficheColumns() as $column) {
             $path = $this->path($column);
-            if (in_array($path, self::EXCLUDED_PATHS, true) || $this->isSensitive($path)) { continue; }
+            if (in_array($path, self::EXCLUDED_PATHS, true) || $this->isSensitive($path)) {
+                continue;
+            }
             $definitions[] = new OcrFieldDefinition($path, $this->label($column->header), $this->type($column), options: $this->options($column, $schema->lovChoices()));
         }
         foreach ($schema->collections() as $collection) {
@@ -66,17 +70,24 @@ final readonly class OcrFieldCatalog
             if ($field->collection) {
                 $box['fields'] = array_map(static function (array $column): array {
                     $result = ['key' => $column['key'], 'displayName' => $column['label'], 'type' => $column['type']];
-                    if ([] !== $column['options']) { $result['options'] = array_map(static fn (int|string $key): array => ['key' => (string) $key], array_keys($column['options'])); }
+                    if ([] !== $column['options']) {
+                        $result['options'] = array_map(static fn (int|string $key): array => ['key' => (string) $key], array_keys($column['options']));
+                    }
+
                     return $result;
                 }, $field->columns);
             }
+
             return $box;
         }, $this->definitions($type));
     }
 
     private function path(ColumnDefinition $column): string
     {
-        if ('label' === $column->target) { return 'fiche.label'; }
+        if ('label' === $column->target) {
+            return 'fiche.label';
+        }
+
         return null === $column->targetPath ? $column->target : $column->targetPath.'.'.$column->target;
     }
 
@@ -94,6 +105,7 @@ final readonly class OcrFieldCatalog
 
     /**
      * @param array<string, array<string, string>> $fallback
+     *
      * @return array<string, string>
      */
     private function options(ColumnDefinition $column, array $fallback): array
@@ -101,7 +113,10 @@ final readonly class OcrFieldCatalog
         if (ColumnKind::Enum === $column->kind && null !== $column->enumClass) {
             return array_combine(array_map(static fn (\BackedEnum $case): string => (string) $case->value, $column->enumClass::cases()), array_map(static fn (\BackedEnum $case): string => (string) $case->value, $column->enumClass::cases())) ?: [];
         }
-        if (null === $column->lovAttribute) { return []; }
+        if (null === $column->lovAttribute) {
+            return [];
+        }
+
         return LovRuntimeCatalog::choices($column->lovAttribute) ?? ($fallback[$column->lovAttribute] ?? []);
     }
 

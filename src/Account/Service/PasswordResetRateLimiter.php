@@ -15,7 +15,8 @@ final readonly class PasswordResetRateLimiter
         private RateLimiterFactory $emailLimiter,
         #[Autowire(service: 'limiter.password_reset_ip')]
         private RateLimiterFactory $ipLimiter,
-    ) {}
+    ) {
+    }
 
     public function accept(string $email, string $ipAddress): bool
     {

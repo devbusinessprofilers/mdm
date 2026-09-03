@@ -16,15 +16,15 @@ use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\Form\FormInterface;
 
 /** @implements ProcessorInterface<ServiceEvenementielPatchInput, ServiceEvenementielResource> */
-final readonly class ServiceEvenementielPatchProcessor implements
-    ProcessorInterface
+final readonly class ServiceEvenementielPatchProcessor implements ProcessorInterface
 {
     public function __construct(
         private ServiceEvenementielApiState $state,
         private ServiceEvenementielApiMapper $mapper,
         private FormFactoryInterface $forms,
         private ExternalScopeGuard $scopes,
-    ) {}
+    ) {
+    }
 
     public function process(
         mixed $data,
@@ -33,11 +33,11 @@ final readonly class ServiceEvenementielPatchProcessor implements
         array $context = [],
     ): ServiceEvenementielResource {
         $this->scopes->requireScope(ExternalScopeGuard::FICHES_WRITE);
-        $service = $this->state->service((string) ($uriVariables["id"] ?? ""));
+        $service = $this->state->service((string) ($uriVariables['id'] ?? ''));
         $this->state->assertVersion($service);
 
         $form = $this->forms->create(ServiceEvenementielType::class, $service, [
-            "csrf_protection" => false,
+            'csrf_protection' => false,
         ]);
 
         try {
@@ -51,12 +51,7 @@ final readonly class ServiceEvenementielPatchProcessor implements
                     $form->submit($data->payload(), false);
 
                     if (!$form->isValid()) {
-                        throw new ApiProblemException(
-                            422,
-                            "validation_failed",
-                            "La fiche contient des données invalides.",
-                            ["violations" => $this->errors($form)],
-                        );
+                        throw new ApiProblemException(422, 'validation_failed', 'La fiche contient des données invalides.', ['violations' => $this->errors($form)]);
                     }
 
                     $service->fiche()->markSystemChanged();
@@ -67,11 +62,7 @@ final readonly class ServiceEvenementielPatchProcessor implements
         } catch (ApiProblemException $exception) {
             throw $exception;
         } catch (\Throwable $exception) {
-            throw new ApiProblemException(
-                422,
-                "invalid_payload",
-                $exception->getMessage(),
-            );
+            throw new ApiProblemException(422, 'invalid_payload', $exception->getMessage());
         }
     }
 
@@ -94,8 +85,8 @@ final readonly class ServiceEvenementielPatchProcessor implements
             }
 
             $errors[] = [
-                "propertyPath" => implode(".", $path),
-                "message" => $error->getMessage(),
+                'propertyPath' => implode('.', $path),
+                'message' => $error->getMessage(),
             ];
         }
 

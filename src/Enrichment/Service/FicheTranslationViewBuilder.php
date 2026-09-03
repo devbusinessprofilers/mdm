@@ -15,7 +15,8 @@ final readonly class FicheTranslationViewBuilder
         private FicheTranslationRepository $translations,
         private FicheTranslationSourceExtractor $extractor,
         private TranslationAdminFormFactory $forms,
-    ) {}
+    ) {
+    }
 
     /** @return array<string, mixed> */
     public function build(Fiche $fiche, bool $withCorrectionForms): array

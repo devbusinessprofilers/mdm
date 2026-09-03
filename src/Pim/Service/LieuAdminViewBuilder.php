@@ -31,10 +31,11 @@ final readonly class LieuAdminViewBuilder
         private LieuDocumentPresenter $documents,
         private CsrfTokenManagerInterface $csrfTokens,
         private ParametreProviderInterface $parametres,
-    ) {}
+    ) {
+    }
 
     /** @param FormInterface<mixed> $form
-     *  @return array<string, mixed>
+     * @return array<string, mixed>
      */
     public function form(FormInterface $form, Lieu $lieu, bool $creation): array
     {
@@ -58,7 +59,9 @@ final readonly class LieuAdminViewBuilder
     {
         $documents = [];
         foreach ($lieu->ressources() as $resource) {
-            if (NatureRessource::Document !== $resource->nature() || null === $resource->documentUsage()) { continue; }
+            if (NatureRessource::Document !== $resource->nature() || null === $resource->documentUsage()) {
+                continue;
+            }
             $documents[] = ['view' => $this->documents->resource($resource), 'onglet' => $resource->documentUsage()->ongletMedia()];
         }
 
@@ -77,7 +80,9 @@ final readonly class LieuAdminViewBuilder
         }
 
         $salles = [];
-        foreach ($lieu->salles() as $salle) { $salles[$salle->id()] = $salle->nom(); }
+        foreach ($lieu->salles() as $salle) {
+            $salles[$salle->id()] = $salle->nom();
+        }
 
         return [
             'photos' => $this->photos->photos($lieu), 'documents' => $documents,
@@ -120,7 +125,9 @@ final readonly class LieuAdminViewBuilder
 
         $documents = [];
         foreach ($lieu->ressources() as $resource) {
-            if (NatureRessource::Document !== $resource->nature() || null === $resource->documentUsage()) { continue; }
+            if (NatureRessource::Document !== $resource->nature() || null === $resource->documentUsage()) {
+                continue;
+            }
             $params = ['id' => $lieu->id(), 'resourceId' => $resource->id()];
             $documents[] = [
                 'view' => $this->documents->resource($resource),

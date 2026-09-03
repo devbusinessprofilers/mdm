@@ -10,6 +10,7 @@ interface DocumentExtractionProviderInterface
 
     /**
      * @param list<array<string, mixed>> $fields
+     *
      * @return array<string, mixed>
      */
     public function extract(string $fileId, array $fields): array;

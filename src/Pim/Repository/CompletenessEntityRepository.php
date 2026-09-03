@@ -16,10 +16,12 @@ use Symfony\Component\Uid\Ulid;
 
 final readonly class CompletenessEntityRepository
 {
-    public function __construct(private EntityManagerInterface $entityManager) {}
+    public function __construct(private EntityManagerInterface $entityManager)
+    {
+    }
 
     /** @param list<Fiche> $fiches
-     *  @return list<object>
+     * @return list<object>
      */
     public function findAggregates(TypeFiche $type, array $fiches): array
     {
@@ -61,7 +63,7 @@ final readonly class CompletenessEntityRepository
     }
 
     /** @param class-string $class
-     *  @param list<object> $owners
+     * @param list<object> $owners
      */
     private function fetchCollection(string $class, string $association, array $owners): void
     {

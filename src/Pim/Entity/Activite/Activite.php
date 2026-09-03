@@ -37,31 +37,25 @@ class Activite
     #[ORM\Column(type: 'ulid', unique: true)]
     private Ulid $id;
     #[ORM\OneToOne(cascade: ['persist', 'remove'], orphanRemoval: true)]
-    #[
-        ORM\JoinColumn(
-            name: 'fiche_id',
-            nullable: false,
-            unique: true,
-            onDelete: 'CASCADE',
-        ),
-    ]
+    #[ORM\JoinColumn(
+        name: 'fiche_id',
+        nullable: false,
+        unique: true,
+        onDelete: 'CASCADE',
+    ),]
     private Fiche $fiche;
     #[ORM\ManyToOne]
-    #[
-        ORM\JoinColumn(
-            name: 'prestataire_value_id',
-            nullable: true,
-            onDelete: 'RESTRICT',
-        ),
-    ]
+    #[ORM\JoinColumn(
+        name: 'prestataire_value_id',
+        nullable: true,
+        onDelete: 'RESTRICT',
+    ),]
     private ?ValeurAttribut $prestataire = null;
-    #[
-        ORM\Column(
-            length: 16,
-            enumType: ModeInterventionActivite::class,
-            nullable: true,
-        ),
-    ]
+    #[ORM\Column(
+        length: 16,
+        enumType: ModeInterventionActivite::class,
+        nullable: true,
+    ),]
     private ?ModeInterventionActivite $modeIntervention = null;
     #[ORM\Column(options: ['default' => false])]
     private bool $touteFrance = false;
@@ -94,14 +88,12 @@ class Activite
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $youtubeUrl = null;
     /** @var Collection<int, OffreActivite> */
-    #[
-        ORM\OneToMany(
-            mappedBy: 'activite',
-            targetEntity: OffreActivite::class,
-            cascade: ['persist', 'remove'],
-            orphanRemoval: true,
-        ),
-    ]
+    #[ORM\OneToMany(
+        mappedBy: 'activite',
+        targetEntity: OffreActivite::class,
+        cascade: ['persist', 'remove'],
+        orphanRemoval: true,
+    ),]
     #[ORM\OrderBy(['type' => 'ASC', 'position' => 'ASC'])]
     private Collection $offres;
 

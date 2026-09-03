@@ -27,9 +27,21 @@ class FicheSearchDocument
     ) {
     }
 
-    public function fiche(): Fiche { return $this->fiche; }
-    public function content(): string { return $this->content; }
-    public function sourceVersion(): int { return $this->sourceVersion; }
+    public function fiche(): Fiche
+    {
+        return $this->fiche;
+    }
+
+    public function content(): string
+    {
+        return $this->content;
+    }
+
+    public function sourceVersion(): int
+    {
+        return $this->sourceVersion;
+    }
+
     public function reindex(string $content, int $version): void
     {
         $this->content = $content;

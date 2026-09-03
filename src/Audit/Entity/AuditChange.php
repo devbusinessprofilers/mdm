@@ -11,12 +11,10 @@ use Symfony\Component\Uid\Ulid;
 
 #[ORM\Entity(repositoryClass: AuditChangeRepository::class)]
 #[ORM\Table(name: 'audit_change')]
-#[
-    ORM\Index(
-        name: 'IDX_AUDIT_CHANGE_REVISION_PATH',
-        columns: ['revision_id', 'path'],
-    ),
-]
+#[ORM\Index(
+    name: 'IDX_AUDIT_CHANGE_REVISION_PATH',
+    columns: ['revision_id', 'path'],
+),]
 final class AuditChange
 {
     #[ORM\Id]
@@ -26,18 +24,12 @@ final class AuditChange
     public function __construct(
         // EAGER : AuditRevision est final, Doctrine ne peut pas en générer
         // de proxy lazy quand un change est chargé isolément.
-        #[ORM\ManyToOne(inversedBy: 'changes', fetch: 'EAGER')] #[
-            ORM\JoinColumn(nullable: false, onDelete: 'CASCADE'),
-        ]
+        #[ORM\ManyToOne(inversedBy: 'changes', fetch: 'EAGER')] #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE'),]
         private AuditRevision $revision,
         #[ORM\Column(length: 512)] private string $path,
-        #[
-            ORM\Column(type: Types::JSON, nullable: true),
-        ]
+        #[ORM\Column(type: Types::JSON, nullable: true),]
         private mixed $oldValue,
-        #[
-            ORM\Column(type: Types::JSON, nullable: true),
-        ]
+        #[ORM\Column(type: Types::JSON, nullable: true),]
         private mixed $newValue,
     ) {
         $this->id = new Ulid();

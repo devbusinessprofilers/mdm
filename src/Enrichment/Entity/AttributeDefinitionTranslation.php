@@ -20,7 +20,12 @@ class AttributeDefinitionTranslation extends AbstractLovTranslation
         private AttributDefinition $attribute,
         SupportedLocale $locale,
         string $source,
-    ) { $this->initializeTranslation($locale, $source); }
+    ) {
+        $this->initializeTranslation($locale, $source);
+    }
 
-    public function attribute(): AttributDefinition { return $this->attribute; }
+    public function attribute(): AttributDefinition
+    {
+        return $this->attribute;
+    }
 }

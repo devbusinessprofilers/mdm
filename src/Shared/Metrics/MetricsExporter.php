@@ -19,7 +19,8 @@ final readonly class MetricsExporter
         private Connection $connection,
         #[Autowire(env: 'METRICS_TOKEN')]
         private string $token,
-    ) {}
+    ) {
+    }
 
     public function isAuthorized(Request $request): bool
     {

@@ -6,17 +6,17 @@ namespace App\Pim\Api\State;
 
 use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProviderInterface;
-use App\Pim\Api\ServiceEvenementielApiMapper;
 use App\Pim\Api\Dto\ServiceEvenementielResource;
+use App\Pim\Api\ServiceEvenementielApiMapper;
 
 /** @implements ProviderInterface<ServiceEvenementielResource> */
-final readonly class ServiceEvenementielItemProvider implements
-    ProviderInterface
+final readonly class ServiceEvenementielItemProvider implements ProviderInterface
 {
     public function __construct(
         private ServiceEvenementielApiState $state,
         private ServiceEvenementielApiMapper $mapper,
-    ) {}
+    ) {
+    }
 
     public function provide(
         Operation $operation,
@@ -24,7 +24,7 @@ final readonly class ServiceEvenementielItemProvider implements
         array $context = [],
     ): ServiceEvenementielResource {
         return $this->mapper->service(
-            $this->state->service((string) ($uriVariables["id"] ?? "")),
+            $this->state->service((string) ($uriVariables['id'] ?? '')),
         );
     }
 }

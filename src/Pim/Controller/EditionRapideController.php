@@ -25,14 +25,12 @@ use Symfony\Component\Routing\Attribute\Route;
  */
 final class EditionRapideController extends AbstractController
 {
-    #[
-        Route(
-            '/referentiel/fiche/{id}/edition-rapide',
-            name: 'app_mdm_edition_rapide',
-            requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
-            methods: ['GET', 'POST'],
-        ),
-    ]
+    #[Route(
+        '/referentiel/fiche/{id}/edition-rapide',
+        name: 'app_mdm_edition_rapide',
+        requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
+        methods: ['GET', 'POST'],
+    ),]
     public function __invoke(
         Request $request,
         string $id,

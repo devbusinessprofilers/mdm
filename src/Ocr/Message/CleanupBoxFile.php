@@ -6,5 +6,7 @@ namespace App\Ocr\Message;
 
 final readonly class CleanupBoxFile
 {
-    public function __construct(public string $extractionId, public string $fileId) {}
+    public function __construct(public string $extractionId, public string $fileId)
+    {
+    }
 }

@@ -11,8 +11,8 @@ use App\Pim\Repository\CompletenessConfigurationRevisionRepository;
 use App\Pim\Repository\FicheRepository;
 use App\Shared\Outbox\OutboxPublisherInterface;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler]
 final readonly class RecalculateCompletenessBatchHandler

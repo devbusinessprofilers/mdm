@@ -21,12 +21,15 @@ final readonly class CollaborateurAccessRequestedHandler
     public function __construct(
         private FicheCollaborateurRepository $collaborateurs,
         private MarketplaceCollaborateurGatewayInterface $marketplace,
-    ) {}
+    ) {
+    }
 
     public function __invoke(CollaborateurAccessRequested $message): void
     {
         $collaborateur = $this->collaborateurs->find($message->collaborateurId);
-        if (!$collaborateur instanceof FicheCollaborateur || !$collaborateur->isActive()) { return; }
+        if (!$collaborateur instanceof FicheCollaborateur || !$collaborateur->isActive()) {
+            return;
+        }
         $this->marketplace->envoyerInvitation($collaborateur, $message->ficheId, trim($message->emailBody));
     }
 }

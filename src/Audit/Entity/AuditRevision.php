@@ -13,12 +13,10 @@ use Symfony\Component\Uid\Ulid;
 
 #[ORM\Entity(repositoryClass: AuditRevisionRepository::class)]
 #[ORM\Table(name: 'audit_revision')]
-#[
-    ORM\Index(
-        name: 'IDX_AUDIT_REVISION_FICHE_DATE',
-        columns: ['fiche_id', 'created_at', 'id'],
-    ),
-]
+#[ORM\Index(
+    name: 'IDX_AUDIT_REVISION_FICHE_DATE',
+    columns: ['fiche_id', 'created_at', 'id'],
+),]
 final class AuditRevision
 {
     #[ORM\Id]
@@ -40,14 +38,12 @@ final class AuditRevision
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $createdAt;
     /** @var Collection<int, AuditChange> */
-    #[
-        ORM\OneToMany(
-            mappedBy: 'revision',
-            targetEntity: AuditChange::class,
-            cascade: ['persist'],
-            orphanRemoval: true,
-        ),
-    ]
+    #[ORM\OneToMany(
+        mappedBy: 'revision',
+        targetEntity: AuditChange::class,
+        cascade: ['persist'],
+        orphanRemoval: true,
+    ),]
     #[ORM\OrderBy(['id' => 'ASC'])]
     private Collection $changes;
 

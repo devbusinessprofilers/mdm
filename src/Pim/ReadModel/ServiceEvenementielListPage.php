@@ -10,5 +10,6 @@ final readonly class ServiceEvenementielListPage
     public function __construct(
         public array $items,
         public ?string $nextCursor,
-    ) {}
+    ) {
+    }
 }

@@ -11,8 +11,8 @@ use App\Dam\Service\FicheDocumentUploader;
 use App\Dam\Service\FicheImageUploader;
 use App\Dam\Service\ImageVariantRegistry;
 use App\Enrichment\Service\FicheTranslationScheduler;
-use App\Pim\Entity\Service\ServiceEvenementiel;
 use App\Pim\Entity\Lieu\RessourceLieu;
+use App\Pim\Entity\Service\ServiceEvenementiel;
 use App\Pim\Enum\NatureRessource;
 use App\Pim\Message\IndexFiche;
 use App\Shared\Message\MediaUploaded;
@@ -29,7 +29,8 @@ final readonly class ServiceEvenementielAdminManager
         private FicheImageUploader $imageUploader,
         private FicheDocumentUploader $documentUploader,
         private FicheTranslationScheduler $translationScheduler,
-    ) {}
+    ) {
+    }
 
     /** @return list<string> */
     public function photoAssetIds(ServiceEvenementiel $service): array
@@ -41,7 +42,7 @@ final readonly class ServiceEvenementielAdminManager
     }
 
     /** @param FormInterface<mixed> $form
-     *  @param list<string> $existingMediaIds
+     * @param list<string> $existingMediaIds
      */
     public function save(ServiceEvenementiel $service, FormInterface $form, array $existingMediaIds, string $actor): void
     {
@@ -98,7 +99,10 @@ final readonly class ServiceEvenementielAdminManager
     private function cleanupImages(array $assets): void
     {
         foreach ($assets as $asset) {
-            try { $this->imageUploader->delete($asset); } catch (\Throwable) {}
+            try {
+                $this->imageUploader->delete($asset);
+            } catch (\Throwable) {
+            }
         }
     }
 
@@ -106,7 +110,10 @@ final readonly class ServiceEvenementielAdminManager
     private function cleanupDocuments(array $assets): void
     {
         foreach ($assets as $asset) {
-            try { $this->documentUploader->delete($asset); } catch (\Throwable) {}
+            try {
+                $this->documentUploader->delete($asset);
+            } catch (\Throwable) {
+            }
         }
     }
 }

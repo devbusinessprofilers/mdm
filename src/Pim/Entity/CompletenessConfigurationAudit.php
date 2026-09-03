@@ -20,7 +20,7 @@ final class CompletenessConfigurationAudit
     private Ulid $id;
 
     /** @param array<string, mixed>|null $before
-     *  @param array<string, mixed>|null $after
+     * @param array<string, mixed>|null $after
      */
     public function __construct(
         #[ORM\Column(name: 'fiche_type', length: 32, enumType: TypeFiche::class)]
@@ -47,15 +47,50 @@ final class CompletenessConfigurationAudit
     #[ORM\Column(name: 'changed_at', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $changedAt;
 
-    public function id(): string { return (string) $this->id; }
-    public function ficheType(): TypeFiche { return $this->ficheType; }
-    public function fieldCode(): string { return $this->fieldCode; }
-    public function revision(): int { return $this->revision; }
-    public function actor(): string { return $this->actor; }
-    public function source(): string { return $this->source; }
+    public function id(): string
+    {
+        return (string) $this->id;
+    }
+
+    public function ficheType(): TypeFiche
+    {
+        return $this->ficheType;
+    }
+
+    public function fieldCode(): string
+    {
+        return $this->fieldCode;
+    }
+
+    public function revision(): int
+    {
+        return $this->revision;
+    }
+
+    public function actor(): string
+    {
+        return $this->actor;
+    }
+
+    public function source(): string
+    {
+        return $this->source;
+    }
+
     /** @return array<string, mixed>|null */
-    public function before(): ?array { return $this->before; }
+    public function before(): ?array
+    {
+        return $this->before;
+    }
+
     /** @return array<string, mixed>|null */
-    public function after(): ?array { return $this->after; }
-    public function changedAt(): \DateTimeImmutable { return $this->changedAt; }
+    public function after(): ?array
+    {
+        return $this->after;
+    }
+
+    public function changedAt(): \DateTimeImmutable
+    {
+        return $this->changedAt;
+    }
 }

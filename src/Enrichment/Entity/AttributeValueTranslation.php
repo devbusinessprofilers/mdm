@@ -20,7 +20,12 @@ class AttributeValueTranslation extends AbstractLovTranslation
         private ValeurAttribut $value,
         SupportedLocale $locale,
         string $source,
-    ) { $this->initializeTranslation($locale, $source); }
+    ) {
+        $this->initializeTranslation($locale, $source);
+    }
 
-    public function value(): ValeurAttribut { return $this->value; }
+    public function value(): ValeurAttribut
+    {
+        return $this->value;
+    }
 }

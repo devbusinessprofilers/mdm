@@ -6,10 +6,10 @@ namespace App\Pim\Controller;
 
 use App\Account\Security\FicheVoter;
 use App\Account\Service\CurrentActorProvider;
+use App\Etl\Service\PhotoPublicationGuard;
 use App\Pim\Entity\Fiche;
 use App\Pim\Form\FicheActionFormFactory;
 use App\Pim\Repository\FicheRepository;
-use App\Etl\Service\PhotoPublicationGuard;
 use App\Pim\Service\FicheWorkflowManager;
 use App\Pim\Service\LieuObligationsPublication;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;

@@ -13,8 +13,8 @@ use App\Pim\Repository\RessourceLieuRepository;
 use App\Shared\Service\PrivateObjectStorageInterface;
 use App\Shared\Service\PublicObjectStorageInterface;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
+use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler]
 final readonly class PublishDocumentHandler

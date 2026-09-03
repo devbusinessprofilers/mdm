@@ -128,7 +128,7 @@ final readonly class RechercheRepository
         return $this->connection->fetchFirstColumn(
             'SELECT label FROM pim_fiche WHERE label IS NOT NULL
              UNION ALL
-             SELECT DISTINCT ville FROM pim_localisation WHERE ville IS NOT NULL'
+             SELECT DISTINCT ville FROM pim_localisation WHERE ville IS NOT NULL',
         );
     }
 }

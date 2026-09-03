@@ -74,19 +74,83 @@ class FicheAffiliation
         $this->initializeTimestamps();
     }
 
-    public function id(): Ulid { return $this->id; }
-    public function idString(): string { return (string) $this->id; }
-    public function collaborateur(): FicheCollaborateur { return $this->collaborateur; }
-    public function fiche(): Fiche { return $this->fiche; }
-    public function role(): FicheAffiliationRole { return $this->role; }
-    public function receivesRequests(): bool { return $this->receivesRequests; }
-    public function repli(): bool { return $this->repli; }
-    public function traiteContenus(): bool { return $this->traiteContenus; }
-    public function traitePaiements(): bool { return $this->traitePaiements; }
-    public function changeRepli(bool $value): void { $this->repli = $value; $this->touch(); }
-    public function changeTraiteContenus(bool $value): void { $this->traiteContenus = $value; $this->touch(); }
-    public function changeTraitePaiements(bool $value): void { $this->traitePaiements = $value; $this->touch(); }
-    public function createdBy(): User|FicheCollaborateur { return $this->createdByUser ?? $this->createdByCollaborateur ?? throw new \LogicException('Auteur manquant.'); }
-    public function changeRole(FicheAffiliationRole $role): void { $this->role = $role; $this->touch(); }
-    public function changeReceivesRequests(bool $value): void { $this->receivesRequests = $value; $this->touch(); }
+    public function id(): Ulid
+    {
+        return $this->id;
+    }
+
+    public function idString(): string
+    {
+        return (string) $this->id;
+    }
+
+    public function collaborateur(): FicheCollaborateur
+    {
+        return $this->collaborateur;
+    }
+
+    public function fiche(): Fiche
+    {
+        return $this->fiche;
+    }
+
+    public function role(): FicheAffiliationRole
+    {
+        return $this->role;
+    }
+
+    public function receivesRequests(): bool
+    {
+        return $this->receivesRequests;
+    }
+
+    public function repli(): bool
+    {
+        return $this->repli;
+    }
+
+    public function traiteContenus(): bool
+    {
+        return $this->traiteContenus;
+    }
+
+    public function traitePaiements(): bool
+    {
+        return $this->traitePaiements;
+    }
+
+    public function changeRepli(bool $value): void
+    {
+        $this->repli = $value;
+        $this->touch();
+    }
+
+    public function changeTraiteContenus(bool $value): void
+    {
+        $this->traiteContenus = $value;
+        $this->touch();
+    }
+
+    public function changeTraitePaiements(bool $value): void
+    {
+        $this->traitePaiements = $value;
+        $this->touch();
+    }
+
+    public function createdBy(): User|FicheCollaborateur
+    {
+        return $this->createdByUser ?? $this->createdByCollaborateur ?? throw new \LogicException('Auteur manquant.');
+    }
+
+    public function changeRole(FicheAffiliationRole $role): void
+    {
+        $this->role = $role;
+        $this->touch();
+    }
+
+    public function changeReceivesRequests(bool $value): void
+    {
+        $this->receivesRequests = $value;
+        $this->touch();
+    }
 }

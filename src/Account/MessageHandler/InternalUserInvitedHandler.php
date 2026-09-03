@@ -24,12 +24,15 @@ final readonly class InternalUserInvitedHandler
         private MailerInterface $mailer,
         private ParametreProviderInterface $parametres,
         private string $sender,
-    ) {}
+    ) {
+    }
 
     public function __invoke(InternalUserInvited $message): void
     {
         $invitation = $this->invitations->find($message->invitationId);
-        if (!$invitation instanceof AccountInvitation || !$invitation->isUsable()) { return; }
+        if (!$invitation instanceof AccountInvitation || !$invitation->isUsable()) {
+            return;
+        }
         $url = $this->urls->generate('app_account_invitation_accept', [
             'id' => $invitation->id(),
             'signature' => $this->signer->sign($invitation),

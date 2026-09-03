@@ -30,7 +30,8 @@ final readonly class FicheWorkflowManager
         private ValidatorInterface $validator,
         private PhotoPublicationGuard $photoGuard,
         private LieuObligationsPublication $obligations,
-    ) {}
+    ) {
+    }
 
     public function submit(object $subject, Fiche $fiche, string $actor): ConstraintViolationListInterface
     {

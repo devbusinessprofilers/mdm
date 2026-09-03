@@ -15,7 +15,8 @@ final readonly class AnalyzeMediaHandler
     public function __construct(
         private MediaAssetRepository $assets,
         private MediaAnalysisService $analysis,
-    ) {}
+    ) {
+    }
 
     public function __invoke(AnalyzeMedia $message): void
     {

@@ -7,9 +7,9 @@ namespace App\Pim\Import\Dto;
 final readonly class ConvertedRow
 {
     /**
-     * @param list<ConvertedValue>                        $fields
-     * @param array<string, list<list<ConvertedValue>>>   $collections préfixe => entrées (uniquement les collections touchées)
-     * @param list<RowError>                              $errors
+     * @param list<ConvertedValue>                      $fields
+     * @param array<string, list<list<ConvertedValue>>> $collections préfixe => entrées (uniquement les collections touchées)
+     * @param list<RowError>                            $errors
      */
     public function __construct(
         public int $lineNumber,

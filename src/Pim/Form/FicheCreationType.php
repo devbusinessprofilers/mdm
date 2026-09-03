@@ -178,7 +178,9 @@ final class FicheCreationType extends AbstractType
 
     public static function validate(mixed $data, ExecutionContextInterface $context): void
     {
-        if (!$data instanceof FicheCreation) { return; }
+        if (!$data instanceof FicheCreation) {
+            return;
+        }
         if ($data->envoyerAcces && $data->contactRepli) {
             $context->buildViolation('Un contact de repli ne reçoit pas d\'accès : décochez l\'envoi.')
                 ->atPath('envoyerAcces')

@@ -53,8 +53,8 @@ class SiteDiffusion
 
     /**
      * @var list<array<string, string|int>> Critères géographiques (CritereGeo
-     *      sérialisés, OU logique) : zone dont les fiches sont rattachées
-     *      automatiquement au site. Vide = jamais attribué automatiquement.
+     *                                      sérialisés, OU logique) : zone dont les fiches sont rattachées
+     *                                      automatiquement au site. Vide = jamais attribué automatiquement.
      */
     #[ORM\Column(name: 'criteres_geo', type: Types::JSON)]
     private array $criteresGeo = [];

@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Pim\Service;
 
+use App\Pim\Repository\FicheSearchRepository;
 use App\Shared\Search\BooleanQueryFactory;
 use App\Shared\Search\SearchPage;
 use App\Shared\Search\SearchQuery;
 use App\Shared\Search\SearchResult;
 use App\Shared\Service\SearchEngineInterface;
-use App\Pim\Repository\FicheSearchRepository;
 use Symfony\Component\Uid\Ulid;
 
 final readonly class MariaDbSearchEngine implements SearchEngineInterface

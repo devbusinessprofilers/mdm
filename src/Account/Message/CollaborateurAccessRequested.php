@@ -10,5 +10,6 @@ final readonly class CollaborateurAccessRequested
         public string $collaborateurId,
         public string $ficheId,
         public string $emailBody = '',
-    ) {}
+    ) {
+    }
 }

@@ -27,16 +27,23 @@ final readonly class OcrExtractionManager
         private OcrFieldCatalog $catalog,
         private OutboxPublisherInterface $outbox,
         private DocumentExtractionRepository $extractions,
-    ) {}
+    ) {
+    }
 
     public function upload(Fiche $fiche, UploadedFile $file, DocumentUsage $category, string $actor): DocumentExtraction
     {
         // Une seule lecture à la fois par fiche : le document suivant attend la fin de la précédente.
-        if (null !== $this->extractions->enCours($fiche)) { throw new \DomainException('Une extraction est déjà en cours pour cette fiche : attendez qu’elle se termine avant de déposer un autre document.'); }
-        if (!$this->categories->allows($fiche->type(), $category)) { throw new \DomainException('Cette catégorie documentaire n’est pas autorisée pour ce type de fiche.'); }
+        if (null !== $this->extractions->enCours($fiche)) {
+            throw new \DomainException('Une extraction est déjà en cours pour cette fiche : attendez qu’elle se termine avant de déposer un autre document.');
+        }
+        if (!$this->categories->allows($fiche->type(), $category)) {
+            throw new \DomainException('Cette catégorie documentaire n’est pas autorisée pour ce type de fiche.');
+        }
         $this->assertBelowMaximumCount($fiche, $category);
         $path = $file->getRealPath();
-        if (false === $path) { throw new \DomainException('Le PDF téléversé est introuvable.'); }
+        if (false === $path) {
+            throw new \DomainException('Le PDF téléversé est introuvable.');
+        }
         $this->pdf->inspect($path);
         // Le plafond de taille est celui de la politique documentaire (maximumBytes de l'usage), comme pour les dépôts hors OCR.
         $asset = $this->uploader->upload($file, $fiche, $category);
@@ -54,21 +61,30 @@ final readonly class OcrExtractionManager
             $this->entityManager->persist($extraction);
             $this->outbox->enqueue(new ExtractDocument($extraction->id()));
             $this->entityManager->flush();
+
             return $extraction;
         } catch (\Throwable $error) {
-            try { $this->uploader->delete($asset); } catch (\Throwable) {}
+            try {
+                $this->uploader->delete($asset);
+            } catch (\Throwable) {
+            }
             throw $error;
         }
     }
 
     public function retry(DocumentExtraction $failed, string $actor): DocumentExtraction
     {
-        if (\App\Ocr\Enum\ExtractionStatus::Failed !== $failed->status()) { throw new \DomainException('Seule une extraction en échec peut être relancée.'); }
-        if (null !== $this->extractions->enCours($failed->fiche())) { throw new \DomainException('Une extraction est déjà en cours pour cette fiche : attendez qu’elle se termine avant de relancer.'); }
+        if (\App\Ocr\Enum\ExtractionStatus::Failed !== $failed->status()) {
+            throw new \DomainException('Seule une extraction en échec peut être relancée.');
+        }
+        if (null !== $this->extractions->enCours($failed->fiche())) {
+            throw new \DomainException('Une extraction est déjà en cours pour cette fiche : attendez qu’elle se termine avant de relancer.');
+        }
         $next = new DocumentExtraction($failed->fiche(), $failed->document(), $failed->documentCategory(), $this->catalog->snapshot($failed->fiche()->type()), $actor, $failed);
         $this->entityManager->persist($next);
         $this->outbox->enqueue(new ExtractDocument($next->id()));
         $this->entityManager->flush();
+
         return $next;
     }
 
@@ -76,12 +92,18 @@ final readonly class OcrExtractionManager
     private function assertBelowMaximumCount(Fiche $fiche, DocumentUsage $usage): void
     {
         $maximum = $usage->maximumCount();
-        if (null === $maximum) { return; }
+        if (null === $maximum) {
+            return;
+        }
         $count = 0;
         foreach ($fiche->resources() as $resource) {
             // Le dépôt OCR ne rattache pas de salle : pour un usage par salle, seuls les documents sans salle comptent.
-            if (NatureRessource::Document === $resource->nature() && $resource->usage() === $usage->value && (!$usage->requiresRoom() || (null === $resource->salle() && null === $resource->restaurantSalle()))) { ++$count; }
+            if (NatureRessource::Document === $resource->nature() && $resource->usage() === $usage->value && (!$usage->requiresRoom() || (null === $resource->salle() && null === $resource->restaurantSalle()))) {
+                ++$count;
+            }
         }
-        if ($count >= $maximum) { throw new \DomainException('Le nombre maximal de documents pour cet usage est atteint.'); }
+        if ($count >= $maximum) {
+            throw new \DomainException('Le nombre maximal de documents pour cet usage est atteint.');
+        }
     }
 }

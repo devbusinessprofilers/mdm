@@ -19,20 +19,13 @@ final class PimFixtureTools
         }
 
         if (1 !== preg_match('/^\d+$/', $configured)) {
-            throw new \InvalidArgumentException(sprintf(
-                '%s doit être un entier positif.',
-                $environmentVariable,
-            ));
+            throw new \InvalidArgumentException(sprintf('%s doit être un entier positif.', $environmentVariable));
         }
 
         $count = (int) $configured;
 
         if ($count < 1 || $count > self::MAX_COUNT) {
-            throw new \InvalidArgumentException(sprintf(
-                '%s doit être compris entre 1 et %d.',
-                $environmentVariable,
-                self::MAX_COUNT,
-            ));
+            throw new \InvalidArgumentException(sprintf('%s doit être compris entre 1 et %d.', $environmentVariable, self::MAX_COUNT));
         }
 
         return $count;

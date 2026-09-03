@@ -8,7 +8,9 @@ use App\Account\Entity\AccountInvitation;
 
 final readonly class InvitationTokenSigner
 {
-    public function __construct(private string $key) {}
+    public function __construct(private string $key)
+    {
+    }
 
     public function sign(AccountInvitation $invitation): string
     {

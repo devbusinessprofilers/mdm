@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Dam\MessageHandler;
 
 use App\Dam\Entity\MediaAsset;
+use App\Dam\Enum\MediaKind;
 use App\Dam\Enum\MediaStatus;
 use App\Dam\Repository\MediaAssetRepository;
-use App\Dam\Service\MediaProcessingService;
 use App\Dam\Service\MediaAnalysisService;
-use App\Dam\Enum\MediaKind;
+use App\Dam\Service\MediaProcessingService;
 use App\Shared\Message\MediaProcessed;
 use App\Shared\Message\MediaUploaded;
 use App\Shared\Outbox\OutboxPublisherInterface;

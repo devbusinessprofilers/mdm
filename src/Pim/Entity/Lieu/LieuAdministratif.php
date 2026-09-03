@@ -53,86 +53,421 @@ class LieuAdministratif
     #[ORM\Column(name: 'signataire_email', length: 255, nullable: true)] private ?string $signataireEmail = null;
     #[ORM\Column(name: 'signataire_prenom', length: 255, nullable: true)] private ?string $signatairePrenom = null;
     #[ORM\Column(name: 'signataire_nom', length: 255, nullable: true)] private ?string $signataireNom = null;
-
     public function __construct(Lieu $lieu)
     {
         $this->lieu = $lieu;
     }
 
-    public function infoLegaleNom(): ?string { return $this->infoLegaleNom; }
-    public function changeInfoLegaleNom(?string $value): void { $this->infoLegaleNom = self::normalize($value); $this->lieu->markChanged(); }
-    public function infoLegaleFormeJuridique(): ?string { return $this->infoLegaleFormeJuridique; }
-    public function changeInfoLegaleFormeJuridique(?string $value): void { $this->infoLegaleFormeJuridique = self::normalize($value); $this->lieu->markChanged(); }
-    public function infoLegaleRuePostal(): ?string { return $this->infoLegaleRuePostal; }
-    public function changeInfoLegaleRuePostal(?string $value): void { $this->infoLegaleRuePostal = self::normalize($value); $this->lieu->markChanged(); }
-    public function infoLegaleAdresse2(): ?string { return $this->infoLegaleAdresse2; }
-    public function changeInfoLegaleAdresse2(?string $value): void { $this->infoLegaleAdresse2 = self::normalize($value); $this->lieu->markChanged(); }
-    public function infoLegaleCodePostal(): ?string { return $this->infoLegaleCodePostal; }
-    public function changeInfoLegaleCodePostal(?string $value): void { $this->infoLegaleCodePostal = self::normalize($value); $this->lieu->markChanged(); }
-    public function infoLegaleVille(): ?string { return $this->infoLegaleVille; }
-    public function changeInfoLegaleVille(?string $value): void { $this->infoLegaleVille = self::normalize($value); $this->lieu->markChanged(); }
-    public function inforLegalePays(): ?string { return $this->inforLegalePays; }
-    public function changeInforLegalePays(?string $value): void { $this->inforLegalePays = self::normalize($value); $this->lieu->markChanged(); }
-    public function infoLegaleSiret(): ?string { return $this->infoLegaleSiret; }
-    public function changeInfoLegaleSiret(?string $value): void { $this->infoLegaleSiret = self::normalize($value); $this->lieu->markChanged(); }
-    public function infoLegaleNumTva(): ?string { return $this->infoLegaleNumTva; }
-    public function changeInfoLegaleNumTva(?string $value): void { $this->infoLegaleNumTva = self::normalize($value); $this->lieu->markChanged(); }
-    public function infoLegaleAssujettiTva(): ?bool { return $this->infoLegaleAssujettiTva; }
-    public function changeInfoLegaleAssujettiTva(?bool $value): void { $this->infoLegaleAssujettiTva = $value; $this->lieu->markChanged(); }
-    public function infoLegaleTva(): ?string { return $this->infoLegaleTva; }
-    public function changeInfoLegaleTva(?string $value): void { LieuLovCatalog::assertValid('INFO_LEGALE_TVA', $value); $this->infoLegaleTva = self::normalize($value); $this->lieu->markChanged(); }
-    public function infoLegaleTypeDeProcedureJudiciaire(): ?string { return $this->infoLegaleTypeDeProcedureJudiciaire; }
-    public function changeInfoLegaleTypeDeProcedureJudiciaire(?string $value): void { $this->infoLegaleTypeDeProcedureJudiciaire = self::normalize($value); $this->lieu->markChanged(); }
-    public function adresseFacturationNom(): ?string { return $this->adresseFacturationNom; }
-    public function changeAdresseFacturationNom(?string $value): void { $this->adresseFacturationNom = self::normalize($value); $this->lieu->markChanged(); }
-    public function adresseFacturationRuePostal(): ?string { return $this->adresseFacturationRuePostal; }
-    public function changeAdresseFacturationRuePostal(?string $value): void { $this->adresseFacturationRuePostal = self::normalize($value); $this->lieu->markChanged(); }
-    public function adresseFacturationCodePostal(): ?string { return $this->adresseFacturationCodePostal; }
-    public function changeAdresseFacturationCodePostal(?string $value): void { $this->adresseFacturationCodePostal = self::normalize($value); $this->lieu->markChanged(); }
-    public function adresseFacturationVille(): ?string { return $this->adresseFacturationVille; }
-    public function changeAdresseFacturationVille(?string $value): void { $this->adresseFacturationVille = self::normalize($value); $this->lieu->markChanged(); }
-    public function adresseFacturationPays(): ?string { return $this->adresseFacturationPays; }
-    public function changeAdresseFacturationPays(?string $value): void { $this->adresseFacturationPays = self::normalize($value); $this->lieu->markChanged(); }
-    public function adresseFacturationNumTva(): ?string { return $this->adresseFacturationNumTva; }
-    public function changeAdresseFacturationNumTva(?string $value): void { $this->adresseFacturationNumTva = self::normalize($value); $this->lieu->markChanged(); }
-    public function contactFacturationNom(): ?string { return $this->contactFacturationNom; }
-    public function changeContactFacturationNom(?string $value): void { $this->contactFacturationNom = self::normalize($value); $this->lieu->markChanged(); }
-    public function contactFacturationPrenom(): ?string { return $this->contactFacturationPrenom; }
-    public function changeContactFacturationPrenom(?string $value): void { $this->contactFacturationPrenom = self::normalize($value); $this->lieu->markChanged(); }
-    public function contactFacturationEmail(): ?string { return $this->contactFacturationEmail; }
-    public function changeContactFacturationEmail(?string $value): void { $this->contactFacturationEmail = self::normalize($value); $this->lieu->markChanged(); }
-    public function contactFacturationTelephone(): ?string { return $this->contactFacturationTelephone; }
-    public function changeContactFacturationTelephone(?string $value): void { $this->contactFacturationTelephone = self::normalize($value); $this->lieu->markChanged(); }
-    public function modePaiementBic(): ?string { return $this->modePaiementBic; }
-    public function changeModePaiementBic(?string $value): void { $this->modePaiementBic = self::normalize($value); $this->lieu->markChanged(); }
-    public function modePaiementIban(): ?string { return $this->modePaiementIban; }
-    public function changeModePaiementIban(?string $value): void { $this->modePaiementIban = self::normalize($value); $this->lieu->markChanged(); }
-    public function modePaiementAcceptDeductionCom(): ?bool { return $this->modePaiementAcceptDeductionCom; }
-    public function changeModePaiementAcceptDeductionCom(?bool $value): void { $this->modePaiementAcceptDeductionCom = $value; $this->lieu->markChanged(); }
-    public function modePaiementAffacturage(): ?bool { return $this->modePaiementAffacturage; }
-    public function changeModePaiementAffacturage(?bool $value): void { $this->modePaiementAffacturage = $value; $this->lieu->markChanged(); }
-    public function affacturageBic(): ?string { return $this->affacturageBic; }
-    public function changeAffacturageBic(?string $value): void { $this->affacturageBic = self::normalize($value); $this->lieu->markChanged(); }
-    public function affacturageIban(): ?string { return $this->affacturageIban; }
-    public function changeAffacturageIban(?string $value): void { $this->affacturageIban = self::normalize($value); $this->lieu->markChanged(); }
-    public function condPaieAccSignature(): ?string { return $this->condPaieAccSignature; }
-    public function changeCondPaieAccSignature(?string $value): void { LieuLovCatalog::assertValid('COND_PAIE_ACC_SIGNATURE', $value); $this->condPaieAccSignature = self::normalize($value); $this->lieu->markChanged(); }
-    public function condPaieAnnSignature(): ?string { return $this->condPaieAnnSignature; }
-    public function changeCondPaieAnnSignature(?string $value): void { LieuLovCatalog::assertValid('COND_PAIE_ANN_SIGNATURE', $value); $this->condPaieAnnSignature = self::normalize($value); $this->lieu->markChanged(); }
-    public function commissionApplicable(): ?string { return $this->commissionApplicable; }
-    public function changeCommissionApplicable(?string $value): void { $this->commissionApplicable = self::normalize($value); $this->lieu->markChanged(); }
-    public function datePaiementSold(): ?string { return $this->datePaiementSold; }
-    public function changeDatePaiementSold(?string $value): void { LieuLovCatalog::assertValid('DATE_PAIEMENT_SOLD', $value); $this->datePaiementSold = self::normalize($value); $this->lieu->markChanged(); }
-    public function convPartSigneeLe(): ?string { return $this->convPartSigneeLe; }
-    public function changeConvPartSigneeLe(?string $value): void { $this->convPartSigneeLe = self::normalize($value); $this->lieu->markChanged(); }
-    public function convPartTaux(): ?string { return $this->convPartTaux; }
-    public function changeConvPartTaux(?string $value): void { $this->convPartTaux = self::normalize($value); $this->lieu->markChanged(); }
-    public function signataireEmail(): ?string { return $this->signataireEmail; }
-    public function changeSignataireEmail(?string $value): void { $this->signataireEmail = self::normalize($value); $this->lieu->markChanged(); }
-    public function signatairePrenom(): ?string { return $this->signatairePrenom; }
-    public function changeSignatairePrenom(?string $value): void { $this->signatairePrenom = self::normalize($value); $this->lieu->markChanged(); }
-    public function signataireNom(): ?string { return $this->signataireNom; }
-    public function changeSignataireNom(?string $value): void { $this->signataireNom = self::normalize($value); $this->lieu->markChanged(); }
+    public function infoLegaleNom(): ?string
+    {
+        return $this->infoLegaleNom;
+    }
+
+    public function changeInfoLegaleNom(?string $value): void
+    {
+        $this->infoLegaleNom = self::normalize($value);
+        $this->lieu->markChanged();
+    }
+
+    public function infoLegaleFormeJuridique(): ?string
+    {
+        return $this->infoLegaleFormeJuridique;
+    }
+
+    public function changeInfoLegaleFormeJuridique(?string $value): void
+    {
+        $this->infoLegaleFormeJuridique = self::normalize($value);
+        $this->lieu->markChanged();
+    }
+
+    public function infoLegaleRuePostal(): ?string
+    {
+        return $this->infoLegaleRuePostal;
+    }
+
+    public function changeInfoLegaleRuePostal(?string $value): void
+    {
+        $this->infoLegaleRuePostal = self::normalize($value);
+        $this->lieu->markChanged();
+    }
+
+    public function infoLegaleAdresse2(): ?string
+    {
+        return $this->infoLegaleAdresse2;
+    }
+
+    public function changeInfoLegaleAdresse2(?string $value): void
+    {
+        $this->infoLegaleAdresse2 = self::normalize($value);
+        $this->lieu->markChanged();
+    }
+
+    public function infoLegaleCodePostal(): ?string
+    {
+        return $this->infoLegaleCodePostal;
+    }
+
+    public function changeInfoLegaleCodePostal(?string $value): void
+    {
+        $this->infoLegaleCodePostal = self::normalize($value);
+        $this->lieu->markChanged();
+    }
+
+    public function infoLegaleVille(): ?string
+    {
+        return $this->infoLegaleVille;
+    }
+
+    public function changeInfoLegaleVille(?string $value): void
+    {
+        $this->infoLegaleVille = self::normalize($value);
+        $this->lieu->markChanged();
+    }
+
+    public function inforLegalePays(): ?string
+    {
+        return $this->inforLegalePays;
+    }
+
+    public function changeInforLegalePays(?string $value): void
+    {
+        $this->inforLegalePays = self::normalize($value);
+        $this->lieu->markChanged();
+    }
+
+    public function infoLegaleSiret(): ?string
+    {
+        return $this->infoLegaleSiret;
+    }
+
+    public function changeInfoLegaleSiret(?string $value): void
+    {
+        $this->infoLegaleSiret = self::normalize($value);
+        $this->lieu->markChanged();
+    }
+
+    public function infoLegaleNumTva(): ?string
+    {
+        return $this->infoLegaleNumTva;
+    }
+
+    public function changeInfoLegaleNumTva(?string $value): void
+    {
+        $this->infoLegaleNumTva = self::normalize($value);
+        $this->lieu->markChanged();
+    }
+
+    public function infoLegaleAssujettiTva(): ?bool
+    {
+        return $this->infoLegaleAssujettiTva;
+    }
+
+    public function changeInfoLegaleAssujettiTva(?bool $value): void
+    {
+        $this->infoLegaleAssujettiTva = $value;
+        $this->lieu->markChanged();
+    }
+
+    public function infoLegaleTva(): ?string
+    {
+        return $this->infoLegaleTva;
+    }
+
+    public function changeInfoLegaleTva(?string $value): void
+    {
+        LieuLovCatalog::assertValid('INFO_LEGALE_TVA', $value);
+        $this->infoLegaleTva = self::normalize($value);
+        $this->lieu->markChanged();
+    }
+
+    public function infoLegaleTypeDeProcedureJudiciaire(): ?string
+    {
+        return $this->infoLegaleTypeDeProcedureJudiciaire;
+    }
+
+    public function changeInfoLegaleTypeDeProcedureJudiciaire(?string $value): void
+    {
+        $this->infoLegaleTypeDeProcedureJudiciaire = self::normalize($value);
+        $this->lieu->markChanged();
+    }
+
+    public function adresseFacturationNom(): ?string
+    {
+        return $this->adresseFacturationNom;
+    }
+
+    public function changeAdresseFacturationNom(?string $value): void
+    {
+        $this->adresseFacturationNom = self::normalize($value);
+        $this->lieu->markChanged();
+    }
+
+    public function adresseFacturationRuePostal(): ?string
+    {
+        return $this->adresseFacturationRuePostal;
+    }
+
+    public function changeAdresseFacturationRuePostal(?string $value): void
+    {
+        $this->adresseFacturationRuePostal = self::normalize($value);
+        $this->lieu->markChanged();
+    }
+
+    public function adresseFacturationCodePostal(): ?string
+    {
+        return $this->adresseFacturationCodePostal;
+    }
+
+    public function changeAdresseFacturationCodePostal(?string $value): void
+    {
+        $this->adresseFacturationCodePostal = self::normalize($value);
+        $this->lieu->markChanged();
+    }
+
+    public function adresseFacturationVille(): ?string
+    {
+        return $this->adresseFacturationVille;
+    }
+
+    public function changeAdresseFacturationVille(?string $value): void
+    {
+        $this->adresseFacturationVille = self::normalize($value);
+        $this->lieu->markChanged();
+    }
+
+    public function adresseFacturationPays(): ?string
+    {
+        return $this->adresseFacturationPays;
+    }
+
+    public function changeAdresseFacturationPays(?string $value): void
+    {
+        $this->adresseFacturationPays = self::normalize($value);
+        $this->lieu->markChanged();
+    }
+
+    public function adresseFacturationNumTva(): ?string
+    {
+        return $this->adresseFacturationNumTva;
+    }
+
+    public function changeAdresseFacturationNumTva(?string $value): void
+    {
+        $this->adresseFacturationNumTva = self::normalize($value);
+        $this->lieu->markChanged();
+    }
+
+    public function contactFacturationNom(): ?string
+    {
+        return $this->contactFacturationNom;
+    }
+
+    public function changeContactFacturationNom(?string $value): void
+    {
+        $this->contactFacturationNom = self::normalize($value);
+        $this->lieu->markChanged();
+    }
+
+    public function contactFacturationPrenom(): ?string
+    {
+        return $this->contactFacturationPrenom;
+    }
+
+    public function changeContactFacturationPrenom(?string $value): void
+    {
+        $this->contactFacturationPrenom = self::normalize($value);
+        $this->lieu->markChanged();
+    }
+
+    public function contactFacturationEmail(): ?string
+    {
+        return $this->contactFacturationEmail;
+    }
+
+    public function changeContactFacturationEmail(?string $value): void
+    {
+        $this->contactFacturationEmail = self::normalize($value);
+        $this->lieu->markChanged();
+    }
+
+    public function contactFacturationTelephone(): ?string
+    {
+        return $this->contactFacturationTelephone;
+    }
+
+    public function changeContactFacturationTelephone(?string $value): void
+    {
+        $this->contactFacturationTelephone = self::normalize($value);
+        $this->lieu->markChanged();
+    }
+
+    public function modePaiementBic(): ?string
+    {
+        return $this->modePaiementBic;
+    }
+
+    public function changeModePaiementBic(?string $value): void
+    {
+        $this->modePaiementBic = self::normalize($value);
+        $this->lieu->markChanged();
+    }
+
+    public function modePaiementIban(): ?string
+    {
+        return $this->modePaiementIban;
+    }
+
+    public function changeModePaiementIban(?string $value): void
+    {
+        $this->modePaiementIban = self::normalize($value);
+        $this->lieu->markChanged();
+    }
+
+    public function modePaiementAcceptDeductionCom(): ?bool
+    {
+        return $this->modePaiementAcceptDeductionCom;
+    }
+
+    public function changeModePaiementAcceptDeductionCom(?bool $value): void
+    {
+        $this->modePaiementAcceptDeductionCom = $value;
+        $this->lieu->markChanged();
+    }
+
+    public function modePaiementAffacturage(): ?bool
+    {
+        return $this->modePaiementAffacturage;
+    }
+
+    public function changeModePaiementAffacturage(?bool $value): void
+    {
+        $this->modePaiementAffacturage = $value;
+        $this->lieu->markChanged();
+    }
+
+    public function affacturageBic(): ?string
+    {
+        return $this->affacturageBic;
+    }
+
+    public function changeAffacturageBic(?string $value): void
+    {
+        $this->affacturageBic = self::normalize($value);
+        $this->lieu->markChanged();
+    }
+
+    public function affacturageIban(): ?string
+    {
+        return $this->affacturageIban;
+    }
+
+    public function changeAffacturageIban(?string $value): void
+    {
+        $this->affacturageIban = self::normalize($value);
+        $this->lieu->markChanged();
+    }
+
+    public function condPaieAccSignature(): ?string
+    {
+        return $this->condPaieAccSignature;
+    }
+
+    public function changeCondPaieAccSignature(?string $value): void
+    {
+        LieuLovCatalog::assertValid('COND_PAIE_ACC_SIGNATURE', $value);
+        $this->condPaieAccSignature = self::normalize($value);
+        $this->lieu->markChanged();
+    }
+
+    public function condPaieAnnSignature(): ?string
+    {
+        return $this->condPaieAnnSignature;
+    }
+
+    public function changeCondPaieAnnSignature(?string $value): void
+    {
+        LieuLovCatalog::assertValid('COND_PAIE_ANN_SIGNATURE', $value);
+        $this->condPaieAnnSignature = self::normalize($value);
+        $this->lieu->markChanged();
+    }
+
+    public function commissionApplicable(): ?string
+    {
+        return $this->commissionApplicable;
+    }
+
+    public function changeCommissionApplicable(?string $value): void
+    {
+        $this->commissionApplicable = self::normalize($value);
+        $this->lieu->markChanged();
+    }
+
+    public function datePaiementSold(): ?string
+    {
+        return $this->datePaiementSold;
+    }
+
+    public function changeDatePaiementSold(?string $value): void
+    {
+        LieuLovCatalog::assertValid('DATE_PAIEMENT_SOLD', $value);
+        $this->datePaiementSold = self::normalize($value);
+        $this->lieu->markChanged();
+    }
+
+    public function convPartSigneeLe(): ?string
+    {
+        return $this->convPartSigneeLe;
+    }
+
+    public function changeConvPartSigneeLe(?string $value): void
+    {
+        $this->convPartSigneeLe = self::normalize($value);
+        $this->lieu->markChanged();
+    }
+
+    public function convPartTaux(): ?string
+    {
+        return $this->convPartTaux;
+    }
+
+    public function changeConvPartTaux(?string $value): void
+    {
+        $this->convPartTaux = self::normalize($value);
+        $this->lieu->markChanged();
+    }
+
+    public function signataireEmail(): ?string
+    {
+        return $this->signataireEmail;
+    }
+
+    public function changeSignataireEmail(?string $value): void
+    {
+        $this->signataireEmail = self::normalize($value);
+        $this->lieu->markChanged();
+    }
+
+    public function signatairePrenom(): ?string
+    {
+        return $this->signatairePrenom;
+    }
+
+    public function changeSignatairePrenom(?string $value): void
+    {
+        $this->signatairePrenom = self::normalize($value);
+        $this->lieu->markChanged();
+    }
+
+    public function signataireNom(): ?string
+    {
+        return $this->signataireNom;
+    }
+
+    public function changeSignataireNom(?string $value): void
+    {
+        $this->signataireNom = self::normalize($value);
+        $this->lieu->markChanged();
+    }
 
     private static function normalize(?string $value): ?string
     {

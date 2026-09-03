@@ -29,7 +29,8 @@ final readonly class ActiviteAdminManager
         private FicheImageUploader $imageUploader,
         private FicheDocumentUploader $documentUploader,
         private FicheTranslationScheduler $translationScheduler,
-    ) {}
+    ) {
+    }
 
     /** @return list<string> */
     public function photoAssetIds(Activite $activite): array
@@ -41,7 +42,7 @@ final readonly class ActiviteAdminManager
     }
 
     /** @param FormInterface<mixed> $form
-     *  @param list<string> $existingMediaIds
+     * @param list<string> $existingMediaIds
      */
     public function save(Activite $activite, FormInterface $form, array $existingMediaIds, string $actor): void
     {
@@ -98,7 +99,10 @@ final readonly class ActiviteAdminManager
     private function cleanupImages(array $assets): void
     {
         foreach ($assets as $asset) {
-            try { $this->imageUploader->delete($asset); } catch (\Throwable) {}
+            try {
+                $this->imageUploader->delete($asset);
+            } catch (\Throwable) {
+            }
         }
     }
 
@@ -106,7 +110,10 @@ final readonly class ActiviteAdminManager
     private function cleanupDocuments(array $assets): void
     {
         foreach ($assets as $asset) {
-            try { $this->documentUploader->delete($asset); } catch (\Throwable) {}
+            try {
+                $this->documentUploader->delete($asset);
+            } catch (\Throwable) {
+            }
         }
     }
 }

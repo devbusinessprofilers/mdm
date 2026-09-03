@@ -23,8 +23,8 @@ use App\Pim\Api\Dto\DocumentPublicationInput;
 use App\Pim\Api\Dto\LieuDocumentResource;
 use App\Pim\Api\Exception\ApiProblemException;
 use App\Pim\Api\ExternalDocumentAccess;
-use App\Pim\Entity\Service\ServiceEvenementiel;
 use App\Pim\Entity\Lieu\RessourceLieu;
+use App\Pim\Entity\Service\ServiceEvenementiel;
 use App\Pim\Enum\NatureRessource;
 use App\Pim\Repository\RessourceLieuRepository;
 use App\Shared\Outbox\OutboxPublisherInterface;
@@ -33,8 +33,7 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\RequestStack;
 
 /** @implements ProcessorInterface<mixed,LieuDocumentResource|void> */
-final readonly class ServiceEvenementielDocumentProcessor implements
-    ProcessorInterface
+final readonly class ServiceEvenementielDocumentProcessor implements ProcessorInterface
 {
     public function __construct(
         private ServiceEvenementielApiState $state,
@@ -46,7 +45,8 @@ final readonly class ServiceEvenementielDocumentProcessor implements
         private EntityManagerInterface $em,
         private OutboxPublisherInterface $outbox,
         private RequestStack $requests,
-    ) {}
+    ) {
+    }
 
     public function process(
         mixed $data,
@@ -54,13 +54,13 @@ final readonly class ServiceEvenementielDocumentProcessor implements
         array $uriVariables = [],
         array $context = [],
     ): ?LieuDocumentResource {
-        $a = $this->state->service((string) ($uriVariables["serviceId"] ?? ""));
+        $a = $this->state->service((string) ($uriVariables['serviceId'] ?? ''));
         $this->state->assertVersion($a);
-        if (!($operation instanceof HttpOperation)) {
-            throw new \LogicException("Opération HTTP requise.");
+        if (!$operation instanceof HttpOperation) {
+            throw new \LogicException('Opération HTTP requise.');
         }
         $method = $operation->getMethod();
-        $template = $operation->getUriTemplate() ?? "";
+        $template = $operation->getUriTemplate() ?? '';
 
         return $a
             ->fiche()
@@ -72,47 +72,39 @@ final readonly class ServiceEvenementielDocumentProcessor implements
                 $uriVariables,
             ) {
                 if (
-                    "POST" === $method &&
-                    str_ends_with($template, "/documents")
+                    'POST' === $method
+                    && str_ends_with($template, '/documents')
                 ) {
                     return $this->create($a);
                 }
                 $d = $this->document(
                     $a,
-                    (string) ($uriVariables["documentId"] ?? ""),
+                    (string) ($uriVariables['documentId'] ?? ''),
                 );
-                if ("PATCH" === $method) {
-                    if (!($data instanceof DocumentPatchInput)) {
-                        throw new ApiProblemException(
-                            400,
-                            "invalid_payload",
-                            "Corps JSON invalide.",
-                        );
+                if ('PATCH' === $method) {
+                    if (!$data instanceof DocumentPatchInput) {
+                        throw new ApiProblemException(400, 'invalid_payload', 'Corps JSON invalide.');
                     }
 
                     return $this->metadata($a, $d, $data);
                 }
                 if (
-                    "POST" === $method &&
-                    str_ends_with($template, "/fichier")
+                    'POST' === $method
+                    && str_ends_with($template, '/fichier')
                 ) {
                     return $this->replace($a, $d);
                 }
                 if (
-                    "POST" === $method &&
-                    str_ends_with($template, "/publication")
+                    'POST' === $method
+                    && str_ends_with($template, '/publication')
                 ) {
-                    if (!($data instanceof DocumentPublicationInput)) {
-                        throw new ApiProblemException(
-                            400,
-                            "invalid_payload",
-                            "Corps JSON invalide.",
-                        );
+                    if (!$data instanceof DocumentPublicationInput) {
+                        throw new ApiProblemException(400, 'invalid_payload', 'Corps JSON invalide.');
                     }
 
                     return $this->publication($a, $d, $data->published);
                 }
-                if ("DELETE" === $method) {
+                if ('DELETE' === $method) {
                     $this->access->requireWrite($d);
                     $this->unpublish($d);
                     $this->outbox->enqueue(new DeleteMedia($d->damAssetId()));
@@ -122,7 +114,7 @@ final readonly class ServiceEvenementielDocumentProcessor implements
 
                     return null;
                 }
-                throw new \LogicException("Opération documentaire inconnue.");
+                throw new \LogicException('Opération documentaire inconnue.');
             });
     }
 
@@ -133,25 +125,21 @@ final readonly class ServiceEvenementielDocumentProcessor implements
         );
         $request = $this->requests->getCurrentRequest();
         if (null === $request) {
-            throw new \LogicException("Aucune requete HTTP active.");
+            throw new \LogicException('Aucune requete HTTP active.');
         }
-        $file = $request->files->get("document");
-        if (!($file instanceof UploadedFile)) {
-            throw new ApiProblemException(
-                422,
-                "document_required",
-                "Le champ multipart document est obligatoire.",
-            );
+        $file = $request->files->get('document');
+        if (!$file instanceof UploadedFile) {
+            throw new ApiProblemException(422, 'document_required', 'Le champ multipart document est obligatoire.');
         }
         $asset = $this->upload($file, $a);
         try {
             $d = new RessourceLieu();
             $d->configureDocument(DocumentUsage::CommercialSupport);
             $d->changeDamAssetId($asset->id());
-            $d->changeLegende($request->request->getString("title"));
-            $d->changeSource($request->request->getString("source"));
-            if ($request->request->getBoolean("rightsGranted")) {
-                throw new ApiProblemException(403, "rights_validation_forbidden", "La validation des droits est réservée aux validateurs internes du PIM.");
+            $d->changeLegende($request->request->getString('title'));
+            $d->changeSource($request->request->getString('source'));
+            if ($request->request->getBoolean('rightsGranted')) {
+                throw new ApiProblemException(403, 'rights_validation_forbidden', 'La validation des droits est réservée aux validateurs internes du PIM.');
             }
             $a->addRessource($d);
             $this->em->persist($asset);
@@ -177,40 +165,32 @@ final readonly class ServiceEvenementielDocumentProcessor implements
         $payload = json_decode((string) $this->request()->getContent(), true);
         $payload = is_array($payload) ? $payload : [];
         if (
-            array_key_exists("usage", $payload) &&
-            DocumentUsage::CommercialSupport->value !== $input->usage
+            array_key_exists('usage', $payload)
+            && DocumentUsage::CommercialSupport->value !== $input->usage
         ) {
-            throw new ApiProblemException(
-                422,
-                "invalid_document_usage",
-                "Un Service accepte uniquement les supports commerciaux.",
-            );
+            throw new ApiProblemException(422, 'invalid_document_usage', 'Un Service accepte uniquement les supports commerciaux.');
         }
         if (
-            array_key_exists("salleId", $payload) &&
-            null !== $input->salleId &&
-            "" !== $input->salleId
+            array_key_exists('salleId', $payload)
+            && null !== $input->salleId
+            && '' !== $input->salleId
         ) {
-            throw new ApiProblemException(
-                422,
-                "foreign_room",
-                "Un support Service ne peut pas être rattaché à une salle.",
-            );
+            throw new ApiProblemException(422, 'foreign_room', 'Un support Service ne peut pas être rattaché à une salle.');
         }
-        if (array_key_exists("title", $payload)) {
+        if (array_key_exists('title', $payload)) {
             $d->changeLegende($input->title);
         }
-        if (array_key_exists("source", $payload)) {
+        if (array_key_exists('source', $payload)) {
             $d->changeSource($input->source);
         }
-        if (array_key_exists("keywords", $payload)) {
+        if (array_key_exists('keywords', $payload)) {
             $d->changeKeywords($input->keywords);
         }
-        if (array_key_exists("rightsExpiresAt", $payload)) {
+        if (array_key_exists('rightsExpiresAt', $payload)) {
             $d->changeRightsExpiresAt($input->rightsExpiresAt);
         }
-        if (array_key_exists("rightsGranted", $payload)) {
-            throw new ApiProblemException(403, "rights_validation_forbidden", "La validation des droits est réservée aux validateurs internes du PIM.");
+        if (array_key_exists('rightsGranted', $payload)) {
+            throw new ApiProblemException(403, 'rights_validation_forbidden', 'La validation des droits est réservée aux validateurs internes du PIM.');
         }
         if ($rightsWereGranted && !$d->rightsGranted()) {
             $this->unpublish($d);
@@ -225,13 +205,9 @@ final readonly class ServiceEvenementielDocumentProcessor implements
         RessourceLieu $d,
     ): LieuDocumentResource {
         $this->access->requireWrite($d);
-        $file = $this->request()->files->get("document");
-        if (!($file instanceof UploadedFile)) {
-            throw new ApiProblemException(
-                422,
-                "document_required",
-                "Le champ multipart document est obligatoire.",
-            );
+        $file = $this->request()->files->get('document');
+        if (!$file instanceof UploadedFile) {
+            throw new ApiProblemException(422, 'document_required', 'Le champ multipart document est obligatoire.');
         }
         $asset = $this->upload($file, $a);
         $old = $d->damAssetId();
@@ -261,24 +237,16 @@ final readonly class ServiceEvenementielDocumentProcessor implements
         if ($published) {
             $asset = $this->assets->find($d->damAssetId());
             if (
-                !($asset instanceof MediaAsset) ||
-                MediaKind::Document !== $asset->kind() ||
-                MediaStatus::Processed !== $asset->status()
+                !($asset instanceof MediaAsset)
+                || MediaKind::Document !== $asset->kind()
+                || MediaStatus::Processed !== $asset->status()
             ) {
-                throw new ApiProblemException(
-                    422,
-                    "invalid_document",
-                    "Le fichier DAM est absent ou invalide.",
-                );
+                throw new ApiProblemException(422, 'invalid_document', 'Le fichier DAM est absent ou invalide.');
             }
             try {
                 $d->requestPublication();
             } catch (\DomainException $e) {
-                throw new ApiProblemException(
-                    422,
-                    "publication_refused",
-                    $e->getMessage(),
-                );
+                throw new ApiProblemException(422, 'publication_refused', $e->getMessage());
             }
             $this->outbox->enqueue(new PublishDocument($d->id()));
         } else {
@@ -293,16 +261,12 @@ final readonly class ServiceEvenementielDocumentProcessor implements
     {
         $d = $this->resources->find($id);
         if (
-            !($d instanceof RessourceLieu) ||
-            $d->fiche() !== $a->fiche() ||
-            NatureRessource::Document !== $d->nature() ||
-            DocumentUsage::CommercialSupport !== $d->documentUsage()
+            !($d instanceof RessourceLieu)
+            || $d->fiche() !== $a->fiche()
+            || NatureRessource::Document !== $d->nature()
+            || DocumentUsage::CommercialSupport !== $d->documentUsage()
         ) {
-            throw new ApiProblemException(
-                404,
-                "not_found",
-                "Document introuvable.",
-            );
+            throw new ApiProblemException(404, 'not_found', 'Document introuvable.');
         }
 
         return $d;
@@ -319,11 +283,7 @@ final readonly class ServiceEvenementielDocumentProcessor implements
                 DocumentUsage::CommercialSupport,
             );
         } catch (DocumentUploadException $e) {
-            throw new ApiProblemException(
-                $e->httpStatus,
-                "invalid_document_file",
-                $e->getMessage(),
-            );
+            throw new ApiProblemException($e->httpStatus, 'invalid_document_file', $e->getMessage());
         }
     }
 
@@ -344,6 +304,6 @@ final readonly class ServiceEvenementielDocumentProcessor implements
     private function request(): \Symfony\Component\HttpFoundation\Request
     {
         return $this->requests->getCurrentRequest() ??
-            throw new \LogicException("Aucune requête HTTP active.");
+            throw new \LogicException('Aucune requête HTTP active.');
     }
 }

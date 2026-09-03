@@ -72,9 +72,7 @@ final readonly class AuditRestorer
             }
         });
         if ([] === $applied) {
-            throw new NotRestorableException(
-                'Aucun champ de cette révision n\'est restaurable.',
-            );
+            throw new NotRestorableException('Aucun champ de cette révision n\'est restaurable.');
         }
         $this->finalize($fiche);
 
@@ -93,9 +91,7 @@ final readonly class AuditRestorer
             throw new NotRestorableException('Fiche introuvable.');
         }
         if ($fiche->version() !== $expectedVersion) {
-            throw new StaleVersionException(
-                'La fiche a été modifiée depuis l\'affichage de l\'historique.',
-            );
+            throw new StaleVersionException('La fiche a été modifiée depuis l\'affichage de l\'historique.');
         }
 
         return $fiche;

@@ -58,7 +58,7 @@ final readonly class ActiviteDocumentProcessor implements ProcessorInterface
             (string) ($uriVariables['activiteId'] ?? ''),
         );
         $this->state->assertVersion($a);
-        if (!($operation instanceof HttpOperation)) {
+        if (!$operation instanceof HttpOperation) {
             throw new \LogicException('Opération HTTP requise.');
         }
         $method = $operation->getMethod();
@@ -84,7 +84,7 @@ final readonly class ActiviteDocumentProcessor implements ProcessorInterface
                     (string) ($uriVariables['documentId'] ?? ''),
                 );
                 if ('PATCH' === $method) {
-                    if (!($data instanceof DocumentPatchInput)) {
+                    if (!$data instanceof DocumentPatchInput) {
                         throw new ApiProblemException(400, 'invalid_payload', 'Corps JSON invalide.');
                     }
 
@@ -100,7 +100,7 @@ final readonly class ActiviteDocumentProcessor implements ProcessorInterface
                     'POST' === $method
                     && str_ends_with($template, '/publication')
                 ) {
-                    if (!($data instanceof DocumentPublicationInput)) {
+                    if (!$data instanceof DocumentPublicationInput) {
                         throw new ApiProblemException(400, 'invalid_payload', 'Corps JSON invalide.');
                     }
 
@@ -130,7 +130,7 @@ final readonly class ActiviteDocumentProcessor implements ProcessorInterface
             throw new \LogicException('Aucune requete HTTP active.');
         }
         $file = $request->files->get('document');
-        if (!($file instanceof UploadedFile)) {
+        if (!$file instanceof UploadedFile) {
             throw new ApiProblemException(422, 'document_required', 'Le champ multipart document est obligatoire.');
         }
         $asset = $this->upload($file, $a);
@@ -208,7 +208,7 @@ final readonly class ActiviteDocumentProcessor implements ProcessorInterface
     ): LieuDocumentResource {
         $this->access->requireWrite($d);
         $file = $this->request()->files->get('document');
-        if (!($file instanceof UploadedFile)) {
+        if (!$file instanceof UploadedFile) {
             throw new ApiProblemException(422, 'document_required', 'Le champ multipart document est obligatoire.');
         }
         $asset = $this->upload($file, $a);

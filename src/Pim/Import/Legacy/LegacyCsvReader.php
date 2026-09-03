@@ -32,6 +32,7 @@ final class LegacyCsvReader
 
     /**
      * @param list<string> $headers
+     *
      * @return \Generator<LegacyCsvRecord> numérotés à partir de 1 (première ligne de données)
      */
     public function records(string $path, array $headers): \Generator

@@ -6,5 +6,7 @@ namespace App\Dam\Message;
 
 final readonly class AnalyzeMedia
 {
-    public function __construct(public string $mediaId) {}
+    public function __construct(public string $mediaId)
+    {
+    }
 }

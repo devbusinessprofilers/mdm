@@ -47,9 +47,7 @@ final readonly class RestorableFieldCatalog
         $parsed = $this->parse($path);
         $parameter = $this->setterParameter($path);
         if (null === $parsed || null === $parameter) {
-            throw new NotRestorableException(
-                sprintf('Le champ « %s » n\'est pas restaurable.', $path),
-            );
+            throw new NotRestorableException(sprintf('Le champ « %s » n\'est pas restaurable.', $path));
         }
         $entity = $this->resolveEntity($fiche, $path);
         [, $field] = $parsed;
@@ -62,16 +60,12 @@ final readonly class RestorableFieldCatalog
     {
         $parsed = $this->parse($path);
         if (null === $parsed) {
-            throw new NotRestorableException(
-                sprintf('Le champ « %s » n\'est pas restaurable.', $path),
-            );
+            throw new NotRestorableException(sprintf('Le champ « %s » n\'est pas restaurable.', $path));
         }
         $entity = $this->resolveEntity($fiche, $path);
         [, $field] = $parsed;
         if (!method_exists($entity, $field)) {
-            throw new NotRestorableException(
-                sprintf('Le champ « %s » n\'a pas d\'accesseur.', $path),
-            );
+            throw new NotRestorableException(sprintf('Le champ « %s » n\'a pas d\'accesseur.', $path));
         }
 
         return $entity->{$field}();
@@ -150,41 +144,27 @@ final readonly class RestorableFieldCatalog
         $typeName = $type->getName();
         if (null === $value) {
             if (!$type->allowsNull()) {
-                throw new NotRestorableException(sprintf(
-                    'Le champ « %s » n\'accepte pas de valeur vide.',
-                    $path,
-                ));
+                throw new NotRestorableException(sprintf('Le champ « %s » n\'accepte pas de valeur vide.', $path));
             }
 
             return null;
         }
         try {
             return match (true) {
-                is_subclass_of($typeName, \BackedEnum::class)
-                    => $typeName::from($value),
-                is_a($typeName, \DateTimeImmutable::class, true)
-                    => new \DateTimeImmutable((string) $value),
+                is_subclass_of($typeName, \BackedEnum::class) => $typeName::from($value),
+                is_a($typeName, \DateTimeImmutable::class, true) => new \DateTimeImmutable((string) $value),
                 'string' === $typeName => (string) $value,
                 'int' === $typeName => (int) $value,
                 'float' === $typeName => (float) $value,
                 'bool' === $typeName => (bool) $value,
                 'array' === $typeName && is_array($value) => $value,
-                default => throw new NotRestorableException(sprintf(
-                    'Valeur incompatible pour le champ « %s ».',
-                    $path,
-                )),
+                default => throw new NotRestorableException(sprintf('Valeur incompatible pour le champ « %s ».', $path)),
             };
         } catch (\ValueError|\TypeError|\Exception $exception) {
             if ($exception instanceof NotRestorableException) {
                 throw $exception;
             }
-            throw new NotRestorableException(
-                sprintf(
-                    'La valeur historisée du champ « %s » n\'est plus interprétable.',
-                    $path,
-                ),
-                previous: $exception,
-            );
+            throw new NotRestorableException(sprintf('La valeur historisée du champ « %s » n\'est plus interprétable.', $path), previous: $exception);
         }
     }
 
@@ -192,9 +172,7 @@ final readonly class RestorableFieldCatalog
     {
         $parsed = $this->parse($path);
         if (null === $parsed) {
-            throw new NotRestorableException(
-                sprintf('Le champ « %s » n\'est pas restaurable.', $path),
-            );
+            throw new NotRestorableException(sprintf('Le champ « %s » n\'est pas restaurable.', $path));
         }
         [$prefix] = $parsed;
         if ('fiche' === $prefix) {
@@ -213,10 +191,7 @@ final readonly class RestorableFieldCatalog
             default => $detail::class === $detailClass ? $detail : null,
         };
         if (null === $entity) {
-            throw new NotRestorableException(sprintf(
-                'Le champ « %s » ne correspond plus à la fiche.',
-                $path,
-            ));
+            throw new NotRestorableException(sprintf('Le champ « %s » ne correspond plus à la fiche.', $path));
         }
 
         return $entity;
@@ -233,9 +208,7 @@ final readonly class RestorableFieldCatalog
                 return $detail;
             }
         }
-        throw new NotRestorableException(
-            'La fiche n\'a plus d\'entité de détail.',
-        );
+        throw new NotRestorableException('La fiche n\'a plus d\'entité de détail.');
     }
 
     private static function setterName(string $field): string

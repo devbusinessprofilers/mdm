@@ -9,11 +9,11 @@ use App\Pim\Enum\NatureRessource;
 use App\Shared\Service\ParametreProviderInterface;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
+use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
-use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
-use Symfony\Component\Form\Extension\Core\Type\DateType;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\FormError;
 use Symfony\Component\Form\FormEvent;
@@ -112,7 +112,7 @@ final class ActiviteRessourceType extends AbstractType
             FormEvent $event,
         ): void {
             $resource = $event->getData();
-            if (!($resource instanceof RessourceLieu)) {
+            if (!$resource instanceof RessourceLieu) {
                 return;
             }
             $resource->changeNature(NatureRessource::Photo);

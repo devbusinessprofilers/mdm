@@ -35,7 +35,9 @@ final readonly class LegacyLieuRowMapper
         'Fitness' => 'BIEN_ETRE_9',
     ];
 
-    public function __construct(private LegacyLovMapper $lovMapper) {}
+    public function __construct(private LegacyLovMapper $lovMapper)
+    {
+    }
 
     public function supports(RawCsvRow $row): bool
     {
@@ -205,6 +207,7 @@ final readonly class LegacyLieuRowMapper
 
     /**
      * @param list<string> $warnings
+     *
      * @param-out list<string> $warnings
      */
     private function tarification(Lieu $lieu, RawCsvRow $row, array &$warnings): void
@@ -243,6 +246,7 @@ final readonly class LegacyLieuRowMapper
      * Timestamp Unix (format marketplace) ou date, sinon warning.
      *
      * @param list<string> $warnings
+     *
      * @param-out list<string> $warnings
      */
     private static function promoDate(string $value, array &$warnings): ?\DateTimeImmutable

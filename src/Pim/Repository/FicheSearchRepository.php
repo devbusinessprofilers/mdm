@@ -4,17 +4,20 @@ declare(strict_types=1);
 
 namespace App\Pim\Repository;
 
-use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\ArrayParameterType;
+use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\ParameterType;
 use Symfony\Component\Uid\Ulid;
 
 final readonly class FicheSearchRepository
 {
-    public function __construct(private Connection $connection) {}
+    public function __construct(private Connection $connection)
+    {
+    }
 
     /**
      * @param array<string, mixed> $filters
+     *
      * @return array{rows: list<array{id: string, score: string|float|int}>, total: int}
      */
     public function search(

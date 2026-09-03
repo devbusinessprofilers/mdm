@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Ocr\EventSubscriber;
 
 use App\Ocr\Entity\DocumentExtraction;
-use App\Ocr\Message\ExtractDocument;
 use App\Ocr\Message\CleanupBoxFile;
+use App\Ocr\Message\ExtractDocument;
 use App\Ocr\Service\OcrRecoverableExtractionException;
 use App\Shared\Outbox\OutboxPublisherInterface;
 use Doctrine\ORM\EntityManagerInterface;
@@ -23,25 +23,36 @@ final readonly class OcrFailureSubscriber
         private ManagerRegistry $registry,
         private OutboxPublisherInterface $outbox,
         private LoggerInterface $logger,
-    ) {}
+    ) {
+    }
 
     public function __invoke(WorkerMessageFailedEvent $event): void
     {
         $message = $event->getEnvelope()->getMessage();
-        if (!$message instanceof ExtractDocument) { return; }
+        if (!$message instanceof ExtractDocument) {
+            return;
+        }
         try {
             // L'échec du handler peut avoir fermé l'EntityManager (exception
             // Doctrine) : le réinitialiser avant de marquer l'extraction.
             $manager = $this->registry->getManagerForClass(DocumentExtraction::class);
-            if (!$manager instanceof EntityManagerInterface || !$manager->isOpen()) { $manager = $this->registry->resetManager(); }
+            if (!$manager instanceof EntityManagerInterface || !$manager->isOpen()) {
+                $manager = $this->registry->resetManager();
+            }
             $extraction = $manager->find(DocumentExtraction::class, $message->extractionId);
-            if (!$extraction instanceof DocumentExtraction) { return; }
+            if (!$extraction instanceof DocumentExtraction) {
+                return;
+            }
             foreach ($this->cleanupFiles($event->getThrowable()) as $fileId) {
                 $extraction->rememberTemporaryBoxFile($fileId);
                 $this->outbox->enqueue(new CleanupBoxFile($extraction->id(), $fileId));
             }
             $extraction->recordTechnicalAttempt();
-            if ($event->willRetry()) { $manager->flush(); return; }
+            if ($event->willRetry()) {
+                $manager->flush();
+
+                return;
+            }
             $extraction->fail($event->getThrowable()->getMessage());
             $manager->flush();
         } catch (\Throwable $error) {
@@ -53,12 +64,18 @@ final readonly class OcrFailureSubscriber
     /** @return list<string> */
     private function cleanupFiles(\Throwable $error): array
     {
-        if ($error instanceof OcrRecoverableExtractionException) { return $error->boxFilesToClean; }
+        if ($error instanceof OcrRecoverableExtractionException) {
+            return $error->boxFilesToClean;
+        }
         if ($error instanceof HandlerFailedException) {
             $files = [];
-            foreach ($error->getWrappedExceptions() as $wrapped) { $files = [...$files, ...$this->cleanupFiles($wrapped)]; }
+            foreach ($error->getWrappedExceptions() as $wrapped) {
+                $files = [...$files, ...$this->cleanupFiles($wrapped)];
+            }
+
             return array_values(array_unique($files));
         }
+
         return null === $error->getPrevious() ? [] : $this->cleanupFiles($error->getPrevious());
     }
 }

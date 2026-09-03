@@ -14,7 +14,9 @@ use Symfony\Component\HttpFoundation\Response;
  */
 final readonly class HealthReporter
 {
-    public function __construct(private Connection $connection) {}
+    public function __construct(private Connection $connection)
+    {
+    }
 
     /** @return array{httpStatus: int, payload: array<string, mixed>} */
     public function report(): array

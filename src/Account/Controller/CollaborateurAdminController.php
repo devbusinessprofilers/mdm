@@ -179,5 +179,4 @@ final class CollaborateurAdminController extends AbstractController
 
         return $this->redirectToRoute('app_account_admin_show', ['id' => $collaborateurId]);
     }
-
 }

@@ -66,17 +66,60 @@ class LegacyPhotoImport
         $this->initializeTimestamps();
     }
 
-    public function id(): ?int { return $this->id; }
-    public function syspadId(): int { return $this->syspadId; }
-    public function legacyPath(): string { return $this->legacyPath; }
-    public function category(): string { return $this->category; }
-    public function usageCode(): string { return $this->usageCode; }
-    public function position(): int { return $this->position; }
-    public function status(): LegacyPhotoStatus { return $this->status; }
-    public function mediaAssetId(): ?string { return $this->mediaAssetId; }
-    public function errorMessage(): ?string { return $this->errorMessage; }
-    public function attempts(): int { return $this->attempts; }
-    public function processedAt(): ?\DateTimeImmutable { return $this->processedAt; }
+    public function id(): ?int
+    {
+        return $this->id;
+    }
+
+    public function syspadId(): int
+    {
+        return $this->syspadId;
+    }
+
+    public function legacyPath(): string
+    {
+        return $this->legacyPath;
+    }
+
+    public function category(): string
+    {
+        return $this->category;
+    }
+
+    public function usageCode(): string
+    {
+        return $this->usageCode;
+    }
+
+    public function position(): int
+    {
+        return $this->position;
+    }
+
+    public function status(): LegacyPhotoStatus
+    {
+        return $this->status;
+    }
+
+    public function mediaAssetId(): ?string
+    {
+        return $this->mediaAssetId;
+    }
+
+    public function errorMessage(): ?string
+    {
+        return $this->errorMessage;
+    }
+
+    public function attempts(): int
+    {
+        return $this->attempts;
+    }
+
+    public function processedAt(): ?\DateTimeImmutable
+    {
+        return $this->processedAt;
+    }
 
     public function markDone(string $mediaAssetId): void
     {

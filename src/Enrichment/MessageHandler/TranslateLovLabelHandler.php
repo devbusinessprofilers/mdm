@@ -30,7 +30,8 @@ final readonly class TranslateLovLabelHandler
         private AttributeValueTranslationRepository $valueTranslations,
         private TranslationProviderInterface $provider,
         private MarketplaceLovSyncScheduler $marketplace,
-    ) {}
+    ) {
+    }
 
     public function __invoke(TranslateLovLabel $message): void
     {
@@ -46,7 +47,9 @@ final readonly class TranslateLovLabelHandler
                 ? $this->valueTranslations->findRequested($subject, $locale, $message->requestToken)
                 : null;
         }
-        if (!$translation instanceof AbstractLovTranslation) { return; }
+        if (!$translation instanceof AbstractLovTranslation) {
+            return;
+        }
         $result = $this->provider->translate([$translation->sourceLabel()], $locale);
         $translation->applyGoogle($result[0], $message->requestToken);
         // Libellé de valeur traduit : la marketplace reçoit le dictionnaire à

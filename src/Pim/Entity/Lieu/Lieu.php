@@ -7,17 +7,17 @@ namespace App\Pim\Entity\Lieu;
 use App\Pim\Attribute\CompletenessTarget;
 use App\Pim\Entity\AvecHorairesJours;
 use App\Pim\Entity\CompletenessScoresTrait;
-use App\Pim\Entity\HorairesJours;
 use App\Pim\Entity\Fiche;
+use App\Pim\Entity\HorairesJours;
 use App\Pim\Entity\Localisation;
 use App\Pim\Entity\Restaurant\Restaurant;
-use App\Pim\Lov\LieuLovCatalog;
-use App\Pim\Repository\LieuRepository;
 use App\Pim\Enum\TypeAccesLieu;
 use App\Pim\Enum\TypeFiche;
+use App\Pim\Lov\LieuLovCatalog;
+use App\Pim\Repository\LieuRepository;
+use App\Pim\Validation\ValidLieu;
 use App\Shared\Entity\TimestampableTrait;
 use App\Shared\Text\TexteBrut;
-use App\Pim\Validation\ValidLieu;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
@@ -571,7 +571,9 @@ class Lieu implements AvecHorairesJours
 
         $this->ressources->add($ressource);
         $ressource->attachTo($this);
-        if (!$this->fiche->resources()->contains($ressource)) { $this->fiche->addResource($ressource); }
+        if (!$this->fiche->resources()->contains($ressource)) {
+            $this->fiche->addResource($ressource);
+        }
         $this->touch();
     }
 
@@ -1434,7 +1436,6 @@ class Lieu implements AvecHorairesJours
         $this->touch();
     }
 
-
     public function markChanged(): void
     {
         $this->touch();
@@ -1490,5 +1491,4 @@ class Lieu implements AvecHorairesJours
 
         return '' === $value ? null : $value;
     }
-
 }

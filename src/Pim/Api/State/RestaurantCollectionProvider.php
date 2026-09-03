@@ -36,20 +36,12 @@ final readonly class RestaurantCollectionProvider implements ProviderInterface
             ? null
             : StatutFiche::tryFrom($statusValue);
         if ('' !== $statusValue && null === $status) {
-            throw new ApiProblemException(
-                400,
-                'invalid_filter',
-                'Le filtre status est invalide.',
-            );
+            throw new ApiProblemException(400, 'invalid_filter', 'Le filtre status est invalide.');
         }
 
         $limit = $request?->query->getInt('limit', 50) ?? 50;
         if ($limit < 1 || $limit > 100) {
-            throw new ApiProblemException(
-                400,
-                'invalid_filter',
-                'Le paramètre limit doit être compris entre 1 et 100.',
-            );
+            throw new ApiProblemException(400, 'invalid_filter', 'Le paramètre limit doit être compris entre 1 et 100.');
         }
 
         try {
@@ -57,11 +49,7 @@ final readonly class RestaurantCollectionProvider implements ProviderInterface
                 $request?->query->getString('cursor'),
             );
         } catch (\InvalidArgumentException $exception) {
-            throw new ApiProblemException(
-                400,
-                'invalid_cursor',
-                $exception->getMessage(),
-            );
+            throw new ApiProblemException(400, 'invalid_cursor', $exception->getMessage());
         }
 
         $page = $this->restaurants->findListPage($cursor, $limit, $status);

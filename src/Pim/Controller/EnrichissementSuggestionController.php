@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Pim\Controller;
 
+use App\Account\Service\CurrentActorProvider;
 use App\Pim\Entity\FicheSuggestion;
 use App\Pim\Form\EnrichissementSuggestionFormFactory;
-use App\Account\Service\CurrentActorProvider;
 use App\Pim\Repository\FicheSuggestionRepository;
 use App\Pim\Service\EnrichissementSuggestionArbitre;
 use App\Pim\Service\FicheEditeurEcran;

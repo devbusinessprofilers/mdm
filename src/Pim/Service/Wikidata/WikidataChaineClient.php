@@ -31,7 +31,8 @@ final readonly class WikidataChaineClient
         private HttpClientInterface $httpClient,
         private LoggerInterface $logger,
         private string $endpoint,
-    ) {}
+    ) {
+    }
 
     public function isConfigured(): bool
     {

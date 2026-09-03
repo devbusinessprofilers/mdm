@@ -32,23 +32,31 @@ final readonly class TranslationFailureSubscriber
         private FicheTranslationRepository $ficheTranslations,
         private AttributeDefinitionTranslationRepository $definitionTranslations,
         private AttributeValueTranslationRepository $valueTranslations,
-    ) {}
+    ) {
+    }
 
     #[AsEventListener]
     public function __invoke(WorkerMessageFailedEvent $event): void
     {
-        if ($event->willRetry()) { return; }
+        if ($event->willRetry()) {
+            return;
+        }
         $message = $event->getEnvelope()->getMessage();
         $error = $event->getThrowable()->getMessage();
         if ($message instanceof TranslatePublishedFiche) {
             $fiche = $this->fiches->find(Ulid::fromString($message->ficheId));
             if ($fiche instanceof Fiche) {
-                foreach ($this->ficheTranslations->requested($fiche, SupportedLocale::from($message->locale), $message->requestToken) as $row) { $row->fail($message->requestToken, $error); }
+                foreach ($this->ficheTranslations->requested($fiche, SupportedLocale::from($message->locale), $message->requestToken) as $row) {
+                    $row->fail($message->requestToken, $error);
+                }
                 $this->entityManager->flush();
             }
+
             return;
         }
-        if (!$message instanceof TranslateLovLabel) { return; }
+        if (!$message instanceof TranslateLovLabel) {
+            return;
+        }
         $locale = SupportedLocale::from($message->locale);
         if ('definition' === $message->subject) {
             $subject = $this->attributes->find($message->subjectId);
@@ -61,6 +69,9 @@ final readonly class TranslationFailureSubscriber
                 ? $this->valueTranslations->findRequested($subject, $locale, $message->requestToken)
                 : null;
         }
-        if ($row instanceof AbstractLovTranslation) { $row->fail($message->requestToken, $error); $this->entityManager->flush(); }
+        if ($row instanceof AbstractLovTranslation) {
+            $row->fail($message->requestToken, $error);
+            $this->entityManager->flush();
+        }
     }
 }

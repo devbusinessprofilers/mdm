@@ -89,7 +89,7 @@ final readonly class SalesforceSallesCsvExporter
             self::i($salle->capaciteClasse()),  // S_SALLE_ECOLE (classe)
             self::i($salle->capaciteTheatre()), // S_SALLE_THEATRE
             self::i($salle->capaciteCabaret()), // S_SALLE_CABARET
-            self::i($salle->capaciteCocktail()),// S_SALLE_COCKTAIL
+            self::i($salle->capaciteCocktail()), // S_SALLE_COCKTAIL
             '',                                 // S_SALLE_LONGUEUR (pas d'équivalent PIM)
             '',                                 // S_SALLE_LARGEUR
             '',                                 // S_SALLE_HAUTEUR

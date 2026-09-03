@@ -29,7 +29,7 @@ final class ValidLieuValidator extends ConstraintValidator
 
     public function validate(mixed $value, Constraint $constraint): void
     {
-        if (!($value instanceof Lieu)) {
+        if (!$value instanceof Lieu) {
             return;
         }
         $this->length(

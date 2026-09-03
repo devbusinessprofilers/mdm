@@ -53,15 +53,50 @@ abstract class AbstractLovTranslation
         $this->initializeTimestamps();
     }
 
-    public function id(): string { return (string) $this->id; }
-    public function locale(): SupportedLocale { return $this->locale; }
-    public function sourceLabel(): string { return $this->sourceLabel; }
-    public function translatedLabel(): ?string { return $this->translatedLabel; }
-    public function suggestedLabel(): ?string { return $this->suggestedLabel; }
-    public function origin(): ?TranslationOrigin { return $this->origin; }
-    public function status(): TranslationStatus { return $this->status; }
-    public function requestToken(): ?string { return $this->requestToken; }
-    public function lastError(): ?string { return $this->lastError; }
+    public function id(): string
+    {
+        return (string) $this->id;
+    }
+
+    public function locale(): SupportedLocale
+    {
+        return $this->locale;
+    }
+
+    public function sourceLabel(): string
+    {
+        return $this->sourceLabel;
+    }
+
+    public function translatedLabel(): ?string
+    {
+        return $this->translatedLabel;
+    }
+
+    public function suggestedLabel(): ?string
+    {
+        return $this->suggestedLabel;
+    }
+
+    public function origin(): ?TranslationOrigin
+    {
+        return $this->origin;
+    }
+
+    public function status(): TranslationStatus
+    {
+        return $this->status;
+    }
+
+    public function requestToken(): ?string
+    {
+        return $this->requestToken;
+    }
+
+    public function lastError(): ?string
+    {
+        return $this->lastError;
+    }
 
     public function schedule(string $source, string $token): bool
     {
@@ -69,7 +104,9 @@ abstract class AbstractLovTranslation
         $changed = $hash !== $this->sourceHash;
         $this->sourceLabel = $source;
         $this->sourceHash = $hash;
-        if (!$changed && TranslationStatus::Available === $this->status) { return false; }
+        if (!$changed && TranslationStatus::Available === $this->status) {
+            return false;
+        }
         $this->status = TranslationOrigin::Manual === $this->origin && null !== $this->translatedLabel
             ? TranslationStatus::Obsolete
             : TranslationStatus::Pending;
@@ -82,7 +119,9 @@ abstract class AbstractLovTranslation
 
     public function applyGoogle(string $value, string $token): void
     {
-        if ($token !== $this->requestToken) { return; }
+        if ($token !== $this->requestToken) {
+            return;
+        }
         if (TranslationOrigin::Manual === $this->origin && null !== $this->translatedLabel) {
             $this->suggestedLabel = trim($value);
             $this->status = TranslationStatus::Obsolete;
@@ -113,7 +152,9 @@ abstract class AbstractLovTranslation
 
     public function fail(string $token, string $error): void
     {
-        if ($token !== $this->requestToken) { return; }
+        if ($token !== $this->requestToken) {
+            return;
+        }
         $this->status = TranslationStatus::Failed;
         $this->lastError = mb_substr($error, 0, 2000);
         $this->requestToken = null;

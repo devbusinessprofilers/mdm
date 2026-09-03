@@ -29,7 +29,8 @@ final readonly class FieldFillRateCalculator
         private CompletenessEntityResolver $resolver,
         private FicheRepository $fiches,
         private EntityManagerInterface $entityManager,
-    ) {}
+    ) {
+    }
 
     /** @return array{perType: array<string, array{fiches: int, fieldCount: int, worstFields: list<array{code: string, label: string, applicable: int, filled: int, rate: float}>}>} */
     public function compute(): array

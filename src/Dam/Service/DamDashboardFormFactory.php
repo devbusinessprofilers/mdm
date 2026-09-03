@@ -17,7 +17,8 @@ final readonly class DamDashboardFormFactory
     public function __construct(
         private FormFactoryInterface $forms,
         private UrlGeneratorInterface $urls,
-    ) {}
+    ) {
+    }
 
     /**
      * @param list<array<string, mixed>> $items

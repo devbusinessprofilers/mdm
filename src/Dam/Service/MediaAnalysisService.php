@@ -13,9 +13,9 @@ use App\Dam\Enum\MediaStatus;
 use App\Dam\Repository\MediaAssetRepository;
 use App\Dam\Repository\MediaDuplicateAlertRepository;
 use App\Dam\Repository\MediaPerceptualHashBandRepository;
+use App\Pim\Repository\RessourceLieuRepository;
 use App\Shared\Service\ParametreProviderInterface;
 use App\Shared\Service\PrivateObjectStorageInterface;
-use App\Pim\Repository\RessourceLieuRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
 final readonly class MediaAnalysisService
@@ -29,7 +29,8 @@ final readonly class MediaAnalysisService
         private RessourceLieuRepository $resources,
         private EntityManagerInterface $entityManager,
         private ParametreProviderInterface $parametres,
-    ) {}
+    ) {
+    }
 
     /**
      * @param string|null $originalPath copie locale de l'original, pour éviter

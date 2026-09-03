@@ -72,17 +72,60 @@ class MediaDuplicateAlert
         $this->initializeTimestamps();
     }
 
-    public function id(): string { return (string) $this->id; }
-    public function media(): MediaAsset { return $this->media; }
-    public function duplicateOf(): MediaAsset { return $this->duplicateOf; }
-    public function resourceId(): string { return $this->resourceId; }
-    public function ficheId(): string { return $this->ficheId; }
-    public function ficheType(): string { return $this->ficheType; }
-    public function kind(): DuplicateKind { return $this->kind; }
-    public function distance(): ?int { return $this->distance; }
-    public function status(): DuplicateReviewStatus { return $this->status; }
-    public function reviewedBy(): ?string { return $this->reviewedBy; }
-    public function reviewedAt(): ?\DateTimeImmutable { return $this->reviewedAt; }
+    public function id(): string
+    {
+        return (string) $this->id;
+    }
+
+    public function media(): MediaAsset
+    {
+        return $this->media;
+    }
+
+    public function duplicateOf(): MediaAsset
+    {
+        return $this->duplicateOf;
+    }
+
+    public function resourceId(): string
+    {
+        return $this->resourceId;
+    }
+
+    public function ficheId(): string
+    {
+        return $this->ficheId;
+    }
+
+    public function ficheType(): string
+    {
+        return $this->ficheType;
+    }
+
+    public function kind(): DuplicateKind
+    {
+        return $this->kind;
+    }
+
+    public function distance(): ?int
+    {
+        return $this->distance;
+    }
+
+    public function status(): DuplicateReviewStatus
+    {
+        return $this->status;
+    }
+
+    public function reviewedBy(): ?string
+    {
+        return $this->reviewedBy;
+    }
+
+    public function reviewedAt(): ?\DateTimeImmutable
+    {
+        return $this->reviewedAt;
+    }
 
     public function refresh(MediaAsset $duplicateOf, DuplicateKind $kind, ?int $distance): void
     {

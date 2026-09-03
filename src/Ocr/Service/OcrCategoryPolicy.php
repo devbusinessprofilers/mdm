@@ -16,6 +16,7 @@ final class OcrCategoryPolicy
             'Support commercial' => DocumentUsage::CommercialSupport,
             'Justificatif RSE' => DocumentUsage::RseEvidence,
         ];
+
         return match ($type) {
             TypeFiche::Lieu => ['Plan de salle' => DocumentUsage::RoomPlan, 'Plan général' => DocumentUsage::GeneralPlan, ...$common],
             TypeFiche::Restaurant => ['Plan de salle' => DocumentUsage::RoomPlan, 'Menu de restaurant' => DocumentUsage::RestaurantMenu, ...$common],
@@ -32,8 +33,11 @@ final class OcrCategoryPolicy
     public function label(string $usage): string
     {
         foreach (DocumentUsage::choices() as $label => $candidate) {
-            if ($candidate->value === $usage) { return $label; }
+            if ($candidate->value === $usage) {
+                return $label;
+            }
         }
+
         return $usage;
     }
 }

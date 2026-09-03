@@ -18,8 +18,8 @@ use ApiPlatform\OpenApi\Model\Parameter;
 use ApiPlatform\OpenApi\Model\RequestBody;
 use App\Pim\Api\State\RestaurantCollectionProvider;
 use App\Pim\Api\State\RestaurantItemProvider;
-use App\Pim\Api\State\RestaurantPatchProcessor;
 use App\Pim\Api\State\RestaurantMediaProcessor;
+use App\Pim\Api\State\RestaurantPatchProcessor;
 
 #[ApiResource(
     shortName: 'Restaurant',
@@ -190,20 +190,20 @@ use App\Pim\Api\State\RestaurantMediaProcessor;
 final readonly class RestaurantResource
 {
     /**
-     * @param list<string> $typesRestaurant
-     * @param list<string> $typesCuisine
-     * @param list<string> $specificitesAlimentaires
-     * @param list<string> $typesEvenement
-     * @param list<string> $joursOuverture
+     * @param list<string>               $typesRestaurant
+     * @param list<string>               $typesCuisine
+     * @param list<string>               $specificitesAlimentaires
+     * @param list<string>               $typesEvenement
+     * @param list<string>               $joursOuverture
      * @param list<array<string, mixed>> $periodesFermeture
-     * @param array<string, mixed>|null $localisation
+     * @param array<string, mixed>|null  $localisation
      * @param list<array<string, mixed>> $acces
-     * @param list<string> $atouts
+     * @param list<string>               $atouts
      * @param list<array<string, mixed>> $salles
-     * @param list<string> $services
-     * @param list<string> $equipements
-     * @param list<string> $engagementsRse
-     * @param list<LieuMediaResource> $medias
+     * @param list<string>               $services
+     * @param list<string>               $equipements
+     * @param list<string>               $engagementsRse
+     * @param list<LieuMediaResource>    $medias
      */
     public function __construct(
         #[ApiProperty(identifier: true)] public string $id,

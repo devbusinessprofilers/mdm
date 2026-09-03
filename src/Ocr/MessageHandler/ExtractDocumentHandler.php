@@ -39,14 +39,19 @@ final readonly class ExtractDocumentHandler
         private OcrValueAccessor $accessor,
         private OutboxPublisherInterface $outbox,
         private EntityManagerInterface $entityManager,
-    ) {}
+    ) {
+    }
 
     public function __invoke(ExtractDocument $message): void
     {
         $extraction = $this->extractions->find($message->extractionId);
-        if (!$extraction instanceof DocumentExtraction || !in_array($extraction->status(), [ExtractionStatus::Queued, ExtractionStatus::Failed], true)) { return; }
+        if (!$extraction instanceof DocumentExtraction || !in_array($extraction->status(), [ExtractionStatus::Queued, ExtractionStatus::Failed], true)) {
+            return;
+        }
         $temp = tempnam(sys_get_temp_dir(), 'mdm-ocr-source-');
-        if (false === $temp) { throw new RecoverableMessageHandlingException('Impossible de créer le PDF temporaire.'); }
+        if (false === $temp) {
+            throw new RecoverableMessageHandlingException('Impossible de créer le PDF temporaire.');
+        }
         $batches = [];
         $boxFilesToClean = [];
         try {
@@ -55,10 +60,20 @@ final readonly class ExtractDocumentHandler
             $source = $this->storage->readStream($extraction->document()->originalStorageKey());
             try {
                 $destination = fopen($temp, 'wb');
-                if (false === $destination) { throw new \RuntimeException('Impossible de préparer le PDF DAM.'); }
-                try { stream_copy_to_stream($source, $destination); } finally { fclose($destination); }
-            } finally { fclose($source); }
-            if (hash_file('sha256', $temp) !== $extraction->documentChecksum()) { throw new \DomainException('L’empreinte du document DAM ne correspond plus à l’extraction.'); }
+                if (false === $destination) {
+                    throw new \RuntimeException('Impossible de préparer le PDF DAM.');
+                }
+                try {
+                    stream_copy_to_stream($source, $destination);
+                } finally {
+                    fclose($destination);
+                }
+            } finally {
+                fclose($source);
+            }
+            if (hash_file('sha256', $temp) !== $extraction->documentChecksum()) {
+                throw new \DomainException('L’empreinte du document DAM ne correspond plus à l’extraction.');
+            }
             $pages = $this->pdf->inspect($temp);
             $extraction->start($pages);
             $batches = $this->pdf->batches($temp, $pages);
@@ -70,8 +85,10 @@ final readonly class ExtractDocumentHandler
                 try {
                     $responses[] = ['first_page' => $batch->firstPage, 'response' => $this->provider->extract($fileId, $this->catalog->boxFields($extraction->fiche()->type()))];
                 } finally {
-                    try { $this->provider->delete($fileId); $extraction->forgetTemporaryBoxFile($fileId); }
-                    catch (\Throwable) {
+                    try {
+                        $this->provider->delete($fileId);
+                        $extraction->forgetTemporaryBoxFile($fileId);
+                    } catch (\Throwable) {
                         $boxFilesToClean[] = $fileId;
                         $this->outbox->enqueue(new CleanupBoxFile($extraction->id(), $fileId));
                     }
@@ -80,12 +97,20 @@ final readonly class ExtractDocumentHandler
             $result = $this->consolidator->consolidate($responses);
             $schema = $this->schemas->for($extraction->fiche()->type());
             $aggregate = $schema->findAggregateByFiche($extraction->fiche());
-            if (null === $aggregate) { throw new \DomainException('L’agrégat PIM lié à la fiche est introuvable.'); }
+            if (null === $aggregate) {
+                throw new \DomainException('L’agrégat PIM lié à la fiche est introuvable.');
+            }
             $definitions = [];
-            foreach ($extraction->schemaSnapshot()['fields'] ?? [] as $field) { if (is_array($field) && is_string($field['path'] ?? null)) { $definitions[$field['path']] = $field; } }
+            foreach ($extraction->schemaSnapshot()['fields'] ?? [] as $field) {
+                if (is_array($field) && is_string($field['path'] ?? null)) {
+                    $definitions[$field['path']] = $field;
+                }
+            }
             foreach ($result['suggestions'] as $suggestion) {
                 $definition = $definitions[$suggestion['path']] ?? null;
-                if (!is_array($definition)) { continue; }
+                if (!is_array($definition)) {
+                    continue;
+                }
                 $this->entityManager->persist(new OcrSuggestion(
                     $extraction, $suggestion['path'], (string) ($definition['label'] ?? $suggestion['path']), (string) ($definition['type'] ?? 'string'),
                     $suggestion['value'], $this->accessor->read($extraction->fiche(), $aggregate, $suggestion['path']), $suggestion['confidence'], $suggestion['pages'],
@@ -110,7 +135,9 @@ final readonly class ExtractDocumentHandler
             $extraction->fail($error->getMessage());
         } finally {
             $this->pdf->cleanup($batches);
-            if (is_file($temp)) { @unlink($temp); }
+            if (is_file($temp)) {
+                @unlink($temp);
+            }
         }
     }
 }

@@ -9,12 +9,10 @@ use App\Account\Service\CurrentActorProvider;
 use App\Dam\Repository\MediaAssetRepository;
 use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Repository\RessourceLieuRepository;
-use App\Shared\Service\PrivateObjectStorageInterface;
 use App\Pim\Service\InternalFicheMutationPolicy;
 use App\Pim\Service\LieuMediaCsrfGuard;
 use App\Pim\Service\LieuPhotoManager;
-use App\Pim\Service\FicheSectionsCatalogue;
-use App\Pim\Enum\TypeFiche;
+use App\Shared\Service\PrivateObjectStorageInterface;
 use App\Vision\Service\ImageRecognitionManager;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -33,7 +31,10 @@ final class LieuPhotoController extends AbstractController
         $this->denyAccessUnlessGranted(FicheVoter::EDIT, $lieu->fiche());
         $csrf->assertValid($lieu, (string) $request->headers->get('X-CSRF-TOKEN', $request->request->getString('_token')));
         $files = $request->files->all('photos');
-        if ([] === $files) { $single = $request->files->get('photos'); $files = $single instanceof UploadedFile ? [$single] : []; }
+        if ([] === $files) {
+            $single = $request->files->get('photos');
+            $files = $single instanceof UploadedFile ? [$single] : [];
+        }
         $files = array_values(array_filter($files, static fn (mixed $file): bool => $file instanceof UploadedFile));
         try {
             $uploaded = $mutationPolicy->execute(
@@ -42,8 +43,9 @@ final class LieuPhotoController extends AbstractController
             );
 
             return $this->json(['uploaded' => $uploaded], Response::HTTP_CREATED);
+        } catch (\DomainException $exception) {
+            return $this->json(['error' => $exception->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
-        catch (\DomainException $exception) { return $this->json(['error' => $exception->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY); }
     }
 
     #[Route('/ordre', name: 'order', methods: ['POST'])]
@@ -59,8 +61,9 @@ final class LieuPhotoController extends AbstractController
             );
 
             return $this->json(['updated' => $updated]);
+        } catch (\DomainException $exception) {
+            return $this->json(['error' => $exception->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
-        catch (\DomainException $exception) { return $this->json(['error' => $exception->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY); }
     }
 
     #[Route('/{resourceId}', name: 'update', methods: ['PATCH'])]
@@ -69,15 +72,18 @@ final class LieuPhotoController extends AbstractController
         $this->denyAccessUnlessGranted(FicheVoter::EDIT, $lieu->fiche());
         $csrf->assertValid($lieu, (string) $request->headers->get('X-CSRF-TOKEN', $request->request->getString('_token')));
         $resource = $resources->findPhotoForFiche($lieu->fiche(), $resourceId);
-        if (null === $resource || $resource->lieu() !== $lieu) { throw $this->createNotFoundException('Photo introuvable pour ce lieu.'); }
+        if (null === $resource || $resource->lieu() !== $lieu) {
+            throw $this->createNotFoundException('Photo introuvable pour ce lieu.');
+        }
         try {
             $mutationPolicy->execute($lieu->fiche(), function () use ($manager, $resource, $lieu, $request, $actor): void {
                 $manager->update($resource, $lieu, $request->getPayload()->all(), $actor->id());
             });
 
             return $this->json(['updated' => true]);
+        } catch (\DomainException $exception) {
+            return $this->json(['error' => $exception->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
-        catch (\DomainException $exception) { return $this->json(['error' => $exception->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY); }
     }
 
     /**
@@ -90,7 +96,9 @@ final class LieuPhotoController extends AbstractController
         $this->denyAccessUnlessGranted(FicheVoter::EDIT, $lieu->fiche());
         $csrf->assertValid($lieu, (string) $request->headers->get('X-CSRF-TOKEN', $request->request->getString('_token')));
         $resource = $resources->findPhotoForFiche($lieu->fiche(), $resourceId);
-        if (null === $resource || $resource->lieu() !== $lieu) { throw $this->createNotFoundException('Photo introuvable pour ce lieu.'); }
+        if (null === $resource || $resource->lieu() !== $lieu) {
+            throw $this->createNotFoundException('Photo introuvable pour ce lieu.');
+        }
         try {
             $mutationPolicy->execute($lieu->fiche(), static function () use ($manager, $resource, $lieu, $request): void {
                 // La barre de salle envoie salle_id seul : l'usage courant est conservé.
@@ -104,8 +112,9 @@ final class LieuPhotoController extends AbstractController
             });
 
             return $this->json(['updated' => true]);
+        } catch (\DomainException $exception) {
+            return $this->json(['error' => $exception->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
-        catch (\DomainException $exception) { return $this->json(['error' => $exception->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY); }
     }
 
     /**
@@ -118,7 +127,9 @@ final class LieuPhotoController extends AbstractController
     {
         $this->denyAccessUnlessGranted(FicheVoter::VIEW, $lieu->fiche());
         $resource = $resources->findPhotoForFiche($lieu->fiche(), $resourceId);
-        if (null === $resource || $resource->lieu() !== $lieu) { throw $this->createNotFoundException('Photo introuvable pour ce lieu.'); }
+        if (null === $resource || $resource->lieu() !== $lieu) {
+            throw $this->createNotFoundException('Photo introuvable pour ce lieu.');
+        }
         $asset = $assets->find($resource->damAssetId()) ?? throw $this->createNotFoundException('Fichier DAM introuvable.');
 
         return $this->redirect($storage->temporaryUrl($asset->originalStorageKey(), new \DateTimeImmutable('+10 minutes')));
@@ -130,17 +141,22 @@ final class LieuPhotoController extends AbstractController
         $this->denyAccessUnlessGranted(FicheVoter::EDIT, $lieu->fiche());
         $csrf->assertValid($lieu, (string) $request->headers->get('X-CSRF-TOKEN', $request->request->getString('_token')));
         $resource = $resources->findPhotoForFiche($lieu->fiche(), $resourceId);
-        if (null === $resource || $resource->lieu() !== $lieu) { throw $this->createNotFoundException('Photo introuvable pour ce lieu.'); }
+        if (null === $resource || $resource->lieu() !== $lieu) {
+            throw $this->createNotFoundException('Photo introuvable pour ce lieu.');
+        }
         $file = $request->files->get('photo');
-        if (!$file instanceof UploadedFile) { return $this->json(['error' => 'Sélectionnez une image.'], Response::HTTP_UNPROCESSABLE_ENTITY); }
+        if (!$file instanceof UploadedFile) {
+            return $this->json(['error' => 'Sélectionnez une image.'], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
         try {
             $mutationPolicy->execute($lieu->fiche(), static function () use ($manager, $resource, $lieu, $file): void {
                 $manager->replace($resource, $lieu, $file);
             });
 
             return $this->json(['replaced' => true]);
+        } catch (\DomainException $exception) {
+            return $this->json(['error' => $exception->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
-        catch (\DomainException $exception) { return $this->json(['error' => $exception->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY); }
     }
 
     #[Route('/{resourceId}/relancer', name: 'retry', methods: ['POST'])]
@@ -149,13 +165,16 @@ final class LieuPhotoController extends AbstractController
         $this->denyAccessUnlessGranted(FicheVoter::EDIT, $lieu->fiche());
         $csrf->assertValid($lieu, (string) $request->headers->get('X-CSRF-TOKEN', $request->request->getString('_token')));
         $resource = $resources->findPhotoForFiche($lieu->fiche(), $resourceId);
-        if (null === $resource || $resource->lieu() !== $lieu) { throw $this->createNotFoundException('Photo introuvable pour ce lieu.'); }
+        if (null === $resource || $resource->lieu() !== $lieu) {
+            throw $this->createNotFoundException('Photo introuvable pour ce lieu.');
+        }
         try {
             $manager->retry($resource);
 
             return $this->json(['queued' => true]);
+        } catch (\DomainException $exception) {
+            return $this->json(['error' => $exception->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
-        catch (\DomainException $exception) { return $this->json(['error' => $exception->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY); }
     }
 
     #[Route('/{resourceId}/enrichir', name: 'enrich', methods: ['POST'])]
@@ -164,11 +183,14 @@ final class LieuPhotoController extends AbstractController
         $this->denyAccessUnlessGranted(FicheVoter::EDIT, $lieu->fiche());
         $csrf->assertValid($lieu, (string) $request->headers->get('X-CSRF-TOKEN', $request->request->getString('_token')));
         $resource = $resources->findPhotoForFiche($lieu->fiche(), $resourceId);
-        if (null === $resource || $resource->lieu() !== $lieu) { throw $this->createNotFoundException('Photo introuvable pour ce lieu.'); }
+        if (null === $resource || $resource->lieu() !== $lieu) {
+            throw $this->createNotFoundException('Photo introuvable pour ce lieu.');
+        }
         try {
             return $this->json(['queued' => $recognitions->launchForResource($resource, $actor->id())]);
+        } catch (\DomainException $exception) {
+            return $this->json(['error' => $exception->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
-        catch (\DomainException $exception) { return $this->json(['error' => $exception->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY); }
     }
 
     #[Route('/{resourceId}', name: 'delete', methods: ['DELETE'])]
@@ -177,14 +199,17 @@ final class LieuPhotoController extends AbstractController
         $this->denyAccessUnlessGranted(FicheVoter::EDIT, $lieu->fiche());
         $csrf->assertValid($lieu, (string) $request->headers->get('X-CSRF-TOKEN', $request->request->getString('_token')));
         $resource = $resources->findPhotoForFiche($lieu->fiche(), $resourceId);
-        if (null === $resource || $resource->lieu() !== $lieu) { throw $this->createNotFoundException('Photo introuvable pour ce lieu.'); }
+        if (null === $resource || $resource->lieu() !== $lieu) {
+            throw $this->createNotFoundException('Photo introuvable pour ce lieu.');
+        }
         try {
             $mutationPolicy->execute($lieu->fiche(), static function () use ($manager, $resource, $lieu): void {
                 $manager->delete($resource, $lieu);
             });
 
             return $this->json(null, Response::HTTP_NO_CONTENT);
+        } catch (\DomainException $exception) {
+            return $this->json(['error' => $exception->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
-        catch (\DomainException $exception) { return $this->json(['error' => $exception->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY); }
     }
 }

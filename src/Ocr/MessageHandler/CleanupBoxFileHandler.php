@@ -15,15 +15,23 @@ use Symfony\Component\Messenger\Exception\RecoverableMessageHandlingException;
 #[AsMessageHandler]
 final readonly class CleanupBoxFileHandler
 {
-    public function __construct(private DocumentExtractionProviderInterface $provider, private DocumentExtractionRepository $extractions) {}
+    public function __construct(private DocumentExtractionProviderInterface $provider, private DocumentExtractionRepository $extractions)
+    {
+    }
 
     public function __invoke(CleanupBoxFile $message): void
     {
         $extraction = $this->extractions->find($message->extractionId);
-        if (!$extraction instanceof DocumentExtraction || !in_array($message->fileId, $extraction->temporaryBoxFileIds(), true)) { return; }
-        try { $this->provider->delete($message->fileId); $extraction->forgetTemporaryBoxFile($message->fileId); }
-        catch (BoxProviderException $error) {
-            if ($error->retryable) { throw new RecoverableMessageHandlingException($error->getMessage(), previous: $error, retryDelay: 1000 * ($error->retryAfter ?? 60)); }
+        if (!$extraction instanceof DocumentExtraction || !in_array($message->fileId, $extraction->temporaryBoxFileIds(), true)) {
+            return;
+        }
+        try {
+            $this->provider->delete($message->fileId);
+            $extraction->forgetTemporaryBoxFile($message->fileId);
+        } catch (BoxProviderException $error) {
+            if ($error->retryable) {
+                throw new RecoverableMessageHandlingException($error->getMessage(), previous: $error, retryDelay: 1000 * ($error->retryAfter ?? 60));
+            }
             throw $error;
         }
     }

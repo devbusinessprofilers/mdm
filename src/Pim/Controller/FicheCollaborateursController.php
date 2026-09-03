@@ -27,14 +27,12 @@ use Symfony\Component\Routing\Attribute\Route;
  */
 final class FicheCollaborateursController extends AbstractController
 {
-    #[
-        Route(
-            '/referentiel/fiche/{id}/collaborateurs/inviter',
-            name: 'app_mdm_fiche_collaborateur_inviter',
-            requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
-            methods: ['POST'],
-        ),
-    ]
+    #[Route(
+        '/referentiel/fiche/{id}/collaborateurs/inviter',
+        name: 'app_mdm_fiche_collaborateur_inviter',
+        requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
+        methods: ['POST'],
+    ),]
     public function inviter(
         Request $request,
         string $id,
@@ -83,14 +81,12 @@ final class FicheCollaborateursController extends AbstractController
             ]);
     }
 
-    #[
-        Route(
-            '/referentiel/fiche-affiliation/{id}/modifier',
-            name: 'app_mdm_fiche_affiliation_modifier',
-            requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
-            methods: ['POST'],
-        ),
-    ]
+    #[Route(
+        '/referentiel/fiche-affiliation/{id}/modifier',
+        name: 'app_mdm_fiche_affiliation_modifier',
+        requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
+        methods: ['POST'],
+    ),]
     public function modifier(
         Request $request,
         string $id,
@@ -135,14 +131,12 @@ final class FicheCollaborateursController extends AbstractController
             ]);
     }
 
-    #[
-        Route(
-            '/referentiel/fiche-affiliation/{id}/retirer',
-            name: 'app_mdm_fiche_affiliation_retirer',
-            requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
-            methods: ['POST'],
-        ),
-    ]
+    #[Route(
+        '/referentiel/fiche-affiliation/{id}/retirer',
+        name: 'app_mdm_fiche_affiliation_retirer',
+        requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
+        methods: ['POST'],
+    ),]
     public function retirer(
         Request $request,
         string $id,
@@ -183,5 +177,4 @@ final class FicheCollaborateursController extends AbstractController
                 'section' => $section,
             ]);
     }
-
 }

@@ -11,5 +11,6 @@ final readonly class WikidataChaine
     public function __construct(
         public string $nom,
         public array $alias = [],
-    ) {}
+    ) {
+    }
 }

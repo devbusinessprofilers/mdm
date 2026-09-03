@@ -16,5 +16,6 @@ final readonly class ServiceEvenementielListItem
         public StatutFiche $status,
         public int $completeness,
         public \DateTimeImmutable $updatedAt,
-    ) {}
+    ) {
+    }
 }

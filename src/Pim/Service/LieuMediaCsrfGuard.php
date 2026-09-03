@@ -14,7 +14,9 @@ use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
 
 final readonly class LieuMediaCsrfGuard
 {
-    public function __construct(private CsrfTokenManagerInterface $tokens) {}
+    public function __construct(private CsrfTokenManagerInterface $tokens)
+    {
+    }
 
     public function assertValid(Lieu|Restaurant|Activite|ServiceEvenementiel $lieu, string $value): void
     {

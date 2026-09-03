@@ -43,10 +43,7 @@ final readonly class ReceivedDoctrineTransactionMiddleware implements Middleware
 
             return $handledEnvelope;
         } catch (HandlerFailedException $error) {
-            throw new HandlerFailedException(
-                $error->getEnvelope()->withoutAll(HandledStamp::class),
-                $error->getWrappedExceptions(),
-            );
+            throw new HandlerFailedException($error->getEnvelope()->withoutAll(HandledStamp::class), $error->getWrappedExceptions());
         } finally {
             if (!$success && $connection->isTransactionActive()) {
                 $connection->rollBack();

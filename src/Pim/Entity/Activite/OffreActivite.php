@@ -13,12 +13,10 @@ use Symfony\Component\Uid\Ulid;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'pim_activite_offre')]
-#[
-    ORM\Index(
-        name: 'IDX_ACTIVITE_OFFRE_ORDERED',
-        columns: ['activite_id', 'type', 'position', 'id'],
-    ),
-]
+#[ORM\Index(
+    name: 'IDX_ACTIVITE_OFFRE_ORDERED',
+    columns: ['activite_id', 'type', 'position', 'id'],
+),]
 #[ORM\HasLifecycleCallbacks]
 class OffreActivite
 {

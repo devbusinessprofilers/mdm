@@ -86,11 +86,7 @@ final readonly class RestaurantDocumentProcessor implements ProcessorInterface
                 );
                 if ('PATCH' === $method) {
                     if (!$data instanceof DocumentPatchInput) {
-                        throw new ApiProblemException(
-                            400,
-                            'invalid_payload',
-                            'Corps JSON invalide.',
-                        );
+                        throw new ApiProblemException(400, 'invalid_payload', 'Corps JSON invalide.');
                     }
 
                     return $this->metadata($restaurant, $document, $data);
@@ -100,11 +96,7 @@ final readonly class RestaurantDocumentProcessor implements ProcessorInterface
                 }
                 if ('POST' === $method && str_ends_with($template, '/publication')) {
                     if (!$data instanceof DocumentPublicationInput) {
-                        throw new ApiProblemException(
-                            400,
-                            'invalid_payload',
-                            'Corps JSON invalide.',
-                        );
+                        throw new ApiProblemException(400, 'invalid_payload', 'Corps JSON invalide.');
                     }
 
                     return $this->publication(
@@ -136,11 +128,7 @@ final readonly class RestaurantDocumentProcessor implements ProcessorInterface
         $request = $this->request();
         $usage = DocumentUsage::tryFrom($request->request->getString('usage'));
         if (null === $usage || !$this->allowedUsage($usage)) {
-            throw new ApiProblemException(
-                422,
-                'invalid_document_usage',
-                'Usage documentaire Restaurant invalide.',
-            );
+            throw new ApiProblemException(422, 'invalid_document_usage', 'Usage documentaire Restaurant invalide.');
         }
         $this->access->requireCreate($usage->access());
 
@@ -149,21 +137,13 @@ final readonly class RestaurantDocumentProcessor implements ProcessorInterface
             $request->request->getString('salleId'),
         );
         if ($usage->requiresRoom() && null === $room) {
-            throw new ApiProblemException(
-                422,
-                'room_required',
-                'Un plan de salle doit être rattaché à une salle.',
-            );
+            throw new ApiProblemException(422, 'room_required', 'Un plan de salle doit être rattaché à une salle.');
         }
         $this->assertCount($restaurant, $usage, $room);
 
         $file = $request->files->get('document');
         if (!$file instanceof UploadedFile) {
-            throw new ApiProblemException(
-                422,
-                'document_required',
-                'Le champ multipart document est obligatoire.',
-            );
+            throw new ApiProblemException(422, 'document_required', 'Le champ multipart document est obligatoire.');
         }
 
         $asset = $this->upload($file, $restaurant, $usage);
@@ -204,11 +184,7 @@ final readonly class RestaurantDocumentProcessor implements ProcessorInterface
         if (array_key_exists('usage', $payload)) {
             $usage = DocumentUsage::tryFrom((string) $input->usage);
             if (null === $usage || !$this->allowedUsage($usage)) {
-                throw new ApiProblemException(
-                    422,
-                    'invalid_document_usage',
-                    'Usage documentaire Restaurant invalide.',
-                );
+                throw new ApiProblemException(422, 'invalid_document_usage', 'Usage documentaire Restaurant invalide.');
             }
             $document->configureDocument($usage);
         }
@@ -221,11 +197,7 @@ final readonly class RestaurantDocumentProcessor implements ProcessorInterface
             DocumentUsage::RoomPlan === $document->documentUsage()
             && null === $document->restaurantSalle()
         ) {
-            throw new ApiProblemException(
-                422,
-                'room_required',
-                'Un plan de salle doit être rattaché à une salle.',
-            );
+            throw new ApiProblemException(422, 'room_required', 'Un plan de salle doit être rattaché à une salle.');
         }
         if (array_key_exists('title', $payload)) {
             $document->changeLegende($input->title);
@@ -258,19 +230,11 @@ final readonly class RestaurantDocumentProcessor implements ProcessorInterface
         $this->access->requireWrite($document);
         $file = $this->request()->files->get('document');
         if (!$file instanceof UploadedFile) {
-            throw new ApiProblemException(
-                422,
-                'document_required',
-                'Le champ multipart document est obligatoire.',
-            );
+            throw new ApiProblemException(422, 'document_required', 'Le champ multipart document est obligatoire.');
         }
 
         $usage = $document->documentUsage()
-            ?? throw new ApiProblemException(
-                422,
-                'invalid_document_usage',
-                'Usage documentaire invalide.',
-            );
+            ?? throw new ApiProblemException(422, 'invalid_document_usage', 'Usage documentaire invalide.');
         $asset = $this->upload($file, $restaurant, $usage);
         $oldAssetId = $document->damAssetId();
         try {
@@ -303,20 +267,12 @@ final readonly class RestaurantDocumentProcessor implements ProcessorInterface
                 || MediaKind::Document !== $asset->kind()
                 || MediaStatus::Processed !== $asset->status()
             ) {
-                throw new ApiProblemException(
-                    422,
-                    'invalid_document',
-                    'Le fichier DAM est absent ou invalide.',
-                );
+                throw new ApiProblemException(422, 'invalid_document', 'Le fichier DAM est absent ou invalide.');
             }
             try {
                 $document->requestPublication();
             } catch (\DomainException $exception) {
-                throw new ApiProblemException(
-                    422,
-                    'publication_refused',
-                    $exception->getMessage(),
-                );
+                throw new ApiProblemException(422, 'publication_refused', $exception->getMessage());
             }
             $this->outbox->enqueue(new PublishDocument($document->id()));
         } else {
@@ -339,11 +295,7 @@ final readonly class RestaurantDocumentProcessor implements ProcessorInterface
             || null === $document->documentUsage()
             || !$this->allowedUsage($document->documentUsage())
         ) {
-            throw new ApiProblemException(
-                404,
-                'not_found',
-                'Document introuvable.',
-            );
+            throw new ApiProblemException(404, 'not_found', 'Document introuvable.');
         }
 
         return $document;
@@ -357,11 +309,7 @@ final readonly class RestaurantDocumentProcessor implements ProcessorInterface
         try {
             return $this->uploader->upload($file, $restaurant->fiche(), $usage);
         } catch (DocumentUploadException $exception) {
-            throw new ApiProblemException(
-                $exception->httpStatus,
-                'invalid_document_file',
-                $exception->getMessage(),
-            );
+            throw new ApiProblemException($exception->httpStatus, 'invalid_document_file', $exception->getMessage());
         }
     }
 
@@ -378,11 +326,7 @@ final readonly class RestaurantDocumentProcessor implements ProcessorInterface
             }
         }
 
-        throw new ApiProblemException(
-            422,
-            'foreign_room',
-            'La salle doit appartenir au Restaurant.',
-        );
+        throw new ApiProblemException(422, 'foreign_room', 'La salle doit appartenir au Restaurant.');
     }
 
     private function assertCount(
@@ -405,11 +349,7 @@ final readonly class RestaurantDocumentProcessor implements ProcessorInterface
             }
         }
         if ($count >= $maximum) {
-            throw new ApiProblemException(
-                422,
-                'document_limit_reached',
-                'Le nombre maximal de documents pour cet usage est atteint.',
-            );
+            throw new ApiProblemException(422, 'document_limit_reached', 'Le nombre maximal de documents pour cet usage est atteint.');
         }
     }
 

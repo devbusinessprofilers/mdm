@@ -28,7 +28,8 @@ final readonly class AlertNotifier
         private ParametreProviderInterface $parametres,
         #[Autowire(env: 'MAILER_FROM')]
         private string $sender,
-    ) {}
+    ) {
+    }
 
     public function notify(string $type, string $fingerprint, string $subject, string $body): void
     {

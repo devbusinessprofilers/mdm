@@ -17,8 +17,7 @@ final readonly class CompletenessRecalculationScheduler
         private EntityManagerInterface $entityManager,
         private CompletenessConfigurationRevisionRepository $revisions,
         private OutboxPublisherInterface $outbox,
-    )
-    {
+    ) {
     }
 
     public function schedule(TypeFiche $type, bool $incrementRevision = true, int $batchSize = 250): int

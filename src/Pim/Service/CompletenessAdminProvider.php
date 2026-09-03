@@ -18,7 +18,8 @@ final readonly class CompletenessAdminProvider
         private CompletenessFieldConfigurationRepository $configurations,
         private CompletenessConfigurationRevisionRepository $revisions,
         private CompletenessRepository $completeness,
-    ) {}
+    ) {
+    }
 
     /** @return list<array{configuration: CompletenessFieldConfiguration, definition: \App\Pim\Completeness\CompletenessFieldDefinition, effective_target: int|null}> */
     public function rows(?TypeFiche $selectedType, string $query): array

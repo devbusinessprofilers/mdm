@@ -6,9 +6,9 @@ namespace App\Dam\Repository;
 
 use App\Dam\Entity\MediaAsset;
 use App\Dam\Entity\MediaDuplicateAlert;
+use App\Dam\Enum\DuplicateReviewStatus;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
-use App\Dam\Enum\DuplicateReviewStatus;
 
 /** @extends ServiceEntityRepository<MediaDuplicateAlert> */
 final class MediaDuplicateAlertRepository extends ServiceEntityRepository

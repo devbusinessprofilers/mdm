@@ -18,7 +18,7 @@ final readonly class CompletenessCalculator
     }
 
     /** @param list<CompletenessFieldConfiguration> $configurations
-     *  @param array<string, mixed> $overrides Valeurs indexées par code de champ.
+     * @param array<string, mixed> $overrides valeurs indexées par code de champ
      */
     public function calculate(object $entity, TypeFiche $type, array $configurations, array $overrides = []): CompletenessScores
     {
@@ -42,10 +42,18 @@ final readonly class CompletenessCalculator
             $fraction = $this->fraction($value, $configuration->formula(), $target);
             $weight = $configuration->weight();
             $channels = ['global'];
-            if ($configuration->marketplace()) { $channels[] = 'marketplace'; }
-            if ($configuration->thematicSites()) { $channels[] = 'thematicSites'; }
-            if ($configuration->salesforce()) { $channels[] = 'salesforce'; }
-            if ($configuration->providerPortal()) { $channels[] = 'providerPortal'; }
+            if ($configuration->marketplace()) {
+                $channels[] = 'marketplace';
+            }
+            if ($configuration->thematicSites()) {
+                $channels[] = 'thematicSites';
+            }
+            if ($configuration->salesforce()) {
+                $channels[] = 'salesforce';
+            }
+            if ($configuration->providerPortal()) {
+                $channels[] = 'providerPortal';
+            }
             foreach ($channels as $channel) {
                 $totals[$channel][0] += $weight * $fraction;
                 $totals[$channel][1] += $weight;
@@ -74,16 +82,22 @@ final readonly class CompletenessCalculator
             $value = iterator_to_array($value);
         }
         if (is_array($value)) {
-            if ([] === $value) { return 0.0; }
+            if ([] === $value) {
+                return 0.0;
+            }
             $fractions = array_map(fn (mixed $item): float => $this->fraction($item, $formula, $target), array_values($value));
 
             return array_sum($fractions) / count($fractions);
         }
-        if (null === $value) { return 0.0; }
+        if (null === $value) {
+            return 0.0;
+        }
         if (CompletenessFormula::Presence === $formula) {
             return is_string($value) ? ('' === trim($value) ? 0.0 : 1.0) : 1.0;
         }
-        if (!is_string($value) || null === $target) { return 0.0; }
+        if (!is_string($value) || null === $target) {
+            return 0.0;
+        }
         $normalized = trim((string) preg_replace('/\s+/u', ' ', $value));
 
         return min(mb_strlen($normalized) / $target, 1.0);

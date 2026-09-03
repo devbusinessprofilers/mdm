@@ -6,5 +6,7 @@ namespace App\Pim\Message;
 
 final readonly class AnalyzeFicheTexts
 {
-    public function __construct(public string $ficheId) {}
+    public function __construct(public string $ficheId)
+    {
+    }
 }

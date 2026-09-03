@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace App\Pim\Fusion;
 
+use App\Account\Security\FicheVoter;
 use App\Pim\Entity\Fiche;
 use App\Pim\Enum\NatureRessource;
+use App\Pim\Enum\StatutFiche;
 use App\Pim\Export\FicheExportColonnesCatalogue;
 use App\Pim\Export\FicheExportValueReader;
 use App\Pim\Form\FusionType;
 use App\Pim\Import\Schema\ColumnDefinition;
 use App\Pim\Import\Schema\FicheImportSchemaRegistry;
-use App\Account\Security\FicheVoter;
-use App\Pim\Enum\StatutFiche;
 use App\Pim\Repository\FicheAffiliationRepository;
 use App\Pim\Repository\FicheRepository;
 use Symfony\Bundle\SecurityBundle\Security;

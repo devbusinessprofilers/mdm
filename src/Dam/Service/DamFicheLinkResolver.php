@@ -20,7 +20,8 @@ final readonly class DamFicheLinkResolver
         private RestaurantRepository $restaurants,
         private ServiceEvenementielRepository $services,
         private UrlGeneratorInterface $urls,
-    ) {}
+    ) {
+    }
 
     public function editUrl(Fiche $fiche): ?string
     {

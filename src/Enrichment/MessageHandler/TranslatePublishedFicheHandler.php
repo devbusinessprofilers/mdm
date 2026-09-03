@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Enrichment\MessageHandler;
 
-use App\Etl\Service\MarketplaceSyncScheduler;
 use App\Enrichment\Enum\SupportedLocale;
 use App\Enrichment\Message\TranslatePublishedFiche;
 use App\Enrichment\Repository\FicheTranslationRepository;
 use App\Enrichment\Service\TranslationProviderInterface;
+use App\Etl\Service\MarketplaceSyncScheduler;
 use App\Pim\Entity\Fiche;
 use App\Pim\Repository\FicheRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -24,7 +24,8 @@ final readonly class TranslatePublishedFicheHandler
         private TranslationProviderInterface $provider,
         private EntityManagerInterface $entityManager,
         private MarketplaceSyncScheduler $marketplaceScheduler,
-    ) {}
+    ) {
+    }
 
     public function __invoke(TranslatePublishedFiche $message): void
     {
@@ -33,14 +34,20 @@ final readonly class TranslatePublishedFicheHandler
         // Pas de garde sur le statut : la relance manuelle traduit aussi les
         // fiches non publiées, et seules des lignes déjà planifiées (jeton
         // valide) sont traitées ici.
-        if (!$fiche instanceof Fiche) { return; }
+        if (!$fiche instanceof Fiche) {
+            return;
+        }
         $rows = $this->translations->requested($fiche, $locale, $message->requestToken);
-        if ([] === $rows) { return; }
+        if ([] === $rows) {
+            return;
+        }
         $translated = $this->provider->translate(
             array_map(static fn ($row): string => $row->sourceText(), $rows),
             $locale,
         );
-        foreach ($rows as $index => $row) { $row->applyGoogle($translated[$index], $message->requestToken); }
+        foreach ($rows as $index => $row) {
+            $row->applyGoogle($translated[$index], $message->requestToken);
+        }
         // Les traductions fraîchement disponibles redescendent vers la
         // marketplace via une resynchronisation du snapshot complet.
         $this->marketplaceScheduler->schedule($fiche);

@@ -32,7 +32,8 @@ final class RechercheEntrepriseClient
         private readonly HttpClientInterface $httpClient,
         private readonly LoggerInterface $logger,
         private readonly string $endpoint,
-    ) {}
+    ) {
+    }
 
     /**
      * @param bool $absorberIndisponibilite vrai au pré-remplissage (une panne
@@ -43,7 +44,9 @@ final class RechercheEntrepriseClient
     public function findBest(string $query, ?string $codePostal = null, bool $absorberIndisponibilite = true): ?EntrepriseInfo
     {
         $query = trim($query);
-        if ('' === $query) { return null; }
+        if ('' === $query) {
+            return null;
+        }
         $codePostal = trim((string) $codePostal);
         try {
             $result = $this->search($query, '' === $codePostal ? null : $codePostal);
@@ -73,7 +76,9 @@ final class RechercheEntrepriseClient
     public function findStatut(string $siret): ?EntrepriseInfo
     {
         $siret = preg_replace('/\D/', '', $siret) ?? '';
-        if (!preg_match('/^\d{14}$/', $siret)) { return null; }
+        if (!preg_match('/^\d{14}$/', $siret)) {
+            return null;
+        }
 
         return $this->search($siret, null, actifsSeulement: false, siretAttendu: $siret);
     }
@@ -248,7 +253,9 @@ final class RechercheEntrepriseClient
         }
         $payload = $this->requete($parameters);
         $result = $payload['results'][0] ?? null;
-        if (!\is_array($result)) { return null; }
+        if (!\is_array($result)) {
+            return null;
+        }
 
         /** @var array<string, mixed> $siege */
         $siege = \is_array($result['siege'] ?? null) ? $result['siege'] : [];
@@ -367,7 +374,9 @@ final class RechercheEntrepriseClient
      */
     private static function dirigeantPrincipal(mixed $dirigeants): ?array
     {
-        if (!\is_array($dirigeants)) { return null; }
+        if (!\is_array($dirigeants)) {
+            return null;
+        }
         foreach ($dirigeants as $dirigeant) {
             if (!\is_array($dirigeant) || 'personne physique' !== ($dirigeant['type_de_dirigeant'] ?? null)) {
                 continue;
@@ -428,7 +437,9 @@ final class RechercheEntrepriseClient
     /** Numéro de TVA intracommunautaire français, calculable depuis le SIREN. */
     private static function numeroTva(?string $siren): ?string
     {
-        if (null === $siren || !preg_match('/^\d{9}$/', $siren)) { return null; }
+        if (null === $siren || !preg_match('/^\d{9}$/', $siren)) {
+            return null;
+        }
         $key = (12 + 3 * ((int) $siren % 97)) % 97;
 
         return sprintf('FR%02d%s', $key, $siren);
@@ -436,8 +447,12 @@ final class RechercheEntrepriseClient
 
     private static function string(mixed $value): ?string
     {
-        if (\is_int($value) || \is_float($value)) { $value = (string) $value; }
-        if (!\is_string($value)) { return null; }
+        if (\is_int($value) || \is_float($value)) {
+            $value = (string) $value;
+        }
+        if (!\is_string($value)) {
+            return null;
+        }
         $value = trim($value);
 
         return '' === $value ? null : $value;

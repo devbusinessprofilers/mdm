@@ -101,21 +101,82 @@ class ImageRecognition
         $this->initializeTimestamps();
     }
 
-    public function id(): string { return (string) $this->id; }
-    public function fiche(): Fiche { return $this->fiche; }
-    public function media(): MediaAsset { return $this->media; }
-    public function resource(): RessourceLieu { return $this->resource; }
-    public function sourceChecksum(): string { return $this->sourceChecksum; }
-    public function prompt(): string { return $this->prompt; }
-    public function providerModel(): string { return $this->providerModel; }
-    public function status(): RecognitionStatus { return $this->status; }
-    public function createdBy(): string { return $this->createdBy; }
-    public function attempts(): int { return $this->attempts; }
-    public function startedAt(): ?\DateTimeImmutable { return $this->startedAt; }
-    public function finishedAt(): ?\DateTimeImmutable { return $this->finishedAt; }
-    public function errorMessage(): ?string { return $this->errorMessage; }
-    /** @return array<string, mixed>|null */ public function rawResponse(): ?array { return $this->rawResponse; }
-    /** @return Collection<int, ImageRecognitionSuggestion> */ public function suggestions(): Collection { return $this->suggestions; }
+    public function id(): string
+    {
+        return (string) $this->id;
+    }
+
+    public function fiche(): Fiche
+    {
+        return $this->fiche;
+    }
+
+    public function media(): MediaAsset
+    {
+        return $this->media;
+    }
+
+    public function resource(): RessourceLieu
+    {
+        return $this->resource;
+    }
+
+    public function sourceChecksum(): string
+    {
+        return $this->sourceChecksum;
+    }
+
+    public function prompt(): string
+    {
+        return $this->prompt;
+    }
+
+    public function providerModel(): string
+    {
+        return $this->providerModel;
+    }
+
+    public function status(): RecognitionStatus
+    {
+        return $this->status;
+    }
+
+    public function createdBy(): string
+    {
+        return $this->createdBy;
+    }
+
+    public function attempts(): int
+    {
+        return $this->attempts;
+    }
+
+    public function startedAt(): ?\DateTimeImmutable
+    {
+        return $this->startedAt;
+    }
+
+    public function finishedAt(): ?\DateTimeImmutable
+    {
+        return $this->finishedAt;
+    }
+
+    public function errorMessage(): ?string
+    {
+        return $this->errorMessage;
+    }
+
+    /** @return array<string, mixed>|null */
+    public function rawResponse(): ?array
+    {
+        return $this->rawResponse;
+    }
+
+    /** @return Collection<int, ImageRecognitionSuggestion> */
+    public function suggestions(): Collection
+    {
+        return $this->suggestions;
+    }
 
     public function start(): void
     {
@@ -169,7 +230,11 @@ class ImageRecognition
     {
         $pending = $decided = 0;
         foreach ($this->suggestions as $suggestion) {
-            if ($suggestion->isPending()) { ++$pending; } else { ++$decided; }
+            if ($suggestion->isPending()) {
+                ++$pending;
+            } else {
+                ++$decided;
+            }
         }
         $this->status = 0 === $pending ? RecognitionStatus::Reviewed : (0 < $decided ? RecognitionStatus::PartiallyReviewed : RecognitionStatus::Ready);
         $this->touch();

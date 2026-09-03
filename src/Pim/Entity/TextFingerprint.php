@@ -76,15 +76,50 @@ class TextFingerprint
         $this->initializeTimestamps();
     }
 
-    public function id(): string { return (string) $this->id; }
-    public function ficheId(): string { return $this->ficheId; }
-    public function ficheType(): string { return $this->ficheType; }
-    public function fieldPath(): string { return $this->fieldPath; }
-    public function fieldLabel(): string { return $this->fieldLabel; }
-    public function exactHash(): string { return $this->exactHash; }
-    public function simhash(): string { return $this->simhash; }
-    public function length(): int { return $this->length; }
-    public function snippet(): ?string { return $this->snippet; }
+    public function id(): string
+    {
+        return (string) $this->id;
+    }
+
+    public function ficheId(): string
+    {
+        return $this->ficheId;
+    }
+
+    public function ficheType(): string
+    {
+        return $this->ficheType;
+    }
+
+    public function fieldPath(): string
+    {
+        return $this->fieldPath;
+    }
+
+    public function fieldLabel(): string
+    {
+        return $this->fieldLabel;
+    }
+
+    public function exactHash(): string
+    {
+        return $this->exactHash;
+    }
+
+    public function simhash(): string
+    {
+        return $this->simhash;
+    }
+
+    public function length(): int
+    {
+        return $this->length;
+    }
+
+    public function snippet(): ?string
+    {
+        return $this->snippet;
+    }
 
     /** Réaligne l'empreinte sur le texte courant. Renvoie true si le contenu a changé. */
     public function refresh(string $fieldLabel, string $exactHash, string $simhash, int $length, ?string $snippet): bool

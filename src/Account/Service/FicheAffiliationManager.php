@@ -150,7 +150,9 @@ final readonly class FicheAffiliationManager
 
     /**
      * @template T
+     *
      * @param callable(): T $operation
+     *
      * @return T
      */
     private function transactional(callable $operation): mixed

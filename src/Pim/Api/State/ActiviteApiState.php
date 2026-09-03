@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Pim\Api\State;
 
-use App\Pim\Api\Exception\ApiProblemException;
 use App\Enrichment\Service\FicheTranslationScheduler;
+use App\Pim\Api\Exception\ApiProblemException;
 use App\Pim\Entity\Activite\Activite;
 use App\Pim\Message\IndexFiche;
 use App\Pim\Repository\ActiviteRepository;
@@ -28,7 +28,7 @@ final readonly class ActiviteApiState
     public function activite(string $id): Activite
     {
         $a = $this->activities->find($id);
-        if (!($a instanceof Activite)) {
+        if (!$a instanceof Activite) {
             throw new ApiProblemException(Response::HTTP_NOT_FOUND, 'not_found', 'Activité introuvable.');
         }
 

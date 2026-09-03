@@ -20,7 +20,8 @@ final readonly class SignalementBugMailer
         private Security $security,
         private string $sender,
         private string $destinataire,
-    ) {}
+    ) {
+    }
 
     public function envoyer(string $titre, string $description, ?string $page, ?string $navigateur): void
     {

@@ -6,8 +6,8 @@ namespace App\Pim\Completeness;
 
 use App\Pim\Entity\CompletenessConfigurationRevision;
 use App\Pim\Entity\Fiche;
-use App\Pim\Repository\CompletenessFieldConfigurationRepository;
 use App\Pim\Repository\CompletenessConfigurationRevisionRepository;
+use App\Pim\Repository\CompletenessFieldConfigurationRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
 final readonly class CompletenessManager
@@ -31,7 +31,9 @@ final readonly class CompletenessManager
     /** @param list<Fiche> $fiches */
     public function calculateBatch(array $fiches, bool $flush = true): int
     {
-        if ([] === $fiches) { return 0; }
+        if ([] === $fiches) {
+            return 0;
+        }
         $type = $fiches[0]->type();
         $configurations = $this->configurations->activeFor($type);
         if ([] === $configurations) {
@@ -49,9 +51,13 @@ final readonly class CompletenessManager
         $eligiblePhotos = $this->photoEligibility->resolve($entities);
         $scoresByFiche = [];
         foreach ($fiches as $fiche) {
-            if ($fiche->type() !== $type) { throw new \InvalidArgumentException('Un lot de complétude ne peut contenir qu’un seul type de fiche.'); }
+            if ($fiche->type() !== $type) {
+                throw new \InvalidArgumentException('Un lot de complétude ne peut contenir qu’un seul type de fiche.');
+            }
             $entity = $entities[$fiche->idString()] ?? null;
-            if (null === $entity) { continue; }
+            if (null === $entity) {
+                continue;
+            }
             $scoresByFiche[$fiche->idString()] = $this->calculator->calculate(
                 $entity,
                 $type,
@@ -63,7 +69,9 @@ final readonly class CompletenessManager
         if ($count !== count($scoresByFiche)) {
             throw new \RuntimeException(sprintf('L’écriture de complétude a mis à jour %d fiche(s) sur %d.', $count, count($scoresByFiche)));
         }
-        if ($flush) { $this->entityManager->flush(); }
+        if ($flush) {
+            $this->entityManager->flush();
+        }
 
         return $count;
     }

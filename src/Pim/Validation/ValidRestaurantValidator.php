@@ -261,8 +261,7 @@ final class ValidRestaurantValidator extends ConstraintValidator
 
         $location = $value->localisation();
         foreach (
-            ['pays', 'region', 'departement', 'ruePostale', 'codePostal', 'ville', 'latitude', 'longitude']
-            as $field
+            ['pays', 'region', 'departement', 'ruePostale', 'codePostal', 'ville', 'latitude', 'longitude'] as $field
         ) {
             if (
                 null === $location
@@ -281,8 +280,7 @@ final class ValidRestaurantValidator extends ConstraintValidator
             $value->acces()->toArray(),
         );
         foreach (
-            [TypeAccesRestaurant::Aeroport, TypeAccesRestaurant::Gare]
-            as $requiredType
+            [TypeAccesRestaurant::Aeroport, TypeAccesRestaurant::Gare] as $requiredType
         ) {
             if (!in_array($requiredType, $accessTypes, true)) {
                 $this->violation(
@@ -339,8 +337,7 @@ final class ValidRestaurantValidator extends ConstraintValidator
         return array_values(
             array_filter(
                 $value->ressources()->toArray(),
-                static fn (RessourceLieu $resource): bool =>
-                    NatureRessource::Photo === $resource->nature(),
+                static fn (RessourceLieu $resource): bool => NatureRessource::Photo === $resource->nature(),
             ),
         );
     }

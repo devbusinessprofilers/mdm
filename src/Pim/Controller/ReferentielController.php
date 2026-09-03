@@ -30,9 +30,9 @@ use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Messenger\MessageBusInterface;
-use Symfony\Component\Uid\Ulid;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Uid\Ulid;
 
 /**
  * Liste du référentiel aux emplacements de la maquette front : facettes,
@@ -388,5 +388,4 @@ final class ReferentielController extends AbstractController
 
         return $this->redirectToRoute('app_mdm_referentiel_general');
     }
-
 }

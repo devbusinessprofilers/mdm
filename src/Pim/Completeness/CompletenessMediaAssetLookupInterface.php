@@ -7,7 +7,7 @@ namespace App\Pim\Completeness;
 interface CompletenessMediaAssetLookupInterface
 {
     /** @param list<string> $assetIds
-     *  @return list<string>
+     * @return list<string>
      */
     public function processedImageIds(array $assetIds): array;
 }

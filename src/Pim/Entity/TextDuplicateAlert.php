@@ -75,17 +75,60 @@ class TextDuplicateAlert
         $this->initializeTimestamps();
     }
 
-    public function id(): string { return (string) $this->id; }
-    public function fingerprint(): TextFingerprint { return $this->fingerprint; }
-    public function duplicateOf(): TextFingerprint { return $this->duplicateOf; }
-    public function ficheId(): string { return $this->ficheId; }
-    public function ficheType(): string { return $this->ficheType; }
-    public function fieldPath(): string { return $this->fieldPath; }
-    public function kind(): TextDuplicateKind { return $this->kind; }
-    public function distance(): ?int { return $this->distance; }
-    public function status(): DuplicateReviewStatus { return $this->status; }
-    public function reviewedBy(): ?string { return $this->reviewedBy; }
-    public function reviewedAt(): ?\DateTimeImmutable { return $this->reviewedAt; }
+    public function id(): string
+    {
+        return (string) $this->id;
+    }
+
+    public function fingerprint(): TextFingerprint
+    {
+        return $this->fingerprint;
+    }
+
+    public function duplicateOf(): TextFingerprint
+    {
+        return $this->duplicateOf;
+    }
+
+    public function ficheId(): string
+    {
+        return $this->ficheId;
+    }
+
+    public function ficheType(): string
+    {
+        return $this->ficheType;
+    }
+
+    public function fieldPath(): string
+    {
+        return $this->fieldPath;
+    }
+
+    public function kind(): TextDuplicateKind
+    {
+        return $this->kind;
+    }
+
+    public function distance(): ?int
+    {
+        return $this->distance;
+    }
+
+    public function status(): DuplicateReviewStatus
+    {
+        return $this->status;
+    }
+
+    public function reviewedBy(): ?string
+    {
+        return $this->reviewedBy;
+    }
+
+    public function reviewedAt(): ?\DateTimeImmutable
+    {
+        return $this->reviewedAt;
+    }
 
     public function refresh(TextFingerprint $duplicateOf, TextDuplicateKind $kind, ?int $distance): void
     {

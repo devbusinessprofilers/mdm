@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Pim\Api\State;
 
-use App\Pim\Api\Exception\ApiProblemException;
 use App\Enrichment\Service\FicheTranslationScheduler;
+use App\Pim\Api\Exception\ApiProblemException;
 use App\Pim\Entity\Fiche;
 use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Message\IndexFiche;
@@ -29,7 +29,7 @@ final readonly class LieuApiState
     public function lieu(string $id): Lieu
     {
         $lieu = $this->lieux->find($id);
-        if (!($lieu instanceof Lieu)) {
+        if (!$lieu instanceof Lieu) {
             throw new ApiProblemException(Response::HTTP_NOT_FOUND, 'not_found', 'Lieu introuvable.');
         }
 

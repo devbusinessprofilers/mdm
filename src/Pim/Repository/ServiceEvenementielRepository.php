@@ -27,7 +27,7 @@ final class ServiceEvenementielRepository extends ServiceEntityRepository
 
     public function findOneByFiche(Fiche $fiche): ?ServiceEvenementiel
     {
-        return $this->findOneBy(["fiche" => $fiche]);
+        return $this->findOneBy(['fiche' => $fiche]);
     }
 
     public function findListPage(
@@ -36,24 +36,24 @@ final class ServiceEvenementielRepository extends ServiceEntityRepository
         ?StatutFiche $status = null,
     ): ServiceEvenementielListPage {
         $limit = max(1, min(100, $limit));
-        $conditions = ["f.type = :type"];
-        $parameters = ["type" => TypeFiche::ServiceEvenementiel->value];
-        $types = ["type" => ParameterType::STRING];
+        $conditions = ['f.type = :type'];
+        $parameters = ['type' => TypeFiche::ServiceEvenementiel->value];
+        $types = ['type' => ParameterType::STRING];
         if (null !== $status) {
-            $conditions[] = "f.status = :status";
-            $parameters["status"] = $status->value;
-            $types["status"] = ParameterType::STRING;
+            $conditions[] = 'f.status = :status';
+            $parameters['status'] = $status->value;
+            $types['status'] = ParameterType::STRING;
         }
         if (null !== $cursor) {
-            $conditions[] = "(f.updated_at, f.id) < (:updated, :id)";
-            $parameters["updated"] = $cursor->updatedAt->format("Y-m-d H:i:s");
-            $parameters["id"] = $cursor->id->toBinary();
-            $types["updated"] = ParameterType::STRING;
-            $types["id"] = ParameterType::BINARY;
+            $conditions[] = '(f.updated_at, f.id) < (:updated, :id)';
+            $parameters['updated'] = $cursor->updatedAt->format('Y-m-d H:i:s');
+            $parameters['id'] = $cursor->id->toBinary();
+            $types['updated'] = ParameterType::STRING;
+            $types['id'] = ParameterType::BINARY;
         }
         $sql = sprintf(
             "SELECT f.id, f.code, f.label, f.status, s.completeness_global AS completeness, f.updated_at, CASE WHEN s.mode_intervention = 'fixe' THEN loc.ville ELSE NULL END ville FROM pim_fiche f INNER JOIN pim_service_evenementiel s ON s.fiche_id=f.id LEFT JOIN pim_localisation loc ON loc.id=f.localisation_id WHERE %s ORDER BY f.updated_at DESC, f.id DESC LIMIT %d",
-            implode(" AND ", $conditions),
+            implode(' AND ', $conditions),
             $limit + 1,
         );
         $rows = $this->getEntityManager()
@@ -80,13 +80,13 @@ final class ServiceEvenementielRepository extends ServiceEntityRepository
         return (int) $this->getEntityManager()
             ->getConnection()
             ->fetchOne(
-                "SELECT COUNT(*) FROM pim_fiche f INNER JOIN pim_service_evenementiel s ON s.fiche_id=f.id WHERE f.type=? AND f.status=?",
+                'SELECT COUNT(*) FROM pim_fiche f INNER JOIN pim_service_evenementiel s ON s.fiche_id=f.id WHERE f.type=? AND f.status=?',
                 [TypeFiche::ServiceEvenementiel->value, $status->value],
             );
     }
 
     /** @param list<string> $ids
-     *  @return list<ServiceEvenementielListItem>
+     * @return list<ServiceEvenementielListItem>
      */
     public function findListItemsByIds(array $ids): array
     {
@@ -98,17 +98,17 @@ final class ServiceEvenementielRepository extends ServiceEntityRepository
             ->executeQuery(
                 "SELECT f.id,f.code,f.label,f.status,s.completeness_global AS completeness,f.updated_at,CASE WHEN s.mode_intervention='fixe' THEN loc.ville ELSE NULL END ville FROM pim_fiche f INNER JOIN pim_service_evenementiel s ON s.fiche_id=f.id LEFT JOIN pim_localisation loc ON loc.id=f.localisation_id WHERE f.type=:type AND f.id IN (:ids)",
                 [
-                    "type" => TypeFiche::ServiceEvenementiel->value,
-                    "ids" => array_map(
-                        static fn(string $id): string => Ulid::fromString(
+                    'type' => TypeFiche::ServiceEvenementiel->value,
+                    'ids' => array_map(
+                        static fn (string $id): string => Ulid::fromString(
                             $id,
                         )->toBinary(),
                         $ids,
                     ),
                 ],
                 [
-                    "type" => ParameterType::STRING,
-                    "ids" => ArrayParameterType::BINARY,
+                    'type' => ParameterType::STRING,
+                    'ids' => ArrayParameterType::BINARY,
                 ],
             )
             ->fetchAllAssociative();
@@ -121,7 +121,7 @@ final class ServiceEvenementielRepository extends ServiceEntityRepository
         return array_values(
             array_filter(
                 array_map(
-                    static fn(
+                    static fn (
                         string $id,
                     ): ?ServiceEvenementielListItem => $mapped[$id] ?? null,
                     $ids,
@@ -134,13 +134,13 @@ final class ServiceEvenementielRepository extends ServiceEntityRepository
     private static function item(array $row): ServiceEvenementielListItem
     {
         return new ServiceEvenementielListItem(
-            (string) Ulid::fromBinary($row["id"]),
-            (int) $row["code"],
-            $row["label"],
-            $row["ville"],
-            StatutFiche::from($row["status"]),
-            (int) $row["completeness"],
-            new \DateTimeImmutable($row["updated_at"]),
+            (string) Ulid::fromBinary($row['id']),
+            (int) $row['code'],
+            $row['label'],
+            $row['ville'],
+            StatutFiche::from($row['status']),
+            (int) $row['completeness'],
+            new \DateTimeImmutable($row['updated_at']),
         );
     }
 }

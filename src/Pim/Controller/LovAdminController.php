@@ -9,15 +9,15 @@ use App\Enrichment\Enum\SupportedLocale;
 use App\Enrichment\Repository\AttributeValueTranslationRepository;
 use App\Pim\Entity\AttributDefinition;
 use App\Pim\Entity\ValeurAttribut;
-use App\Pim\Form\LovValueAdminType;
 use App\Pim\Form\LovSearchType;
+use App\Pim\Form\LovValueAdminType;
 use App\Pim\Repository\AttributDefinitionRepository;
 use App\Pim\Repository\ValeurAttributRepository;
 use App\Pim\Service\LovAdminManager;
 use App\Shared\Form\ActionType;
-use Symfony\Component\Form\FormFactoryInterface;
-use Symfony\Component\Form\FormError;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Form\FormError;
+use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -48,10 +48,11 @@ final class LovAdminController extends AbstractController
         ValeurAttributRepository $values,
         AttributeValueTranslationRepository $translations,
         FormFactoryInterface $forms,
-    ): Response
-    {
+    ): Response {
         $attribute = $attributes->findOneByCode($code);
-        if (!$attribute instanceof AttributDefinition) { throw $this->createNotFoundException('LOV introuvable.'); }
+        if (!$attribute instanceof AttributDefinition) {
+            throw $this->createNotFoundException('LOV introuvable.');
+        }
         $attributeValues = $values->findOrderedByAttribute($attribute);
         $translationRows = $translations->indexedForValues($attributeValues);
         $retryForms = [];
@@ -77,10 +78,11 @@ final class LovAdminController extends AbstractController
         AttributDefinitionRepository $attributes,
         LovAdminManager $manager,
         AuditContext $audit,
-    ): Response
-    {
+    ): Response {
         $attribute = $attributes->findOneByCode($code);
-        if (!$attribute instanceof AttributDefinition) { throw $this->createNotFoundException('LOV introuvable.'); }
+        if (!$attribute instanceof AttributDefinition) {
+            throw $this->createNotFoundException('LOV introuvable.');
+        }
         $form = $this->createForm(LovValueAdminType::class, ['position' => 0, 'active' => true], ['creation' => true]);
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
@@ -88,6 +90,7 @@ final class LovAdminController extends AbstractController
             try {
                 $value = $manager->create($attribute, $data, $audit->current()['actor']);
                 $this->addFlash('success', 'Valeur LOV ajoutée.');
+
                 return $this->redirectToRoute('app_pim_lov_edit', ['code' => $code, 'id' => $value->id()]);
             } catch (\DomainException $exception) {
                 $form->get('code')->addError(new FormError($exception->getMessage()));
@@ -106,12 +109,15 @@ final class LovAdminController extends AbstractController
         ValeurAttributRepository $values,
         FormFactoryInterface $forms,
         LovAdminManager $manager,
-    ): Response
-    {
+    ): Response {
         $attribute = $attributes->findOneByCode($code);
-        if (!$attribute instanceof AttributDefinition) { throw $this->createNotFoundException('LOV introuvable.'); }
+        if (!$attribute instanceof AttributDefinition) {
+            throw $this->createNotFoundException('LOV introuvable.');
+        }
         $value = $values->findOneForAttribute($attribute, $id);
-        if (!$value instanceof ValeurAttribut) { throw $this->createNotFoundException(); }
+        if (!$value instanceof ValeurAttribut) {
+            throw $this->createNotFoundException();
+        }
         $form = $forms->createNamed('retry_'.$value->id(), ActionType::class, null, ['button_label' => 'Relancer Google']);
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
@@ -132,12 +138,15 @@ final class LovAdminController extends AbstractController
         AttributeValueTranslationRepository $translations,
         LovAdminManager $manager,
         AuditContext $audit,
-    ): Response
-    {
+    ): Response {
         $attribute = $attributes->findOneByCode($code);
-        if (!$attribute instanceof AttributDefinition) { throw $this->createNotFoundException('LOV introuvable.'); }
+        if (!$attribute instanceof AttributDefinition) {
+            throw $this->createNotFoundException('LOV introuvable.');
+        }
         $value = $values->findOneForAttribute($attribute, $id);
-        if (!$value instanceof ValeurAttribut) { throw $this->createNotFoundException(); }
+        if (!$value instanceof ValeurAttribut) {
+            throw $this->createNotFoundException();
+        }
         $rows = $translations->indexedForValues([$value])[$value->id()] ?? [];
         $data = ['code' => $value->code(), 'label' => $value->label(), 'position' => $value->position(), 'active' => $value->active()];
         foreach (SupportedLocale::targets() as $locale) {
@@ -154,5 +163,4 @@ final class LovAdminController extends AbstractController
 
         return $this->render('pim/lov/form.html.twig', ['form' => $form, 'attribute' => $attribute, 'value' => $value, 'creation' => false]);
     }
-
 }

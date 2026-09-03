@@ -11,18 +11,14 @@ use Symfony\Component\Uid\Ulid;
 
 #[ORM\Entity(repositoryClass: DashboardSnapshotRepository::class)]
 #[ORM\Table(name: 'dashboard_snapshot')]
-#[
-    ORM\Index(
-        name: 'IDX_DASHBOARD_SNAPSHOT_COMPUTED',
-        columns: ['computed_at', 'id'],
-    ),
-]
-#[
-    ORM\Index(
-        name: 'IDX_DASHBOARD_SNAPSHOT_KIND',
-        columns: ['kind', 'computed_at', 'id'],
-    ),
-]
+#[ORM\Index(
+    name: 'IDX_DASHBOARD_SNAPSHOT_COMPUTED',
+    columns: ['computed_at', 'id'],
+),]
+#[ORM\Index(
+    name: 'IDX_DASHBOARD_SNAPSHOT_KIND',
+    columns: ['kind', 'computed_at', 'id'],
+),]
 final class DashboardSnapshot
 {
     public const int SCHEMA_VERSION = 1;

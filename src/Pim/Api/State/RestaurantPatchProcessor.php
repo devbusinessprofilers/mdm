@@ -50,12 +50,7 @@ final readonly class RestaurantPatchProcessor implements ProcessorInterface
                 function () use ($payload, $form, $restaurant): RestaurantResource {
                     $form->submit($payload, false);
                     if (!$form->isValid()) {
-                        throw new ApiProblemException(
-                            422,
-                            'validation_failed',
-                            'La fiche contient des données invalides.',
-                            ['violations' => $this->errors($form)],
-                        );
+                        throw new ApiProblemException(422, 'validation_failed', 'La fiche contient des données invalides.', ['violations' => $this->errors($form)]);
                     }
 
                     $restaurant->fiche()->markSystemChanged();
@@ -67,11 +62,7 @@ final readonly class RestaurantPatchProcessor implements ProcessorInterface
         } catch (ApiProblemException $exception) {
             throw $exception;
         } catch (\Throwable $exception) {
-            throw new ApiProblemException(
-                422,
-                'invalid_payload',
-                $exception->getMessage(),
-            );
+            throw new ApiProblemException(422, 'invalid_payload', $exception->getMessage());
         }
     }
 

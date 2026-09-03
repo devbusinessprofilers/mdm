@@ -15,7 +15,9 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
 final readonly class TranslationAdminFormFactory
 {
-    public function __construct(private FormFactoryInterface $forms, private UrlGeneratorInterface $urls) {}
+    public function __construct(private FormFactoryInterface $forms, private UrlGeneratorInterface $urls)
+    {
+    }
 
     /** @return FormInterface<array{fieldPath: string, value: string}> */
     public function correction(Fiche $fiche, TranslationSource $source, SupportedLocale $locale, ?FicheTranslation $translation): FormInterface

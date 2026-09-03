@@ -14,13 +14,11 @@ use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Entity\SiteDiffusion;
 use App\Pim\Enum\NatureRessource;
 use App\Pim\Import\Schema\CollectionSchema;
-use App\Pim\Import\Schema\ColumnDefinition;
 use App\Pim\Import\Schema\ColumnKind;
 use App\Pim\Import\Schema\FicheImportSchemaRegistry;
 use App\Pim\Message\IndexFiche;
 use App\Pim\Repository\FicheAffiliationRepository;
 use App\Pim\Repository\SiteDiffusionRepository;
-use App\Pim\Service\PhotoUsageCatalog;
 use App\Shared\Outbox\OutboxPublisherInterface;
 use Doctrine\ORM\EntityManagerInterface;
 

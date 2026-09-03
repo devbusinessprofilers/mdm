@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Account\Form;
 
+use App\Account\Entity\User;
 use App\Pim\Entity\FicheAffiliation;
 use App\Pim\Entity\FicheCollaborateur;
-use App\Account\Entity\User;
 use App\Shared\Form\ActionType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\EmailType;
@@ -19,7 +19,9 @@ final readonly class AccountAdminFormFactory
 {
     public const ROLES = ['Éditeur' => 'ROLE_BP_EDITOR', 'Validateur' => 'ROLE_BP_VALIDATOR'];
 
-    public function __construct(private FormFactoryInterface $forms, private UrlGeneratorInterface $urls) {}
+    public function __construct(private FormFactoryInterface $forms, private UrlGeneratorInterface $urls)
+    {
+    }
 
     /** @return FormInterface<mixed> */
     public function collaborateurInvitation(?string $action = null): FormInterface
@@ -82,6 +84,7 @@ final readonly class AccountAdminFormFactory
     public function internalRole(User $user): FormInterface
     {
         $current = in_array('ROLE_BP_VALIDATOR', $user->getRoles(), true) ? 'ROLE_BP_VALIDATOR' : 'ROLE_BP_EDITOR';
+
         return $this->forms->createNamedBuilder('role_'.$user->id(), data: ['role' => $current])
             ->setAction($this->urls->generate('app_account_user_admin_role', ['id' => $user->id()]))
             ->add('role', ChoiceType::class, ['choices' => self::ROLES])->add('submit', SubmitType::class, ['label' => 'Changer'])->getForm();

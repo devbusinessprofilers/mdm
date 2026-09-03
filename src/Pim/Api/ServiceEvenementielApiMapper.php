@@ -19,7 +19,8 @@ final readonly class ServiceEvenementielApiMapper
     public function __construct(
         private FichePhotoPresenter $photos,
         private ParametreProviderInterface $parametres,
-    ) {}
+    ) {
+    }
 
     public function listItem(
         ServiceEvenementielListItem $item,
@@ -39,7 +40,7 @@ final readonly class ServiceEvenementielApiMapper
         ServiceEvenementiel $service,
     ): ServiceEvenementielResource {
         $fiche = $service->fiche();
-        $fixed = "fixe" === $service->modeIntervention()?->value;
+        $fixed = 'fixe' === $service->modeIntervention()?->value;
         $location = $fixed ? $service->localisation() : null;
 
         return new ServiceEvenementielResource(
@@ -81,7 +82,7 @@ final readonly class ServiceEvenementielApiMapper
             $service->surDevis(),
             $service->youtubeUrl(),
             array_map(
-                fn(array $photo): LieuMediaResource => $this->photo(
+                fn (array $photo): LieuMediaResource => $this->photo(
                     $service,
                     $photo,
                 ),
@@ -95,7 +96,7 @@ final readonly class ServiceEvenementielApiMapper
         RessourceLieu $resource,
     ): LieuMediaResource {
         foreach ($this->photos->photos($service->fiche()) as $photo) {
-            if ($photo["resource"] === $resource) {
+            if ($photo['resource'] === $resource) {
                 return $this->photo($service, $photo);
             }
         }
@@ -125,7 +126,8 @@ final readonly class ServiceEvenementielApiMapper
         ServiceEvenementiel $service,
         array $photo,
     ): LieuMediaResource {
-        $resource = $photo["resource"];
+        $resource = $photo['resource'];
+
         return new LieuMediaResource(
             $resource->id(),
             $service->fiche()->version(),
@@ -137,9 +139,9 @@ final readonly class ServiceEvenementielApiMapper
             $resource->source(),
             $resource->crop(),
             $resource->rotation(),
-            $photo["asset"]?->status()->value,
-            $photo["url"],
-            $photo["variants"],
+            $photo['asset']?->status()->value,
+            $photo['url'],
+            $photo['variants'],
             $resource->keywords(),
             $resource->rightsExpiresAt()?->format('Y-m-d'),
             $resource->rightsValidity(alerteJours: $this->parametres->int('dam.delai_alerte_droits_jours'))->value,
@@ -152,21 +154,21 @@ final readonly class ServiceEvenementielApiMapper
         $result = [];
         foreach (
             [
-                "pays",
-                "countryCode",
-                "region",
-                "departement",
-                "ruePostale",
-                "codePostal",
-                "ville",
-                "arrondissement",
-                "latitude",
-                "longitude",
-            ]
-            as $field
+                'pays',
+                'countryCode',
+                'region',
+                'departement',
+                'ruePostale',
+                'codePostal',
+                'ville',
+                'arrondissement',
+                'latitude',
+                'longitude',
+            ] as $field
         ) {
             $result[$field] = $location->{$field}();
         }
+
         return $result;
     }
 }

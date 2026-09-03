@@ -11,7 +11,9 @@ use Symfony\Component\Messenger\Event\WorkerMessageFailedEvent;
 #[AsEventListener]
 final readonly class WorkerFailureAlertSubscriber
 {
-    public function __construct(private AlertNotifier $notifier) {}
+    public function __construct(private AlertNotifier $notifier)
+    {
+    }
 
     public function __invoke(WorkerMessageFailedEvent $event): void
     {

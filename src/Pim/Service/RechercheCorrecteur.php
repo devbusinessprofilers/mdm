@@ -47,10 +47,10 @@ final readonly class RechercheCorrecteur
      * Requêtes corrigées candidates, déterministes à saisie égale (condition de
      * survie de la pagination keyset, qui les recalcule à chaque page).
      *
-     * @param bool $dernierTokenPartiel En autocomplétion, le dernier mot est un
+     * @param bool $dernierTokenPartiel en autocomplétion, le dernier mot est un
      *                                  préfixe en cours de frappe : il n'est
      *                                  corrigé que s'il ne commence aucun mot
-     *                                  connu.
+     *                                  connu
      *
      * @return list<string>
      */
@@ -185,9 +185,9 @@ final readonly class RechercheCorrecteur
      * deux mots différents se résolvent ainsi ensemble, là où le sondage
      * phrase par phrase s'engageait sur un premier voisin possiblement faux.
      *
-     * @param bool $dernierTokenPartiel Le dernier mot en cours de frappe
+     * @param bool $dernierTokenPartiel le dernier mot en cours de frappe
      *                                  (préfixe d'un mot connu) reste seul
-     *                                  dans son groupe : jamais « corrigé ».
+     *                                  dans son groupe : jamais « corrigé »
      *
      * @return list<array{token: string, normalise: string, candidats: non-empty-list<string>}>
      */

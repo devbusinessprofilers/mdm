@@ -24,14 +24,12 @@ use Symfony\Component\Routing\Attribute\Route;
 
 final class RestoreController extends AbstractController
 {
-    #[
-        Route(
-            '/referentiel/historique/changes/{changeId}/restaurer',
-            name: 'app_audit_restore_change',
-            requirements: ['changeId' => '[0-9A-HJKMNP-TV-Z]{26}'],
-            methods: ['POST'],
-        ),
-    ]
+    #[Route(
+        '/referentiel/historique/changes/{changeId}/restaurer',
+        name: 'app_audit_restore_change',
+        requirements: ['changeId' => '[0-9A-HJKMNP-TV-Z]{26}'],
+        methods: ['POST'],
+    ),]
     public function restoreChange(
         string $changeId,
         Request $request,
@@ -81,14 +79,12 @@ final class RestoreController extends AbstractController
         return $this->redirect($historyUrl);
     }
 
-    #[
-        Route(
-            '/referentiel/historique/revisions/{revisionId}/restaurer',
-            name: 'app_audit_restore_revision_preview',
-            requirements: ['revisionId' => '[0-9A-HJKMNP-TV-Z]{26}'],
-            methods: ['GET'],
-        ),
-    ]
+    #[Route(
+        '/referentiel/historique/revisions/{revisionId}/restaurer',
+        name: 'app_audit_restore_revision_preview',
+        requirements: ['revisionId' => '[0-9A-HJKMNP-TV-Z]{26}'],
+        methods: ['GET'],
+    ),]
     public function previewRevision(
         string $revisionId,
         AuditRevisionRepository $revisions,
@@ -127,14 +123,12 @@ final class RestoreController extends AbstractController
         ]);
     }
 
-    #[
-        Route(
-            '/referentiel/historique/revisions/{revisionId}/restaurer',
-            name: 'app_audit_restore_revision',
-            requirements: ['revisionId' => '[0-9A-HJKMNP-TV-Z]{26}'],
-            methods: ['POST'],
-        ),
-    ]
+    #[Route(
+        '/referentiel/historique/revisions/{revisionId}/restaurer',
+        name: 'app_audit_restore_revision',
+        requirements: ['revisionId' => '[0-9A-HJKMNP-TV-Z]{26}'],
+        methods: ['POST'],
+    ),]
     public function restoreRevision(
         string $revisionId,
         Request $request,

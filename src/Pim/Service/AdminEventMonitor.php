@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Pim\Service;
 
-use App\Shared\Outbox\OutboxRepository;
 use App\Pim\Repository\EventMonitoringRepository;
+use App\Shared\Outbox\OutboxRepository;
 use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\Cache\ItemInterface;
 

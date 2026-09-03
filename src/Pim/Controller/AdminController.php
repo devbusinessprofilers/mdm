@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Pim\Controller;
 
-use App\Pim\Service\AdminPageCatalog;
 use App\Pim\Service\AdminEventCatalog;
 use App\Pim\Service\AdminEventMonitor;
+use App\Pim\Service\AdminPageCatalog;
 use App\Pim\Service\AdminWorkflowCatalog;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;

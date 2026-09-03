@@ -263,9 +263,15 @@ final readonly class FicheCreationManager
             }
             $localisation = new Localisation();
         }
-        if (null === $localisation->ruePostale()) { $localisation->changeRuePostale($entreprise->rue); }
-        if (null === $localisation->codePostal()) { $localisation->changeCodePostal($entreprise->codePostal); }
-        if (null === $localisation->ville()) { $localisation->changeVille($entreprise->ville); }
+        if (null === $localisation->ruePostale()) {
+            $localisation->changeRuePostale($entreprise->rue);
+        }
+        if (null === $localisation->codePostal()) {
+            $localisation->changeCodePostal($entreprise->codePostal);
+        }
+        if (null === $localisation->ville()) {
+            $localisation->changeVille($entreprise->ville);
+        }
         if (null === $localisation->latitude() && null === $localisation->longitude()) {
             try {
                 $localisation->changeLatitude($entreprise->latitude);

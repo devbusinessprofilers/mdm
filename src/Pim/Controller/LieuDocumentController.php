@@ -61,7 +61,7 @@ final class LieuDocumentController extends AbstractController
         $erreur = null;
         $succes = '';
         try {
-            /** @var array{usage: \App\Dam\Enum\DocumentUsage, salle: \App\Pim\Entity\Lieu\Salle|null, title: string|null, source: string|null} $data */
+            /** @var array{usage: DocumentUsage, salle: \App\Pim\Entity\Lieu\Salle|null, title: string|null, source: string|null} $data */
             $data = $form->getData() + ['salle' => null];
             $count = $manager->upload($lieu, $files, $data, $actor->id());
             $succes = $count.' document(s) ajouté(s).';
@@ -77,7 +77,9 @@ final class LieuDocumentController extends AbstractController
     {
         $this->denyAccessUnlessGranted(FicheVoter::EDIT, $lieu->fiche());
         $document = $resources->findDocumentForFiche($lieu->fiche(), $resourceId);
-        if (null === $document || $document->lieu() !== $lieu) { throw $this->createNotFoundException('Document introuvable.'); }
+        if (null === $document || $document->lieu() !== $lieu) {
+            throw $this->createNotFoundException('Document introuvable.');
+        }
         $form = $forms->createNamed('document_metadata_'.$document->id(), LieuDocumentMetadataType::class, [
             'usage' => $document->documentUsage(), 'salle' => $document->salle(), 'title' => $document->legende(),
             'source' => $document->source(), 'keywords' => $document->keywords(), 'rightsExpiresAt' => $document->rightsExpiresAt(),
@@ -88,10 +90,12 @@ final class LieuDocumentController extends AbstractController
             $erreur = 'Le formulaire documentaire est invalide.';
         } else {
             try {
-                /** @var array{usage: \App\Dam\Enum\DocumentUsage, salle: \App\Pim\Entity\Lieu\Salle|null, title: string|null, source: string|null, keywords: string|null, rightsExpiresAt: \DateTimeImmutable|null} $data */
+                /** @var array{usage: DocumentUsage, salle: \App\Pim\Entity\Lieu\Salle|null, title: string|null, source: string|null, keywords: string|null, rightsExpiresAt: \DateTimeImmutable|null} $data */
                 $data = $form->getData();
                 $manager->update($document, $lieu, $data, $actor->id());
-            } catch (\DomainException $exception) { $erreur = $exception->getMessage(); }
+            } catch (\DomainException $exception) {
+                $erreur = $exception->getMessage();
+            }
         }
 
         return $reponse->repondre($request, $lieu->fiche(), $erreur, 'Document modifié.');
@@ -102,7 +106,9 @@ final class LieuDocumentController extends AbstractController
     {
         $this->denyAccessUnlessGranted(FicheVoter::EDIT, $lieu->fiche());
         $document = $resources->findDocumentForFiche($lieu->fiche(), $resourceId);
-        if (null === $document || $document->lieu() !== $lieu) { throw $this->createNotFoundException('Document introuvable.'); }
+        if (null === $document || $document->lieu() !== $lieu) {
+            throw $this->createNotFoundException('Document introuvable.');
+        }
         $form = $forms->createNamed('document_replace_'.$document->id(), LieuDocumentReplaceType::class);
         $form->handleRequest($request);
         $erreur = null;
@@ -113,8 +119,11 @@ final class LieuDocumentController extends AbstractController
             if (!$file instanceof UploadedFile) {
                 $erreur = 'Sélectionnez un document.';
             } else {
-                try { $manager->replace($document, $lieu, $file); }
-                catch (\DomainException $exception) { $erreur = $exception->getMessage(); }
+                try {
+                    $manager->replace($document, $lieu, $file);
+                } catch (\DomainException $exception) {
+                    $erreur = $exception->getMessage();
+                }
             }
         }
 
@@ -126,14 +135,20 @@ final class LieuDocumentController extends AbstractController
     {
         $this->denyAccessUnlessGranted('ROLE_BP_VALIDATOR');
         $document = $resources->findDocumentForFiche($lieu->fiche(), $resourceId);
-        if (null === $document || $document->lieu() !== $lieu) { throw $this->createNotFoundException('Document introuvable.'); }
+        if (null === $document || $document->lieu() !== $lieu) {
+            throw $this->createNotFoundException('Document introuvable.');
+        }
         $form = $forms->createNamed('document_publication_'.$document->id(), ActionType::class, null, ['button_label' => 'Action', 'csrf_token_id' => 'document-publication-'.$document->id()]);
         $form->handleRequest($request);
         $erreur = null;
-        if (!$form->isSubmitted() || !$form->isValid()) { $erreur = 'Le formulaire de publication est invalide.'; }
-        else {
-            try { $manager->togglePublication($document, $lieu); }
-            catch (\DomainException $exception) { $erreur = $exception->getMessage(); }
+        if (!$form->isSubmitted() || !$form->isValid()) {
+            $erreur = 'Le formulaire de publication est invalide.';
+        } else {
+            try {
+                $manager->togglePublication($document, $lieu);
+            } catch (\DomainException $exception) {
+                $erreur = $exception->getMessage();
+            }
         }
 
         return $reponse->repondre($request, $lieu->fiche(), $erreur, 'Changement de publication mis en file.');
@@ -144,12 +159,17 @@ final class LieuDocumentController extends AbstractController
     {
         $this->denyAccessUnlessGranted(FicheVoter::EDIT, $lieu->fiche());
         $document = $resources->findDocumentForFiche($lieu->fiche(), $resourceId);
-        if (null === $document || $document->lieu() !== $lieu) { throw $this->createNotFoundException('Document introuvable.'); }
+        if (null === $document || $document->lieu() !== $lieu) {
+            throw $this->createNotFoundException('Document introuvable.');
+        }
         $form = $forms->createNamed('document_delete_'.$document->id(), ActionType::class, null, ['button_label' => 'Supprimer', 'csrf_token_id' => 'document-delete-'.$document->id()]);
         $form->handleRequest($request);
         $erreur = null;
-        if (!$form->isSubmitted() || !$form->isValid()) { $erreur = 'Le formulaire de suppression est invalide.'; }
-        else { $manager->delete($document, $lieu); }
+        if (!$form->isSubmitted() || !$form->isValid()) {
+            $erreur = 'Le formulaire de suppression est invalide.';
+        } else {
+            $manager->delete($document, $lieu);
+        }
 
         return $reponse->repondre($request, $lieu->fiche(), $erreur, 'Document supprimé.');
     }
@@ -158,12 +178,16 @@ final class LieuDocumentController extends AbstractController
     public function download(Lieu $lieu, string $resourceId, RessourceLieuRepository $resources, MediaAssetRepository $assets, PrivateObjectStorageInterface $storage): RedirectResponse
     {
         $document = $resources->findDocumentForFiche($lieu->fiche(), $resourceId);
-        if (null === $document || $document->lieu() !== $lieu) { throw $this->createNotFoundException('Document introuvable.'); }
-        if (DocumentAccess::Private === $document->documentAccess()) { $this->denyAccessUnlessGranted('ROLE_BP_VALIDATOR'); }
-        else { $this->denyAccessUnlessGranted(FicheVoter::EDIT, $lieu->fiche()); }
+        if (null === $document || $document->lieu() !== $lieu) {
+            throw $this->createNotFoundException('Document introuvable.');
+        }
+        if (DocumentAccess::Private === $document->documentAccess()) {
+            $this->denyAccessUnlessGranted('ROLE_BP_VALIDATOR');
+        } else {
+            $this->denyAccessUnlessGranted(FicheVoter::EDIT, $lieu->fiche());
+        }
         $asset = $assets->find($document->damAssetId()) ?? throw $this->createNotFoundException('Fichier DAM introuvable.');
 
         return $this->redirect($storage->temporaryUrl($asset->originalStorageKey(), new \DateTimeImmutable('+10 minutes')));
     }
-
 }

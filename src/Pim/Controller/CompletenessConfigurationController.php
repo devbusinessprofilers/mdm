@@ -9,8 +9,8 @@ use App\Pim\Entity\CompletenessFieldConfiguration;
 use App\Pim\Enum\TypeFiche;
 use App\Pim\Form\CompletenessConfigurationType;
 use App\Pim\Form\CompletenessSearchType;
-use App\Pim\Repository\CompletenessFieldConfigurationRepository;
 use App\Pim\Repository\CompletenessConfigurationAuditRepository;
+use App\Pim\Repository\CompletenessFieldConfigurationRepository;
 use App\Pim\Service\CompletenessAdminProvider;
 use App\Pim\Service\CompletenessConfigurationManager;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -52,9 +52,13 @@ final class CompletenessConfigurationController extends AbstractController
         CompletenessConfigurationManager $manager,
     ): Response {
         $configuration = $repository->find($id);
-        if (!$configuration instanceof CompletenessFieldConfiguration) { throw $this->createNotFoundException(); }
+        if (!$configuration instanceof CompletenessFieldConfiguration) {
+            throw $this->createNotFoundException();
+        }
         $definition = $catalog->find($configuration->ficheType(), $configuration->fieldCode());
-        if (null === $definition) { throw $this->createNotFoundException('Champ absent du catalogue.'); }
+        if (null === $definition) {
+            throw $this->createNotFoundException('Champ absent du catalogue.');
+        }
         $data = [
             'formula' => $configuration->formula(), 'weight' => $configuration->weight(), 'targetLengthOverride' => $configuration->targetLengthOverride(),
             'active' => $configuration->active(), 'marketplace' => $configuration->marketplace(), 'thematicSites' => $configuration->thematicSites(),

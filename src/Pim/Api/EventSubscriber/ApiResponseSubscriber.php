@@ -75,7 +75,7 @@ final class ApiResponseSubscriber
 
             return;
         }
-        if (!($exception instanceof ApiProblemException)) {
+        if (!$exception instanceof ApiProblemException) {
             return;
         }
         $event->setResponse(

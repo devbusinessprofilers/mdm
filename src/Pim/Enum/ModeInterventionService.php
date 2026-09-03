@@ -6,6 +6,6 @@ namespace App\Pim\Enum;
 
 enum ModeInterventionService: string
 {
-    case Fixe = "fixe";
-    case Mobile = "mobile";
+    case Fixe = 'fixe';
+    case Mobile = 'mobile';
 }

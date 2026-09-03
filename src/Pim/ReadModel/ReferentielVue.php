@@ -8,11 +8,11 @@ namespace App\Pim\ReadModel;
 final readonly class ReferentielVue
 {
     /**
-     * @param list<ReferentielLigne>                 $lignes
-     * @param array<string, array<int|string, int>>  $comptes        Comptes de facettes par groupe puis par valeur
-     * @param array<string, string>                  $paysChoices    label => code pays, pour le formulaire de filtres
-     * @param array<string, int>                     $valeursChoices label => id de valeur de classification
-     * @param array<string, string>                  $contributeursChoices email => identifiant utilisateur
+     * @param list<ReferentielLigne>                $lignes
+     * @param array<string, array<int|string, int>> $comptes              Comptes de facettes par groupe puis par valeur
+     * @param array<string, string>                 $paysChoices          label => code pays, pour le formulaire de filtres
+     * @param array<string, int>                    $valeursChoices       label => id de valeur de classification
+     * @param array<string, string>                 $contributeursChoices email => identifiant utilisateur
      */
     public function __construct(
         public array $lignes,

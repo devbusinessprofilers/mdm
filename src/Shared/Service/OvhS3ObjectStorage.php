@@ -76,9 +76,7 @@ final readonly class OvhS3ObjectStorage implements PrivateObjectStorageInterface
         $prefix = trim($prefix, '/');
 
         if ('' === $prefix || '.' === $prefix) {
-            throw new \InvalidArgumentException(
-                'Le préfixe de stockage à supprimer doit être non vide.',
-            );
+            throw new \InvalidArgumentException('Le préfixe de stockage à supprimer doit être non vide.');
         }
 
         $this->filesystem->deleteDirectory($prefix);

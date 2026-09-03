@@ -30,7 +30,7 @@ final class AttributeValueTranslationRepository extends ServiceEntityRepository
     }
 
     /** @param list<ValeurAttribut> $values
-     *  @return array<int, array<string, AttributeValueTranslation>>
+     * @return array<int, array<string, AttributeValueTranslation>>
      */
     public function indexedForValues(array $values): array
     {

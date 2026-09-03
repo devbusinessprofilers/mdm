@@ -11,7 +11,8 @@ final readonly class InternalFicheMutationPolicy
 {
     public function __construct(
         private AuthorizationCheckerInterface $authorizationChecker,
-    ) {}
+    ) {
+    }
 
     /**
      * Les validateurs modifient la fiche sans effectuer de transition implicite.

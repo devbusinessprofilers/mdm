@@ -21,5 +21,6 @@ final readonly class SuggestionProposee
         public ?string $valeurProposee,
         public ?float $score,
         public ?array $payload = null,
-    ) {}
+    ) {
+    }
 }

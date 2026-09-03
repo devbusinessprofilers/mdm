@@ -17,10 +17,11 @@ final readonly class FicheActionFormFactory
     public function __construct(
         private FormFactoryInterface $forms,
         private UrlGeneratorInterface $urls,
-    ) {}
+    ) {
+    }
 
     /**
-     * @param array<string, string> $buttonAttr Attributs du bouton (data-variant/data-size/data-full pour le thème).
+     * @param array<string, string> $buttonAttr attributs du bouton (data-variant/data-size/data-full pour le thème)
      *
      * @return FormInterface<mixed>
      */

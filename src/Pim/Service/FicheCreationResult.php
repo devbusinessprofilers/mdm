@@ -11,5 +11,6 @@ final readonly class FicheCreationResult
     public function __construct(
         public Fiche $fiche,
         public ?EntrepriseInfo $entreprise,
-    ) {}
+    ) {
+    }
 }

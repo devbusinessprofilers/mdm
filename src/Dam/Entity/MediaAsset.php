@@ -18,18 +18,14 @@ use Symfony\Component\Uid\Ulid;
 #[ORM\Table(name: 'dam_media_asset')]
 #[ORM\Index(name: 'IDX_DAM_MEDIA_CHECKSUM', columns: ['checksum'])]
 #[ORM\Index(name: 'IDX_DAM_MEDIA_PHASH', columns: ['perceptual_hash'])]
-#[
-    ORM\Index(
-        name: 'IDX_DAM_MEDIA_STATUS_CREATED',
-        columns: ['status', 'created_at'],
-    ),
-]
-#[
-    ORM\Index(
-        name: 'IDX_DAM_MEDIA_KIND_STATUS_CREATED',
-        columns: ['kind', 'status', 'created_at'],
-    ),
-]
+#[ORM\Index(
+    name: 'IDX_DAM_MEDIA_STATUS_CREATED',
+    columns: ['status', 'created_at'],
+),]
+#[ORM\Index(
+    name: 'IDX_DAM_MEDIA_KIND_STATUS_CREATED',
+    columns: ['kind', 'status', 'created_at'],
+),]
 // Tri « tous statuts » du journal /outils (167k lignes : sans index, filesort).
 #[ORM\Index(name: 'IDX_DAM_MEDIA_UPDATED', columns: ['updated_at'])]
 #[ORM\HasLifecycleCallbacks]
@@ -57,13 +53,11 @@ class MediaAsset
     private ?\DateTimeImmutable $enhancedAt = null;
     #[ORM\Column(length: 16, nullable: true)]
     private ?string $perceptualHash = null;
-    #[
-        ORM\Column(
-            length: 16,
-            enumType: MediaKind::class,
-            options: ['default' => 'image'],
-        ),
-    ]
+    #[ORM\Column(
+        length: 16,
+        enumType: MediaKind::class,
+        options: ['default' => 'image'],
+    ),]
     private MediaKind $kind;
     #[ORM\Column(length: 32, enumType: MediaStatus::class)]
     private MediaStatus $status = MediaStatus::Uploaded;
@@ -74,14 +68,12 @@ class MediaAsset
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $deletedAt = null;
     /** @var Collection<int, MediaRendition> */
-    #[
-        ORM\OneToMany(
-            mappedBy: 'media',
-            targetEntity: MediaRendition::class,
-            cascade: ['persist', 'remove'],
-            orphanRemoval: true,
-        ),
-    ]
+    #[ORM\OneToMany(
+        mappedBy: 'media',
+        targetEntity: MediaRendition::class,
+        cascade: ['persist', 'remove'],
+        orphanRemoval: true,
+    ),]
     private Collection $renditions;
 
     public function __construct(

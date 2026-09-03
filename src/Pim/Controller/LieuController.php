@@ -6,39 +6,24 @@ namespace App\Pim\Controller;
 
 use App\Account\Security\FicheVoter;
 use App\Account\Service\CurrentActorProvider;
-use App\Dam\Service\LieuPhotoPresenter;
 use App\Pim\Entity\Lieu\Lieu;
-use App\Pim\Enum\StatutFiche;
-use App\Pim\Enum\TypeFiche;
 use App\Pim\Form\FicheActionFormFactory;
-use App\Pim\Form\LieuType;
-use App\Pim\ReadModel\FicheCursor;
 use App\Pim\Repository\LieuRepository;
-use App\Pim\Service\FicheCountProvider;
-use App\Pim\Service\InternalFicheMutationPolicy;
-use App\Pim\Service\LieuAdminViewBuilder;
 use App\Pim\Service\FicheWorkflowManager;
-use App\Shared\Search\SearchQuery;
-use App\Shared\Service\SearchEngineInterface;
-use League\Flysystem\FilesystemException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\Form\FormError;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 
 #[Route('/referentiel/lieux/fiche', name: 'app_pim_lieu_')]
 final class LieuController extends AbstractController
 {
-    #[
-        Route(
-            '/{id}/supprimer',
-            name: 'delete',
-            requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
-            methods: ['POST'],
-        ),
-    ]
+    #[Route(
+        '/{id}/supprimer',
+        name: 'delete',
+        requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
+        methods: ['POST'],
+    ),]
     public function delete(
         Request $request,
         string $id,
@@ -47,7 +32,9 @@ final class LieuController extends AbstractController
         FicheWorkflowManager $workflow,
     ): Response {
         $lieu = $repository->find($id);
-        if (!$lieu instanceof Lieu) { throw $this->createNotFoundException('Lieu introuvable.'); }
+        if (!$lieu instanceof Lieu) {
+            throw $this->createNotFoundException('Lieu introuvable.');
+        }
         $this->denyAccessUnlessGranted(FicheVoter::DELETE, $lieu->fiche());
 
         $form = $forms->action('lieu', $lieu->id(), 'delete', 'Supprimer', true, 'Supprimer ce lieu ?');
@@ -60,14 +47,12 @@ final class LieuController extends AbstractController
         return $this->redirectToRoute('app_mdm_lieux');
     }
 
-    #[
-        Route(
-            '/{id}/soumettre',
-            name: 'submit',
-            requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
-            methods: ['POST'],
-        ),
-    ]
+    #[Route(
+        '/{id}/soumettre',
+        name: 'submit',
+        requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
+        methods: ['POST'],
+    ),]
     public function submit(
         Request $request,
         string $id,
@@ -77,7 +62,9 @@ final class LieuController extends AbstractController
         CurrentActorProvider $actor,
     ): Response {
         $lieu = $repository->find($id);
-        if (!$lieu instanceof Lieu) { throw $this->createNotFoundException('Lieu introuvable.'); }
+        if (!$lieu instanceof Lieu) {
+            throw $this->createNotFoundException('Lieu introuvable.');
+        }
         $this->denyAccessUnlessGranted(FicheVoter::SUBMIT, $lieu->fiche());
         $form = $forms->action('lieu', $lieu->id(), 'submit', 'Soumettre à validation');
         $form->handleRequest($request);
@@ -107,15 +94,12 @@ final class LieuController extends AbstractController
         return $this->redirectToRoute('app_mdm_fiche_lieu', ['id' => $lieu->id()]);
     }
 
-
-    #[
-        Route(
-            '/{id}/valider',
-            name: 'validate',
-            requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
-            methods: ['POST'],
-        ),
-    ]
+    #[Route(
+        '/{id}/valider',
+        name: 'validate',
+        requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
+        methods: ['POST'],
+    ),]
     public function validateLieu(
         Request $request,
         string $id,
@@ -125,7 +109,9 @@ final class LieuController extends AbstractController
         CurrentActorProvider $actor,
     ): Response {
         $lieu = $repository->find($id);
-        if (!$lieu instanceof Lieu) { throw $this->createNotFoundException('Lieu introuvable.'); }
+        if (!$lieu instanceof Lieu) {
+            throw $this->createNotFoundException('Lieu introuvable.');
+        }
         $this->denyAccessUnlessGranted(FicheVoter::VALIDATE, $lieu->fiche());
         $form = $forms->action('lieu', $lieu->id(), 'validate', 'Valider');
         $form->handleRequest($request);
@@ -141,14 +127,12 @@ final class LieuController extends AbstractController
         return $this->redirectToRoute('app_mdm_fiche_lieu', ['id' => $lieu->id()]);
     }
 
-    #[
-        Route(
-            '/{id}/publier',
-            name: 'publish',
-            requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
-            methods: ['POST'],
-        ),
-    ]
+    #[Route(
+        '/{id}/publier',
+        name: 'publish',
+        requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
+        methods: ['POST'],
+    ),]
     public function publishLieu(
         Request $request,
         string $id,
@@ -157,7 +141,9 @@ final class LieuController extends AbstractController
         FicheWorkflowManager $workflow,
     ): Response {
         $lieu = $repository->find($id);
-        if (!$lieu instanceof Lieu) { throw $this->createNotFoundException('Lieu introuvable.'); }
+        if (!$lieu instanceof Lieu) {
+            throw $this->createNotFoundException('Lieu introuvable.');
+        }
         $this->denyAccessUnlessGranted(FicheVoter::PUBLISH, $lieu->fiche());
         $form = $forms->action('lieu', $lieu->id(), 'publish', 'Publier');
         $form->handleRequest($request);
@@ -173,14 +159,12 @@ final class LieuController extends AbstractController
         return $this->redirectToRoute('app_mdm_fiche_lieu', ['id' => $lieu->id()]);
     }
 
-    #[
-        Route(
-            '/{id}/refuser',
-            name: 'reject',
-            requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
-            methods: ['POST'],
-        ),
-    ]
+    #[Route(
+        '/{id}/refuser',
+        name: 'reject',
+        requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
+        methods: ['POST'],
+    ),]
     public function reject(
         Request $request,
         string $id,
@@ -190,7 +174,9 @@ final class LieuController extends AbstractController
         CurrentActorProvider $actor,
     ): Response {
         $lieu = $repository->find($id);
-        if (!$lieu instanceof Lieu) { throw $this->createNotFoundException('Lieu introuvable.'); }
+        if (!$lieu instanceof Lieu) {
+            throw $this->createNotFoundException('Lieu introuvable.');
+        }
         $this->denyAccessUnlessGranted(FicheVoter::VALIDATE, $lieu->fiche());
         $form = $forms->reject('lieu', $lieu->id());
         $form->handleRequest($request);
@@ -211,14 +197,12 @@ final class LieuController extends AbstractController
         return $this->redirectToRoute('app_mdm_fiche_lieu', ['id' => $lieu->id()]);
     }
 
-    #[
-        Route(
-            '/{id}/archiver',
-            name: 'archive',
-            requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
-            methods: ['POST'],
-        ),
-    ]
+    #[Route(
+        '/{id}/archiver',
+        name: 'archive',
+        requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
+        methods: ['POST'],
+    ),]
     public function archive(
         Request $request,
         string $id,
@@ -228,7 +212,9 @@ final class LieuController extends AbstractController
         CurrentActorProvider $actor,
     ): Response {
         $lieu = $repository->find($id);
-        if (!$lieu instanceof Lieu) { throw $this->createNotFoundException('Lieu introuvable.'); }
+        if (!$lieu instanceof Lieu) {
+            throw $this->createNotFoundException('Lieu introuvable.');
+        }
         $this->denyAccessUnlessGranted(FicheVoter::ARCHIVE, $lieu->fiche());
         $form = $forms->action('lieu', $lieu->id(), 'archive', 'Archiver');
         $form->handleRequest($request);
@@ -244,14 +230,12 @@ final class LieuController extends AbstractController
         return $this->redirectToRoute('app_mdm_fiche_lieu', ['id' => $lieu->id()]);
     }
 
-    #[
-        Route(
-            '/{id}/desarchiver',
-            name: 'unarchive',
-            requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
-            methods: ['POST'],
-        ),
-    ]
+    #[Route(
+        '/{id}/desarchiver',
+        name: 'unarchive',
+        requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
+        methods: ['POST'],
+    ),]
     public function unarchive(
         Request $request,
         string $id,
@@ -261,7 +245,9 @@ final class LieuController extends AbstractController
         CurrentActorProvider $actor,
     ): Response {
         $lieu = $repository->find($id);
-        if (!$lieu instanceof Lieu) { throw $this->createNotFoundException('Lieu introuvable.'); }
+        if (!$lieu instanceof Lieu) {
+            throw $this->createNotFoundException('Lieu introuvable.');
+        }
         $this->denyAccessUnlessGranted(FicheVoter::ARCHIVE, $lieu->fiche());
         $form = $forms->action('lieu', $lieu->id(), 'unarchive', 'Désarchiver');
         $form->handleRequest($request);
@@ -277,14 +263,12 @@ final class LieuController extends AbstractController
         return $this->redirectToRoute('app_mdm_fiche_lieu', ['id' => $lieu->id()]);
     }
 
-    #[
-        Route(
-            '/{id}/republier',
-            name: 'republish',
-            requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
-            methods: ['POST'],
-        ),
-    ]
+    #[Route(
+        '/{id}/republier',
+        name: 'republish',
+        requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
+        methods: ['POST'],
+    ),]
     public function republish(
         Request $request,
         string $id,
@@ -294,7 +278,9 @@ final class LieuController extends AbstractController
         CurrentActorProvider $actor,
     ): Response {
         $lieu = $repository->find($id);
-        if (!$lieu instanceof Lieu) { throw $this->createNotFoundException('Lieu introuvable.'); }
+        if (!$lieu instanceof Lieu) {
+            throw $this->createNotFoundException('Lieu introuvable.');
+        }
         $this->denyAccessUnlessGranted(FicheVoter::PUBLISH, $lieu->fiche());
         $form = $forms->action('lieu', $lieu->id(), 'republish', 'Republier');
         $form->handleRequest($request);

@@ -109,10 +109,12 @@ final class CompletenessFieldCatalog
             'CAP_GLOBALE_NB_MAX_PAX' => ['Participants maximum', 'participantsMax'], 'ACTIVITE_DUREE_MIN' => ['Durée minimale', 'dureeMinMinutes'],
             'ACTIVITE_DUREE_MAX' => ['Durée maximale', 'dureeMaxMinutes'], 'PLUS' => ['Les plus', 'plus'],
             'TARIF_PAR_PERSONNE' => ['Tarif par personne', 'tarifParPersonne'], 'GENERALE_YOUTUBE' => ['Lien vidéo', 'youtubeUrl'],
-            'OFFRE_NOM' => ["Nom de l’offre", 'offres.*.nom'], 'OFFRE_PRIX' => ["Prix de l’offre", 'offres.*.prix'],
+            'OFFRE_NOM' => ['Nom de l’offre', 'offres.*.nom'], 'OFFRE_PRIX' => ['Prix de l’offre', 'offres.*.prix'],
             'PHOTO' => ['Photos', 'ressources'],
         ];
-        foreach ($map as $code => [$label, $path]) { $fields[] = $this->field($type, $code, $label, $path); }
+        foreach ($map as $code => [$label, $path]) {
+            $fields[] = $this->field($type, $code, $label, $path);
+        }
         $fields = [...$fields, ...$this->localisation($type, 'modeIntervention', 'fixe', 'Applicable pour une localisation fixe')];
         foreach (['paysMobiles' => 'Pays mobiles', 'regionsMobiles' => 'Régions mobiles', 'departementsMobiles' => 'Départements mobiles', 'touteFrance' => 'Toute la France'] as $path => $label) {
             $fields[] = $this->field($type, 'RAYON_ACTION_'.self::code($path), $label, $path, null, 'modeIntervention', 'mobile', 'Applicable pour une activité mobile');
@@ -128,10 +130,10 @@ final class CompletenessFieldCatalog
         $fields = $this->common($type);
         $map = [
             'TYPE_RESTAURANT' => ['Types de restaurant', 'typesRestaurant'], 'TYPE_CUISINE' => ['Types de cuisine', 'typesCuisine'],
-            'SPECIFICITE_ALIMENTAIRE' => ['Spécificités alimentaires', 'specificitesAlimentaires'], 'TYPE_EVENEMENT' => ["Types d’événements", 'typesEvenement'],
+            'SPECIFICITE_ALIMENTAIRE' => ['Spécificités alimentaires', 'specificitesAlimentaires'], 'TYPE_EVENEMENT' => ['Types d’événements', 'typesEvenement'],
             'GENERALE_WEBSITE_URL' => ['Site officiel', 'siteOfficiel'], 'DISPO_PRIVATISATION_TOTALE' => ['Privatisation totale', 'privatisationTotale'],
-            'DISPO_PRIVATISATION_PARTIELLE' => ['Privatisation partielle', 'privatisationPartielle'], 'DISPO_JOUR_OUVERTURE' => ["Jours d’ouverture", 'joursOuverture'],
-            'DISPO_HEURE_OUVERTURE' => ["Heure d’ouverture", 'amplitudeOuverture'], 'DISPO_HEURE_FERMETURE' => ['Heure de fermeture', 'amplitudeFermeture'],
+            'DISPO_PRIVATISATION_PARTIELLE' => ['Privatisation partielle', 'privatisationPartielle'], 'DISPO_JOUR_OUVERTURE' => ['Jours d’ouverture', 'joursOuverture'],
+            'DISPO_HEURE_OUVERTURE' => ['Heure d’ouverture', 'amplitudeOuverture'], 'DISPO_HEURE_FERMETURE' => ['Heure de fermeture', 'amplitudeFermeture'],
             'PMR_ACCES' => ['Accès PMR', 'accesPmr'], 'PMR_TOILETTE' => ['Toilettes PMR', 'toilettesPmr'],
             'GENERALE_DESC' => ['Description générale', 'descriptionGenerale'], 'RESTAURANT_PLUS' => ['Atouts', 'atouts'],
             'CAP_ASSISE_MAX' => ['Capacité assise maximale', 'capaciteAssiseMax'], 'CAP_ASSISE_SALLE_PRIVATISABLE' => ['Capacité privatisable', 'capaciteEspacePrivatisable'],
@@ -145,9 +147,15 @@ final class CompletenessFieldCatalog
             $fields[] = $this->field($type, $code, $label, $path, $target);
         }
         $fields = [...$fields, ...$this->localisation($type)];
-        foreach (['nom' => 'Nom de la période', 'dateDebut' => 'Début de fermeture', 'dateFin' => 'Fin de fermeture'] as $name => $label) { $fields[] = $this->field($type, 'DISPO_'.self::code($name), $label, 'periodesFermeture.*.'.$name); }
-        foreach (['nom' => 'Nom de l’accès'] as $name => $label) { $fields[] = $this->field($type, 'ACCESSIBILITE_'.self::code($name), $label, 'acces.*.'.$name); }
-        foreach (['nom' => 'Nom de la salle', 'superficie' => 'Superficie', 'capaciteReunion' => 'Capacité réunion', 'capaciteU' => 'Capacité en U', 'capaciteClasse' => 'Capacité classe', 'capaciteTheatre' => 'Capacité théâtre', 'capaciteCabaret' => 'Capacité cabaret', 'capaciteBanquet' => 'Capacité banquet', 'capaciteCocktail' => 'Capacité cocktail', 'capaciteAuditorium' => 'Capacité auditorium', 'lumiereJour' => 'Lumière du jour', 'accesPmr' => 'Accès PMR', 'espaceDansant' => 'Dansant', 'climatisee' => 'Climatisée'] as $name => $label) { $fields[] = $this->field($type, 'CONFIG_SALLE_'.self::code($name), $label, 'salles.*.'.$name); }
+        foreach (['nom' => 'Nom de la période', 'dateDebut' => 'Début de fermeture', 'dateFin' => 'Fin de fermeture'] as $name => $label) {
+            $fields[] = $this->field($type, 'DISPO_'.self::code($name), $label, 'periodesFermeture.*.'.$name);
+        }
+        foreach (['nom' => 'Nom de l’accès'] as $name => $label) {
+            $fields[] = $this->field($type, 'ACCESSIBILITE_'.self::code($name), $label, 'acces.*.'.$name);
+        }
+        foreach (['nom' => 'Nom de la salle', 'superficie' => 'Superficie', 'capaciteReunion' => 'Capacité réunion', 'capaciteU' => 'Capacité en U', 'capaciteClasse' => 'Capacité classe', 'capaciteTheatre' => 'Capacité théâtre', 'capaciteCabaret' => 'Capacité cabaret', 'capaciteBanquet' => 'Capacité banquet', 'capaciteCocktail' => 'Capacité cocktail', 'capaciteAuditorium' => 'Capacité auditorium', 'lumiereJour' => 'Lumière du jour', 'accesPmr' => 'Accès PMR', 'espaceDansant' => 'Dansant', 'climatisee' => 'Climatisée'] as $name => $label) {
+            $fields[] = $this->field($type, 'CONFIG_SALLE_'.self::code($name), $label, 'salles.*.'.$name);
+        }
 
         return $fields;
     }
@@ -164,7 +172,7 @@ final class CompletenessFieldCatalog
             'PRESTATION_FEMME_ENCEINTE' => ['Adapté aux femmes enceintes', 'adapteFemmesEnceintes'], 'PRESTATION_MAL_ENTENDENT' => ['Adapté aux personnes malentendantes', 'adapteMalentendants'],
             'PRESTATION_MAL_VOYANTE' => ['Adapté aux personnes malvoyantes', 'adapteMalvoyants'], 'MATERIEL_LIST' => ['Matériel inclus', 'materielInclus'],
             'MATERIEL_A_PREVOIR_PARTICIPANT' => ['Équipement participants requis', 'equipementParticipantsRequis'], 'MATERIEL_A_PREVOIR_RECEPTION' => ['Équipement réception requis', 'equipementReceptionRequis'],
-            'MATERIEL_CONTRAINTE' => ['Contraintes logistiques', 'contraintesLogistiques'], 'RAYON_ACTION' => ["Rayon d’action", 'modeIntervention'],
+            'MATERIEL_CONTRAINTE' => ['Contraintes logistiques', 'contraintesLogistiques'], 'RAYON_ACTION' => ['Rayon d’action', 'modeIntervention'],
             'PRESTATION_PERSONNE_MIN' => ['Prestation à partir de (personnes)', 'participantsMin'], 'PRESTATION_PERSONNE_MAX' => ["Prestation jusqu'à (personnes)", 'participantsMax'],
             'PRESTATION_DUREE' => ['Durée de la prestation', 'dureeMinutes'],
             'PAR_PRESTATION' => ['Tarif par prestation', 'tarifParPrestation'], 'PAR_PERSONNE' => ['Tarif par personne', 'tarifParPersonne'],
@@ -172,9 +180,13 @@ final class CompletenessFieldCatalog
             'PAR_HEURE' => ['Tarif par heure', 'tarifParHeure'], 'SUR_DEVIS' => ['Sur devis', 'surDevis'],
             'GENERALE_YOUTUBE' => ['Lien vidéo', 'youtubeUrl'], 'PHOTO' => ['Photos', 'ressources'],
         ];
-        foreach ($map as $code => [$label, $path]) { $fields[] = $this->field($type, $code, $label, $path); }
+        foreach ($map as $code => [$label, $path]) {
+            $fields[] = $this->field($type, $code, $label, $path);
+        }
         $fields = [...$fields, ...$this->localisation($type, 'modeIntervention', 'fixe', 'Applicable pour une localisation fixe')];
-        foreach (['paysMobiles' => 'Pays mobiles', 'regionsMobiles' => 'Régions mobiles', 'departementsMobiles' => 'Départements mobiles'] as $path => $label) { $fields[] = $this->field($type, 'RAYON_ACTION_'.self::code($path), $label, $path, null, 'modeIntervention', 'mobile', 'Applicable pour un service mobile'); }
+        foreach (['paysMobiles' => 'Pays mobiles', 'regionsMobiles' => 'Régions mobiles', 'departementsMobiles' => 'Départements mobiles'] as $path => $label) {
+            $fields[] = $this->field($type, 'RAYON_ACTION_'.self::code($path), $label, $path, null, 'modeIntervention', 'mobile', 'Applicable pour un service mobile');
+        }
 
         return $fields;
     }
@@ -200,7 +212,7 @@ final class CompletenessFieldCatalog
     }
 
     /** @param array<string, array<string, mixed>> $map
-     *  @return list<CompletenessFieldDefinition>
+     * @return list<CompletenessFieldDefinition>
      */
     private function fromMap(TypeFiche $type, array $map, string $prefix = '', ?string $conditionPath = null, mixed $conditionValue = null, ?string $conditionLabel = null): array
     {
@@ -238,12 +250,14 @@ final class CompletenessFieldCatalog
     }
 
     /** @param list<CompletenessFieldDefinition> $fields
-     *  @return list<CompletenessFieldDefinition>
+     * @return list<CompletenessFieldDefinition>
      */
     private function unique(array $fields): array
     {
         $unique = [];
-        foreach ($fields as $field) { $unique[$field->code] = $field; }
+        foreach ($fields as $field) {
+            $unique[$field->code] = $field;
+        }
 
         return array_values($unique);
     }

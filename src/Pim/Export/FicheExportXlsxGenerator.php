@@ -133,10 +133,10 @@ final readonly class FicheExportXlsxGenerator
     }
 
     /**
-     * @param int<0, max>                                          $sheetIndex
-     * @param iterable<object>                                     $aggregats
-     * @param list<string>                                         $clesCochees
-     * @param array<string, array{int<1, max>, int<1, max>}>       $plages    lignes [début, fin] des attributs sur la feuille LOV
+     * @param int<0, max>                                    $sheetIndex
+     * @param iterable<object>                               $aggregats
+     * @param list<string>                                   $clesCochees
+     * @param array<string, array{int<1, max>, int<1, max>}> $plages      lignes [début, fin] des attributs sur la feuille LOV
      */
     private function ecrireFeuille(
         Writer $writer,

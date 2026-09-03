@@ -45,12 +45,43 @@ class ClassementAtoutFrance
     ) {
     }
 
-    public function id(): ?int { return $this->id; }
-    public function nom(): string { return $this->nom; }
-    public function codePostal(): string { return $this->codePostal; }
-    public function commune(): string { return $this->commune; }
-    public function typeEtablissement(): string { return $this->typeEtablissement; }
-    public function etoiles(): int { return $this->etoiles; }
-    public function nombreChambres(): ?int { return $this->nombreChambres; }
-    public function dateClassement(): ?\DateTimeImmutable { return $this->dateClassement; }
+    public function id(): ?int
+    {
+        return $this->id;
+    }
+
+    public function nom(): string
+    {
+        return $this->nom;
+    }
+
+    public function codePostal(): string
+    {
+        return $this->codePostal;
+    }
+
+    public function commune(): string
+    {
+        return $this->commune;
+    }
+
+    public function typeEtablissement(): string
+    {
+        return $this->typeEtablissement;
+    }
+
+    public function etoiles(): int
+    {
+        return $this->etoiles;
+    }
+
+    public function nombreChambres(): ?int
+    {
+        return $this->nombreChambres;
+    }
+
+    public function dateClassement(): ?\DateTimeImmutable
+    {
+        return $this->dateClassement;
+    }
 }

@@ -11,13 +11,14 @@ use App\Pim\Entity\Lieu\LieuTarification;
 use App\Pim\Entity\Localisation;
 use App\Pim\Lov\LieuLovCatalog;
 use App\Pim\Service\LieuObligationsPublication;
+use App\Pim\Validation\ValidationGroups;
 use Doctrine\Common\Collections\Collection;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\CollectionType;
-use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Extension\Core\Type\UrlType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\FormEvent;
@@ -26,7 +27,6 @@ use Symfony\Component\Form\FormInterface;
 use Symfony\Component\Form\FormTypeInterface;
 use Symfony\Component\Form\FormView;
 use Symfony\Component\OptionsResolver\OptionsResolver;
-use App\Pim\Validation\ValidationGroups;
 
 /** @extends AbstractType<Lieu> */
 final class LieuType extends AbstractType
@@ -130,7 +130,6 @@ final class LieuType extends AbstractType
      * l'option `required` — l'attribut HTML bloquerait l'enregistrement des
      * brouillons et le cas « champ vidé » que l'éditeur doit pouvoir soumettre.
      *
-     * @param FormView            $view
      * @param FormInterface<mixed> $form
      * @param array<string, mixed> $options
      */
@@ -161,6 +160,7 @@ final class LieuType extends AbstractType
 
     /**
      * @param array<string, array<string, mixed>> $fields
+     *
      * @return array<string, mixed>
      */
     private function section(array $fields): array
@@ -173,9 +173,9 @@ final class LieuType extends AbstractType
     }
 
     /**
-     * @param FormBuilderInterface<Lieu|null> $builder
+     * @param FormBuilderInterface<Lieu|null>        $builder
      * @param class-string<FormTypeInterface<mixed>> $entryType
-     * @param array<string, mixed> $entryOptions
+     * @param array<string, mixed>                   $entryOptions
      */
     private function collection(FormBuilderInterface $builder, string $name, string $entryType, string $getter, string $adder, string $remover, array $entryOptions = [], ?string $label = null, ?string $help = null): void
     {

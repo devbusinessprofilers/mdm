@@ -18,29 +18,23 @@ use Symfony\Component\Uid\Ulid;
 
 #[ORM\Entity(repositoryClass: RessourceLieuRepository::class)]
 #[ORM\Table(name: 'pim_ressource_lieu')]
-#[
-    ORM\Index(
-        name: 'IDX_PIM_RESOURCE_LIEU_ORDERED',
-        columns: ['lieu_id', 'position', 'id'],
-    ),
-]
-#[
-    ORM\Index(
-        name: 'IDX_PIM_RESOURCE_SALLE_ORDERED',
-        columns: ['salle_id', 'position', 'id'],
-    ),
-]
+#[ORM\Index(
+    name: 'IDX_PIM_RESOURCE_LIEU_ORDERED',
+    columns: ['lieu_id', 'position', 'id'],
+),]
+#[ORM\Index(
+    name: 'IDX_PIM_RESOURCE_SALLE_ORDERED',
+    columns: ['salle_id', 'position', 'id'],
+),]
 #[ORM\Index(name: 'IDX_PIM_RESOURCE_USAGE', columns: ['usage_code', 'lieu_id'])]
 #[ORM\Index(name: 'IDX_PIM_RESSOURCE_DAM_ASSET', columns: ['dam_asset_id'])]
 #[ORM\Index(name: 'IDX_PIM_RESOURCE_RIGHTS_EXPIRY', columns: ['rights_granted', 'rights_expires_at'])]
 #[ORM\Index(name: 'IDX_PIM_RESOURCE_FICHE_NATURE', columns: ['fiche_id', 'nature'])]
 #[ORM\Index(name: 'IDX_RESOURCE_RESTAURANT_ROOM', columns: ['restaurant_salle_id', 'position', 'id'])]
-#[
-    ORM\Index(
-        name: 'IDX_RESSOURCE_FICHE_ORDERED',
-        columns: ['fiche_id', 'position', 'id'],
-    ),
-]
+#[ORM\Index(
+    name: 'IDX_RESSOURCE_FICHE_ORDERED',
+    columns: ['fiche_id', 'position', 'id'],
+),]
 #[ORM\HasLifecycleCallbacks]
 class RessourceLieu
 {
@@ -94,13 +88,11 @@ class RessourceLieu
     private int $rotation = 0;
     #[ORM\Column(length: 16, enumType: DocumentAccess::class, nullable: true)]
     private ?DocumentAccess $documentAccess = null;
-    #[
-        ORM\Column(
-            length: 24,
-            enumType: DocumentPublicationStatus::class,
-            nullable: true,
-        ),
-    ]
+    #[ORM\Column(
+        length: 24,
+        enumType: DocumentPublicationStatus::class,
+        nullable: true,
+    ),]
     private ?DocumentPublicationStatus $publicationStatus = null;
     #[ORM\Column(length: 1024, nullable: true)]
     private ?string $publicStorageKey = null;

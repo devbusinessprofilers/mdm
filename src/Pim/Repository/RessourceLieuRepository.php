@@ -5,15 +5,15 @@ declare(strict_types=1);
 namespace App\Pim\Repository;
 
 use App\Dam\Enum\DocumentUsage;
+use App\Dam\Enum\RightsValidityStatus;
 use App\Pim\Entity\Fiche;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Enum\NatureRessource;
+use App\Pim\Enum\TypeFiche;
+use App\Shared\Service\ParametreProviderInterface;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\Persistence\ManagerRegistry;
-use App\Dam\Enum\RightsValidityStatus;
-use App\Pim\Enum\TypeFiche;
-use App\Shared\Service\ParametreProviderInterface;
 use Symfony\Component\Uid\Ulid;
 
 /** @extends ServiceEntityRepository<RessourceLieu> */
@@ -85,8 +85,6 @@ final class RessourceLieuRepository extends ServiceEntityRepository
     }
 
     /**
-     * @param list<string> $mediaIds
-     *
      * @return list<RessourceLieu>
      */
     /**

@@ -23,7 +23,8 @@ final readonly class DamAnomalyCounter
         private MediaAssetRepository $assets,
         private DamAnomalyRepository $anomalies,
         private CacheInterface $cache,
-    ) {}
+    ) {
+    }
 
     /** Anomalies ouvertes tous sujets confondus — le badge « Qualité » de la navigation. */
     public function ouvertes(): int

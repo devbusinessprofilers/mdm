@@ -47,7 +47,9 @@ final class CompletenessConfigurationType extends AbstractType
             'data_class' => null,
             'default_target' => null,
             'constraints' => [new Callback(static function (mixed $data, ExecutionContextInterface $context): void {
-                if (!is_array($data) || CompletenessFormula::LengthRatio !== ($data['formula'] ?? null)) { return; }
+                if (!is_array($data) || CompletenessFormula::LengthRatio !== ($data['formula'] ?? null)) {
+                    return;
+                }
                 $form = $context->getRoot();
                 $default = $form->getConfig()->getOption('default_target');
                 if (null === ($data['targetLengthOverride'] ?? null) && null === $default) {

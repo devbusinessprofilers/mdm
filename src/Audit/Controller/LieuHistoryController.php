@@ -16,14 +16,12 @@ use Symfony\Component\Routing\Attribute\Route;
 
 final class LieuHistoryController extends AbstractController
 {
-    #[
-        Route(
-            '/referentiel/lieux/fiche/{id}/historique',
-            name: 'app_pim_lieu_history',
-            requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
-            methods: ['GET'],
-        ),
-    ]
+    #[Route(
+        '/referentiel/lieux/fiche/{id}/historique',
+        name: 'app_pim_lieu_history',
+        requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
+        methods: ['GET'],
+    ),]
     public function __invoke(
         string $id,
         Request $request,
@@ -33,7 +31,7 @@ final class LieuHistoryController extends AbstractController
     ): Response {
         $this->denyAccessUnlessGranted('ROLE_BP_VALIDATOR');
         $lieu = $lieux->find($id);
-        if (!($lieu instanceof Lieu)) {
+        if (!$lieu instanceof Lieu) {
             throw $this->createNotFoundException('Lieu introuvable.');
         }
         $form = $this->createForm(AuditHistoryFilterType::class, null, [

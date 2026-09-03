@@ -20,7 +20,8 @@ final readonly class MetricsCollector
     public function __construct(
         #[Autowire(service: 'cache.metrics')]
         private CacheItemPoolInterface $cache,
-    ) {}
+    ) {
+    }
 
     public function recordRequest(string $group, int $statusCode, float $seconds): void
     {

@@ -118,8 +118,7 @@ final readonly class RestaurantApiMapper
             $restaurant->engagementsRse(),
             $restaurant->youtubeUrl(),
             array_map(
-                fn (array $photo): LieuMediaResource =>
-                    $this->photo($restaurant, $photo),
+                fn (array $photo): LieuMediaResource => $this->photo($restaurant, $photo),
                 $this->photos->photos($fiche),
             ),
         );

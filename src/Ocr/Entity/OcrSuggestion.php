@@ -63,31 +63,93 @@ final class OcrSuggestion
         $extraction->addSuggestion($this);
     }
 
-    public function id(): string { return (string) $this->id; }
-    public function extraction(): DocumentExtraction { return $this->extraction; }
-    public function fieldPath(): string { return $this->fieldPath; }
-    public function label(): string { return $this->label; }
-    public function valueType(): string { return $this->valueType; }
-    public function rawValue(): mixed { return $this->rawValue; }
-    public function correctedValue(): mixed { return $this->correctedValue; }
-    public function observedValue(): mixed { return $this->observedValue; }
-    public function confidence(): ?float { return null === $this->confidence ? null : (float) $this->confidence; }
-    /** @return list<int> */ public function pageReferences(): array { return $this->pageReferences; }
-    public function status(): SuggestionStatus { return $this->status; }
-    public function isPending(): bool { return SuggestionStatus::Pending === $this->status; }
-    public function decidedBy(): ?string { return $this->decidedBy; }
-    public function decidedAt(): ?\DateTimeImmutable { return $this->decidedAt; }
+    public function id(): string
+    {
+        return (string) $this->id;
+    }
+
+    public function extraction(): DocumentExtraction
+    {
+        return $this->extraction;
+    }
+
+    public function fieldPath(): string
+    {
+        return $this->fieldPath;
+    }
+
+    public function label(): string
+    {
+        return $this->label;
+    }
+
+    public function valueType(): string
+    {
+        return $this->valueType;
+    }
+
+    public function rawValue(): mixed
+    {
+        return $this->rawValue;
+    }
+
+    public function correctedValue(): mixed
+    {
+        return $this->correctedValue;
+    }
+
+    public function observedValue(): mixed
+    {
+        return $this->observedValue;
+    }
+
+    public function confidence(): ?float
+    {
+        return null === $this->confidence ? null : (float) $this->confidence;
+    }
+
+    /** @return list<int> */
+    public function pageReferences(): array
+    {
+        return $this->pageReferences;
+    }
+
+    public function status(): SuggestionStatus
+    {
+        return $this->status;
+    }
+
+    public function isPending(): bool
+    {
+        return SuggestionStatus::Pending === $this->status;
+    }
+
+    public function decidedBy(): ?string
+    {
+        return $this->decidedBy;
+    }
+
+    public function decidedAt(): ?\DateTimeImmutable
+    {
+        return $this->decidedAt;
+    }
 
     public function correct(mixed $value): void
     {
-        if (!$this->isPending()) { throw new \DomainException('Une décision OCR sauvegardée est immuable.'); }
+        if (!$this->isPending()) {
+            throw new \DomainException('Une décision OCR sauvegardée est immuable.');
+        }
         $this->correctedValue = $value;
     }
 
     public function decide(SuggestionStatus $status, string $actor): void
     {
-        if (!$this->isPending()) { throw new \DomainException('Une décision OCR sauvegardée est immuable.'); }
-        if (SuggestionStatus::Pending === $status) { return; }
+        if (!$this->isPending()) {
+            throw new \DomainException('Une décision OCR sauvegardée est immuable.');
+        }
+        if (SuggestionStatus::Pending === $status) {
+            return;
+        }
         $this->status = $status;
         $this->decidedBy = $actor;
         $this->decidedAt = new \DateTimeImmutable();

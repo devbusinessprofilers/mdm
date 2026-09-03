@@ -122,7 +122,7 @@ final class LieuRepository extends ServiceEntityRepository
     }
 
     /**
-     * @param list<string> $ids Ordered fiche ULIDs.
+     * @param list<string> $ids ordered fiche ULIDs
      *
      * @return list<LieuListItem>
      */

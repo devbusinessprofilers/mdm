@@ -49,38 +49,38 @@ final class ServiceEvenementielType extends AbstractType
             && $this->salesforce->existePourFiche($data->fiche()->id());
         $builder
             ->add(
-                "label",
+                'label',
                 TextType::class,
-                $this->field("Nom du prestataire", "label", "changeLabel"),
+                $this->field('Nom du prestataire', 'label', 'changeLabel'),
             )
-            ->add("businessPremium", CheckboxType::class, [
-                "label" => "Adhérent Business Premium",
-                "required" => false,
-                "getter" => static fn (ServiceEvenementiel $service): bool => $service->fiche()->businessPremium(),
-                "setter" => static function (ServiceEvenementiel &$service, mixed $value): void { $service->fiche()->changeBusinessPremium((bool) $value); },
+            ->add('businessPremium', CheckboxType::class, [
+                'label' => 'Adhérent Business Premium',
+                'required' => false,
+                'getter' => static fn (ServiceEvenementiel $service): bool => $service->fiche()->businessPremium(),
+                'setter' => static function (ServiceEvenementiel &$service, mixed $value): void { $service->fiche()->changeBusinessPremium((bool) $value); },
             ])
-            ->add("partenaireBp", CheckboxType::class, [
-                "label" => "Partenaire BP",
-                "required" => false,
-                "disabled" => $partenaireGereParSf,
-                "help" => $partenaireGereParSf ? "Géré par Salesforce." : null,
+            ->add('partenaireBp', CheckboxType::class, [
+                'label' => 'Partenaire BP',
+                'required' => false,
+                'disabled' => $partenaireGereParSf,
+                'help' => $partenaireGereParSf ? 'Géré par Salesforce.' : null,
                 // Chrome « autorité » : seul champ réellement piloté par Salesforce (défaut MDM ailleurs).
-                "label_attr" => $partenaireGereParSf ? ["data-autorite" => \App\Pim\Enum\Autorite::Salesforce->value] : [],
-                "getter" => static fn (ServiceEvenementiel $service): bool => $service->fiche()->partenaireBp(),
-                "setter" => static function (ServiceEvenementiel &$service, mixed $value): void { $service->fiche()->changePartenaireBp((bool) $value); },
+                'label_attr' => $partenaireGereParSf ? ['data-autorite' => \App\Pim\Enum\Autorite::Salesforce->value] : [],
+                'getter' => static fn (ServiceEvenementiel $service): bool => $service->fiche()->partenaireBp(),
+                'setter' => static function (ServiceEvenementiel &$service, mixed $value): void { $service->fiche()->changePartenaireBp((bool) $value); },
             ])
             ->add(
-                "prestations",
+                'prestations',
                 ChoiceType::class,
                 $this->field(
-                    "Prestations",
-                    "prestations",
-                    "changePrestations",
+                    'Prestations',
+                    'prestations',
+                    'changePrestations',
                 ) + [
-                    "choices" => array_flip(ServiceLovCatalog::prestations()),
-                    "multiple" => true,
+                    'choices' => array_flip(ServiceLovCatalog::prestations()),
+                    'multiple' => true,
                     // Select multiple (composant Select) — plus de cases filtrées.
-                    "expanded" => false,
+                    'expanded' => false,
                 ],
             );
 
@@ -91,12 +91,12 @@ final class ServiceEvenementielType extends AbstractType
                 ServiceLovCatalog::SOUS_PRESTATION_FIELDS[$attribute],
                 ChoiceType::class,
                 [
-                    "label" => "Sous-prestations — ".$famille,
-                    "required" => false,
-                    "getter" => static fn (
+                    'label' => 'Sous-prestations — '.$famille,
+                    'required' => false,
+                    'getter' => static fn (
                         ServiceEvenementiel $service,
                     ): array => $service->sousPrestationsPour($attribute),
-                    "setter" => static function (
+                    'setter' => static function (
                         ServiceEvenementiel &$service,
                         mixed $value,
                     ) use ($attribute): void {
@@ -105,23 +105,23 @@ final class ServiceEvenementielType extends AbstractType
                             array_values(array_filter((array) $value, is_string(...))),
                         );
                     },
-                    "choices" => array_flip(
+                    'choices' => array_flip(
                         ServiceLovCatalog::sousPrestationsFor($attribute),
                     ),
-                    "multiple" => true,
-                    "expanded" => false,
+                    'multiple' => true,
+                    'expanded' => false,
                 ],
             );
         }
 
         $builder
             ->add(
-                "descriptionGenerale",
+                'descriptionGenerale',
                 TextareaType::class,
                 $this->field(
-                    "Description générale",
-                    "descriptionGenerale",
-                    "changeDescriptionGenerale",
+                    'Description générale',
+                    'descriptionGenerale',
+                    'changeDescriptionGenerale',
                 ),
             );
 
@@ -130,43 +130,42 @@ final class ServiceEvenementielType extends AbstractType
                 $name,
                 ChoiceType::class,
                 $this->field($label, $name, $setter) + [
-                    "choices" => ["Oui" => true, "Non" => false],
-                    "placeholder" => "Non renseigné",
-                    "choice_value" => static fn(
+                    'choices' => ['Oui' => true, 'Non' => false],
+                    'placeholder' => 'Non renseigné',
+                    'choice_value' => static fn (
                         ?bool $value,
-                    ): string => null === $value ? "" : ($value ? "1" : "0"),
+                    ): string => null === $value ? '' : ($value ? '1' : '0'),
                 ],
             );
         }
 
         $builder
             ->add(
-                "modeIntervention",
+                'modeIntervention',
                 ChoiceType::class,
                 $this->field(
-                    "Rayon d’action",
-                    "modeIntervention",
-                    "changeModeIntervention",
+                    'Rayon d’action',
+                    'modeIntervention',
+                    'changeModeIntervention',
                 ) + [
-                    "choices" => [
-                        "Localisation fixe" => ModeInterventionService::Fixe,
-                        "Localisation mobile" =>
-                            ModeInterventionService::Mobile,
+                    'choices' => [
+                        'Localisation fixe' => ModeInterventionService::Fixe,
+                        'Localisation mobile' => ModeInterventionService::Mobile,
                     ],
-                    "choice_value" => static fn(
+                    'choice_value' => static fn (
                         ?ModeInterventionService $mode,
                     ): ?string => $mode?->value,
-                    "placeholder" => "Choisir…",
+                    'placeholder' => 'Choisir…',
                 ],
             )
-            ->add("localisation", LocalisationType::class, [
-                "label" => "Localisation fixe",
-                "required" => false,
-                "empty_data" => static fn(): Localisation => new Localisation(),
-                "getter" => static fn(
+            ->add('localisation', LocalisationType::class, [
+                'label' => 'Localisation fixe',
+                'required' => false,
+                'empty_data' => static fn (): Localisation => new Localisation(),
+                'getter' => static fn (
                     ServiceEvenementiel $service,
                 ): ?Localisation => $service->localisation(),
-                "setter" => static function (
+                'setter' => static function (
                     ServiceEvenementiel &$service,
                     ?Localisation $location,
                 ): void {
@@ -174,38 +173,38 @@ final class ServiceEvenementielType extends AbstractType
                 },
             ])
             ->add(
-                "paysMobiles",
+                'paysMobiles',
                 StringListType::class,
                 $this->field(
-                    "Pays mobiles",
-                    "paysMobiles",
-                    "changePaysMobiles",
-                ) + ["help" => "Un pays par ligne."],
+                    'Pays mobiles',
+                    'paysMobiles',
+                    'changePaysMobiles',
+                ) + ['help' => 'Un pays par ligne.'],
             )
             ->add(
-                "regionsMobiles",
+                'regionsMobiles',
                 StringListType::class,
                 $this->field(
-                    "Régions mobiles",
-                    "regionsMobiles",
-                    "changeRegionsMobiles",
-                ) + ["help" => "Une région par ligne."],
+                    'Régions mobiles',
+                    'regionsMobiles',
+                    'changeRegionsMobiles',
+                ) + ['help' => 'Une région par ligne.'],
             )
             ->add(
-                "departementsMobiles",
+                'departementsMobiles',
                 StringListType::class,
                 $this->field(
-                    "Départements mobiles",
-                    "departementsMobiles",
-                    "changeDepartementsMobiles",
-                ) + ["help" => "Un département par ligne."],
+                    'Départements mobiles',
+                    'departementsMobiles',
+                    'changeDepartementsMobiles',
+                ) + ['help' => 'Un département par ligne.'],
             );
 
         foreach (
             [
-                "participantsMin" => ["Prestation à partir de (personnes)", "changeParticipantsMin"],
-                "participantsMax" => ["Prestation jusqu'à (personnes)", "changeParticipantsMax"],
-                "dureeMinutes" => ["Durée de la prestation (minutes)", "changeDureeMinutes"],
+                'participantsMin' => ['Prestation à partir de (personnes)', 'changeParticipantsMin'],
+                'participantsMax' => ["Prestation jusqu'à (personnes)", 'changeParticipantsMax'],
+                'dureeMinutes' => ['Durée de la prestation (minutes)', 'changeDureeMinutes'],
             ] as $name => [$label, $setter]
         ) {
             $builder->add(
@@ -220,41 +219,41 @@ final class ServiceEvenementielType extends AbstractType
                 $name,
                 MoneyType::class,
                 $this->field($label, $name, $setter) + [
-                    "currency" => "EUR",
-                    "input" => "float",
-                    "scale" => 2,
+                    'currency' => 'EUR',
+                    'input' => 'float',
+                    'scale' => 2,
                 ],
             );
         }
 
         $builder
             ->add(
-                "youtubeUrl",
+                'youtubeUrl',
                 UrlType::class,
-                $this->field("Lien vidéo", "youtubeUrl", "changeYoutubeUrl") + [
-                    "constraints" => [new LienVideo()],
+                $this->field('Lien vidéo', 'youtubeUrl', 'changeYoutubeUrl') + [
+                    'constraints' => [new LienVideo()],
                 ],
             )
-            ->add("ressources", CollectionType::class, [
-                "entry_type" => ServiceRessourceType::class,
-                "allow_add" => true,
-                "allow_delete" => true,
-                "by_reference" => false,
-                "prototype" => true,
-                "getter" => static fn(
+            ->add('ressources', CollectionType::class, [
+                'entry_type' => ServiceRessourceType::class,
+                'allow_add' => true,
+                'allow_delete' => true,
+                'by_reference' => false,
+                'prototype' => true,
+                'getter' => static fn (
                     ServiceEvenementiel $service,
                 ): Collection => new ArrayCollection(
                     array_values(
                         array_filter(
                             $service->ressources()->toArray(),
-                            static fn(
+                            static fn (
                                 RessourceLieu $resource,
                             ): bool => NatureRessource::Photo ===
                                 $resource->nature(),
                         ),
                     ),
                 ),
-                "setter" => static function (
+                'setter' => static function (
                     ServiceEvenementiel &$service,
                     iterable $submitted,
                 ): void {
@@ -263,8 +262,8 @@ final class ServiceEvenementielType extends AbstractType
                         : iterator_to_array($submitted);
                     foreach ($service->ressources()->toArray() as $old) {
                         if (
-                            NatureRessource::Photo === $old->nature() &&
-                            !in_array($old, $submitted, true)
+                            NatureRessource::Photo === $old->nature()
+                            && !in_array($old, $submitted, true)
                         ) {
                             $service->removeRessource($old);
                         }
@@ -276,45 +275,45 @@ final class ServiceEvenementielType extends AbstractType
                     }
                 },
             ])
-            ->add("supportsCommerciaux", FileType::class, [
-                "label" => "Supports commerciaux",
-                "help" => "PDF, JPEG ou PNG.",
-                "mapped" => false,
-                "multiple" => true,
-                "required" => false,
-                "attr" => ["data-dropzone" => true, "accept" => ".pdf,.jpg,.jpeg,.png", "data-max-files" => 10, "data-max-size" => "100M"],
-                "constraints" => [
+            ->add('supportsCommerciaux', FileType::class, [
+                'label' => 'Supports commerciaux',
+                'help' => 'PDF, JPEG ou PNG.',
+                'mapped' => false,
+                'multiple' => true,
+                'required' => false,
+                'attr' => ['data-dropzone' => true, 'accept' => '.pdf,.jpg,.jpeg,.png', 'data-max-files' => 10, 'data-max-size' => '100M'],
+                'constraints' => [
                     new All([
                         new File(
-                            maxSize: "100M",
+                            maxSize: '100M',
                             mimeTypes: [
-                                "application/pdf",
-                                "image/jpeg",
-                                "image/png",
+                                'application/pdf',
+                                'image/jpeg',
+                                'image/png',
                             ],
                         ),
                     ]),
                 ],
             ])
-            ->add("supportTitle", TextType::class, [
-                "help" => "Appliqué aux fichiers déposés ci-dessus, à l’enregistrement.",
-                "label" => "Titre des nouveaux supports",
-                "mapped" => false,
-                "required" => false,
+            ->add('supportTitle', TextType::class, [
+                'help' => 'Appliqué aux fichiers déposés ci-dessus, à l’enregistrement.',
+                'label' => 'Titre des nouveaux supports',
+                'mapped' => false,
+                'required' => false,
             ])
-            ->add("supportSource", TextType::class, [
-                "label" => "Source des nouveaux supports",
-                "mapped" => false,
-                "required" => false,
+            ->add('supportSource', TextType::class, [
+                'label' => 'Source des nouveaux supports',
+                'mapped' => false,
+                'required' => false,
             ])
-            ->add("submit", SubmitType::class, ["label" => "Enregistrer"]);
+            ->add('submit', SubmitType::class, ['label' => 'Enregistrer']);
     }
 
     public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->setDefaults([
-            "data_class" => ServiceEvenementiel::class,
-            "validation_groups" => [ValidationGroups::DRAFT],
+            'data_class' => ServiceEvenementiel::class,
+            'validation_groups' => [ValidationGroups::DRAFT],
         ]);
     }
 
@@ -322,37 +321,37 @@ final class ServiceEvenementielType extends AbstractType
     private function booleanFields(): array
     {
         return [
-            "prestataireEsat" => ["Prestataire ESAT", "changePrestataireEsat"],
-            "demarcheRse" => [
-                "Engagé dans une démarche RSE",
-                "changeDemarcheRse",
+            'prestataireEsat' => ['Prestataire ESAT', 'changePrestataireEsat'],
+            'demarcheRse' => [
+                'Engagé dans une démarche RSE',
+                'changeDemarcheRse',
             ],
-            "adapteFemmesEnceintes" => [
-                "Adapté aux femmes enceintes",
-                "changeAdapteFemmesEnceintes",
+            'adapteFemmesEnceintes' => [
+                'Adapté aux femmes enceintes',
+                'changeAdapteFemmesEnceintes',
             ],
-            "adapteMalentendants" => [
-                "Adapté aux personnes malentendantes",
-                "changeAdapteMalentendants",
+            'adapteMalentendants' => [
+                'Adapté aux personnes malentendantes',
+                'changeAdapteMalentendants',
             ],
-            "adapteMalvoyants" => [
-                "Adapté aux personnes malvoyantes",
-                "changeAdapteMalvoyants",
+            'adapteMalvoyants' => [
+                'Adapté aux personnes malvoyantes',
+                'changeAdapteMalvoyants',
             ],
-            "materielInclus" => ["Matériel inclus", "changeMaterielInclus"],
-            "equipementParticipantsRequis" => [
-                "Équipement requis pour les participants",
-                "changeEquipementParticipantsRequis",
+            'materielInclus' => ['Matériel inclus', 'changeMaterielInclus'],
+            'equipementParticipantsRequis' => [
+                'Équipement requis pour les participants',
+                'changeEquipementParticipantsRequis',
             ],
-            "equipementReceptionRequis" => [
-                "Équipement requis dans l’espace de réception",
-                "changeEquipementReceptionRequis",
+            'equipementReceptionRequis' => [
+                'Équipement requis dans l’espace de réception',
+                'changeEquipementReceptionRequis',
             ],
-            "contraintesLogistiques" => [
-                "Contraintes logistiques à prévoir",
-                "changeContraintesLogistiques",
+            'contraintesLogistiques' => [
+                'Contraintes logistiques à prévoir',
+                'changeContraintesLogistiques',
             ],
-            "surDevis" => ["Tarification sur devis", "changeSurDevis"],
+            'surDevis' => ['Tarification sur devis', 'changeSurDevis'],
         ];
     }
 
@@ -360,20 +359,20 @@ final class ServiceEvenementielType extends AbstractType
     private function tariffFields(): array
     {
         return [
-            "tarifParPrestation" => [
-                "Tarif par prestation",
-                "changeTarifParPrestation",
+            'tarifParPrestation' => [
+                'Tarif par prestation',
+                'changeTarifParPrestation',
             ],
-            "tarifParPersonne" => [
-                "Tarif par personne",
-                "changeTarifParPersonne",
+            'tarifParPersonne' => [
+                'Tarif par personne',
+                'changeTarifParPersonne',
             ],
-            "tarifParJour" => ["Tarif par jour", "changeTarifParJour"],
-            "tarifParDemiJournee" => [
-                "Tarif par demi-journée",
-                "changeTarifParDemiJournee",
+            'tarifParJour' => ['Tarif par jour', 'changeTarifParJour'],
+            'tarifParDemiJournee' => [
+                'Tarif par demi-journée',
+                'changeTarifParDemiJournee',
             ],
-            "tarifParHeure" => ["Tarif par heure", "changeTarifParHeure"],
+            'tarifParHeure' => ['Tarif par heure', 'changeTarifParHeure'],
         ];
     }
 
@@ -381,12 +380,12 @@ final class ServiceEvenementielType extends AbstractType
     private function field(string $label, string $getter, string $setter): array
     {
         return [
-            "label" => $label,
-            "required" => false,
-            "getter" => static fn(
+            'label' => $label,
+            'required' => false,
+            'getter' => static fn (
                 ServiceEvenementiel $service,
             ): mixed => $service->{$getter}(),
-            "setter" => static function (
+            'setter' => static function (
                 ServiceEvenementiel &$service,
                 mixed $value,
             ) use ($setter): void {

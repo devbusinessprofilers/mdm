@@ -12,15 +12,15 @@ use App\Dam\Message\DeleteMedia;
 use App\Dam\Message\RegenerateMedia;
 use App\Dam\Service\FicheImageUploader;
 use App\Dam\Service\ImageVariantRegistry;
-use App\Pim\Api\ServiceEvenementielApiMapper;
-use App\Pim\Api\Dto\ServiceEvenementielResource;
 use App\Pim\Api\Dto\LieuMediaResource;
 use App\Pim\Api\Dto\MediaOrderInput;
 use App\Pim\Api\Dto\MediaPatchInput;
+use App\Pim\Api\Dto\ServiceEvenementielResource;
 use App\Pim\Api\Exception\ApiProblemException;
 use App\Pim\Api\ExternalScopeGuard;
-use App\Pim\Entity\Service\ServiceEvenementiel;
+use App\Pim\Api\ServiceEvenementielApiMapper;
 use App\Pim\Entity\Lieu\RessourceLieu;
+use App\Pim\Entity\Service\ServiceEvenementiel;
 use App\Pim\Enum\NatureRessource;
 use App\Pim\Enum\TypeFiche;
 use App\Pim\Repository\RessourceLieuRepository;
@@ -35,8 +35,7 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\RequestStack;
 
 /** @implements ProcessorInterface<mixed,LieuMediaResource|ServiceEvenementielResource|void> */
-final readonly class ServiceEvenementielMediaProcessor implements
-    ProcessorInterface
+final readonly class ServiceEvenementielMediaProcessor implements ProcessorInterface
 {
     public function __construct(
         private ServiceEvenementielApiState $state,
@@ -49,7 +48,8 @@ final readonly class ServiceEvenementielMediaProcessor implements
         private RequestStack $requests,
         private ExternalScopeGuard $scopes,
         private LoggerInterface $logger,
-    ) {}
+    ) {
+    }
 
     public function process(
         mixed $data,
@@ -58,13 +58,13 @@ final readonly class ServiceEvenementielMediaProcessor implements
         array $context = [],
     ): LieuMediaResource|ServiceEvenementielResource|null {
         $this->scopes->requireScope(ExternalScopeGuard::MEDIAS_WRITE);
-        $a = $this->state->service((string) ($uriVariables["serviceId"] ?? ""));
+        $a = $this->state->service((string) ($uriVariables['serviceId'] ?? ''));
         $this->state->assertVersion($a);
-        if (!($operation instanceof HttpOperation)) {
-            throw new \LogicException("Une opération HTTP est requise.");
+        if (!$operation instanceof HttpOperation) {
+            throw new \LogicException('Une opération HTTP est requise.');
         }
         $method = $operation->getMethod();
-        $template = $operation->getUriTemplate() ?? "";
+        $template = $operation->getUriTemplate() ?? '';
 
         return $a
             ->fiche()
@@ -75,42 +75,34 @@ final readonly class ServiceEvenementielMediaProcessor implements
                 $template,
                 $uriVariables,
             ) {
-                if ("POST" === $method && str_ends_with($template, "/medias")) {
+                if ('POST' === $method && str_ends_with($template, '/medias')) {
                     return $this->upload($a);
                 }
-                if ("PUT" === $method && str_ends_with($template, "/ordre")) {
-                    if (!($data instanceof MediaOrderInput)) {
-                        throw new ApiProblemException(
-                            400,
-                            "invalid_payload",
-                            "Le tableau ids est obligatoire.",
-                        );
+                if ('PUT' === $method && str_ends_with($template, '/ordre')) {
+                    if (!$data instanceof MediaOrderInput) {
+                        throw new ApiProblemException(400, 'invalid_payload', 'Le tableau ids est obligatoire.');
                     }
 
                     return $this->order($a, $data);
                 }
                 $r = $this->resource(
                     $a,
-                    (string) ($uriVariables["resourceId"] ?? ""),
+                    (string) ($uriVariables['resourceId'] ?? ''),
                 );
-                if ("PATCH" === $method) {
-                    if (!($data instanceof MediaPatchInput)) {
-                        throw new ApiProblemException(
-                            400,
-                            "invalid_payload",
-                            "Corps JSON invalide.",
-                        );
+                if ('PATCH' === $method) {
+                    if (!$data instanceof MediaPatchInput) {
+                        throw new ApiProblemException(400, 'invalid_payload', 'Corps JSON invalide.');
                     }
 
                     return $this->metadata($a, $r, $data);
                 }
                 if (
-                    "POST" === $method &&
-                    str_ends_with($template, "/fichier")
+                    'POST' === $method
+                    && str_ends_with($template, '/fichier')
                 ) {
                     return $this->replace($a, $r);
                 }
-                if ("DELETE" === $method) {
+                if ('DELETE' === $method) {
                     $this->outbox->enqueue(new DeleteMedia($r->damAssetId()));
                     $a->removeRessource($r);
                     $this->em->remove($r);
@@ -118,7 +110,7 @@ final readonly class ServiceEvenementielMediaProcessor implements
 
                     return null;
                 }
-                throw new \LogicException("Opération média inconnue.");
+                throw new \LogicException('Opération média inconnue.');
             });
     }
 
@@ -126,25 +118,17 @@ final readonly class ServiceEvenementielMediaProcessor implements
     {
         $maximum = $this->photoObligations->maximum(TypeFiche::ServiceEvenementiel);
         if (count($this->photos($a)) >= $maximum) {
-            throw new ApiProblemException(
-                422,
-                "media_limit_reached",
-                sprintf("Une service ne peut pas contenir plus de %d photos.", $maximum),
-            );
+            throw new ApiProblemException(422, 'media_limit_reached', sprintf('Une service ne peut pas contenir plus de %d photos.', $maximum));
         }
         $request = $this->requests->getCurrentRequest();
         if (null === $request) {
-            throw new \LogicException("Aucune requete HTTP active.");
+            throw new \LogicException('Aucune requete HTTP active.');
         }
-        $file = $request->files->get("photo");
-        if (!($file instanceof UploadedFile)) {
-            throw new ApiProblemException(
-                422,
-                "photo_required",
-                "Le champ multipart photo est obligatoire.",
-            );
+        $file = $request->files->get('photo');
+        if (!$file instanceof UploadedFile) {
+            throw new ApiProblemException(422, 'photo_required', 'Le champ multipart photo est obligatoire.');
         }
-        $usage = $request->request->getString("usage", PhotoUsageCatalog::DEFAUT);
+        $usage = $request->request->getString('usage', PhotoUsageCatalog::DEFAUT);
         $enTete = $this->usagePrincipaleDeprecie($usage);
         if ($enTete) {
             $usage = PhotoUsageCatalog::DEFAUT;
@@ -153,17 +137,13 @@ final readonly class ServiceEvenementielMediaProcessor implements
         try {
             $asset = $this->uploader->upload($file, $a->fiche());
         } catch (\DomainException $e) {
-            throw new ApiProblemException(
-                422,
-                "invalid_media",
-                $e->getMessage(),
-            );
+            throw new ApiProblemException(422, 'invalid_media', $e->getMessage());
         }
         $r = new RessourceLieu();
         $r->changeDamAssetId($asset->id());
         $r->changeNature(NatureRessource::Photo);
         $r->changeUsage($usage);
-        $legend = $request->request->get("legende");
+        $legend = $request->request->get('legende');
         $r->changeLegende(is_string($legend) ? $legend : null);
         $r->changePosition(count($this->photos($a)));
         $a->addRessource($r);
@@ -195,20 +175,16 @@ final readonly class ServiceEvenementielMediaProcessor implements
     ): ServiceEvenementielResource {
         $photos = $this->photos($a);
         $known = array_map(
-            static fn(RessourceLieu $r): string => $r->id(),
+            static fn (RessourceLieu $r): string => $r->id(),
             $photos,
         );
         if (
-            count($input->ids) !== count(array_unique($input->ids)) ||
-            count($input->ids) !== count($known) ||
-            [] !== array_diff($input->ids, $known) ||
-            [] !== array_diff($known, $input->ids)
+            count($input->ids) !== count(array_unique($input->ids))
+            || count($input->ids) !== count($known)
+            || [] !== array_diff($input->ids, $known)
+            || [] !== array_diff($known, $input->ids)
         ) {
-            throw new ApiProblemException(
-                422,
-                "invalid_media_order",
-                "L’ordre transmis ne correspond pas aux photos de l’service.",
-            );
+            throw new ApiProblemException(422, 'invalid_media_order', 'L’ordre transmis ne correspond pas aux photos de l’service.');
         }
         $byId = [];
         foreach ($photos as $r) {
@@ -229,13 +205,9 @@ final readonly class ServiceEvenementielMediaProcessor implements
     ): LieuMediaResource {
         $raw = json_decode((string) $this->request()->getContent(), true);
         $raw = is_array($raw) ? $raw : [];
-        if (array_key_exists("usage", $raw)) {
+        if (array_key_exists('usage', $raw)) {
             if (!is_string($input->usage)) {
-                throw new ApiProblemException(
-                    422,
-                    "invalid_media_usage",
-                    "La catégorie est invalide.",
-                );
+                throw new ApiProblemException(422, 'invalid_media_usage', 'La catégorie est invalide.');
             }
             if ($this->usagePrincipaleDeprecie($input->usage)) {
                 // La catégorie de la photo est conservée, seule sa place change.
@@ -245,46 +217,42 @@ final readonly class ServiceEvenementielMediaProcessor implements
                 $r->changeUsage($input->usage);
             }
         }
-        if (array_key_exists("legende", $raw)) {
+        if (array_key_exists('legende', $raw)) {
             $r->changeLegende($input->legende);
         }
-        if (array_key_exists("source", $raw)) {
+        if (array_key_exists('source', $raw)) {
             $r->changeSource($input->source);
         }
-        if (array_key_exists("keywords", $raw)) {
+        if (array_key_exists('keywords', $raw)) {
             $r->changeKeywords($input->keywords);
         }
-        if (array_key_exists("rightsExpiresAt", $raw)) {
+        if (array_key_exists('rightsExpiresAt', $raw)) {
             $r->changeRightsExpiresAt($input->rightsExpiresAt);
         }
-        if (array_key_exists("rightsGranted", $raw)) {
-            throw new ApiProblemException(403, "rights_validation_forbidden", "La validation des droits est réservée aux validateurs internes du PIM.");
+        if (array_key_exists('rightsGranted', $raw)) {
+            throw new ApiProblemException(403, 'rights_validation_forbidden', 'La validation des droits est réservée aux validateurs internes du PIM.');
         }
         $transform = false;
         try {
-            if (array_key_exists("crop", $raw)) {
+            if (array_key_exists('crop', $raw)) {
                 $crop = $input->crop;
                 $r->changeCrop(
-                    $crop["x"] ?? null,
-                    $crop["y"] ?? null,
-                    $crop["width"] ?? null,
-                    $crop["height"] ?? null,
+                    $crop['x'] ?? null,
+                    $crop['y'] ?? null,
+                    $crop['width'] ?? null,
+                    $crop['height'] ?? null,
                 );
                 $transform = true;
             }
             if (
-                array_key_exists("rotation", $raw) &&
-                null !== $input->rotation
+                array_key_exists('rotation', $raw)
+                && null !== $input->rotation
             ) {
                 $r->changeRotation($input->rotation);
                 $transform = true;
             }
         } catch (\DomainException $e) {
-            throw new ApiProblemException(
-                422,
-                "invalid_transformation",
-                $e->getMessage(),
-            );
+            throw new ApiProblemException(422, 'invalid_transformation', $e->getMessage());
         }
         if ($transform) {
             $this->outbox->enqueue(new RegenerateMedia($r->damAssetId()));
@@ -298,22 +266,14 @@ final readonly class ServiceEvenementielMediaProcessor implements
         ServiceEvenementiel $a,
         RessourceLieu $r,
     ): LieuMediaResource {
-        $file = $this->request()->files->get("photo");
-        if (!($file instanceof UploadedFile)) {
-            throw new ApiProblemException(
-                422,
-                "photo_required",
-                "Le champ multipart photo est obligatoire.",
-            );
+        $file = $this->request()->files->get('photo');
+        if (!$file instanceof UploadedFile) {
+            throw new ApiProblemException(422, 'photo_required', 'Le champ multipart photo est obligatoire.');
         }
         try {
             $asset = $this->uploader->upload($file, $a->fiche());
         } catch (\DomainException $e) {
-            throw new ApiProblemException(
-                422,
-                "invalid_media",
-                $e->getMessage(),
-            );
+            throw new ApiProblemException(422, 'invalid_media', $e->getMessage());
         }
         $old = $r->damAssetId();
         try {
@@ -341,15 +301,11 @@ final readonly class ServiceEvenementielMediaProcessor implements
     {
         $r = $this->resources->find($id);
         if (
-            !($r instanceof RessourceLieu) ||
-            $r->fiche() !== $a->fiche() ||
-            NatureRessource::Photo !== $r->nature()
+            !($r instanceof RessourceLieu)
+            || $r->fiche() !== $a->fiche()
+            || NatureRessource::Photo !== $r->nature()
         ) {
-            throw new ApiProblemException(
-                404,
-                "not_found",
-                "Média introuvable.",
-            );
+            throw new ApiProblemException(404, 'not_found', 'Média introuvable.');
         }
 
         return $r;
@@ -361,7 +317,7 @@ final readonly class ServiceEvenementielMediaProcessor implements
         return array_values(
             array_filter(
                 $a->ressources()->toArray(),
-                static fn(RessourceLieu $r): bool => NatureRessource::Photo ===
+                static fn (RessourceLieu $r): bool => NatureRessource::Photo ===
                     $r->nature(),
             ),
         );
@@ -369,12 +325,8 @@ final readonly class ServiceEvenementielMediaProcessor implements
 
     private function assertUsage(string $usage): void
     {
-        if ("PHOTO_DIVERSE" !== $usage) {
-            throw new ApiProblemException(
-                422,
-                "invalid_media_usage",
-                "La catégorie est invalide.",
-            );
+        if ('PHOTO_DIVERSE' !== $usage) {
+            throw new ApiProblemException(422, 'invalid_media_usage', 'La catégorie est invalide.');
         }
     }
 
@@ -385,10 +337,10 @@ final readonly class ServiceEvenementielMediaProcessor implements
      */
     private function usagePrincipaleDeprecie(string $usage): bool
     {
-        if ("PHOTO_PRINCIPALE" !== $usage) {
+        if ('PHOTO_PRINCIPALE' !== $usage) {
             return false;
         }
-        $this->logger->notice("Usage déprécié PHOTO_PRINCIPALE reçu par l’API médias : photo placée en tête.");
+        $this->logger->notice('Usage déprécié PHOTO_PRINCIPALE reçu par l’API médias : photo placée en tête.');
 
         return true;
     }
@@ -410,6 +362,6 @@ final readonly class ServiceEvenementielMediaProcessor implements
     private function request(): \Symfony\Component\HttpFoundation\Request
     {
         return $this->requests->getCurrentRequest() ??
-            throw new \LogicException("Aucune requête HTTP active.");
+            throw new \LogicException('Aucune requête HTTP active.');
     }
 }

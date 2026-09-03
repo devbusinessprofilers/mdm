@@ -10,9 +10,12 @@ final class OcrValueAccessor
 {
     public function read(Fiche $fiche, object $aggregate, string $path): mixed
     {
-        if ('fiche.label' === $path) { return $fiche->label(); }
+        if ('fiche.label' === $path) {
+            return $fiche->label();
+        }
         if (str_starts_with($path, 'collections.')) {
             $getter = $this->collectionGetter(substr($path, 12));
+
             return method_exists($aggregate, $getter) ? $this->normalize($aggregate->{$getter}()) : null;
         }
         $parts = explode('.', $path);
@@ -25,9 +28,12 @@ final class OcrValueAccessor
             $target = method_exists($target, $getter) ? $target->{$getter}() : null;
         }
         foreach ($parts as $part) {
-            if (!is_object($target) || !method_exists($target, $part)) { return null; }
+            if (!is_object($target) || !method_exists($target, $part)) {
+                return null;
+            }
             $target = $target->{$part}();
         }
+
         return $this->normalize($target);
     }
 
@@ -41,25 +47,42 @@ final class OcrValueAccessor
 
     private function normalize(mixed $value): mixed
     {
-        if ($value instanceof \BackedEnum) { return $value->value; }
-        if ($value instanceof \DateTimeInterface) { return $value->format('Y-m-d'); }
+        if ($value instanceof \BackedEnum) {
+            return $value->value;
+        }
+        if ($value instanceof \DateTimeInterface) {
+            return $value->format('Y-m-d');
+        }
         if ($value instanceof \Doctrine\Common\Collections\Collection) {
             return array_map(fn (mixed $item): mixed => $this->normalizeObject($item), $value->toArray());
         }
-        if (is_array($value)) { return array_map(fn (mixed $item): mixed => $this->normalize($item), $value); }
+        if (is_array($value)) {
+            return array_map(fn (mixed $item): mixed => $this->normalize($item), $value);
+        }
+
         return $value;
     }
 
     /** @return array<string, mixed>|mixed */
     private function normalizeObject(mixed $value): mixed
     {
-        if (!is_object($value)) { return $this->normalize($value); }
+        if (!is_object($value)) {
+            return $this->normalize($value);
+        }
         $result = [];
         foreach ((new \ReflectionClass($value))->getMethods(\ReflectionMethod::IS_PUBLIC) as $method) {
-            if (0 !== $method->getNumberOfRequiredParameters() || in_array($method->getName(), ['fiche', 'lieu', 'id'], true)) { continue; }
-            if (!preg_match('/^(nom|type|date|distance|duree|mode|capacite|superficie|surface|prix|description|label|position)/i', $method->getName())) { continue; }
-            try { $result[$method->getName()] = $this->normalize($method->invoke($value)); } catch (\Throwable) {}
+            if (0 !== $method->getNumberOfRequiredParameters() || in_array($method->getName(), ['fiche', 'lieu', 'id'], true)) {
+                continue;
+            }
+            if (!preg_match('/^(nom|type|date|distance|duree|mode|capacite|superficie|surface|prix|description|label|position)/i', $method->getName())) {
+                continue;
+            }
+            try {
+                $result[$method->getName()] = $this->normalize($method->invoke($value));
+            } catch (\Throwable) {
+            }
         }
+
         return $result;
     }
 }

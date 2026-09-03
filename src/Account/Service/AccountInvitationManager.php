@@ -22,7 +22,8 @@ final readonly class AccountInvitationManager
         private AccountInvitationRepository $invitations,
         private PasswordResetRequestRepository $passwordResets,
         private LoggerInterface $logger,
-    ) {}
+    ) {
+    }
 
     public function accept(AccountInvitation $invitation, string $password): void
     {

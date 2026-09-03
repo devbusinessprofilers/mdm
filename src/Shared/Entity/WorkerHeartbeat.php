@@ -24,9 +24,9 @@ final class WorkerHeartbeat
     public const STATUS_STOPPED = 'stopped';
 
     /**
-     * @param list<string>                                                     $transports
-     * @param array<string, array{count: int, ms_sum: float, failed: int}>     $messageStats
-     * @param array<string, array{handled: int, ms_sum: float}>                $transportStats
+     * @param list<string>                                                 $transports
+     * @param array<string, array{count: int, ms_sum: float, failed: int}> $messageStats
+     * @param array<string, array{handled: int, ms_sum: float}>            $transportStats
      */
     public function __construct(
         #[ORM\Id]

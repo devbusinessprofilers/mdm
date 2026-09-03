@@ -14,8 +14,8 @@ namespace App\Etl\Service;
 final class SalesforceCsvBuilder
 {
     /**
-     * @param list<string>       $entetes
-     * @param iterable<list<string>> $lignes chaque ligne alignée sur $entetes
+     * @param list<string>           $entetes
+     * @param iterable<list<string>> $lignes  chaque ligne alignée sur $entetes
      */
     public static function build(array $entetes, iterable $lignes): string
     {

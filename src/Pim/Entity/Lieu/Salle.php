@@ -75,40 +75,190 @@ class Salle
         $this->initializeTimestamps();
     }
 
-    public function id(): string { return (string) $this->id; }
-    public function lieu(): ?Lieu { return $this->lieu; }
-    public function nom(): string { return $this->nom; }
-    public function superficie(): ?int { return $this->superficie; }
-    public function capaciteReunion(): ?int { return $this->capaciteReunion; }
-    public function capaciteU(): ?int { return $this->capaciteU; }
-    public function capaciteClasse(): ?int { return $this->capaciteClasse; }
-    public function capaciteTheatre(): ?int { return $this->capaciteTheatre; }
-    public function capaciteCabaret(): ?int { return $this->capaciteCabaret; }
-    public function capaciteBanquet(): ?int { return $this->capaciteBanquet; }
-    public function capaciteCocktail(): ?int { return $this->capaciteCocktail; }
-    public function capaciteAuditorium(): ?int { return $this->capaciteAuditorium; }
-    public function lumiereJour(): bool { return $this->lumiereJour; }
-    public function accesPmr(): bool { return $this->accesPmr; }
-    public function espaceDansant(): bool { return $this->espaceDansant; }
-    public function climatisee(): bool { return $this->climatisee; }
-    public function position(): int { return $this->position; }
+    public function id(): string
+    {
+        return (string) $this->id;
+    }
 
-    public function changeNom(string $value): void { $this->nom = trim($value); $this->touch(); }
-    public function changeSuperficie(?int $value): void { $this->superficie = $value; $this->touch(); }
-    public function changeCapaciteReunion(?int $value): void { $this->capaciteReunion = $value; $this->touch(); }
-    public function changeCapaciteU(?int $value): void { $this->capaciteU = $value; $this->touch(); }
-    public function changeCapaciteClasse(?int $value): void { $this->capaciteClasse = $value; $this->touch(); }
-    public function changeCapaciteTheatre(?int $value): void { $this->capaciteTheatre = $value; $this->touch(); }
-    public function changeCapaciteCabaret(?int $value): void { $this->capaciteCabaret = $value; $this->touch(); }
-    public function changeCapaciteBanquet(?int $value): void { $this->capaciteBanquet = $value; $this->touch(); }
-    public function changeCapaciteCocktail(?int $value): void { $this->capaciteCocktail = $value; $this->touch(); }
-    public function changeCapaciteAuditorium(?int $value): void { $this->capaciteAuditorium = $value; $this->touch(); }
-    public function changeLumiereJour(bool $value): void { $this->lumiereJour = $value; $this->touch(); }
-    public function changeAccesPmr(bool $value): void { $this->accesPmr = $value; $this->touch(); }
-    public function changeEspaceDansant(bool $value): void { $this->espaceDansant = $value; $this->touch(); }
-    public function changeClimatisee(bool $value): void { $this->climatisee = $value; $this->touch(); }
-    public function changePosition(?int $value): void { $this->position = $value ?? 0; $this->touch(); }
+    public function lieu(): ?Lieu
+    {
+        return $this->lieu;
+    }
 
-    public function attachTo(Lieu $lieu): void { $this->lieu = $lieu; }
-    public function detachFrom(Lieu $lieu): void { if ($this->lieu === $lieu) { $this->lieu = null; } }
+    public function nom(): string
+    {
+        return $this->nom;
+    }
+
+    public function superficie(): ?int
+    {
+        return $this->superficie;
+    }
+
+    public function capaciteReunion(): ?int
+    {
+        return $this->capaciteReunion;
+    }
+
+    public function capaciteU(): ?int
+    {
+        return $this->capaciteU;
+    }
+
+    public function capaciteClasse(): ?int
+    {
+        return $this->capaciteClasse;
+    }
+
+    public function capaciteTheatre(): ?int
+    {
+        return $this->capaciteTheatre;
+    }
+
+    public function capaciteCabaret(): ?int
+    {
+        return $this->capaciteCabaret;
+    }
+
+    public function capaciteBanquet(): ?int
+    {
+        return $this->capaciteBanquet;
+    }
+
+    public function capaciteCocktail(): ?int
+    {
+        return $this->capaciteCocktail;
+    }
+
+    public function capaciteAuditorium(): ?int
+    {
+        return $this->capaciteAuditorium;
+    }
+
+    public function lumiereJour(): bool
+    {
+        return $this->lumiereJour;
+    }
+
+    public function accesPmr(): bool
+    {
+        return $this->accesPmr;
+    }
+
+    public function espaceDansant(): bool
+    {
+        return $this->espaceDansant;
+    }
+
+    public function climatisee(): bool
+    {
+        return $this->climatisee;
+    }
+
+    public function position(): int
+    {
+        return $this->position;
+    }
+
+    public function changeNom(string $value): void
+    {
+        $this->nom = trim($value);
+        $this->touch();
+    }
+
+    public function changeSuperficie(?int $value): void
+    {
+        $this->superficie = $value;
+        $this->touch();
+    }
+
+    public function changeCapaciteReunion(?int $value): void
+    {
+        $this->capaciteReunion = $value;
+        $this->touch();
+    }
+
+    public function changeCapaciteU(?int $value): void
+    {
+        $this->capaciteU = $value;
+        $this->touch();
+    }
+
+    public function changeCapaciteClasse(?int $value): void
+    {
+        $this->capaciteClasse = $value;
+        $this->touch();
+    }
+
+    public function changeCapaciteTheatre(?int $value): void
+    {
+        $this->capaciteTheatre = $value;
+        $this->touch();
+    }
+
+    public function changeCapaciteCabaret(?int $value): void
+    {
+        $this->capaciteCabaret = $value;
+        $this->touch();
+    }
+
+    public function changeCapaciteBanquet(?int $value): void
+    {
+        $this->capaciteBanquet = $value;
+        $this->touch();
+    }
+
+    public function changeCapaciteCocktail(?int $value): void
+    {
+        $this->capaciteCocktail = $value;
+        $this->touch();
+    }
+
+    public function changeCapaciteAuditorium(?int $value): void
+    {
+        $this->capaciteAuditorium = $value;
+        $this->touch();
+    }
+
+    public function changeLumiereJour(bool $value): void
+    {
+        $this->lumiereJour = $value;
+        $this->touch();
+    }
+
+    public function changeAccesPmr(bool $value): void
+    {
+        $this->accesPmr = $value;
+        $this->touch();
+    }
+
+    public function changeEspaceDansant(bool $value): void
+    {
+        $this->espaceDansant = $value;
+        $this->touch();
+    }
+
+    public function changeClimatisee(bool $value): void
+    {
+        $this->climatisee = $value;
+        $this->touch();
+    }
+
+    public function changePosition(?int $value): void
+    {
+        $this->position = $value ?? 0;
+        $this->touch();
+    }
+
+    public function attachTo(Lieu $lieu): void
+    {
+        $this->lieu = $lieu;
+    }
+
+    public function detachFrom(Lieu $lieu): void
+    {
+        if ($this->lieu === $lieu) {
+            $this->lieu = null;
+        }
+    }
 }

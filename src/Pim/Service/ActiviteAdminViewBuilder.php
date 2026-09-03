@@ -16,10 +16,12 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
 final readonly class ActiviteAdminViewBuilder
 {
-    public function __construct(private FormFactoryInterface $forms, private UrlGeneratorInterface $urls) {}
+    public function __construct(private FormFactoryInterface $forms, private UrlGeneratorInterface $urls)
+    {
+    }
 
     /** @param FormInterface<mixed> $form
-     *  @return array<string, mixed>
+     * @return array<string, mixed>
      */
     public function form(FormInterface $form, Activite $activite, bool $creation): array
     {

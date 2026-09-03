@@ -30,7 +30,8 @@ final readonly class RequestTimingListener
         private AlertNotifier $alertNotifier,
         #[Autowire(service: 'cache.metrics')]
         private CacheItemPoolInterface $cache,
-    ) {}
+    ) {
+    }
 
     #[AsEventListener(event: KernelEvents::TERMINATE)]
     public function terminate(TerminateEvent $event): void

@@ -70,18 +70,65 @@ class FicheTranslation
         $this->initializeTimestamps();
     }
 
-    public function id(): string { return (string) $this->id; }
-    public function fiche(): Fiche { return $this->fiche; }
-    public function fieldPath(): string { return $this->fieldPath; }
-    public function fieldLabel(): string { return $this->fieldLabel; }
-    public function locale(): SupportedLocale { return $this->locale; }
-    public function sourceText(): string { return $this->sourceText; }
-    public function translatedText(): ?string { return $this->translatedText; }
-    public function suggestedText(): ?string { return $this->suggestedText; }
-    public function origin(): ?TranslationOrigin { return $this->origin; }
-    public function status(): TranslationStatus { return $this->status; }
-    public function requestToken(): ?string { return $this->requestToken; }
-    public function lastError(): ?string { return $this->lastError; }
+    public function id(): string
+    {
+        return (string) $this->id;
+    }
+
+    public function fiche(): Fiche
+    {
+        return $this->fiche;
+    }
+
+    public function fieldPath(): string
+    {
+        return $this->fieldPath;
+    }
+
+    public function fieldLabel(): string
+    {
+        return $this->fieldLabel;
+    }
+
+    public function locale(): SupportedLocale
+    {
+        return $this->locale;
+    }
+
+    public function sourceText(): string
+    {
+        return $this->sourceText;
+    }
+
+    public function translatedText(): ?string
+    {
+        return $this->translatedText;
+    }
+
+    public function suggestedText(): ?string
+    {
+        return $this->suggestedText;
+    }
+
+    public function origin(): ?TranslationOrigin
+    {
+        return $this->origin;
+    }
+
+    public function status(): TranslationStatus
+    {
+        return $this->status;
+    }
+
+    public function requestToken(): ?string
+    {
+        return $this->requestToken;
+    }
+
+    public function lastError(): ?string
+    {
+        return $this->lastError;
+    }
 
     public function schedule(string $label, string $source, string $token): bool
     {
@@ -156,5 +203,8 @@ class FicheTranslation
         $this->touch();
     }
 
-    private static function hash(string $value): string { return hash('sha256', $value); }
+    private static function hash(string $value): string
+    {
+        return hash('sha256', $value);
+    }
 }

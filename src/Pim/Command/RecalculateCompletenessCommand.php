@@ -23,7 +23,9 @@ final class RecalculateCompletenessCommand extends Command
         private readonly CompletenessConfigurationSynchronizer $synchronizer,
         private readonly CompletenessRecalculationScheduler $scheduler,
         private readonly EntityManagerInterface $entityManager,
-    ) { parent::__construct(); }
+    ) {
+        parent::__construct();
+    }
 
     protected function configure(): void
     {

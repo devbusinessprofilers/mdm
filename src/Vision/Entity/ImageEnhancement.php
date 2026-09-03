@@ -111,26 +111,106 @@ class ImageEnhancement
         $this->initializeTimestamps();
     }
 
-    public function id(): string { return (string) $this->id; }
-    public function fiche(): Fiche { return $this->fiche; }
-    public function media(): MediaAsset { return $this->media; }
-    public function resource(): ?RessourceLieu { return $this->resource; }
-    public function sourceChecksum(): string { return $this->sourceChecksum; }
-    public function prompt(): string { return $this->prompt; }
-    public function provider(): EnhancementProvider { return $this->provider; }
-    public function providerModel(): string { return $this->providerModel; }
-    public function status(): EnhancementStatus { return $this->status; }
-    public function resultStorageKey(): ?string { return $this->resultStorageKey; }
-    public function resultChecksum(): ?string { return $this->resultChecksum; }
-    public function resultSizeBytes(): ?int { return $this->resultSizeBytes; }
-    public function createdBy(): string { return $this->createdBy; }
-    public function attempts(): int { return $this->attempts; }
-    public function startedAt(): ?\DateTimeImmutable { return $this->startedAt; }
-    public function finishedAt(): ?\DateTimeImmutable { return $this->finishedAt; }
-    public function errorMessage(): ?string { return $this->errorMessage; }
-    /** @return array<string, mixed>|null */ public function rawResponse(): ?array { return $this->rawResponse; }
-    public function decidedBy(): ?string { return $this->decidedBy; }
-    public function decidedAt(): ?\DateTimeImmutable { return $this->decidedAt; }
+    public function id(): string
+    {
+        return (string) $this->id;
+    }
+
+    public function fiche(): Fiche
+    {
+        return $this->fiche;
+    }
+
+    public function media(): MediaAsset
+    {
+        return $this->media;
+    }
+
+    public function resource(): ?RessourceLieu
+    {
+        return $this->resource;
+    }
+
+    public function sourceChecksum(): string
+    {
+        return $this->sourceChecksum;
+    }
+
+    public function prompt(): string
+    {
+        return $this->prompt;
+    }
+
+    public function provider(): EnhancementProvider
+    {
+        return $this->provider;
+    }
+
+    public function providerModel(): string
+    {
+        return $this->providerModel;
+    }
+
+    public function status(): EnhancementStatus
+    {
+        return $this->status;
+    }
+
+    public function resultStorageKey(): ?string
+    {
+        return $this->resultStorageKey;
+    }
+
+    public function resultChecksum(): ?string
+    {
+        return $this->resultChecksum;
+    }
+
+    public function resultSizeBytes(): ?int
+    {
+        return $this->resultSizeBytes;
+    }
+
+    public function createdBy(): string
+    {
+        return $this->createdBy;
+    }
+
+    public function attempts(): int
+    {
+        return $this->attempts;
+    }
+
+    public function startedAt(): ?\DateTimeImmutable
+    {
+        return $this->startedAt;
+    }
+
+    public function finishedAt(): ?\DateTimeImmutable
+    {
+        return $this->finishedAt;
+    }
+
+    public function errorMessage(): ?string
+    {
+        return $this->errorMessage;
+    }
+
+    /** @return array<string, mixed>|null */
+    public function rawResponse(): ?array
+    {
+        return $this->rawResponse;
+    }
+
+    public function decidedBy(): ?string
+    {
+        return $this->decidedBy;
+    }
+
+    public function decidedAt(): ?\DateTimeImmutable
+    {
+        return $this->decidedAt;
+    }
 
     public function start(): void
     {

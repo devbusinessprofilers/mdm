@@ -41,7 +41,9 @@ final class ServiceDocumentController extends AbstractController
     ): Response {
         $this->denyAccessUnlessGranted(FicheVoter::EDIT, $service->fiche());
         $document = $resources->findDocumentForFiche($service->fiche(), $resourceId, DocumentUsage::CommercialSupport);
-        if (null === $document) { throw $this->createNotFoundException('Document introuvable.'); }
+        if (null === $document) {
+            throw $this->createNotFoundException('Document introuvable.');
+        }
         $form = $forms->createNamed('service_document_metadata_'.$document->id(), ActiviteDocumentMetadataType::class, [
             'title' => $document->legende(), 'source' => $document->source(), 'keywords' => $document->keywords(), 'rightsExpiresAt' => $document->rightsExpiresAt(),
         ]);
@@ -63,7 +65,9 @@ final class ServiceDocumentController extends AbstractController
     {
         $this->denyAccessUnlessGranted(FicheVoter::EDIT, $service->fiche());
         $document = $resources->findDocumentForFiche($service->fiche(), $resourceId, DocumentUsage::CommercialSupport);
-        if (null === $document) { throw $this->createNotFoundException('Document introuvable.'); }
+        if (null === $document) {
+            throw $this->createNotFoundException('Document introuvable.');
+        }
         $form = $forms->createNamed('service_document_replace_'.$document->id(), LieuDocumentReplaceType::class);
         $form->handleRequest($request);
         $file = $form->isSubmitted() && $form->isValid() ? $form->get('document')->getData() : null;
@@ -82,15 +86,20 @@ final class ServiceDocumentController extends AbstractController
     {
         $this->denyAccessUnlessGranted('ROLE_BP_VALIDATOR');
         $document = $resources->findDocumentForFiche($service->fiche(), $resourceId, DocumentUsage::CommercialSupport);
-        if (null === $document) { throw $this->createNotFoundException('Document introuvable.'); }
+        if (null === $document) {
+            throw $this->createNotFoundException('Document introuvable.');
+        }
         $form = $forms->createNamed('service_document_publication_'.$document->id(), ActionType::class, null, ['button_label' => 'Action', 'csrf_token_id' => 'service-document-publication-'.$document->id()]);
         $form->handleRequest($request);
         $erreur = null;
         if (!$form->isSubmitted() || !$form->isValid()) {
             $erreur = 'Action de publication invalide.';
         } else {
-            try { $manager->togglePublication($document, $service->fiche()); }
-            catch (\DomainException $exception) { $erreur = $exception->getMessage(); }
+            try {
+                $manager->togglePublication($document, $service->fiche());
+            } catch (\DomainException $exception) {
+                $erreur = $exception->getMessage();
+            }
         }
 
         return $reponse->repondre($request, $service->fiche(), $erreur, 'Changement de publication mis en file.');
@@ -101,7 +110,9 @@ final class ServiceDocumentController extends AbstractController
     {
         $this->denyAccessUnlessGranted(FicheVoter::EDIT, $service->fiche());
         $document = $resources->findDocumentForFiche($service->fiche(), $resourceId, DocumentUsage::CommercialSupport);
-        if (null === $document) { throw $this->createNotFoundException('Document introuvable.'); }
+        if (null === $document) {
+            throw $this->createNotFoundException('Document introuvable.');
+        }
         $form = $forms->createNamed('service_document_delete_'.$document->id(), ActionType::class, null, ['button_label' => 'Supprimer', 'csrf_token_id' => 'service-document-delete-'.$document->id()]);
         $form->handleRequest($request);
         $erreur = null;
@@ -118,12 +129,16 @@ final class ServiceDocumentController extends AbstractController
     public function download(ServiceEvenementiel $service, string $resourceId, RessourceLieuRepository $resources, MediaAssetRepository $assets, PrivateObjectStorageInterface $storage): RedirectResponse
     {
         $document = $resources->findDocumentForFiche($service->fiche(), $resourceId, DocumentUsage::CommercialSupport);
-        if (null === $document) { throw $this->createNotFoundException('Document introuvable.'); }
-        if (DocumentAccess::Private === $document->documentAccess()) { $this->denyAccessUnlessGranted('ROLE_BP_VALIDATOR'); }
-        else { $this->denyAccessUnlessGranted(FicheVoter::EDIT, $service->fiche()); }
+        if (null === $document) {
+            throw $this->createNotFoundException('Document introuvable.');
+        }
+        if (DocumentAccess::Private === $document->documentAccess()) {
+            $this->denyAccessUnlessGranted('ROLE_BP_VALIDATOR');
+        } else {
+            $this->denyAccessUnlessGranted(FicheVoter::EDIT, $service->fiche());
+        }
         $asset = $assets->find($document->damAssetId()) ?? throw $this->createNotFoundException('Fichier DAM introuvable.');
 
         return $this->redirect($storage->temporaryUrl($asset->originalStorageKey(), new \DateTimeImmutable('+10 minutes')));
     }
-
 }

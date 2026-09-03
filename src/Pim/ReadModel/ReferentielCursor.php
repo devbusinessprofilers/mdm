@@ -36,11 +36,17 @@ final readonly class ReferentielCursor
 
         try {
             $decoded = base64_decode(strtr($cursor, '-_', '+/'), true);
-            if (false === $decoded) { throw new \InvalidArgumentException(); }
+            if (false === $decoded) {
+                throw new \InvalidArgumentException();
+            }
             $data = json_decode($decoded, true, 8, JSON_THROW_ON_ERROR);
-            if (!is_array($data) || !is_string($data['t'] ?? null) || !is_string($data['k'] ?? null) || !is_string($data['i'] ?? null)) { throw new \InvalidArgumentException(); }
+            if (!is_array($data) || !is_string($data['t'] ?? null) || !is_string($data['k'] ?? null) || !is_string($data['i'] ?? null)) {
+                throw new \InvalidArgumentException();
+            }
             $tri = TriReferentiel::tryFrom($data['t']);
-            if (null === $tri || !self::cleValide($tri, $data['k'])) { throw new \InvalidArgumentException(); }
+            if (null === $tri || !self::cleValide($tri, $data['k'])) {
+                throw new \InvalidArgumentException();
+            }
 
             return new self($tri, $data['k'], Ulid::fromString($data['i']));
         } catch (\Throwable) {

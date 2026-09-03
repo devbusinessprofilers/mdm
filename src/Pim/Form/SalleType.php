@@ -35,7 +35,7 @@ final class SalleType extends AbstractType
     }
 
     /**
-     * @param FormBuilderInterface<Salle|null> $builder
+     * @param FormBuilderInterface<Salle|null>       $builder
      * @param class-string<FormTypeInterface<mixed>> $type
      */
     private function field(FormBuilderInterface $builder, string $name, string $type, string $label, string $getter, string $setter, bool $required = false): void

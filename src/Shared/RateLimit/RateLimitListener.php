@@ -36,7 +36,8 @@ final readonly class RateLimitListener
         #[Autowire(service: 'limiter.public_endpoint_ip')]
         private RateLimiterFactory $publicEndpointLimiter,
         private TokenStorageInterface $tokenStorage,
-    ) {}
+    ) {
+    }
 
     #[AsEventListener(event: KernelEvents::REQUEST, priority: 4)]
     public function request(RequestEvent $event): void

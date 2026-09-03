@@ -29,9 +29,28 @@ class AttributDefinition
     ) {
     }
 
-    public function id(): int { return $this->id; }
-    public function code(): string { return $this->code; }
-    public function label(): string { return $this->label; }
-    public function translatable(): bool { return $this->translatable; }
-    public function changeLabel(string $label): void { $this->label = trim($label); }
+    public function id(): int
+    {
+        return $this->id;
+    }
+
+    public function code(): string
+    {
+        return $this->code;
+    }
+
+    public function label(): string
+    {
+        return $this->label;
+    }
+
+    public function translatable(): bool
+    {
+        return $this->translatable;
+    }
+
+    public function changeLabel(string $label): void
+    {
+        $this->label = trim($label);
+    }
 }

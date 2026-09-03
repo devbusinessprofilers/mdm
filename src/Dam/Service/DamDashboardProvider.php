@@ -44,7 +44,8 @@ final readonly class DamDashboardProvider
         private PublicMediaUrlGenerator $publicUrls,
         private DamFicheLinkResolver $links,
         private DamDashboardFormFactory $forms,
-    ) {}
+    ) {
+    }
 
     /**
      * Comptes des badges du rail d'onglets — les seuls agrégats calculés par la
@@ -326,7 +327,7 @@ final readonly class DamDashboardProvider
     }
 
     /** @param list<MediaAsset> $assets
-     *  @return array<string, RessourceLieu> ressources indexées par identifiant de média
+     * @return array<string, RessourceLieu> ressources indexées par identifiant de média
      */
     private function resourceMap(array $assets): array
     {
@@ -339,7 +340,7 @@ final readonly class DamDashboardProvider
     }
 
     /** @param list<RessourceLieu> $resources
-     *  @return array<string, MediaAsset>
+     * @return array<string, MediaAsset>
      */
     private function assetMap(array $resources): array
     {

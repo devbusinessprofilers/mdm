@@ -78,7 +78,7 @@ final class LieuFormCatalog
     public static function meetingRooms(): array
     {
         return self::labels([
-            'salleReunionExist' => "Mon établissement dispose de salles de réunion ?",
+            'salleReunionExist' => 'Mon établissement dispose de salles de réunion ?',
             'salleReunionNbTotal' => 'Nombre de salles de réunion',
             'salleReunionCapaciteMaxCocktail' => 'Capacité de la plus grande salle en configuration cocktail',
             'salleReunionCapaciteMaxTheatre' => 'Capacité de la plus grande salle en configuration théâtre',
@@ -217,7 +217,8 @@ final class LieuFormCatalog
 
     /**
      * @param array<string, string> $labels
-     * @param list<string> $textareas
+     * @param list<string>          $textareas
+     *
      * @return array<string, array<string, mixed>>
      */
     private static function labels(array $labels, array $textareas = []): array

@@ -7,8 +7,8 @@ namespace App\Pim\Import\Schema;
 final readonly class CollectionSchema
 {
     /**
-     * @param class-string               $entryClass
-     * @param list<ColumnDefinition>     $columns    en-têtes relatifs, préfixés {prefix}_{i}_ dans le CSV
+     * @param class-string           $entryClass
+     * @param list<ColumnDefinition> $columns    en-têtes relatifs, préfixés {prefix}_{i}_ dans le CSV
      */
     public function __construct(
         public string $prefix,

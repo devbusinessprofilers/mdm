@@ -34,7 +34,7 @@ final class FicheExportValueReader
      * @param object                               $porteur    agrégat de la gamme, ou entrée de collection
      * @param array<string, array<string, string>> $lovChoices
      *
-     * @return list<null|int|float|string> une cellule par colonne
+     * @return list<int|float|string|null> une cellule par colonne
      */
     public function cellules(ColumnDefinition $column, object $porteur, Fiche $fiche, array $lovChoices): array
     {

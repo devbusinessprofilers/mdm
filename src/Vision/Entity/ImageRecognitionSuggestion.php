@@ -68,18 +68,65 @@ final class ImageRecognitionSuggestion
         $recognition->addSuggestion($this);
     }
 
-    public function id(): string { return (string) $this->id; }
-    public function recognition(): ImageRecognition { return $this->recognition; }
-    public function fieldPath(): string { return $this->fieldPath; }
-    public function label(): string { return $this->label; }
-    public function rawValue(): mixed { return $this->rawValue; }
-    public function correctedValue(): mixed { return $this->correctedValue; }
-    public function observedValue(): mixed { return $this->observedValue; }
-    public function status(): SuggestionStatus { return $this->status; }
-    public function isPending(): bool { return SuggestionStatus::Pending === $this->status; }
-    public function isAccepted(): bool { return SuggestionStatus::Accepted === $this->status; }
-    public function decidedBy(): ?string { return $this->decidedBy; }
-    public function decidedAt(): ?\DateTimeImmutable { return $this->decidedAt; }
+    public function id(): string
+    {
+        return (string) $this->id;
+    }
+
+    public function recognition(): ImageRecognition
+    {
+        return $this->recognition;
+    }
+
+    public function fieldPath(): string
+    {
+        return $this->fieldPath;
+    }
+
+    public function label(): string
+    {
+        return $this->label;
+    }
+
+    public function rawValue(): mixed
+    {
+        return $this->rawValue;
+    }
+
+    public function correctedValue(): mixed
+    {
+        return $this->correctedValue;
+    }
+
+    public function observedValue(): mixed
+    {
+        return $this->observedValue;
+    }
+
+    public function status(): SuggestionStatus
+    {
+        return $this->status;
+    }
+
+    public function isPending(): bool
+    {
+        return SuggestionStatus::Pending === $this->status;
+    }
+
+    public function isAccepted(): bool
+    {
+        return SuggestionStatus::Accepted === $this->status;
+    }
+
+    public function decidedBy(): ?string
+    {
+        return $this->decidedBy;
+    }
+
+    public function decidedAt(): ?\DateTimeImmutable
+    {
+        return $this->decidedAt;
+    }
 
     public function correct(mixed $value): void
     {

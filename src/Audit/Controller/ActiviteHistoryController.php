@@ -16,14 +16,12 @@ use Symfony\Component\Routing\Attribute\Route;
 
 final class ActiviteHistoryController extends AbstractController
 {
-    #[
-        Route(
-            '/referentiel/activites/fiche/{id}/historique',
-            name: 'app_pim_activite_history',
-            requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
-            methods: ['GET'],
-        ),
-    ]
+    #[Route(
+        '/referentiel/activites/fiche/{id}/historique',
+        name: 'app_pim_activite_history',
+        requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
+        methods: ['GET'],
+    ),]
     public function __invoke(
         string $id,
         Request $request,
@@ -33,7 +31,7 @@ final class ActiviteHistoryController extends AbstractController
     ): Response {
         $this->denyAccessUnlessGranted('ROLE_BP_VALIDATOR');
         $activity = $activities->find($id);
-        if (!($activity instanceof Activite)) {
+        if (!$activity instanceof Activite) {
             throw $this->createNotFoundException('Activité introuvable.');
         }
         $form = $this->createForm(AuditHistoryFilterType::class, null, [

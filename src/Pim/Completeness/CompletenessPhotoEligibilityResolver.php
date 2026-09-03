@@ -16,6 +16,7 @@ final readonly class CompletenessPhotoEligibilityResolver
 
     /**
      * @param array<string, object> $entities indexées par identifiant de fiche
+     *
      * @return array<string, bool>
      */
     public function resolve(array $entities): array

@@ -23,7 +23,8 @@ final readonly class FicheTranslationSourceExtractor
         private ActiviteRepository $activites,
         private RestaurantRepository $restaurants,
         private ServiceEvenementielRepository $services,
-    ) {}
+    ) {
+    }
 
     /** @return list<TranslationSource> */
     public function extract(Fiche $fiche): array
@@ -49,10 +50,18 @@ final readonly class FicheTranslationSourceExtractor
             'service_evenementiel' => $this->services->find($fiche->id()),
             default => null,
         };
-        if ($detail instanceof Lieu) { $this->lieu($sources, $detail, $includeEmpty); }
-        if ($detail instanceof Activite) { $this->activite($sources, $detail, $includeEmpty); }
-        if ($detail instanceof Restaurant) { $this->restaurant($sources, $detail, $includeEmpty); }
-        if ($detail instanceof ServiceEvenementiel) { $this->service($sources, $detail, $includeEmpty); }
+        if ($detail instanceof Lieu) {
+            $this->lieu($sources, $detail, $includeEmpty);
+        }
+        if ($detail instanceof Activite) {
+            $this->activite($sources, $detail, $includeEmpty);
+        }
+        if ($detail instanceof Restaurant) {
+            $this->restaurant($sources, $detail, $includeEmpty);
+        }
+        if ($detail instanceof ServiceEvenementiel) {
+            $this->service($sources, $detail, $includeEmpty);
+        }
         foreach ($fiche->resources() as $resource) {
             $this->resource($sources, $resource, $includeEmpty);
         }
@@ -70,11 +79,17 @@ final readonly class FicheTranslationSourceExtractor
             'chambreDescGenerale' => "Description de l'hébergement",
             'salleReunionDescSalleSeminaire' => 'Description des salles de séminaire',
             'rseDescGenerale' => 'Description RSE',
-        ] as $field => $label) { $this->add($sources, 'lieu.'.$field, $label, $lieu->{$field}(), $includeEmpty); }
+        ] as $field => $label) {
+            $this->add($sources, 'lieu.'.$field, $label, $lieu->{$field}(), $includeEmpty);
+        }
         $this->stringList($sources, 'lieu.loisirInterne', 'Loisir interne', $lieu->loisirInterne(), $includeEmpty);
         $this->stringList($sources, 'lieu.loisirExterneNomActivite', 'Activité externe', $lieu->loisirExterneNomActivite(), $includeEmpty);
-        foreach ($lieu->salles() as $value) { $this->add($sources, sprintf('salles[%s].nom', $value->id()), 'Nom de la salle', $value->nom(), $includeEmpty); }
-        foreach ($lieu->periodesFermeture() as $value) { $this->add($sources, sprintf('fermetures[%s].nom', $value->id()), 'Période de fermeture', $value->nom(), $includeEmpty); }
+        foreach ($lieu->salles() as $value) {
+            $this->add($sources, sprintf('salles[%s].nom', $value->id()), 'Nom de la salle', $value->nom(), $includeEmpty);
+        }
+        foreach ($lieu->periodesFermeture() as $value) {
+            $this->add($sources, sprintf('fermetures[%s].nom', $value->id()), 'Période de fermeture', $value->nom(), $includeEmpty);
+        }
         foreach ($lieu->acces() as $value) {
             $this->add($sources, sprintf('acces[%s].nom', $value->id()), "Nom de l'accès", $value->nom(), $includeEmpty);
             $this->add($sources, sprintf('acces[%s].modeTransport', $value->id()), 'Mode de transport', $value->modeTransport(), $includeEmpty);
@@ -87,7 +102,9 @@ final readonly class FicheTranslationSourceExtractor
         $this->add($sources, 'activite.descriptionGenerale', 'Description générale', $activity->descriptionGenerale(), $includeEmpty);
         $this->add($sources, 'activite.comprendPrestation', 'Contenu de la prestation', $activity->comprendPrestation(), $includeEmpty);
         $this->stringList($sources, 'activite.plus', 'Atout', $activity->plus(), $includeEmpty);
-        foreach ($activity->offres() as $offer) { $this->add($sources, sprintf('%ss[%s].nom', $offer->type()->value, $offer->id()), "Nom de l'offre", $offer->nom(), $includeEmpty); }
+        foreach ($activity->offres() as $offer) {
+            $this->add($sources, sprintf('%ss[%s].nom', $offer->type()->value, $offer->id()), "Nom de l'offre", $offer->nom(), $includeEmpty);
+        }
     }
 
     /** @param list<TranslationSource> $sources */
@@ -95,9 +112,15 @@ final readonly class FicheTranslationSourceExtractor
     {
         $this->add($sources, 'restaurant.descriptionGenerale', 'Description générale', $restaurant->descriptionGenerale(), $includeEmpty);
         $this->stringList($sources, 'restaurant.atouts', 'Atout', $restaurant->atouts(), $includeEmpty);
-        foreach ($restaurant->salles() as $value) { $this->add($sources, sprintf('salles[%s].nom', $value->id()), 'Nom de la salle', $value->nom(), $includeEmpty); }
-        foreach ($restaurant->periodesFermeture() as $value) { $this->add($sources, sprintf('fermetures[%s].nom', $value->id()), 'Période de fermeture', $value->nom(), $includeEmpty); }
-        foreach ($restaurant->acces() as $value) { $this->add($sources, sprintf('acces[%s].nom', $value->id()), "Nom de l'accès", $value->nom(), $includeEmpty); }
+        foreach ($restaurant->salles() as $value) {
+            $this->add($sources, sprintf('salles[%s].nom', $value->id()), 'Nom de la salle', $value->nom(), $includeEmpty);
+        }
+        foreach ($restaurant->periodesFermeture() as $value) {
+            $this->add($sources, sprintf('fermetures[%s].nom', $value->id()), 'Période de fermeture', $value->nom(), $includeEmpty);
+        }
+        foreach ($restaurant->acces() as $value) {
+            $this->add($sources, sprintf('acces[%s].nom', $value->id()), "Nom de l'accès", $value->nom(), $includeEmpty);
+        }
     }
 
     /** @param list<TranslationSource> $sources */
@@ -117,7 +140,9 @@ final readonly class FicheTranslationSourceExtractor
     private function add(array &$sources, string $path, string $label, ?string $value, bool $includeEmpty = false): void
     {
         $value = null === $value ? '' : trim($value);
-        if ($includeEmpty || '' !== $value) { $sources[] = new TranslationSource($path, $label, $value); }
+        if ($includeEmpty || '' !== $value) {
+            $sources[] = new TranslationSource($path, $label, $value);
+        }
     }
 
     /**
@@ -126,6 +151,8 @@ final readonly class FicheTranslationSourceExtractor
      */
     private function stringList(array &$sources, string $path, string $label, array $values, bool $includeEmpty = false): void
     {
-        foreach ($values as $index => $value) { $this->add($sources, sprintf('%s[%d]', $path, $index), $label.' '.($index + 1), $value, $includeEmpty); }
+        foreach ($values as $index => $value) {
+            $this->add($sources, sprintf('%s[%d]', $path, $index), $label.' '.($index + 1), $value, $includeEmpty);
+        }
     }
 }

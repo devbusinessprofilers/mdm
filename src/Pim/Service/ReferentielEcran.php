@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Pim\Service;
 
+use App\Account\Repository\UserRepository;
 use App\Pim\Entity\SavedView;
 use App\Pim\Enum\TriReferentiel;
 use App\Pim\Enum\TypeFiche;
@@ -15,7 +16,6 @@ use App\Pim\Form\SavedViewType;
 use App\Pim\Import\Schema\FicheImportSchemaRegistry;
 use App\Pim\ReadModel\ReferentielCursor;
 use App\Pim\ReadModel\ReferentielVue;
-use App\Account\Repository\UserRepository;
 use App\Pim\Repository\SavedViewRepository;
 use App\Pim\Repository\SiteDiffusionRepository;
 use App\Shared\Form\ActionType;

@@ -27,7 +27,7 @@ final class ValidActiviteValidator extends ConstraintValidator
 
     public function validate(mixed $value, Constraint $constraint): void
     {
-        if (!($value instanceof Activite)) {
+        if (!$value instanceof Activite) {
             return;
         }
         $this->maxLength($value->label(), 255, 'label');

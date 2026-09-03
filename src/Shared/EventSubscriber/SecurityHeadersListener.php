@@ -19,7 +19,8 @@ final readonly class SecurityHeadersListener
     public function __construct(
         #[Autowire(env: 'S3_PUBLIC_BASE_URL')]
         private string $s3PublicBaseUrl,
-    ) {}
+    ) {
+    }
 
     #[AsEventListener(event: KernelEvents::RESPONSE)]
     public function response(ResponseEvent $event): void

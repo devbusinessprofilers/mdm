@@ -20,10 +20,11 @@ final readonly class RestaurantAdminViewBuilder
         private FormFactoryInterface $forms,
         private UrlGeneratorInterface $urls,
         private LocalisationRepository $locations,
-    ) {}
+    ) {
+    }
 
     /** @param FormInterface<mixed> $form
-     *  @return array<string, mixed>
+     * @return array<string, mixed>
      */
     public function form(FormInterface $form, Restaurant $restaurant, bool $creation): array
     {
@@ -39,7 +40,9 @@ final readonly class RestaurantAdminViewBuilder
     {
         $documents = [];
         foreach ($restaurant->ressources() as $resource) {
-            if (NatureRessource::Document !== $resource->nature()) { continue; }
+            if (NatureRessource::Document !== $resource->nature()) {
+                continue;
+            }
             $params = ['id' => $restaurant->id(), 'resourceId' => $resource->id()];
             $documents[] = [
                 'resource' => $resource,

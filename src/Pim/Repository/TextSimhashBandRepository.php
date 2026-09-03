@@ -16,7 +16,9 @@ final readonly class TextSimhashBandRepository
 {
     private const BAND_LENGTHS = [8, 7, 7, 7, 7, 7, 7, 7, 7];
 
-    public function __construct(private Connection $connection) {}
+    public function __construct(private Connection $connection)
+    {
+    }
 
     public function replace(string $fingerprintId, string $hash): void
     {

@@ -27,7 +27,7 @@ final readonly class ExternalScopeGuard
     public function requireScope(string $scope): void
     {
         $user = $this->security->getUser();
-        if (!($user instanceof ExternalSitePrincipal)) {
+        if (!$user instanceof ExternalSitePrincipal) {
             throw new ApiProblemException(Response::HTTP_FORBIDDEN, 'insufficient_scope', 'Jeton externe requis.');
         }
         if (!$user->hasScope($scope)) {

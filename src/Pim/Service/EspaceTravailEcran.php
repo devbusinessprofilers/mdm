@@ -45,7 +45,7 @@ final readonly class EspaceTravailEcran
     }
 
     /**
-     * @param list<string> $vuesAutorisees Clés de self::VUES couvertes par le rôle courant.
+     * @param list<string> $vuesAutorisees clés de self::VUES couvertes par le rôle courant
      *
      * @return array<string, mixed> Variables du gabarit mdm/espace_travail.html.twig.
      */

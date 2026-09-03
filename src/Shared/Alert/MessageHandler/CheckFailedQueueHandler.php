@@ -18,7 +18,8 @@ final readonly class CheckFailedQueueHandler
         private Connection $connection,
         private AlertNotifier $notifier,
         private ParametreProviderInterface $parametres,
-    ) {}
+    ) {
+    }
 
     public function __invoke(CheckFailedQueue $message): void
     {

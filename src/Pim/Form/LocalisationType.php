@@ -48,12 +48,7 @@ final class LocalisationType extends AbstractType
                                 ? Localisation::normalizeLatitude($value)
                                 : Localisation::normalizeLongitude($value);
                         } catch (\InvalidArgumentException $exception) {
-                            throw new TransformationFailedException(
-                                $exception->getMessage(),
-                                0,
-                                $exception,
-                                'La coordonnée saisie est invalide.',
-                            );
+                            throw new TransformationFailedException($exception->getMessage(), 0, $exception, 'La coordonnée saisie est invalide.');
                         }
                     },
                 ));

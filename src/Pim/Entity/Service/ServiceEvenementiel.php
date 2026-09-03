@@ -20,11 +20,11 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Uid\Ulid;
 
 #[ORM\Entity(repositoryClass: ServiceEvenementielRepository::class)]
-#[ORM\Table(name: "pim_service_evenementiel")]
-#[ORM\Index(name: "IDX_SERVICE_EVENEMENTIEL_COMPLETENESS_REVISION", columns: ["completeness_revision"])]
+#[ORM\Table(name: 'pim_service_evenementiel')]
+#[ORM\Index(name: 'IDX_SERVICE_EVENEMENTIEL_COMPLETENESS_REVISION', columns: ['completeness_revision'])]
 #[ORM\HasLifecycleCallbacks]
-#[ValidServiceEvenementiel(groups: ["Draft"])]
-#[ValidServiceEvenementiel(groups: ["Submission"])]
+#[ValidServiceEvenementiel(groups: ['Draft'])]
+#[ValidServiceEvenementiel(groups: ['Submission'])]
 class ServiceEvenementiel
 {
     use TimestampableTrait {
@@ -33,18 +33,16 @@ class ServiceEvenementiel
     use CompletenessScoresTrait;
 
     #[ORM\Id]
-    #[ORM\Column(type: "ulid", unique: true)]
+    #[ORM\Column(type: 'ulid', unique: true)]
     private Ulid $id;
 
-    #[ORM\OneToOne(cascade: ["persist", "remove"], orphanRemoval: true)]
-    #[
-        ORM\JoinColumn(
-            name: "fiche_id",
-            nullable: false,
-            unique: true,
-            onDelete: "CASCADE",
-        ),
-    ]
+    #[ORM\OneToOne(cascade: ['persist', 'remove'], orphanRemoval: true)]
+    #[ORM\JoinColumn(
+        name: 'fiche_id',
+        nullable: false,
+        unique: true,
+        onDelete: 'CASCADE',
+    ),]
     private Fiche $fiche;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
@@ -88,13 +86,11 @@ class ServiceEvenementiel
     #[ORM\Column(nullable: true)]
     private ?int $dureeMinutes = null;
 
-    #[
-        ORM\Column(
-            length: 16,
-            enumType: ModeInterventionService::class,
-            nullable: true,
-        ),
-    ]
+    #[ORM\Column(
+        length: 16,
+        enumType: ModeInterventionService::class,
+        nullable: true,
+    ),]
     private ?ModeInterventionService $modeIntervention = null;
 
     /** @var list<string> */
@@ -178,7 +174,7 @@ class ServiceEvenementiel
     {
         return array_map(
             ServiceLovCatalog::valueCode(...),
-            $this->fiche->valueIdsFor("TYPE_PRESTATAIRE"),
+            $this->fiche->valueIdsFor('TYPE_PRESTATAIRE'),
         );
     }
 
@@ -186,7 +182,7 @@ class ServiceEvenementiel
     public function changePrestations(array $values): void
     {
         $this->fiche->replaceAttributeValues(
-            "TYPE_PRESTATAIRE",
+            'TYPE_PRESTATAIRE',
             ServiceLovCatalog::valueIds($values),
         );
         $this->touch();
@@ -255,7 +251,7 @@ class ServiceEvenementiel
 
     public function changeParticipantsMin(?int $value): void
     {
-        $this->set("participantsMin", $value);
+        $this->set('participantsMin', $value);
     }
 
     public function participantsMax(): ?int
@@ -265,7 +261,7 @@ class ServiceEvenementiel
 
     public function changeParticipantsMax(?int $value): void
     {
-        $this->set("participantsMax", $value);
+        $this->set('participantsMax', $value);
     }
 
     public function dureeMinutes(): ?int
@@ -275,7 +271,7 @@ class ServiceEvenementiel
 
     public function changeDureeMinutes(?int $value): void
     {
-        $this->set("dureeMinutes", $value);
+        $this->set('dureeMinutes', $value);
     }
 
     public function descriptionGenerale(): ?string
@@ -285,7 +281,7 @@ class ServiceEvenementiel
 
     public function changeDescriptionGenerale(?string $value): void
     {
-        $this->setString("descriptionGenerale", $value);
+        $this->setString('descriptionGenerale', $value);
     }
 
     public function prestataireEsat(): ?bool
@@ -295,7 +291,7 @@ class ServiceEvenementiel
 
     public function changePrestataireEsat(?bool $value): void
     {
-        $this->set("prestataireEsat", $value);
+        $this->set('prestataireEsat', $value);
     }
 
     public function demarcheRse(): ?bool
@@ -305,7 +301,7 @@ class ServiceEvenementiel
 
     public function changeDemarcheRse(?bool $value): void
     {
-        $this->set("demarcheRse", $value);
+        $this->set('demarcheRse', $value);
     }
 
     public function adapteFemmesEnceintes(): ?bool
@@ -315,7 +311,7 @@ class ServiceEvenementiel
 
     public function changeAdapteFemmesEnceintes(?bool $value): void
     {
-        $this->set("adapteFemmesEnceintes", $value);
+        $this->set('adapteFemmesEnceintes', $value);
     }
 
     public function adapteMalentendants(): ?bool
@@ -325,7 +321,7 @@ class ServiceEvenementiel
 
     public function changeAdapteMalentendants(?bool $value): void
     {
-        $this->set("adapteMalentendants", $value);
+        $this->set('adapteMalentendants', $value);
     }
 
     public function adapteMalvoyants(): ?bool
@@ -335,7 +331,7 @@ class ServiceEvenementiel
 
     public function changeAdapteMalvoyants(?bool $value): void
     {
-        $this->set("adapteMalvoyants", $value);
+        $this->set('adapteMalvoyants', $value);
     }
 
     public function materielInclus(): ?bool
@@ -345,7 +341,7 @@ class ServiceEvenementiel
 
     public function changeMaterielInclus(?bool $value): void
     {
-        $this->set("materielInclus", $value);
+        $this->set('materielInclus', $value);
     }
 
     public function equipementParticipantsRequis(): ?bool
@@ -355,7 +351,7 @@ class ServiceEvenementiel
 
     public function changeEquipementParticipantsRequis(?bool $value): void
     {
-        $this->set("equipementParticipantsRequis", $value);
+        $this->set('equipementParticipantsRequis', $value);
     }
 
     public function equipementReceptionRequis(): ?bool
@@ -365,7 +361,7 @@ class ServiceEvenementiel
 
     public function changeEquipementReceptionRequis(?bool $value): void
     {
-        $this->set("equipementReceptionRequis", $value);
+        $this->set('equipementReceptionRequis', $value);
     }
 
     public function contraintesLogistiques(): ?bool
@@ -375,7 +371,7 @@ class ServiceEvenementiel
 
     public function changeContraintesLogistiques(?bool $value): void
     {
-        $this->set("contraintesLogistiques", $value);
+        $this->set('contraintesLogistiques', $value);
     }
 
     public function modeIntervention(): ?ModeInterventionService
@@ -386,7 +382,7 @@ class ServiceEvenementiel
     public function changeModeIntervention(
         ?ModeInterventionService $value,
     ): void {
-        $this->set("modeIntervention", $value);
+        $this->set('modeIntervention', $value);
     }
 
     /** @return list<string> */
@@ -398,7 +394,7 @@ class ServiceEvenementiel
     /** @param list<string> $value */
     public function changePaysMobiles(array $value): void
     {
-        $this->set("paysMobiles", self::normalizeList($value));
+        $this->set('paysMobiles', self::normalizeList($value));
     }
 
     /** @return list<string> */
@@ -410,7 +406,7 @@ class ServiceEvenementiel
     /** @param list<string> $value */
     public function changeRegionsMobiles(array $value): void
     {
-        $this->set("regionsMobiles", self::normalizeList($value));
+        $this->set('regionsMobiles', self::normalizeList($value));
     }
 
     /** @return list<string> */
@@ -422,7 +418,7 @@ class ServiceEvenementiel
     /** @param list<string> $value */
     public function changeDepartementsMobiles(array $value): void
     {
-        $this->set("departementsMobiles", self::normalizeList($value));
+        $this->set('departementsMobiles', self::normalizeList($value));
     }
 
     public function tarifParPrestation(): ?float
@@ -432,7 +428,7 @@ class ServiceEvenementiel
 
     public function changeTarifParPrestation(?float $value): void
     {
-        $this->set("tarifParPrestation", $value);
+        $this->set('tarifParPrestation', $value);
     }
 
     public function tarifParPersonne(): ?float
@@ -442,7 +438,7 @@ class ServiceEvenementiel
 
     public function changeTarifParPersonne(?float $value): void
     {
-        $this->set("tarifParPersonne", $value);
+        $this->set('tarifParPersonne', $value);
     }
 
     public function tarifParJour(): ?float
@@ -452,7 +448,7 @@ class ServiceEvenementiel
 
     public function changeTarifParJour(?float $value): void
     {
-        $this->set("tarifParJour", $value);
+        $this->set('tarifParJour', $value);
     }
 
     public function tarifParDemiJournee(): ?float
@@ -462,7 +458,7 @@ class ServiceEvenementiel
 
     public function changeTarifParDemiJournee(?float $value): void
     {
-        $this->set("tarifParDemiJournee", $value);
+        $this->set('tarifParDemiJournee', $value);
     }
 
     public function tarifParHeure(): ?float
@@ -472,7 +468,7 @@ class ServiceEvenementiel
 
     public function changeTarifParHeure(?float $value): void
     {
-        $this->set("tarifParHeure", $value);
+        $this->set('tarifParHeure', $value);
     }
 
     public function surDevis(): ?bool
@@ -482,7 +478,7 @@ class ServiceEvenementiel
 
     public function changeSurDevis(?bool $value): void
     {
-        $this->set("surDevis", $value);
+        $this->set('surDevis', $value);
     }
 
     public function youtubeUrl(): ?string
@@ -492,7 +488,7 @@ class ServiceEvenementiel
 
     public function changeYoutubeUrl(?string $value): void
     {
-        $this->setString("youtubeUrl", $value);
+        $this->setString('youtubeUrl', $value);
     }
 
     /** @return Collection<int, RessourceLieu> */
@@ -504,9 +500,7 @@ class ServiceEvenementiel
     public function addRessource(RessourceLieu $value): void
     {
         if (null !== $value->lieu() || null !== $value->salle()) {
-            throw new \DomainException(
-                "Une ressource Service ne peut pas être rattachée à un Lieu ou une salle.",
-            );
+            throw new \DomainException('Une ressource Service ne peut pas être rattachée à un Lieu ou une salle.');
         }
         $this->fiche->addResource($value);
         $this->touch();
@@ -526,8 +520,8 @@ class ServiceEvenementiel
 
     private function setString(string $property, ?string $value): void
     {
-        $value = null === $value ? "" : trim($value);
-        $this->set($property, "" === $value ? null : $value);
+        $value = null === $value ? '' : trim($value);
+        $this->set($property, '' === $value ? null : $value);
     }
 
     public function markChanged(): void

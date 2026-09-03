@@ -123,19 +123,11 @@ final readonly class ParametreAdminManager
     {
         $maximum = self::PAIRES_MIN_MAX[$nom] ?? null;
         if (null !== $maximum && $valeur > $this->provider->int($maximum)) {
-            throw new \DomainException(sprintf(
-                'Le minimum ne peut pas dépasser le maximum actuel (%d, paramètre « %s »).',
-                $this->provider->int($maximum),
-                $maximum,
-            ));
+            throw new \DomainException(sprintf('Le minimum ne peut pas dépasser le maximum actuel (%d, paramètre « %s »).', $this->provider->int($maximum), $maximum));
         }
         $minimum = array_search($nom, self::PAIRES_MIN_MAX, true);
         if (false !== $minimum && $valeur < $this->provider->int($minimum)) {
-            throw new \DomainException(sprintf(
-                'Le maximum ne peut pas être inférieur au minimum actuel (%d, paramètre « %s »).',
-                $this->provider->int($minimum),
-                $minimum,
-            ));
+            throw new \DomainException(sprintf('Le maximum ne peut pas être inférieur au minimum actuel (%d, paramètre « %s »).', $this->provider->int($minimum), $minimum));
         }
     }
 

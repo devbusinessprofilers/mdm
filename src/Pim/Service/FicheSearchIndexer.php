@@ -7,13 +7,13 @@ namespace App\Pim\Service;
 use App\Pim\Entity\Fiche;
 use App\Pim\Entity\FicheSearchDocument;
 use App\Pim\Message\CalculateFicheCompleteness;
-use App\Pim\Repository\LieuRepository;
 use App\Pim\Repository\ActiviteRepository;
-use App\Pim\Repository\ServiceEvenementielRepository;
-use App\Pim\Repository\RestaurantRepository;
 use App\Pim\Repository\FicheSearchDocumentRepository;
-use Doctrine\ORM\EntityManagerInterface;
+use App\Pim\Repository\LieuRepository;
+use App\Pim\Repository\RestaurantRepository;
+use App\Pim\Repository\ServiceEvenementielRepository;
 use App\Shared\Outbox\OutboxPublisherInterface;
+use Doctrine\ORM\EntityManagerInterface;
 
 final readonly class FicheSearchIndexer
 {

@@ -24,7 +24,8 @@ final readonly class LegacyServiceRowMapper
     public function __construct(
         private LegacyLovMapper $lovMapper,
         private LegacyServiceLovMapper $serviceLovMapper,
-    ) {}
+    ) {
+    }
 
     public function supports(RawCsvRow $row): bool
     {

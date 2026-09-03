@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Pim\Api\State;
 
-use App\Pim\Api\Exception\ApiProblemException;
 use App\Enrichment\Service\FicheTranslationScheduler;
+use App\Pim\Api\Exception\ApiProblemException;
 use App\Pim\Entity\Fiche;
 use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Message\IndexFiche;
@@ -30,11 +30,7 @@ final readonly class RestaurantApiState
     {
         $restaurant = $this->restaurants->find($id);
         if (!$restaurant instanceof Restaurant) {
-            throw new ApiProblemException(
-                Response::HTTP_NOT_FOUND,
-                'not_found',
-                'Restaurant introuvable.',
-            );
+            throw new ApiProblemException(Response::HTTP_NOT_FOUND, 'not_found', 'Restaurant introuvable.');
         }
 
         return $restaurant;
@@ -49,22 +45,13 @@ final readonly class RestaurantApiState
             " \t\n\r\x00\v\"",
         );
         if ('' === $header) {
-            throw new ApiProblemException(
-                428,
-                'precondition_required',
-                "L’en-tête If-Match est obligatoire.",
-            );
+            throw new ApiProblemException(428, 'precondition_required', 'L’en-tête If-Match est obligatoire.');
         }
         if (
             !ctype_digit($header)
             || (int) $header !== $restaurant->fiche()->version()
         ) {
-            throw new ApiProblemException(
-                409,
-                'version_conflict',
-                'La fiche a été modifiée depuis sa lecture.',
-                ['currentVersion' => $restaurant->fiche()->version()],
-            );
+            throw new ApiProblemException(409, 'version_conflict', 'La fiche a été modifiée depuis sa lecture.', ['currentVersion' => $restaurant->fiche()->version()]);
         }
     }
 

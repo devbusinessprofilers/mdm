@@ -8,9 +8,9 @@ use App\Dam\Entity\MediaDuplicateAlert;
 use App\Dam\Enum\DuplicateReviewStatus;
 use App\Dam\Message\DeleteMedia;
 use App\Dam\Message\RegenerateMedia;
+use App\Dam\Message\UnpublishDocument;
 use App\Dam\Repository\MediaAssetRepository;
 use App\Dam\Repository\MediaDuplicateAlertRepository;
-use App\Dam\Message\UnpublishDocument;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Enum\NatureRessource;
 use App\Pim\Message\IndexFiche;
@@ -31,7 +31,8 @@ final readonly class DamResourceManager
         private OutboxPublisherInterface $outbox,
         private EntityManagerInterface $entityManager,
         private AuthorizationCheckerInterface $authorization,
-    ) {}
+    ) {
+    }
 
     public function acceptDuplicate(string $alertId, string $actor): void
     {

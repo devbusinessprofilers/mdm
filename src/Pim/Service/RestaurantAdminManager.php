@@ -30,7 +30,8 @@ final readonly class RestaurantAdminManager
         private FicheImageUploader $imageUploader,
         private FicheDocumentUploader $documentUploader,
         private FicheTranslationScheduler $translationScheduler,
-    ) {}
+    ) {
+    }
 
     /** @return list<string> */
     public function photoAssetIds(Restaurant $restaurant): array
@@ -41,7 +42,7 @@ final readonly class RestaurantAdminManager
     }
 
     /** @param FormInterface<mixed> $form
-     *  @param list<string> $existingMediaIds
+     * @param list<string> $existingMediaIds
      */
     public function save(Restaurant $restaurant, FormInterface $form, array $existingMediaIds, string $actor): void
     {
@@ -51,7 +52,9 @@ final readonly class RestaurantAdminManager
             foreach ($form->get('ressources') as $resourceForm) {
                 $file = $resourceForm->get('image')->getData();
                 $resource = $resourceForm->getData();
-                if (!$file instanceof UploadedFile || !$resource instanceof RessourceLieu) { continue; }
+                if (!$file instanceof UploadedFile || !$resource instanceof RessourceLieu) {
+                    continue;
+                }
                 $media = $this->imageUploader->upload($file, $restaurant->fiche());
                 $images[] = $media;
                 $this->entityManager->persist($media);
@@ -62,7 +65,9 @@ final readonly class RestaurantAdminManager
             $this->uploadDocuments($form, 'menus', DocumentUsage::RestaurantMenu, $restaurant, $documents, $actor);
             $this->uploadDocuments($form, 'supportsCommerciaux', DocumentUsage::CommercialSupport, $restaurant, $documents, $actor);
             foreach (array_diff($existingMediaIds, $this->photoAssetIds($restaurant)) as $removed) {
-                if ('' !== $removed) { $this->outbox->enqueue(new DeleteMedia($removed)); }
+                if ('' !== $removed) {
+                    $this->outbox->enqueue(new DeleteMedia($removed));
+                }
             }
             $this->entityManager->persist($restaurant);
             $this->translationScheduler->schedule($restaurant->fiche());
@@ -82,13 +87,15 @@ final readonly class RestaurantAdminManager
     }
 
     /** @param FormInterface<mixed> $form
-     *  @param list<MediaAsset> $uploadedDocuments
+     * @param list<MediaAsset> $uploadedDocuments
      */
     private function uploadDocuments(FormInterface $form, string $field, DocumentUsage $usage, Restaurant $restaurant, array &$uploadedDocuments, string $actor): void
     {
         $files = $form->get($field)->getData();
         foreach (is_array($files) ? $files : [] as $file) {
-            if (!$file instanceof UploadedFile) { continue; }
+            if (!$file instanceof UploadedFile) {
+                continue;
+            }
             $asset = $this->documentUploader->upload($file, $restaurant->fiche(), $usage);
             $uploadedDocuments[] = $asset;
             $this->entityManager->persist($asset);
@@ -104,11 +111,21 @@ final readonly class RestaurantAdminManager
     }
 
     /** @param list<MediaAsset> $images
-     *  @param list<MediaAsset> $documents
+     * @param list<MediaAsset> $documents
      */
     private function cleanup(array $images, array $documents): void
     {
-        foreach ($images as $asset) { try { $this->imageUploader->delete($asset); } catch (\Throwable) {} }
-        foreach ($documents as $asset) { try { $this->documentUploader->delete($asset); } catch (\Throwable) {} }
+        foreach ($images as $asset) {
+            try {
+                $this->imageUploader->delete($asset);
+            } catch (\Throwable) {
+            }
+        }
+        foreach ($documents as $asset) {
+            try {
+                $this->documentUploader->delete($asset);
+            } catch (\Throwable) {
+            }
+        }
     }
 }

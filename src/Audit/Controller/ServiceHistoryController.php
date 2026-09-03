@@ -16,14 +16,12 @@ use Symfony\Component\Routing\Attribute\Route;
 
 final class ServiceHistoryController extends AbstractController
 {
-    #[
-        Route(
-            '/referentiel/services/fiche/{id}/historique',
-            name: 'app_pim_service_history',
-            requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
-            methods: ['GET'],
-        ),
-    ]
+    #[Route(
+        '/referentiel/services/fiche/{id}/historique',
+        name: 'app_pim_service_history',
+        requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
+        methods: ['GET'],
+    ),]
     public function __invoke(
         string $id,
         Request $request,
@@ -33,7 +31,7 @@ final class ServiceHistoryController extends AbstractController
     ): Response {
         $this->denyAccessUnlessGranted('ROLE_BP_VALIDATOR');
         $service = $services->find($id);
-        if (!($service instanceof ServiceEvenementiel)) {
+        if (!$service instanceof ServiceEvenementiel) {
             throw $this->createNotFoundException('Service introuvable.');
         }
         $form = $this->createForm(AuditHistoryFilterType::class, null, [

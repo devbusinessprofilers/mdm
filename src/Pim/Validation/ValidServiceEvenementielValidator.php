@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Pim\Validation;
 
-use App\Dam\Enum\MediaStatus;
 use App\Dam\Enum\DocumentUsage;
+use App\Dam\Enum\MediaStatus;
 use App\Dam\Repository\MediaAssetRepository;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Entity\Service\ServiceEvenementiel;
@@ -21,43 +21,43 @@ final class ValidServiceEvenementielValidator extends ConstraintValidator
     public function __construct(
         private readonly MediaAssetRepository $assets,
         private readonly PhotoObligations $photoObligations,
-    ) {}
+    ) {
+    }
 
     public function validate(mixed $value, Constraint $constraint): void
     {
-        if (!($value instanceof ServiceEvenementiel)) {
+        if (!$value instanceof ServiceEvenementiel) {
             return;
         }
 
-        $this->maximumLength($value->label(), 255, "label");
-        $this->maximumLength($value->youtubeUrl(), 255, "youtubeUrl");
+        $this->maximumLength($value->label(), 255, 'label');
+        $this->maximumLength($value->youtubeUrl(), 255, 'youtubeUrl');
         if (
-            null !== $value->youtubeUrl() &&
-            false === filter_var($value->youtubeUrl(), FILTER_VALIDATE_URL)
+            null !== $value->youtubeUrl()
+            && false === filter_var($value->youtubeUrl(), FILTER_VALIDATE_URL)
         ) {
             $this->violation(
-                "Le lien vidéo doit être une URL valide.",
-                "youtubeUrl",
+                'Le lien vidéo doit être une URL valide.',
+                'youtubeUrl',
             );
         } elseif (
-            null !== $value->youtubeUrl() &&
-            !LienVideoValidator::estHebergeurAutorise($value->youtubeUrl())
+            null !== $value->youtubeUrl()
+            && !LienVideoValidator::estHebergeurAutorise($value->youtubeUrl())
         ) {
             $this->violation(
-                "Le lien vidéo doit pointer vers un hébergeur vidéo reconnu.",
-                "youtubeUrl",
+                'Le lien vidéo doit pointer vers un hébergeur vidéo reconnu.',
+                'youtubeUrl',
             );
         }
 
         foreach (
-            ["paysMobiles", "regionsMobiles", "departementsMobiles"]
-            as $field
+            ['paysMobiles', 'regionsMobiles', 'departementsMobiles'] as $field
         ) {
             foreach ($value->{$field}() as $index => $item) {
                 $this->maximumLength(
                     $item,
                     255,
-                    sprintf("%s[%d]", $field, $index),
+                    sprintf('%s[%d]', $field, $index),
                 );
             }
         }
@@ -65,7 +65,7 @@ final class ValidServiceEvenementielValidator extends ConstraintValidator
         foreach ($this->tariffs($value) as $field => $amount) {
             if (null !== $amount && (!is_finite($amount) || $amount < 0)) {
                 $this->violation(
-                    "Le tarif doit être un montant positif ou nul.",
+                    'Le tarif doit être un montant positif ou nul.',
                     $field,
                 );
             }
@@ -73,27 +73,26 @@ final class ValidServiceEvenementielValidator extends ConstraintValidator
 
         foreach (
             [
-                "participantsMin" => $value->participantsMin(),
-                "participantsMax" => $value->participantsMax(),
-                "dureeMinutes" => $value->dureeMinutes(),
-            ]
-            as $field => $number
+                'participantsMin' => $value->participantsMin(),
+                'participantsMax' => $value->participantsMax(),
+                'dureeMinutes' => $value->dureeMinutes(),
+            ] as $field => $number
         ) {
             if (null !== $number && $number < 0) {
                 $this->violation(
-                    "Cette valeur doit être un nombre positif.",
+                    'Cette valeur doit être un nombre positif.',
                     $field,
                 );
             }
         }
         if (
-            null !== $value->participantsMin() &&
-            null !== $value->participantsMax() &&
-            $value->participantsMin() > $value->participantsMax()
+            null !== $value->participantsMin()
+            && null !== $value->participantsMax()
+            && $value->participantsMin() > $value->participantsMax()
         ) {
             $this->violation(
-                "Le minimum de participants doit être inférieur ou égal au maximum.",
-                "participantsMin",
+                'Le minimum de participants doit être inférieur ou égal au maximum.',
+                'participantsMin',
             );
         }
 
@@ -101,16 +100,16 @@ final class ValidServiceEvenementielValidator extends ConstraintValidator
         foreach ($value->ressources() as $resource) {
             if (null !== $resource->lieu() || null !== $resource->salle()) {
                 $this->violation(
-                    "Une ressource Service ne peut pas être rattachée à un lieu ou une salle.",
-                    "ressources",
+                    'Une ressource Service ne peut pas être rattachée à un lieu ou une salle.',
+                    'ressources',
                 );
             }
             if (NatureRessource::Photo === $resource->nature()) {
                 $photos[] = $resource;
-            } elseif ("PJ_SUPPORT_COMMERCIAUX" !== $resource->usage()) {
+            } elseif ('PJ_SUPPORT_COMMERCIAUX' !== $resource->usage()) {
                 $this->violation(
-                    "Un Service accepte uniquement les supports commerciaux comme documents.",
-                    "ressources",
+                    'Un Service accepte uniquement les supports commerciaux comme documents.',
+                    'ressources',
                 );
             }
         }
@@ -118,8 +117,8 @@ final class ValidServiceEvenementielValidator extends ConstraintValidator
         $maximum = $this->photoObligations->maximum(TypeFiche::ServiceEvenementiel);
         if (count($photos) > $maximum) {
             $this->violation(
-                sprintf("Un Service ne peut pas contenir plus de %d photos.", $maximum),
-                "ressources",
+                sprintf('Un Service ne peut pas contenir plus de %d photos.', $maximum),
+                'ressources',
             );
         }
         if (ValidationGroups::SUBMISSION === $this->context->getGroup()) {
@@ -132,38 +131,37 @@ final class ValidServiceEvenementielValidator extends ConstraintValidator
     {
         foreach (
             [
-                "label" => $value->label(),
-                "descriptionGenerale" => $value->descriptionGenerale(),
-                "modeIntervention" => $value->modeIntervention(),
-                "youtubeUrl" => $value->youtubeUrl(),
-            ]
-            as $path => $field
+                'label' => $value->label(),
+                'descriptionGenerale' => $value->descriptionGenerale(),
+                'modeIntervention' => $value->modeIntervention(),
+                'youtubeUrl' => $value->youtubeUrl(),
+            ] as $path => $field
         ) {
-            if (null === $field || "" === $field) {
+            if (null === $field || '' === $field) {
                 $this->violation(
-                    "Ce champ est obligatoire avant soumission.",
+                    'Ce champ est obligatoire avant soumission.',
                     $path,
                 );
             }
         }
         if ([] === $value->prestations()) {
             $this->violation(
-                "Au moins une prestation est obligatoire.",
-                "prestations",
+                'Au moins une prestation est obligatoire.',
+                'prestations',
             );
         }
 
         foreach ($this->booleans($value) as $path => $answer) {
             if (null === $answer) {
                 $this->violation(
-                    "Une réponse Oui ou Non est obligatoire.",
+                    'Une réponse Oui ou Non est obligatoire.',
                     $path,
                 );
             }
         }
         foreach ($this->tariffs($value) as $path => $amount) {
             if (null === $amount) {
-                $this->violation("Ce tarif en euros est obligatoire.", $path);
+                $this->violation('Ce tarif en euros est obligatoire.', $path);
             }
         }
 
@@ -171,38 +169,36 @@ final class ValidServiceEvenementielValidator extends ConstraintValidator
         if (ModeInterventionService::Fixe === $value->modeIntervention()) {
             foreach (
                 [
-                    "pays",
-                    "region",
-                    "departement",
-                    "ruePostale",
-                    "codePostal",
-                    "ville",
-                    "arrondissement",
-                    "latitude",
-                    "longitude",
-                ]
-                as $field
+                    'pays',
+                    'region',
+                    'departement',
+                    'ruePostale',
+                    'codePostal',
+                    'ville',
+                    'arrondissement',
+                    'latitude',
+                    'longitude',
+                ] as $field
             ) {
                 if (
-                    null === $location ||
-                    null === $location->{$field}() ||
-                    "" === trim((string) $location->{$field}())
+                    null === $location
+                    || null === $location->{$field}()
+                    || '' === trim((string) $location->{$field}())
                 ) {
                     $this->violation(
-                        "Ce champ de localisation fixe est obligatoire.",
-                        "localisation." . $field,
+                        'Ce champ de localisation fixe est obligatoire.',
+                        'localisation.'.$field,
                     );
                 }
             }
         }
         if (ModeInterventionService::Mobile === $value->modeIntervention()) {
             foreach (
-                ["paysMobiles", "regionsMobiles", "departementsMobiles"]
-                as $field
+                ['paysMobiles', 'regionsMobiles', 'departementsMobiles'] as $field
             ) {
                 if ([] === $value->{$field}()) {
                     $this->violation(
-                        "Au moins une valeur est obligatoire.",
+                        'Au moins une valeur est obligatoire.',
                         $field,
                     );
                 }
@@ -215,19 +211,19 @@ final class ValidServiceEvenementielValidator extends ConstraintValidator
         $maximum = $this->photoObligations->maximum(TypeFiche::ServiceEvenementiel);
         if (count($photos) < $minimum || count($photos) > $maximum) {
             $this->violation(
-                sprintf("Une fiche Service doit contenir entre %d et %d photos.", $minimum, $maximum),
-                "ressources",
+                sprintf('Une fiche Service doit contenir entre %d et %d photos.', $minimum, $maximum),
+                'ressources',
             );
         }
         foreach ($value->ressources() as $resource) {
             $asset = $this->assets->find($resource->damAssetId());
             if (
-                null === $asset ||
-                MediaStatus::Processed !== $asset->status()
+                null === $asset
+                || MediaStatus::Processed !== $asset->status()
             ) {
                 $this->violation(
-                    "Chaque ressource doit disposer d’un fichier DAM traité.",
-                    "ressources",
+                    'Chaque ressource doit disposer d’un fichier DAM traité.',
+                    'ressources',
                 );
             }
         }
@@ -235,46 +231,46 @@ final class ValidServiceEvenementielValidator extends ConstraintValidator
         $supports = array_values(
             array_filter(
                 $value->ressources()->toArray(),
-                static fn(
+                static fn (
                     RessourceLieu $resource,
-                ): bool => NatureRessource::Document === $resource->nature() &&
-                    DocumentUsage::CommercialSupport ===
+                ): bool => NatureRessource::Document === $resource->nature()
+                    && DocumentUsage::CommercialSupport ===
                         $resource->documentUsage(),
             ),
         );
 
         if ([] === $supports) {
             $this->violation(
-                "Au moins un support commercial est obligatoire avant soumission.",
-                "ressources",
+                'Au moins un support commercial est obligatoire avant soumission.',
+                'ressources',
             );
         }
 
         foreach ($supports as $index => $support) {
             if (
-                null === $support->legende() ||
-                "" === trim($support->legende())
+                null === $support->legende()
+                || '' === trim($support->legende())
             ) {
                 $this->violation(
-                    "Le titre du support commercial est obligatoire.",
-                    sprintf("ressources[%d].legende", $index),
+                    'Le titre du support commercial est obligatoire.',
+                    sprintf('ressources[%d].legende', $index),
                 );
             }
 
             if (
-                null === $support->source() ||
-                "" === trim($support->source())
+                null === $support->source()
+                || '' === trim($support->source())
             ) {
                 $this->violation(
-                    "La source du support commercial est obligatoire.",
-                    sprintf("ressources[%d].source", $index),
+                    'La source du support commercial est obligatoire.',
+                    sprintf('ressources[%d].source', $index),
                 );
             }
 
             if (!$support->rightsGranted()) {
                 $this->violation(
-                    "Les droits du support commercial doivent être validés.",
-                    sprintf("ressources[%d].rightsGranted", $index),
+                    'Les droits du support commercial doivent être validés.',
+                    sprintf('ressources[%d].rightsGranted', $index),
                 );
             }
         }
@@ -284,16 +280,16 @@ final class ValidServiceEvenementielValidator extends ConstraintValidator
     private function booleans(ServiceEvenementiel $value): array
     {
         return [
-            "prestataireEsat" => $value->prestataireEsat(),
-            "demarcheRse" => $value->demarcheRse(),
-            "adapteFemmesEnceintes" => $value->adapteFemmesEnceintes(),
-            "adapteMalentendants" => $value->adapteMalentendants(),
-            "adapteMalvoyants" => $value->adapteMalvoyants(),
-            "materielInclus" => $value->materielInclus(),
-            "equipementParticipantsRequis" => $value->equipementParticipantsRequis(),
-            "equipementReceptionRequis" => $value->equipementReceptionRequis(),
-            "contraintesLogistiques" => $value->contraintesLogistiques(),
-            "surDevis" => $value->surDevis(),
+            'prestataireEsat' => $value->prestataireEsat(),
+            'demarcheRse' => $value->demarcheRse(),
+            'adapteFemmesEnceintes' => $value->adapteFemmesEnceintes(),
+            'adapteMalentendants' => $value->adapteMalentendants(),
+            'adapteMalvoyants' => $value->adapteMalvoyants(),
+            'materielInclus' => $value->materielInclus(),
+            'equipementParticipantsRequis' => $value->equipementParticipantsRequis(),
+            'equipementReceptionRequis' => $value->equipementReceptionRequis(),
+            'contraintesLogistiques' => $value->contraintesLogistiques(),
+            'surDevis' => $value->surDevis(),
         ];
     }
 
@@ -301,11 +297,11 @@ final class ValidServiceEvenementielValidator extends ConstraintValidator
     private function tariffs(ServiceEvenementiel $value): array
     {
         return [
-            "tarifParPrestation" => $value->tarifParPrestation(),
-            "tarifParPersonne" => $value->tarifParPersonne(),
-            "tarifParJour" => $value->tarifParJour(),
-            "tarifParDemiJournee" => $value->tarifParDemiJournee(),
-            "tarifParHeure" => $value->tarifParHeure(),
+            'tarifParPrestation' => $value->tarifParPrestation(),
+            'tarifParPersonne' => $value->tarifParPersonne(),
+            'tarifParJour' => $value->tarifParJour(),
+            'tarifParDemiJournee' => $value->tarifParDemiJournee(),
+            'tarifParHeure' => $value->tarifParHeure(),
         ];
     }
 
@@ -317,7 +313,7 @@ final class ValidServiceEvenementielValidator extends ConstraintValidator
         if (null !== $value && mb_strlen($value) > $maximum) {
             $this->violation(
                 sprintf(
-                    "Cette valeur ne doit pas dépasser %d caractères.",
+                    'Cette valeur ne doit pas dépasser %d caractères.',
                     $maximum,
                 ),
                 $path,

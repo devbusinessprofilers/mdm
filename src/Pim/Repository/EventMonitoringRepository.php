@@ -8,7 +8,9 @@ use Doctrine\DBAL\Connection;
 
 final readonly class EventMonitoringRepository
 {
-    public function __construct(private Connection $connection) {}
+    public function __construct(private Connection $connection)
+    {
+    }
 
     /** @return array<string, int> */
     public function queueCounts(): array

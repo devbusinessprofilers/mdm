@@ -555,9 +555,7 @@ class Restaurant implements AvecHorairesJours
             null !== $value->restaurantSalle()
             && $value->restaurantSalle()->restaurant() !== $this
         ) {
-            throw new \DomainException(
-                'La salle de la ressource doit appartenir au Restaurant.',
-            );
+            throw new \DomainException('La salle de la ressource doit appartenir au Restaurant.');
         }
 
         $this->fiche->addResource($value);
@@ -613,7 +611,7 @@ class Restaurant implements AvecHorairesJours
     }
 
     /** @param list<string> $values
-     *  @return list<string>
+     * @return list<string>
      */
     private static function normalizeList(array $values): array
     {

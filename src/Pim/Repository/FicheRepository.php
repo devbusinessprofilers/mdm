@@ -169,7 +169,7 @@ final class FicheRepository extends ServiceEntityRepository
     }
 
     /**
-     * @param list<string> $ids Ordered fiche ULIDs, in search relevance order.
+     * @param list<string> $ids ordered fiche ULIDs, in search relevance order
      *
      * @return list<GlobalSearchItem>
      */
@@ -239,6 +239,7 @@ final class FicheRepository extends ServiceEntityRepository
 
     /**
      * @param list<string> $fingerprints empreintes binaires (Localisation::addressFingerprint)
+     *
      * @return list<string> identifiants ULID des fiches dont la localisation partage une empreinte
      */
     public function findIdsByAddressFingerprints(array $fingerprints): array

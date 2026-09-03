@@ -27,11 +27,14 @@ final readonly class InternalUserManager
         private OutboxPublisherInterface $outbox,
         private ParametreProviderInterface $parametres,
         private LoggerInterface $logger,
-    ) {}
+    ) {
+    }
 
     public function invite(string $email, string $role): void
     {
-        if ($this->users->findOneByEmail($email) instanceof User) { throw new \DomainException('Un compte existe déjà pour cette adresse.'); }
+        if ($this->users->findOneByEmail($email) instanceof User) {
+            throw new \DomainException('Un compte existe déjà pour cette adresse.');
+        }
         $user = new User($email, [$role]);
         $user->deactivate();
         $invitation = new AccountInvitation($user, $this->parametres->int('compte.invitation_validite_heures'));

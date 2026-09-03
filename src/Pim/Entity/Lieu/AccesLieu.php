@@ -51,20 +51,91 @@ class AccesLieu
         $this->initializeTimestamps();
     }
 
-    public function id(): string { return (string) $this->id; }
-    public function lieu(): ?Lieu { return $this->lieu; }
-    public function type(): TypeAccesLieu { return $this->type; }
-    public function nom(): string { return $this->nom; }
-    public function distanceKilometres(): ?string { return $this->distanceKilometres; }
-    public function dureeMinutes(): ?int { return $this->dureeMinutes; }
-    public function modeTransport(): ?string { return $this->modeTransport; }
-    public function position(): int { return $this->position; }
-    public function changeType(TypeAccesLieu $value): void { $this->type = $value; $this->touch(); }
-    public function changeNom(string $value): void { $this->nom = trim($value); $this->touch(); }
-    public function changeDistanceKilometres(?string $value): void { $this->distanceKilometres = null === $value || '' === trim($value) ? null : trim($value); $this->touch(); }
-    public function changeDureeMinutes(?int $value): void { $this->dureeMinutes = $value; $this->touch(); }
-    public function changeModeTransport(?string $value): void { $this->modeTransport = null === $value || '' === trim($value) ? null : trim($value); $this->touch(); }
-    public function changePosition(?int $value): void { $this->position = $value ?? 0; $this->touch(); }
-    public function attachTo(Lieu $lieu): void { $this->lieu = $lieu; }
-    public function detachFrom(Lieu $lieu): void { if ($this->lieu === $lieu) { $this->lieu = null; } }
+    public function id(): string
+    {
+        return (string) $this->id;
+    }
+
+    public function lieu(): ?Lieu
+    {
+        return $this->lieu;
+    }
+
+    public function type(): TypeAccesLieu
+    {
+        return $this->type;
+    }
+
+    public function nom(): string
+    {
+        return $this->nom;
+    }
+
+    public function distanceKilometres(): ?string
+    {
+        return $this->distanceKilometres;
+    }
+
+    public function dureeMinutes(): ?int
+    {
+        return $this->dureeMinutes;
+    }
+
+    public function modeTransport(): ?string
+    {
+        return $this->modeTransport;
+    }
+
+    public function position(): int
+    {
+        return $this->position;
+    }
+
+    public function changeType(TypeAccesLieu $value): void
+    {
+        $this->type = $value;
+        $this->touch();
+    }
+
+    public function changeNom(string $value): void
+    {
+        $this->nom = trim($value);
+        $this->touch();
+    }
+
+    public function changeDistanceKilometres(?string $value): void
+    {
+        $this->distanceKilometres = null === $value || '' === trim($value) ? null : trim($value);
+        $this->touch();
+    }
+
+    public function changeDureeMinutes(?int $value): void
+    {
+        $this->dureeMinutes = $value;
+        $this->touch();
+    }
+
+    public function changeModeTransport(?string $value): void
+    {
+        $this->modeTransport = null === $value || '' === trim($value) ? null : trim($value);
+        $this->touch();
+    }
+
+    public function changePosition(?int $value): void
+    {
+        $this->position = $value ?? 0;
+        $this->touch();
+    }
+
+    public function attachTo(Lieu $lieu): void
+    {
+        $this->lieu = $lieu;
+    }
+
+    public function detachFrom(Lieu $lieu): void
+    {
+        if ($this->lieu === $lieu) {
+            $this->lieu = null;
+        }
+    }
 }

@@ -9,8 +9,8 @@ use App\Pim\Entity\CompletenessConfigurationRevision;
 use App\Pim\Entity\CompletenessFieldConfiguration;
 use App\Pim\Enum\TypeFiche;
 use App\Pim\Message\RecalculateCompletenessBatch;
-use App\Pim\Repository\CompletenessFieldConfigurationRepository;
 use App\Pim\Repository\CompletenessConfigurationRevisionRepository;
+use App\Pim\Repository\CompletenessFieldConfigurationRepository;
 use App\Shared\Outbox\OutboxPublisherInterface;
 use Doctrine\ORM\EntityManagerInterface;
 

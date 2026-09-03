@@ -54,10 +54,7 @@ final class MarketplaceApiClient implements MarketplaceClientInterface
             return false;
         }
         if ($status < 200 || $status >= 300) {
-            throw new MarketplaceApiException(
-                sprintf('La marketplace a refusé la fiche %d (HTTP %d).', $code, $status),
-                retryable: self::retryable($status),
-            );
+            throw new MarketplaceApiException(sprintf('La marketplace a refusé la fiche %d (HTTP %d).', $code, $status), retryable: self::retryable($status));
         }
 
         return true;
@@ -74,10 +71,7 @@ final class MarketplaceApiClient implements MarketplaceClientInterface
             return false;
         }
         if ($status < 200 || $status >= 300) {
-            throw new MarketplaceApiException(
-                sprintf('La marketplace a refusé le dictionnaire LOV (HTTP %d).', $status),
-                retryable: self::retryable($status),
-            );
+            throw new MarketplaceApiException(sprintf('La marketplace a refusé le dictionnaire LOV (HTTP %d).', $status), retryable: self::retryable($status));
         }
 
         return true;
@@ -97,10 +91,7 @@ final class MarketplaceApiClient implements MarketplaceClientInterface
             return true;
         }
         if ($status < 200 || $status >= 300) {
-            throw new MarketplaceApiException(
-                sprintf('La marketplace a refusé la dépublication de la fiche %d (HTTP %d).', $code, $status),
-                retryable: self::retryable($status),
-            );
+            throw new MarketplaceApiException(sprintf('La marketplace a refusé la dépublication de la fiche %d (HTTP %d).', $code, $status), retryable: self::retryable($status));
         }
 
         return true;
@@ -121,19 +112,12 @@ final class MarketplaceApiClient implements MarketplaceClientInterface
             return null;
         }
         if ($status < 200 || $status >= 300) {
-            throw new MarketplaceApiException(
-                sprintf('La marketplace a refusé la purge des photos de la fiche %d (HTTP %d).', $code, $status),
-                retryable: self::retryable($status),
-            );
+            throw new MarketplaceApiException(sprintf('La marketplace a refusé la purge des photos de la fiche %d (HTTP %d).', $code, $status), retryable: self::retryable($status));
         }
         try {
             $data = $response->toArray(false);
         } catch (ExceptionInterface $exception) {
-            throw new MarketplaceApiException(
-                sprintf('Réponse illisible à la purge des photos de la fiche %d.', $code),
-                0,
-                $exception,
-            );
+            throw new MarketplaceApiException(sprintf('Réponse illisible à la purge des photos de la fiche %d.', $code), 0, $exception);
         }
 
         return [

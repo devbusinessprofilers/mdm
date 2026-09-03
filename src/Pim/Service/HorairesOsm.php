@@ -20,8 +20,8 @@ final class HorairesOsm
 
     /**
      * @return array{jours: list<string>, horaires: array<string, array{ouverture: string, fermeture: string}>}|null
-     *         jours = codes DISPO_JOUR_OUVERTURE_1..7 triés ; horaires vide
-     *         pour `24/7` (les jours sont sûrs, l'amplitude ne l'est pas)
+     *                                                                                                               jours = codes DISPO_JOUR_OUVERTURE_1..7 triés ; horaires vide
+     *                                                                                                               pour `24/7` (les jours sont sûrs, l'amplitude ne l'est pas)
      */
     public static function parser(string $openingHours): ?array
     {

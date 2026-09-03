@@ -43,9 +43,7 @@ final class RestaurantFixtures extends Fixture implements FixtureGroupInterface
     public function load(ObjectManager $manager): void
     {
         if (!$manager instanceof EntityManagerInterface) {
-            throw new \LogicException(
-                'Les fixtures Restaurant nécessitent Doctrine ORM.',
-            );
+            throw new \LogicException('Les fixtures Restaurant nécessitent Doctrine ORM.');
         }
 
         $count = PimFixtureTools::count(

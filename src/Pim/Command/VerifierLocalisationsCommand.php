@@ -143,8 +143,8 @@ final class VerifierLocalisationsCommand extends Command
 
     /**
      * @param array{score: ?float, label: ?string, name: ?string, codePostal: ?string, ville: ?string, latitude: ?string, longitude: ?string, type: ?string}|null $resultat
-     * @param array<string, int>                                                                                                                   $stats
-     * @param list<array{panier: string, fournisseur: string, code: int, adresse: string, ban: string, score: string}>                             $rapport
+     * @param array<string, int>                                                                                                                                  $stats
+     * @param list<array{panier: string, fournisseur: string, code: int, adresse: string, ban: string, score: string}>                                            $rapport
      */
     private function classer(Fiche $fiche, ?array $resultat, float $seuil, bool $appliquer, array &$stats, array &$rapport): void
     {
@@ -165,12 +165,12 @@ final class VerifierLocalisationsCommand extends Command
                 'score' => null === $score ? '' : number_format($score, 2),
             ];
         }
-        $stats[match ($panier) {
+        ++$stats[match ($panier) {
             'conforme' => 'conformes',
             'enrichissable' => 'enrichissables',
             'correction' => 'corrections proposées',
             default => 'douteuses',
-        }]++;
+        }];
         if (!$appliquer) {
             return;
         }

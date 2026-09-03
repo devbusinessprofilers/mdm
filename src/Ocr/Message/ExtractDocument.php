@@ -6,5 +6,7 @@ namespace App\Ocr\Message;
 
 final readonly class ExtractDocument
 {
-    public function __construct(public string $extractionId) {}
+    public function __construct(public string $extractionId)
+    {
+    }
 }

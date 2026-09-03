@@ -158,6 +158,7 @@ final class LegacyLovMapper
 
     /**
      * @param list<string> $warnings
+     *
      * @return list<string>
      */
     private function decodeJsonList(string $json, array &$warnings, string $warningCode): array

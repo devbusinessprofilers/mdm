@@ -15,7 +15,8 @@ final readonly class CompletenessConfigurationManager
     public function __construct(
         private CompletenessRecalculationScheduler $scheduler,
         private EntityManagerInterface $entityManager,
-    ) {}
+    ) {
+    }
 
     /** @param array<string, mixed> $data */
     public function update(CompletenessFieldConfiguration $configuration, array $data, string $actor): bool

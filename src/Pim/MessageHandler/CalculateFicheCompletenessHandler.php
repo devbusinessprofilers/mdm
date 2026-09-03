@@ -21,6 +21,8 @@ final readonly class CalculateFicheCompletenessHandler
     public function __invoke(CalculateFicheCompleteness $message): void
     {
         $fiche = $this->fiches->find(Ulid::fromString($message->ficheId));
-        if ($fiche instanceof Fiche) { $this->manager->calculate($fiche); }
+        if ($fiche instanceof Fiche) {
+            $this->manager->calculate($fiche);
+        }
     }
 }

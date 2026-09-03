@@ -21,7 +21,8 @@ final readonly class DamAnomalyScanner
     public function __construct(
         private EntityManagerInterface $entityManager,
         private DamAnomalyRepository $anomalies,
-    ) {}
+    ) {
+    }
 
     public function scan(): void
     {

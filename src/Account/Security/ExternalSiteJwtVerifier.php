@@ -20,17 +20,23 @@ final readonly class ExternalSiteJwtVerifier
     public function verify(string $token): array
     {
         $parts = explode('.', $token);
-        if (3 !== count($parts)) { throw new BadCredentialsException('JWT mal formé.'); }
+        if (3 !== count($parts)) {
+            throw new BadCredentialsException('JWT mal formé.');
+        }
         [$headerPart, $payloadPart, $signaturePart] = $parts;
         $header = $this->decodeJson($headerPart);
         $claims = $this->decodeJson($payloadPart);
-        if ('RS256' !== ($header['alg'] ?? null)) { throw new BadCredentialsException('Algorithme JWT invalide.'); }
+        if ('RS256' !== ($header['alg'] ?? null)) {
+            throw new BadCredentialsException('Algorithme JWT invalide.');
+        }
         $key = str_starts_with($this->publicKey, '-----BEGIN') ? $this->publicKey : @file_get_contents($this->publicKey);
         if (!is_string($key) || '' === $key || 1 !== openssl_verify($headerPart.'.'.$payloadPart, $this->decode($signaturePart), $key, OPENSSL_ALGO_SHA256)) {
             throw new BadCredentialsException('Signature JWT invalide.');
         }
         foreach (['iss', 'aud', 'sub', 'iat', 'exp', 'jti'] as $required) {
-            if (!array_key_exists($required, $claims)) { throw new BadCredentialsException('Claim JWT manquant.'); }
+            if (!array_key_exists($required, $claims)) {
+                throw new BadCredentialsException('Claim JWT manquant.');
+            }
         }
         $audiences = is_array($claims['aud']) ? $claims['aud'] : [$claims['aud']];
         $now = time();
@@ -47,8 +53,15 @@ final readonly class ExternalSiteJwtVerifier
     /** @return array<string, mixed> */
     private function decodeJson(string $part): array
     {
-        try { $value = json_decode($this->decode($part), true, 32, JSON_THROW_ON_ERROR); } catch (\Throwable) { throw new BadCredentialsException('JWT mal formé.'); }
-        if (!is_array($value)) { throw new BadCredentialsException('JWT mal formé.'); }
+        try {
+            $value = json_decode($this->decode($part), true, 32, JSON_THROW_ON_ERROR);
+        } catch (\Throwable) {
+            throw new BadCredentialsException('JWT mal formé.');
+        }
+        if (!is_array($value)) {
+            throw new BadCredentialsException('JWT mal formé.');
+        }
+
         return $value;
     }
 
@@ -56,7 +69,10 @@ final readonly class ExternalSiteJwtVerifier
     {
         $padding = (4 - strlen($value) % 4) % 4;
         $decoded = base64_decode(strtr($value.str_repeat('=', $padding), '-_', '+/'), true);
-        if (false === $decoded) { throw new BadCredentialsException('JWT mal formé.'); }
+        if (false === $decoded) {
+            throw new BadCredentialsException('JWT mal formé.');
+        }
+
         return $decoded;
     }
 }

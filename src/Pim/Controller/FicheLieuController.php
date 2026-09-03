@@ -23,14 +23,12 @@ use Symfony\Component\Routing\Attribute\Route;
  */
 final class FicheLieuController extends AbstractController
 {
-    #[
-        Route(
-            '/referentiel/lieux/fiche/{id}',
-            name: 'app_mdm_fiche_lieu',
-            requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
-            methods: ['GET', 'POST'],
-        ),
-    ]
+    #[Route(
+        '/referentiel/lieux/fiche/{id}',
+        name: 'app_mdm_fiche_lieu',
+        requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
+        methods: ['GET', 'POST'],
+    ),]
     public function __invoke(
         Request $request,
         string $id,

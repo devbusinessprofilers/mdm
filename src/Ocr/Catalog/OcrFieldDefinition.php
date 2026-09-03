@@ -7,7 +7,7 @@ namespace App\Ocr\Catalog;
 final readonly class OcrFieldDefinition
 {
     /**
-     * @param array<string, string>       $options
+     * @param array<string, string>      $options
      * @param list<array<string, mixed>> $columns
      */
     public function __construct(
@@ -17,7 +17,8 @@ final readonly class OcrFieldDefinition
         public bool $collection = false,
         public array $options = [],
         public array $columns = [],
-    ) {}
+    ) {
+    }
 
     /** @return array<string, mixed> */
     public function snapshot(): array

@@ -53,12 +53,35 @@ class LegacyFicheMapping
         $this->initializeTimestamps();
     }
 
-    public function syspadId(): int { return $this->syspadId; }
-    public function ficheId(): Ulid { return $this->ficheId; }
-    public function label(): ?string { return $this->label; }
-    public function gamme(): string { return $this->gamme; }
-    public function photosJson(): ?string { return $this->photosJson; }
-    public function photosSeededAt(): ?\DateTimeImmutable { return $this->photosSeededAt; }
+    public function syspadId(): int
+    {
+        return $this->syspadId;
+    }
+
+    public function ficheId(): Ulid
+    {
+        return $this->ficheId;
+    }
+
+    public function label(): ?string
+    {
+        return $this->label;
+    }
+
+    public function gamme(): string
+    {
+        return $this->gamme;
+    }
+
+    public function photosJson(): ?string
+    {
+        return $this->photosJson;
+    }
+
+    public function photosSeededAt(): ?\DateTimeImmutable
+    {
+        return $this->photosSeededAt;
+    }
 
     public function refresh(?string $label, string $gamme, ?string $photosJson): void
     {

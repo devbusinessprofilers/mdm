@@ -24,8 +24,9 @@ final class ChampsOmisCompleteur
     private const ABSENT = "\0absent";
 
     /**
-     * @param FormInterface<mixed>  $form
-     * @param array<string, mixed>  $data
+     * @param FormInterface<mixed> $form
+     * @param array<string, mixed> $data
+     *
      * @return array<string, mixed>
      */
     public static function completer(FormInterface $form, array $data, TypeFiche $type): array
@@ -47,6 +48,7 @@ final class ChampsOmisCompleteur
      * @param FormInterface<mixed> $parent
      * @param list<string>         $segments
      * @param array<string, mixed> $donnees
+     *
      * @return array<string, mixed>
      */
     private static function completerChemin(FormInterface $parent, array $segments, array $donnees): array

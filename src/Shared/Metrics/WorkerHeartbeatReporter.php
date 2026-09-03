@@ -211,7 +211,7 @@ final class WorkerHeartbeatReporter
             $transports[$transport] = ['handled' => $stats['handled'], 'ms_sum' => (int) round($stats['ms_sum'])];
         }
         $this->connection->executeStatement(
-            "INSERT INTO perf_sample (sampled_at, kind, subject, metrics) VALUES (NOW(), :kind, :subject, :metrics)",
+            'INSERT INTO perf_sample (sampled_at, kind, subject, metrics) VALUES (NOW(), :kind, :subject, :metrics)',
             [
                 'kind' => PerfSample::KIND_WORKER,
                 'subject' => $this->workerKey,

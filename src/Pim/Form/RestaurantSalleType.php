@@ -51,7 +51,7 @@ final class RestaurantSalleType extends AbstractType
 
     /**
      * @param FormBuilderInterface<RestaurantSalle|null> $builder
-     * @param class-string<FormTypeInterface<mixed>> $type
+     * @param class-string<FormTypeInterface<mixed>>     $type
      */
     private function field(
         FormBuilderInterface $builder,

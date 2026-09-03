@@ -11,18 +11,14 @@ use Symfony\Component\Uid\Ulid;
 #[ORM\Entity]
 #[ORM\Table(name: 'dam_media_rendition')]
 #[ORM\Index(name: 'IDX_DAM_RENDITION_MEDIA', columns: ['media_id'])]
-#[
-    ORM\UniqueConstraint(
-        name: 'UNIQ_DAM_RENDITION_MEDIA_NAME',
-        columns: ['media_id', 'name'],
-    ),
-]
-#[
-    ORM\UniqueConstraint(
-        name: 'UNIQ_DAM_RENDITION_STORAGE_KEY',
-        columns: ['storage_key'],
-    ),
-]
+#[ORM\UniqueConstraint(
+    name: 'UNIQ_DAM_RENDITION_MEDIA_NAME',
+    columns: ['media_id', 'name'],
+),]
+#[ORM\UniqueConstraint(
+    name: 'UNIQ_DAM_RENDITION_STORAGE_KEY',
+    columns: ['storage_key'],
+),]
 #[ORM\HasLifecycleCallbacks]
 final class MediaRendition
 {

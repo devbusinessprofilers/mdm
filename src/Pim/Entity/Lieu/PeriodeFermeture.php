@@ -40,14 +40,58 @@ class PeriodeFermeture
         $this->initializeTimestamps();
     }
 
-    public function id(): string { return (string) $this->id; }
-    public function lieu(): ?Lieu { return $this->lieu; }
-    public function nom(): string { return $this->nom; }
-    public function dateDebut(): ?\DateTimeImmutable { return $this->dateDebut; }
-    public function dateFin(): ?\DateTimeImmutable { return $this->dateFin; }
-    public function changeNom(string $value): void { $this->nom = trim($value); $this->touch(); }
-    public function changeDateDebut(?\DateTimeImmutable $value): void { $this->dateDebut = $value; $this->touch(); }
-    public function changeDateFin(?\DateTimeImmutable $value): void { $this->dateFin = $value; $this->touch(); }
-    public function attachTo(Lieu $lieu): void { $this->lieu = $lieu; }
-    public function detachFrom(Lieu $lieu): void { if ($this->lieu === $lieu) { $this->lieu = null; } }
+    public function id(): string
+    {
+        return (string) $this->id;
+    }
+
+    public function lieu(): ?Lieu
+    {
+        return $this->lieu;
+    }
+
+    public function nom(): string
+    {
+        return $this->nom;
+    }
+
+    public function dateDebut(): ?\DateTimeImmutable
+    {
+        return $this->dateDebut;
+    }
+
+    public function dateFin(): ?\DateTimeImmutable
+    {
+        return $this->dateFin;
+    }
+
+    public function changeNom(string $value): void
+    {
+        $this->nom = trim($value);
+        $this->touch();
+    }
+
+    public function changeDateDebut(?\DateTimeImmutable $value): void
+    {
+        $this->dateDebut = $value;
+        $this->touch();
+    }
+
+    public function changeDateFin(?\DateTimeImmutable $value): void
+    {
+        $this->dateFin = $value;
+        $this->touch();
+    }
+
+    public function attachTo(Lieu $lieu): void
+    {
+        $this->lieu = $lieu;
+    }
+
+    public function detachFrom(Lieu $lieu): void
+    {
+        if ($this->lieu === $lieu) {
+            $this->lieu = null;
+        }
+    }
 }

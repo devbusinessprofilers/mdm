@@ -24,25 +24,30 @@ final readonly class LovTranslationScheduler
         private OutboxPublisherInterface $outbox,
         private AttributeDefinitionTranslationRepository $definitionTranslations,
         private AttributeValueTranslationRepository $valueTranslations,
-    ) {}
+    ) {
+    }
 
     public function scheduleDefinition(AttributDefinition $attribute): int
     {
-        if (!$attribute->translatable() || 'PRESTATAIRE' === $attribute->code()) { return 0; }
+        if (!$attribute->translatable() || 'PRESTATAIRE' === $attribute->code()) {
+            return 0;
+        }
 
         return $this->schedule('definition', $attribute->id(), $attribute->label(), fn (SupportedLocale $locale) => $this->definitionTranslations->findOne($attribute, $locale), static fn (SupportedLocale $locale) => new AttributeDefinitionTranslation($attribute, $locale, $attribute->label()));
     }
 
     public function scheduleValue(ValeurAttribut $value): int
     {
-        if (!$value->attribute()->translatable() || 'PRESTATAIRE' === $value->attribute()->code()) { return 0; }
+        if (!$value->attribute()->translatable() || 'PRESTATAIRE' === $value->attribute()->code()) {
+            return 0;
+        }
 
         return $this->schedule('value', $value->id(), $value->label(), fn (SupportedLocale $locale) => $this->valueTranslations->findOne($value, $locale), static fn (SupportedLocale $locale) => new AttributeValueTranslation($value, $locale, $value->label()));
     }
 
     /**
      * @param callable(SupportedLocale): ?AbstractLovTranslation $finder
-     * @param callable(SupportedLocale): AbstractLovTranslation $factory
+     * @param callable(SupportedLocale): AbstractLovTranslation  $factory
      */
     private function schedule(string $subject, int $subjectId, string $source, callable $finder, callable $factory): int
     {

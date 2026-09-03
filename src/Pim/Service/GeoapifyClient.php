@@ -267,7 +267,7 @@ final class GeoapifyClient implements GeocodeurEtrangerInterface
 
     /**
      * @param array<string, mixed> $raw
-     * @param list<string>          $cles
+     * @param list<string>         $cles
      */
     private static function premiereChaine(array $raw, array $cles): ?string
     {

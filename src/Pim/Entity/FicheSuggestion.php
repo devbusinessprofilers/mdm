@@ -103,22 +103,81 @@ class FicheSuggestion
         $this->createdAt = new \DateTimeImmutable();
     }
 
-    public function id(): string { return (string) $this->id; }
-    public function fiche(): Fiche { return $this->fiche; }
-    public function source(): SuggestionSource { return $this->source; }
-    public function action(): SuggestionAction { return $this->action; }
-    public function champ(): string { return $this->champ; }
-    public function label(): string { return $this->label; }
-    public function valeurActuelle(): ?string { return $this->valeurActuelle; }
-    public function valeurProposee(): ?string { return $this->valeurProposee; }
-    public function score(): ?float { return null === $this->score ? null : (float) $this->score; }
+    public function id(): string
+    {
+        return (string) $this->id;
+    }
+
+    public function fiche(): Fiche
+    {
+        return $this->fiche;
+    }
+
+    public function source(): SuggestionSource
+    {
+        return $this->source;
+    }
+
+    public function action(): SuggestionAction
+    {
+        return $this->action;
+    }
+
+    public function champ(): string
+    {
+        return $this->champ;
+    }
+
+    public function label(): string
+    {
+        return $this->label;
+    }
+
+    public function valeurActuelle(): ?string
+    {
+        return $this->valeurActuelle;
+    }
+
+    public function valeurProposee(): ?string
+    {
+        return $this->valeurProposee;
+    }
+
+    public function score(): ?float
+    {
+        return null === $this->score ? null : (float) $this->score;
+    }
+
     /** @return array<string, mixed>|null */
-    public function payload(): ?array { return $this->payload; }
-    public function statut(): SuggestionStatut { return $this->statut; }
-    public function isPending(): bool { return SuggestionStatut::EnAttente === $this->statut; }
-    public function createdAt(): \DateTimeImmutable { return $this->createdAt; }
-    public function decidedBy(): ?string { return $this->decidedBy; }
-    public function decidedAt(): ?\DateTimeImmutable { return $this->decidedAt; }
+    public function payload(): ?array
+    {
+        return $this->payload;
+    }
+
+    public function statut(): SuggestionStatut
+    {
+        return $this->statut;
+    }
+
+    public function isPending(): bool
+    {
+        return SuggestionStatut::EnAttente === $this->statut;
+    }
+
+    public function createdAt(): \DateTimeImmutable
+    {
+        return $this->createdAt;
+    }
+
+    public function decidedBy(): ?string
+    {
+        return $this->decidedBy;
+    }
+
+    public function decidedAt(): ?\DateTimeImmutable
+    {
+        return $this->decidedAt;
+    }
 
     /**
      * Rafraîchit une suggestion existante avec un constat plus récent (garde l'écart à jour).

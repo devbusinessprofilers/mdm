@@ -28,7 +28,8 @@ final readonly class PasswordResetManager
         private UserPasswordHasherInterface $hasher,
         private ParametreProviderInterface $parametres,
         private LoggerInterface $logger,
-    ) {}
+    ) {
+    }
 
     public function request(User $user): PasswordResetRequest
     {

@@ -21,288 +21,286 @@ use App\Pim\Api\State\ServiceEvenementielItemProvider;
 use App\Pim\Api\State\ServiceEvenementielMediaProcessor;
 use App\Pim\Api\State\ServiceEvenementielPatchProcessor;
 
-#[
-    ApiResource(
-        shortName: "ServiceEvenementiel",
-        description: "Fiche Service échangée avec le site externe.",
-        formats: ["json" => ["application/json"]],
-        operations: [
-            new GetCollection(
-                uriTemplate: "/v1/services",
-                paginationEnabled: false,
-                provider: ServiceEvenementielCollectionProvider::class,
-                openapi: new Operation(
-                    tags: ["Services événementiels"],
-                    summary: "Lister les services",
-                    parameters: [
-                        new Parameter(
-                            "status",
-                            "query",
-                            "Filtre de statut",
-                            schema: ["type" => "string"],
-                        ),
-                        new Parameter(
-                            "cursor",
-                            "query",
-                            "Curseur opaque",
-                            schema: ["type" => "string"],
-                        ),
-                        new Parameter(
-                            "limit",
-                            "query",
-                            "Nombre de résultats",
-                            schema: [
-                                "type" => "integer",
-                                "minimum" => 1,
-                                "maximum" => 100,
-                            ],
-                        ),
-                    ],
-                    security: [["bearerAuth" => []]],
-                ),
-            ),
-            new Get(
-                uriTemplate: "/v1/services/{id}",
-                requirements: ["id" => "[0-9A-HJKMNP-TV-Z]{26}"],
-                provider: ServiceEvenementielItemProvider::class,
-                openapi: new Operation(
-                    tags: ["Services événementiels"],
-                    summary: "Consulter un service",
-                    security: [["bearerAuth" => []]],
-                ),
-            ),
-            new Patch(
-                uriTemplate: "/v1/services/{id}",
-                requirements: ["id" => "[0-9A-HJKMNP-TV-Z]{26}"],
-                input: ServiceEvenementielPatchInput::class,
-                output: self::class,
-                inputFormats: ["json" => ["application/merge-patch+json"]],
-                denormalizationContext: ["allow_extra_attributes" => false],
-                read: false,
-                processor: ServiceEvenementielPatchProcessor::class,
-                openapi: new Operation(
-                    tags: ["Services événementiels"],
-                    summary: "Modifier partiellement un service",
-                    description: "Conserve le workflow courant.",
-                    parameters: [
-                        new Parameter(
-                            "If-Match",
-                            "header",
-                            "Version courante",
-                            true,
-                            schema: ["type" => "string"],
-                        ),
-                    ],
-                    security: [["bearerAuth" => []]],
-                ),
-            ),
-            new Post(
-                uriTemplate: "/v1/services/{serviceId}/medias",
-                uriVariables: [
-                    "serviceId" => new Link(
-                        fromClass: self::class,
-                        identifiers: ["id"],
-                        compositeIdentifier: false,
+#[ApiResource(
+    shortName: 'ServiceEvenementiel',
+    description: 'Fiche Service échangée avec le site externe.',
+    formats: ['json' => ['application/json']],
+    operations: [
+        new GetCollection(
+            uriTemplate: '/v1/services',
+            paginationEnabled: false,
+            provider: ServiceEvenementielCollectionProvider::class,
+            openapi: new Operation(
+                tags: ['Services événementiels'],
+                summary: 'Lister les services',
+                parameters: [
+                    new Parameter(
+                        'status',
+                        'query',
+                        'Filtre de statut',
+                        schema: ['type' => 'string'],
+                    ),
+                    new Parameter(
+                        'cursor',
+                        'query',
+                        'Curseur opaque',
+                        schema: ['type' => 'string'],
+                    ),
+                    new Parameter(
+                        'limit',
+                        'query',
+                        'Nombre de résultats',
+                        schema: [
+                            'type' => 'integer',
+                            'minimum' => 1,
+                            'maximum' => 100,
+                        ],
                     ),
                 ],
-                input: false,
-                output: LieuMediaResource::class,
-                deserialize: false,
-                read: false,
-                processor: ServiceEvenementielMediaProcessor::class,
-                openapi: new Operation(
-                    tags: ["Médias Services événementiels"],
-                    summary: "Téléverser une photo",
-                    parameters: [
-                        new Parameter(
-                            "If-Match",
-                            "header",
-                            "Version courante",
-                            true,
-                            schema: ["type" => "string"],
-                        ),
-                    ],
-                    requestBody: new RequestBody(
-                        "Photo et métadonnées",
-                        new \ArrayObject([
-                            "multipart/form-data" => [
-                                "schema" => [
-                                    "type" => "object",
-                                    "required" => ["photo"],
-                                    "properties" => [
-                                        "photo" => [
-                                            "type" => "string",
-                                            "format" => "binary",
+                security: [['bearerAuth' => []]],
+            ),
+        ),
+        new Get(
+            uriTemplate: '/v1/services/{id}',
+            requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
+            provider: ServiceEvenementielItemProvider::class,
+            openapi: new Operation(
+                tags: ['Services événementiels'],
+                summary: 'Consulter un service',
+                security: [['bearerAuth' => []]],
+            ),
+        ),
+        new Patch(
+            uriTemplate: '/v1/services/{id}',
+            requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
+            input: ServiceEvenementielPatchInput::class,
+            output: self::class,
+            inputFormats: ['json' => ['application/merge-patch+json']],
+            denormalizationContext: ['allow_extra_attributes' => false],
+            read: false,
+            processor: ServiceEvenementielPatchProcessor::class,
+            openapi: new Operation(
+                tags: ['Services événementiels'],
+                summary: 'Modifier partiellement un service',
+                description: 'Conserve le workflow courant.',
+                parameters: [
+                    new Parameter(
+                        'If-Match',
+                        'header',
+                        'Version courante',
+                        true,
+                        schema: ['type' => 'string'],
+                    ),
+                ],
+                security: [['bearerAuth' => []]],
+            ),
+        ),
+        new Post(
+            uriTemplate: '/v1/services/{serviceId}/medias',
+            uriVariables: [
+                'serviceId' => new Link(
+                    fromClass: self::class,
+                    identifiers: ['id'],
+                    compositeIdentifier: false,
+                ),
+            ],
+            input: false,
+            output: LieuMediaResource::class,
+            deserialize: false,
+            read: false,
+            processor: ServiceEvenementielMediaProcessor::class,
+            openapi: new Operation(
+                tags: ['Médias Services événementiels'],
+                summary: 'Téléverser une photo',
+                parameters: [
+                    new Parameter(
+                        'If-Match',
+                        'header',
+                        'Version courante',
+                        true,
+                        schema: ['type' => 'string'],
+                    ),
+                ],
+                requestBody: new RequestBody(
+                    'Photo et métadonnées',
+                    new \ArrayObject([
+                        'multipart/form-data' => [
+                            'schema' => [
+                                'type' => 'object',
+                                'required' => ['photo'],
+                                'properties' => [
+                                    'photo' => [
+                                        'type' => 'string',
+                                        'format' => 'binary',
+                                    ],
+                                    'usage' => [
+                                        'type' => 'string',
+                                        'enum' => [
+                                            'PHOTO_DIVERSE',
                                         ],
-                                        "usage" => [
-                                            "type" => "string",
-                                            "enum" => [
-                                                "PHOTO_DIVERSE",
-                                            ],
-                                        ],
-                                        "legende" => [
-                                            "type" => "string",
-                                            "nullable" => true,
-                                        ],
+                                    ],
+                                    'legende' => [
+                                        'type' => 'string',
+                                        'nullable' => true,
                                     ],
                                 ],
                             ],
-                        ]),
+                        ],
+                    ]),
+                    true,
+                ),
+                security: [['bearerAuth' => []]],
+            ),
+        ),
+        new Put(
+            uriTemplate: '/v1/services/{serviceId}/medias/ordre',
+            uriVariables: [
+                'serviceId' => new Link(
+                    fromClass: self::class,
+                    identifiers: ['id'],
+                    compositeIdentifier: false,
+                ),
+            ],
+            input: MediaOrderInput::class,
+            output: self::class,
+            read: false,
+            processor: ServiceEvenementielMediaProcessor::class,
+            openapi: new Operation(
+                tags: ['Médias Services événementiels'],
+                summary: 'Réordonner les photos',
+                parameters: [
+                    new Parameter(
+                        'If-Match',
+                        'header',
+                        'Version courante',
                         true,
-                    ),
-                    security: [["bearerAuth" => []]],
-                ),
-            ),
-            new Put(
-                uriTemplate: "/v1/services/{serviceId}/medias/ordre",
-                uriVariables: [
-                    "serviceId" => new Link(
-                        fromClass: self::class,
-                        identifiers: ["id"],
-                        compositeIdentifier: false,
+                        schema: ['type' => 'string'],
                     ),
                 ],
-                input: MediaOrderInput::class,
-                output: self::class,
-                read: false,
-                processor: ServiceEvenementielMediaProcessor::class,
-                openapi: new Operation(
-                    tags: ["Médias Services événementiels"],
-                    summary: "Réordonner les photos",
-                    parameters: [
-                        new Parameter(
-                            "If-Match",
-                            "header",
-                            "Version courante",
-                            true,
-                            schema: ["type" => "string"],
-                        ),
-                    ],
-                    security: [["bearerAuth" => []]],
-                ),
+                security: [['bearerAuth' => []]],
             ),
-            new Patch(
-                uriTemplate: "/v1/services/{serviceId}/medias/{resourceId}",
-                uriVariables: [
-                    "serviceId" => new Link(
-                        fromClass: self::class,
-                        identifiers: ["id"],
-                        compositeIdentifier: false,
-                    ),
-                    "resourceId" => new Link(
-                        fromClass: self::class,
-                        identifiers: ["id"],
-                        compositeIdentifier: false,
+        ),
+        new Patch(
+            uriTemplate: '/v1/services/{serviceId}/medias/{resourceId}',
+            uriVariables: [
+                'serviceId' => new Link(
+                    fromClass: self::class,
+                    identifiers: ['id'],
+                    compositeIdentifier: false,
+                ),
+                'resourceId' => new Link(
+                    fromClass: self::class,
+                    identifiers: ['id'],
+                    compositeIdentifier: false,
+                ),
+            ],
+            input: MediaPatchInput::class,
+            output: LieuMediaResource::class,
+            inputFormats: ['json' => ['application/merge-patch+json']],
+            read: false,
+            processor: ServiceEvenementielMediaProcessor::class,
+            openapi: new Operation(
+                tags: ['Médias Services événementiels'],
+                summary: 'Modifier une photo',
+                parameters: [
+                    new Parameter(
+                        'If-Match',
+                        'header',
+                        'Version courante',
+                        true,
+                        schema: ['type' => 'string'],
                     ),
                 ],
-                input: MediaPatchInput::class,
-                output: LieuMediaResource::class,
-                inputFormats: ["json" => ["application/merge-patch+json"]],
-                read: false,
-                processor: ServiceEvenementielMediaProcessor::class,
-                openapi: new Operation(
-                    tags: ["Médias Services événementiels"],
-                    summary: "Modifier une photo",
-                    parameters: [
-                        new Parameter(
-                            "If-Match",
-                            "header",
-                            "Version courante",
-                            true,
-                            schema: ["type" => "string"],
-                        ),
-                    ],
-                    security: [["bearerAuth" => []]],
-                ),
+                security: [['bearerAuth' => []]],
             ),
-            new Post(
-                uriTemplate: "/v1/services/{serviceId}/medias/{resourceId}/fichier",
-                uriVariables: [
-                    "serviceId" => new Link(
-                        fromClass: self::class,
-                        identifiers: ["id"],
-                        compositeIdentifier: false,
-                    ),
-                    "resourceId" => new Link(
-                        fromClass: self::class,
-                        identifiers: ["id"],
-                        compositeIdentifier: false,
+        ),
+        new Post(
+            uriTemplate: '/v1/services/{serviceId}/medias/{resourceId}/fichier',
+            uriVariables: [
+                'serviceId' => new Link(
+                    fromClass: self::class,
+                    identifiers: ['id'],
+                    compositeIdentifier: false,
+                ),
+                'resourceId' => new Link(
+                    fromClass: self::class,
+                    identifiers: ['id'],
+                    compositeIdentifier: false,
+                ),
+            ],
+            input: false,
+            output: LieuMediaResource::class,
+            deserialize: false,
+            read: false,
+            processor: ServiceEvenementielMediaProcessor::class,
+            openapi: new Operation(
+                tags: ['Médias Services événementiels'],
+                summary: 'Remplacer le fichier photo',
+                parameters: [
+                    new Parameter(
+                        'If-Match',
+                        'header',
+                        'Version courante',
+                        true,
+                        schema: ['type' => 'string'],
                     ),
                 ],
-                input: false,
-                output: LieuMediaResource::class,
-                deserialize: false,
-                read: false,
-                processor: ServiceEvenementielMediaProcessor::class,
-                openapi: new Operation(
-                    tags: ["Médias Services événementiels"],
-                    summary: "Remplacer le fichier photo",
-                    parameters: [
-                        new Parameter(
-                            "If-Match",
-                            "header",
-                            "Version courante",
-                            true,
-                            schema: ["type" => "string"],
-                        ),
-                    ],
-                    requestBody: new RequestBody(
-                        "Photo",
-                        new \ArrayObject([
-                            "multipart/form-data" => [
-                                "schema" => [
-                                    "type" => "object",
-                                    "required" => ["photo"],
-                                    "properties" => [
-                                        "photo" => [
-                                            "type" => "string",
-                                            "format" => "binary",
-                                        ],
+                requestBody: new RequestBody(
+                    'Photo',
+                    new \ArrayObject([
+                        'multipart/form-data' => [
+                            'schema' => [
+                                'type' => 'object',
+                                'required' => ['photo'],
+                                'properties' => [
+                                    'photo' => [
+                                        'type' => 'string',
+                                        'format' => 'binary',
                                     ],
                                 ],
                             ],
-                        ]),
-                        true,
-                    ),
-                    security: [["bearerAuth" => []]],
+                        ],
+                    ]),
+                    true,
                 ),
+                security: [['bearerAuth' => []]],
             ),
-            new Delete(
-                uriTemplate: "/v1/services/{serviceId}/medias/{resourceId}",
-                uriVariables: [
-                    "serviceId" => new Link(
-                        fromClass: self::class,
-                        identifiers: ["id"],
-                        compositeIdentifier: false,
-                    ),
-                    "resourceId" => new Link(
-                        fromClass: self::class,
-                        identifiers: ["id"],
-                        compositeIdentifier: false,
+        ),
+        new Delete(
+            uriTemplate: '/v1/services/{serviceId}/medias/{resourceId}',
+            uriVariables: [
+                'serviceId' => new Link(
+                    fromClass: self::class,
+                    identifiers: ['id'],
+                    compositeIdentifier: false,
+                ),
+                'resourceId' => new Link(
+                    fromClass: self::class,
+                    identifiers: ['id'],
+                    compositeIdentifier: false,
+                ),
+            ],
+            input: false,
+            output: false,
+            read: false,
+            processor: ServiceEvenementielMediaProcessor::class,
+            openapi: new Operation(
+                tags: ['Médias Services événementiels'],
+                summary: 'Supprimer une photo',
+                parameters: [
+                    new Parameter(
+                        'If-Match',
+                        'header',
+                        'Version courante',
+                        true,
+                        schema: ['type' => 'string'],
                     ),
                 ],
-                input: false,
-                output: false,
-                read: false,
-                processor: ServiceEvenementielMediaProcessor::class,
-                openapi: new Operation(
-                    tags: ["Médias Services événementiels"],
-                    summary: "Supprimer une photo",
-                    parameters: [
-                        new Parameter(
-                            "If-Match",
-                            "header",
-                            "Version courante",
-                            true,
-                            schema: ["type" => "string"],
-                        ),
-                    ],
-                    security: [["bearerAuth" => []]],
-                ),
+                security: [['bearerAuth' => []]],
             ),
-        ],
-    ),
-]
+        ),
+    ],
+),]
 final readonly class ServiceEvenementielResource
 {
     /**
@@ -354,5 +352,6 @@ final readonly class ServiceEvenementielResource
         public ?bool $surDevis,
         public ?string $youtubeUrl,
         public array $medias,
-    ) {}
+    ) {
+    }
 }

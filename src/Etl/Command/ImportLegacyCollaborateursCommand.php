@@ -18,12 +18,12 @@ use App\Pim\Repository\SiteDiffusionRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use OpenSpout\Reader\XLSX\Reader;
 use Symfony\Component\Console\Attribute\AsCommand;
-use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
 /**
  * Import manuel des collaborateurs legacy depuis le XLSX d'export production

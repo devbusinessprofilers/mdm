@@ -12,7 +12,7 @@ namespace App\GoLive;
 final readonly class Etape
 {
     /**
-     * @param \Closure(): EtapeEtat                            $verification
+     * @param \Closure(): EtapeEtat                              $verification
      * @param (\Closure(SousCommandeRunnerInterface): bool)|null $execution
      */
     public function __construct(

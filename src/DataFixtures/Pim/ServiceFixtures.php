@@ -40,7 +40,7 @@ final class ServiceFixtures extends Fixture implements FixtureGroupInterface
 
     public function load(ObjectManager $manager): void
     {
-        if (!($manager instanceof EntityManagerInterface)) {
+        if (!$manager instanceof EntityManagerInterface) {
             throw new \LogicException('Les fixtures Service nécessitent Doctrine ORM.');
         }
 

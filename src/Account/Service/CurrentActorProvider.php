@@ -10,7 +10,9 @@ use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 final readonly class CurrentActorProvider
 {
-    public function __construct(private Security $security) {}
+    public function __construct(private Security $security)
+    {
+    }
 
     public function id(): string
     {

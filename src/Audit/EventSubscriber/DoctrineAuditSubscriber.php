@@ -21,11 +21,11 @@ use App\Pim\Entity\Lieu\PeriodeFermeture;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Entity\Lieu\Salle;
 use App\Pim\Entity\Localisation;
-use App\Pim\Entity\Service\ServiceEvenementiel;
 use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Entity\Restaurant\RestaurantAcces;
 use App\Pim\Entity\Restaurant\RestaurantPeriodeFermeture;
 use App\Pim\Entity\Restaurant\RestaurantSalle;
+use App\Pim\Entity\Service\ServiceEvenementiel;
 use App\Pim\Enum\NatureRessource;
 use Doctrine\Bundle\DoctrineBundle\Attribute\AsDoctrineListener;
 use Doctrine\ORM\Event\OnFlushEventArgs;
@@ -394,11 +394,11 @@ final readonly class DoctrineAuditSubscriber
     }
 
     /**
-     * @param list<Lieu>     $lieux
-     * @param list<Activite> $activites
+     * @param list<Lieu>                $lieux
+     * @param list<Activite>            $activites
      * @param list<ServiceEvenementiel> $services
-     * @param list<Restaurant> $restaurants
-     * @param list<Fiche> $fiches
+     * @param list<Restaurant>          $restaurants
+     * @param list<Fiche>               $fiches
      */
     private function resolveFiche(
         object $entity,

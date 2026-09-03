@@ -6,5 +6,7 @@ namespace App\Enrichment\Message;
 
 final readonly class TranslatePublishedFiche
 {
-    public function __construct(public string $ficheId, public string $locale, public string $requestToken) {}
+    public function __construct(public string $ficheId, public string $locale, public string $requestToken)
+    {
+    }
 }

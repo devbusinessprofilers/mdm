@@ -14,5 +14,6 @@ final readonly class ServiceEvenementielListResource
         public string $status,
         public int $completeness,
         public string $updatedAt,
-    ) {}
+    ) {
+    }
 }

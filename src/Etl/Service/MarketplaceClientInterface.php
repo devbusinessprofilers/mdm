@@ -55,8 +55,8 @@ interface MarketplaceClientInterface
      * @param list<string> $locations
      *
      * @return array{removed: int, remaining: int, principaleRemaining: bool}|false|null
-     *         les compteurs après purge ; faux sur 409 (séquence dépassée) ;
-     *         null sur 404 (fiche inconnue de la marketplace : rien à purger)
+     *                                                                                   les compteurs après purge ; faux sur 409 (séquence dépassée) ;
+     *                                                                                   null sur 404 (fiche inconnue de la marketplace : rien à purger)
      *
      * @throws MarketplaceApiException
      */

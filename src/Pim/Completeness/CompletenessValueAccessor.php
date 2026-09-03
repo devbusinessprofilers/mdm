@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Pim\Completeness;
 
-use BackedEnum;
 use Doctrine\Common\Collections\Collection;
 
 final class CompletenessValueAccessor
@@ -44,6 +43,6 @@ final class CompletenessValueAccessor
 
     public function comparable(mixed $value): mixed
     {
-        return $value instanceof BackedEnum ? $value->value : $value;
+        return $value instanceof \BackedEnum ? $value->value : $value;
     }
 }

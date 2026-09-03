@@ -25,14 +25,15 @@ final readonly class FicheDocumentManager
         private OutboxPublisherInterface $outbox,
         private FicheDocumentUploader $uploader,
         private InternalFicheMutationPolicy $mutationPolicy,
-    ) {}
+    ) {
+    }
 
     /**
      * Dépôt documentaire du Restaurant — pendant de LieuDocumentManager::upload,
      * la salle rattachée étant une RestaurantSalle (l'entité porte les gardes
      * d'appartenance dans addRessource).
      *
-     * @param list<UploadedFile> $files
+     * @param list<UploadedFile>                                                                                $files
      * @param array{usage: DocumentUsage, salle: RestaurantSalle|null, title: string|null, source: string|null} $data
      */
     public function upload(Restaurant $restaurant, array $files, array $data, string $actor): int
@@ -44,15 +45,19 @@ final readonly class FicheDocumentManager
     }
 
     /**
-     * @param list<UploadedFile> $files
+     * @param list<UploadedFile>                                                                                $files
      * @param array{usage: DocumentUsage, salle: RestaurantSalle|null, title: string|null, source: string|null} $data
      */
     private function uploadWithinMutation(Restaurant $restaurant, array $files, array $data, string $actor): int
     {
         $usage = $data['usage'];
         $salle = $data['salle'];
-        if ($usage->requiresRoom() && null === $salle) { throw new \DomainException('Un plan de salle doit être rattaché à une salle.'); }
-        if (!$this->withinMaximum($restaurant->fiche(), $usage, $salle, count($files))) { throw new \DomainException('Le nombre maximal de documents pour cet usage serait dépassé.'); }
+        if ($usage->requiresRoom() && null === $salle) {
+            throw new \DomainException('Un plan de salle doit être rattaché à une salle.');
+        }
+        if (!$this->withinMaximum($restaurant->fiche(), $usage, $salle, count($files))) {
+            throw new \DomainException('Le nombre maximal de documents pour cet usage serait dépassé.');
+        }
         $uploaded = [];
         try {
             foreach ($files as $file) {
@@ -69,7 +74,12 @@ final readonly class FicheDocumentManager
             }
             $this->changed($restaurant->fiche());
         } catch (\Throwable $exception) {
-            foreach ($uploaded as $asset) { try { $this->uploader->delete($asset); } catch (\Throwable) {} }
+            foreach ($uploaded as $asset) {
+                try {
+                    $this->uploader->delete($asset);
+                } catch (\Throwable) {
+                }
+            }
             throw $exception;
         }
 
@@ -92,8 +102,12 @@ final readonly class FicheDocumentManager
         if (\array_key_exists('salle', $data)) {
             $salle = ($data['salle'] ?? null) instanceof RestaurantSalle ? $data['salle'] : null;
             $usage = $document->documentUsage();
-            if (null !== $usage && $usage->requiresRoom() && null === $salle) { throw new \DomainException('Un plan de salle doit être rattaché à une salle.'); }
-            if (null !== $usage && $salle !== $document->restaurantSalle() && !$this->withinMaximum($fiche, $usage, $salle, 1, $document)) { throw new \DomainException('Le nombre maximal de documents pour cet usage serait dépassé.'); }
+            if (null !== $usage && $usage->requiresRoom() && null === $salle) {
+                throw new \DomainException('Un plan de salle doit être rattaché à une salle.');
+            }
+            if (null !== $usage && $salle !== $document->restaurantSalle() && !$this->withinMaximum($fiche, $usage, $salle, 1, $document)) {
+                throw new \DomainException('Le nombre maximal de documents pour cet usage serait dépassé.');
+            }
             $document->changeRestaurantSalle($salle);
         }
         $document->changeLegende(is_string($data['title'] ?? null) ? $data['title'] : null);
@@ -125,7 +139,10 @@ final readonly class FicheDocumentManager
             $this->outbox->enqueue(new DeleteMedia($old));
             $this->changed($fiche);
         } catch (\Throwable $exception) {
-            try { $this->uploader->delete($asset); } catch (\Throwable) {}
+            try {
+                $this->uploader->delete($asset);
+            } catch (\Throwable) {
+            }
             throw $exception;
         }
     }
@@ -166,10 +183,14 @@ final readonly class FicheDocumentManager
 
     private function withinMaximum(Fiche $fiche, DocumentUsage $usage, ?RestaurantSalle $salle, int $added, ?RessourceLieu $current = null): bool
     {
-        if (null === $usage->maximumCount()) { return true; }
+        if (null === $usage->maximumCount()) {
+            return true;
+        }
         $count = 0;
         foreach ($fiche->resources() as $resource) {
-            if ($resource !== $current && $resource->usage() === $usage->value && (!$usage->requiresRoom() || $resource->restaurantSalle() === $salle)) { ++$count; }
+            if ($resource !== $current && $resource->usage() === $usage->value && (!$usage->requiresRoom() || $resource->restaurantSalle() === $salle)) {
+                ++$count;
+            }
         }
 
         return $count + $added <= $usage->maximumCount();
@@ -178,7 +199,9 @@ final readonly class FicheDocumentManager
     private function unpublish(RessourceLieu $document): void
     {
         $key = $document->requestUnpublication();
-        if (null !== $key) { $this->outbox->enqueue(new UnpublishDocument($document->id(), $key)); }
+        if (null !== $key) {
+            $this->outbox->enqueue(new UnpublishDocument($document->id(), $key));
+        }
     }
 
     private function changed(Fiche $fiche): void

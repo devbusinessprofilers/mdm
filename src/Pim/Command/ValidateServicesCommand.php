@@ -15,12 +15,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
-#[
-    AsCommand(
-        name: "app:services:validate",
-        description: "Contrôle les fiches Service existantes sans modifier les données.",
-    ),
-]
+#[AsCommand(
+    name: 'app:services:validate',
+    description: 'Contrôle les fiches Service existantes sans modifier les données.',
+),]
 final class ValidateServicesCommand extends Command
 {
     public function __construct(
@@ -33,10 +31,10 @@ final class ValidateServicesCommand extends Command
     protected function configure(): void
     {
         $this->addOption(
-            "submission",
+            'submission',
             null,
             InputOption::VALUE_NONE,
-            "Ajoute les contraintes nécessaires à la soumission.",
+            'Ajoute les contraintes nécessaires à la soumission.',
         );
     }
 
@@ -47,20 +45,20 @@ final class ValidateServicesCommand extends Command
         $io = new SymfonyStyle($input, $output);
         $groups = [ValidationGroups::DRAFT];
 
-        if ($input->getOption("submission")) {
+        if ($input->getOption('submission')) {
             $groups[] = ValidationGroups::SUBMISSION;
         }
 
         $checked = 0;
         $invalid = 0;
         $query = $this->entityManager->createQuery(
-            "SELECT service FROM " .
-                ServiceEvenementiel::class .
-                " service ORDER BY service.id",
+            'SELECT service FROM '.
+                ServiceEvenementiel::class.
+                ' service ORDER BY service.id',
         );
 
         foreach ($query->toIterable() as $service) {
-            if (!($service instanceof ServiceEvenementiel)) {
+            if (!$service instanceof ServiceEvenementiel) {
                 continue;
             }
 
@@ -77,10 +75,10 @@ final class ValidateServicesCommand extends Command
                 $io->writeln(
                     json_encode(
                         [
-                            "id" => $service->id(),
-                            "code" => $service->code(),
-                            "field" => (string) $violation->getPropertyPath(),
-                            "error" => (string) $violation->getMessage(),
+                            'id' => $service->id(),
+                            'code' => $service->code(),
+                            'field' => (string) $violation->getPropertyPath(),
+                            'error' => (string) $violation->getMessage(),
                         ],
                         JSON_UNESCAPED_UNICODE |
                             JSON_UNESCAPED_SLASHES |
@@ -94,7 +92,7 @@ final class ValidateServicesCommand extends Command
 
         $io->comment(
             sprintf(
-                "%d service(s) contrôlé(s), %d invalide(s). Aucune donnée modifiée.",
+                '%d service(s) contrôlé(s), %d invalide(s). Aucune donnée modifiée.',
                 $checked,
                 $invalid,
             ),

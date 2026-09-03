@@ -33,9 +33,9 @@ final class AccesLieuType extends AbstractType
     }
 
     /**
-     * @param FormBuilderInterface<AccesLieu|null> $builder
+     * @param FormBuilderInterface<AccesLieu|null>   $builder
      * @param class-string<FormTypeInterface<mixed>> $type
-     * @param array<string, mixed> $options
+     * @param array<string, mixed>                   $options
      */
     private function field(FormBuilderInterface $builder, string $name, string $type, string $label, array $options = []): void
     {

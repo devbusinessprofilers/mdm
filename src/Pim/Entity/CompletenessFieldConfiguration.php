@@ -61,18 +61,65 @@ class CompletenessFieldConfiguration
         $this->label = trim($label);
     }
 
-    public function id(): ?int { return $this->id; }
-    public function ficheType(): TypeFiche { return $this->ficheType; }
-    public function fieldCode(): string { return $this->fieldCode; }
-    public function label(): string { return $this->label; }
-    public function formula(): CompletenessFormula { return $this->formula; }
-    public function weight(): float { return (float) $this->weight; }
-    public function targetLengthOverride(): ?int { return $this->targetLengthOverride; }
-    public function active(): bool { return $this->active; }
-    public function marketplace(): bool { return $this->marketplace; }
-    public function thematicSites(): bool { return $this->thematicSites; }
-    public function salesforce(): bool { return $this->salesforce; }
-    public function providerPortal(): bool { return $this->providerPortal; }
+    public function id(): ?int
+    {
+        return $this->id;
+    }
+
+    public function ficheType(): TypeFiche
+    {
+        return $this->ficheType;
+    }
+
+    public function fieldCode(): string
+    {
+        return $this->fieldCode;
+    }
+
+    public function label(): string
+    {
+        return $this->label;
+    }
+
+    public function formula(): CompletenessFormula
+    {
+        return $this->formula;
+    }
+
+    public function weight(): float
+    {
+        return (float) $this->weight;
+    }
+
+    public function targetLengthOverride(): ?int
+    {
+        return $this->targetLengthOverride;
+    }
+
+    public function active(): bool
+    {
+        return $this->active;
+    }
+
+    public function marketplace(): bool
+    {
+        return $this->marketplace;
+    }
+
+    public function thematicSites(): bool
+    {
+        return $this->thematicSites;
+    }
+
+    public function salesforce(): bool
+    {
+        return $this->salesforce;
+    }
+
+    public function providerPortal(): bool
+    {
+        return $this->providerPortal;
+    }
 
     public function refreshLabel(string $label): void
     {

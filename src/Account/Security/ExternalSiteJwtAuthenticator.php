@@ -16,9 +16,14 @@ use Symfony\Component\Security\Http\Authenticator\Passport\SelfValidatingPasspor
 
 final class ExternalSiteJwtAuthenticator extends AbstractAuthenticator
 {
-    public function __construct(private readonly ExternalSiteJwtVerifier $verifier) {}
+    public function __construct(private readonly ExternalSiteJwtVerifier $verifier)
+    {
+    }
 
-    public function supports(Request $request): bool { return str_starts_with($request->getPathInfo(), '/api/v1/'); }
+    public function supports(Request $request): bool
+    {
+        return str_starts_with($request->getPathInfo(), '/api/v1/');
+    }
 
     public function authenticate(Request $request): SelfValidatingPassport
     {
@@ -27,17 +32,27 @@ final class ExternalSiteJwtAuthenticator extends AbstractAuthenticator
         }
         $claims = $this->verifier->verify($matches[1]);
         $subject = (string) $claims['sub'];
-        if ('' === $subject) { throw new BadCredentialsException('Identité JWT vide.'); }
+        if ('' === $subject) {
+            throw new BadCredentialsException('Identité JWT vide.');
+        }
         $rawScopes = $claims['scope'] ?? $claims['scopes'] ?? [];
         $scopes = is_string($rawScopes) ? preg_split('/\s+/', trim($rawScopes), -1, PREG_SPLIT_NO_EMPTY) : $rawScopes;
         $scopes = is_array($scopes) ? array_values(array_unique(array_filter($scopes, is_string(...)))) : [];
+
         return new SelfValidatingPassport(new UserBadge($subject, static function (string $id) use ($scopes): ExternalSitePrincipal {
-            if ('' === $id) { throw new BadCredentialsException('Identité JWT vide.'); }
+            if ('' === $id) {
+                throw new BadCredentialsException('Identité JWT vide.');
+            }
+
             return new ExternalSitePrincipal($id, $scopes);
         }));
     }
 
-    public function onAuthenticationSuccess(Request $request, TokenInterface $token, string $firewallName): ?Response { return null; }
+    public function onAuthenticationSuccess(Request $request, TokenInterface $token, string $firewallName): ?Response
+    {
+        return null;
+    }
+
     public function onAuthenticationFailure(Request $request, AuthenticationException $exception): Response
     {
         return new JsonResponse(['type' => 'invalid_token', 'message' => 'Authentification du site externe invalide.'], Response::HTTP_UNAUTHORIZED);

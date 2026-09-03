@@ -42,15 +42,41 @@ class AccountInvitation
         $this->expiresAt = $this->createdAt->modify(sprintf('+%d hours', $validiteHeures));
     }
 
-    public function id(): string { return $this->id; }
-    public function user(): User { return $this->user; }
-    public function expiresAt(): \DateTimeImmutable { return $this->expiresAt; }
-    public function acceptedAt(): ?\DateTimeImmutable { return $this->acceptedAt; }
-    public function invalidatedAt(): ?\DateTimeImmutable { return $this->invalidatedAt; }
-    public function isUsable(): bool { return null === $this->acceptedAt && null === $this->invalidatedAt && !$this->user->isDeleted() && $this->expiresAt > new \DateTimeImmutable(); }
+    public function id(): string
+    {
+        return $this->id;
+    }
+
+    public function user(): User
+    {
+        return $this->user;
+    }
+
+    public function expiresAt(): \DateTimeImmutable
+    {
+        return $this->expiresAt;
+    }
+
+    public function acceptedAt(): ?\DateTimeImmutable
+    {
+        return $this->acceptedAt;
+    }
+
+    public function invalidatedAt(): ?\DateTimeImmutable
+    {
+        return $this->invalidatedAt;
+    }
+
+    public function isUsable(): bool
+    {
+        return null === $this->acceptedAt && null === $this->invalidatedAt && !$this->user->isDeleted() && $this->expiresAt > new \DateTimeImmutable();
+    }
+
     public function accept(): void
     {
-        if (!$this->isUsable()) { throw new \DomainException('Cette invitation est expirée ou déjà utilisée.'); }
+        if (!$this->isUsable()) {
+            throw new \DomainException('Cette invitation est expirée ou déjà utilisée.');
+        }
         $this->acceptedAt = new \DateTimeImmutable();
     }
 

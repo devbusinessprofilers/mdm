@@ -8,7 +8,6 @@ use App\Account\Security\FicheVoter;
 use App\Pim\Entity\Activite\Activite;
 use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Entity\Service\ServiceEvenementiel;
-use App\Pim\Enum\TypeFiche;
 use App\Pim\Repository\ActiviteRepository;
 use App\Pim\Repository\RestaurantRepository;
 use App\Pim\Repository\ServiceEvenementielRepository;
@@ -27,14 +26,12 @@ use Symfony\Component\Routing\Attribute\Route;
  */
 final class FicheGammeController extends AbstractController
 {
-    #[
-        Route(
-            '/referentiel/{gamme}/fiche/{id}',
-            name: 'app_mdm_fiche_gamme',
-            requirements: ['gamme' => 'restaurants|activites|services', 'id' => '[0-9A-HJKMNP-TV-Z]{26}'],
-            methods: ['GET', 'POST'],
-        ),
-    ]
+    #[Route(
+        '/referentiel/{gamme}/fiche/{id}',
+        name: 'app_mdm_fiche_gamme',
+        requirements: ['gamme' => 'restaurants|activites|services', 'id' => '[0-9A-HJKMNP-TV-Z]{26}'],
+        methods: ['GET', 'POST'],
+    ),]
     public function __invoke(
         Request $request,
         string $gamme,

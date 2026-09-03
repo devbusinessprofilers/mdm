@@ -13,7 +13,9 @@ use Symfony\Component\Uid\Ulid;
 
 final readonly class CompletenessRepository
 {
-    public function __construct(private Connection $connection) {}
+    public function __construct(private Connection $connection)
+    {
+    }
 
     public function countPending(TypeFiche $type, int $revision): int
     {

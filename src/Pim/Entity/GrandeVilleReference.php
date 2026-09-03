@@ -37,10 +37,33 @@ class GrandeVilleReference
     ) {
     }
 
-    public function id(): ?int { return $this->id; }
-    public function nom(): string { return $this->nom; }
-    public function codePays(): string { return $this->codePays; }
-    public function population(): int { return $this->population; }
-    public function latitude(): float { return $this->latitude; }
-    public function longitude(): float { return $this->longitude; }
+    public function id(): ?int
+    {
+        return $this->id;
+    }
+
+    public function nom(): string
+    {
+        return $this->nom;
+    }
+
+    public function codePays(): string
+    {
+        return $this->codePays;
+    }
+
+    public function population(): int
+    {
+        return $this->population;
+    }
+
+    public function latitude(): float
+    {
+        return $this->latitude;
+    }
+
+    public function longitude(): float
+    {
+        return $this->longitude;
+    }
 }

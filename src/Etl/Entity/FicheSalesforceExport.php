@@ -119,7 +119,7 @@ class FicheSalesforceExport
      * @param \DateTimeImmutable $borne échéance (dirtyAt) observée au début du
      *                                  traitement : marquer envoyé jusqu'à cette
      *                                  valeur laisse « sale » toute mutation
-     *                                  survenue pendant l'envoi (dirtyAt avancé).
+     *                                  survenue pendant l'envoi (dirtyAt avancé)
      */
     public function recordProduitsSent(\DateTimeImmutable $borne): void
     {

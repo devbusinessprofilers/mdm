@@ -5,19 +5,19 @@ declare(strict_types=1);
 namespace App\Pim\Service;
 
 use App\Account\Service\CurrentActorProvider;
+use App\Audit\Repository\AuditRevisionRepository;
 use App\Dam\Repository\MediaAssetRepository;
 use App\Dam\Service\FichePhotoPresenter;
-use App\Audit\Repository\AuditRevisionRepository;
 use App\Etl\Repository\FicheSalesforceRepository;
 use App\Etl\Service\MarketplaceRetrait;
 use App\Ocr\Form\OcrReviewFormFactory;
 use App\Ocr\Form\OcrUploadType;
 use App\Ocr\Repository\DocumentExtractionRepository;
 use App\Ocr\Service\OcrCategoryPolicy;
-use App\Pim\Entity\Fiche;
 use App\Pim\Completeness\CompletenessCalculator;
 use App\Pim\Completeness\CompletenessFieldCatalog;
 use App\Pim\Entity\Activite\Activite;
+use App\Pim\Entity\Fiche;
 use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Entity\Service\ServiceEvenementiel;
@@ -46,10 +46,10 @@ use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\FormError;
 use Symfony\Component\Form\FormFactoryInterface;
-use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
 
 /**
  * Écran d'édition de fiche par sections (maquette front), pour les quatre
@@ -713,14 +713,14 @@ final readonly class FicheEditeurEcran
      *
      * @return array{label: string, url: ?string}|null
      */
-    private function fusion(\App\Pim\Entity\Fiche $fiche): ?array
+    private function fusion(Fiche $fiche): ?array
     {
         $survivantId = $fiche->mergedIntoId();
         if (null === $survivantId) {
             return null;
         }
         $survivante = $this->fiches->find($survivantId);
-        if (!$survivante instanceof \App\Pim\Entity\Fiche) {
+        if (!$survivante instanceof Fiche) {
             return ['label' => (string) $survivantId, 'url' => null];
         }
 

@@ -17,12 +17,10 @@ use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\DependencyInjection\Attribute\When;
 
 #[When(env: 'dev')]
-#[
-    AsCommand(
-        name: 'app:dev:database:clean',
-        description: 'Vide les données et les médias de développement.',
-    ),
-]
+#[AsCommand(
+    name: 'app:dev:database:clean',
+    description: 'Vide les données et les médias de développement.',
+),]
 final class CleanDevelopmentDatabaseCommand extends Command
 {
     /** @var list<string> */

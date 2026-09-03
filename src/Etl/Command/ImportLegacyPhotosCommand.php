@@ -4,20 +4,20 @@ declare(strict_types=1);
 
 namespace App\Etl\Command;
 
-use App\Etl\Entity\LegacyPhotoImport;
-use App\Etl\Enum\LegacyPhotoStatus;
-use App\Etl\Repository\LegacyFicheMappingRepository;
-use App\Etl\Repository\LegacyPhotoImportRepository;
 use App\Dam\Entity\MediaAsset;
 use App\Dam\Service\FicheImageUploader;
 use App\Dam\Service\LieuImageUploader;
 use App\Dam\Service\MediaProcessingService;
+use App\Etl\Entity\LegacyPhotoImport;
+use App\Etl\Enum\LegacyPhotoStatus;
+use App\Etl\Repository\LegacyFicheMappingRepository;
+use App\Etl\Repository\LegacyPhotoImportRepository;
 use App\Pim\Entity\Activite\Activite;
 use App\Pim\Entity\Fiche;
 use App\Pim\Entity\Lieu\Lieu;
+use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Entity\Service\ServiceEvenementiel;
-use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Enum\NatureRessource;
 use App\Pim\Import\Legacy\LegacyPhotoCatalog;
 use App\Shared\Service\PrivateObjectStorageInterface;

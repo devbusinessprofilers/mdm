@@ -24,10 +24,11 @@ final readonly class LieuDocumentManager
         private EntityManagerInterface $entityManager,
         private OutboxPublisherInterface $outbox,
         private InternalFicheMutationPolicy $mutationPolicy,
-    ) {}
+    ) {
+    }
 
     /** @param list<UploadedFile> $files
-     *  @param array{usage: DocumentUsage, salle: Salle|null, title: string|null, source: string|null} $data
+     * @param array{usage: DocumentUsage, salle: Salle|null, title: string|null, source: string|null} $data
      */
     public function upload(Lieu $lieu, array $files, array $data, string $actor): int
     {
@@ -38,14 +39,18 @@ final readonly class LieuDocumentManager
     }
 
     /** @param list<UploadedFile> $files
-     *  @param array{usage: DocumentUsage, salle: Salle|null, title: string|null, source: string|null} $data
+     * @param array{usage: DocumentUsage, salle: Salle|null, title: string|null, source: string|null} $data
      */
     private function uploadWithinMutation(Lieu $lieu, array $files, array $data, string $actor): int
     {
         $usage = $data['usage'];
         $salle = $data['salle'];
-        if ($usage->requiresRoom() && null === $salle) { throw new \DomainException('Un plan de salle doit être rattaché à une salle.'); }
-        if (!$this->withinMaximum($lieu, $usage, $salle, count($files))) { throw new \DomainException('Le nombre maximal de documents pour cet usage serait dépassé.'); }
+        if ($usage->requiresRoom() && null === $salle) {
+            throw new \DomainException('Un plan de salle doit être rattaché à une salle.');
+        }
+        if (!$this->withinMaximum($lieu, $usage, $salle, count($files))) {
+            throw new \DomainException('Le nombre maximal de documents pour cet usage serait dépassé.');
+        }
         $uploaded = [];
         try {
             foreach ($files as $file) {
@@ -62,7 +67,12 @@ final readonly class LieuDocumentManager
             }
             $this->changed($lieu);
         } catch (\Throwable $exception) {
-            foreach ($uploaded as $asset) { try { $this->uploader->delete($asset); } catch (\Throwable) {} }
+            foreach ($uploaded as $asset) {
+                try {
+                    $this->uploader->delete($asset);
+                } catch (\Throwable) {
+                }
+            }
             throw $exception;
         }
 
@@ -82,9 +92,15 @@ final readonly class LieuDocumentManager
     {
         $usage = $data['usage'];
         $salle = $data['salle'];
-        if ($usage->requiresRoom() && null === $salle) { throw new \DomainException('Un plan de salle doit être rattaché à une salle.'); }
-        if (!$this->withinMaximum($lieu, $usage, $salle, 1, $document)) { throw new \DomainException('Le nombre maximal de documents pour cet usage serait dépassé.'); }
-        if ($usage !== $document->documentUsage()) { $this->unpublish($document); }
+        if ($usage->requiresRoom() && null === $salle) {
+            throw new \DomainException('Un plan de salle doit être rattaché à une salle.');
+        }
+        if (!$this->withinMaximum($lieu, $usage, $salle, 1, $document)) {
+            throw new \DomainException('Le nombre maximal de documents pour cet usage serait dépassé.');
+        }
+        if ($usage !== $document->documentUsage()) {
+            $this->unpublish($document);
+        }
         $document->configureDocument($usage);
         $document->changeSalle($salle);
         $document->changeLegende($data['title']);
@@ -92,7 +108,9 @@ final readonly class LieuDocumentManager
         $document->changeSource($data['source']);
         $document->changeKeywords(is_string($data['keywords'] ?? null) ? $data['keywords'] : null);
         $document->changeRightsExpiresAt(($data['rightsExpiresAt'] ?? null) instanceof \DateTimeImmutable ? $data['rightsExpiresAt'] : null);
-        if ($wasPublished && !$document->rightsGranted()) { $this->unpublish($document); }
+        if ($wasPublished && !$document->rightsGranted()) {
+            $this->unpublish($document);
+        }
         $this->changed($lieu);
     }
 
@@ -115,7 +133,10 @@ final readonly class LieuDocumentManager
             $this->outbox->enqueue(new DeleteMedia($old));
             $this->changed($lieu);
         } catch (\Throwable $exception) {
-            try { $this->uploader->delete($asset); } catch (\Throwable) {}
+            try {
+                $this->uploader->delete($asset);
+            } catch (\Throwable) {
+            }
             throw $exception;
         }
     }
@@ -129,8 +150,12 @@ final readonly class LieuDocumentManager
 
     private function togglePublicationWithinMutation(RessourceLieu $document, Lieu $lieu): void
     {
-        if ('published' !== $document->publicationStatus()?->value) { $document->requestPublication(); $this->outbox->enqueue(new PublishDocument($document->id())); }
-        else { $this->unpublish($document); }
+        if ('published' !== $document->publicationStatus()?->value) {
+            $document->requestPublication();
+            $this->outbox->enqueue(new PublishDocument($document->id()));
+        } else {
+            $this->unpublish($document);
+        }
         $this->changed($lieu);
     }
 
@@ -152,10 +177,14 @@ final readonly class LieuDocumentManager
 
     private function withinMaximum(Lieu $lieu, DocumentUsage $usage, ?Salle $salle, int $added, ?RessourceLieu $current = null): bool
     {
-        if (null === $usage->maximumCount()) { return true; }
+        if (null === $usage->maximumCount()) {
+            return true;
+        }
         $count = 0;
         foreach ($lieu->ressources() as $resource) {
-            if ($resource !== $current && $resource->usage() === $usage->value && (!$usage->requiresRoom() || $resource->salle() === $salle)) { ++$count; }
+            if ($resource !== $current && $resource->usage() === $usage->value && (!$usage->requiresRoom() || $resource->salle() === $salle)) {
+                ++$count;
+            }
         }
 
         return $count + $added <= $usage->maximumCount();
@@ -164,7 +193,9 @@ final readonly class LieuDocumentManager
     private function unpublish(RessourceLieu $document): void
     {
         $key = $document->requestUnpublication();
-        if (null !== $key) { $this->outbox->enqueue(new UnpublishDocument($document->id(), $key)); }
+        if (null !== $key) {
+            $this->outbox->enqueue(new UnpublishDocument($document->id(), $key));
+        }
     }
 
     private function changed(Lieu $lieu): void

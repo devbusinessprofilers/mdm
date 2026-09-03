@@ -22,7 +22,8 @@ final readonly class InternalUserPasswordResetRequestedHandler
         private UrlGeneratorInterface $urls,
         private MailerInterface $mailer,
         private string $sender,
-    ) {}
+    ) {
+    }
 
     public function __invoke(InternalUserPasswordResetRequested $message): void
     {

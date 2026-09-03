@@ -20,5 +20,6 @@ final readonly class DataTourismePoi
         public ?string $longitude = null,
         public ?string $description = null,
         public array $features = [],
-    ) {}
+    ) {
+    }
 }

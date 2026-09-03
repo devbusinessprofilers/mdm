@@ -7,9 +7,9 @@ namespace App\Enrichment\Service;
 use App\Audit\AuditContext;
 use App\Audit\Entity\AuditChange;
 use App\Audit\Entity\AuditRevision;
-use App\Etl\Service\MarketplaceSyncScheduler;
 use App\Enrichment\Entity\FicheTranslation;
 use App\Enrichment\Enum\SupportedLocale;
+use App\Etl\Service\MarketplaceSyncScheduler;
 use App\Pim\Entity\Fiche;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -20,7 +20,8 @@ final readonly class FicheTranslationManager
         private AuditContext $auditContext,
         private FicheTranslationScheduler $scheduler,
         private MarketplaceSyncScheduler $marketplaceScheduler,
-    ) {}
+    ) {
+    }
 
     public function correct(
         Fiche $fiche,

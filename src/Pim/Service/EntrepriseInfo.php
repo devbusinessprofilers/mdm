@@ -28,7 +28,8 @@ final readonly class EntrepriseInfo
         public bool $rapprochementSansCodePostal = false,
         /** Code NAF/APE (`activite_principale`, établissement prioritaire), ex. « 55.30Z ». */
         public ?string $naf = null,
-    ) {}
+    ) {
+    }
 
     /** Vrai quand l'API a explicitement renvoyé un établissement cessé. */
     public function estCesse(): bool

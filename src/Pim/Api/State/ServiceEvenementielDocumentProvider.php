@@ -16,15 +16,15 @@ use App\Pim\Enum\NatureRessource;
 use App\Pim\Repository\RessourceLieuRepository;
 
 /** @implements ProviderInterface<LieuDocumentResource> */
-final readonly class ServiceEvenementielDocumentProvider implements
-    ProviderInterface
+final readonly class ServiceEvenementielDocumentProvider implements ProviderInterface
 {
     public function __construct(
         private ServiceEvenementielApiState $state,
         private RessourceLieuRepository $resources,
         private ExternalDocumentAccess $access,
         private LieuDocumentPresenter $presenter,
-    ) {}
+    ) {
+    }
 
     /** @return LieuDocumentResource|list<LieuDocumentResource> */
     public function provide(
@@ -32,19 +32,15 @@ final readonly class ServiceEvenementielDocumentProvider implements
         array $uriVariables = [],
         array $context = [],
     ): LieuDocumentResource|array {
-        $a = $this->state->service((string) ($uriVariables["serviceId"] ?? ""));
-        if (isset($uriVariables["documentId"])) {
-            $d = $this->resources->find((string) $uriVariables["documentId"]);
+        $a = $this->state->service((string) ($uriVariables['serviceId'] ?? ''));
+        if (isset($uriVariables['documentId'])) {
+            $d = $this->resources->find((string) $uriVariables['documentId']);
             if (
-                !($d instanceof RessourceLieu) ||
-                !$this->isDocument($a->fiche(), $d) ||
-                !$this->access->canRead($d)
+                !($d instanceof RessourceLieu)
+                || !$this->isDocument($a->fiche(), $d)
+                || !$this->access->canRead($d)
             ) {
-                throw new ApiProblemException(
-                    404,
-                    "not_found",
-                    "Document introuvable.",
-                );
+                throw new ApiProblemException(404, 'not_found', 'Document introuvable.');
             }
 
             return $this->presenter->resource(
@@ -55,8 +51,8 @@ final readonly class ServiceEvenementielDocumentProvider implements
         $result = [];
         foreach ($a->ressources() as $d) {
             if (
-                $this->isDocument($a->fiche(), $d) &&
-                $this->access->canRead($d)
+                $this->isDocument($a->fiche(), $d)
+                && $this->access->canRead($d)
             ) {
                 $result[] = $this->presenter->resource($d);
             }
@@ -67,9 +63,9 @@ final readonly class ServiceEvenementielDocumentProvider implements
 
     private function isDocument(\App\Pim\Entity\Fiche $fiche, mixed $d): bool
     {
-        return $d instanceof RessourceLieu &&
-            $d->fiche() === $fiche &&
-            NatureRessource::Document === $d->nature() &&
-            DocumentUsage::CommercialSupport === $d->documentUsage();
+        return $d instanceof RessourceLieu
+            && $d->fiche() === $fiche
+            && NatureRessource::Document === $d->nature()
+            && DocumentUsage::CommercialSupport === $d->documentUsage();
     }
 }

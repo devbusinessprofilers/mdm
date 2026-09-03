@@ -47,7 +47,7 @@ final readonly class PerceptualHashCalculator
 
             $pixels = unpack('C*', $contents);
             if (false === $pixels) {
-                throw new \RuntimeException("Impossible de lire la matrice pHash produite par ImageMagick.");
+                throw new \RuntimeException('Impossible de lire la matrice pHash produite par ImageMagick.');
             }
 
             return $this->hash(array_values($pixels));

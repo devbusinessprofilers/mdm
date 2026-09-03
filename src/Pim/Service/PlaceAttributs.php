@@ -42,7 +42,8 @@ final readonly class PlaceAttributs
         public ?string $horairesOuverture = null,
         /** Catégorie OSM du lieu : tag `tourism`, sinon `amenity` (minuscules). */
         public ?string $categorie = null,
-    ) {}
+    ) {
+    }
 
     public function estVide(): bool
     {

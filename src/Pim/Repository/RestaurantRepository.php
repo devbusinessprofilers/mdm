@@ -144,7 +144,7 @@ final class RestaurantRepository extends ServiceEntityRepository
     }
 
     /** @param list<string> $ids
-     *  @return list<RestaurantListItem>
+     * @return list<RestaurantListItem>
      */
     public function findListItemsByIds(array $ids): array
     {
@@ -163,8 +163,7 @@ final class RestaurantRepository extends ServiceEntityRepository
                 [
                     'type' => TypeFiche::Restaurant->value,
                     'ids' => array_map(
-                        static fn (string $id): string =>
-                            Ulid::fromString($id)->toBinary(),
+                        static fn (string $id): string => Ulid::fromString($id)->toBinary(),
                         $ids,
                     ),
                 ],
@@ -184,8 +183,7 @@ final class RestaurantRepository extends ServiceEntityRepository
         return array_values(
             array_filter(
                 array_map(
-                    static fn (string $id): ?RestaurantListItem =>
-                        $mapped[$id] ?? null,
+                    static fn (string $id): ?RestaurantListItem => $mapped[$id] ?? null,
                     $ids,
                 ),
             ),

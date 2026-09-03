@@ -31,14 +31,53 @@ class ValeurAttribut
     ) {
     }
 
-    public function id(): int { return $this->id; }
-    public function attribute(): AttributDefinition { return $this->attribute; }
-    public function code(): string { return $this->code; }
-    public function label(): string { return $this->label; }
-    public function position(): int { return $this->position; }
-    public function active(): bool { return $this->active; }
-    public function changeLabel(string $label): void { $this->label = trim($label); }
-    public function changePosition(int $position): void { $this->position = max(0, $position); }
-    public function activate(): void { $this->active = true; }
-    public function deactivate(): void { $this->active = false; }
+    public function id(): int
+    {
+        return $this->id;
+    }
+
+    public function attribute(): AttributDefinition
+    {
+        return $this->attribute;
+    }
+
+    public function code(): string
+    {
+        return $this->code;
+    }
+
+    public function label(): string
+    {
+        return $this->label;
+    }
+
+    public function position(): int
+    {
+        return $this->position;
+    }
+
+    public function active(): bool
+    {
+        return $this->active;
+    }
+
+    public function changeLabel(string $label): void
+    {
+        $this->label = trim($label);
+    }
+
+    public function changePosition(int $position): void
+    {
+        $this->position = max(0, $position);
+    }
+
+    public function activate(): void
+    {
+        $this->active = true;
+    }
+
+    public function deactivate(): void
+    {
+        $this->active = false;
+    }
 }

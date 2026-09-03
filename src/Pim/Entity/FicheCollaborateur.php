@@ -55,16 +55,48 @@ class FicheCollaborateur
     public static function normalizeEmail(string $email): string
     {
         $email = mb_strtolower(trim($email));
-        if ('' === $email) { throw new \InvalidArgumentException('L’adresse email ne peut pas être vide.'); }
+        if ('' === $email) {
+            throw new \InvalidArgumentException('L’adresse email ne peut pas être vide.');
+        }
+
         return $email;
     }
-    public function id(): string { return (string) $this->id; }
-    public function email(): string { return $this->email; }
-    public function estInterne(): bool { return str_ends_with($this->email, self::DOMAINE_INTERNE); }
-    public function firstName(): string { return $this->firstName; }
-    public function lastName(): string { return $this->lastName; }
-    public function language(): string { return $this->language; }
-    public function isActive(): bool { return $this->isActive; }
+
+    public function id(): string
+    {
+        return (string) $this->id;
+    }
+
+    public function email(): string
+    {
+        return $this->email;
+    }
+
+    public function estInterne(): bool
+    {
+        return str_ends_with($this->email, self::DOMAINE_INTERNE);
+    }
+
+    public function firstName(): string
+    {
+        return $this->firstName;
+    }
+
+    public function lastName(): string
+    {
+        return $this->lastName;
+    }
+
+    public function language(): string
+    {
+        return $this->language;
+    }
+
+    public function isActive(): bool
+    {
+        return $this->isActive;
+    }
+
     public function changeProfile(string $firstName, string $lastName, string $language): void
     {
         $language = strtolower(trim($language));
@@ -77,7 +109,11 @@ class FicheCollaborateur
         $this->touch();
     }
 
-    public function phone(): ?string { return $this->phone; }
+    public function phone(): ?string
+    {
+        return $this->phone;
+    }
+
     public function changePhone(?string $phone): void
     {
         $phone = trim((string) $phone);
@@ -85,6 +121,15 @@ class FicheCollaborateur
         $this->touch();
     }
 
-    public function deactivate(): void { $this->isActive = false; $this->touch(); }
-    public function activate(): void { $this->isActive = true; $this->touch(); }
+    public function deactivate(): void
+    {
+        $this->isActive = false;
+        $this->touch();
+    }
+
+    public function activate(): void
+    {
+        $this->isActive = true;
+        $this->touch();
+    }
 }

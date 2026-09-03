@@ -17,7 +17,8 @@ final readonly class RequestContextProcessor
     public function __construct(
         private RequestStack $requestStack,
         private TokenStorageInterface $tokenStorage,
-    ) {}
+    ) {
+    }
 
     public function __invoke(LogRecord $record): LogRecord
     {

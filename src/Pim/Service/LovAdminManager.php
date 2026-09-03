@@ -26,7 +26,8 @@ final readonly class LovAdminManager
         private LovTranslationScheduler $scheduler,
         private MarketplaceLovSyncScheduler $marketplace,
         private LovRuntimeCatalog $runtime,
-    ) {}
+    ) {
+    }
 
     /** @param array<string, mixed> $data */
     public function create(AttributDefinition $attribute, array $data, string $actor): ValeurAttribut

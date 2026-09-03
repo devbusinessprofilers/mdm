@@ -204,10 +204,18 @@ final readonly class LieuAttributsVerifier
     private static function bienEtre(PlaceAttributs $attributs): array
     {
         $codes = [];
-        if (true === $attributs->piscineInterieure) { $codes[] = 'BIEN_ETRE_2'; }
-        if (true === $attributs->piscineExterieure) { $codes[] = 'BIEN_ETRE_3'; }
-        if (true === $attributs->spa) { $codes[] = 'BIEN_ETRE_4'; }
-        if (true === $attributs->sauna) { $codes[] = 'BIEN_ETRE_5'; }
+        if (true === $attributs->piscineInterieure) {
+            $codes[] = 'BIEN_ETRE_2';
+        }
+        if (true === $attributs->piscineExterieure) {
+            $codes[] = 'BIEN_ETRE_3';
+        }
+        if (true === $attributs->spa) {
+            $codes[] = 'BIEN_ETRE_4';
+        }
+        if (true === $attributs->sauna) {
+            $codes[] = 'BIEN_ETRE_5';
+        }
 
         return $codes;
     }
@@ -216,10 +224,18 @@ final readonly class LieuAttributsVerifier
     private static function installations(PlaceAttributs $attributs): array
     {
         $codes = [];
-        if (true === $attributs->jardin) { $codes[] = 'INSTALLATION_3'; }
-        if (true === $attributs->terrasse) { $codes[] = 'INSTALLATION_5'; }
-        if (true === $attributs->parking) { $codes[] = 'INSTALLATION_10'; }
-        if (true === $attributs->ascenseur) { $codes[] = 'INSTALLATION_12'; }
+        if (true === $attributs->jardin) {
+            $codes[] = 'INSTALLATION_3';
+        }
+        if (true === $attributs->terrasse) {
+            $codes[] = 'INSTALLATION_5';
+        }
+        if (true === $attributs->parking) {
+            $codes[] = 'INSTALLATION_10';
+        }
+        if (true === $attributs->ascenseur) {
+            $codes[] = 'INSTALLATION_12';
+        }
 
         return $codes;
     }

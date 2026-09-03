@@ -13,7 +13,7 @@ final readonly class CompletenessEntityResolver
     {
     }
 
-    public function resolve(Fiche $fiche): object|null
+    public function resolve(Fiche $fiche): ?object
     {
         return $this->resolveBatch([$fiche])[$fiche->idString()] ?? null;
     }
@@ -22,6 +22,7 @@ final readonly class CompletenessEntityResolver
      * Charge un lot avec un nombre de requêtes indépendant du nombre de fiches.
      *
      * @param list<Fiche> $fiches
+     *
      * @return array<string, object>
      */
     public function resolveBatch(array $fiches): array

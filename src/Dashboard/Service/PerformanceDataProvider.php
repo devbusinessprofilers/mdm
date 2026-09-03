@@ -168,6 +168,7 @@ final readonly class PerformanceDataProvider
             && ($hb['current_message_since_s'] ?? 0) < self::SEUIL_MESSAGE_LONG_S) {
             return 'occupe';
         }
+
         return $hb['last_seen_ago_s'] < self::SEUIL_RETARD_S ? 'retard' : 'inactif';
     }
 

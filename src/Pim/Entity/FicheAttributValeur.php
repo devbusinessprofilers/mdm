@@ -26,7 +26,18 @@ class FicheAttributValeur
     ) {
     }
 
-    public function fiche(): Fiche { return $this->fiche; }
-    public function attributeCode(): string { return $this->attributeCode; }
-    public function valueId(): int { return $this->valueId; }
+    public function fiche(): Fiche
+    {
+        return $this->fiche;
+    }
+
+    public function attributeCode(): string
+    {
+        return $this->attributeCode;
+    }
+
+    public function valueId(): int
+    {
+        return $this->valueId;
+    }
 }

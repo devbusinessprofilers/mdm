@@ -352,12 +352,7 @@ class Localisation
             || ((int) $integerPart === $maximumAbsoluteValue && '' !== trim($decimalPart, '0'));
 
         if ($outsideBounds) {
-            throw new \InvalidArgumentException(sprintf(
-                'The %s must be a number between -%d and %d.',
-                $coordinate,
-                $maximumAbsoluteValue,
-                $maximumAbsoluteValue,
-            ));
+            throw new \InvalidArgumentException(sprintf('The %s must be a number between -%d and %d.', $coordinate, $maximumAbsoluteValue, $maximumAbsoluteValue));
         }
 
         return $value;

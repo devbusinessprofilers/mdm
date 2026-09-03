@@ -13,7 +13,7 @@ final class LienVideoValidator extends ConstraintValidator
 {
     public function validate(mixed $value, Constraint $constraint): void
     {
-        if (!($constraint instanceof LienVideo)) {
+        if (!$constraint instanceof LienVideo) {
             throw new UnexpectedTypeException($constraint, LienVideo::class);
         }
         if (null === $value || '' === $value) {

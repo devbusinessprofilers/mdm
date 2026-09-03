@@ -42,11 +42,30 @@ final class PasswordResetRequest
         $this->expiresAt = $this->createdAt->modify(sprintf('+%d hours', $validiteHeures));
     }
 
-    public function id(): string { return $this->id; }
-    public function user(): User { return $this->user; }
-    public function expiresAt(): \DateTimeImmutable { return $this->expiresAt; }
-    public function usedAt(): ?\DateTimeImmutable { return $this->usedAt; }
-    public function invalidatedAt(): ?\DateTimeImmutable { return $this->invalidatedAt; }
+    public function id(): string
+    {
+        return $this->id;
+    }
+
+    public function user(): User
+    {
+        return $this->user;
+    }
+
+    public function expiresAt(): \DateTimeImmutable
+    {
+        return $this->expiresAt;
+    }
+
+    public function usedAt(): ?\DateTimeImmutable
+    {
+        return $this->usedAt;
+    }
+
+    public function invalidatedAt(): ?\DateTimeImmutable
+    {
+        return $this->invalidatedAt;
+    }
 
     public function isUsable(): bool
     {

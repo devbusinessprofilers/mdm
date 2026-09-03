@@ -120,7 +120,7 @@ final readonly class ReferentielRepository
         $choices = [];
         foreach ($rows as $row) {
             $code = (string) $row['code'];
-            $choices[('' !== (string) $row['label'] ? (string) $row['label'] : $code)] = $code;
+            $choices['' !== (string) $row['label'] ? (string) $row['label'] : $code] = $code;
         }
 
         return $choices;

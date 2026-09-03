@@ -11,13 +11,12 @@ use App\Dam\Service\ImageVariantRegistry;
 use App\Dam\Service\LieuImageUploader;
 use App\Pim\Entity\Activite\Activite;
 use App\Pim\Entity\Lieu\Lieu;
+use App\Pim\Entity\Lieu\RessourceLieu;
+use App\Pim\Entity\Lieu\Salle;
 use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Entity\Restaurant\RestaurantSalle;
 use App\Pim\Entity\Service\ServiceEvenementiel;
-use App\Pim\Entity\Lieu\RessourceLieu;
-use App\Pim\Entity\Lieu\Salle;
 use App\Pim\Enum\NatureRessource;
-use App\Pim\Enum\TypeFiche;
 use App\Pim\Message\IndexFiche;
 use App\Shared\Message\MediaUploaded;
 use App\Shared\Outbox\OutboxPublisherInterface;
@@ -27,14 +26,14 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 final readonly class LieuPhotoManager
 {
-
     public function __construct(
         private LieuImageUploader $uploader,
         private PhotoObligations $photoObligations,
         private EntityManagerInterface $entityManager,
         private OutboxPublisherInterface $outbox,
         private ParametreProviderInterface $parametres,
-    ) {}
+    ) {
+    }
 
     /** @return list<RessourceLieu> */
     public function photos(Lieu|Restaurant|Activite|ServiceEvenementiel $lieu): array
@@ -47,8 +46,12 @@ final readonly class LieuPhotoManager
     {
         $count = count($this->photos($lieu));
         $maximum = $this->photoObligations->maximum($lieu->fiche()->type());
-        if ($count >= $maximum) { throw new \DomainException('Le nombre maximal de photos est atteint.'); }
-        if ([] === $files || $count + count($files) > $maximum) { throw new \DomainException('Sélectionnez entre 1 et '.($maximum - $count).' image(s).'); }
+        if ($count >= $maximum) {
+            throw new \DomainException('Le nombre maximal de photos est atteint.');
+        }
+        if ([] === $files || $count + count($files) > $maximum) {
+            throw new \DomainException('Sélectionnez entre 1 et '.($maximum - $count).' image(s).');
+        }
         $uploaded = [];
         try {
             foreach ($files as $offset => $file) {
@@ -64,7 +67,10 @@ final readonly class LieuPhotoManager
                 $this->outbox->enqueue(new MediaUploaded($asset->id(), $asset->originalStorageKey(), $asset->checksum(), ImageVariantRegistry::names()));
             }
             $this->changed($lieu);
-        } catch (\Throwable $exception) { $this->cleanup($uploaded); throw $exception; }
+        } catch (\Throwable $exception) {
+            $this->cleanup($uploaded);
+            throw $exception;
+        }
 
         return count($uploaded);
     }
@@ -78,9 +84,13 @@ final readonly class LieuPhotoManager
             throw new \DomainException("L'ordre transmis ne correspond pas aux photos du lieu.");
         }
         $byId = [];
-        foreach ($photos as $photo) { $byId[$photo->id()] = $photo; }
+        foreach ($photos as $photo) {
+            $byId[$photo->id()] = $photo;
+        }
         // La principale est la première photo de l'ordre : réordonner suffit.
-        foreach ($ids as $position => $id) { $byId[$id]->changePosition($position); }
+        foreach ($ids as $position => $id) {
+            $byId[$id]->changePosition($position);
+        }
         $this->changed($lieu);
 
         return count($ids);
@@ -95,7 +105,9 @@ final readonly class LieuPhotoManager
      */
     public function changeCategorie(RessourceLieu $resource, Lieu|Restaurant|Activite|ServiceEvenementiel $lieu, string $usage, ?string $salleId = null): void
     {
-        if (!isset(PhotoUsageCatalog::LABELS[$usage])) { throw new \DomainException('Catégorie de photo invalide.'); }
+        if (!isset(PhotoUsageCatalog::LABELS[$usage])) {
+            throw new \DomainException('Catégorie de photo invalide.');
+        }
         $this->rattacherSalle($resource, PhotoUsageCatalog::SALLE === $usage ? self::salleRattachee($resource, $lieu, (string) $salleId) : null);
         $resource->changeUsage($usage);
         $this->changed($lieu);
@@ -113,7 +125,11 @@ final readonly class LieuPhotoManager
             throw new \DomainException('Les photos de salle sont réservées aux fiches Lieu et Restaurant.');
         }
         if ('' !== $salleId) {
-            foreach ($fiche->salles() as $candidate) { if ($candidate->id() === $salleId) { return $candidate; } }
+            foreach ($fiche->salles() as $candidate) {
+                if ($candidate->id() === $salleId) {
+                    return $candidate;
+                }
+            }
             throw new \DomainException("La salle n'appartient pas à cette fiche.");
         }
         $courante = $fiche instanceof Lieu ? $resource->salle() : $resource->restaurantSalle();
@@ -132,7 +148,9 @@ final readonly class LieuPhotoManager
     public function update(RessourceLieu $resource, Lieu|Restaurant|Activite|ServiceEvenementiel $lieu, array $data, string $actor): void
     {
         $usage = (string) ($data['usage'] ?? '');
-        if (!isset(PhotoUsageCatalog::LABELS[$usage])) { throw new \DomainException('Catégorie de photo invalide.'); }
+        if (!isset(PhotoUsageCatalog::LABELS[$usage])) {
+            throw new \DomainException('Catégorie de photo invalide.');
+        }
         $salle = PhotoUsageCatalog::SALLE === $usage ? self::salleRattachee($resource, $lieu, (string) ($data['salle_id'] ?? '')) : null;
         $resource->changeUsage($usage);
         $resource->changeLegende((string) ($data['legende'] ?? ''));
@@ -141,7 +159,11 @@ final readonly class LieuPhotoManager
         $expiration = $data['rights_expires_at'] ?? null;
         if (is_string($expiration) && '' !== $expiration) {
             // Chaîne arbitraire du payload : une date malformée doit finir en 422, pas en 500.
-            try { $expiration = new \DateTimeImmutable($expiration); } catch (\Exception) { throw new \DomainException("Date d'expiration des droits invalide."); }
+            try {
+                $expiration = new \DateTimeImmutable($expiration);
+            } catch (\Exception) {
+                throw new \DomainException("Date d'expiration des droits invalide.");
+            }
         }
         $resource->changeRightsExpiresAt($expiration instanceof \DateTimeImmutable ? $expiration : null);
         $this->rattacherSalle($resource, $salle);
@@ -159,7 +181,9 @@ final readonly class LieuPhotoManager
         $changed = $resource->crop() !== (null === $crop[0] ? null : ['x' => $crop[0], 'y' => $crop[1], 'width' => $crop[2], 'height' => $crop[3]]) || $resource->rotation() !== $rotation;
         $resource->changeCrop(...$crop);
         $resource->changeRotation($rotation);
-        if ($changed) { $this->outbox->enqueue(new RegenerateMedia($resource->damAssetId())); }
+        if ($changed) {
+            $this->outbox->enqueue(new RegenerateMedia($resource->damAssetId()));
+        }
         $this->changed($lieu);
     }
 
@@ -173,7 +197,10 @@ final readonly class LieuPhotoManager
             $this->outbox->enqueue(new MediaUploaded($asset->id(), $asset->originalStorageKey(), $asset->checksum(), ImageVariantRegistry::names()));
             $this->outbox->enqueue(new DeleteMedia($old));
             $this->changed($lieu);
-        } catch (\Throwable $exception) { $this->cleanup([$asset]); throw $exception; }
+        } catch (\Throwable $exception) {
+            $this->cleanup([$asset]);
+            throw $exception;
+        }
     }
 
     public function retry(RessourceLieu $resource): void
@@ -201,6 +228,11 @@ final readonly class LieuPhotoManager
     /** @param list<MediaAsset> $assets */
     private function cleanup(array $assets): void
     {
-        foreach ($assets as $asset) { try { $this->uploader->delete($asset); } catch (\Throwable) {} }
+        foreach ($assets as $asset) {
+            try {
+                $this->uploader->delete($asset);
+            } catch (\Throwable) {
+            }
+        }
     }
 }

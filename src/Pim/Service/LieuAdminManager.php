@@ -27,7 +27,8 @@ final readonly class LieuAdminManager
         private OutboxPublisherInterface $outbox,
         private LieuImageUploader $imageUploader,
         private FicheTranslationScheduler $translationScheduler,
-    ) {}
+    ) {
+    }
 
     /** @return list<string> */
     public function photoAssetIds(Lieu $lieu): array
@@ -38,7 +39,7 @@ final readonly class LieuAdminManager
     }
 
     /** @param FormInterface<mixed> $form
-     *  @param list<string> $existingMediaIds
+     * @param list<string> $existingMediaIds
      */
     public function save(Lieu $lieu, FormInterface $form, array $existingMediaIds): void
     {
@@ -47,7 +48,9 @@ final readonly class LieuAdminManager
             foreach ($form->get('ressources') as $resourceForm) {
                 $file = $resourceForm->get('image')->getData();
                 $resource = $resourceForm->getData();
-                if (!$file instanceof UploadedFile || !$resource instanceof RessourceLieu) { continue; }
+                if (!$file instanceof UploadedFile || !$resource instanceof RessourceLieu) {
+                    continue;
+                }
                 $media = $this->imageUploader->upload($file, $lieu);
                 $uploaded[] = $media;
                 $this->entityManager->persist($media);
@@ -56,7 +59,9 @@ final readonly class LieuAdminManager
                 $this->outbox->enqueue(new MediaUploaded($media->id(), $media->originalStorageKey(), $media->checksum(), ImageVariantRegistry::names()));
             }
             foreach (array_diff($existingMediaIds, $this->photoAssetIds($lieu)) as $removed) {
-                if ('' !== $removed) { $this->outbox->enqueue(new DeleteMedia($removed)); }
+                if ('' !== $removed) {
+                    $this->outbox->enqueue(new DeleteMedia($removed));
+                }
             }
             $this->entityManager->persist($lieu);
             $this->translationScheduler->schedule($lieu->fiche());
@@ -78,6 +83,11 @@ final readonly class LieuAdminManager
     /** @param list<MediaAsset> $assets */
     private function cleanup(array $assets): void
     {
-        foreach ($assets as $asset) { try { $this->imageUploader->delete($asset); } catch (\Throwable) {} }
+        foreach ($assets as $asset) {
+            try {
+                $this->imageUploader->delete($asset);
+            } catch (\Throwable) {
+            }
+        }
     }
 }

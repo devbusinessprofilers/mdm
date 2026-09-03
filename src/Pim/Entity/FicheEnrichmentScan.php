@@ -39,7 +39,18 @@ class FicheEnrichmentScan
         $this->scannedAt = $scannedAt;
     }
 
-    public function fiche(): Fiche { return $this->fiche; }
-    public function source(): SuggestionSource { return SuggestionSource::from($this->source); }
-    public function scannedAt(): \DateTimeImmutable { return $this->scannedAt; }
+    public function fiche(): Fiche
+    {
+        return $this->fiche;
+    }
+
+    public function source(): SuggestionSource
+    {
+        return SuggestionSource::from($this->source);
+    }
+
+    public function scannedAt(): \DateTimeImmutable
+    {
+        return $this->scannedAt;
+    }
 }

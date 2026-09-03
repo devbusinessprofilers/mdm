@@ -45,11 +45,7 @@ final readonly class RestaurantDocumentProvider implements ProviderInterface
                 || !$this->isDocument($restaurant->fiche(), $document)
                 || !$this->access->canRead($document)
             ) {
-                throw new ApiProblemException(
-                    404,
-                    'not_found',
-                    'Document introuvable.',
-                );
+                throw new ApiProblemException(404, 'not_found', 'Document introuvable.');
             }
 
             return $this->presenter->resource(

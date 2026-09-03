@@ -87,6 +87,7 @@ final readonly class StatutEtablissementVerifier
                 score: 1.0,
             )];
         }
+
         return [
             ...(null === ($tva = $this->propositionTva($lieu, $info)) ? [] : [$tva]),
             ...$this->propositionsLegales($lieu, $info, null),

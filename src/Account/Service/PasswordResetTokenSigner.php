@@ -8,7 +8,9 @@ use App\Account\Entity\PasswordResetRequest;
 
 final readonly class PasswordResetTokenSigner
 {
-    public function __construct(private string $key) {}
+    public function __construct(private string $key)
+    {
+    }
 
     public function sign(PasswordResetRequest $request): string
     {

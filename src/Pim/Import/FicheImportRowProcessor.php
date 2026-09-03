@@ -207,9 +207,9 @@ final readonly class FicheImportRowProcessor
     }
 
     /**
-     * @param list<\App\Pim\Import\Schema\CollectionSchema>  $schemas
-     * @param array<string, list<list<ConvertedValue>>>      $collections
-     * @param list<RowError>                                 $errors
+     * @param list<Schema\CollectionSchema>             $schemas
+     * @param array<string, list<list<ConvertedValue>>> $collections
+     * @param list<RowError>                            $errors
      */
     private function applyCollections(array $schemas, object $aggregate, array $collections, int $line, array &$errors): void
     {

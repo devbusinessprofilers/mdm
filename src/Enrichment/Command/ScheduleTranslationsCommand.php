@@ -26,7 +26,9 @@ final class ScheduleTranslationsCommand extends Command
         private readonly ValeurAttributRepository $values,
         private readonly FicheTranslationScheduler $fiches,
         private readonly LovTranslationScheduler $lovs,
-    ) { parent::__construct(); }
+    ) {
+        parent::__construct();
+    }
 
     protected function configure(): void
     {
@@ -39,20 +41,39 @@ final class ScheduleTranslationsCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $scope = (string) $input->getOption('scope');
-        if (!in_array($scope, ['all', 'fiches', 'lov'], true)) { $output->writeln('<error>Scope attendu : all, fiches ou lov.</error>'); return Command::INVALID; }
+        if (!in_array($scope, ['all', 'fiches', 'lov'], true)) {
+            $output->writeln('<error>Scope attendu : all, fiches ou lov.</error>');
+
+            return Command::INVALID;
+        }
         $limit = max(1, min(1000, (int) $input->getOption('limit')));
-        $count = 0; $last = null;
+        $count = 0;
+        $last = null;
         if (in_array($scope, ['all', 'fiches'], true)) {
             $after = trim((string) $input->getOption('after'));
-            foreach ($this->ficheRepository->findPublishedAfter('' === $after ? null : $after, $limit) as $fiche) { $this->fiches->schedule($fiche); ++$count; $last = $fiche->idString(); }
+            foreach ($this->ficheRepository->findPublishedAfter('' === $after ? null : $after, $limit) as $fiche) {
+                $this->fiches->schedule($fiche);
+                ++$count;
+                $last = $fiche->idString();
+            }
         }
         if (in_array($scope, ['all', 'lov'], true)) {
-            foreach ($this->attributes->findOrdered($limit) as $attribute) { $this->lovs->scheduleDefinition($attribute); ++$count; }
-            foreach ($this->values->findOrdered($limit) as $value) { $this->lovs->scheduleValue($value); ++$count; }
+            foreach ($this->attributes->findOrdered($limit) as $attribute) {
+                $this->lovs->scheduleDefinition($attribute);
+                ++$count;
+            }
+            foreach ($this->values->findOrdered($limit) as $value) {
+                $this->lovs->scheduleValue($value);
+                ++$count;
+            }
         }
-        if (!$input->getOption('dry-run')) { $this->entityManager->flush(); }
+        if (!$input->getOption('dry-run')) {
+            $this->entityManager->flush();
+        }
         $output->writeln(sprintf('<info>%d sujet(s) %s.</info>', $count, $input->getOption('dry-run') ? 'analysés' : 'planifiés'));
-        if (null !== $last) { $output->writeln('Prochain curseur : '.$last); }
+        if (null !== $last) {
+            $output->writeln('Prochain curseur : '.$last);
+        }
 
         return Command::SUCCESS;
     }

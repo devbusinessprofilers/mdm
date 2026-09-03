@@ -20,5 +20,6 @@ final readonly class FicheDuplicateCandidate
         public StatutFiche $status,
         public array $reasons,
         public ?string $url,
-    ) {}
+    ) {
+    }
 }

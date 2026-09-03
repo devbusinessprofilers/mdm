@@ -112,27 +112,114 @@ class DocumentExtraction
         $this->initializeTimestamps();
     }
 
-    public function id(): string { return (string) $this->id; }
-    public function fiche(): Fiche { return $this->fiche; }
-    public function document(): MediaAsset { return $this->document; }
-    public function retryOf(): ?self { return $this->retryOf; }
-    public function documentChecksum(): string { return $this->documentChecksum; }
-    public function documentCategory(): string { return $this->documentCategory; }
-    /** @return array<string, mixed> */ public function schemaSnapshot(): array { return $this->schemaSnapshot; }
-    public function schemaFingerprint(): string { return $this->schemaFingerprint; }
-    public function status(): ExtractionStatus { return $this->status; }
-    public function createdBy(): string { return $this->createdBy; }
-    public function attempts(): int { return $this->attempts; }
-    public function pageCount(): ?int { return $this->pageCount; }
-    public function startedAt(): ?\DateTimeImmutable { return $this->startedAt; }
-    public function finishedAt(): ?\DateTimeImmutable { return $this->finishedAt; }
-    public function errorMessage(): ?string { return $this->errorMessage; }
-    /** @return array<string, mixed>|null */ public function rawResponse(): ?array { return $this->rawResponse; }
-    public function providerAgent(): ?string { return $this->providerAgent; }
-    public function providerModel(): ?string { return $this->providerModel; }
-    /** @return list<string> */ public function temporaryBoxFileIds(): array { return $this->temporaryBoxFileIds; }
-    /** @return Collection<int, OcrSuggestion> */ public function suggestions(): Collection { return $this->suggestions; }
-    public function suggestionCount(): int { return $this->suggestions->count(); }
+    public function id(): string
+    {
+        return (string) $this->id;
+    }
+
+    public function fiche(): Fiche
+    {
+        return $this->fiche;
+    }
+
+    public function document(): MediaAsset
+    {
+        return $this->document;
+    }
+
+    public function retryOf(): ?self
+    {
+        return $this->retryOf;
+    }
+
+    public function documentChecksum(): string
+    {
+        return $this->documentChecksum;
+    }
+
+    public function documentCategory(): string
+    {
+        return $this->documentCategory;
+    }
+
+    /** @return array<string, mixed> */
+    public function schemaSnapshot(): array
+    {
+        return $this->schemaSnapshot;
+    }
+
+    public function schemaFingerprint(): string
+    {
+        return $this->schemaFingerprint;
+    }
+
+    public function status(): ExtractionStatus
+    {
+        return $this->status;
+    }
+
+    public function createdBy(): string
+    {
+        return $this->createdBy;
+    }
+
+    public function attempts(): int
+    {
+        return $this->attempts;
+    }
+
+    public function pageCount(): ?int
+    {
+        return $this->pageCount;
+    }
+
+    public function startedAt(): ?\DateTimeImmutable
+    {
+        return $this->startedAt;
+    }
+
+    public function finishedAt(): ?\DateTimeImmutable
+    {
+        return $this->finishedAt;
+    }
+
+    public function errorMessage(): ?string
+    {
+        return $this->errorMessage;
+    }
+
+    /** @return array<string, mixed>|null */
+    public function rawResponse(): ?array
+    {
+        return $this->rawResponse;
+    }
+
+    public function providerAgent(): ?string
+    {
+        return $this->providerAgent;
+    }
+
+    public function providerModel(): ?string
+    {
+        return $this->providerModel;
+    }
+
+    /** @return list<string> */
+    public function temporaryBoxFileIds(): array
+    {
+        return $this->temporaryBoxFileIds;
+    }
+
+    /** @return Collection<int, OcrSuggestion> */
+    public function suggestions(): Collection
+    {
+        return $this->suggestions;
+    }
+
+    public function suggestionCount(): int
+    {
+        return $this->suggestions->count();
+    }
 
     public function start(int $pages): void
     {
@@ -150,7 +237,9 @@ class DocumentExtraction
 
     public function rememberTemporaryBoxFile(string $fileId): void
     {
-        if (!in_array($fileId, $this->temporaryBoxFileIds, true)) { $this->temporaryBoxFileIds[] = $fileId; }
+        if (!in_array($fileId, $this->temporaryBoxFileIds, true)) {
+            $this->temporaryBoxFileIds[] = $fileId;
+        }
         $this->touch();
     }
 
@@ -188,14 +277,20 @@ class DocumentExtraction
 
     public function addSuggestion(OcrSuggestion $suggestion): void
     {
-        if (!$this->suggestions->contains($suggestion)) { $this->suggestions->add($suggestion); }
+        if (!$this->suggestions->contains($suggestion)) {
+            $this->suggestions->add($suggestion);
+        }
     }
 
     public function refreshReviewStatus(): void
     {
         $pending = $decided = 0;
         foreach ($this->suggestions as $suggestion) {
-            if ($suggestion->isPending()) { ++$pending; } else { ++$decided; }
+            if ($suggestion->isPending()) {
+                ++$pending;
+            } else {
+                ++$decided;
+            }
         }
         $this->status = 0 === $pending ? ExtractionStatus::Reviewed : (0 < $decided ? ExtractionStatus::PartiallyReviewed : ExtractionStatus::Ready);
         $this->touch();
@@ -204,6 +299,7 @@ class DocumentExtraction
     private static function short(?string $value): ?string
     {
         $value = null === $value ? null : trim($value);
+
         return null === $value || '' === $value ? null : mb_substr($value, 0, 100);
     }
 }

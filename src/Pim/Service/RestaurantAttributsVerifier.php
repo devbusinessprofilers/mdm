@@ -108,6 +108,7 @@ final readonly class RestaurantAttributsVerifier
                 score: null,
             );
         }
+
         return $propositions;
     }
 
@@ -210,9 +211,15 @@ final readonly class RestaurantAttributsVerifier
     private static function equipements(PlaceAttributs $attributs): array
     {
         $codes = [];
-        if (true === $attributs->wifi) { $codes[] = 'WIFI'; }
-        if (true === $attributs->terrasse) { $codes[] = 'TERRASSE'; }
-        if (true === $attributs->climatisation) { $codes[] = 'CLIMATISATION'; }
+        if (true === $attributs->wifi) {
+            $codes[] = 'WIFI';
+        }
+        if (true === $attributs->terrasse) {
+            $codes[] = 'TERRASSE';
+        }
+        if (true === $attributs->climatisation) {
+            $codes[] = 'CLIMATISATION';
+        }
 
         return $codes;
     }

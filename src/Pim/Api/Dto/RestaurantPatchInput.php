@@ -13,21 +13,25 @@ final class RestaurantPatchInput
     {
         $this->payload['label'] = $value;
     }
+
     /** @param list<string> $value */
     public function setTypesRestaurant(array $value): void
     {
         $this->payload['typesRestaurant'] = $value;
     }
+
     /** @param list<string> $value */
     public function setTypesCuisine(array $value): void
     {
         $this->payload['typesCuisine'] = $value;
     }
+
     /** @param list<string> $value */
     public function setSpecificitesAlimentaires(array $value): void
     {
         $this->payload['specificitesAlimentaires'] = $value;
     }
+
     /** @param list<string> $value */
     public function setTypesEvenement(array $value): void
     {
@@ -48,6 +52,7 @@ final class RestaurantPatchInput
     {
         $this->payload['privatisationPartielle'] = $value;
     }
+
     /** @param list<string> $value */
     public function setJoursOuverture(array $value): void
     {
@@ -63,21 +68,25 @@ final class RestaurantPatchInput
     {
         $this->payload['heureFermeture'] = $value;
     }
+
     /** @param array<string, array<string, mixed>>|null $value */
     public function setHorairesJours(?array $value): void
     {
         $this->payload['horairesJours'] = $value ?? [];
     }
+
     /** @param list<array<string, mixed>> $value */
     public function setPeriodesFermeture(array $value): void
     {
         $this->payload['periodesFermeture'] = $value;
     }
+
     /** @param array<string, mixed>|null $value */
     public function setLocalisation(?array $value): void
     {
         $this->payload['localisation'] = $value;
     }
+
     /** @param list<array<string, mixed>> $value */
     public function setAcces(array $value): void
     {
@@ -98,6 +107,7 @@ final class RestaurantPatchInput
     {
         $this->payload['descriptionGenerale'] = $value;
     }
+
     /** @param list<string> $value */
     public function setAtouts(array $value): void
     {
@@ -123,21 +133,25 @@ final class RestaurantPatchInput
     {
         $this->payload['capaciteCocktail'] = $value;
     }
+
     /** @param list<array<string, mixed>> $value */
     public function setSalles(array $value): void
     {
         $this->payload['salles'] = $value;
     }
+
     /** @param list<string> $value */
     public function setServices(array $value): void
     {
         $this->payload['services'] = $value;
     }
+
     /** @param list<string> $value */
     public function setEquipements(array $value): void
     {
         $this->payload['equipements'] = $value;
     }
+
     /** @param list<string> $value */
     public function setEngagementsRse(array $value): void
     {

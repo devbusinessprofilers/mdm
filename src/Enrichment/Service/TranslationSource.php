@@ -6,5 +6,7 @@ namespace App\Enrichment\Service;
 
 final readonly class TranslationSource
 {
-    public function __construct(public string $path, public string $label, public string $value) {}
+    public function __construct(public string $path, public string $label, public string $value)
+    {
+    }
 }

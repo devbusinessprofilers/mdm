@@ -29,9 +29,20 @@ class CompletenessConfigurationRevision
         $this->updatedAt = new \DateTimeImmutable();
     }
 
-    public function ficheType(): TypeFiche { return $this->ficheType; }
-    public function revision(): int { return $this->revision; }
-    public function updatedAt(): \DateTimeImmutable { return $this->updatedAt; }
+    public function ficheType(): TypeFiche
+    {
+        return $this->ficheType;
+    }
+
+    public function revision(): int
+    {
+        return $this->revision;
+    }
+
+    public function updatedAt(): \DateTimeImmutable
+    {
+        return $this->updatedAt;
+    }
 
     public function increment(): int
     {

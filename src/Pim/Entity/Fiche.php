@@ -17,31 +17,23 @@ use Symfony\Component\Uid\Ulid;
 
 #[ORM\Entity(repositoryClass: FicheRepository::class)]
 #[ORM\Table(name: 'pim_fiche')]
-#[
-    ORM\UniqueConstraint(
-        name: 'UNIQ_PIM_FICHE_CODE',
-        columns: ['code'],
-    ),
-]
-#[
-    ORM\Index(
-        name: 'IDX_PIM_FICHE_TYPE_UPDATED',
-        columns: ['type', 'updated_at', 'id'],
-    ),
-]
+#[ORM\UniqueConstraint(
+    name: 'UNIQ_PIM_FICHE_CODE',
+    columns: ['code'],
+),]
+#[ORM\Index(
+    name: 'IDX_PIM_FICHE_TYPE_UPDATED',
+    columns: ['type', 'updated_at', 'id'],
+),]
 #[ORM\Index(name: 'IDX_PIM_FICHE_TYPE_ID', columns: ['type', 'id'])]
-#[
-    ORM\Index(
-        name: 'IDX_PIM_FICHE_TYPE_STATUS_UPDATED',
-        columns: ['type', 'status', 'updated_at', 'id'],
-    ),
-]
-#[
-    ORM\Index(
-        name: 'IDX_PIM_FICHE_STATUS_UPDATED',
-        columns: ['status', 'updated_at', 'id'],
-    ),
-]
+#[ORM\Index(
+    name: 'IDX_PIM_FICHE_TYPE_STATUS_UPDATED',
+    columns: ['type', 'status', 'updated_at', 'id'],
+),]
+#[ORM\Index(
+    name: 'IDX_PIM_FICHE_STATUS_UPDATED',
+    columns: ['status', 'updated_at', 'id'],
+),]
 #[ORM\Index(name: 'IDX_PIM_FICHE_UPDATED', columns: ['updated_at', 'id'])]
 #[ORM\Index(name: 'IDX_PIM_FICHE_MERGED_INTO', columns: ['merged_into_id'])]
 #[ORM\Index(name: 'FTX_PIM_FICHE_LABEL', columns: ['label'], flags: ['fulltext'])]
@@ -58,25 +50,21 @@ class Fiche
     private TypeFiche $type;
     // Null à la création : le trigger SQL l'attribue depuis le compteur,
     // sauf si un code a été fourni explicitement (import legacy).
-    #[
-        ORM\Column(
-            options: ['unsigned' => true],
-            updatable: false,
-            generated: 'INSERT',
-        ),
-    ]
+    #[ORM\Column(
+        options: ['unsigned' => true],
+        updatable: false,
+        generated: 'INSERT',
+    ),]
     private ?int $code = null;
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $label = null;
     #[ORM\Column(length: 32, enumType: StatutFiche::class)]
     private StatutFiche $status = StatutFiche::EnCours;
     #[ORM\Version]
-    #[
-        ORM\Column(
-            type: Types::INTEGER,
-            options: ['unsigned' => true, 'default' => 1],
-        ),
-    ]
+    #[ORM\Column(
+        type: Types::INTEGER,
+        options: ['unsigned' => true, 'default' => 1],
+    ),]
     private int $version = 1;
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $publishedAt = null;
@@ -110,48 +98,40 @@ class Fiche
     #[ORM\JoinColumn(name: 'assignee_id', nullable: true, onDelete: 'SET NULL')]
     private ?\App\Account\Entity\User $assignee = null;
     #[ORM\OneToOne(cascade: ['persist', 'remove'], orphanRemoval: true)]
-    #[
-        ORM\JoinColumn(
-            name: 'localisation_id',
-            referencedColumnName: 'id',
-            nullable: true,
-            unique: true,
-            onDelete: 'SET NULL',
-        ),
-    ]
+    #[ORM\JoinColumn(
+        name: 'localisation_id',
+        referencedColumnName: 'id',
+        nullable: true,
+        unique: true,
+        onDelete: 'SET NULL',
+    ),]
     private ?Localisation $localisation = null;
     /** @var Collection<int, FicheAttributValeur> */
-    #[
-        ORM\OneToMany(
-            mappedBy: 'fiche',
-            targetEntity: FicheAttributValeur::class,
-            cascade: ['persist', 'remove'],
-            orphanRemoval: true,
-            fetch: 'EXTRA_LAZY',
-        ),
-    ]
+    #[ORM\OneToMany(
+        mappedBy: 'fiche',
+        targetEntity: FicheAttributValeur::class,
+        cascade: ['persist', 'remove'],
+        orphanRemoval: true,
+        fetch: 'EXTRA_LAZY',
+    ),]
     private Collection $attributValues;
     /** @var Collection<int, RessourceLieu> */
-    #[
-        ORM\OneToMany(
-            mappedBy: 'fiche',
-            targetEntity: RessourceLieu::class,
-            cascade: ['persist', 'remove'],
-            orphanRemoval: true,
-        ),
-    ]
+    #[ORM\OneToMany(
+        mappedBy: 'fiche',
+        targetEntity: RessourceLieu::class,
+        cascade: ['persist', 'remove'],
+        orphanRemoval: true,
+    ),]
     #[ORM\OrderBy(['position' => 'ASC'])]
     private Collection $resources;
     /** @var Collection<int, FicheSiteDiffusion> */
-    #[
-        ORM\OneToMany(
-            mappedBy: 'fiche',
-            targetEntity: FicheSiteDiffusion::class,
-            cascade: ['persist', 'remove'],
-            orphanRemoval: true,
-            fetch: 'EXTRA_LAZY',
-        ),
-    ]
+    #[ORM\OneToMany(
+        mappedBy: 'fiche',
+        targetEntity: FicheSiteDiffusion::class,
+        cascade: ['persist', 'remove'],
+        orphanRemoval: true,
+        fetch: 'EXTRA_LAZY',
+    ),]
     private Collection $siteSelections;
 
     public function __construct(TypeFiche $type, ?Ulid $id = null)
@@ -182,9 +162,7 @@ class Fiche
     public function code(): int
     {
         if (null === $this->code) {
-            throw new \LogicException(
-                'Le code de la fiche sera attribué lors de son enregistrement.',
-            );
+            throw new \LogicException('Le code de la fiche sera attribué lors de son enregistrement.');
         }
 
         return $this->code;

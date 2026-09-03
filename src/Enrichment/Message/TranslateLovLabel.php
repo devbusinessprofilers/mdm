@@ -6,5 +6,7 @@ namespace App\Enrichment\Message;
 
 final readonly class TranslateLovLabel
 {
-    public function __construct(public string $subject, public int $subjectId, public string $locale, public string $requestToken) {}
+    public function __construct(public string $subject, public int $subjectId, public string $locale, public string $requestToken)
+    {
+    }
 }

@@ -35,7 +35,6 @@ class LieuTarification
     #[ORM\Column(name: 'tarif_rest_opt_vin', type: Types::DECIMAL, precision: 12, scale: 2, nullable: true)] private ?string $tarifRestOptVin = null;
     #[ORM\Column(name: 'tarif_rest_opt_alcool', type: Types::DECIMAL, precision: 12, scale: 2, nullable: true)] private ?string $tarifRestOptAlcool = null;
     #[ORM\Column(name: 'tarif_rest_forfait_personalise', type: Types::DECIMAL, precision: 12, scale: 2, nullable: true)] private ?string $tarifRestForfaitPersonalise = null;
-
     // Offre spéciale du bloc « Tarifs & formules » (bloc promo marketplace).
     #[ORM\Column(name: 'offre_speciale', type: Types::TEXT, nullable: true)] private ?string $offreSpeciale = null;
     #[ORM\Column(name: 'promotion_debut', type: Types::DATE_IMMUTABLE, nullable: true)] private ?\DateTimeImmutable $promotionDebut = null;
@@ -43,63 +42,286 @@ class LieuTarification
     #[ORM\Column(name: 'heberg_group_tarif_chambre_single', type: Types::DECIMAL, precision: 12, scale: 2, nullable: true)] private ?string $hebergGroupTarifChambreSingle = null;
     #[ORM\Column(name: 'heberg_group_tarif_chambre_twin', type: Types::DECIMAL, precision: 12, scale: 2, nullable: true)] private ?string $hebergGroupTarifChambreTwin = null;
     #[ORM\Column(name: 'heberg_group_tarif_chambre_double', type: Types::DECIMAL, precision: 12, scale: 2, nullable: true)] private ?string $hebergGroupTarifChambreDouble = null;
-
     public function __construct(Lieu $lieu)
     {
         $this->lieu = $lieu;
     }
 
-    public function seminaireJourneeDemiJourneeEtude(): ?string { return $this->seminaireJourneeDemiJourneeEtude; }
-    public function changeSeminaireJourneeDemiJourneeEtude(?string $value): void { $this->seminaireJourneeDemiJourneeEtude = self::normalizeDecimal($value); $this->lieu->markChanged(); }
-    public function seminaireJourneeJourneeEtude(): ?string { return $this->seminaireJourneeJourneeEtude; }
-    public function changeSeminaireJourneeJourneeEtude(?string $value): void { $this->seminaireJourneeJourneeEtude = self::normalizeDecimal($value); $this->lieu->markChanged(); }
-    public function seminaireJourneeDemiJourneeEtudeCocktail(): ?string { return $this->seminaireJourneeDemiJourneeEtudeCocktail; }
-    public function changeSeminaireJourneeDemiJourneeEtudeCocktail(?string $value): void { $this->seminaireJourneeDemiJourneeEtudeCocktail = self::normalizeDecimal($value); $this->lieu->markChanged(); }
-    public function seminaireJourneeJourneeEtudeCocktail(): ?string { return $this->seminaireJourneeJourneeEtudeCocktail; }
-    public function changeSeminaireJourneeJourneeEtudeCocktail(?string $value): void { $this->seminaireJourneeJourneeEtudeCocktail = self::normalizeDecimal($value); $this->lieu->markChanged(); }
-    public function seminaireNuiteeSemiResidentiel(): ?string { return $this->seminaireNuiteeSemiResidentiel; }
-    public function changeSeminaireNuiteeSemiResidentiel(?string $value): void { $this->seminaireNuiteeSemiResidentiel = self::normalizeDecimal($value); $this->lieu->markChanged(); }
-    public function seminaireNuiteeResidentiel(): ?string { return $this->seminaireNuiteeResidentiel; }
-    public function changeSeminaireNuiteeResidentiel(?string $value): void { $this->seminaireNuiteeResidentiel = self::normalizeDecimal($value); $this->lieu->markChanged(); }
-    public function seminaireNuiteeResidentielAllInclusive(): ?string { return $this->seminaireNuiteeResidentielAllInclusive; }
-    public function changeSeminaireNuiteeResidentielAllInclusive(?string $value): void { $this->seminaireNuiteeResidentielAllInclusive = self::normalizeDecimal($value); $this->lieu->markChanged(); }
-    public function locSalleSeulDemiJournee(): ?string { return $this->locSalleSeulDemiJournee; }
-    public function changeLocSalleSeulDemiJournee(?string $value): void { $this->locSalleSeulDemiJournee = self::normalizeDecimal($value); $this->lieu->markChanged(); }
-    public function locSalleSeulJournee(): ?string { return $this->locSalleSeulJournee; }
-    public function changeLocSalleSeulJournee(?string $value): void { $this->locSalleSeulJournee = self::normalizeDecimal($value); $this->lieu->markChanged(); }
-    public function locSalleSeulSoiree(): ?string { return $this->locSalleSeulSoiree; }
-    public function changeLocSalleSeulSoiree(?string $value): void { $this->locSalleSeulSoiree = self::normalizeDecimal($value); $this->lieu->markChanged(); }
-    public function csCocktailDejeunatoire10Pers(): ?string { return $this->csCocktailDejeunatoire10Pers; }
-    public function changeCsCocktailDejeunatoire10Pers(?string $value): void { $this->csCocktailDejeunatoire10Pers = self::normalizeDecimal($value); $this->lieu->markChanged(); }
-    public function csCocktailDinatoire(): ?string { return $this->csCocktailDinatoire; }
-    public function changeCsCocktailDinatoire(?string $value): void { $this->csCocktailDinatoire = self::normalizeDecimal($value); $this->lieu->markChanged(); }
-    public function csSoireeDansante(): ?string { return $this->csSoireeDansante; }
-    public function changeCsSoireeDansante(?string $value): void { $this->csSoireeDansante = self::normalizeDecimal($value); $this->lieu->markChanged(); }
-    public function csSoireeDinerAssis(): ?string { return $this->csSoireeDinerAssis; }
-    public function changeCsSoireeDinerAssis(?string $value): void { $this->csSoireeDinerAssis = self::normalizeDecimal($value); $this->lieu->markChanged(); }
-    public function tarifRestDejeunerAssis(): ?string { return $this->tarifRestDejeunerAssis; }
-    public function changeTarifRestDejeunerAssis(?string $value): void { $this->tarifRestDejeunerAssis = self::normalizeDecimal($value); $this->lieu->markChanged(); }
-    public function tarifRestDinerAssis(): ?string { return $this->tarifRestDinerAssis; }
-    public function changeTarifRestDinerAssis(?string $value): void { $this->tarifRestDinerAssis = self::normalizeDecimal($value); $this->lieu->markChanged(); }
-    public function tarifRestOptVin(): ?string { return $this->tarifRestOptVin; }
-    public function changeTarifRestOptVin(?string $value): void { $this->tarifRestOptVin = self::normalizeDecimal($value); $this->lieu->markChanged(); }
-    public function tarifRestOptAlcool(): ?string { return $this->tarifRestOptAlcool; }
-    public function changeTarifRestOptAlcool(?string $value): void { $this->tarifRestOptAlcool = self::normalizeDecimal($value); $this->lieu->markChanged(); }
-    public function tarifRestForfaitPersonalise(): ?string { return $this->tarifRestForfaitPersonalise; }
-    public function changeTarifRestForfaitPersonalise(?string $value): void { $this->tarifRestForfaitPersonalise = self::normalizeDecimal($value); $this->lieu->markChanged(); }
-    public function hebergGroupTarifChambreSingle(): ?string { return $this->hebergGroupTarifChambreSingle; }
-    public function changeHebergGroupTarifChambreSingle(?string $value): void { $this->hebergGroupTarifChambreSingle = self::normalizeDecimal($value); $this->lieu->markChanged(); }
-    public function hebergGroupTarifChambreTwin(): ?string { return $this->hebergGroupTarifChambreTwin; }
-    public function changeHebergGroupTarifChambreTwin(?string $value): void { $this->hebergGroupTarifChambreTwin = self::normalizeDecimal($value); $this->lieu->markChanged(); }
-    public function hebergGroupTarifChambreDouble(): ?string { return $this->hebergGroupTarifChambreDouble; }
-    public function changeHebergGroupTarifChambreDouble(?string $value): void { $this->hebergGroupTarifChambreDouble = self::normalizeDecimal($value); $this->lieu->markChanged(); }
+    public function seminaireJourneeDemiJourneeEtude(): ?string
+    {
+        return $this->seminaireJourneeDemiJourneeEtude;
+    }
 
-    public function offreSpeciale(): ?string { return $this->offreSpeciale; }
-    public function changeOffreSpeciale(?string $value): void { $value = null === $value ? null : trim($value); $this->offreSpeciale = '' === $value ? null : $value; $this->lieu->markChanged(); }
-    public function promotionDebut(): ?\DateTimeImmutable { return $this->promotionDebut; }
-    public function changePromotionDebut(?\DateTimeImmutable $value): void { $this->promotionDebut = $value; $this->lieu->markChanged(); }
-    public function promotionFin(): ?\DateTimeImmutable { return $this->promotionFin; }
-    public function changePromotionFin(?\DateTimeImmutable $value): void { $this->promotionFin = $value; $this->lieu->markChanged(); }
+    public function changeSeminaireJourneeDemiJourneeEtude(?string $value): void
+    {
+        $this->seminaireJourneeDemiJourneeEtude = self::normalizeDecimal($value);
+        $this->lieu->markChanged();
+    }
+
+    public function seminaireJourneeJourneeEtude(): ?string
+    {
+        return $this->seminaireJourneeJourneeEtude;
+    }
+
+    public function changeSeminaireJourneeJourneeEtude(?string $value): void
+    {
+        $this->seminaireJourneeJourneeEtude = self::normalizeDecimal($value);
+        $this->lieu->markChanged();
+    }
+
+    public function seminaireJourneeDemiJourneeEtudeCocktail(): ?string
+    {
+        return $this->seminaireJourneeDemiJourneeEtudeCocktail;
+    }
+
+    public function changeSeminaireJourneeDemiJourneeEtudeCocktail(?string $value): void
+    {
+        $this->seminaireJourneeDemiJourneeEtudeCocktail = self::normalizeDecimal($value);
+        $this->lieu->markChanged();
+    }
+
+    public function seminaireJourneeJourneeEtudeCocktail(): ?string
+    {
+        return $this->seminaireJourneeJourneeEtudeCocktail;
+    }
+
+    public function changeSeminaireJourneeJourneeEtudeCocktail(?string $value): void
+    {
+        $this->seminaireJourneeJourneeEtudeCocktail = self::normalizeDecimal($value);
+        $this->lieu->markChanged();
+    }
+
+    public function seminaireNuiteeSemiResidentiel(): ?string
+    {
+        return $this->seminaireNuiteeSemiResidentiel;
+    }
+
+    public function changeSeminaireNuiteeSemiResidentiel(?string $value): void
+    {
+        $this->seminaireNuiteeSemiResidentiel = self::normalizeDecimal($value);
+        $this->lieu->markChanged();
+    }
+
+    public function seminaireNuiteeResidentiel(): ?string
+    {
+        return $this->seminaireNuiteeResidentiel;
+    }
+
+    public function changeSeminaireNuiteeResidentiel(?string $value): void
+    {
+        $this->seminaireNuiteeResidentiel = self::normalizeDecimal($value);
+        $this->lieu->markChanged();
+    }
+
+    public function seminaireNuiteeResidentielAllInclusive(): ?string
+    {
+        return $this->seminaireNuiteeResidentielAllInclusive;
+    }
+
+    public function changeSeminaireNuiteeResidentielAllInclusive(?string $value): void
+    {
+        $this->seminaireNuiteeResidentielAllInclusive = self::normalizeDecimal($value);
+        $this->lieu->markChanged();
+    }
+
+    public function locSalleSeulDemiJournee(): ?string
+    {
+        return $this->locSalleSeulDemiJournee;
+    }
+
+    public function changeLocSalleSeulDemiJournee(?string $value): void
+    {
+        $this->locSalleSeulDemiJournee = self::normalizeDecimal($value);
+        $this->lieu->markChanged();
+    }
+
+    public function locSalleSeulJournee(): ?string
+    {
+        return $this->locSalleSeulJournee;
+    }
+
+    public function changeLocSalleSeulJournee(?string $value): void
+    {
+        $this->locSalleSeulJournee = self::normalizeDecimal($value);
+        $this->lieu->markChanged();
+    }
+
+    public function locSalleSeulSoiree(): ?string
+    {
+        return $this->locSalleSeulSoiree;
+    }
+
+    public function changeLocSalleSeulSoiree(?string $value): void
+    {
+        $this->locSalleSeulSoiree = self::normalizeDecimal($value);
+        $this->lieu->markChanged();
+    }
+
+    public function csCocktailDejeunatoire10Pers(): ?string
+    {
+        return $this->csCocktailDejeunatoire10Pers;
+    }
+
+    public function changeCsCocktailDejeunatoire10Pers(?string $value): void
+    {
+        $this->csCocktailDejeunatoire10Pers = self::normalizeDecimal($value);
+        $this->lieu->markChanged();
+    }
+
+    public function csCocktailDinatoire(): ?string
+    {
+        return $this->csCocktailDinatoire;
+    }
+
+    public function changeCsCocktailDinatoire(?string $value): void
+    {
+        $this->csCocktailDinatoire = self::normalizeDecimal($value);
+        $this->lieu->markChanged();
+    }
+
+    public function csSoireeDansante(): ?string
+    {
+        return $this->csSoireeDansante;
+    }
+
+    public function changeCsSoireeDansante(?string $value): void
+    {
+        $this->csSoireeDansante = self::normalizeDecimal($value);
+        $this->lieu->markChanged();
+    }
+
+    public function csSoireeDinerAssis(): ?string
+    {
+        return $this->csSoireeDinerAssis;
+    }
+
+    public function changeCsSoireeDinerAssis(?string $value): void
+    {
+        $this->csSoireeDinerAssis = self::normalizeDecimal($value);
+        $this->lieu->markChanged();
+    }
+
+    public function tarifRestDejeunerAssis(): ?string
+    {
+        return $this->tarifRestDejeunerAssis;
+    }
+
+    public function changeTarifRestDejeunerAssis(?string $value): void
+    {
+        $this->tarifRestDejeunerAssis = self::normalizeDecimal($value);
+        $this->lieu->markChanged();
+    }
+
+    public function tarifRestDinerAssis(): ?string
+    {
+        return $this->tarifRestDinerAssis;
+    }
+
+    public function changeTarifRestDinerAssis(?string $value): void
+    {
+        $this->tarifRestDinerAssis = self::normalizeDecimal($value);
+        $this->lieu->markChanged();
+    }
+
+    public function tarifRestOptVin(): ?string
+    {
+        return $this->tarifRestOptVin;
+    }
+
+    public function changeTarifRestOptVin(?string $value): void
+    {
+        $this->tarifRestOptVin = self::normalizeDecimal($value);
+        $this->lieu->markChanged();
+    }
+
+    public function tarifRestOptAlcool(): ?string
+    {
+        return $this->tarifRestOptAlcool;
+    }
+
+    public function changeTarifRestOptAlcool(?string $value): void
+    {
+        $this->tarifRestOptAlcool = self::normalizeDecimal($value);
+        $this->lieu->markChanged();
+    }
+
+    public function tarifRestForfaitPersonalise(): ?string
+    {
+        return $this->tarifRestForfaitPersonalise;
+    }
+
+    public function changeTarifRestForfaitPersonalise(?string $value): void
+    {
+        $this->tarifRestForfaitPersonalise = self::normalizeDecimal($value);
+        $this->lieu->markChanged();
+    }
+
+    public function hebergGroupTarifChambreSingle(): ?string
+    {
+        return $this->hebergGroupTarifChambreSingle;
+    }
+
+    public function changeHebergGroupTarifChambreSingle(?string $value): void
+    {
+        $this->hebergGroupTarifChambreSingle = self::normalizeDecimal($value);
+        $this->lieu->markChanged();
+    }
+
+    public function hebergGroupTarifChambreTwin(): ?string
+    {
+        return $this->hebergGroupTarifChambreTwin;
+    }
+
+    public function changeHebergGroupTarifChambreTwin(?string $value): void
+    {
+        $this->hebergGroupTarifChambreTwin = self::normalizeDecimal($value);
+        $this->lieu->markChanged();
+    }
+
+    public function hebergGroupTarifChambreDouble(): ?string
+    {
+        return $this->hebergGroupTarifChambreDouble;
+    }
+
+    public function changeHebergGroupTarifChambreDouble(?string $value): void
+    {
+        $this->hebergGroupTarifChambreDouble = self::normalizeDecimal($value);
+        $this->lieu->markChanged();
+    }
+
+    public function offreSpeciale(): ?string
+    {
+        return $this->offreSpeciale;
+    }
+
+    public function changeOffreSpeciale(?string $value): void
+    {
+        $value = null === $value ? null : trim($value);
+        $this->offreSpeciale = '' === $value ? null : $value;
+        $this->lieu->markChanged();
+    }
+
+    public function promotionDebut(): ?\DateTimeImmutable
+    {
+        return $this->promotionDebut;
+    }
+
+    public function changePromotionDebut(?\DateTimeImmutable $value): void
+    {
+        $this->promotionDebut = $value;
+        $this->lieu->markChanged();
+    }
+
+    public function promotionFin(): ?\DateTimeImmutable
+    {
+        return $this->promotionFin;
+    }
+
+    public function changePromotionFin(?\DateTimeImmutable $value): void
+    {
+        $this->promotionFin = $value;
+        $this->lieu->markChanged();
+    }
 
     private static function normalizeDecimal(?string $value): ?string
     {

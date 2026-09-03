@@ -28,11 +28,17 @@ final readonly class FicheCursor
 
         try {
             $decoded = base64_decode(strtr($cursor, '-_', '+/'), true);
-            if (false === $decoded) { throw new \InvalidArgumentException(); }
+            if (false === $decoded) {
+                throw new \InvalidArgumentException();
+            }
             $data = json_decode($decoded, true, 8, JSON_THROW_ON_ERROR);
-            if (!is_array($data) || !is_string($data['u'] ?? null) || !is_string($data['i'] ?? null)) { throw new \InvalidArgumentException(); }
+            if (!is_array($data) || !is_string($data['u'] ?? null) || !is_string($data['i'] ?? null)) {
+                throw new \InvalidArgumentException();
+            }
             $date = \DateTimeImmutable::createFromFormat('!Y-m-d H:i:s.u', $data['u']);
-            if (false === $date) { throw new \InvalidArgumentException(); }
+            if (false === $date) {
+                throw new \InvalidArgumentException();
+            }
 
             return new self($date, Ulid::fromString($data['i']));
         } catch (\Throwable) {

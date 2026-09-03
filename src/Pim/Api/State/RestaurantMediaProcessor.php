@@ -85,11 +85,7 @@ final readonly class RestaurantMediaProcessor implements ProcessorInterface
                 }
                 if ('PUT' === $method && str_ends_with($template, '/ordre')) {
                     if (!$data instanceof MediaOrderInput) {
-                        throw new ApiProblemException(
-                            400,
-                            'invalid_payload',
-                            'Le tableau ids est obligatoire.',
-                        );
+                        throw new ApiProblemException(400, 'invalid_payload', 'Le tableau ids est obligatoire.');
                     }
 
                     return $this->order($restaurant, $data);
@@ -101,11 +97,7 @@ final readonly class RestaurantMediaProcessor implements ProcessorInterface
                 );
                 if ('PATCH' === $method) {
                     if (!$data instanceof MediaPatchInput) {
-                        throw new ApiProblemException(
-                            400,
-                            'invalid_payload',
-                            'Corps JSON invalide.',
-                        );
+                        throw new ApiProblemException(400, 'invalid_payload', 'Corps JSON invalide.');
                     }
 
                     return $this->metadata($restaurant, $resource, $data);
@@ -133,21 +125,13 @@ final readonly class RestaurantMediaProcessor implements ProcessorInterface
     {
         $maximum = $this->photoObligations->maximum(TypeFiche::Restaurant);
         if (count($this->photos($restaurant)) >= $maximum) {
-            throw new ApiProblemException(
-                422,
-                'media_limit_reached',
-                sprintf('Un Restaurant ne peut pas contenir plus de %d photos.', $maximum),
-            );
+            throw new ApiProblemException(422, 'media_limit_reached', sprintf('Un Restaurant ne peut pas contenir plus de %d photos.', $maximum));
         }
 
         $request = $this->request();
         $file = $request->files->get('photo');
         if (!$file instanceof UploadedFile) {
-            throw new ApiProblemException(
-                422,
-                'photo_required',
-                'Le champ multipart photo est obligatoire.',
-            );
+            throw new ApiProblemException(422, 'photo_required', 'Le champ multipart photo est obligatoire.');
         }
 
         $usage = $request->request->getString('usage', PhotoUsageCatalog::DEFAUT);
@@ -161,21 +145,13 @@ final readonly class RestaurantMediaProcessor implements ProcessorInterface
             $request->request->getString('salleId'),
         );
         if (PhotoUsageCatalog::SALLE === $usage && null === $room) {
-            throw new ApiProblemException(
-                422,
-                'room_required',
-                'Une photo de salle doit être rattachée à une salle.',
-            );
+            throw new ApiProblemException(422, 'room_required', 'Une photo de salle doit être rattachée à une salle.');
         }
 
         try {
             $asset = $this->uploader->upload($file, $restaurant->fiche());
         } catch (\DomainException $exception) {
-            throw new ApiProblemException(
-                422,
-                'invalid_media',
-                $exception->getMessage(),
-            );
+            throw new ApiProblemException(422, 'invalid_media', $exception->getMessage());
         }
 
         $resource = new RessourceLieu();
@@ -224,11 +200,7 @@ final readonly class RestaurantMediaProcessor implements ProcessorInterface
             || [] !== array_diff($input->ids, $known)
             || count($input->ids) !== count(array_unique($input->ids))
         ) {
-            throw new ApiProblemException(
-                422,
-                'invalid_media_order',
-                'La liste doit contenir chaque média une seule fois.',
-            );
+            throw new ApiProblemException(422, 'invalid_media_order', 'La liste doit contenir chaque média une seule fois.');
         }
 
         $byId = [];
@@ -253,11 +225,7 @@ final readonly class RestaurantMediaProcessor implements ProcessorInterface
 
         if (array_key_exists('usage', $payload)) {
             if (!is_string($input->usage)) {
-                throw new ApiProblemException(
-                    422,
-                    'invalid_media_usage',
-                    'La catégorie est invalide.',
-                );
+                throw new ApiProblemException(422, 'invalid_media_usage', 'La catégorie est invalide.');
             }
             if ($this->usagePrincipaleDeprecie($input->usage)) {
                 // La catégorie de la photo est conservée, seule sa place change.
@@ -276,11 +244,7 @@ final readonly class RestaurantMediaProcessor implements ProcessorInterface
             PhotoUsageCatalog::SALLE === $resource->usage()
             && null === $resource->restaurantSalle()
         ) {
-            throw new ApiProblemException(
-                422,
-                'room_required',
-                'Une photo de salle doit être rattachée à une salle.',
-            );
+            throw new ApiProblemException(422, 'room_required', 'Une photo de salle doit être rattachée à une salle.');
         }
         if (array_key_exists('legende', $payload)) {
             $resource->changeLegende($input->legende);
@@ -315,11 +279,7 @@ final readonly class RestaurantMediaProcessor implements ProcessorInterface
                 $transform = true;
             }
         } catch (\DomainException $exception) {
-            throw new ApiProblemException(
-                422,
-                'invalid_transformation',
-                $exception->getMessage(),
-            );
+            throw new ApiProblemException(422, 'invalid_transformation', $exception->getMessage());
         }
 
         if ($transform) {
@@ -338,21 +298,13 @@ final readonly class RestaurantMediaProcessor implements ProcessorInterface
     ): LieuMediaResource {
         $file = $this->request()->files->get('photo');
         if (!$file instanceof UploadedFile) {
-            throw new ApiProblemException(
-                422,
-                'photo_required',
-                'Le champ multipart photo est obligatoire.',
-            );
+            throw new ApiProblemException(422, 'photo_required', 'Le champ multipart photo est obligatoire.');
         }
 
         try {
             $asset = $this->uploader->upload($file, $restaurant->fiche());
         } catch (\DomainException $exception) {
-            throw new ApiProblemException(
-                422,
-                'invalid_media',
-                $exception->getMessage(),
-            );
+            throw new ApiProblemException(422, 'invalid_media', $exception->getMessage());
         }
 
         $oldAssetId = $resource->damAssetId();
@@ -406,11 +358,7 @@ final readonly class RestaurantMediaProcessor implements ProcessorInterface
             }
         }
 
-        throw new ApiProblemException(
-            422,
-            'foreign_room',
-            'La salle doit appartenir au Restaurant.',
-        );
+        throw new ApiProblemException(422, 'foreign_room', 'La salle doit appartenir au Restaurant.');
     }
 
     /** @return list<RessourceLieu> */
@@ -419,8 +367,7 @@ final readonly class RestaurantMediaProcessor implements ProcessorInterface
         return array_values(
             array_filter(
                 $restaurant->ressources()->toArray(),
-                static fn (RessourceLieu $resource): bool =>
-                    NatureRessource::Photo === $resource->nature(),
+                static fn (RessourceLieu $resource): bool => NatureRessource::Photo === $resource->nature(),
             ),
         );
     }
@@ -432,11 +379,7 @@ final readonly class RestaurantMediaProcessor implements ProcessorInterface
             ['PHOTO_DIVERSE', PhotoUsageCatalog::SALLE],
             true,
         )) {
-            throw new ApiProblemException(
-                422,
-                'invalid_media_usage',
-                'La catégorie est invalide.',
-            );
+            throw new ApiProblemException(422, 'invalid_media_usage', 'La catégorie est invalide.');
         }
     }
 

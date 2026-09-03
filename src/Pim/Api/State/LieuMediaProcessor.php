@@ -72,7 +72,7 @@ final readonly class LieuMediaProcessor implements ProcessorInterface
         $this->scopes->requireScope(ExternalScopeGuard::MEDIAS_WRITE);
         $lieu = $this->state->lieu((string) ($uriVariables['lieuId'] ?? ''));
         $this->state->assertVersion($lieu);
-        if (!($operation instanceof HttpOperation)) {
+        if (!$operation instanceof HttpOperation) {
             throw new \LogicException('Une opération HTTP est requise.');
         }
         $template = $operation->getUriTemplate() ?? '';
@@ -91,7 +91,7 @@ final readonly class LieuMediaProcessor implements ProcessorInterface
                     return $this->upload($lieu);
                 }
                 if ('PUT' === $method && str_ends_with($template, '/ordre')) {
-                    if (!($data instanceof MediaOrderInput)) {
+                    if (!$data instanceof MediaOrderInput) {
                         throw new ApiProblemException(Response::HTTP_BAD_REQUEST, 'invalid_payload', 'Le tableau ids est obligatoire.');
                     }
 
@@ -102,7 +102,7 @@ final readonly class LieuMediaProcessor implements ProcessorInterface
                     (string) ($uriVariables['resourceId'] ?? ''),
                 );
                 if ('PATCH' === $method) {
-                    if (!($data instanceof MediaPatchInput)) {
+                    if (!$data instanceof MediaPatchInput) {
                         throw new ApiProblemException(Response::HTTP_BAD_REQUEST, 'invalid_payload', 'Corps JSON invalide.');
                     }
 
@@ -139,7 +139,7 @@ final readonly class LieuMediaProcessor implements ProcessorInterface
             throw new \LogicException('Aucune requête HTTP active.');
         }
         $file = $request->files->get('photo');
-        if (!($file instanceof UploadedFile)) {
+        if (!$file instanceof UploadedFile) {
             throw new ApiProblemException(Response::HTTP_UNPROCESSABLE_ENTITY, 'photo_required', 'Le champ multipart photo est obligatoire.');
         }
         $usage = $request->request->getString('usage', PhotoUsageCatalog::DEFAUT);
@@ -284,7 +284,7 @@ final readonly class LieuMediaProcessor implements ProcessorInterface
         RessourceLieu $resource,
     ): LieuMediaResource {
         $file = $this->requests->getCurrentRequest()?->files->get('photo');
-        if (!($file instanceof UploadedFile)) {
+        if (!$file instanceof UploadedFile) {
             throw new ApiProblemException(Response::HTTP_UNPROCESSABLE_ENTITY, 'photo_required', 'Le champ multipart photo est obligatoire.');
         }
         try {
