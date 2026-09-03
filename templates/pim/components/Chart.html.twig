@@ -1,7 +1,0 @@
-{% set chartCva = cva({
-    base: 'overflow-hidden',
-}) %}
-
-<div {{ attributes.without('class', 'chartClass') }} class="{{ chartCva.apply({}, attributes.render('class'))}}">
-    {{ render_chart(chart, { 'class': attributes.render('chartClass')|default('') }) }}
-</div>

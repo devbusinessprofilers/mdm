@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Pim\Entity;
 
-use App\Pim\Completeness\CompletenessScores;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
@@ -64,17 +63,6 @@ trait CompletenessScoresTrait
     public function completenessRevision(): int
     {
         return $this->completenessRevision;
-    }
-
-    public function applyCompleteness(CompletenessScores $scores, int $revision): void
-    {
-        $this->completenessGlobal = $scores->global;
-        $this->completenessMarketplace = $scores->marketplace;
-        $this->completenessThematicSites = $scores->thematicSites;
-        $this->completenessSalesforce = $scores->salesforce;
-        $this->completenessProviderPortal = $scores->providerPortal;
-        $this->completenessRevision = max(0, $revision);
-        $this->completenessCalculatedAt = new \DateTimeImmutable();
     }
 
     /** @return array{marketplace: int, thematicSites: int, salesforce: int, providerPortal: int} */

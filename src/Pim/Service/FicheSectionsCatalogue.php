@@ -34,12 +34,6 @@ final class FicheSectionsCatalogue
         };
     }
 
-    /** @return array{titre: string, champs: list<string>, proprietes: list<string>, blocs: list<string>} */
-    public static function section(TypeFiche $type, int $index): array
-    {
-        return self::pour($type)[$index] ?? self::pour($type)[0];
-    }
-
     public static function indexValide(TypeFiche $type, int $index): int
     {
         return array_key_exists($index, self::pour($type)) ? $index : 0;

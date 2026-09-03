@@ -1,8 +1,6 @@
 twig_component:
     anonymous_template_directory: 'components/'
     defaults:
-        # Namespace & directory for components
-        App\Twig\Components\: 'components/'
         # Design-system repris du front : composants sous templates/pim/components,
         # exposés sans préfixe de nom (ex. <twig:Button>, <twig:Form:TextInput>).
         App\Pim\Twig\Components\:

@@ -1,5 +1,4 @@
 import { Controller } from '@hotwired/stimulus';
-import { getDefaultLocale } from '@symfony/ux-translator';
 
 /*
  * TinyMCE n'est pas un module de l'importmap, et le portail le chargeait par une
@@ -50,7 +49,7 @@ export default class extends Controller {
     }
 
     init() {
-        const locale = getDefaultLocale();
+        const locale = document.documentElement.lang || 'fr';
 
         // @see: https://www.tiny.cloud/docs/tinymce/latest/ui-localization/
         const lang = 'fr' === locale ? 'fr-FR' : 'en';

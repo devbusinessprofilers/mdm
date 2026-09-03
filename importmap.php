@@ -40,19 +40,7 @@ return [
     '@orchidjs/unicode-variants' => [
         'version' => '1.1.2',
     ],
-    'tom-select/dist/css/tom-select.default.min.css' => [
-        'version' => '2.6.2',
-        'type' => 'css',
-    ],
     'tom-select/dist/css/tom-select.default.css' => [
-        'version' => '2.6.2',
-        'type' => 'css',
-    ],
-    'tom-select/dist/css/tom-select.bootstrap4.css' => [
-        'version' => '2.6.2',
-        'type' => 'css',
-    ],
-    'tom-select/dist/css/tom-select.bootstrap5.css' => [
         'version' => '2.6.2',
         'type' => 'css',
     ],
@@ -61,30 +49,6 @@ return [
     ],
     '@kurkle/color' => [
         'version' => '0.3.4',
-    ],
-    '@symfony/ux-live-component' => [
-        'path' => './vendor/symfony/ux-live-component/assets/dist/live_controller.js',
-    ],
-    'intl-messageformat' => [
-        'version' => '10.7.18',
-    ],
-    'tslib' => [
-        'version' => '2.8.1',
-    ],
-    '@formatjs/fast-memoize' => [
-        'version' => '2.2.7',
-    ],
-    '@formatjs/icu-messageformat-parser' => [
-        'version' => '2.11.4',
-    ],
-    '@formatjs/icu-skeleton-parser' => [
-        'version' => '1.8.16',
-    ],
-    '@symfony/ux-translator' => [
-        'path' => './vendor/symfony/ux-translator/assets/dist/translator_controller.js',
-    ],
-    '@popperjs/core' => [
-        'version' => '2.11.8',
     ],
     'cropperjs' => [
         'version' => '2.2.0',
