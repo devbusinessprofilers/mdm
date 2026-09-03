@@ -6,7 +6,6 @@ namespace App\Pim\Service;
 
 use App\Dam\Entity\MediaAsset;
 use App\Dam\Message\DeleteMedia;
-use App\Dam\Message\UnpublishDocument;
 use App\Dam\Service\ImageVariantRegistry;
 use App\Dam\Service\LieuImageUploader;
 use App\Enrichment\Service\FicheTranslationScheduler;
@@ -63,8 +62,8 @@ final readonly class LieuAdminManager
             $this->translationScheduler->schedule($lieu->fiche());
             $this->outbox->enqueue(new IndexFiche($lieu->fiche()->idString()));
             // Liaison Restaurant modifiée : le payload des fiches détachée/
-            // attachée change aussi, sans transition de workflow (le flush
-            // sous suppression évite le markChanged du PreUpdate détail).
+            // attachée change aussi, sans transition de workflow (flush sous
+            // suppression pour ces fiches).
             $liees = $lieu->drainFichesLieesAResynchroniser();
             foreach ($liees as $ficheLiee) {
                 $this->outbox->enqueue(new IndexFiche($ficheLiee->idString()));
@@ -74,37 +73,6 @@ final readonly class LieuAdminManager
             $this->cleanup($uploaded);
             throw $exception;
         }
-    }
-
-    public function delete(Lieu $lieu): void
-    {
-        foreach ($lieu->ressources() as $resource) {
-            if ('' !== $resource->damAssetId()) { $this->outbox->enqueue(new DeleteMedia($resource->damAssetId())); }
-            if (null !== $resource->publicStorageKey()) { $this->outbox->enqueue(new UnpublishDocument($resource->id(), $resource->publicStorageKey())); }
-        }
-        // Le restaurant lié survit (FK SET NULL) mais son payload change.
-        $restaurant = $lieu->restaurant();
-        if (null !== $restaurant) {
-            $restaurant->syncLieu(null);
-            $this->outbox->enqueue(new IndexFiche($restaurant->fiche()->idString()));
-        }
-        $this->entityManager->remove($lieu);
-        Fiche::preserveWorkflowsDuring(
-            null === $restaurant ? [] : [$restaurant->fiche()],
-            fn () => $this->entityManager->flush(),
-        );
-    }
-
-    public function archive(Lieu $lieu, string $actor): void
-    {
-        foreach ($lieu->ressources() as $resource) {
-            if (NatureRessource::Document !== $resource->nature()) { continue; }
-            $key = $resource->archiveDocument();
-            if (null !== $key) { $this->outbox->enqueue(new UnpublishDocument($resource->id(), $key)); }
-        }
-        $lieu->fiche()->archive($actor);
-        $this->outbox->enqueue(new IndexFiche($lieu->fiche()->idString()));
-        $this->entityManager->flush();
     }
 
     /** @param list<MediaAsset> $assets */

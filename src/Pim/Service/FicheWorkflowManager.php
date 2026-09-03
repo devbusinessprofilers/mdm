@@ -4,11 +4,16 @@ declare(strict_types=1);
 
 namespace App\Pim\Service;
 
+use App\Dam\Message\DeleteMedia;
+use App\Dam\Message\UnpublishDocument;
 use App\Enrichment\Service\FicheTranslationScheduler;
 use App\Etl\Service\PhotoPublicationGuard;
+use App\Pim\Entity\Activite\Activite;
 use App\Pim\Entity\Fiche;
 use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Entity\Restaurant\Restaurant;
+use App\Pim\Entity\Service\ServiceEvenementiel;
+use App\Pim\Enum\NatureRessource;
 use App\Pim\Message\IndexFiche;
 use App\Pim\Validation\ValidationGroups;
 use App\Shared\Outbox\OutboxPublisherInterface;
@@ -92,10 +97,22 @@ final readonly class FicheWorkflowManager
         return true;
     }
 
+    /**
+     * Archive la fiche, quelle que soit sa gamme : ses documents publiés
+     * quittent le stockage public en même temps.
+     */
     public function archive(Fiche $fiche, string $actor): void
     {
+        foreach ($fiche->resources() as $resource) {
+            if (NatureRessource::Document !== $resource->nature()) {
+                continue;
+            }
+            $key = $resource->archiveDocument();
+            if (null !== $key) {
+                $this->outbox->enqueue(new UnpublishDocument($resource->id(), $key));
+            }
+        }
         $fiche->archive($actor);
-        $this->translations->schedule($fiche);
         $this->indexAndFlush($fiche);
     }
 
@@ -120,8 +137,20 @@ final readonly class FicheWorkflowManager
         $this->indexAndFlush($fiche);
     }
 
-    public function delete(object $subject): void
+    /**
+     * Supprime la fiche, quelle que soit sa gamme : ses originaux et ses
+     * documents publiés sont purgés du DAM par l'outbox.
+     */
+    public function delete(Lieu|Restaurant|Activite|ServiceEvenementiel $subject): void
     {
+        foreach ($subject->fiche()->resources() as $resource) {
+            if ('' !== $resource->damAssetId()) {
+                $this->outbox->enqueue(new DeleteMedia($resource->damAssetId()));
+            }
+            if (null !== $resource->publicStorageKey()) {
+                $this->outbox->enqueue(new UnpublishDocument($resource->id(), $resource->publicStorageKey()));
+            }
+        }
         // Liaison Lieu ↔ Restaurant : la fiche liée survit mais son payload
         // change — la détacher et la réindexer, sans transition de workflow.
         $liee = match (true) {

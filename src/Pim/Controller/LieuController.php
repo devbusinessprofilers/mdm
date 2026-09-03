@@ -16,7 +16,6 @@ use App\Pim\ReadModel\FicheCursor;
 use App\Pim\Repository\LieuRepository;
 use App\Pim\Service\FicheCountProvider;
 use App\Pim\Service\InternalFicheMutationPolicy;
-use App\Pim\Service\LieuAdminManager;
 use App\Pim\Service\LieuAdminViewBuilder;
 use App\Pim\Service\FicheWorkflowManager;
 use App\Shared\Search\SearchQuery;
@@ -45,7 +44,7 @@ final class LieuController extends AbstractController
         string $id,
         LieuRepository $repository,
         FicheActionFormFactory $forms,
-        LieuAdminManager $manager,
+        FicheWorkflowManager $workflow,
     ): Response {
         $lieu = $repository->find($id);
         if (!$lieu instanceof Lieu) { throw $this->createNotFoundException('Lieu introuvable.'); }
@@ -54,7 +53,7 @@ final class LieuController extends AbstractController
         $form = $forms->action('lieu', $lieu->id(), 'delete', 'Supprimer', true, 'Supprimer ce lieu ?');
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
-            $manager->delete($lieu);
+            $workflow->delete($lieu);
             $this->addFlash('success', 'Lieu supprimé.');
         }
 
@@ -225,7 +224,7 @@ final class LieuController extends AbstractController
         string $id,
         LieuRepository $repository,
         FicheActionFormFactory $forms,
-        LieuAdminManager $manager,
+        FicheWorkflowManager $workflow,
         CurrentActorProvider $actor,
     ): Response {
         $lieu = $repository->find($id);
@@ -235,7 +234,7 @@ final class LieuController extends AbstractController
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
             try {
-                $manager->archive($lieu, $actor->id());
+                $workflow->archive($lieu->fiche(), $actor->id());
                 $this->addFlash('success', 'Fiche archivée.');
             } catch (\DomainException $exception) {
                 $this->addFlash('warning', $exception->getMessage());

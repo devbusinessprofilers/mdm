@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Dashboard\Service;
 
+use App\Shared\Outbox\EventIdStamp;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\MessageBusInterface;
@@ -19,9 +20,10 @@ use Symfony\Component\Messenger\Transport\TransportInterface;
 /**
  * Liste et actions sur la DLQ Messenger (transport failed) pour la page
  * /admin/performance : équivalents web de messenger:failed:show / retry /
- * remove. Le retry renvoie le message nu vers son transport d'origine
- * (TransportNamesStamp) : compteur de tentatives remis à zéro, traitement par
- * le worker habituel plutôt qu'en synchrone dans la requête web.
+ * remove. Le retry renvoie le message vers son transport d'origine
+ * (TransportNamesStamp) avec son identifiant d'événement outbox : compteur de
+ * tentatives remis à zéro, traitement par le worker habituel plutôt qu'en
+ * synchrone dans la requête web.
  */
 final readonly class FailedMessageActions
 {
@@ -73,10 +75,15 @@ final readonly class FailedMessageActions
             return false;
         }
         $transport = $envelope->last(SentToFailureTransportStamp::class)?->getOriginalReceiverName();
-        $this->bus->dispatch(
-            $envelope->getMessage(),
-            null !== $transport ? [new TransportNamesStamp([$transport])] : [],
-        );
+        $stamps = null !== $transport ? [new TransportNamesStamp([$transport])] : [];
+        // L'identifiant d'événement de l'outbox suit le message : le reçu
+        // processed_message garde son sens (un handler qui avait échoué n'a
+        // rien committé, la relance est donc acceptée une fois).
+        $eventId = $envelope->last(EventIdStamp::class);
+        if ($eventId instanceof EventIdStamp) {
+            $stamps[] = $eventId;
+        }
+        $this->bus->dispatch($envelope->getMessage(), $stamps);
         $this->failed->reject($envelope);
 
         return true;

@@ -31,20 +31,4 @@ class UserDTO
     {
         return substr($this->firstName ?? '', 0, 1).substr($this->lastName ?? '', 0, 1);
     }
-
-    public static function mock(bool $withAvatar = true): self
-    {
-        $userDTO = new self();
-
-        // @todo: use protected route to display user picture?
-        $userDTO->pictureUrl = $withAvatar ? '/img/mock/avatar.png' : null;
-        $userDTO->firstName = 'Clémence';
-        $userDTO->lastName = 'PHILIPS';
-        $userDTO->email = 'clemence.philips@yopmail.com';
-        $userDTO->phone = '+33 6 54 32 25 34';
-        $userDTO->job = 'Responsable marketing';
-        $userDTO->password = 'pa$$W0RD';
-
-        return $userDTO;
-    }
 }

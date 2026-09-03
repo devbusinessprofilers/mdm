@@ -196,9 +196,9 @@ class Restaurant implements AvecHorairesJours
     }
 
     /**
-     * Fiches liées à réindexer, vidées à la lecture. Le flush qui suit doit
-     * être exécuté sous Fiche::preserveWorkflowsDuring de ces fiches : la mise
-     * à jour de leur ligne détail déclenche sinon markChanged au PreUpdate.
+     * Fiches liées à réindexer, vidées à la lecture. Le flush qui suit
+     * s'exécute sous Fiche::preserveWorkflowsDuring de ces fiches : leur
+     * statut de workflow ne doit pas bouger pour une simple resynchronisation.
      *
      * @return list<Fiche>
      */

@@ -92,8 +92,8 @@ final readonly class FicheFusionneur
                     $this->outbox->enqueue(new IndexFiche($ficheLiee->idString()));
                 }
                 // L'absorbée et les fiches tierces liées (Lieu↔Restaurant) ne
-                // doivent pas repasser En cours au PreUpdate de leur ligne
-                // détail ; la survivante, elle, assume son markChanged.
+                // doivent pas repasser En cours pour une simple resynchronisation ;
+                // la survivante, elle, assume son markChanged.
                 Fiche::preserveWorkflowsDuring(
                     [$absorbee, ...$fichesLiees],
                     function (): void {

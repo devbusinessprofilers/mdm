@@ -68,8 +68,8 @@ final readonly class RestaurantAdminManager
             $this->translationScheduler->schedule($restaurant->fiche());
             $this->outbox->enqueue(new IndexFiche($restaurant->fiche()->idString()));
             // Liaison Lieu modifiée : le payload des fiches détachée/attachée
-            // change aussi, sans transition de workflow (le flush sous
-            // suppression évite le markChanged du PreUpdate détail).
+            // change aussi, sans transition de workflow (flush sous
+            // suppression pour ces fiches).
             $liees = $restaurant->drainFichesLieesAResynchroniser();
             foreach ($liees as $ficheLiee) {
                 $this->outbox->enqueue(new IndexFiche($ficheLiee->idString()));

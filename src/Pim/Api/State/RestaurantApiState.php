@@ -75,7 +75,7 @@ final readonly class RestaurantApiState
             new IndexFiche($restaurant->fiche()->idString()),
         );
         // Liaison Lieu modifiée : resynchroniser les fiches liées, sans
-        // transition de workflow (flush sous suppression du PreUpdate détail).
+        // transition de workflow (flush sous suppression pour ces fiches).
         $liees = $restaurant->drainFichesLieesAResynchroniser();
         foreach ($liees as $ficheLiee) {
             $this->outbox->enqueue(new IndexFiche($ficheLiee->idString()));

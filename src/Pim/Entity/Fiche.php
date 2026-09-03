@@ -721,8 +721,8 @@ class Fiche
     /**
      * Exécute une mutation (typiquement un flush) sous suppression de
      * transition de workflow pour plusieurs fiches à la fois — pour les mises
-     * à jour techniques de fiches liées dont la ligne détail déclencherait
-     * markChanged au PreUpdate.
+     * à jour techniques de fiches liées (resynchronisation d'une liaison
+     * Lieu ↔ Restaurant) qui ne doivent pas repasser ces fiches « en cours ».
      *
      * @template T
      *

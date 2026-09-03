@@ -118,8 +118,8 @@ final class LieuPersistenceTest extends KernelTestCase
         $this->entityManager->flush();
 
         // Même mécanique que LieuAdminManager::save : le flush s'exécute sous
-        // suppression de transition des fiches liées, sinon le PreUpdate de la
-        // ligne pim_restaurant (lieu_id) repasserait la fiche « en cours ».
+        // suppression de transition des fiches liées, dont le statut ne doit
+        // pas bouger pour une simple resynchronisation.
         $lieu->changeRestaurant($restaurant);
         Fiche::preserveWorkflowsDuring(
             $lieu->drainFichesLieesAResynchroniser(),
@@ -132,6 +132,30 @@ final class LieuPersistenceTest extends KernelTestCase
             [\Symfony\Component\Uid\Ulid::fromString($restaurant->fiche()->idString())->toBinary()],
         );
         self::assertSame(StatutFiche::Publiee->value, $statutEnBase);
+    }
+
+    public function testUneMiseAJourTechniqueDeLaLigneDetailNeDepubliePas(): void
+    {
+        $restaurant = new Restaurant();
+        $restaurant->changeLabel('La Table des tests');
+        $restaurant->fiche()->publishForImport();
+        $lieu = new Lieu();
+        $lieu->changeLabel('Hôtel des tests');
+        $this->entityManager->persist($restaurant);
+        $this->entityManager->persist($lieu);
+        $this->entityManager->flush();
+
+        // Mise à jour technique de pim_restaurant (lieu_id) puis flush SANS
+        // suppression de transition : l'horodatage au PreUpdate ne doit pas
+        // repasser la fiche « en cours » (incident du 2026-09-03).
+        $restaurant->syncLieu($lieu);
+        $this->entityManager->flush();
+
+        self::assertSame(StatutFiche::Publiee, $restaurant->fiche()->status());
+        self::assertSame(
+            StatutFiche::Publiee->value,
+            $this->connection->fetchOne('SELECT status FROM pim_fiche WHERE id = ?', [\Symfony\Component\Uid\Ulid::fromString($restaurant->fiche()->idString())->toBinary()]),
+        );
     }
 
     public function testKeysetPaginationDoesNotDuplicateOrOmitEqualTimestamps(): void

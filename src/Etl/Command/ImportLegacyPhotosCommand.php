@@ -344,10 +344,9 @@ final class ImportLegacyPhotosCommand extends Command
                 $owner = $lieu;
             }
             $resource = $this->resource($asset->id(), $photo);
-            // preserveWorkflowDuring englobe le flush : le @PreUpdate du détail
-            // (Lieu::touch → fiche->markChanged) se déclenche PENDANT le flush,
-            // il doit donc être neutralisé jusqu'à la fin de l'écriture pour
-            // ne pas repasser une fiche publiée en brouillon.
+            // preserveWorkflowDuring englobe le flush : addRessource passe par
+            // Lieu::touch → fiche->markChanged, ce qui repasserait une fiche
+            // publiée en brouillon pendant un simple import.
             $fiche->preserveWorkflowDuring(function () use ($owner, $resource, $asset): void {
                 $owner->addRessource($resource);
                 $this->entityManager->persist($asset);

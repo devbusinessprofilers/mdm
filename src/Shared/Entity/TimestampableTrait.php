@@ -27,10 +27,16 @@ trait TimestampableTrait
         $this->updatedAt = $now;
     }
 
+    /**
+     * Horodatage technique au flush : n'appelle volontairement pas touch(),
+     * que les lignes détail des fiches (Lieu, Restaurant…) surchargent pour
+     * propager un markChanged métier. Un UPDATE Doctrine n'est pas une
+     * modification métier : il ne doit jamais repasser une fiche « en cours ».
+     */
     #[ORM\PreUpdate]
     public function updateTimestamp(): void
     {
-        $this->touch();
+        $this->updatedAt = new \DateTimeImmutable();
     }
 
     public function createdAt(): \DateTimeImmutable

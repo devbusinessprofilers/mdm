@@ -32,7 +32,7 @@
         "
     >
         <div class="flex flex-col max-h-full overflow-y-auto">
-            <twig:Header:Profil isMobile currentRoute="{{ currentRoute }}" />
+            <twig:Header:Profil isMobile user="{{ user }}" currentRoute="{{ currentRoute }}" route="app_mdm_espace_travail" />
             <nav class="py-4 px-6 max-h-full overflow-y-auto overflow-x-hidden scrollbar">
                 <ul class="flex flex-col gap-2">
                     {% for item in items %}
