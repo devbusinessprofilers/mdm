@@ -21,6 +21,19 @@ final class LieuLovCatalogTest extends TestCase
         self::assertSame('Premium', $statuses['MICE_STATUT_4']);
     }
 
+    public function testEvenementsDePredilectionSuiventLaBibleVersionBp(): void
+    {
+        // Catalogue statique : 8 valeurs historiques + 9 de la bible (les 3
+        // remplacées restent codées, désactivées en base par migration).
+        $evenements = LieuLovCatalog::allChoices()['GENERALE_EVENEMENTS_PREDILECTION'];
+
+        self::assertCount(17, $evenements);
+        self::assertSame('Convention', $evenements['GENERALE_EVENEMENTS_PREDILECTION_11']);
+        self::assertSame('Comité de direction', $evenements['GENERALE_EVENEMENTS_PREDILECTION_12']);
+        self::assertSame('Afterwork', $evenements['GENERALE_EVENEMENTS_PREDILECTION_13']);
+        self::assertSame('Simposium', $evenements['GENERALE_EVENEMENTS_PREDILECTION_17']);
+    }
+
     public function testUnknownAttributeReturnsNoChoices(): void
     {
         self::assertSame([], LieuLovCatalog::choicesFor('UNKNOWN'));

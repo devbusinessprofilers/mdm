@@ -81,8 +81,14 @@ final class CompletenessFieldCatalog
         foreach (['nom' => 'Nom de la période', 'dateDebut' => 'Début de fermeture', 'dateFin' => 'Fin de fermeture'] as $name => $label) {
             $fields[] = $this->field($type, 'DISPO_'.self::code($name), $label, 'periodesFermeture.*.'.$name);
         }
-        foreach (['nom' => 'Nom de l’accès', 'distanceKilometres' => 'Distance de l’accès', 'dureeMinutes' => 'Durée de l’accès', 'modeTransport' => 'Mode de transport'] as $name => $label) {
-            $fields[] = $this->field($type, 'ACCESS_'.self::code($name), $label, 'acces.*.'.$name);
+        // Accès pondérés par type (bible « VERSION BP ») : chaque lecteur
+        // renvoie les accès du type, tableau vide = champ absent.
+        foreach ([
+            'AEROPORT' => ['Accès aéroport', 'accesAeroport'], 'GARE' => ['Accès gare', 'accesGare'],
+            'METRO' => ['Accès métro', 'accesMetro'], 'TRAMWAY' => ['Accès tramway', 'accesTramway'],
+            'GRANDE_VILLE' => ['Accès depuis les grandes villes à proximité', 'accesGrandeVille'],
+        ] as $code => [$label, $path]) {
+            $fields[] = $this->field($type, 'ACCESS_'.$code, $label, $path);
         }
         $fields[] = $this->field($type, 'PHOTO', 'Photos', 'ressources');
 
@@ -203,7 +209,10 @@ final class CompletenessFieldCatalog
             $target = '' === $prefix && in_array($name, ['generaleWebsiteUrl', 'pmrDetails', 'descGenerale', 'chambreDescGenerale', 'atout1', 'atout2', 'atout3', 'atout4', 'atout5'], true)
                 ? $this->target(Lieu::class, $name)
                 : null;
-            $fields[] = $this->field($type, self::code($name), (string) ($options['label'] ?? $name), $prefix.$name, $target, $conditionPath, $conditionValue, $conditionLabel);
+            // Un champ sans libellé de formulaire (label: false) porte son
+            // libellé de complétude à part.
+            $label = $options['libelle_completude'] ?? $options['label'] ?? $name;
+            $fields[] = $this->field($type, self::code($name), is_string($label) ? $label : $name, $prefix.$name, $target, $conditionPath, $conditionValue, $conditionLabel);
         }
 
         return $fields;

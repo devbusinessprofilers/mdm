@@ -57,6 +57,7 @@ final readonly class ReferentielActionGroupee
         private OutboxPublisherInterface $outbox,
         private Security $security,
         private PhotoPublicationGuard $photoGuard,
+        private LieuObligationsPublication $obligations,
     ) {
     }
 
@@ -133,6 +134,13 @@ final readonly class ReferentielActionGroupee
                 // photos (minimum du type, plancher à une photo) n'est pas publiée,
                 // comme à l'import et au fil de l'eau (garde photos).
                 if (in_array($action, ['publier', 'republier'], true) && !$this->photoGuard->compliant($fiche)) {
+                    ++$ignorees;
+                    continue;
+                }
+                // Champs obligatoires de la bible (gamme Lieu) : ni soumission
+                // ni publication tant qu'un champ est vide — la fiche est
+                // ignorée et comptée, comme pour les photos.
+                if (in_array($action, ['soumettre', 'publier', 'republier'], true) && [] !== $this->obligations->manquantsPourFiche($fiche)) {
                     ++$ignorees;
                     continue;
                 }

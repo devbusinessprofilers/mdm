@@ -19,6 +19,8 @@ use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\UrlType;
 use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\Form\FormEvent;
+use Symfony\Component\Form\FormEvents;
 use Symfony\Component\Form\FormTypeInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use App\Pim\Validation\ValidationGroups;
@@ -103,6 +105,17 @@ final class LieuType extends AbstractType
             'salle_choices' => $options['data'] instanceof Lieu ? $options['data']->salles()->toArray() : [],
         ]);
         $builder->add('submit', SubmitType::class, ['label' => 'Enregistrer']);
+
+        // Capacité d'accueil par défaut (bible row 52) : nombre total de
+        // chambres + chambres twin, calculée seulement quand la capacité est
+        // laissée vide — une saisie manuelle n'est jamais écrasée.
+        $builder->addEventListener(FormEvents::POST_SUBMIT, static function (FormEvent $event): void {
+            $lieu = $event->getData();
+            if (!$lieu instanceof Lieu || !$lieu->chambreHebergement() || null !== $lieu->chambreCapaciteTotale() || null === $lieu->chambreNbTotal()) {
+                return;
+            }
+            $lieu->changeChambreCapaciteTotale($lieu->chambreNbTotal() + ($lieu->chambreNbTotalTwin() ?? 0));
+        });
     }
 
     /** @return array<string, mixed> */

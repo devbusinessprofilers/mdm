@@ -24,4 +24,10 @@ class Wysiwyg
      * Allows to set max character length of WYSIWYG (0 to ignore).
      */
     public int $maxLength = 0;
+
+    /**
+     * Longueur de référence du compteur « x / N » affiché sous l'éditeur
+     * (0 = pas de compteur). Indicatif : ne bloque pas la saisie.
+     */
+    public int $compteur = 0;
 }

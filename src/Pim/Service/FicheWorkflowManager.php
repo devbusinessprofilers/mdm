@@ -24,6 +24,7 @@ final readonly class FicheWorkflowManager
         private FicheTranslationScheduler $translations,
         private ValidatorInterface $validator,
         private PhotoPublicationGuard $photoGuard,
+        private LieuObligationsPublication $obligations,
     ) {}
 
     public function submit(object $subject, Fiche $fiche, string $actor): ConstraintViolationListInterface
@@ -43,17 +44,34 @@ final readonly class FicheWorkflowManager
         $this->indexAndFlush($fiche);
     }
 
+    /**
+     * @throws \DomainException si la fiche n'est pas validée, ou si un champ
+     *                          obligatoire de la bible (gamme Lieu) est vide
+     */
     public function publish(Fiche $fiche): void
     {
+        $this->refuserSiIncomplete($fiche);
         $fiche->publish();
         $this->translations->schedule($fiche);
         $this->indexAndFlush($fiche);
     }
 
     /**
+     * Champs obligatoires (bible VERSION BP) encore vides : libellés, vides
+     * pour une fiche complète ou d'une autre gamme que Lieu.
+     *
+     * @return list<string>
+     */
+    public function champsObligatoiresManquants(Fiche $fiche): array
+    {
+        return $this->obligations->manquantsPourFiche($fiche);
+    }
+
+    /**
      * Valide puis publie en un geste (bouton « Valider et publier ») : la
-     * publication est retenue si les obligations photos ne sont pas satisfaites
-     * — même garde que la publication de masse —, la fiche restant validée.
+     * publication est retenue si les obligations photos ou les champs
+     * obligatoires ne sont pas satisfaits — mêmes gardes que la publication
+     * de masse —, la fiche restant validée.
      *
      * @return bool vrai si la fiche a été publiée, faux si elle reste validée
      *
@@ -62,7 +80,7 @@ final readonly class FicheWorkflowManager
     public function validateAndPublish(Fiche $fiche, string $actor): bool
     {
         $fiche->validate($actor);
-        if (!$this->photoGuard->compliant($fiche)) {
+        if (!$this->photoGuard->compliant($fiche) || [] !== $this->champsObligatoiresManquants($fiche)) {
             $this->indexAndFlush($fiche);
 
             return false;
@@ -87,8 +105,10 @@ final readonly class FicheWorkflowManager
         $this->indexAndFlush($fiche);
     }
 
+    /** @throws \DomainException si la fiche n'est pas archivée ou reste incomplète */
     public function republish(Fiche $fiche, string $actor): void
     {
+        $this->refuserSiIncomplete($fiche);
         $fiche->republish($actor);
         $this->translations->schedule($fiche);
         $this->indexAndFlush($fiche);
@@ -129,5 +149,14 @@ final readonly class FicheWorkflowManager
     {
         $this->outbox->enqueue(new IndexFiche($fiche->idString()));
         $this->entityManager->flush();
+    }
+
+    /** @throws \DomainException */
+    private function refuserSiIncomplete(Fiche $fiche): void
+    {
+        $manquants = $this->champsObligatoiresManquants($fiche);
+        if ([] !== $manquants) {
+            throw new \DomainException('Publication refusée. '.LieuObligationsPublication::motif($manquants));
+        }
     }
 }

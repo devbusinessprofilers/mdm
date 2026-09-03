@@ -48,6 +48,33 @@ final class LieuTypeTest extends KernelTestCase
         self::assertSame('125.50', $lieu->tarification()->seminaireJourneeJourneeEtude());
     }
 
+    public function testLaCapaciteDHebergementEstCalculeeParDefautSansEcraserLaSaisie(): void
+    {
+        self::bootKernel();
+        $factory = self::getContainer()->get(FormFactoryInterface::class);
+
+        // Capacité vide : total des chambres + chambres twin (bible row 52).
+        $lieu = new Lieu();
+        $form = $factory->create(LieuType::class, $lieu, ['csrf_protection' => false]);
+        $form->submit(['label' => 'Hôtel', 'hebergement' => ['chambreHebergement' => '1', 'chambreNbTotal' => '40', 'chambreNbTotalTwin' => '15']]);
+        self::assertTrue($form->isValid(), (string) $form->getErrors(true));
+        self::assertSame(55, $lieu->chambreCapaciteTotale());
+
+        // Capacité saisie : conservée telle quelle.
+        $lieu = new Lieu();
+        $form = $factory->create(LieuType::class, $lieu, ['csrf_protection' => false]);
+        $form->submit(['label' => 'Hôtel', 'hebergement' => ['chambreHebergement' => '1', 'chambreNbTotal' => '40', 'chambreNbTotalTwin' => '15', 'chambreCapaciteTotale' => '70']]);
+        self::assertTrue($form->isValid(), (string) $form->getErrors(true));
+        self::assertSame(70, $lieu->chambreCapaciteTotale());
+
+        // Sans hébergement : rien n'est calculé.
+        $lieu = new Lieu();
+        $form = $factory->create(LieuType::class, $lieu, ['csrf_protection' => false]);
+        $form->submit(['label' => 'Salle', 'hebergement' => ['chambreNbTotal' => '40']]);
+        self::assertTrue($form->isValid(), (string) $form->getErrors(true));
+        self::assertNull($lieu->chambreCapaciteTotale());
+    }
+
     public function testTemporaryCrudFormCreatesNestedData(): void
     {
         self::bootKernel();

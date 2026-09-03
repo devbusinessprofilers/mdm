@@ -6,15 +6,19 @@
     CSS (`group-has`), sans contrôleur ; les valeurs d'un jour refermé sont
     conservées.
 
+    Copie des horaires (bible row 13) : sous les heures d'un jour ouvert, le
+    lien « Copier sur les jours suivants » recopie ses heures sur les jours
+    suivants (contrôleur horaires-copie, pur client avant soumission).
+
     Variables : `jours` — le champ choix multiple joursOuverture (étendu) ;
     `horaires` — le sous-formulaire composé des horaires par jour.
 #}
 <div class="flex flex-col gap-4">
     <twig:Typography variant="subtitle" bold>Horaires</twig:Typography>
 
-    <div class="flex flex-row gap-6 items-start flex-wrap">
+    <div class="flex flex-row gap-6 items-start flex-wrap" data-controller="horaires-copie">
         {% for jour in jours %}
-            <div class="group/jour flex flex-col gap-2 flex-1 basis-32 min-w-0">
+            <div class="group/jour flex flex-col gap-2 flex-1 basis-32 min-w-0" data-horaires-copie-target="jour">
                 <label class="flex flex-row items-center gap-2 shrink-0 cursor-pointer" for="{{ jour.vars.id }}">
                     <twig:Form:SwitchButton id="{{ jour.vars.id }}" name="{{ jour.vars.full_name }}"
                                             value="{{ jour.vars.value }}" :checked="jour.vars.checked" class="shrink-0" />
@@ -24,9 +28,15 @@
 
                 {% set horaires_jour = attribute(horaires, jour.vars.value)|default(null) %}
                 {% if horaires_jour %}
-                    <div class="hidden group-has-[:checked]/jour:flex flex-row gap-2 flex-wrap">
-                        <div class="w-[104px]">{{ form_row(horaires_jour.ouverture) }}</div>
-                        <div class="w-[104px]">{{ form_row(horaires_jour.fermeture) }}</div>
+                    <div class="hidden group-has-[:checked]/jour:flex flex-col gap-2">
+                        <div class="flex flex-row gap-2 flex-wrap">
+                            <div class="w-[104px]">{{ form_row(horaires_jour.ouverture) }}</div>
+                            <div class="w-[104px]">{{ form_row(horaires_jour.fermeture) }}</div>
+                        </div>
+                        {% if not loop.last %}
+                            <button type="button" data-action="horaires-copie#copier"
+                                    class="self-start antialiased text-[0.625rem] leading-[1rem] font-sans font-[900] text-primary-3 hover:underline cursor-pointer">Copier sur les jours suivants</button>
+                        {% endif %}
                     </div>
                 {% endif %}
             </div>

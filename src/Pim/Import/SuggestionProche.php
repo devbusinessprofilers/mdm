@@ -39,14 +39,24 @@ final class SuggestionProche
             if (0 === $distance) {
                 return $candidat;
             }
-            // Premier des ex æquo retenu : rendu déterministe.
-            if ($distance < $meilleureDistance) {
+            // Ex æquo : le candidat le plus court, puis l'ordre alphabétique —
+            // indépendant de l'ordre des listes (les LOV sont triées par
+            // libellé en base, pas par code).
+            if ($distance < $meilleureDistance
+                || ($distance === $meilleureDistance && null !== $meilleur && self::plusProche($candidatNorm, self::normalise($meilleur)))) {
                 $meilleureDistance = $distance;
                 $meilleur = $candidat;
             }
         }
 
         return $meilleureDistance <= $seuil ? $meilleur : null;
+    }
+
+    private static function plusProche(string $candidat, string $retenu): bool
+    {
+        $delta = mb_strlen($candidat) <=> mb_strlen($retenu);
+
+        return 0 === $delta ? strcmp($candidat, $retenu) < 0 : $delta < 0;
     }
 
     private static function normalise(string $valeur): string

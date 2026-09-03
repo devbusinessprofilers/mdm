@@ -444,7 +444,7 @@ final readonly class FicheEditeurEcran
                 'valeur' => $suggestion->valeurProposee() ?? '',
                 // Enseigne absente de la LOV : accepter créera l'entrée — le dire.
                 'note' => 'lieu_chaine' === $suggestion->champ() && ChaineLovResolution::creeraUneEntree($suggestion->valeurProposee())
-                    ? 'Créera une nouvelle entrée dans la liste « Groupe et chaîne hôtelière ».'
+                    ? 'Créera une nouvelle entrée dans la liste « Groupe et Chaîne hôtelière ».'
                     : null,
                 'confiance' => null === $suggestion->score() ? null : (int) round($suggestion->score() * 100),
                 'accepter' => $this->enrichissementSuggestions->action($suggestion->id(), 'accepter')->createView(),

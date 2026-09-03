@@ -24,6 +24,7 @@ use App\Pim\Service\ReferentielActionGroupee;
 use App\Pim\Service\ReferentielListeProvider;
 use App\Shared\Service\PrivateObjectStorageInterface;
 use Symfony\Component\Uid\Ulid;
+use App\Tests\Support\LieuComplet;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\Group;
@@ -157,28 +158,35 @@ final class ReferentielControllerTest extends WebTestCase
         $entityManager->persist($user);
 
         // Une fiche neuve est en cours : c'est le pas manquant du workflow que
-        // l'action de masse « Soumettre à validation » vient combler.
-        $lieu = new Lieu();
+        // l'action de masse « Soumettre à validation » vient combler. Une
+        // fiche Lieu à laquelle manque un champ obligatoire de la bible est
+        // ignorée et comptée.
+        $lieu = LieuComplet::completer(new Lieu());
         $lieu->changeLabel('Château à soumettre');
         $entityManager->persist($lieu);
+        $incomplet = new Lieu();
+        $incomplet->changeLabel('Château incomplet');
+        $entityManager->persist($incomplet);
         $entityManager->flush();
         $ficheId = $lieu->fiche()->idString();
+        $incompletId = $incomplet->fiche()->idString();
         $client->loginUser($user);
 
         $crawler = $client->request('GET', '/referentiel');
         self::assertResponseIsSuccessful();
         $form = $crawler->selectButton('Soumettre à validation')->form();
         $values = $form->getPhpValues();
-        $values['selection']['ids'] = [$ficheId];
+        $values['selection']['ids'] = [$ficheId, $incompletId];
         $client->request($form->getMethod(), $form->getUri(), $values);
 
         self::assertResponseRedirects();
         $client->followRedirect();
-        self::assertSelectorTextContains('body', '1 élément(s) traité(s)');
+        self::assertSelectorTextContains('body', '1 élément(s) traité(s), 1 ignoré(s)');
         $entityManager->clear();
         $fiche = $entityManager->find(Fiche::class, $ficheId);
         self::assertInstanceOf(Fiche::class, $fiche);
         self::assertSame(StatutFiche::EnAttenteValidation, $fiche->status());
+        self::assertSame(StatutFiche::EnCours, $entityManager->find(Fiche::class, $incompletId)?->status());
     }
 
     public function testActionGroupeeArchiveDepuisNimporteQuelStatut(): void
@@ -1081,6 +1089,7 @@ final class ReferentielControllerTest extends WebTestCase
         $this->connection->executeStatement("DELETE FROM pim_site_diffusion WHERE code LIKE '%_TEST'");
         $this->connection->executeStatement('DELETE FROM pim_fiche_search');
         $this->connection->executeStatement('DELETE FROM pim_ressource_lieu');
+        $this->connection->executeStatement('DELETE FROM pim_acces_lieu');
         $this->connection->executeStatement('DELETE FROM pim_fiche_attribute_value');
         $this->connection->executeStatement('DELETE FROM pim_lieu_administratif');
         $this->connection->executeStatement('DELETE FROM pim_lieu_tarification');

@@ -13,6 +13,7 @@ use App\Pim\Entity\Localisation;
 use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Lov\LieuLovCatalog;
 use App\Pim\Repository\LieuRepository;
+use App\Pim\Enum\TypeAccesLieu;
 use App\Pim\Enum\TypeFiche;
 use App\Shared\Entity\TimestampableTrait;
 use App\Pim\Validation\ValidLieu;
@@ -503,6 +504,52 @@ class Lieu implements AvecHorairesJours
             $acces->detachFrom($this);
             $this->touch();
         }
+    }
+
+    /**
+     * Accès d'un type donné, dans l'ordre de saisie. Lecteurs nommés
+     * (accesAeroport()…) : la complétude pondère chaque type séparément
+     * (bible « VERSION BP » : aéroport et gare obligatoires, métro, tramway
+     * et grandes villes à 2 points) et lit les méthodes par leur nom.
+     *
+     * @return list<AccesLieu>
+     */
+    public function accesParType(TypeAccesLieu $type): array
+    {
+        return array_values(array_filter(
+            $this->acces->toArray(),
+            static fn (AccesLieu $acces): bool => $acces->type() === $type,
+        ));
+    }
+
+    /** @return list<AccesLieu> */
+    public function accesAeroport(): array
+    {
+        return $this->accesParType(TypeAccesLieu::Aeroport);
+    }
+
+    /** @return list<AccesLieu> */
+    public function accesGare(): array
+    {
+        return $this->accesParType(TypeAccesLieu::Gare);
+    }
+
+    /** @return list<AccesLieu> */
+    public function accesMetro(): array
+    {
+        return $this->accesParType(TypeAccesLieu::Metro);
+    }
+
+    /** @return list<AccesLieu> */
+    public function accesTramway(): array
+    {
+        return $this->accesParType(TypeAccesLieu::Tramway);
+    }
+
+    /** @return list<AccesLieu> */
+    public function accesGrandeVille(): array
+    {
+        return $this->accesParType(TypeAccesLieu::GrandeVille);
     }
 
     /** @return Collection<int, RessourceLieu> */

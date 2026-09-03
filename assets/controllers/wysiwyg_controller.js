@@ -34,8 +34,9 @@ function loadTinymce() {
 }
 
 export default class extends Controller {
-    static targets = ['wysiwyg'];
-    static values = { maxHeight: Number, maxLength: Number };
+    static targets = ['wysiwyg', 'compteur'];
+    // compteur : affiche « x / N » sous l'éditeur (0 = pas de compteur).
+    static values = { maxHeight: Number, maxLength: Number, compteur: Number };
 
     connect() {
         loadTinymce().then((tinymce) => {
@@ -70,6 +71,7 @@ export default class extends Controller {
                 editor.on('keydown', (e) => this.onKeyDown(e, editor));
                 editor.on('input', () => this.onChange(editor));
                 editor.on('PastePreProcess', (e) => this.onPaste(e, editor));
+                editor.on('init change input undo redo SetContent', () => this.compter(editor));
             },
         }
 
@@ -82,6 +84,15 @@ export default class extends Controller {
 
     onChange(editor) {
         editor.save();
+    }
+
+    compter(editor) {
+        if (this.compteurValue <= 0 || !this.hasCompteurTarget) {
+            return;
+        }
+        const longueur = editor.plugins.wordcount.body.getCharacterCount();
+        this.compteurTarget.textContent = `${longueur} / ${this.compteurValue}`;
+        this.compteurTarget.classList.toggle('text-error', longueur > this.compteurValue);
     }
 
     onPaste(e, editor) {

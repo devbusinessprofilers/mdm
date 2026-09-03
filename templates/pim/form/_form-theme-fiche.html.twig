@@ -91,9 +91,29 @@
                 value="{{ value }}"
                 :disabled="disabled"
                 :maxLength="attr.maxlength|default(0)"
+                :compteur="attr['data-compteur']|default(0)"
                 class="[&_.tox-tinymce]:h-[200px]!"
             />
             <div class="flex flex-row justify-end">{{ pilule_suggerer }}</div>
+        </div>
+    {%- elseif attr['data-compteur']|default(0) > 0 -%}
+        {#- Zone de texte simple avec compteur « x / N » (opt-in `data-compteur`,
+            bible row 53) : le contrôleur compteur-caracteres lit le champ à
+            chaque saisie. -#}
+        <div class="flex flex-col gap-1"
+             data-controller="compteur-caracteres"
+             data-compteur-caracteres-max-value="{{ attr['data-compteur'] }}">
+            <twig:Form:Textarea
+                id="{{ id }}"
+                name="{{ full_name }}"
+                value="{{ value }}"
+                :disabled="disabled"
+                data-compteur-caracteres-target="champ"
+                data-action="input->compteur-caracteres#actualiser"
+            />
+            <div class="flex justify-end">
+                <span data-compteur-caracteres-target="affichage" class="antialiased text-[0.75rem] leading-[1.25rem] font-sans text-neutral-500">0 / {{ attr['data-compteur'] }}</span>
+            </div>
         </div>
     {%- elseif attr['data-suggerer']|default(false) -%}
         <div class="flex flex-col gap-2"

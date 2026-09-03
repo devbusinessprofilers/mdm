@@ -19,10 +19,14 @@ final class SuggestionProcheTest extends TestCase
         self::assertSame('Séminaire PARIS', SuggestionProche::trouver('seminaire paris', ['Lyon', 'Séminaire PARIS']));
     }
 
-    public function testRetourneLePremierDesExAequo(): void
+    public function testDepartageLesExAequoParLongueurPuisAlphabet(): void
     {
-        // « aa » est à distance 1 de « aaa » comme de « ab » : premier gagnant.
-        self::assertSame('aaa', SuggestionProche::trouver('aa', ['aaa', 'ab']));
+        // « aa » est à distance 1 de « aaa » comme de « ab » : le plus court
+        // gagne, quel que soit l'ordre de la liste (les LOV sont triées par
+        // libellé en base).
+        self::assertSame('ab', SuggestionProche::trouver('aa', ['aaa', 'ab']));
+        self::assertSame('ab', SuggestionProche::trouver('aa', ['ab', 'aaa']));
+        self::assertSame('ab', SuggestionProche::trouver('aa', ['ac', 'ab']));
     }
 
     public function testPasDeSuggestionSiTropEloigne(): void

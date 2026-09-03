@@ -8,6 +8,7 @@ use App\Account\Entity\User;
 use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Enum\NatureRessource;
+use App\Tests\Support\LieuComplet;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\Group;
@@ -62,6 +63,20 @@ final class FicheValiderPublierControllerTest extends WebTestCase
         self::assertSame('validee', $this->connection->fetchOne('SELECT status FROM pim_fiche'));
     }
 
+    public function testUneFicheIncompleteResteValideeAvecLesChampsManquants(): void
+    {
+        $client = $this->clientValidateur();
+        $lieu = $this->lieuEnAttente(avecPhotos: true, complet: false);
+
+        $crawler = $client->request('GET', '/referentiel/lieux/fiche/'.$lieu->id());
+        $client->submit($crawler->selectButton('Valider et publier')->form());
+        self::assertResponseRedirects();
+        $client->followRedirect();
+        self::assertSelectorTextContains('body', 'Champs obligatoires manquants : Typologie');
+        self::assertSelectorTextContains('body', 'Capacité maximale en configuration assise');
+        self::assertSame('validee', $this->connection->fetchOne('SELECT status FROM pim_fiche'));
+    }
+
     public function testLeBoutonNExisteQuEnAttenteDeValidation(): void
     {
         $client = $this->clientValidateur();
@@ -91,11 +106,15 @@ final class FicheValiderPublierControllerTest extends WebTestCase
         return $client;
     }
 
-    private function lieuEnAttente(bool $avecPhotos): Lieu
+    private function lieuEnAttente(bool $avecPhotos, bool $complet = true): Lieu
     {
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $lieu = new Lieu();
         $lieu->changeLabel('Château à publier');
+        if ($complet) {
+            // Champs obligatoires de la bible : la publication les exige.
+            LieuComplet::completer($lieu);
+        }
         if ($avecPhotos) {
             // Obligations photos du type Lieu : minimum atteint + principale.
             for ($i = 0; $i < 4; ++$i) {
@@ -119,6 +138,7 @@ final class FicheValiderPublierControllerTest extends WebTestCase
         foreach ([
             'outbox_message',
             'pim_ressource_lieu',
+            'pim_acces_lieu',
             'pim_fiche_search',
             'pim_fiche_attribute_value',
             'pim_fiche_site_diffusion',

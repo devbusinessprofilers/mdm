@@ -134,6 +134,17 @@ final class LieuLovCatalog
             'GENERALE_EVENEMENTS_PREDILECTION_6' => 'Lancement de produit',
             'GENERALE_EVENEMENTS_PREDILECTION_7' => 'Soirée / Réception',
             'GENERALE_EVENEMENTS_PREDILECTION_8' => 'Événement hybride',
+            // Bible « VERSION BP » (2026-09) : libellés repris tels quels, y
+            // compris « congrés » et « Simposium » (typos signalées au métier).
+            'GENERALE_EVENEMENTS_PREDILECTION_9' => 'Lancement de véhicule',
+            'GENERALE_EVENEMENTS_PREDILECTION_10' => 'Road show',
+            'GENERALE_EVENEMENTS_PREDILECTION_11' => 'Convention',
+            'GENERALE_EVENEMENTS_PREDILECTION_12' => 'Comité de direction',
+            'GENERALE_EVENEMENTS_PREDILECTION_13' => 'Afterwork',
+            'GENERALE_EVENEMENTS_PREDILECTION_14' => 'Colloque',
+            'GENERALE_EVENEMENTS_PREDILECTION_15' => 'Conférences et congrés',
+            'GENERALE_EVENEMENTS_PREDILECTION_16' => 'Salons et expositions',
+            'GENERALE_EVENEMENTS_PREDILECTION_17' => 'Simposium',
         ],
         'COND_PAIE_ACC_SIGNATURE' => [
             'COND_PAIE_ACC_SIGNATURE_1' => 'Signature à J-61',

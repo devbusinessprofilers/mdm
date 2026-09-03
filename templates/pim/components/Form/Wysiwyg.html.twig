@@ -1,6 +1,6 @@
 <div
     class="{{ attributes.render('class') }}"
-    {{ stimulus_controller('wysiwyg', { 'maxHeight': maxHeight, 'maxLength': maxLength }) }}
+    {{ stimulus_controller('wysiwyg', { 'maxHeight': maxHeight, 'maxLength': maxLength, 'compteur': compteur }) }}
 >
     <textarea
         id="{{ id }}"
@@ -10,4 +10,9 @@
         {% if readonly %}readonly{% endif %}
         {{ attributes.without('class', 'value') }}
     >{{ value|default('') }}</textarea>
+    {% if compteur > 0 %}
+        <div class="flex justify-end">
+            <span {{ stimulus_target('wysiwyg', 'compteur') }} class="antialiased text-[0.75rem] leading-[1.25rem] font-sans text-neutral-500">0 / {{ compteur }}</span>
+        </div>
+    {% endif %}
 </div>

@@ -367,7 +367,7 @@ final readonly class QualiteRepository
                 'proposition' => $proposition,
                 // Enseigne absente de la LOV : accepter créera l'entrée — le dire.
                 'note' => 'lieu_chaine' === $row['champ'] && ChaineLovResolution::creeraUneEntree($proposition)
-                    ? 'Créera une nouvelle entrée dans la liste « Groupe et chaîne hôtelière ».'
+                    ? 'Créera une nouvelle entrée dans la liste « Groupe et Chaîne hôtelière ».'
                     : null,
                 'score' => null === $row['score'] ? null : (int) round((float) $row['score'] * 100),
                 'quand' => null === $row['created_at'] ? null : (string) $row['created_at'],

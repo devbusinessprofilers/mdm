@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Pim\Form;
 
+use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Lov\LieuLovCatalog;
 use App\Pim\Validation\LienVideo;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
@@ -19,9 +20,10 @@ final class LieuFormCatalog
     {
         return [
             // Ordre de la maquette : groupe, événements, puis ERP.
-            'generaleChainesGroupeHot' => self::choice('GENERALE_CHAINES_GROUPE_HOT', 'Groupe et chaîne hôtelière', true),
+            'generaleChainesGroupeHot' => self::choice('GENERALE_CHAINES_GROUPE_HOT', 'Groupe et Chaîne hôtelière', true),
             'evenementsPredilection' => self::choice('GENERALE_EVENEMENTS_PREDILECTION', 'Événements de prédilection', true),
-            'generaleEtabRp' => ['label' => 'ERP'],
+            // Info-bulle demandée par le métier : le sigle seul n'est pas parlant.
+            'generaleEtabRp' => ['label' => 'ERP', 'options' => ['help' => 'Établissement Recevant du Public']],
         ];
     }
 
@@ -33,7 +35,7 @@ final class LieuFormCatalog
         return [
             'dispoLieuPrivatisable' => ['label' => 'Lieu privatisable'],
             'joursOuverture' => self::choice('DISPO_JOUR_OUVERTURE', "Jours d'ouverture", true, etendu: true),
-            'dispoHorairesJours' => ['label' => false, 'type' => HorairesJoursType::class],
+            'dispoHorairesJours' => ['label' => false, 'type' => HorairesJoursType::class, 'libelle_completude' => 'Horaires d’ouverture par jour'],
         ];
     }
 
@@ -45,9 +47,9 @@ final class LieuFormCatalog
             'pmrAcces' => ['label' => 'Accès PMR'],
             'pmrDetails' => ['label' => 'Détails des accès PMR', 'type' => TextareaType::class],
             'taThematique' => self::choice('TA_THEMATIQUE', 'Thématique', true),
-            'taCadreEnv' => self::choice('TA_CADRE_ENV', 'Cadre / environnement', true),
+            'taCadreEnv' => self::choice('TA_CADRE_ENV', 'Cadre / Environnement', true),
             'taAmbiance' => self::choice('TA_AMBIANCE', 'Ambiance', true),
-            'descGenerale' => self::richText('Description générale'),
+            'descGenerale' => self::richText('Texte de description', compteur: true),
             'atout1' => ['label' => 'Plus n°1'],
             'atout2' => ['label' => 'Plus n°2'],
             'atout3' => ['label' => 'Plus n°3'],
@@ -60,29 +62,31 @@ final class LieuFormCatalog
     public static function accommodation(): array
     {
         return self::labels([
-            'chambreHebergement' => "L'établissement dispose d'hébergement",
+            'chambreHebergement' => "Mon établissement dispose d'hébergement ?",
             'chambreNbTotal' => 'Nombre total de chambres',
-            'chambreNbTotalSingle' => 'Nombre de chambres single',
-            'chambreNbTotalTwin' => 'Nombre de chambres twin',
-            'chambreDouble' => 'Nombre de chambres doubles',
-            'chambreCapaciteTotale' => "Capacité totale d'hébergement",
-            'chambreDescGenerale' => 'Description de l’hébergement',
-        ], ['chambreDescGenerale']);
+            'chambreNbTotalSingle' => 'Dont nombre de chambres single / individuelle',
+            'chambreNbTotalTwin' => 'Dont nombre de chambres twin',
+            'chambreDouble' => 'Dont nombre de chambres double',
+            'chambreCapaciteTotale' => "Capacité d'accueil totale des personnes hébergées",
+        ]) + [
+            // Compteur « x / 1000 » sous la zone de texte (bible row 53).
+            'chambreDescGenerale' => ['label' => 'Texte de description générale', 'type' => TextareaType::class, 'options' => ['attr' => ['data-compteur' => Lieu::DESCRIPTION_MAX_LENGTH]]],
+        ];
     }
 
     /** @return array<string, array<string, mixed>> */
     public static function meetingRooms(): array
     {
         return self::labels([
-            'salleReunionExist' => "L'établissement dispose de salles de réunion",
+            'salleReunionExist' => "Mon établissement dispose de salles de réunion ?",
             'salleReunionNbTotal' => 'Nombre de salles de réunion',
-            'salleReunionCapaciteMaxCocktail' => 'Capacité maximale cocktail',
-            'salleReunionCapaciteMaxTheatre' => 'Capacité maximale théâtre',
-            'salleReunionCapaciteMinTheatre' => 'Capacité minimale théâtre',
-            'salleReunionSurfaceMinReunion' => 'Surface minimale de réunion',
-            'salleReunionSurfaceMaxReunion' => 'Surface maximale de réunion',
+            'salleReunionCapaciteMaxCocktail' => 'Capacité de la plus grande salle en configuration cocktail',
+            'salleReunionCapaciteMaxTheatre' => 'Capacité de la plus grande salle en configuration théâtre',
+            'salleReunionCapaciteMinTheatre' => 'Capacité de la plus petite salle en configuration théâtre',
+            'salleReunionSurfaceMinReunion' => 'Surface de la plus petite salle de réunion (en m²)',
+            'salleReunionSurfaceMaxReunion' => 'Surface de la plus grande salle de réunion (en m²)',
         ]) + [
-            'salleReunionDescSalleSeminaire' => self::richText('Description des salles de séminaire'),
+            'salleReunionDescSalleSeminaire' => self::richText('Texte de description'),
         ];
     }
 
@@ -93,8 +97,8 @@ final class LieuFormCatalog
         return [
             'equipements' => self::choice('EQUIPEMENTS', 'Équipements', true, etendu: true),
             'services' => self::choice('SERVICES', 'Services', true, etendu: true),
-            'techniqueReunion' => self::choice('TECHNIQUE_REUNION', 'Technique et réunion', true, etendu: true),
-            'installation' => self::choice('INSTALLATION', 'Installations', true, etendu: true),
+            'techniqueReunion' => self::choice('TECHNIQUE_REUNION', 'Technique & Réunion', true, etendu: true),
+            'installation' => self::choice('INSTALLATION', 'Installation', true, etendu: true),
             'bienEtre' => self::choice('BIEN_ETRE', 'Bien-être', true, etendu: true),
         ];
     }
@@ -108,9 +112,9 @@ final class LieuFormCatalog
             'achatResponsable' => self::choice('ACHAT_RESPONSABLE', 'Achats responsables', true),
             'impactEnv' => self::choice('IMPACT_ENV', 'Impact environnemental', true),
             'impactSocial' => self::choice('IMPACT_SOCIAL', 'Impact social', true),
-            'volumeAchatCatEsatStpa' => self::choice('VOLUME_ACHAT_CAT_ESAT_STPA', '% d’achats ESAT/STPA', true),
+            'volumeAchatCatEsatStpa' => self::choice('VOLUME_ACHAT_CAT_ESAT_STPA', "% de volume d'achat par catégorie ESAT STPA", true),
             'mobilite' => self::choice('MOBILITE', 'Mobilité', true),
-            'certification' => self::choice('CERTIFICATION', 'Certifications', true),
+            'certification' => self::choice('CERTIFICATION', 'Certification', true),
         ];
     }
 
@@ -130,17 +134,17 @@ final class LieuFormCatalog
         return self::labels([
             'restaurantTotal' => 'Nombre de restaurants sur place',
             'restaurantSalleRestauration' => 'Nombre de salles de restauration',
-            'restaurantCapaciteDebout' => 'Capacité maximale debout',
-            'restaurantCapaciteAssis' => 'Capacité maximale assise',
+            'restaurantCapaciteDebout' => 'Capacité maximale en configuration debout',
+            'restaurantCapaciteAssis' => 'Capacité maximale en configuration assise',
             'restaurantSoireeDansante' => 'Soirée dansante',
             'restaurantCocktailDinatoire' => 'Cocktail dînatoire',
             'restaurantTraiteurSurPlace' => 'Traiteur sur place',
-            'restaurantInterventionTraiteurExterne' => 'Gestion d’un traiteur externe',
-            'restaurantTrateurExterneClient' => 'Traiteur externe autorisé',
+            'restaurantInterventionTraiteurExterne' => "Gestion de l'intervention d'un traiteur externe",
+            'restaurantTrateurExterneClient' => 'Traiteur externe autorisé ?',
             'restaurantPrivatisable' => 'Restaurant privatisable',
             'restaurantHeureInterruptionMusique' => 'Heure limite de diffusion de la musique',
         ]) + [
-            'typeCuisine' => self::choice('TYPE_CUISINE', 'Types de cuisine', true),
+            'typeCuisine' => self::choice('TYPE_CUISINE', 'Type de cuisine', true),
             'serviceRestauration' => self::choice('SERVICE_RESTAURATION', 'Services de restauration', true),
         ];
     }
@@ -235,9 +239,16 @@ final class LieuFormCatalog
      *
      * @return array<string, mixed>
      */
-    private static function richText(string $label): array
+    private static function richText(string $label, bool $compteur = false): array
     {
-        return ['label' => $label, 'type' => TextareaType::class, 'options' => ['attr' => ['data-wysiwyg' => true]]];
+        // `data-compteur` : compteur de caractères « x / N » sous l'éditeur
+        // (bible row 40), affiché par le contrôleur wysiwyg.
+        $attr = ['data-wysiwyg' => true];
+        if ($compteur) {
+            $attr['data-compteur'] = Lieu::DESCRIPTION_MAX_LENGTH;
+        }
+
+        return ['label' => $label, 'type' => TextareaType::class, 'options' => ['attr' => $attr]];
     }
 
     /** @return array<string, mixed> */

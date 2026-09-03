@@ -31,6 +31,22 @@ final class CompletenessFieldCatalogTest extends TestCase
         yield 'service' => [TypeFiche::ServiceEvenementiel, 25];
     }
 
+    public function testLesAccesDuLieuSontPonderesParType(): void
+    {
+        $catalog = new CompletenessFieldCatalog();
+        $codes = array_map(static fn ($definition): string => $definition->code, $catalog->definitions(TypeFiche::Lieu));
+
+        foreach (['ACCESS_AEROPORT', 'ACCESS_GARE', 'ACCESS_METRO', 'ACCESS_TRAMWAY', 'ACCESS_GRANDE_VILLE'] as $code) {
+            self::assertContains($code, $codes);
+        }
+        foreach (['ACCESS_NOM', 'ACCESS_DISTANCE_KILOMETRES', 'ACCESS_DUREE_MINUTES', 'ACCESS_MODE_TRANSPORT'] as $code) {
+            self::assertNotContains($code, $codes);
+        }
+        self::assertSame('accesAeroport', $catalog->find(TypeFiche::Lieu, 'ACCESS_AEROPORT')?->path);
+        // Un champ sans libellé de formulaire garde un libellé de complétude.
+        self::assertSame('Horaires d’ouverture par jour', $catalog->find(TypeFiche::Lieu, 'DISPO_HORAIRES_JOURS')?->label);
+    }
+
     public function testDefinitionsAndCodeIndexAreReused(): void
     {
         $catalog = new CompletenessFieldCatalog();

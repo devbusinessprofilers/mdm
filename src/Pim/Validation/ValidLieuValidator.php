@@ -13,6 +13,7 @@ use App\Pim\Enum\TypeAccesLieu;
 use App\Pim\Enum\TypeFiche;
 use App\Pim\Form\LieuFormCatalog;
 use App\Pim\Lov\LieuLovCatalog;
+use App\Pim\Service\LieuObligationsPublication;
 use App\Pim\Service\PhotoObligations;
 use Symfony\Component\Validator\Constraint;
 use Symfony\Component\Validator\ConstraintValidator;
@@ -22,6 +23,7 @@ final class ValidLieuValidator extends ConstraintValidator
     public function __construct(
         private readonly MediaAssetRepository $assets,
         private readonly PhotoObligations $photoObligations,
+        private readonly LieuObligationsPublication $obligations,
     ) {
     }
 
@@ -378,6 +380,14 @@ final class ValidLieuValidator extends ConstraintValidator
             $this->violation(
                 'Le nom du lieu est obligatoire pour la soumission.',
                 'label',
+            );
+        }
+        // Champs « Obligatoire » de la bible VERSION BP : une violation par
+        // champ vide, sur le chemin du champ dans le formulaire.
+        foreach ($this->obligations->manquants($lieu) as $chemin => $libelle) {
+            $this->violation(
+                sprintf('« %s » est obligatoire pour la soumission.', $libelle),
+                $chemin,
             );
         }
         $photos = array_values(
