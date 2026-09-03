@@ -8,6 +8,10 @@ framework:
         # conteneur php et restent valables en multi-instance. Le rate limiter
         # (cache filesystem ci-dessous) reste, lui, mono-instance.
         handler_id: Symfony\Component\HttpFoundation\Session\Storage\Handler\PdoSessionHandler
+        # Nom de cookie propre au PIM : en local, la marketplace (localhost:7080)
+        # partage le domaine « localhost » (les cookies ignorent le port) et
+        # écrasait le PHPSESSID du PIM à chaque page, déconnectant l'utilisateur.
+        name: PIMSESSID
         cookie_secure: auto
         cookie_httponly: true
         cookie_samesite: lax
