@@ -54,6 +54,22 @@ final class RessourceLieuRepository extends ServiceEntityRepository
     }
 
     /** Photos rattachées à une fiche et adossées à un média DAM — l'assiette de la reconnaissance IA. */
+    /**
+     * Photos rattachées à un média, avec la gamme de leur fiche : sert au
+     * reclassement des objets du bucket par segment de gamme.
+     *
+     * @return list<array{asset: string, fiche_id: string, type: string}>
+     */
+    public function photosAvecGamme(): array
+    {
+        /** @var list<array{asset: string, fiche_id: string, type: string}> $lignes */
+        $lignes = $this->getEntityManager()->getConnection()->fetchAllAssociative(
+            "SELECT r.dam_asset_id AS asset, r.fiche_id, f.type FROM pim_ressource_lieu r INNER JOIN pim_fiche f ON f.id = r.fiche_id WHERE r.nature = 'photo' AND r.dam_asset_id <> ''",
+        );
+
+        return $lignes;
+    }
+
     public function countPhotosAvecMedia(): int
     {
         return (int) $this->photosAvecMediaQuery()

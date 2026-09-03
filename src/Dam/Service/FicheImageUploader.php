@@ -6,6 +6,7 @@ namespace App\Dam\Service;
 
 use App\Dam\Entity\MediaAsset;
 use App\Pim\Entity\Fiche;
+use App\Pim\Enum\TypeFiche;
 use App\Shared\Service\ParametreProviderInterface;
 use App\Shared\Service\PrivateObjectStorageInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -57,13 +58,7 @@ final readonly class FicheImageUploader
             throw new \RuntimeException('Empreinte média impossible.');
         }
         $id = new Ulid();
-        $segment = match ($fiche->type()->value) {
-            'activite' => 'activites',
-            'restaurant' => 'restaurants',
-            'service_evenementiel' => 'services',
-            'traiteur' => 'traiteurs',
-            default => 'lieux',
-        };
+        $segment = self::segment($fiche->type());
         $prefix = trim($this->storagePrefix, '/');
         $key =
             ('' === $prefix ? '' : $prefix.'/').
@@ -105,5 +100,17 @@ final readonly class FicheImageUploader
     public function delete(MediaAsset $asset): void
     {
         $this->storage->delete($asset->originalStorageKey());
+    }
+
+    /** Dossier de premier niveau des objets d'une fiche dans le bucket, par gamme. */
+    public static function segment(TypeFiche $type): string
+    {
+        return match ($type) {
+            TypeFiche::Activite => 'activites',
+            TypeFiche::Restaurant => 'restaurants',
+            TypeFiche::ServiceEvenementiel => 'services',
+            TypeFiche::Traiteur => 'traiteurs',
+            TypeFiche::Lieu => 'lieux',
+        };
     }
 }

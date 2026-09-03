@@ -156,6 +156,14 @@ class MediaAsset
         return null !== $this->enhancedStorageKey;
     }
 
+    /** Nouvelle clé de l'original (et de la retouche) après reclassement dans le bucket. */
+    public function relocate(string $originalStorageKey, ?string $enhancedStorageKey): void
+    {
+        $this->originalStorageKey = $originalStorageKey;
+        $this->enhancedStorageKey = $enhancedStorageKey;
+        $this->touch();
+    }
+
     public function applyEnhancedSource(string $storageKey, string $checksum): void
     {
         $this->enhancedStorageKey = $storageKey;

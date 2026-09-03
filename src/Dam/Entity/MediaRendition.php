@@ -100,6 +100,13 @@ final class MediaRendition
         return $this->sizeBytes;
     }
 
+    /** Nouvelle clé du rendu après reclassement dans le bucket public. */
+    public function relocate(string $storageKey): void
+    {
+        $this->storageKey = $storageKey;
+        $this->touch();
+    }
+
     public function refresh(
         string $storageKey,
         int $width,

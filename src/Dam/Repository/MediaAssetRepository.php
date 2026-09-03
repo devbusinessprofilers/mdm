@@ -31,6 +31,26 @@ final class MediaAssetRepository extends ServiceEntityRepository
     }
 
     /**
+     * Clé de l'original de chaque média non supprimé, indexée par identifiant
+     * (chaîne ULID) : balayage léger pour le reclassement par segment.
+     *
+     * @return array<string, string>
+     */
+    public function clesOriginaux(): array
+    {
+        $cles = [];
+        /** @var iterable<array{id: string, original_storage_key: string}> $lignes */
+        $lignes = $this->getEntityManager()->getConnection()->iterateAssociative(
+            "SELECT id, original_storage_key FROM dam_media_asset WHERE status NOT IN ('deleting', 'deleted')",
+        );
+        foreach ($lignes as $ligne) {
+            $cles[(string) Ulid::fromBinary($ligne['id'])] = $ligne['original_storage_key'];
+        }
+
+        return $cles;
+    }
+
+    /**
      * @param list<string> $ids
      *
      * @return list<MediaAsset>
