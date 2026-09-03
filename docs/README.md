@@ -20,6 +20,8 @@
 Le `rapport-audit-anti-spaghetti.html` à la racine est le rapport d'audit
 d'organisation du code du 3 septembre 2026 (constats, anomalies, plan de
 simplification à mécanique constante).
+Les six audits détaillés par domaine qui l'alimentent (chemins, lignes, chiffres
+mesurés) sont dans `audit/` : c'est le matériau des phases restantes du plan.
 
 Le `cahier-des-charges-etat-mdm.html` à la racine est un document de travail
 (état d'avancement annoté du cahier des charges), non suivi par git.
