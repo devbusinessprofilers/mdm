@@ -57,7 +57,7 @@
         data-form-collection-prototype-value="{{ form_widget(field.vars.prototype)|e('html_attr') }}"
     >
         <div class="flex flex-row items-center gap-6"{% if avec_suggestion %} data-controller="acces-suggestion"{% endif %}>
-            <legend class="contents"><twig:Typography variant="subtitle" bold element="span">{{ title }}</twig:Typography></legend>
+            <legend class="contents"><twig:Typography variant="subtitle" bold element="span">{{ title }}{% if field.vars.obligatoire|default(false) %} *{% endif %}</twig:Typography></legend>
             <span class="flex-1"></span>
             {% if avec_suggestion %}
                 <span data-acces-suggestion-target="statut" class="hidden antialiased text-[0.625rem] leading-[1rem] font-sans text-red-600"></span>
@@ -830,6 +830,30 @@
             </div>
         </div>
     </twig:Modal>
+    {# Confirmation avant dépublication : la fiche est publiée et un champ
+       obligatoire de la bible vient d'être vidé. Rien n'a été enregistré :
+       « Non » ferme la modale et laisse la saisie dans le formulaire, « Oui »
+       renvoie le même formulaire avec le submitter nommé (SubmitType
+       confirmerDepublication du LieuType), qui déclenche l'enregistrement
+       et la dépublication côté serveur. #}
+    {% if confirmation_depublication|default(null) and form.confirmerDepublication is defined %}
+        <twig:Modal identifier="depublication" :display="true">
+            <div class="flex flex-col gap-4 w-[min(560px,80vw)]">
+                <twig:Typography variant="heading-3" element="h3" bold>Voulez-vous vraiment continuer ?</twig:Typography>
+                <twig:Typography variant="body">Cette fiche sera dépubliée : elle repassera « En cours », sera retirée de la marketplace et devra être soumise à nouveau à validation. Les champs obligatoires suivants sont désormais vides :</twig:Typography>
+                <ul class="list-disc pl-6 flex flex-col gap-1">
+                    {% for champ in confirmation_depublication %}
+                        <li><twig:Typography variant="body-sm" bold element="span">{{ champ }}</twig:Typography></li>
+                    {% endfor %}
+                </ul>
+                <div class="flex flex-row gap-2 justify-end mt-2">
+                    <twig:Button variant="outline" size="md" type="button" data-action="click->modal#close">Non</twig:Button>
+                    <twig:Button variant="primary" size="md" type="submit" form="form-fiche"
+                                 name="{{ form.confirmerDepublication.vars.full_name }}" value="1">Oui, dépublier</twig:Button>
+                </div>
+            </div>
+        </twig:Modal>
+    {% endif %}
 
     <div class="shrink-0 h-2"></div>
   </div>

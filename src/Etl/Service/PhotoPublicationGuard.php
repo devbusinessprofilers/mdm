@@ -4,12 +4,8 @@ declare(strict_types=1);
 
 namespace App\Etl\Service;
 
-use App\Etl\Enum\MarketplaceSyncStatus;
-use App\Etl\Message\RemoveFicheFromMarketplace;
-use App\Etl\Repository\FicheMarketplaceSyncRepository;
 use App\Pim\Entity\Fiche;
 use App\Pim\Enum\StatutFiche;
-use App\Shared\Outbox\OutboxPublisherInterface;
 
 /**
  * Invariant de publication : une fiche au statut publié doit satisfaire les
@@ -19,18 +15,16 @@ use App\Shared\Outbox\OutboxPublisherInterface;
  * mutation (IndexFicheHandler) et par la commande de rattrapage
  * app:fiches:conformite-photos.
  *
- * La rétrogradation dépublie aussi la marketplace : le scheduler seul ne
- * suffit pas, une fiche repassée en cours y conserverait sinon son dernier
- * snapshot publié. La purge des photos reste au scheduler (statut
- * intermédiaire → PruneMarketplacePhotos), appelé après cette garde.
+ * La rétrogradation dépublie aussi la marketplace (MarketplaceRetrait) : le
+ * scheduler seul ne suffit pas, une fiche repassée en cours y conserverait
+ * sinon son dernier snapshot publié. La purge des photos reste au scheduler
+ * (statut intermédiaire → PruneMarketplacePhotos), appelé après cette garde.
  */
 final readonly class PhotoPublicationGuard
 {
     public function __construct(
         private MarketplacePhotoPolicy $policy,
-        private FicheMarketplaceSyncRepository $tracking,
-        private OutboxPublisherInterface $outbox,
-        private MarketplaceClientInterface $client,
+        private MarketplaceRetrait $retrait,
     ) {
     }
 
@@ -52,13 +46,7 @@ final readonly class PhotoPublicationGuard
             return false;
         }
         $fiche->unpublishForInsufficientPhotos();
-        if (!$this->client->isConfigured()) {
-            return true;
-        }
-        $tracked = $this->tracking->forFiche($fiche->id());
-        if (null !== $tracked && MarketplaceSyncStatus::Removed !== $tracked->status()) {
-            $this->outbox->enqueue(new RemoveFicheFromMarketplace($fiche->idString()));
-        }
+        $this->retrait->retirer($fiche);
 
         return true;
     }

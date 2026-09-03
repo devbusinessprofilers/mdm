@@ -9,8 +9,10 @@ use App\Pim\Entity\Lieu\AccesLieu;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Entity\Lieu\Salle;
 use App\Pim\Form\LieuType;
+use App\Pim\Service\LieuObligationsPublication;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Form\FormFactoryInterface;
+use Symfony\Component\Form\FormView;
 
 final class LieuTypeTest extends KernelTestCase
 {
@@ -46,6 +48,32 @@ final class LieuTypeTest extends KernelTestCase
         self::assertTrue($lieu->demarcheRse());
         self::assertSame('Société Bible', $lieu->administratif()->infoLegaleNom());
         self::assertSame('125.50', $lieu->tarification()->seminaireJourneeJourneeEtude());
+    }
+
+    public function testLesChampsObligatoiresDeLaBiblePortentLeMarqueurDAffichageSansRequired(): void
+    {
+        self::bootKernel();
+        $factory = self::getContainer()->get(FormFactoryInterface::class);
+        $vue = $factory->create(LieuType::class, new Lieu(), ['csrf_protection' => false])->createView();
+
+        $marques = [];
+        $parcours = static function (FormView $noeud, string $chemin) use (&$parcours, &$marques): void {
+            if ($noeud->vars['obligatoire'] ?? false) {
+                $marques[] = $chemin;
+                // Marqueur d'affichage seul : jamais l'attribut HTML required
+                // sur un champ de saisie (la collection Accès est composée).
+                if (!$noeud->vars['compound']) {
+                    self::assertFalse($noeud->vars['required'], $chemin);
+                }
+            }
+            foreach ($noeud->children as $nom => $enfant) {
+                $parcours($enfant, '' === $chemin ? (string) $nom : $chemin.'.'.$nom);
+            }
+        };
+        $parcours($vue, '');
+
+        self::assertEqualsCanonicalizing(LieuObligationsPublication::cheminsFormulaire(), $marques);
+        self::assertStringContainsString('aéroport', (string) $vue['acces']->vars['help']);
     }
 
     public function testLesDescriptionsRichesSontStockeesEnTexteBrutEtRenduesEnParagraphes(): void

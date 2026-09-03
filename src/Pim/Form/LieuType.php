@@ -10,6 +10,7 @@ use App\Pim\Entity\Lieu\LieuAdministratif;
 use App\Pim\Entity\Lieu\LieuTarification;
 use App\Pim\Entity\Localisation;
 use App\Pim\Lov\LieuLovCatalog;
+use App\Pim\Service\LieuObligationsPublication;
 use Doctrine\Common\Collections\Collection;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
@@ -21,7 +22,9 @@ use Symfony\Component\Form\Extension\Core\Type\UrlType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\FormEvent;
 use Symfony\Component\Form\FormEvents;
+use Symfony\Component\Form\FormInterface;
 use Symfony\Component\Form\FormTypeInterface;
+use Symfony\Component\Form\FormView;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use App\Pim\Validation\ValidationGroups;
 
@@ -100,11 +103,14 @@ final class LieuType extends AbstractType
 
         $this->collection($builder, 'salles', SalleType::class, 'salles', 'addSalle', 'removeSalle', label: 'Salles');
         $this->collection($builder, 'periodesFermeture', PeriodeFermetureType::class, 'periodesFermeture', 'addPeriodeFermeture', 'removePeriodeFermeture', label: 'Périodes de fermeture');
-        $this->collection($builder, 'acces', AccesLieuType::class, 'acces', 'addAcces', 'removeAcces', label: 'Accès');
+        $this->collection($builder, 'acces', AccesLieuType::class, 'acces', 'addAcces', 'removeAcces', label: 'Accès', help: 'Au moins un accès de type aéroport et un accès de type gare sont requis pour la publication.');
         $this->collection($builder, 'ressources', RessourceLieuType::class, 'ressources', 'addRessource', 'removeRessource', [
             'salle_choices' => $options['data'] instanceof Lieu ? $options['data']->salles()->toArray() : [],
         ]);
         $builder->add('submit', SubmitType::class, ['label' => 'Enregistrer']);
+        // Bouton « Oui, dépublier » de la modale de l'éditeur : seul ce
+        // submitter l'envoie (isClicked), une soumission ordinaire l'ignore.
+        $builder->add('confirmerDepublication', SubmitType::class, ['label' => 'Oui, dépublier']);
 
         // Capacité d'accueil par défaut (bible row 52) : nombre total de
         // chambres + chambres twin, calculée seulement quand la capacité est
@@ -116,6 +122,30 @@ final class LieuType extends AbstractType
             }
             $lieu->changeChambreCapaciteTotale($lieu->chambreNbTotal() + ($lieu->chambreNbTotalTwin() ?? 0));
         });
+    }
+
+    /**
+     * Astérisque permanent des champs obligatoires de la bible : un marqueur
+     * d'affichage (var `obligatoire`, lue par le thème de l'éditeur), jamais
+     * l'option `required` — l'attribut HTML bloquerait l'enregistrement des
+     * brouillons et le cas « champ vidé » que l'éditeur doit pouvoir soumettre.
+     *
+     * @param FormView            $view
+     * @param FormInterface<mixed> $form
+     * @param array<string, mixed> $options
+     */
+    public function finishView(FormView $view, FormInterface $form, array $options): void
+    {
+        foreach (LieuObligationsPublication::cheminsFormulaire() as $chemin) {
+            $cible = $view;
+            foreach (explode('.', $chemin) as $segment) {
+                if (!isset($cible->children[$segment])) {
+                    continue 2;
+                }
+                $cible = $cible->children[$segment];
+            }
+            $cible->vars['obligatoire'] = true;
+        }
     }
 
     /** @return array<string, mixed> */
@@ -147,10 +177,11 @@ final class LieuType extends AbstractType
      * @param class-string<FormTypeInterface<mixed>> $entryType
      * @param array<string, mixed> $entryOptions
      */
-    private function collection(FormBuilderInterface $builder, string $name, string $entryType, string $getter, string $adder, string $remover, array $entryOptions = [], ?string $label = null): void
+    private function collection(FormBuilderInterface $builder, string $name, string $entryType, string $getter, string $adder, string $remover, array $entryOptions = [], ?string $label = null, ?string $help = null): void
     {
         $builder->add($name, CollectionType::class, [
             'label' => $label,
+            'help' => $help,
             'entry_type' => $entryType,
             'entry_options' => $entryOptions,
             'allow_add' => true,

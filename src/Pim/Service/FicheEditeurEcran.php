@@ -9,6 +9,7 @@ use App\Dam\Repository\MediaAssetRepository;
 use App\Dam\Service\FichePhotoPresenter;
 use App\Audit\Repository\AuditRevisionRepository;
 use App\Etl\Repository\FicheSalesforceRepository;
+use App\Etl\Service\MarketplaceRetrait;
 use App\Ocr\Form\OcrReviewFormFactory;
 use App\Ocr\Form\OcrUploadType;
 use App\Ocr\Repository\DocumentExtractionRepository;
@@ -22,6 +23,7 @@ use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Entity\Service\ServiceEvenementiel;
 use App\Pim\Entity\SiteDiffusion;
 use App\Pim\Entity\VisibiliteGeoRun;
+use App\Pim\Enum\StatutFiche;
 use App\Pim\Enum\TypeFiche;
 use App\Pim\Form\ActiviteType;
 use App\Pim\Form\AdresseSuggestionFormFactory;
@@ -39,6 +41,7 @@ use App\Pim\Repository\SiteDiffusionRepository;
 use App\Shared\Form\ActionType;
 use App\Shared\Service\ParametreProviderInterface;
 use League\Flysystem\FilesystemException;
+use Symfony\Component\Form\ClickableInterface;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\FormError;
@@ -114,6 +117,8 @@ final readonly class FicheEditeurEcran
         private FicheRepository $fiches,
         private SiteDiffusionGeoAttribueur $geoAttribueur,
         private VisibiliteGeoJournal $journalGeo,
+        private LieuObligationsPublication $obligations,
+        private MarketplaceRetrait $retraitMarketplace,
     ) {
     }
 
@@ -132,9 +137,16 @@ final readonly class FicheEditeurEcran
      * Soumission partielle : seuls les champs présents dans la requête sont
      * appliqués, le reste de la fiche est laissé intact.
      *
+     * Fiche publiée dont un champ obligatoire de la bible (gamme Lieu) vient
+     * d'être vidé : rien n'est enregistré tant que l'utilisateur n'a pas
+     * confirmé (modale de l'éditeur, bouton « Oui, dépublier ») ; confirmé,
+     * l'enregistrement dépublie la fiche et la retire de la marketplace. Seuls
+     * les manquants nouveaux comptent — les lieux publiés incomplets de longue
+     * date s'enregistrent sans question.
+     *
      * @param FormInterface<mixed> $form
      */
-    public function soumettreSection(Request $request, Lieu|Restaurant|Activite|ServiceEvenementiel $entite, FormInterface $form): bool
+    public function soumettreSection(Request $request, Lieu|Restaurant|Activite|ServiceEvenementiel $entite, FormInterface $form): SoumissionSection
     {
         // Les fichiers déposés (dropzones des sections Médias) arrivent dans
         // $request->files : sans cette fusion, submit() ne voit jamais les
@@ -144,32 +156,69 @@ final readonly class FicheEditeurEcran
             $request->files->all($form->getName()),
         );
         if ([] === $data) {
-            return false;
+            return SoumissionSection::nonSoumise();
         }
         // Case décochée, liste multiple vidée, collection sans ligne : le
         // navigateur n'envoie rien, et la soumission partielle ignorerait le
         // champ — la suppression serait perdue sans message.
         $data = ChampsOmisCompleteur::completer($form, $data, $entite->fiche()->type());
+        $fiche = $entite->fiche();
+        $existing = $this->photoAssetIds($entite);
+        $avant = $entite instanceof Lieu ? $this->obligations->manquants($entite) : [];
+        $dateAvant = $fiche->updatedAt();
 
-        return (bool) $this->policy->execute($entite->fiche(), function () use ($form, $entite, $data): bool {
-            $existing = $this->photoAssetIds($entite);
+        // Soumission « à blanc » : les setters de l'entité remontent
+        // markChanged (statut En cours en mémoire pour un éditeur). Le
+        // workflow est figé pour pouvoir re-rendre la page sans transition
+        // fantôme quand la confirmation est requise — sans enregistrer(),
+        // rien n'est persisté.
+        $vides = [];
+        $refus = $fiche->preserveWorkflowDuring(function () use ($form, $data, $entite, $fiche, $avant, &$vides): ?SoumissionSection {
             $form->submit($data, false);
             if (!$form->isValid()) {
-                return false;
+                return SoumissionSection::invalide();
+            }
+            if ($entite instanceof Lieu && StatutFiche::Publiee === $fiche->status()) {
+                $vides = array_values(array_diff_key($this->obligations->manquants($entite), $avant));
+                $bouton = $form->get('confirmerDepublication');
+                if ([] !== $vides && !($bouton instanceof ClickableInterface && $bouton->isClicked())) {
+                    return SoumissionSection::confirmationRequise($vides);
+                }
+            }
+
+            return null;
+        });
+        if (null !== $refus) {
+            return $refus;
+        }
+        // touch() remplace l'objet updatedAt : une soumission sans changement
+        // ne doit pas faire repasser la fiche en cours.
+        $modifiee = $fiche->updatedAt() !== $dateAvant;
+        if ([] !== $vides) {
+            // Dépublication confirmée, dans le même flush que l'enregistrement.
+            $fiche->unpublishForMissingRequiredFields($vides);
+            $this->retraitMarketplace->retirer($fiche);
+        }
+
+        return $this->policy->execute($fiche, function () use ($form, $entite, $fiche, $existing, $modifiee, $vides): SoumissionSection {
+            // Reproduit la transition que les setters auraient faite hors du
+            // gel : touch seul pour un validateur, En cours pour un éditeur.
+            if ($modifiee) {
+                $fiche->markChanged();
             }
             try {
                 $this->enregistrer($entite, $form, $existing);
             } catch (\DomainException $exception) {
                 $form->addError(new FormError($exception->getMessage()));
 
-                return false;
+                return SoumissionSection::invalide();
             } catch (FilesystemException) {
                 $form->addError(new FormError('Le stockage des médias est temporairement indisponible.'));
 
-                return false;
+                return SoumissionSection::invalide();
             }
 
-            return true;
+            return [] === $vides ? SoumissionSection::enregistree() : SoumissionSection::depubliee($vides);
         });
     }
 

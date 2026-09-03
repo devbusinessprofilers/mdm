@@ -163,7 +163,8 @@
         {%- set libelle -%}
             <span class="antialiased text-[0.875rem] leading-[1.375rem] font-sans text-base-text">
                 {{- translation_domain is same as(false) ? label : label|trans({}, translation_domain) -}}
-                {%- if required %} *{% endif -%}
+                {#- `obligatoire` : champ bloquant pour la publication (LieuType::finishView), sans attribut HTML required. -#}
+                {%- if required or obligatoire|default(false) %} *{% endif -%}
             </span>
         {%- endset -%}
         <label for="{{ id }}"{% if disabled %} class="cursor-not-allowed"{% endif %}>

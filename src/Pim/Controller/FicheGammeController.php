@@ -14,6 +14,7 @@ use App\Pim\Repository\RestaurantRepository;
 use App\Pim\Repository\ServiceEvenementielRepository;
 use App\Pim\Service\FicheEditeurEcran;
 use App\Pim\Service\FicheSectionsCatalogue;
+use App\Pim\Service\SoumissionSection;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -58,6 +59,7 @@ final class FicheGammeController extends AbstractController
         $form = $ecran->formSection($entite);
         $formSites = $ecran->formSites($entite);
         $formSitesGeo = $ecran->formSitesGeo($entite);
+        $resultat = SoumissionSection::nonSoumise();
         if ($request->isMethod('POST')) {
             $this->denyAccessUnlessGranted(FicheVoter::EDIT, $entite->fiche());
             if ($request->request->has('sites_geo')) {
@@ -75,15 +77,23 @@ final class FicheGammeController extends AbstractController
 
                     return $this->redirectToRoute('app_mdm_fiche_gamme', ['gamme' => $gamme, 'id' => $id, 'section' => $section]);
                 }
-            } elseif ($ecran->soumettreSection($request, $entite, $form)) {
-                $this->addFlash('success', 'Fiche enregistrée.');
+            } else {
+                $resultat = $ecran->soumettreSection($request, $entite, $form);
+                if ($resultat->estEnregistree()) {
+                    $this->addFlash('success', 'Fiche enregistrée.');
+                    if ($resultat->depubliee) {
+                        $this->addFlash('warning', 'Fiche dépubliée : champs obligatoires vidés — '.implode(', ', $resultat->champsVides).'.');
+                    }
 
-                return $this->redirectToRoute('app_mdm_fiche_gamme', ['gamme' => $gamme, 'id' => $id, 'section' => $section]);
+                    return $this->redirectToRoute('app_mdm_fiche_gamme', ['gamme' => $gamme, 'id' => $id, 'section' => $section]);
+                }
             }
         }
 
-        // 422 : Turbo Drive ignore une réponse 200 à un POST de formulaire.
+        // 422 : Turbo Drive ignore une réponse 200 à un POST de formulaire —
+        // y compris pour la demande de confirmation de dépublication.
         $soumisInvalide = ($form->isSubmitted() && !$form->isValid())
+            || $resultat->attendConfirmation()
             || ($formSites->isSubmitted() && !$formSites->isValid())
             || ($formSitesGeo->isSubmitted() && !$formSitesGeo->isValid());
 
@@ -92,6 +102,7 @@ final class FicheGammeController extends AbstractController
             'form' => $form->createView(),
             'form_sites' => $formSites->createView(),
             'form_sites_geo' => $formSitesGeo->createView(),
+            'confirmation_depublication' => $resultat->attendConfirmation() ? $resultat->champsVides : null,
         ] + $ecran->variables($entite, $section, $form), new Response(null, $soumisInvalide ? Response::HTTP_UNPROCESSABLE_ENTITY : Response::HTTP_OK));
     }
 }

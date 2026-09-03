@@ -22,8 +22,54 @@ use App\Pim\Repository\LieuRepository;
  */
 final readonly class LieuObligationsPublication
 {
+    /**
+     * Chemins de formulaire des champs obligatoires, dans l'ordre de
+     * manquants() — source unique pour l'astérisque permanent de l'éditeur
+     * (LieuType::finishView) ; un test garantit l'alignement avec manquants().
+     */
+    public const CHEMINS = [
+        'generaleTypologie',
+        'accessibiliteDescription.descGenerale',
+        'acces.aeroport',
+        'acces.gare',
+        'hebergement.chambreNbTotal',
+        'hebergement.chambreCapaciteTotale',
+        'hebergement.chambreDescGenerale',
+        'syntheseSalles.salleReunionNbTotal',
+        'syntheseSalles.salleReunionCapaciteMaxCocktail',
+        'syntheseSalles.salleReunionCapaciteMaxTheatre',
+        'syntheseSalles.salleReunionCapaciteMinTheatre',
+        'syntheseSalles.salleReunionSurfaceMinReunion',
+        'syntheseSalles.salleReunionSurfaceMaxReunion',
+        'syntheseSalles.salleReunionDescSalleSeminaire',
+        'restauration.restaurantTotal',
+        'restauration.restaurantCapaciteAssis',
+    ];
+
+    /**
+     * Obligations portées par la collection « acces » (au moins une ligne
+     * d'un type donné) : elles n'ont pas de champ propre dans le formulaire.
+     */
+    public const PSEUDO_CHEMINS = ['acces.aeroport', 'acces.gare'];
+
     public function __construct(private LieuRepository $lieux)
     {
+    }
+
+    /**
+     * Chemins réellement rendus par l'éditeur : les pseudo-chemins sont
+     * ramenés à leur collection (« acces »), qui porte alors la mention.
+     *
+     * @return list<string>
+     */
+    public static function cheminsFormulaire(): array
+    {
+        $chemins = [];
+        foreach (self::CHEMINS as $chemin) {
+            $chemins[] = in_array($chemin, self::PSEUDO_CHEMINS, true) ? explode('.', $chemin, 2)[0] : $chemin;
+        }
+
+        return array_values(array_unique($chemins));
     }
 
     /**

@@ -85,6 +85,20 @@ final class FicheWorkflowTest extends TestCase
         self::assertSame(StatutFiche::EnCours, $fiche->status());
     }
 
+    public function testUnpublishForMissingRequiredFieldsDemotesAndExplains(): void
+    {
+        $fiche = new Fiche(TypeFiche::Lieu);
+        $fiche->publishForImport();
+
+        $fiche->unpublishForMissingRequiredFields(['Typologie', 'Texte de description']);
+
+        self::assertSame(StatutFiche::EnCours, $fiche->status());
+        self::assertSame('Dépublication : champs obligatoires vidés — Typologie, Texte de description.', $fiche->validationFeedback());
+
+        $this->expectException(\DomainException::class);
+        $fiche->unpublishForMissingRequiredFields(['Typologie']);
+    }
+
     public function testExternalUpdatePublishesDirectly(): void
     {
         $fiche = new Fiche(TypeFiche::Lieu);

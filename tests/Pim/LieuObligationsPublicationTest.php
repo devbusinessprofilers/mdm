@@ -17,25 +17,22 @@ final class LieuObligationsPublicationTest extends KernelTestCase
     {
         $manquants = $this->service()->manquants(new Lieu());
 
-        self::assertSame([
-            'generaleTypologie',
-            'accessibiliteDescription.descGenerale',
-            'acces.aeroport',
-            'acces.gare',
-            'hebergement.chambreNbTotal',
-            'hebergement.chambreCapaciteTotale',
-            'hebergement.chambreDescGenerale',
-            'syntheseSalles.salleReunionNbTotal',
-            'syntheseSalles.salleReunionCapaciteMaxCocktail',
-            'syntheseSalles.salleReunionCapaciteMaxTheatre',
-            'syntheseSalles.salleReunionCapaciteMinTheatre',
-            'syntheseSalles.salleReunionSurfaceMinReunion',
-            'syntheseSalles.salleReunionSurfaceMaxReunion',
-            'syntheseSalles.salleReunionDescSalleSeminaire',
-            'restauration.restaurantTotal',
-            'restauration.restaurantCapaciteAssis',
-        ], array_keys($manquants));
+        // La constante CHEMINS (astérisque permanent de l'éditeur) doit rester
+        // le miroir exact du calcul.
+        self::assertSame(LieuObligationsPublication::CHEMINS, array_keys($manquants));
+        self::assertCount(16, LieuObligationsPublication::CHEMINS);
         self::assertSame('Typologie', $manquants['generaleTypologie']);
+    }
+
+    public function testLesCheminsFormulaireRamenentLesPseudoCheminsALaCollection(): void
+    {
+        $chemins = LieuObligationsPublication::cheminsFormulaire();
+
+        self::assertContains('acces', $chemins);
+        self::assertNotContains('acces.aeroport', $chemins);
+        self::assertNotContains('acces.gare', $chemins);
+        self::assertSame(array_values(array_unique($chemins)), $chemins);
+        self::assertCount(15, $chemins);
     }
 
     public function testUnLieuCompletNaAucunManquant(): void

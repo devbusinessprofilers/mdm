@@ -503,6 +503,23 @@ class Fiche
         $this->touch();
     }
 
+    /**
+     * Dépublication confirmée par l'utilisateur : un champ obligatoire de la
+     * bible (gamme Lieu) vient d'être vidé sur une fiche publiée. La fiche
+     * retourne en cours jusqu'à remise en conformité puis resoumission.
+     *
+     * @param list<string> $champs Libellés des champs obligatoires désormais vides
+     */
+    public function unpublishForMissingRequiredFields(array $champs): void
+    {
+        if (StatutFiche::Publiee !== $this->status) {
+            throw new \DomainException('Seule une fiche publiée peut être dépubliée.');
+        }
+        $this->status = StatutFiche::EnCours;
+        $this->validationFeedback = 'Dépublication : champs obligatoires vidés — '.implode(', ', $champs).'.';
+        $this->touch();
+    }
+
     /** @return list<int> */
     public function valueIdsFor(string $attributeCode): array
     {
