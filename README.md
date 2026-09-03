@@ -572,17 +572,28 @@ L'antivirus ClamAV sur VPS OVH reste une décision à valider. S'il est retenu, 
 
 ## 5. Contrôles obligatoires avant chaque livraison
 
-Depuis `html/` :
+Un seul script les enchaîne, dans le conteneur php : `bin/ci` (style
+php-cs-fixer, lints conteneur/Twig/YAML, mapping Doctrine, PHPStan niveau 8 à
+zéro erreur, deptrac avec la baseline des dépendances connues, PHPUnit).
+Le hook versionné `.githooks/pre-push` le lance avant chaque push ; à activer
+une fois par clone ou par worktree :
 
 ```bash
-composer analyse
-php bin/phpunit
-php bin/console doctrine:schema:validate
+git config core.hooksPath .githooks
+```
+
+Manuellement, depuis `html/` :
+
+```bash
+docker compose exec php bin/ci          # tout
+docker compose exec php composer cs     # style seulement (dry-run) ; composer cs:fix pour appliquer
+docker compose exec php composer deptrac
 php bin/console doctrine:schema:update --dump-sql
 git diff --check
 ```
 
-Le SQL de mise à jour doit être vide après application des migrations. Les tests d'intégration doivent utiliser une MariaDB temporaire isolée et jamais la base de développement.
+`SKIP_CI=1 git push` court-circuite le hook (à réserver aux pushs de
+sauvegarde). Le SQL de mise à jour doit être vide après application des migrations. Les tests d'intégration doivent utiliser une MariaDB temporaire isolée et jamais la base de développement.
 
 Pour les tests de volume :
 

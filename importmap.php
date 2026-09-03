@@ -86,4 +86,12 @@ return [
     '@cropper/element-viewer' => [
         'version' => '2.2.0',
     ],
+    'tom-select/dist/css/tom-select.bootstrap4.css' => [
+        'version' => '2.6.2',
+        'type' => 'css',
+    ],
+    'tom-select/dist/css/tom-select.bootstrap5.css' => [
+        'version' => '2.6.2',
+        'type' => 'css',
+    ],
 ];

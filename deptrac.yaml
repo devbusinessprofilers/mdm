@@ -1,0 +1,58 @@
+# Dépendances autorisées entre modules (voir ARCHITECTURE.md, « Dépendances »).
+# Une couche = un dossier de src/. La règle est celle de la cible ; les
+# violations existantes au 2026-09-03 sont figées dans deptrac.baseline.yaml
+# (générée par `vendor/bin/deptrac analyse --formatter=baseline
+# --output=deptrac.baseline.yaml`) : elles ne bloquent pas, mais aucune nouvelle
+# dépendance interdite ne peut être ajoutée. Retirer une ligne de la baseline
+# quand le couplage correspondant est supprimé.
+imports:
+  - deptrac.baseline.yaml
+
+deptrac:
+  cache_file: var/.deptrac.cache
+  paths:
+    - ./src
+  exclude_files:
+    - '#.*/DataFixtures/.*#'
+  layers:
+    - name: Shared
+      collectors: [{ type: directory, value: src/Shared/.* }]
+    - name: Account
+      collectors: [{ type: directory, value: src/Account/.* }]
+    - name: Pim
+      collectors: [{ type: directory, value: src/Pim/.* }]
+    - name: Dam
+      collectors: [{ type: directory, value: src/Dam/.* }]
+    - name: Enrichment
+      collectors: [{ type: directory, value: src/Enrichment/.* }]
+    - name: Etl
+      collectors: [{ type: directory, value: src/Etl/.* }]
+    - name: Ocr
+      collectors: [{ type: directory, value: src/Ocr/.* }]
+    - name: Vision
+      collectors: [{ type: directory, value: src/Vision/.* }]
+    - name: Audit
+      collectors: [{ type: directory, value: src/Audit/.* }]
+    - name: Dashboard
+      collectors: [{ type: directory, value: src/Dashboard/.* }]
+    - name: GoLive
+      collectors: [{ type: directory, value: src/GoLive/.* }]
+  ruleset:
+    # Shared ne dépend d'aucun domaine métier.
+    Shared: []
+    Account: [Shared, Pim]
+    # Le PIM utilise les uploaders et messages du DAM, le planificateur de
+    # traduction d'Enrichment et les droits d'Account.
+    Pim: [Shared, Dam, Enrichment, Account]
+    # Le DAM consulte le rattachement PIM d'un média.
+    Dam: [Shared, Pim]
+    Enrichment: [Shared, Pim]
+    # Imports entrants et diffusion sortante gravitent autour du PIM.
+    Etl: [Shared, Pim, Dam, Enrichment, Account]
+    Ocr: [Shared, Pim, Dam]
+    Vision: [Shared, Pim, Dam]
+    Audit: [Shared, Pim, Account]
+    # Tableaux de bord : lecture des autres modules.
+    Dashboard: [Shared, Pim, Dam, Enrichment, Etl, Ocr, Vision, Audit, Account]
+    # Outillage jetable du go-live, supprimé après.
+    GoLive: [Shared, Pim, Dam, Enrichment, Etl, Account]

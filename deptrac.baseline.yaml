@@ -1,0 +1,104 @@
+deptrac:
+  skip_violations:
+    App\Audit\Restore\AuditRestorer:
+      - App\Enrichment\Service\FicheTranslationScheduler
+    App\Dam\Controller\DamDashboardController:
+      - App\Account\Service\CurrentActorProvider
+    App\Dam\Controller\MediasController:
+      - App\Vision\Enum\EnhancementProvider
+      - App\Vision\Form\VisionFormFactory
+      - App\Vision\Service\VisionDashboardProvider
+    App\Dam\MessageHandler\MediaUploadedHandler:
+      - App\Vision\Entity\ImageRecognition
+      - App\Vision\Service\ImageRecognitionManager
+    App\Enrichment\Controller\FicheTranslationController:
+      - App\Account\Security\FicheVoter
+    App\Enrichment\MessageHandler\TranslateLovLabelHandler:
+      - App\Etl\Service\MarketplaceLovSyncScheduler
+    App\Enrichment\MessageHandler\TranslatePublishedFicheHandler:
+      - App\Etl\Service\MarketplaceSyncScheduler
+    App\Enrichment\Service\FicheTranslationManager:
+      - App\Audit\AuditContext
+      - App\Audit\Entity\AuditChange
+      - App\Audit\Entity\AuditRevision
+      - App\Etl\Service\MarketplaceSyncScheduler
+    App\Etl\Controller\ImportMasseController:
+      - App\Dashboard\Repository\JournalTraitementsRepository
+    App\Ocr\Controller\OcrController:
+      - App\Account\Security\FicheVoter
+      - App\Account\Service\CurrentActorProvider
+    App\Ocr\Service\OcrSuggestionApplier:
+      - App\Enrichment\Service\FicheTranslationScheduler
+    App\Pim\Command\NormaliserLocalisationsCommand:
+      - App\Etl\Service\MarketplaceSyncScheduler
+    App\Pim\Command\SyncSitesDiffusionCommand:
+      - App\Etl\Service\MarketplaceSyncScheduler
+    App\Pim\Command\VerifierLocalisationsCommand:
+      - App\Etl\Service\MarketplaceSyncScheduler
+    App\Pim\Controller\FicheExtractionController:
+      - App\Ocr\Repository\DocumentExtractionRepository
+      - App\Ocr\Service\OcrActions
+    App\Pim\Controller\FicheSalesforceController:
+      - App\Etl\Service\SalesforceSelectionSender
+    App\Pim\Controller\FicheSuggestionController:
+      - App\Vision\Service\OpenAiProviderException
+    App\Pim\Controller\FicheValiderPublierController:
+      - App\Etl\Service\PhotoPublicationGuard
+    App\Pim\Controller\GammePhotoController:
+      - App\Vision\Service\ImageRecognitionManager
+    App\Pim\Controller\LieuPhotoController:
+      - App\Vision\Service\ImageRecognitionManager
+    App\Pim\Controller\LovAdminController:
+      - App\Audit\AuditContext
+    App\Pim\Controller\ReferentielController:
+      - App\Etl\Service\SalesforceSelectionSender
+    App\Pim\Form\ActiviteType:
+      - App\Etl\Repository\FicheSalesforceRepository
+    App\Pim\Form\LieuType:
+      - App\Etl\Repository\FicheSalesforceRepository
+    App\Pim\Form\RestaurantType:
+      - App\Etl\Repository\FicheSalesforceRepository
+    App\Pim\Form\ServiceEvenementielType:
+      - App\Etl\Repository\FicheSalesforceRepository
+    App\Pim\Fusion\ChampRecenceProvider:
+      - App\Audit\Repository\AuditChangeRepository
+    App\Pim\Fusion\FusionValeurLecteur:
+      - App\Audit\ValueNormalizer
+    App\Pim\MessageHandler\IndexFicheHandler:
+      - App\Etl\Service\MarketplaceSyncScheduler
+      - App\Etl\Service\PhotoPublicationGuard
+      - App\Etl\Service\SalesforceExportScheduler
+    App\Pim\Service\AtoutsIaVerifier:
+      - App\Vision\Service\OpenAiProviderException
+    App\Pim\Service\ChampSuggestionService:
+      - App\Vision\Service\OpenAiProviderException
+      - App\Vision\Service\TextSuggestionProviderInterface
+    App\Pim\Service\DescriptionIaVerifier:
+      - App\Vision\Service\OpenAiProviderException
+    App\Pim\Service\EspaceTravailEcran:
+      - App\Dashboard\Repository\QualiteRepository
+    App\Pim\Service\FicheEditeurEcran:
+      - App\Audit\Repository\AuditRevisionRepository
+      - App\Etl\Repository\FicheSalesforceRepository
+      - App\Etl\Service\MarketplaceRetrait
+      - App\Etl\Service\SalesforceCsvSettings
+      - App\Ocr\Form\OcrReviewFormFactory
+      - App\Ocr\Form\OcrUploadType
+      - App\Ocr\Repository\DocumentExtractionRepository
+      - App\Ocr\Service\OcrCategoryPolicy
+    App\Pim\Service\FicheWorkflowManager:
+      - App\Etl\Service\PhotoPublicationGuard
+    App\Pim\Service\LovAdminManager:
+      - App\Etl\Service\MarketplaceLovSyncScheduler
+    App\Pim\Service\ReferentielActionGroupee:
+      - App\Etl\Service\PhotoPublicationGuard
+    App\Shared\Command\PerformancePurgeCommand:
+      - App\Dashboard\Repository\LogEntryRepository
+    App\Shared\RateLimit\RateLimitListener:
+      - App\Account\Security\ExternalSitePrincipal
+    App\Shared\Service\SignalementBugMailer:
+      - App\Account\Entity\User
+    App\Vision\Controller\VisionRecoController:
+      - App\Account\Service\CurrentActorProvider
+    App\Vision\Controller\VisionRetoucheController:
+      - App\Account\Service\CurrentActorProvider

@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# Hook pre-push versionné. Activation (une fois par clone ou par worktree) :
+#   git config core.hooksPath .githooks
+# Il exécute bin/ci dans le conteneur php de docker-compose (dossier parent),
+# en montant CE dépôt (html/ ou un worktree) sous /var/www/chantier, sans
+# passer par l'entrypoint local-deploy. Les services sql doivent tourner.
+set -euo pipefail
+
+ROOT=$(git rev-parse --show-toplevel)
+COMPOSE_FILE=$(dirname "$ROOT")/docker-compose.yml
+
+if [ ! -f "$COMPOSE_FILE" ]; then
+    echo "pre-push : docker-compose.yml introuvable à côté de $ROOT, contrôles ignorés." >&2
+    exit 0
+fi
+
+if [ "${SKIP_CI:-0}" = "1" ]; then
+    echo "pre-push : contrôles ignorés (SKIP_CI=1)." >&2
+    exit 0
+fi
+
+exec docker compose -f "$COMPOSE_FILE" run --rm --no-deps --entrypoint "" \
+    -v "$ROOT:/var/www/chantier" -w /var/www/chantier \
+    -e APP_CACHE_DIR=/var/www/chantier/var/cache \
+    php bin/ci

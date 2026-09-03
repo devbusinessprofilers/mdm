@@ -104,7 +104,12 @@
             "@auto-scripts"
         ],
         "test": "phpunit",
+        "cs": "PHP_CS_FIXER_IGNORE_ENV=1 php-cs-fixer fix --dry-run --diff",
+        "cs:fix": "PHP_CS_FIXER_IGNORE_ENV=1 php-cs-fixer fix",
+        "deptrac": "deptrac analyse --no-progress",
+        "ci": "bin/ci",
         "build:assets": [
+            "@php bin/console app:icons:build-sprite",
             "@php bin/console tailwind:build --minify",
             "@php bin/console asset-map:compile"
         ]
@@ -119,7 +124,9 @@
         }
     },
     "require-dev": {
+        "deptrac/deptrac": "^4.7",
         "doctrine/doctrine-fixtures-bundle": "^4.0",
+        "friendsofphp/php-cs-fixer": "^3.95",
         "phpstan/phpstan": "^2.2",
         "phpstan/phpstan-doctrine": "^2.0",
         "phpstan/phpstan-symfony": "^2.0",

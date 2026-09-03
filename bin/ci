@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# Contrôles obligatoires avant push, à lancer DANS le conteneur php depuis la
+# racine du projet (le hook .githooks/pre-push s'en charge). Chaque étape
+# bloque : un style non conforme, une erreur PHPStan, une dépendance interdite
+# hors baseline deptrac ou un test rouge arrête le push.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+etape() { printf '\n\033[1m▶ %s\033[0m\n' "$1"; }
+
+etape "Style (php-cs-fixer, sans modification)"
+PHP_CS_FIXER_IGNORE_ENV=1 vendor/bin/php-cs-fixer fix --dry-run --diff
+
+etape "Conteneur, Twig et YAML"
+php bin/console lint:container
+php bin/console lint:twig templates
+php bin/console lint:yaml config
+
+etape "Mapping Doctrine"
+php bin/console doctrine:schema:validate --skip-sync
+
+etape "PHPStan (niveau 8, 0 erreur attendue)"
+APP_ENV=dev APP_DEBUG=1 php bin/console cache:warmup --no-optional-warmers -q
+APP_ENV=dev APP_DEBUG=1 vendor/bin/phpstan analyse --no-progress --memory-limit=1G
+
+etape "Dépendances entre modules (deptrac, baseline des couplages connus)"
+vendor/bin/deptrac analyse --no-progress
+
+etape "Tests"
+php bin/phpunit
+
+printf '\n\033[32m✔ Tous les contrôles passent.\033[0m\n'
