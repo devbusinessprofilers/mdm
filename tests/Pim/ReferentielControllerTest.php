@@ -568,6 +568,31 @@ final class ReferentielControllerTest extends WebTestCase
         self::assertSelectorTextContains('table', 'Le Grand Pavillon Chantilly');
     }
 
+    public function testLaRechercheTolereLesStopwordsInnoDb(): void
+    {
+        $client = self::createClient();
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $this->connection = self::getContainer()->get(Connection::class);
+        $this->clearTables();
+
+        $user = new User('recherche-stopword@example.test', ['ROLE_BP_EDITOR']);
+        $user->setPassword('not-used-by-login-user');
+        $entityManager->persist($user);
+        $lieu = new Lieu();
+        $lieu->changeLabel('Jeanne & The Forest – Château de Montvillargenne');
+        $lieu->fiche()->publishForImport();
+        $entityManager->persist($lieu);
+        $entityManager->flush();
+        self::getContainer()->get(FicheSearchIndexer::class)->index($lieu->fiche());
+        $client->loginUser($user);
+
+        // « The » a la taille requise mais est un stopword InnoDB : jamais indexé,
+        // l'exiger dans la requête booléenne éliminait la fiche.
+        $client->request('GET', '/referentiel', ['f' => ['q' => 'Jeanne & The Forest – Château de Montvillargenne']]);
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('table', 'Jeanne & The Forest – Château de Montvillargenne');
+    }
+
     public function testLaRechercheTrieParPertinence(): void
     {
         $client = self::createClient();
