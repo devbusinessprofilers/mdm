@@ -13,8 +13,10 @@ use Doctrine\DBAL\Connection;
  */
 final readonly class FilesATraiterRepository
 {
-    public function __construct(private Connection $connection)
-    {
+    public function __construct(
+        private Connection $connection,
+        private JournalTraitementsRepository $journal,
+    ) {
     }
 
     /** @return array{a_valider: int, a_publier: int, echecs: int, ia: int, repli: int} */
@@ -27,16 +29,9 @@ final readonly class FilesATraiterRepository
             'a_publier' => (int) $this->connection->fetchOne(
                 "SELECT COUNT(*) FROM pim_fiche WHERE status = 'validee'",
             ),
-            'echecs' => (int) $this->connection->fetchOne(
-                "SELECT
-                    (SELECT COUNT(*) FROM etl_import_job WHERE status IN ('echoue', 'termine_avec_erreurs'))
-                    + (SELECT COUNT(*) FROM enrichment_fiche_translation WHERE status = 'en_erreur')
-                    + (SELECT COUNT(*) FROM ocr_document_extraction WHERE status = 'failed')
-                    + (SELECT COUNT(*) FROM dam_media_asset WHERE status = 'failed' AND deleted_at IS NULL)
-                    + (SELECT COUNT(*) FROM etl_fiche_marketplace WHERE status = 'failed')
-                    + (SELECT COUNT(*) FROM outbox_message WHERE status = 'failed')
-                    + (SELECT COUNT(*) FROM pim_referentiel_export WHERE statut = 'echoue')",
-            ),
+            // Même périmètre que la vue /admin/traitements-en-echec : une seule
+            // définition des échecs par famille, dans le journal.
+            'echecs' => $this->journal->compterEchecs(),
             // Tout ce qui attend un arbitrage humain : suggestions IA (OCR)
             // ET écarts d'adresse (BAN / Geoapify).
             'ia' => (int) $this->connection->fetchOne(

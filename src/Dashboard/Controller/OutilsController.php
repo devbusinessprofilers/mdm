@@ -28,7 +28,7 @@ final class OutilsController extends AbstractController
         // la page demandée est bornée à l'intervalle réel.
         $lignes = $journal->journal($famille, $erreurs);
         $total = count($lignes);
-        $enErreur = count(array_filter($lignes, static fn (array $ligne): bool => in_array($ligne['statut'], JournalTraitementsRepository::STATUTS_ERREUR, true)));
+        $enErreur = count(array_filter($lignes, static fn (array $ligne): bool => $ligne['etat']->estEchec()));
         $pages = max(1, (int) ceil($total / JournalTraitementsRepository::PAR_PAGE));
         $page = min(max(1, $request->query->getInt('page', 1)), $pages);
 

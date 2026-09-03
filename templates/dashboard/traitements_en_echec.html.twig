@@ -28,7 +28,7 @@
                 <td><time datetime="{{ ligne.quand|date('c') }}">{{ ligne.quand|date('d/m/Y H:i') }}</time></td>
                 <td><span class="badge badge-neutral">{{ familles[ligne.famille] ?? ligne.famille }}</span></td>
                 <td>{{ ligne.sujet }}</td>
-                <td><span class="badge badge-danger">{{ ligne.statut }}</span></td>
+                <td><span class="badge badge-danger">{{ ligne.etat.libelle }}</span></td>
                 <td>{{ ligne.erreur ?? '—' }}</td>
                 <td>
                     {% if ligne.lien %}

@@ -10,7 +10,6 @@
 {% block title %}Outils · Journal des traitements{% endblock %}
 
 {% set famille_libelles = familles %}
-{% set statuts_erreur = ['echoue', 'termine_avec_erreurs', 'failed', 'en_erreur'] %}
 
 {# ------------------------------------------------- Rail : les outils, puis les familles du journal #}
 {% block rail %}
@@ -49,29 +48,6 @@
 
         {# ---- Tableau maquette : Origine / Traitement / État / Erreur / Quand / lien. ---- #}
         {% set grille = 'grid gap-4 items-center px-4 grid-cols-[repeat(auto-fit,minmax(0,1fr))]' %}
-        {% set etat_jetons = {
-            'echoue': ['Échoué', 'bg-error-pastel'],
-            'failed': ['Échoué', 'bg-error-pastel'],
-            'en_erreur': ['En erreur', 'bg-error-pastel'],
-            'termine_avec_erreurs': ['Terminé avec erreurs', 'bg-peach-pastel'],
-            'en_cours': ['En cours', 'bg-primary-4'],
-            'processing': ['En cours', 'bg-primary-4'],
-            'running': ['En cours', 'bg-primary-4'],
-            'en_attente': ['En file', 'bg-neutral-200'],
-            'pending': ['En file', 'bg-neutral-200'],
-            'uploaded': ['En file', 'bg-neutral-200'],
-            'queued': ['En file', 'bg-neutral-200'],
-            'termine': ['Terminé', 'bg-success-pastel'],
-            'terminee': ['Terminé', 'bg-success-pastel'],
-            'expiree': ['Expiré', 'bg-neutral-200'],
-            'ready': ['Terminé', 'bg-success-pastel'],
-            'disponible': ['Disponible', 'bg-success-pastel'],
-            'obsolete': ['Obsolète', 'bg-neutral-200'],
-            'partially_reviewed': ['Revue partielle', 'bg-primary-4'],
-            'reviewed': ['Revue terminée', 'bg-success-pastel'],
-            'synced': ['Diffusée', 'bg-success-pastel'],
-            'removed': ['Retirée', 'bg-neutral-200'],
-        } %}
         <div class="shrink-0 flex flex-col rounded-sm overflow-hidden bg-neutral-100 shadow-(--shadow)">
             {# L'onglet « Historique des exports » ajoute la date de suppression du classeur (rétention 30 jours). #}
             {% set entetes_journal = famille == 'export'
@@ -88,7 +64,7 @@
 
             <div class="flex flex-col">
                 {% for ligne in lignes %}
-                    {% set jeton = etat_jetons[ligne.statut]|default([ligne.statut|replace({'_': ' '})|capitalize, 'bg-success-pastel']) %}
+                    {% set jeton = [ligne.etat.libelle, ligne.etat.teinte] %}
                     <div role="row" class="{{ grille }} w-full min-h-[56px] py-2 box-border hover:bg-primary-5
                                            {{ loop.first ? '' : 'border-t border-neutral-200' }}">
                         <span class="min-w-0">
@@ -105,7 +81,7 @@
                         </span>
                         <span class="min-w-0">
                             {# Rouge seulement pour un vrai échec : la colonne porte aussi des détails sains (résultat d'enrichissement…). #}
-                            <twig:Typography variant="body-sm" textColor="{{ ligne.erreur and ligne.statut in statuts_erreur ? 'error' : 'neutral-500' }}" class="text-pretty">{{ ligne.erreur ?? '—' }}</twig:Typography>
+                            <twig:Typography variant="body-sm" textColor="{{ ligne.erreur and ligne.etat.estEchec ? 'error' : 'neutral-500' }}" class="text-pretty">{{ ligne.erreur ?? '—' }}</twig:Typography>
                         </span>
                         <span class="min-w-0">
                             <twig:Typography variant="body-sm" ellipsis textColor="neutral-500">{{ ligne.quand|date('d/m/Y H:i') }}</twig:Typography>
