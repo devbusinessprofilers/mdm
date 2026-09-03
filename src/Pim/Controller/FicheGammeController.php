@@ -8,9 +8,7 @@ use App\Account\Security\FicheVoter;
 use App\Pim\Entity\Activite\Activite;
 use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Entity\Service\ServiceEvenementiel;
-use App\Pim\Repository\ActiviteRepository;
-use App\Pim\Repository\RestaurantRepository;
-use App\Pim\Repository\ServiceEvenementielRepository;
+use App\Pim\Service\FicheDetailResolver;
 use App\Pim\Service\FicheEditeurEcran;
 use App\Pim\Service\FicheSectionsCatalogue;
 use App\Pim\Service\SoumissionSection;
@@ -36,16 +34,10 @@ final class FicheGammeController extends AbstractController
         Request $request,
         string $gamme,
         string $id,
-        RestaurantRepository $restaurants,
-        ActiviteRepository $activites,
-        ServiceEvenementielRepository $services,
+        FicheDetailResolver $details,
         FicheEditeurEcran $ecran,
     ): Response {
-        $entite = match ($gamme) {
-            'restaurants' => $restaurants->find($id),
-            'activites' => $activites->find($id),
-            default => $services->find($id),
-        };
+        $entite = $details->parSlugEtId($gamme, $id);
         if (!$entite instanceof Restaurant && !$entite instanceof Activite && !$entite instanceof ServiceEvenementiel) {
             throw $this->createNotFoundException('Fiche introuvable.');
         }

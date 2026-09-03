@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Pim\Service;
 
+use App\Pim\Entity\Activite\Activite;
 use App\Pim\Entity\Fiche;
+use App\Pim\Entity\Lieu\Lieu;
+use App\Pim\Entity\Restaurant\Restaurant;
+use App\Pim\Entity\Service\ServiceEvenementiel;
 use App\Pim\Enum\TypeFiche;
-use App\Pim\Repository\ActiviteRepository;
-use App\Pim\Repository\LieuRepository;
-use App\Pim\Repository\RestaurantRepository;
-use App\Pim\Repository\ServiceEvenementielRepository;
 
 /**
  * Champs de texte libre long enrôlés dans la détection de doublons, par type de
@@ -21,10 +21,7 @@ use App\Pim\Repository\ServiceEvenementielRepository;
 final readonly class TextDuplicateFields
 {
     public function __construct(
-        private LieuRepository $lieux,
-        private RestaurantRepository $restaurants,
-        private ActiviteRepository $activites,
-        private ServiceEvenementielRepository $services,
+        private FicheDetailResolver $details,
     ) {
     }
 
@@ -43,8 +40,8 @@ final readonly class TextDuplicateFields
     /** @return list<ChampTexte> */
     private function lieuFields(Fiche $fiche): array
     {
-        $lieu = $this->lieux->findOneBy(['fiche' => $fiche]);
-        if (null === $lieu) {
+        $lieu = $this->details->pour($fiche);
+        if (!$lieu instanceof Lieu) {
             return [];
         }
 
@@ -60,8 +57,8 @@ final readonly class TextDuplicateFields
     /** @return list<ChampTexte> */
     private function restaurantFields(Fiche $fiche): array
     {
-        $restaurant = $this->restaurants->findOneBy(['fiche' => $fiche]);
-        if (null === $restaurant) {
+        $restaurant = $this->details->pour($fiche);
+        if (!$restaurant instanceof Restaurant) {
             return [];
         }
 
@@ -73,8 +70,8 @@ final readonly class TextDuplicateFields
     /** @return list<ChampTexte> */
     private function activiteFields(Fiche $fiche): array
     {
-        $activite = $this->activites->findOneBy(['fiche' => $fiche]);
-        if (null === $activite) {
+        $activite = $this->details->pour($fiche);
+        if (!$activite instanceof Activite) {
             return [];
         }
 
@@ -87,8 +84,8 @@ final readonly class TextDuplicateFields
     /** @return list<ChampTexte> */
     private function serviceFields(Fiche $fiche): array
     {
-        $service = $this->services->findOneBy(['fiche' => $fiche]);
-        if (null === $service) {
+        $service = $this->details->pour($fiche);
+        if (!$service instanceof ServiceEvenementiel) {
             return [];
         }
 

@@ -7,6 +7,7 @@ namespace App\Dashboard\Repository;
 use App\Dashboard\Journal\EtatTraitement;
 use App\Dashboard\Journal\FamilleTraitement;
 use App\Pim\Enum\ResultatSourceEnrichissement;
+use App\Pim\Enum\TypeFiche;
 use Doctrine\DBAL\Connection;
 use Symfony\Component\Uid\Ulid;
 
@@ -448,13 +449,14 @@ final readonly class JournalTraitementsRepository
      */
     private static function lienFiche(string $type, string $ficheId): ?array
     {
-        return match ($type) {
-            'lieu' => ['route' => 'app_mdm_fiche_lieu', 'params' => ['id' => $ficheId]],
-            'restaurant' => ['route' => 'app_mdm_fiche_gamme', 'params' => ['gamme' => 'restaurants', 'id' => $ficheId]],
-            'activite' => ['route' => 'app_mdm_fiche_gamme', 'params' => ['gamme' => 'activites', 'id' => $ficheId]],
-            'service_evenementiel' => ['route' => 'app_mdm_fiche_gamme', 'params' => ['gamme' => 'services', 'id' => $ficheId]],
-            default => null,
-        };
+        $gamme = TypeFiche::tryFrom($type);
+        if (null === $gamme || !$gamme->estOperationnel()) {
+            return null;
+        }
+
+        return TypeFiche::Lieu === $gamme
+            ? ['route' => 'app_mdm_fiche_lieu', 'params' => ['id' => $ficheId]]
+            : ['route' => 'app_mdm_fiche_gamme', 'params' => ['gamme' => $gamme->slug(), 'id' => $ficheId]];
     }
 
     private static function ulid(mixed $binaire): string

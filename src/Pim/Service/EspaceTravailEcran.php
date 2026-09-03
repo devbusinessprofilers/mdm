@@ -41,6 +41,7 @@ final readonly class EspaceTravailEcran
         private FicheRepository $fiches,
         private RessourceLieuRepository $ressources,
         private UrlGeneratorInterface $urls,
+        private FicheRouteResolver $routes,
     ) {
     }
 
@@ -102,14 +103,9 @@ final readonly class EspaceTravailEcran
 
     private function urlFiche(string $type, string $id): ?string
     {
-        return match (TypeFiche::tryFrom($type)) {
-            TypeFiche::Lieu => $this->urls->generate('app_mdm_fiche_lieu', ['id' => $id]),
-            TypeFiche::Restaurant, TypeFiche::Activite, TypeFiche::ServiceEvenementiel => $this->urls->generate('app_mdm_fiche_gamme', [
-                'gamme' => FicheEditeurEcran::slug(TypeFiche::from($type)),
-                'id' => $id,
-            ]),
-            default => null,
-        };
+        $gamme = TypeFiche::tryFrom($type);
+
+        return null === $gamme || !$gamme->estOperationnel() ? null : $this->routes->editUrl($gamme, $id);
     }
 
     /**

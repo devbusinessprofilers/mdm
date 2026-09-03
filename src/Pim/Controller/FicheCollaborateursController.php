@@ -12,7 +12,7 @@ use App\Pim\Enum\TypeFiche;
 use App\Pim\Repository\FicheAffiliationRepository;
 use App\Pim\Repository\FicheRepository;
 use App\Pim\Service\FicheCollaborateursEcran;
-use App\Pim\Service\FicheEditeurEcran;
+use App\Pim\Service\FicheRouteResolver;
 use App\Pim\Service\FicheSectionsCatalogue;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -34,6 +34,7 @@ final class FicheCollaborateursController extends AbstractController
         methods: ['POST'],
     ),]
     public function inviter(
+        FicheRouteResolver $routes,
         Request $request,
         string $id,
         FicheRepository $fiches,
@@ -72,13 +73,7 @@ final class FicheCollaborateursController extends AbstractController
         }
         $section = FicheSectionsCatalogue::indexBloc($fiche->type(), 'collaborateurs');
 
-        return TypeFiche::Lieu === $fiche->type()
-            ? $this->redirectToRoute('app_mdm_fiche_lieu', ['id' => $fiche->idString(), 'section' => $section])
-            : $this->redirectToRoute('app_mdm_fiche_gamme', [
-                'gamme' => FicheEditeurEcran::slug($fiche->type()),
-                'id' => $fiche->idString(),
-                'section' => $section,
-            ]);
+        return $this->redirect($routes->editUrl($fiche->type(), $fiche->idString(), $section));
     }
 
     #[Route(
@@ -88,6 +83,7 @@ final class FicheCollaborateursController extends AbstractController
         methods: ['POST'],
     ),]
     public function modifier(
+        FicheRouteResolver $routes,
         Request $request,
         string $id,
         FicheAffiliationRepository $affiliations,
@@ -122,13 +118,7 @@ final class FicheCollaborateursController extends AbstractController
         }
         $section = FicheSectionsCatalogue::indexBloc($fiche->type(), 'collaborateurs');
 
-        return TypeFiche::Lieu === $fiche->type()
-            ? $this->redirectToRoute('app_mdm_fiche_lieu', ['id' => $fiche->idString(), 'section' => $section])
-            : $this->redirectToRoute('app_mdm_fiche_gamme', [
-                'gamme' => FicheEditeurEcran::slug($fiche->type()),
-                'id' => $fiche->idString(),
-                'section' => $section,
-            ]);
+        return $this->redirect($routes->editUrl($fiche->type(), $fiche->idString(), $section));
     }
 
     #[Route(
@@ -138,6 +128,7 @@ final class FicheCollaborateursController extends AbstractController
         methods: ['POST'],
     ),]
     public function retirer(
+        FicheRouteResolver $routes,
         Request $request,
         string $id,
         FicheAffiliationRepository $affiliations,
@@ -169,12 +160,6 @@ final class FicheCollaborateursController extends AbstractController
         }
         $section = FicheSectionsCatalogue::indexBloc($fiche->type(), 'collaborateurs');
 
-        return TypeFiche::Lieu === $fiche->type()
-            ? $this->redirectToRoute('app_mdm_fiche_lieu', ['id' => $fiche->idString(), 'section' => $section])
-            : $this->redirectToRoute('app_mdm_fiche_gamme', [
-                'gamme' => FicheEditeurEcran::slug($fiche->type()),
-                'id' => $fiche->idString(),
-                'section' => $section,
-            ]);
+        return $this->redirect($routes->editUrl($fiche->type(), $fiche->idString(), $section));
     }
 }

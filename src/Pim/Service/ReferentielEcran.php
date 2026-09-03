@@ -65,14 +65,7 @@ final readonly class ReferentielEcran
             $urls[$ligne->id] = [
                 'voir' => TypeFiche::Traiteur === $ligne->type ? null : $this->routes->showUrl($ligne->type, $ligne->id),
                 'modifier' => TypeFiche::Traiteur === $ligne->type ? null : $this->routes->editUrl($ligne->type, $ligne->id),
-                'editeur' => match ($ligne->type) {
-                    TypeFiche::Lieu => $this->urls->generate('app_mdm_fiche_lieu', ['id' => $ligne->id]),
-                    TypeFiche::Traiteur => null,
-                    default => $this->urls->generate('app_mdm_fiche_gamme', [
-                        'gamme' => FicheEditeurEcran::slug($ligne->type),
-                        'id' => $ligne->id,
-                    ]),
-                },
+                'editeur' => TypeFiche::Traiteur === $ligne->type ? null : $this->routes->editUrl($ligne->type, $ligne->id),
                 'edition_rapide' => $this->urls->generate(
                     'app_mdm_edition_rapide',
                     ['id' => $ligne->id] + $parametresFiltre,

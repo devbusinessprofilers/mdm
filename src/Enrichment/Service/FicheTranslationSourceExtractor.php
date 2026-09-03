@@ -11,18 +11,12 @@ use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Entity\Service\ServiceEvenementiel;
 use App\Pim\Enum\NatureRessource;
-use App\Pim\Repository\ActiviteRepository;
-use App\Pim\Repository\LieuRepository;
-use App\Pim\Repository\RestaurantRepository;
-use App\Pim\Repository\ServiceEvenementielRepository;
+use App\Pim\Service\FicheDetailResolver;
 
 final readonly class FicheTranslationSourceExtractor
 {
     public function __construct(
-        private LieuRepository $lieux,
-        private ActiviteRepository $activites,
-        private RestaurantRepository $restaurants,
-        private ServiceEvenementielRepository $services,
+        private FicheDetailResolver $details,
     ) {
     }
 
@@ -43,13 +37,7 @@ final readonly class FicheTranslationSourceExtractor
     {
         $sources = [];
         $this->add($sources, 'nom', 'Nom', $fiche->label(), $includeEmpty);
-        $detail = match ($fiche->type()->value) {
-            'lieu' => $this->lieux->find($fiche->id()),
-            'activite' => $this->activites->find($fiche->id()),
-            'restaurant' => $this->restaurants->find($fiche->id()),
-            'service_evenementiel' => $this->services->find($fiche->id()),
-            default => null,
-        };
+        $detail = $this->details->pour($fiche);
         if ($detail instanceof Lieu) {
             $this->lieu($sources, $detail, $includeEmpty);
         }

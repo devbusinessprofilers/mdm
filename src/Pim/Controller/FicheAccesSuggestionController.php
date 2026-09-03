@@ -5,10 +5,9 @@ declare(strict_types=1);
 namespace App\Pim\Controller;
 
 use App\Account\Security\FicheVoter;
-use App\Pim\Repository\LieuRepository;
 use App\Pim\Service\AccesSuggere;
 use App\Pim\Service\AccesSuggesteur;
-use App\Pim\Service\GammeEntiteResolver;
+use App\Pim\Service\FicheDetailResolver;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -30,8 +29,7 @@ final class FicheAccesSuggestionController extends AbstractController
     #[Route('/referentiel/fiche/suggerer-acces', name: 'app_pim_fiche_suggerer_acces', methods: ['POST'])]
     public function __invoke(
         Request $request,
-        LieuRepository $lieux,
-        GammeEntiteResolver $resolver,
+        FicheDetailResolver $details,
         AccesSuggesteur $suggesteur,
         CsrfTokenManagerInterface $csrf,
     ): JsonResponse {
@@ -50,7 +48,7 @@ final class FicheAccesSuggestionController extends AbstractController
             return $this->json(['error' => 'Cette gamme n\'a pas de bloc Accès.'], 400);
         }
 
-        $entite = 'lieux' === $gamme ? $lieux->find($id) : $resolver->resolve($gamme, $id);
+        $entite = $details->parSlugEtId($gamme, $id);
         if (null === $entite) {
             throw $this->createNotFoundException('Fiche introuvable.');
         }

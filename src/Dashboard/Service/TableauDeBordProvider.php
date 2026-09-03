@@ -7,7 +7,6 @@ namespace App\Dashboard\Service;
 use App\Dashboard\Repository\ActivitePeriodeRepository;
 use App\Dashboard\Repository\FilesATraiterRepository;
 use App\Pim\Entity\Fiche;
-use App\Pim\Enum\TypeFiche;
 use App\Pim\Repository\FicheRepository;
 use App\Pim\Service\FicheRouteResolver;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
@@ -51,11 +50,7 @@ final readonly class TableauDeBordProvider
         return array_map(
             fn (Fiche $fiche): array => [
                 'fiche' => $fiche,
-                'url' => match (true) {
-                    TypeFiche::Lieu === $fiche->type() => $this->urls->generate('app_mdm_fiche_lieu', ['id' => $fiche->idString()]),
-                    TypeFiche::Traiteur === $fiche->type() => null,
-                    default => $this->routes->showUrl($fiche->type(), $fiche->idString()),
-                },
+                'url' => $fiche->type()->estOperationnel() ? $this->routes->showUrl($fiche->type(), $fiche->idString()) : null,
             ],
             $this->fiches->findDernieresPubliees($limit),
         );

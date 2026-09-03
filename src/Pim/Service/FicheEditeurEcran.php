@@ -353,9 +353,7 @@ final readonly class FicheEditeurEcran
             $sections[$i]['nb_champs'] = $nb;
         }
         $parSection = $this->completudesParSection($entite);
-        $lienSection = fn (int $i): string => TypeFiche::Lieu === $type
-            ? $this->urls->generate('app_mdm_fiche_lieu', ['id' => $fiche->idString(), 'section' => $i])
-            : $this->urls->generate('app_mdm_fiche_gamme', ['gamme' => self::slug($type), 'id' => $fiche->idString(), 'section' => $i]);
+        $lienSection = fn (int $i): string => $this->routes->editUrl($type, $fiche->idString(), $i);
         $onglets = [];
         foreach ($sections as $i => $section) {
             $onglets[] = [
@@ -450,7 +448,7 @@ final readonly class FicheEditeurEcran
             // Bouton « Suggérer les accès » du bloc Accès (Lieu et Restaurant) :
             // le jeton couvre l'endpoint de suggestion d'accès.
             'acces_suggestion_csrf' => $this->csrfTokens->getToken('fiche-acces-suggestion')->getValue(),
-            'gamme_slug' => self::slug($type),
+            'gamme_slug' => $type->slug(),
         ];
     }
 
@@ -542,9 +540,7 @@ final readonly class FicheEditeurEcran
     /** URL d'une section précise de l'éditeur, toutes gammes. */
     public function urlSection(TypeFiche $type, string $id, int $index): string
     {
-        return TypeFiche::Lieu === $type
-            ? $this->urls->generate('app_mdm_fiche_lieu', ['id' => $id, 'section' => $index])
-            : $this->urls->generate('app_mdm_fiche_gamme', ['gamme' => self::slug($type), 'id' => $id, 'section' => $index]);
+        return $this->routes->editUrl($type, $id, $index);
     }
 
     /** URL de la section de l'éditeur qui porte le bloc extraction. */
@@ -558,9 +554,7 @@ final readonly class FicheEditeurEcran
             }
         }
 
-        return TypeFiche::Lieu === $type
-            ? $this->urls->generate('app_mdm_fiche_lieu', ['id' => $id, 'section' => $index])
-            : $this->urls->generate('app_mdm_fiche_gamme', ['gamme' => self::slug($type), 'id' => $id, 'section' => $index]);
+        return $this->routes->editUrl($type, $id, $index);
     }
 
     /**
@@ -652,7 +646,7 @@ final readonly class FicheEditeurEcran
             ];
         }
 
-        $slug = self::slug($entite->fiche()->type());
+        $slug = $entite->fiche()->type()->slug();
 
         return [
             'gamme' => $entite->fiche()->type()->value,
@@ -726,21 +720,8 @@ final readonly class FicheEditeurEcran
 
         return [
             'label' => $survivante->label() ?? sprintf('fiche %d', $survivante->code()),
-            'url' => TypeFiche::Lieu === $survivante->type()
-                ? $this->urls->generate('app_mdm_fiche_lieu', ['id' => $survivante->idString()])
-                : $this->urls->generate('app_mdm_fiche_gamme', ['gamme' => self::slug($survivante->type()), 'id' => $survivante->idString()]),
+            'url' => $this->routes->editUrl($survivante->type(), $survivante->idString()),
         ];
-    }
-
-    public static function slug(TypeFiche $type): string
-    {
-        return match ($type) {
-            TypeFiche::Lieu => 'lieux',
-            TypeFiche::Restaurant => 'restaurants',
-            TypeFiche::Activite => 'activites',
-            TypeFiche::ServiceEvenementiel => 'services',
-            TypeFiche::Traiteur => throw new \InvalidArgumentException('Gamme hors de cette version du MDM.'),
-        };
     }
 
     /**

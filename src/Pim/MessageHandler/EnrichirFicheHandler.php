@@ -4,20 +4,18 @@ declare(strict_types=1);
 
 namespace App\Pim\MessageHandler;
 
+use App\Pim\Entity\Activite\Activite;
 use App\Pim\Entity\Fiche;
 use App\Pim\Entity\Lieu\Lieu;
+use App\Pim\Entity\Restaurant\Restaurant;
+use App\Pim\Entity\Service\ServiceEvenementiel;
 use App\Pim\Enum\ResultatSourceEnrichissement;
 use App\Pim\Enum\SuggestionSource;
-use App\Pim\Enum\TypeFiche;
 use App\Pim\Message\EnrichirFiche;
 use App\Pim\Message\VerifierAdresseFiche;
-use App\Pim\Repository\ActiviteRepository;
 use App\Pim\Repository\FicheEnrichmentRunRepository;
 use App\Pim\Repository\FicheEnrichmentScanRepository;
 use App\Pim\Repository\FicheRepository;
-use App\Pim\Repository\LieuRepository;
-use App\Pim\Repository\RestaurantRepository;
-use App\Pim\Repository\ServiceEvenementielRepository;
 use App\Pim\Service\AtoutsIaVerifier;
 use App\Pim\Service\ChaineHoteliereVerifier;
 use App\Pim\Service\ClassementAtoutFranceVerifier;
@@ -26,6 +24,7 @@ use App\Pim\Service\DataTourisme\DataTourismeIndex;
 use App\Pim\Service\DataTourismeVerifier;
 use App\Pim\Service\DescriptionIaVerifier;
 use App\Pim\Service\EnrichissementIndisponibleException;
+use App\Pim\Service\FicheDetailResolver;
 use App\Pim\Service\FicheSuggestionEnregistreur;
 use App\Pim\Service\GeoapifyClient;
 use App\Pim\Service\LieuAttributsVerifier;
@@ -55,11 +54,8 @@ use Symfony\Component\Uid\Ulid;
 final readonly class EnrichirFicheHandler
 {
     public function __construct(
+        private FicheDetailResolver $details,
         private FicheRepository $fiches,
-        private LieuRepository $lieux,
-        private RestaurantRepository $restaurants,
-        private ActiviteRepository $activites,
-        private ServiceEvenementielRepository $services,
         private StatutEtablissementVerifier $statutsEtablissement,
         private RestaurantAttributsVerifier $attributsRestaurant,
         private LieuAttributsVerifier $attributsLieu,
@@ -92,10 +88,11 @@ final readonly class EnrichirFicheHandler
         $this->outbox->enqueue(new VerifierAdresseFiche($fiche->idString()));
 
         $type = $fiche->type();
-        $lieu = TypeFiche::Lieu === $type ? $this->lieux->findOneByFiche($fiche) : null;
-        $restaurant = TypeFiche::Restaurant === $type ? $this->restaurants->findOneByFiche($fiche) : null;
-        $activite = TypeFiche::Activite === $type ? $this->activites->findOneByFiche($fiche) : null;
-        $service = TypeFiche::ServiceEvenementiel === $type ? $this->services->findOneByFiche($fiche) : null;
+        $detail = $this->details->pour($fiche);
+        $lieu = $detail instanceof Lieu ? $detail : null;
+        $restaurant = $detail instanceof Restaurant ? $detail : null;
+        $activite = $detail instanceof Activite ? $detail : null;
+        $service = $detail instanceof ServiceEvenementiel ? $detail : null;
 
         // Résultat par source, journalisé sur la demande (visible dans /outils) :
         // « inactif » (gate off), « non_configuree » (clé API ou flux manquant),

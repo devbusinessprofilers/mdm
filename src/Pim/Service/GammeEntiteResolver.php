@@ -7,30 +7,21 @@ namespace App\Pim\Service;
 use App\Pim\Entity\Activite\Activite;
 use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Entity\Service\ServiceEvenementiel;
-use App\Pim\Repository\ActiviteRepository;
-use App\Pim\Repository\RestaurantRepository;
-use App\Pim\Repository\ServiceEvenementielRepository;
 
 /**
- * Résout l'entité d'une fiche de gamme depuis le segment d'URL
- * (restaurants|activites|services) et son identifiant.
+ * Résout l'entité d'une fiche de gamme (hors Lieu) depuis le segment d'URL
+ * (restaurants|activites|services) et son identifiant. Simple restriction de
+ * FicheDetailResolver pour les contrôleurs dont la route exclut les lieux.
  */
 final readonly class GammeEntiteResolver
 {
-    public function __construct(
-        private RestaurantRepository $restaurants,
-        private ActiviteRepository $activites,
-        private ServiceEvenementielRepository $services,
-    ) {
+    public function __construct(private FicheDetailResolver $details)
+    {
     }
 
     public function resolve(string $gamme, string $id): Restaurant|Activite|ServiceEvenementiel|null
     {
-        $entite = match ($gamme) {
-            'restaurants' => $this->restaurants->find($id),
-            'activites' => $this->activites->find($id),
-            default => $this->services->find($id),
-        };
+        $entite = $this->details->parSlugEtId($gamme, $id);
 
         return $entite instanceof Restaurant || $entite instanceof Activite || $entite instanceof ServiceEvenementiel
             ? $entite

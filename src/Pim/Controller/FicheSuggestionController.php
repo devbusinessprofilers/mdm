@@ -5,9 +5,8 @@ declare(strict_types=1);
 namespace App\Pim\Controller;
 
 use App\Account\Security\FicheVoter;
-use App\Pim\Repository\LieuRepository;
 use App\Pim\Service\ChampSuggestionService;
-use App\Pim\Service\GammeEntiteResolver;
+use App\Pim\Service\FicheDetailResolver;
 use App\Shared\Service\ParametreProviderInterface;
 use App\Vision\Service\OpenAiProviderException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -29,8 +28,7 @@ final class FicheSuggestionController extends AbstractController
     #[Route('/referentiel/fiche/suggerer', name: 'app_pim_fiche_suggerer', methods: ['POST'])]
     public function __invoke(
         Request $request,
-        LieuRepository $lieux,
-        GammeEntiteResolver $resolver,
+        FicheDetailResolver $details,
         ChampSuggestionService $suggestions,
         ParametreProviderInterface $parametres,
         CsrfTokenManagerInterface $csrf,
@@ -51,7 +49,7 @@ final class FicheSuggestionController extends AbstractController
         $champ = is_string($data['champ'] ?? null) ? $data['champ'] : '';
         $valeur = is_string($data['valeur'] ?? null) ? $data['valeur'] : '';
 
-        $entite = 'lieux' === $gamme ? $lieux->find($id) : $resolver->resolve($gamme, $id);
+        $entite = $details->parSlugEtId($gamme, $id);
         if (null === $entite) {
             throw $this->createNotFoundException('Fiche introuvable.');
         }

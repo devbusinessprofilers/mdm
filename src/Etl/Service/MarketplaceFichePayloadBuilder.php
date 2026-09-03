@@ -23,10 +23,7 @@ use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Entity\Service\ServiceEvenementiel;
 use App\Pim\Lov\ActiviteLovCatalog;
 use App\Pim\Lov\ServiceLovCatalog;
-use App\Pim\Repository\ActiviteRepository;
-use App\Pim\Repository\LieuRepository;
-use App\Pim\Repository\RestaurantRepository;
-use App\Pim\Repository\ServiceEvenementielRepository;
+use App\Pim\Service\FicheDetailResolver;
 use App\Pim\Service\PhotoPrincipale;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
@@ -62,10 +59,7 @@ final readonly class MarketplaceFichePayloadBuilder
     ];
 
     public function __construct(
-        private LieuRepository $lieux,
-        private ActiviteRepository $activites,
-        private RestaurantRepository $restaurants,
-        private ServiceEvenementielRepository $services,
+        private FicheDetailResolver $details,
         private FicheTranslationRepository $translations,
         private MediaAssetRepository $assets,
         private FicheSalesforceRepository $salesforce,
@@ -107,13 +101,7 @@ final readonly class MarketplaceFichePayloadBuilder
         if (null !== $salesforce) {
             $data['salesforce'] = $salesforce;
         }
-        $detail = match ($fiche->type()->value) {
-            'lieu' => $this->lieux->find($fiche->id()),
-            'restaurant' => $this->restaurants->find($fiche->id()),
-            'activite' => $this->activites->find($fiche->id()),
-            'service_evenementiel' => $this->services->find($fiche->id()),
-            default => null,
-        };
+        $detail = $this->details->pour($fiche);
 
         return $data + match (true) {
             $detail instanceof Lieu => $this->lieu($detail),

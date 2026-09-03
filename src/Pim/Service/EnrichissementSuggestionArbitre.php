@@ -12,11 +12,7 @@ use App\Pim\Entity\Service\ServiceEvenementiel;
 use App\Pim\Enum\SuggestionAction;
 use App\Pim\Lov\LieuLovCatalog;
 use App\Pim\Lov\RestaurantLovCatalog;
-use App\Pim\Repository\ActiviteRepository;
 use App\Pim\Repository\AttributDefinitionRepository;
-use App\Pim\Repository\LieuRepository;
-use App\Pim\Repository\RestaurantRepository;
-use App\Pim\Repository\ServiceEvenementielRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
@@ -29,12 +25,9 @@ use Doctrine\ORM\EntityManagerInterface;
 final readonly class EnrichissementSuggestionArbitre
 {
     public function __construct(
+        private FicheDetailResolver $details,
         private InternalFicheMutationPolicy $policy,
         private FicheWorkflowManager $workflow,
-        private LieuRepository $lieux,
-        private RestaurantRepository $restaurants,
-        private ActiviteRepository $activites,
-        private ServiceEvenementielRepository $services,
         private AttributDefinitionRepository $attributs,
         private LovAdminManager $lovAdmin,
         private EntityManagerInterface $entityManager,
@@ -75,28 +68,36 @@ final readonly class EnrichissementSuggestionArbitre
         $champ = $suggestion->champ();
         $fiche = $suggestion->fiche();
         if (str_starts_with($champ, 'restaurant_')) {
-            $restaurant = $this->restaurants->findOneByFiche($fiche)
-                ?? throw new \DomainException('Restaurant introuvable : impossible d\'appliquer la valeur.');
+            $restaurant = $this->details->pour($fiche);
+            if (!$restaurant instanceof Restaurant) {
+                throw new \DomainException('Restaurant introuvable : impossible d\'appliquer la valeur.');
+            }
             $this->policy->execute($fiche, fn () => $this->appliquerRestaurant($restaurant, $suggestion));
 
             return;
         }
         if (str_starts_with($champ, 'activite_')) {
-            $activite = $this->activites->findOneByFiche($fiche)
-                ?? throw new \DomainException('Activité introuvable : impossible d\'appliquer la valeur.');
+            $activite = $this->details->pour($fiche);
+            if (!$activite instanceof Activite) {
+                throw new \DomainException('Activité introuvable : impossible d\'appliquer la valeur.');
+            }
             $this->policy->execute($fiche, fn () => $this->appliquerActivite($activite, $suggestion));
 
             return;
         }
         if (str_starts_with($champ, 'service_')) {
-            $service = $this->services->findOneByFiche($fiche)
-                ?? throw new \DomainException('Service introuvable : impossible d\'appliquer la valeur.');
+            $service = $this->details->pour($fiche);
+            if (!$service instanceof ServiceEvenementiel) {
+                throw new \DomainException('Service introuvable : impossible d\'appliquer la valeur.');
+            }
             $this->policy->execute($fiche, fn () => $this->appliquerService($service, $suggestion));
 
             return;
         }
-        $lieu = $this->lieux->findOneByFiche($fiche)
-            ?? throw new \DomainException('Fiche sans bloc administratif : impossible d\'appliquer la valeur.');
+        $lieu = $this->details->pour($fiche);
+        if (!$lieu instanceof Lieu) {
+            throw new \DomainException('Fiche sans bloc administratif : impossible d\'appliquer la valeur.');
+        }
         $this->policy->execute($fiche, fn () => $this->appliquerLieu($lieu, $suggestion, $actor));
     }
 

@@ -5,14 +5,12 @@ declare(strict_types=1);
 namespace App\Pim\Service;
 
 use App\Pim\Entity\Fiche;
-use App\Pim\Enum\TypeFiche;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Session\FlashBagAwareSessionInterface;
-use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
 /**
  * Réponse des actions documentaires des fiches, partagée par les contrôleurs
@@ -25,7 +23,7 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 final readonly class MediasBlocReponse
 {
     public function __construct(
-        private UrlGeneratorInterface $urls,
+        private FicheRouteResolver $routes,
         private RequestStack $requests,
     ) {
     }
@@ -44,13 +42,7 @@ final readonly class MediasBlocReponse
         // L'entité et sa fiche partagent le même ULID : l'id de la fiche
         // résout la route de l'éditeur quelle que soit la gamme.
         $section = FicheSectionsCatalogue::indexBloc($fiche->type(), 'medias');
-        $url = TypeFiche::Lieu === $fiche->type()
-            ? $this->urls->generate('app_mdm_fiche_lieu', ['id' => $fiche->idString(), 'section' => $section])
-            : $this->urls->generate('app_mdm_fiche_gamme', [
-                'gamme' => FicheEditeurEcran::slug($fiche->type()),
-                'id' => $fiche->idString(),
-                'section' => $section,
-            ]);
+        $url = $this->routes->editUrl($fiche->type(), $fiche->idString(), $section);
 
         return new RedirectResponse($url);
     }

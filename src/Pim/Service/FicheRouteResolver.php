@@ -7,6 +7,11 @@ namespace App\Pim\Service;
 use App\Pim\Enum\TypeFiche;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
+/**
+ * Les URL d'une fiche selon sa gamme : l'éditeur (une route pour les lieux,
+ * une route paramétrée par le segment pour les autres gammes) et
+ * l'historique. Le seul endroit qui connaît ces noms de routes.
+ */
 final readonly class FicheRouteResolver
 {
     public function __construct(private UrlGeneratorInterface $urlGenerator)
@@ -22,11 +27,17 @@ final readonly class FicheRouteResolver
         return $this->editUrl($type, $id);
     }
 
-    public function editUrl(TypeFiche $type, string $id): string
+    /** @param ?int $section section de l'éditeur à ouvrir (index du catalogue des sections) */
+    public function editUrl(TypeFiche $type, string $id, ?int $section = null): string
     {
+        if (!$type->estOperationnel()) {
+            throw new \InvalidArgumentException('Gamme hors de cette version du MDM.');
+        }
+        $params = ['id' => $id] + (null === $section ? [] : ['section' => $section]);
+
         return TypeFiche::Lieu === $type
-            ? $this->urlGenerator->generate('app_mdm_fiche_lieu', ['id' => $id])
-            : $this->urlGenerator->generate('app_mdm_fiche_gamme', ['gamme' => self::gamme($type), 'id' => $id]);
+            ? $this->urlGenerator->generate('app_mdm_fiche_lieu', $params)
+            : $this->urlGenerator->generate('app_mdm_fiche_gamme', ['gamme' => $type->slug()] + $params);
     }
 
     public function historyUrl(TypeFiche $type, string $id): string
@@ -36,17 +47,7 @@ final readonly class FicheRouteResolver
             TypeFiche::Activite => 'app_pim_activite_history',
             TypeFiche::Restaurant => 'app_pim_restaurant_history',
             TypeFiche::ServiceEvenementiel => 'app_pim_service_history',
-            TypeFiche::Traiteur => throw new \InvalidArgumentException('Type de fiche invalide.'),
+            TypeFiche::Traiteur => throw new \InvalidArgumentException('Gamme hors de cette version du MDM.'),
         }, ['id' => $id]);
-    }
-
-    private static function gamme(TypeFiche $type): string
-    {
-        return match ($type) {
-            TypeFiche::Restaurant => 'restaurants',
-            TypeFiche::Activite => 'activites',
-            TypeFiche::ServiceEvenementiel => 'services',
-            default => throw new \InvalidArgumentException('Type de fiche invalide.'),
-        };
     }
 }
