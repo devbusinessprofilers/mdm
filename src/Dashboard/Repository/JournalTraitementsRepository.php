@@ -30,6 +30,9 @@ final readonly class JournalTraitementsRepository
         'visibilite' => 'Visibilité géographique',
         'marketplace' => 'Diffusion marketplace',
         'salesforce' => 'Synchronisation Salesforce',
+        'retouche' => 'Retouches IA',
+        'reconnaissance' => 'Reconnaissance IA',
+        'relance' => 'Relances de complétude',
     ];
 
     /** Familles sans journal propre, visibles uniquement parmi les échecs. */
@@ -132,45 +135,6 @@ final readonly class JournalTraitementsRepository
         return (int) $this->connection->fetchOne(
             "SELECT COUNT(*) FROM outbox_message WHERE status = 'pending'",
         );
-    }
-
-    /**
-     * État de toutes les files Messenger (transport Doctrine, table unique
-     * `messenger_messages`), par état réel du message. Les quatre compteurs
-     * partitionnent la table ; les messages traités sont supprimés, il n'y a
-     * donc pas de « terminés » à compter. `available_at` est stocké en UTC par
-     * le transport.
-     *
-     * - en_file   : en attente, pas encore pris par un worker
-     * - en_cours  : réservé par un worker (livré, pas encore acquitté)
-     * - planifies : en attente d'un retry (disponible dans le futur)
-     * - echecs    : DLQ `failed`
-     *
-     * @return array{en_file: int, en_cours: int, planifies: int, echecs: int}
-     */
-    public function etatFilesMessenger(): array
-    {
-        try {
-            $row = $this->connection->fetchAssociative(
-                "SELECT
-                    COALESCE(SUM(queue_name <> 'failed' AND delivered_at IS NULL AND available_at <= UTC_TIMESTAMP()), 0) AS en_file,
-                    COALESCE(SUM(queue_name <> 'failed' AND delivered_at IS NOT NULL), 0) AS en_cours,
-                    COALESCE(SUM(queue_name <> 'failed' AND delivered_at IS NULL AND available_at > UTC_TIMESTAMP()), 0) AS planifies,
-                    COALESCE(SUM(queue_name = 'failed'), 0) AS echecs
-                 FROM messenger_messages",
-            );
-        } catch (\Throwable) {
-            // Transport Doctrine en auto_setup=0 : la table peut manquer (base
-            // neuve). L'écran Outils ne doit jamais tomber pour autant.
-            return ['en_file' => 0, 'en_cours' => 0, 'planifies' => 0, 'echecs' => 0];
-        }
-
-        return [
-            'en_file' => (int) ($row['en_file'] ?? 0),
-            'en_cours' => (int) ($row['en_cours'] ?? 0),
-            'planifies' => (int) ($row['planifies'] ?? 0),
-            'echecs' => (int) ($row['echecs'] ?? 0),
-        ];
     }
 
     /**
@@ -343,6 +307,57 @@ final readonly class JournalTraitementsRepository
                         'lien' => null === $row['type'] ? null : self::lienFiche((string) $row['type'], self::ulid($row['fiche_id'])),
                     ];
                 },
+            ),
+            new FamilleTraitement(
+                // Retouche IA d'une photo (OpenAI ou ImageMagick) : l'avant/après
+                // se décide sur /medias, onglet Retouches.
+                code: 'retouche',
+                colonnes: 'v.status, v.provider, v.error_message, v.created_by, COALESCE(v.finished_at, v.started_at, v.created_at) AS quand, v.fiche_id, f.label, f.type, m.original_filename',
+                depuis: 'vision_image_enhancement v INNER JOIN pim_fiche f ON f.id = v.fiche_id INNER JOIN dam_media_asset m ON m.id = v.media_asset_id',
+                condition: null,
+                echec: "v.status = 'failed'",
+                tri: 'COALESCE(v.finished_at, v.started_at, v.created_at)',
+                ligne: static fn (array $row): array => [
+                    'sujet' => sprintf('Retouche %s · %s · %s', (string) $row['provider'], (string) $row['original_filename'], (string) ($row['label'] ?? 'fiche')),
+                    'statut' => (string) $row['status'],
+                    'erreur' => null === $row['error_message'] ? null : (string) $row['error_message'],
+                    'quand' => (string) $row['quand'],
+                    'lien' => self::lienFiche((string) $row['type'], self::ulid($row['fiche_id'])),
+                ],
+            ),
+            new FamilleTraitement(
+                // Reconnaissance IA d'une photo (légende, mots-clés) : suggestions
+                // arbitrées depuis la galerie de la fiche.
+                code: 'reconnaissance',
+                colonnes: 'v.status, v.error_message, v.created_by, COALESCE(v.finished_at, v.started_at, v.created_at) AS quand, v.fiche_id, f.label, f.type, m.original_filename',
+                depuis: 'vision_image_recognition v INNER JOIN pim_fiche f ON f.id = v.fiche_id INNER JOIN dam_media_asset m ON m.id = v.media_asset_id',
+                condition: null,
+                echec: "v.status = 'failed'",
+                tri: 'COALESCE(v.finished_at, v.started_at, v.created_at)',
+                ligne: static fn (array $row): array => [
+                    'sujet' => sprintf('Reconnaissance · %s · %s', (string) $row['original_filename'], (string) ($row['label'] ?? 'fiche')),
+                    'statut' => (string) $row['status'],
+                    'erreur' => null === $row['error_message'] ? null : (string) $row['error_message'],
+                    'quand' => (string) $row['quand'],
+                    'lien' => self::lienFiche((string) $row['type'], self::ulid($row['fiche_id'])),
+                ],
+            ),
+            new FamilleTraitement(
+                // Relances de complétude préparées par le planificateur puis
+                // envoyées, exclues ou annulées depuis /admin/relances.
+                code: 'relance',
+                colonnes: 'r.statut, r.motif, r.prepared_at, r.processed_at, r.completeness_at_preparation, r.fiche_id, f.label, f.type',
+                depuis: 'pim_fiche_relance_planifiee r INNER JOIN pim_fiche f ON f.id = r.fiche_id',
+                condition: null,
+                echec: null,
+                tri: 'COALESCE(r.processed_at, r.prepared_at)',
+                ligne: static fn (array $row): array => [
+                    'sujet' => sprintf('Relance · %s (complétude %d %%)', (string) ($row['label'] ?? 'fiche'), (int) $row['completeness_at_preparation']),
+                    'statut' => (string) $row['statut'],
+                    'erreur' => null === $row['motif'] ? null : (string) $row['motif'],
+                    'quand' => (string) ($row['processed_at'] ?? $row['prepared_at']),
+                    'lien' => self::lienFiche((string) $row['type'], self::ulid($row['fiche_id'])),
+                ],
             ),
             new FamilleTraitement(
                 // Événements de l'outbox jamais relayés : la reprise se fait par

@@ -10,6 +10,7 @@ use App\Etl\Form\ImportMasseUploadType;
 use App\Etl\Repository\FicheImportJobRepository;
 use App\Etl\Service\FicheImportJobManager;
 use App\Pim\Export\FicheExportXlsxGenerator;
+use App\Shared\Repository\FilesMessengerRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
@@ -34,6 +35,7 @@ final class ImportMasseController extends AbstractController
         FicheImportJobManager $manager,
         FicheImportJobRepository $imports,
         JournalTraitementsRepository $journal,
+        FilesMessengerRepository $files,
     ): Response {
         $form = $this->createForm(ImportMasseUploadType::class);
         $form->handleRequest($request);
@@ -69,7 +71,7 @@ final class ImportMasseController extends AbstractController
             'familles' => JournalTraitementsRepository::FAMILLES,
             'journal_limit' => JournalTraitementsRepository::JOURNAL_LIMIT,
             'outbox_en_attente' => $journal->outboxEnAttente(),
-            'etat_files' => $journal->etatFilesMessenger(),
+            'etat_files' => $files->etats(),
         ]);
     }
 }

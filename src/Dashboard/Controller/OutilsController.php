@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Dashboard\Controller;
 
 use App\Dashboard\Repository\JournalTraitementsRepository;
+use App\Shared\Repository\FilesMessengerRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -18,7 +19,7 @@ use Symfony\Component\Routing\Attribute\Route;
 final class OutilsController extends AbstractController
 {
     #[Route('/outils', name: 'app_mdm_outils', methods: ['GET'])]
-    public function __invoke(Request $request, JournalTraitementsRepository $journal): Response
+    public function __invoke(Request $request, JournalTraitementsRepository $journal, FilesMessengerRepository $files): Response
     {
         $famille = $request->query->getString('famille');
         $famille = array_key_exists($famille, JournalTraitementsRepository::FAMILLES) ? $famille : null;
@@ -42,7 +43,7 @@ final class OutilsController extends AbstractController
             'famille' => $famille,
             'erreurs' => $erreurs,
             'outbox_en_attente' => $journal->outboxEnAttente(),
-            'etat_files' => $journal->etatFilesMessenger(),
+            'etat_files' => $files->etats(),
             'journal_limit' => JournalTraitementsRepository::JOURNAL_LIMIT,
         ]);
     }
@@ -52,11 +53,11 @@ final class OutilsController extends AbstractController
      * ~10 s pour suivre en direct l'état des files Messenger.
      */
     #[Route('/outils/indicateurs', name: 'app_mdm_outils_indicateurs', methods: ['GET'])]
-    public function indicateurs(JournalTraitementsRepository $journal): Response
+    public function indicateurs(JournalTraitementsRepository $journal, FilesMessengerRepository $files): Response
     {
         $response = $this->render('dashboard/_outils_indicateurs.html.twig', [
             'outbox_en_attente' => $journal->outboxEnAttente(),
-            'etat_files' => $journal->etatFilesMessenger(),
+            'etat_files' => $files->etats(),
         ]);
         // Fragment rafraîchi en continu : jamais servi depuis un cache.
         $response->setPrivate();

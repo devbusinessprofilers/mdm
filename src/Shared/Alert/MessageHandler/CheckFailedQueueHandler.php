@@ -7,6 +7,7 @@ namespace App\Shared\Alert\MessageHandler;
 use App\Shared\Alert\AlertNotifier;
 use App\Shared\Alert\Message\CheckFailedQueue;
 use App\Shared\Outbox\OutboxStatus;
+use App\Shared\Repository\FilesMessengerRepository;
 use App\Shared\Service\ParametreProviderInterface;
 use Doctrine\DBAL\Connection;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
@@ -16,6 +17,7 @@ final readonly class CheckFailedQueueHandler
 {
     public function __construct(
         private Connection $connection,
+        private FilesMessengerRepository $files,
         private AlertNotifier $notifier,
         private ParametreProviderInterface $parametres,
     ) {
@@ -26,9 +28,7 @@ final readonly class CheckFailedQueueHandler
         $threshold = $this->parametres->int('alerte.seuil_file_echec');
         // Deux origines d'échec surveillées : la queue failed de Messenger
         // et les événements outbox abandonnés après épuisement des tentatives.
-        $messengerFailed = (int) $this->connection->fetchOne(
-            "SELECT COUNT(*) FROM messenger_messages WHERE queue_name = 'failed'",
-        );
+        $messengerFailed = $this->files->compterEchecs();
         $outboxFailed = (int) $this->connection->fetchOne(
             'SELECT COUNT(*) FROM outbox_message WHERE status = :status',
             ['status' => OutboxStatus::Failed->value],

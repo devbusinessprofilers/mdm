@@ -6,6 +6,7 @@ namespace App\Pim\Service;
 
 use App\Pim\Repository\EventMonitoringRepository;
 use App\Shared\Outbox\OutboxRepository;
+use App\Shared\Repository\FilesMessengerRepository;
 use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\Cache\ItemInterface;
 
@@ -17,6 +18,7 @@ final readonly class AdminEventMonitor
 
     public function __construct(
         private EventMonitoringRepository $events,
+        private FilesMessengerRepository $files,
         private OutboxRepository $outbox,
         private AdminEventCatalog $catalog,
         private CacheInterface $cache,
@@ -58,7 +60,7 @@ final readonly class AdminEventMonitor
     {
         try {
             $queues = array_fill_keys(self::QUEUES, 0);
-            foreach ($this->events->queueCounts() as $queue => $total) {
+            foreach ($this->files->totalParFile() as $queue => $total) {
                 $queues[$queue] = $total;
             }
 

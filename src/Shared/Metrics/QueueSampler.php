@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Shared\Metrics;
 
+use App\Shared\Repository\FilesMessengerRepository;
 use Doctrine\DBAL\Connection;
 
 /**
@@ -20,9 +21,6 @@ use Doctrine\DBAL\Connection;
  */
 final class QueueSampler
 {
-    /** Files des transports Doctrine déclarés dans messenger.yaml. */
-    public const KNOWN_QUEUES = ['pim', 'dam', 'etl', 'enrichment', 'completeness', 'mail', 'marketplace', 'failed'];
-
     public static function sampleIfStale(Connection $connection, int $maxAgeS = 55): void
     {
         if (1 !== (int) $connection->fetchOne("SELECT GET_LOCK('perf_sample_queue', 0)")) {
@@ -42,15 +40,12 @@ final class QueueSampler
     }
 
     /**
-     * Files connues (littéraux de KNOWN_QUEUES) + files inattendues présentes
+     * Files déclarées (FilesMessengerRepository::FILES) + files inattendues présentes
      * en table, chacune avec ses jauges — 0 pour une file vide.
      */
     private static function insertQueueSamplesSql(): string
     {
-        $connues = implode(' UNION ', array_map(
-            static fn (string $nom): string => sprintf("SELECT '%s' AS nom", $nom),
-            self::KNOWN_QUEUES,
-        ));
+        $connues = FilesMessengerRepository::filesDeclarees();
 
         // m.queue_name IS NOT NULL : sur une file vide, la ligne non appariée
         // du LEFT JOIN a toutes ses colonnes m.* à NULL — sans cette garde,

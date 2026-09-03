@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Shared\Service;
 
+use App\Shared\Repository\FilesMessengerRepository;
 use Doctrine\DBAL\Connection;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -14,8 +15,10 @@ use Symfony\Component\HttpFoundation\Response;
  */
 final readonly class HealthReporter
 {
-    public function __construct(private Connection $connection)
-    {
+    public function __construct(
+        private Connection $connection,
+        private FilesMessengerRepository $files,
+    ) {
     }
 
     /** @return array{httpStatus: int, payload: array<string, mixed>} */
@@ -33,15 +36,10 @@ final readonly class HealthReporter
         }
         if ('ok' === $checks['db']) {
             try {
-                $failed = (int) $this->connection->fetchOne(
-                    "SELECT COUNT(*) FROM messenger_messages WHERE queue_name = 'failed'",
-                );
-                $pending = $this->connection->fetchAllKeyValue(
-                    "SELECT queue_name, COUNT(*) FROM messenger_messages WHERE delivered_at IS NULL AND queue_name <> 'failed' GROUP BY queue_name",
-                );
+                $failed = $this->files->compterEchecs();
                 $checks['messenger'] = [
                     'failed' => $failed,
-                    'pending' => array_map(intval(...), $pending),
+                    'pending' => $this->files->enAttenteParFile(),
                 ];
                 if ($failed > 0) {
                     $status = 'degraded';

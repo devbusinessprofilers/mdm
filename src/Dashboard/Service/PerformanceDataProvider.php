@@ -7,9 +7,8 @@ namespace App\Dashboard\Service;
 use App\Shared\Entity\PerfSample;
 use App\Shared\Entity\WorkerHeartbeat;
 use App\Shared\Metrics\PerfSampleRepository;
-use App\Shared\Metrics\QueueSampler;
 use App\Shared\Metrics\WorkerHeartbeatRepository;
-use Doctrine\DBAL\Connection;
+use App\Shared\Repository\FilesMessengerRepository;
 
 /**
  * Agrège heartbeats, série temporelle et files Messenger en un instantané
@@ -37,7 +36,7 @@ final readonly class PerformanceDataProvider
         private WorkerHeartbeatRepository $heartbeats,
         private PerfSampleRepository $samples,
         private FailedMessageActions $failedMessages,
-        private Connection $connection,
+        private FilesMessengerRepository $files,
     ) {
     }
 
@@ -237,9 +236,8 @@ final readonly class PerformanceDataProvider
     }
 
     /**
-     * État courant des files : requête directe sur messenger_messages (la
-     * table est petite, les messages traités en sont supprimés — d'où le
-     * LEFT JOIN sur les files déclarées, pour montrer les files vides à 0).
+     * État courant des files (FilesMessengerRepository::parFile, files
+     * déclarées comprises, à 0 quand vides), croisé avec les workers actifs.
      *
      * @param list<array<string, mixed>> $heartbeats
      *
@@ -247,25 +245,8 @@ final readonly class PerformanceDataProvider
      */
     private function queues(array $heartbeats): array
     {
-        $connues = implode(' UNION ', array_map(
-            static fn (string $nom): string => sprintf("SELECT '%s' AS nom", $nom),
-            QueueSampler::KNOWN_QUEUES,
-        ));
         try {
-            $rows = $this->connection->fetchAllAssociative(<<<SQL
-                SELECT files.nom AS queue_name,
-                       -- m.queue_name IS NOT NULL : ligne non appariée du LEFT JOIN
-                       -- (file vide), sinon comptée comme un message fantôme.
-                       COALESCE(SUM(m.queue_name IS NOT NULL AND m.delivered_at IS NULL AND m.available_at <= UTC_TIMESTAMP()), 0) AS pending,
-                       COALESCE(SUM(m.queue_name IS NOT NULL AND m.delivered_at IS NULL AND m.available_at > UTC_TIMESTAMP()), 0) AS delayed,
-                       COALESCE(SUM(m.delivered_at IS NOT NULL), 0) AS en_cours,
-                       COALESCE(TIMESTAMPDIFF(SECOND,
-                           MIN(CASE WHEN m.delivered_at IS NULL THEN m.available_at END), UTC_TIMESTAMP()), 0) AS oldest_age_s
-                FROM ($connues UNION SELECT DISTINCT queue_name FROM messenger_messages) files
-                LEFT JOIN messenger_messages m ON m.queue_name = files.nom
-                GROUP BY files.nom
-                ORDER BY files.nom
-                SQL);
+            $rows = $this->files->parFile();
         } catch (\Throwable) {
             return []; // table absente (base neuve) : la page ne tombe pas
         }

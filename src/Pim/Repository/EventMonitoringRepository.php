@@ -12,17 +12,6 @@ final readonly class EventMonitoringRepository
     {
     }
 
-    /** @return array<string, int> */
-    public function queueCounts(): array
-    {
-        $counts = [];
-        foreach ($this->connection->fetchAllAssociative('SELECT queue_name, COUNT(*) AS total FROM messenger_messages GROUP BY queue_name') as $row) {
-            $counts[(string) $row['queue_name']] = (int) $row['total'];
-        }
-
-        return $counts;
-    }
-
     /** @return list<array<string, mixed>> */
     public function recentEvents(int $limit = 20): array
     {

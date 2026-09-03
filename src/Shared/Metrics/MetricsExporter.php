@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Shared\Metrics;
 
-use Doctrine\DBAL\Connection;
+use App\Shared\Repository\FilesMessengerRepository;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\Request;
 
@@ -16,7 +16,7 @@ final readonly class MetricsExporter
 {
     public function __construct(
         private MetricsCollector $metrics,
-        private Connection $connection,
+        private FilesMessengerRepository $files,
         #[Autowire(env: 'METRICS_TOKEN')]
         private string $token,
     ) {
@@ -63,23 +63,14 @@ final readonly class MetricsExporter
         $lines[] = '# TYPE app_messenger_queue_oldest_message_seconds gauge';
         $lines[] = '# TYPE app_messenger_failed_messages gauge';
         try {
-            $pending = $this->connection->fetchAllKeyValue(
-                "SELECT queue_name, COUNT(*) FROM messenger_messages WHERE delivered_at IS NULL AND queue_name <> 'failed' GROUP BY queue_name",
-            );
-            foreach ($pending as $queue => $count) {
+            foreach ($this->files->enAttenteParFile() as $queue => $count) {
                 $lines[] = sprintf('app_messenger_queue_messages{queue="%s"} %d', $queue, (int) $count);
             }
-            // available_at est stocké en UTC par le transport Doctrine, d'où
-            // UTC_TIMESTAMP() quel que soit le fuseau du serveur MySQL.
-            $oldest = $this->connection->fetchAllKeyValue(
-                "SELECT queue_name, TIMESTAMPDIFF(SECOND, MIN(available_at), UTC_TIMESTAMP()) FROM messenger_messages WHERE delivered_at IS NULL AND queue_name <> 'failed' GROUP BY queue_name",
-            );
+            $oldest = $this->files->ageDuPlusAncienParFile();
             foreach ($oldest as $queue => $seconds) {
                 $lines[] = sprintf('app_messenger_queue_oldest_message_seconds{queue="%s"} %d', $queue, max(0, (int) $seconds));
             }
-            $lines[] = 'app_messenger_failed_messages '.(int) $this->connection->fetchOne(
-                "SELECT COUNT(*) FROM messenger_messages WHERE queue_name = 'failed'",
-            );
+            $lines[] = 'app_messenger_failed_messages '.$this->files->compterEchecs();
         } catch (\Throwable) {
             $lines[] = '# messenger metrics unavailable (database error)';
         }

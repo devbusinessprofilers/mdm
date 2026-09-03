@@ -7,6 +7,7 @@ namespace App\Tests\Shared;
 use App\Shared\Alert\AlertNotifier;
 use App\Shared\Alert\Message\CheckFailedQueue;
 use App\Shared\Alert\MessageHandler\CheckFailedQueueHandler;
+use App\Shared\Repository\FilesMessengerRepository;
 use App\Tests\Support\ParametresFixes;
 use App\Tests\Support\RecordingMailer;
 use Doctrine\DBAL\Connection;
@@ -30,11 +31,11 @@ final class CheckFailedQueueHandlerTest extends KernelTestCase
         $notifier = new AlertNotifier($mailer, new ArrayAdapter(), new NullLogger(), new ParametresFixes(['alerte.email' => 'ops@example.test']), 'noreply@example.test');
 
         // Sous le seuil : rien.
-        (new CheckFailedQueueHandler($connection, $notifier, new ParametresFixes(['alerte.seuil_file_echec' => (string) PHP_INT_MAX])))(new CheckFailedQueue());
+        (new CheckFailedQueueHandler($connection, new FilesMessengerRepository($connection), $notifier, new ParametresFixes(['alerte.seuil_file_echec' => (string) PHP_INT_MAX])))(new CheckFailedQueue());
         self::assertCount(0, $mailer->sent);
 
         // Seuil à 0 : toujours atteint, une alerte part.
-        (new CheckFailedQueueHandler($connection, $notifier, new ParametresFixes(['alerte.seuil_file_echec' => '0'])))(new CheckFailedQueue());
+        (new CheckFailedQueueHandler($connection, new FilesMessengerRepository($connection), $notifier, new ParametresFixes(['alerte.seuil_file_echec' => '0'])))(new CheckFailedQueue());
         self::assertCount(1, $mailer->sent);
         $email = $mailer->sent[0];
         self::assertInstanceOf(Email::class, $email);

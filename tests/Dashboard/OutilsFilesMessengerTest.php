@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Dashboard;
 
 use App\Account\Entity\User;
-use App\Dashboard\Repository\JournalTraitementsRepository;
+use App\Shared\Repository\FilesMessengerRepository;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\Group;
@@ -30,7 +30,7 @@ final class OutilsFilesMessengerTest extends WebTestCase
         $this->seed($connection, 'dam', 3, delivered: false, futur: true);
         $this->seed($connection, 'failed', 2, delivered: false, futur: false);
 
-        $etat = self::getContainer()->get(JournalTraitementsRepository::class)->etatFilesMessenger();
+        $etat = self::getContainer()->get(FilesMessengerRepository::class)->etats();
         self::assertSame(['en_file' => 4, 'en_cours' => 2, 'planifies' => 3, 'echecs' => 2], $etat);
 
         $this->loginAdmin($client);
@@ -61,7 +61,7 @@ final class OutilsFilesMessengerTest extends WebTestCase
 
         self::assertSame(
             ['en_file' => 0, 'en_cours' => 0, 'planifies' => 0, 'echecs' => 0],
-            self::getContainer()->get(JournalTraitementsRepository::class)->etatFilesMessenger(),
+            self::getContainer()->get(FilesMessengerRepository::class)->etats(),
         );
 
         $this->loginAdmin($client);

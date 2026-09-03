@@ -24,9 +24,11 @@ final class DashboardScheduleProvider implements ScheduleProviderInterface
     {
         return (new Schedule())
             ->stateful($this->cache)
-            ->add(RecurringMessage::every('15 minutes', new ComputeDashboardStats()))
-            // Parcourt toutes les fiches : quotidien, et redispatché vers le
-            // worker pim pour ne pas occuper le consumer cron du scheduler.
+            // Les deux calculs sont redispatchés vers le worker pim : le
+            // consumer cron ne fait que planifier, et le passage par le bus
+            // leur donne le même reçu d'idempotence qu'aux autres messages.
+            ->add(RecurringMessage::every('15 minutes', new RedispatchMessage(new ComputeDashboardStats(), 'pim')))
+            // Parcourt toutes les fiches : quotidien.
             ->add(RecurringMessage::cron('30 4 * * *', new RedispatchMessage(new ComputeFieldFillRates(), 'pim'), new \DateTimeZone('Europe/Paris')));
     }
 }
