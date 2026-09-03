@@ -17,5 +17,9 @@
 - [sync-marketplace-referentiel-lov.md](architecture/sync-marketplace-referentiel-lov.md) — synchronisation du dictionnaire LOV et des fiches vers la marketplace, reprise Salesforce
 - [import-legacy.md](architecture/import-legacy.md) — reprise des données de l'ancien système (commandes, mappings CSV)
 
+Le `rapport-audit-anti-spaghetti.html` à la racine est le rapport d'audit
+d'organisation du code du 3 septembre 2026 (constats, anomalies, plan de
+simplification à mécanique constante).
+
 Le `cahier-des-charges-etat-mdm.html` à la racine est un document de travail
 (état d'avancement annoté du cahier des charges), non suivi par git.

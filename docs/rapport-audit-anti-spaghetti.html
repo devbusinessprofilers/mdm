@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Audit anti-spaghetti PIM</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#F6F7F5; --bg-2:#EEF0EC; --ink:#1B222B; --ink-2:#4A535E; --ink-3:#737C87;
+  --line:#D9DDD6; --accent:#1F6C74; --accent-soft:#DDEBEC;
+  --sev-e:#B0453A; --sev-e-bg:#F7E6E3; --sev-m:#B37E22; --sev-m-bg:#F8EEDA; --sev-f:#5B7B4B; --sev-f-bg:#E6EEDF;
+  --ok:#2F6F4E; --ok-bg:#E1EFE6; --code-bg:#ECEFEA;
+  --display:"Bricolage Grotesque","Helvetica Neue",Arial,sans-serif;
+  --body:"IBM Plex Sans","Segoe UI",Roboto,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#15191E; --bg-2:#1C2127; --ink:#E6E9EC; --ink-2:#B3BAC2; --ink-3:#848C95;
+    --line:#2C333B; --accent:#5FB3BB; --accent-soft:#1B3236;
+    --sev-e:#E07A6E; --sev-e-bg:#3A2320; --sev-m:#D9A54A; --sev-m-bg:#38301C; --sev-f:#8FB37A; --sev-f-bg:#232E1E;
+    --ok:#7CC29A; --ok-bg:#1E3027; --code-bg:#20262D;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15191E; --bg-2:#1C2127; --ink:#E6E9EC; --ink-2:#B3BAC2; --ink-3:#848C95;
+  --line:#2C333B; --accent:#5FB3BB; --accent-soft:#1B3236;
+  --sev-e:#E07A6E; --sev-e-bg:#3A2320; --sev-m:#D9A54A; --sev-m-bg:#38301C; --sev-f:#8FB37A; --sev-f-bg:#232E1E;
+  --ok:#7CC29A; --ok-bg:#1E3027; --code-bg:#20262D;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased}
+a{color:var(--accent)}
+.wrap{max-width:1180px;margin:0 auto;padding:40px 24px 80px;display:grid;grid-template-columns:220px minmax(0,1fr);gap:48px}
+@media (max-width:900px){.wrap{grid-template-columns:1fr;gap:24px}}
+nav.toc{position:sticky;top:24px;align-self:start;font-size:13.5px}
+@media (max-width:900px){nav.toc{position:static}}
+nav.toc .kicker{font-family:var(--display);font-weight:700;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin:0 0 10px}
+nav.toc ol{list-style:none;margin:0;padding:0;border-left:2px solid var(--line)}
+nav.toc li a{display:block;padding:5px 0 5px 12px;color:var(--ink-2);text-decoration:none;border-left:2px solid transparent;margin-left:-2px}
+nav.toc li a:hover{color:var(--accent);border-left-color:var(--accent)}
+main{max-width:76ch;min-width:0}
+header.head{margin-bottom:36px}
+.eyebrow{font-family:var(--mono);font-size:12.5px;color:var(--ink-3);letter-spacing:.02em;margin:0 0 12px}
+h1{font-family:var(--display);font-weight:700;font-size:40px;line-height:1.08;letter-spacing:-.015em;margin:0 0 14px;text-wrap:balance}
+.lede{font-size:18px;color:var(--ink-2);margin:0 0 18px;max-width:64ch}
+h2{font-family:var(--display);font-weight:700;font-size:26px;line-height:1.15;letter-spacing:-.01em;margin:56px 0 14px;padding-top:20px;border-top:1px solid var(--line);text-wrap:balance}
+h3{font-family:var(--display);font-weight:700;font-size:19px;margin:30px 0 8px;text-wrap:balance}
+h4{font-family:var(--body);font-weight:600;font-size:15px;margin:20px 0 6px;color:var(--ink)}
+p{margin:0 0 12px}
+ul,ol{margin:0 0 14px;padding-left:22px}
+li{margin:0 0 5px}
+code{font-family:var(--mono);font-size:.86em;background:var(--code-bg);padding:1px 5px;border-radius:3px;white-space:nowrap}
+pre{font-family:var(--mono);font-size:13px;background:var(--code-bg);padding:12px 14px;border-radius:6px;overflow-x:auto;margin:0 0 14px}
+.meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px 22px;font-size:13.5px;color:var(--ink-2);border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:12px 0;margin:18px 0 0}
+.meta b{display:block;font-family:var(--display);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);font-weight:700;margin-bottom:2px}
+.verdict{background:var(--accent-soft);border-left:4px solid var(--accent);padding:16px 20px;border-radius:0 6px 6px 0;margin:18px 0 22px}
+.verdict p:last-child{margin:0}
+.verdict strong{color:var(--accent)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:18px 0 8px}
+.tile{background:var(--bg-2);border-radius:6px;padding:12px 14px}
+.tile .n{font-family:var(--display);font-weight:700;font-size:28px;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.tile .l{font-size:12.5px;color:var(--ink-2);margin-top:6px;line-height:1.35}
+.tbl{overflow-x:auto;margin:10px 0 18px;border:1px solid var(--line);border-radius:6px}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{padding:8px 10px;vertical-align:top;text-align:left;border-bottom:1px solid var(--line)}
+th{font-family:var(--display);font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-3);font-weight:700;background:var(--bg-2)}
+tr:last-child td{border-bottom:0}
+td code{white-space:normal}
+.sev{display:inline-block;font-family:var(--display);font-weight:700;font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:3px;white-space:nowrap}
+.sev.e{color:var(--sev-e);background:var(--sev-e-bg)}
+.sev.m{color:var(--sev-m);background:var(--sev-m-bg)}
+.sev.f{color:var(--sev-f);background:var(--sev-f-bg)}
+.sev.ok{color:var(--ok);background:var(--ok-bg)}
+.finding{border:1px solid var(--line);border-radius:6px;padding:14px 16px;margin:0 0 12px;background:var(--bg-2)}
+.finding .t{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;margin-bottom:6px}
+.finding .t h4{margin:0;font-size:15.5px}
+.finding .ev{font-size:14px;color:var(--ink-2);margin:0 0 8px}
+.finding .prop{font-size:14px;margin:0}
+.finding .prop b{color:var(--accent)}
+.finding .tail{font-family:var(--mono);font-size:12px;color:var(--ink-3);margin-top:8px}
+.note{font-size:14px;color:var(--ink-2);border-left:3px solid var(--line);padding:4px 14px;margin:12px 0 16px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:700px){.two{grid-template-columns:1fr}}
+.phase{display:grid;grid-template-columns:44px minmax(0,1fr);gap:12px;margin:0 0 14px}
+.phase .num{font-family:var(--display);font-weight:700;font-size:22px;color:var(--accent);line-height:1.2;font-variant-numeric:tabular-nums}
+.phase h4{margin:0 0 4px}
+.phase p{margin:0 0 4px;font-size:14.5px}
+.phase .why{color:var(--ink-3);font-size:13px}
+footer{margin-top:60px;padding-top:16px;border-top:1px solid var(--line);font-size:13px;color:var(--ink-3)}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+<nav class="toc" aria-label="Sommaire">
+  <p class="kicker">Sommaire</p>
+  <ol>
+    <li><a href="#journal">1. Le journal des traitements</a></li>
+    <li><a href="#diagnostic">2. Diagnostic global</a></li>
+    <li><a href="#bugs">3. Anomalies de comportement</a></li>
+    <li><a href="#chantiers">4. Les dix chantiers</a></li>
+    <li><a href="#gammes">5. Duplication par gamme</a></li>
+    <li><a href="#workflow">6. Workflow de la fiche</a></li>
+    <li><a href="#pim">7. Services et contrôleurs</a></li>
+    <li><a href="#modules">8. Modules périphériques</a></li>
+    <li><a href="#front">9. Front</a></li>
+    <li><a href="#outillage">10. Outillage et code mort</a></li>
+    <li><a href="#sain">11. Ce qui est sain</a></li>
+    <li><a href="#plan">12. Ordre d'attaque</a></li>
+  </ol>
+</nav>
+
+<main>
+<header class="head">
+  <p class="eyebrow">lamp-docker-mdm / html · branche dev · 3 septembre 2026 · lecture seule</p>
+  <h1>Audit anti-spaghetti du PIM</h1>
+  <p class="lede">Organisation du code, duplication et simplifications possibles à mécanique constante. Aucune modification n'a été faite. Chaque constat cite le fichier et la ligne, chaque chiffre a été mesuré sur l'arbre courant.</p>
+  <div class="meta">
+    <div><b>Périmètre</b>src/ (1 019 fichiers PHP, 94 767 lignes), templates/, assets/, config/, tests/, migrations/</div>
+    <div><b>Méthode</b>6 audits parallèles par domaine, puis vérification manuelle des constats structurants</div>
+    <div><b>Sévérité</b><span class="sev e">Élevé</span> structure · <span class="sev m">Moyen</span> duplication · <span class="sev f">Faible</span> hygiène</div>
+    <div><b>Effort</b>S = heures · M = 1 à 3 jours · L = semaine</div>
+  </div>
+</header>
+
+<h2 id="journal">1. Le journal des traitements : une seule fonction d'écriture ?</h2>
+<div class="verdict">
+  <p><strong>Non.</strong> Il n'existe ni service ni table « journal ». La page /outils est une <strong>vue de lecture</strong> recomposée à partir de 10 tables métier hétérogènes. Chaque worker écrit dans sa propre entité de suivi, avec son propre vocabulaire de statut, sa propre colonne d'erreur et sa propre façon de marquer l'échec.</p>
+  <p>Le repository de lecture (<code>src/Dashboard/Repository/JournalTraitementsRepository.php</code>, 543 lignes) exécute 9 SELECT indépendants dans <code>journal()</code> (l. 72-253) puis 8 autres dans <code>echecs()</code> (l. 274-410), recode à la main la sémantique de chaque table, et fusionne le tout en PHP. Le seul service nommé « journal » qui écrit, <code>VisibiliteGeoJournal</code>, ne couvre qu'une famille sur dix et n'est appelé par aucun worker.</p>
+</div>
+
+<h3>Une famille, une mécanique</h3>
+<div class="tbl"><table>
+<tr><th>Famille</th><th>Entité de suivi</th><th>Statut</th><th>Qui marque l'échec</th><th>Colonne erreur</th></tr>
+<tr><td>Import</td><td><code>FicheImportJob</code></td><td>enum FR : en_attente, en_cours, termine, termine_avec_erreurs, echoue</td><td>handler + subscriber</td><td>failure_message + error_count</td></tr>
+<tr><td>OCR</td><td><code>DocumentExtraction</code></td><td>enum EN : queued, processing, ready, partially_reviewed, reviewed, failed</td><td>handler + subscriber</td><td>error_message</td></tr>
+<tr><td>Traduction</td><td><code>FicheTranslation</code></td><td>enum mixte (cases EN, valeurs FR) ; <code>en_cours</code> jamais affecté</td><td>subscriber (non protégé)</td><td>last_error</td></tr>
+<tr><td>Média</td><td><code>MediaAsset</code></td><td>enum EN : uploaded, processing, processed, failed, deleting, deleted</td><td>subscriber</td><td>error_message</td></tr>
+<tr><td>Enrichissement</td><td><code>FicheEnrichmentRun</code></td><td><b>aucun statut</b>, dérivé de finished_at en PHP</td><td><b>personne</b> : un crash laisse la ligne « en attente » pour toujours</td><td>aucune (JSON)</td></tr>
+<tr><td>Export</td><td><code>ReferentielExport</code></td><td><b>constantes string</b>, pas d'enum</td><td>handler (catch Throwable)</td><td>erreur</td></tr>
+<tr><td>Visibilité géo</td><td><code>VisibiliteGeoRun</code></td><td><b>aucun statut</b>, « termine » constant dans le SQL</td><td>personne</td><td>aucune</td></tr>
+<tr><td>Marketplace</td><td><code>FicheMarketplaceSync</code></td><td>enum EN : synced, failed, removed ; le constructeur initialise à <code>Failed</code></td><td>subscriber (non protégé)</td><td>last_error</td></tr>
+<tr><td>Salesforce</td><td><code>FicheSalesforceExport</code></td><td><b>aucun statut</b>, dérivé de 3 dates en PHP</td><td>handler</td><td>last_error + failure_count</td></tr>
+<tr><td>Outbox</td><td><code>OutboxMessage</code></td><td>enum : pending, published, failed</td><td>repository DBAL</td><td>last_error + attempts</td></tr>
+</table></div>
+
+<p>Conséquences mesurées :</p>
+<ul>
+  <li><b>Cinq mots pour « échec »</b> (echoue, termine_avec_erreurs, failed, en_erreur, plus un statut synthétisé) et quatre pour « terminé ». La constante <code>STATUTS_ERREUR</code> et le dictionnaire de 22 entrées dans <code>templates/dashboard/outils.html.twig</code> (l. 52-74) n'existent que pour absorber cette dispersion.</li>
+  <li><b>Le critère « qu'est-ce qu'un échec » est écrit trois fois</b> : dans <code>STATUTS_ERREUR</code>, dans les WHERE de <code>echecs()</code>, et dans <code>FilesATraiterRepository</code>. Le code documente lui-même (l. 257-260) qu'il faut les aligner à la main.</li>
+  <li><b>journal() et echecs() divergent</b> sans raison documentée : date différente pour l'import et l'OCR, message d'erreur inventé en dur pour la traduction (l. 119) alors que <code>last_error</code> existe et est lu par l'autre méthode (l. 320), liens différents pour les médias et la marketplace. Enrichissement et visibilité sont absents de la vue des échecs.</li>
+  <li><b>Quatre familles ont une entité de suivi mais ne sont pas dans le journal</b> : retouche IA, reconnaissance IA, relances planifiées, snapshots du tableau de bord.</li>
+  <li><b>Deux stratégies de marquage d'échec coexistent</b> dans les 42 handlers : try/catch dans le handler (6 cas), subscriber sur <code>WorkerMessageFailedEvent</code> (5 cas), les deux à la fois (3 cas), ni l'un ni l'autre (6 familles).</li>
+  <li><b>Les 5 subscribers d'échec sont 5 copies divergentes du même squelette.</b> Média et OCR réinitialisent l'EntityManager fermé et protègent par try/catch. Traduction, Import et Marketplace ne le font pas : après une exception Doctrine dans le handler, leur <code>flush()</code> lève à son tour dans le listener, et les listeners suivants (dont l'alerte mail) ne s'exécutent pas.</li>
+</ul>
+
+<h3>Ce que ça donnerait, simplement</h3>
+<p>La mécanique reste la même : chaque famille garde sa table. Ce qui change, c'est qu'on cesse de recopier.</p>
+<ol>
+  <li><b>Une enum partagée <code>EtatTraitement</code></b> à six valeurs (en file, en cours, terminé, terminé avec erreurs, échoué, retiré), et une méthode de traduction sur chaque enum ou entité de suivi. Les valeurs stockées ne bougent pas ; le repository et Twig ne manipulent plus que six états.</li>
+  <li><b>Une table de correspondance par famille</b> (table SQL, colonne de statut, valeurs d'échec, colonne d'erreur, expression de date, jointure fiche, fabrique de lien). <code>journal()</code>, <code>echecs()</code>, <code>comptes()</code> et la constante Twig en dérivent tous. Ajouter une famille devient une entrée de tableau.</li>
+  <li><b>Une classe de base pour les subscribers d'échec</b> portant le filtre <code>willRetry</code>, la réinitialisation de l'EntityManager, le try/catch de dernier recours et le log. Les 5 subscribers ne gardent que « quel message » et « quelle entité marquer ».</li>
+</ol>
+
+<h2 id="diagnostic">2. Diagnostic global</h2>
+<div class="tiles">
+  <div class="tile"><div class="n">2</div><div class="l">classes abstraites et 3 traits pour 1 019 fichiers : le partage passe par le copier-coller</div></div>
+  <div class="tile"><div class="n">≈ 9 000</div><div class="l">lignes de code « par gamme » dans Pim, dont la moitié est du copier-coller structurel</div></div>
+  <div class="tile"><div class="n">135</div><div class="l">instanceof sur une gamme dans 43 fichiers, 34 match, 208 comparaisons TypeFiche::</div></div>
+  <div class="tile"><div class="n">43 / 87</div><div class="l">composants Twig jamais rendus (design-system importé le 14 août, jamais branché)</div></div>
+  <div class="tile"><div class="n">87 / 140</div><div class="l">erreurs PHPStan situées dans ce code mort : le cœur applicatif n'en a que 2</div></div>
+  <div class="tile"><div class="n">0</div><div class="l">CI, php-cs-fixer, deptrac ou phpcpd : rien n'empêche la récidive</div></div>
+</div>
+
+<p>Le code n'est pas spaghetti au sens « illisible fichier par fichier ». Les classes sont courtes, <code>final</code> à 100 %, <code>readonly</code> à 87 %, documentées. Le problème est ailleurs, et il est structurel :</p>
+<ul>
+  <li><b>Lieu a été écrit en premier, les trois autres gammes ont été copiées.</b> Puis des génériques « Fiche* » et « Gamme* » ont été introduits pour les nouvelles gammes sans reprendre Lieu. Il existe donc systématiquement deux implémentations de chaque brique (<code>LieuImageUploader</code> et <code>FicheImageUploader</code>, <code>LieuDocumentManager</code> et <code>FicheDocumentManager</code>, <code>LieuPhotoController</code> et <code>GammePhotoController</code>, etc.), et chaque correction doit être reportée à la main.</li>
+  <li><b>Le module Pim représente 59 % du code</b> (602 fichiers, 20 sous-dossiers) et dépend de tous les autres modules, y compris ceux qu'ARCHITECTURE.md décrit comme « gravitant autour » (Etl, Ocr, Dashboard, Audit) et un module absent du document (Vision). Les cycles Pim ↔ Etl, Pim ↔ Dam, Pim ↔ Enrichment sont réels et non documentés.</li>
+  <li><b>Les règles d'architecture sont testées par des regex sur le source</b>, avec un effet pervers : interdire les constructeurs et méthodes privées dans les contrôleurs a produit sept classes « Ecran » dont une à 817 lignes et 37 dépendances.</li>
+  <li><b>Les listes de champs d'une gamme vivent dans 16 fichiers.</b> Ajouter un champ à Lieu, c'est toucher jusqu'à 16 endroits sans qu'aucun test signale l'oubli.</li>
+  <li><b>Un tiers du front est mort</b> : composants, DTO « portail prestataire », contrôleurs Stimulus, dépendances JS eager. Ce code inerte porte l'essentiel du bruit PHPStan et masque un cœur propre.</li>
+</ul>
+
+<h2 id="bugs">3. Anomalies de comportement découvertes au passage</h2>
+<p>L'audit portait sur l'organisation, pas sur les bugs. Ces cas ont été confirmés en relisant le code et méritent une décision indépendante du chantier de simplification.</p>
+<div class="tbl"><table>
+<tr><th>Anomalie</th><th>Preuve</th><th>Effet</th></tr>
+<tr><td>Faux profil dans le menu burger</td><td><code>src/Pim/Twig/Components/Header/Profil.php:19</code> instancie <code>UserDTO::mock()</code>. Le desktop l'écrase (<code>mdm/base.html.twig:88</code>) mais <code>Header/Menu/BurgerMenu.html.twig:35</code> rend le composant sans <code>user</code>.</td><td>Sous 1 392 px, chaque page affiche « Clémence PHILIPS, clemence.philips@yopmail.com ».</td></tr>
+<tr><td>Mise à jour technique qui remet la fiche « en cours »</td><td><code>TimestampableTrait::updateTimestamp()</code> (PreUpdate) appelle <code>touch()</code>, que <code>Lieu</code>, <code>Restaurant</code>, <code>Activite</code> et <code>ServiceEvenementiel</code> surchargent pour appeler <code>fiche-&gt;markChanged()</code> (<code>Lieu.php:1443-1448</code>).</td><td>Tout UPDATE Doctrine d'une ligne détail dépublie la fiche s'il n'est pas enveloppé dans <code>preserveWorkflowsDuring</code>. C'est exactement l'incident du 3 septembre (52 fiches dépubliées).</td></tr>
+<tr><td>Archiver et supprimer ne font pas la même chose selon la gamme</td><td><code>LieuAdminManager::archive</code> (l. 98-108) dépublie les documents mais ne planifie pas les traductions ; <code>FicheWorkflowManager::archive</code> (l. 95-100) fait l'inverse. <code>LieuAdminManager::delete</code> purge les médias DAM ; <code>FicheWorkflowManager::delete</code> ne purge rien.</td><td>Les fiches Restaurant, Activité et Service supprimées laissent leurs originaux en S3. Divergence héritée de la copie, pas d'une décision.</td></tr>
+<tr><td>Gate OCR lue à deux sources</td><td><code>FicheExtractionController.php:45,82</code> lit <code>%env(bool:BOX_OCR_ENABLED)%</code> alors que l'éditeur et <code>OcrController</code> lisent le paramètre BDD <code>box.ocr_active</code>.</td><td>Activer l'OCR depuis /admin/parametres affiche le bloc dans l'éditeur, mais le dépôt renvoie 404.</td></tr>
+<tr><td>Deux codes pour « photo de salle »</td><td><code>PhotoUsageCatalog</code>, <code>LieuMediaProcessor</code>, <code>LieuPhotoManager</code>, <code>RessourceLieuType</code> utilisent <code>CONFIG_PHOTO_SALLE</code> ; <code>RestaurantMediaProcessor</code> (l. 163, 276, 432) et <code>RestaurantRessourceType:60</code> utilisent <code>CONFIG_SALLE_PHOTO</code>, absent du catalogue.</td><td>En base : 1 ligne CONFIG_PHOTO_SALLE, 0 CONFIG_SALLE_PHOTO. Le libellé Restaurant renverra le code brut le jour où une photo de salle Restaurant sera créée.</td></tr>
+<tr><td>Relance web d'un message échoué sans idempotence</td><td><code>FailedMessageActions.php:76-79</code> renvoie le message nu, sans son <code>EventIdStamp</code>. Le middleware d'idempotence n'agit que si le stamp est présent, et seul <code>OutboxPublisher</code> le pose.</td><td>Dix dispatchs directs (contrôleurs, scheduler) et tout retry web échappent au reçu <code>processed_message</code>. ARCHITECTURE.md affirme une idempotence universelle qui ne vaut que pour 30 handlers sur 42.</td></tr>
+<tr><td>Deux contrôleurs pour le même flux OCR</td><td><code>Ocr/Controller/OcrController</code> upload/save et <code>Pim/Controller/FicheExtractionController</code> deposer/valider : même form, même factory, même policy, même source d'audit.</td><td>Deux gates différentes pour une même action, aucun test sur les routes <code>app_ocr_*</code>.</td></tr>
+<tr><td>Prompts OpenAI dérivés</td><td><code>OPENAI_RECO_PROMPT</code> vaut 474 caractères dans .env et 145 dans <code>services.yaml:36</code> (ancien prompt). Idem <code>OPENAI_SUGGESTION_PROMPT</code>.</td><td>Le prompt effectif dépend de l'environnement qui fournit la variable.</td></tr>
+</table></div>
+
+<h2 id="chantiers">4. Les dix chantiers qui rapportent le plus</h2>
+<p>Classés par rendement (lignes ou pièges supprimés) rapporté au risque. Tous conservent le comportement du site, les noms de routes, les noms de formulaires, les colonnes et les clés S3 existantes.</p>
+
+<div class="finding">
+  <div class="t"><span class="sev e">Élevé</span><h4>1. Supprimer le design-system mort et ses dépendances</h4></div>
+  <p class="ev">43 composants Twig sur 87 jamais rendus, 26 templates de composants, 15 classes ProviderPortal à zéro référence (et 24 autres utilisées seulement par ces morts), 12 contrôleurs Stimulus (867 lignes), ux-live-component, ux-chartjs, ux-map, ux-translator et 3 CSS tom-select chargés pour rien. Sept composants morts pointent vers des contrôleurs Stimulus qui n'existent pas ; les menus citent 52 routes <code>provider_portal_sheet_*</code> inexistantes. <code>CollaboratorDTO</code> référence une classe <code>MembershipDTO</code> qui n'existe plus.</p>
+  <p class="prop"><b>Faire :</b> deux passes de suppression avec le script de références rejouable (scratchpad <code>deadcode.sh</code>), puis <code>lint:container</code>, <code>lint:twig</code> et la suite de tests. Corriger au passage le mock utilisateur du burger.</p>
+  <p class="tail">≈ 4 000 lignes PHP/Twig/JS et ~350 Ko de JS eager en moins · PHPStan 140 → ~28 erreurs · effort M · risque faible (aucune référence, aucun test ne les importe)</p>
+</div>
+
+<div class="finding">
+  <div class="t"><span class="sev e">Élevé</span><h4>2. Un filet de sécurité avant tout le reste : CI, style, graphe</h4></div>
+  <p class="ev">Aucune CI, aucun hook, aucun php-cs-fixer, rector, deptrac ou phpcpd. Résultat mesurable : <code>ValidateActivitesCommand.php</code> est minifié sur 11 lignes physiques, les fichiers <code>ServiceEvenementiel*</code> sont formatés avec des guillemets doubles (diffs bruités), et les mémoires du projet acceptent « ~119 erreurs PHPStan préexistantes » et « 3 tests rouges avant commit ».</p>
+  <p class="prop"><b>Faire :</b> un script <code>ci.sh</code> appelé par un hook pre-push (PHPStan sans nouvelle erreur, PHPUnit, lint:container, lint:twig, schema:validate), php-cs-fixer @Symfony, deptrac avec une baseline des violations actuelles pour bloquer les nouveaux couplages sans casser l'existant. Passer le fixer une fois avant tout refactor pour que les diffs restent lisibles.</p>
+  <p class="tail">effort M · risque faible · prérequis des chantiers 4 à 10</p>
+</div>
+
+<div class="finding">
+  <div class="t"><span class="sev e">Élevé</span><h4>3. Un registre de gamme et un résolveur de détail uniques</h4></div>
+  <p class="ev">Le motif « type → repository → instanceof » avec les 4 repositories injectés est recopié dans 7 services (<code>DamFicheLinkResolver</code>, <code>FicheTranslationSourceExtractor</code>, <code>MarketplaceFichePayloadBuilder</code>, <code>EnrichirFicheHandler</code>, <code>EnrichissementSuggestionArbitre</code>, <code>FicheSearchIndexer</code>, <code>TextDuplicateFields</code>), plus <code>GammeEntiteResolver</code> (3 gammes, pas Lieu) et un match réécrit dans <code>FicheGammeController:46-53</code>. Le ternaire de route « Lieu ? route_lieu : route_gamme » est écrit 9 fois, deux tables de slugs coexistent, 10 branches mortes traitent <code>TypeFiche::Traiteur</code>. Cinq tables de libellés de gamme divergent (« Service evenementiel » sans accent côté Dashboard).</p>
+  <p class="prop"><b>Faire :</b> une table de configuration indexée par <code>TypeFiche</code> (segment d'URL, classe détail, repository, routes, libellés singulier/pluriel, usages photo, salles oui/non) et un <code>FicheDetailResolver::pour(Fiche)</code>. <code>TypeFiche::label()</code> et <code>slug()</code>. <code>FicheRouteResolver::editUrl()</code> avec paramètre de section. Chaque remplacement est mécanique et local.</p>
+  <p class="tail">supprime les 7 résolutions, les 9 ternaires, 4 blocs identiques de <code>DoctrineAuditSubscriber</code>, les branches Traiteur · effort M · risque faible</p>
+</div>
+
+<div class="finding">
+  <div class="t"><span class="sev e">Élevé</span><h4>4. Un point d'entrée unique pour muter une fiche</h4></div>
+  <p class="ev">Six leviers pour le workflow : <code>markChanged</code> (88 appels, dont 62 one-liners dans <code>LieuAdministratif</code>/<code>LieuTarification</code>), <code>markSystemChanged</code>, <code>touch</code> surchargé, <code>preserveWorkflowDuring</code>, <code>preserveWorkflowsDuring</code>, <code>InternalFicheMutationPolicy</code> (33 appelants). <code>drainFichesLieesAResynchroniser</code> est dupliqué dans Lieu et Restaurant et consommé à 7 endroits. <code>flush()</code> apparaît dans 42 fichiers sans <code>preserveWorkflow</code> dans le même fichier ; rien ne garantit statiquement qu'ils ne touchent pas une ligne détail. Aucun test ne verrouille « un UPDATE technique ne dépublie pas ».</p>
+  <p class="prop"><b>Faire :</b> un service <code>FicheMutation</code> avec trois méthodes (<code>metier</code>, <code>technique</code> qui enveloppe mutation et flush sous preserve, <code>parActeur</code>), qui absorbe la policy et le drain des fiches liées. Un test d'architecture interdisant <code>flush()</code> direct dans les services qui manipulent une entité détail. Un test de non-régression sur le piège PreUpdate. Ensuite seulement, décider si le PreUpdate doit cesser d'appeler <code>markChanged</code> (cela change le comportement dans le cas piège uniquement, c'est une décision métier).</p>
+  <p class="tail">effort S pour le service et les tests · risque faible · ferme la porte à un troisième incident de dépublication</p>
+</div>
+
+<div class="finding">
+  <div class="t"><span class="sev e">Élevé</span><h4>5. Processeurs et providers API génériques</h4></div>
+  <p class="ev">Quatre <code>*MediaProcessor</code> (1 638 lignes) et quatre <code>*DocumentProcessor</code> (1 482 lignes). Activité et Service sont identiques à 81 % après normalisation, et à 100 % hors nom d'entité, variable d'URI, libellés et format. Les quatre <code>*ItemProvider</code> sont identiques. La rétrocompat <code>PHOTO_PRINCIPALE</code> est recopiée 12 fois. L'ordre de validation des photos diffère entre Lieu et Restaurant avec un autre message. <code>LieuDocumentResource</code> héberge les 7 opérations Activité (l. 252-501). Aucun test unitaire par processeur.</p>
+  <p class="prop"><b>Faire :</b> un <code>FicheMediaProcessor</code>, un <code>FicheDocumentProcessor</code> et un <code>FicheApiState</code> paramétrés par le registre du chantier 3 (usages autorisés, résolveur de salle nullable, préfixe d'upload, messages). Les ressources API Platform gardent leurs <code>uriTemplate</code> et pointent vers le processeur générique. Rejouer <code>LieuApiTest</code>, <code>RestaurantApiTest</code> et les <code>*OpenApiTest</code> avant et après. Renommer <code>LieuMediaResource</code> en <code>FicheMediaResource</code>.</p>
+  <p class="tail">≈ 2 500 lignes en moins · effort M · risque moyen (pas de test unitaire, d'où les tests d'API en garde-fou)</p>
+</div>
+
+<div class="finding">
+  <div class="t"><span class="sev e">Élevé</span><h4>6. Supprimer les doublons Lieu* / Fiche* et trancher archive/delete</h4></div>
+  <p class="ev"><code>LieuDocumentUploader</code> et <code>FicheDocumentUploader</code> : 86 % identiques, seule la clé S3 change (<code>lieux/</code> contre <code>restaurants/</code>). Un même Restaurant est stocké sous <code>lieux/{id}</code> via l'éditeur HTML et sous <code>restaurants/{id}</code> via l'API. <code>LieuPhotoManager</code> est déjà multi-gammes malgré son nom. Quatre contrôleurs de workflow (1 097 lignes, 32 actions) sur le même squelette, avec 49 imports fossiles, des libellés anglais hors Lieu (« Validate », « Archive ») et des flashes de succès uniquement pour Lieu. Quatre <code>*AdminManager</code> dont deux ne diffèrent que par une ligne. Quatre <code>*DocumentController</code> dont deux à 94 %, avec un try/catch présent d'un côté et absent de l'autre (500 contre message d'erreur).</p>
+  <p class="prop"><b>Faire :</b> d'abord <b>décider</b> du comportement d'archive et de delete (purge DAM et dépublication des documents pour toutes les gammes ? traductions pour Lieu ?), car la factorisation rend la divergence visible. Puis un <code>FicheTransitionExecutor</code> et un contrôleur de workflow unique routé <code>/referentiel/{gamme}/fiche/{id}/{transition}</code> avec les noms de routes conservés. Un seul uploader par type avec une stratégie de clé conservant les deux dispositions actuelles. Étendre <code>GammePhotoController</code> à <code>lieux</code>.</p>
+  <p class="tail">≈ 1 500 lignes en moins · effort M · risque moyen (zéro test fonctionnel sur les 32 routes de transition : en écrire avant)</p>
+</div>
+
+<div class="finding">
+  <div class="t"><span class="sev e">Élevé</span><h4>7. Découper FicheEditeurEcran</h4></div>
+  <p class="ev">817 lignes, <b>37 paramètres de constructeur</b>, imports d'Account, Dam, Audit, Etl, Ocr et Vision. Douze responsabilités (soumission partielle, sites de diffusion, onglets, en-tête, Salesforce, médias des 4 gammes, collaborateurs, extraction OCR, suggestions, historique, fusion, icônes). Le ternaire de route y est écrit 4 fois, le formatage d'adresse 2 fois, et <code>FicheSectionsCatalogue::pour()</code> (non mémoïsé) est appelé 3 fois par rendu. Le template qu'il alimente, <code>mdm/fiche_editeur.html.twig</code> (860 lignes), porte lui aussi de la logique : aplatissement map/reduce, liste de noms en dur, 11 tests sur le nom du bloc, table action → voter.</p>
+  <p class="prop"><b>Faire :</b> garder <code>variables()</code> comme assembleur et extraire cinq fournisseurs de bloc avec leurs seules dépendances (navigation, en-tête et actions, médias, suggestions, extraction). Seul le fournisseur d'extraction dépend d'Ocr. Faire calculer par le service la liste ordonnée des cellules à rendre, le template devenant une boucle. Vérification par comparaison HTML avant/après sur une fiche par gamme.</p>
+  <p class="tail">37 → ~8 dépendances · effort M (service) + L (template) · risque faible puis moyen</p>
+</div>
+
+<div class="finding">
+  <div class="t"><span class="sev m">Moyen</span><h4>8. Une racine unique pour les champs d'une gamme</h4></div>
+  <p class="ev">Pour Lieu, deux catalogues indépendants : <code>Form/LieuFormCatalog</code> (pivot de la form, de l'API, de la complétude, des sections) et <code>Import/Schema/LieuImportSchema</code> (pivot de l'import CSV et de l'export Excel), recouvrement ≈ 95 %, aucun test de cohérence. Deux sérialisations manuelles supplémentaires dans <code>MarketplaceFichePayloadBuilder</code> (127 lignes) et <code>SalesforceProduitsCsvExporter</code> (122 lignes). Les 3 autres gammes n'ont pas de FormCatalog, donc leurs ApiMapper (814 lignes) listent tout en dur. Les 14 capacités de salle sont listées dans 5 fichiers. Une troisième liste des chemins traduisibles vit dans une commande legacy. L'applier OCR (<code>OcrSuggestionApplier:127-175</code>) réimplémente <code>applyFields/applyCollections</code> de l'import de masse.</p>
+  <p class="prop"><b>Faire :</b> court terme, un test de cohérence schéma ↔ FormCatalog et une méthode <code>salleColumns()</code> partagée ; le PayloadBuilder devient un tableau clé → accesseur avec un snapshot du payload sur 4 fiches avant refonte. Long terme (après go-live), un label sur <code>ColumnDefinition</code> pour dériver les catalogues de forme du schéma.</p>
+  <p class="tail">effort S puis L · risque moyen (payload marketplace et CSV Salesforce sont contractuels)</p>
+</div>
+
+<div class="finding">
+  <div class="t"><span class="sev m">Moyen</span><h4>9. Réécrire les tests d'architecture en règles de dépendance</h4></div>
+  <p class="ev"><code>ControllerArchitectureTest</code> interdit <code>__construct</code> et <code>private function</code> dans les contrôleurs : c'est ce qui a produit les classes Ecran et des « services » qui ne sont que des helpers de contrôleur. <code>RepositoryBoundaryTest</code> ne couvre que 4 modules sur 10 : 20 fichiers Etl, Dashboard, Shared et Audit font du DBAL hors Repository. La règle sur <code>$this-&gt;entityManager-&gt;find(</code> est contournée par construction (65 fichiers Pim injectent l'EM, DQL non interdit). La regex <code>\son[a-z]+\s*=</code> de la policy Twig déclencherait sur <code>{% set onglet = %}</code>. Aucun test ne vérifie les trois règles écrites dans ARCHITECTURE.md (modules, orchestration, entités sans I/O). Shared dépend d'Account et de Dashboard malgré la règle « Shared ne dépend d'aucun domaine ».</p>
+  <p class="prop"><b>Faire :</b> deptrac ou PHPat avec baseline pour « Controller ne dépend pas de Doctrine\ORM », « seuls Repository/ dépendent de DBAL », « Shared n'importe aucun module métier », sur tous les modules. Lever l'interdiction du constructeur. Resserrer la regex aux vrais gestionnaires HTML. Documenter les cycles tolérés (Pim ↔ Etl, Dam, Enrichment) dans ARCHITECTURE.md et y ajouter Vision et GoLive.</p>
+  <p class="tail">effort M · risque moyen (décider des exceptions Etl)</p>
+</div>
+
+<div class="finding">
+  <div class="t"><span class="sev m">Moyen</span><h4>10. Nommer et ranger : Enrichment, Etl, Completeness, conventions</h4></div>
+  <p class="ev">Le module <code>Enrichment</code> ne fait que de la traduction ; le vrai enrichissement (Sirene, Geoapify, Wikidata, DATAtourisme, Atout France, OSM, IA) fait 53 fichiers et 6 108 lignes à plat dans <code>Pim/Service</code>, avec 12 classes <code>Enrich*</code> en français et anglais mêlés, et un handler à 23 dépendances. <code>Etl</code> mélange à plat quatre sous-domaines (marketplace 22 fichiers, Salesforce 25, legacy 14, import masse 15). Six classes de complétude vivent hors de <code>Completeness/</code>. Cinq conventions concurrentes pour la présentation (Ecran, ViewBuilder, Provider, Reponse, Catalog/Catalogue), <code>Manager</code> pour quatre rôles différents, 25 README squelettes de 3 lignes.</p>
+  <p class="prop"><b>Faire :</b> renommer <code>Enrichment</code> en <code>Translation</code> ; sous-namespaces <code>Etl\Marketplace</code>, <code>Etl\Salesforce</code>, <code>Etl\Legacy</code>, <code>Etl\ImportMasse</code> ; <code>Pim\Enrichissement\{Sirene,Geoapify,...}</code> ; une page de conventions de trois lignes (suffixe par rôle, langue, où mettre les valeurs d'env). Déplacements purs, tables et routes inchangées.</p>
+  <p class="tail">effort M (renommages IDE) · risque faible · à faire sur un arbre propre, après push des commits en attente</p>
+</div>
+
+<h2 id="gammes">5. Duplication par gamme, en chiffres</h2>
+<p>Pourcentages de lignes communes après normalisation des noms de gamme et des blancs. Ce sont des bornes basses : les fichiers ServiceEvenementiel sont formatés différemment, ce qui fait chuter le score alors que la logique est identique.</p>
+<div class="tbl"><table>
+<tr><th>Famille</th><th>Lignes</th><th>Communes</th><th>Ce qui diffère vraiment</th></tr>
+<tr><td>Api/State/*MediaProcessor ×4</td><td>1 638</td><td>Activité↔Service 81 %, Lieu↔Restaurant 75 %</td><td>liste des usages photo, résolution de salle, uploader</td></tr>
+<tr><td>Api/State/*DocumentProcessor ×4</td><td>1 482</td><td>80 % / 65 %</td><td>salle, maximum, usage autorisé</td></tr>
+<tr><td>*ItemProvider ×4</td><td>120</td><td>100 %</td><td>rien</td></tr>
+<tr><td>Controller/*Controller (workflow) ×4</td><td>1 097</td><td>47 à 68 %</td><td>repository, manager, redirection, libellés, flashes</td></tr>
+<tr><td>Controller/*DocumentController ×4</td><td>588</td><td>Activité↔Service 94 %</td><td>préfixe de route, noms de formulaires, try/catch</td></tr>
+<tr><td>Service/*AdminManager ×4</td><td>453</td><td>Activité↔Service 99 %</td><td>une ligne d'import ; Lieu a delete/archive en plus</td></tr>
+<tr><td>Form/*Type ×4</td><td>1 486</td><td>30 à 40 %</td><td>Lieu est déclaratif, les 3 autres impératifs avec les mêmes helpers recopiés</td></tr>
+<tr><td>Validation/Valid*Validator ×4</td><td>1 493</td><td>27 à 44 %</td><td>même squelette, helpers renommés à chaque copie, 0 test unitaire</td></tr>
+<tr><td>Repository/*Repository ×4</td><td>774</td><td>Activité↔Restaurant 80 %</td><td>findOneByFiche, findBatchAfter, findListPage recopiés</td></tr>
+<tr><td>Dam uploaders Lieu*/Fiche*</td><td>446</td><td>65 % / 86 %</td><td>type du paramètre, préfixe de clé S3</td></tr>
+<tr><td>Salle ↔ RestaurantSalle, PeriodeFermeture ↔ RestaurantPeriodeFermeture, Acces</td><td>695</td><td>17 colonnes identiques</td><td>la référence propriétaire ; RessourceLieu porte deux colonnes exclusives salle_id / restaurant_salle_id</td></tr>
+<tr><td>Command/Validate*Command ×4</td><td>281</td><td>66 %</td><td>la gamme ; l'une est minifiée</td></tr>
+<tr><td>Etl/Command/ImportLegacy* de gamme ×4</td><td>785</td><td>76 %</td><td>10 à 16 lignes par paire</td></tr>
+</table></div>
+
+<h3>Lieu.php, 1 494 lignes</h3>
+<p>50 colonnes scalaires, 22 attributs LOV (chaque paire getter/setter fait 10 lignes pour appeler <code>lovValues</code>), 74 setters, 90 getters, 47 commentaires « Bible row » sans colonne. Sept groupes de champs (hébergement, synthèse salles, restauration, RSE, loisirs, description avec cinq colonnes <code>atout1..5</code> alors que Restaurant stocke une liste, visibilité). L'entité porte aussi la liaison Lieu ↔ Restaurant, un miroir de la collection <code>ressources</code> avec <code>fiche-&gt;resources</code> (54 appels d'un côté, 17 de l'autre) et cinq lecteurs d'accès pour la complétude.</p>
+<p>Sortie possible sans toucher au schéma : embeddables Doctrine avec <code>columnPrefix: false</code> (les noms de colonnes restent, <code>schema:validate</code> sans diff), accès LOV générique <code>lov(code)</code> / <code>changeLov(code, valeurs)</code> (les formulaires passent déjà par des noms de méthode en chaîne dans <code>LieuFormCatalog</code>), <code>ressources()</code> devenant un alias de <code>fiche-&gt;resources()</code>, <code>MappedSuperclass</code> pour Salle et PeriodeFermeture.</p>
+
+<h2 id="workflow">6. Le workflow de la fiche, tel qu'il est vraiment</h2>
+<ol>
+  <li>Tout setter d'une entité détail appelle <code>touch()</code> sans garde d'égalité (<code>Lieu.php:631</code>, <code>Restaurant.php:592</code>).</li>
+  <li><code>touch()</code> est surchargé dans les 4 entités détail : timestamp puis <code>fiche-&gt;markChanged()</code>.</li>
+  <li><code>Fiche::markChanged()</code> (l. 639-656) : si une profondeur de préservation est active, simple <code>touch()</code> ; sinon statut → EnCours et effacement de 8 champs (archivage, fusion, validation).</li>
+  <li><code>preserveWorkflowDuring()</code> sauvegarde ces 8 champs, incrémente la profondeur, exécute, restaure. <code>preserveWorkflowsDuring()</code> l'empile pour N fiches.</li>
+  <li><b>Le piège :</b> <code>TimestampableTrait::updateTimestamp()</code> est un <code>PreUpdate</code> et appelle <code>touch()</code>, donc la version surchargée. Tout UPDATE Doctrine d'une ligne détail déclenche <code>markChanged()</code> au flush, y compris pour une modification purement technique. D'où la règle en commentaire (<code>Lieu.php:413-417</code>) « le flush qui suit doit être sous preserveWorkflowsDuring », le mécanisme <code>drainFichesLieesAResynchroniser</code> dupliqué, et l'incident du 3 septembre.</li>
+  <li><code>InternalFicheMutationPolicy</code> ajoute une couche (validateur → preserve, éditeur → markChanged) réinjectée dans chacune des 18 actions photo.</li>
+</ol>
+<p class="note">Incohérence interne : <code>Fiche::replaceAttributeValues</code> et <code>replaceSiteDiffusion</code> ont une garde « sélection inchangée → ne pas toucher », aucun setter scalaire des entités détail ne l'a. Un formulaire soumis sans modification renvoie donc la fiche en cours, sauf pour les LOV. À faire valider par le métier avant d'aligner.</p>
+
+<h2 id="pim">7. Services et contrôleurs Pim</h2>
+<div class="tbl"><table>
+<tr><th></th><th>Constat</th><th>Proposition</th><th>Effort</th></tr>
+<tr><td><span class="sev m">Moyen</span></td><td><code>GeoapifyClient</code> 645 lignes, 5 endpoints, 7 responsabilités, injecté en concret dans 4 services malgré <code>GeocodeurEtrangerInterface</code>. Transport HTTP avec lissage et 429 copié mot pour mot dans <code>RechercheEntrepriseClient</code> (l. 312-331) et proche dans 3 clients Vision/Ocr. Normalisation ASCII maison écrite 7 fois.</td><td><code>Shared\Http\ClientHttpLisse</code>, découpage Geoapify en 4 classes, DTO <code>SuggestionAdresse</code>. Cinq fichiers de test couvrent chaque endpoint.</td><td>M</td></tr>
+<tr><td><span class="sev m">Moyen</span></td><td><code>EnrichissementSuggestionArbitre</code> 437 lignes, 9 dépendances, dispatch par <code>str_starts_with</code> sur des codes de champ émis en chaînes libres par 7 classes. Garde « atouts déjà saisis » écrite 3 fois.</td><td>enum <code>ChampSuggestion</code>, un applier par gamme tagué, <code>SuggestionPayload</code> partagé.</td><td>M</td></tr>
+<tr><td><span class="sev m">Moyen</span></td><td>Logique dans les contrôleurs malgré l'interdiction du flush : <code>ReferentielController::actions()</code> 109 lignes, <code>exporter()</code> charge tous les ids pour compter, <code>exportFichier()</code> dépend d'un MessageHandler ; <code>FicheController::adresseAutocomplete()</code> est un service écrit dans le contrôleur. Trois <code>dispatch()</code> directs hors outbox selon le patron « demarrer() puis dispatch » : si le dispatch échoue, la trace reste « en file » pour toujours.</td><td>Déplacer dans les services d'écran existants, passer par l'outbox.</td><td>M</td></tr>
+<tr><td><span class="sev m">Moyen</span></td><td>Listes définies plusieurs fois : codes d'actions groupées écrits 5 fois (<code>ReferentielActionGroupee</code>, <code>ReferentielEcran</code>), <code>ReferentielEcran::LIBELLES</code> miroir des choices de <code>ReferentielFiltresType</code>, sections « Booster / Utilisateurs / Templates » identiques 3 fois dans <code>FicheSectionsCatalogue</code>.</td><td>enum <code>ActionGroupee</code>, source unique des facettes, mémoïsation.</td><td>S</td></tr>
+<tr><td><span class="sev f">Faible</span></td><td>Méthodes publiques mortes : <code>FicheSectionsCatalogue::section()</code>, les 4 <code>*AdminViewBuilder::form()</code>, <code>SiteDiffusionGeoAttribueur::sitesPour()</code>, <code>CompletenessScoresTrait::applyCompleteness()</code>. Recherche du bloc <code>suggestions_attente</code> qu'aucune section ne déclare (repli silencieux sur la section 0). <code>ColumnKind::Time</code> et ses branches. Adresse e-mail de production en dur dans <code>FicheCreationManager::CONTACT_REPLI</code>.</td><td>Supprimer, déclarer ou paramétrer.</td><td>S</td></tr>
+<tr><td><span class="sev f">Faible</span></td><td>Deux pipelines d'import parallèles : legacy impératif (4 mappers, localisation copiée 4 fois, <code>salles()</code> identique ligne pour ligne entre Lieu et Restaurant) et import de masse déclaratif, sain. Le legacy est jetable après go-live.</td><td>Ne pas refactorer le legacy, l'isoler dans <code>Etl\Legacy</code> avec un gate, le supprimer après go-live comme <code>src/GoLive</code>.</td><td>S</td></tr>
+</table></div>
+
+<h2 id="modules">8. Modules périphériques</h2>
+<div class="tbl"><table>
+<tr><th></th><th>Module</th><th>Constat</th><th>Proposition</th></tr>
+<tr><td><span class="sev e">Élevé</span></td><td>Audit</td><td><code>DoctrineAuditSubscriber::onFlush</code> 289 lignes, 6 responsabilités, un bloc de 25 lignes copié à l'identique (l. 226-250 et 331-354), liste blanche de 17 classes et 20 champs exclus en dur. La convention de chemins <code>lieu.x</code> / <code>salles[id].x</code> est encodée dans <code>path()</code>, décodée dans <code>RestorableFieldCatalog</code>, et ré-encodée à la main dans <code>Pim/Fusion/FusionChampsCatalogue:74-97</code>. Ces chemins sont persistés : tout changement casse restauration et fusion en silence.</td><td><code>AuditPath</code> partagé par les trois, <code>AuditedEntityLocator</code>, découpage en trois méthodes. Chaînes inchangées.</td></tr>
+<tr><td><span class="sev m">Moyen</span></td><td>Ocr / Vision</td><td>Quatre mécanismes « suggestion → arbitrage » parallèles. <code>Vision\Enum\SuggestionStatus</code> est un fichier identique à celui d'Ocr ; <code>decide()</code> et <code>refreshReviewStatus()</code> sont copiés ligne pour ligne ; <code>ExtractionStatus</code> ≡ <code>RecognitionStatus</code>. <code>Dashboard/Service/SuggestionsBulkArbitre</code> écrit depuis un module annoncé lecture seule. Vision héberge <code>OpenAiTextProvider</code> qui ne sert qu'à Pim ; le client HTTP OpenAI est dupliqué entre image et texte.</td><td>enum <code>DecisionStatus</code> + traits partagés (valeurs BDD inchangées), <code>Shared/OpenAi</code>.</td></tr>
+<tr><td><span class="sev m">Moyen</span></td><td>Account</td><td><code>FicheVoter</code> ne regarde jamais le sujet (c'est la hiérarchie de rôles). 146 appels <code>isGranted</code>/<code>hasRole</code> hors voter, 24 <code>is_granted('ROLE_BP_VALIDATOR')</code> en Twig contre 6 attributs <code>FICHE_*</code>. Affiliations réparties sur 2 modules et 7 dossiers avec dépendance bidirectionnelle (Pim importe Account dans 41 fichiers, ARCHITECTURE.md dessine un sens unique). JWT/base64url réimplémentés 3 fois, deux signers HMAC identiques.</td><td><code>FicheVoter::VALIDATE</code>, <code>UserVoter</code>, <code>Pim/Affiliation/</code>, <code>Shared/Security/Base64Url</code>.</td></tr>
+<tr><td><span class="sev m">Moyen</span></td><td>Dashboard</td><td><code>QualiteRepository</code> 598 lignes, 29 SELECT, 0 DQL, jointure localisation répétée 9 fois, statuts en littéral alors que les enums existent, <code>propositionAdresse()</code> existe et est recopiée inline, une méthode vivante uniquement par un test, libellés d'interface dans le repository. <code>DashboardStatsCalculator</code> écrit <code>'publiee'</code> en SQL et <code>StatutFiche::Publiee</code> en DQL dans la même classe. Sept classes lisent <code>messenger_messages</code> avec chacune leur SQL. Quatre <code>*HistoryController</code> jumeaux. <code>OutilsController</code> charge 1 000 lignes puis pagine en PHP.</td><td>Fragments SQL en constantes, enums liés en paramètres, <code>FilesMessengerRepository</code> unique, contrôleur d'historique paramétré par gamme.</td></tr>
+<tr><td><span class="sev m">Moyen</span></td><td>Dam</td><td>Présentateurs jumeaux, bloc « URL temporaire +10 min » copié 14 fois, validation image refaite entre formulaires et uploaders avec des plafonds en dur (<code>'100M'</code>, <code>'10M'</code>) alors que <code>DocumentContraintes</code> est paramétrable, <code>[Deleting, Deleted]</code> écrit 13 fois, <code>DamDashboardProvider</code> avec 8 paginations parallèles et un N+1. Neuf fichiers Dam importent Pim ; trois enums rangées dans Dam sont des colonnes de <code>RessourceLieu</code>.</td><td><code>PhotoPresenter</code> unique, <code>ImageContraintes</code>, <code>MediaStatus::inactifs()</code>, fabrique <code>MediaUploaded::pour()</code>.</td></tr>
+<tr><td><span class="sev m">Moyen</span></td><td>Shared</td><td>Dépend d'Account (2 fichiers) et de Dashboard (1) malgré la règle. Porte des bornes métier (<code>ParametreAdminManager</code>), une route Pim (<code>FormExtension</code>), la composition des workers recopiée depuis docker-compose (<code>WorkerNameResolver::KNOWN</code>) et la liste des transports recopiée depuis messenger.yaml (<code>QueueSampler::KNOWN_QUEUES</code>). <code>SearchEngineInterface</code> n'a qu'un consommateur (la détection de doublons), la vraie recherche passe à côté : le « point d'extension OpenSearch » d'ARCHITECTURE.md est survendu. 26 interfaces dont 5 de cérémonie pure (implémentation unique, aucune doublure de test).</td><td>Déplacer vers les modules propriétaires, injecter les listes depuis la config, documenter ou déplacer l'interface de recherche.</td></tr>
+<tr><td><span class="sev f">Faible</span></td><td>Config</td><td>Les 49 paramètres BDD sont cohérents. Restes : <code>APP_SHARE_DIR</code> et <code>URL</code> jamais lus, 3 défauts <code>env()</code> absents de .env, 4 paramètres entiers sans bornes, routes Notifier mortes dans messenger.yaml (l. 127-128), <code>retry_strategy</code> copiée 7 fois.</td><td>Nettoyage et ancre YAML.</td></tr>
+</table></div>
+
+<h2 id="front">9. Front</h2>
+<p>Points sains vérifiés : zéro script inline, zéro route en dur dans le JS, tous les listeners globaux retirés dans <code>disconnect()</code>.</p>
+<div class="tbl"><table>
+<tr><th></th><th>Constat</th><th>Proposition</th></tr>
+<tr><td><span class="sev e">Élevé</span></td><td>Bloc Médias dupliqué Lieu / autres gammes : <code>pim/lieu/_medias.html.twig</code> (135 l.) et <code>pim/_medias_gamme.html.twig</code> (142 l.), 70 lignes identiques, macros copiées ; modales identiques à 3 lignes près ; dispatch <code>{% if medias.gamme == 'lieu' %}</code> dans <code>_medias_onglets.html.twig:45-57</code> qui connaît la structure du formulaire par gamme. Le partial commun <code>_medias_galerie_photos</code> prouve que la paramétrisation par tableau de routes fonctionne déjà.</td><td>Un seul bloc et une seule modale alimentés par <code>FicheEditeurEcran::medias()</code> avec un tableau de routes complet et deux booléens (salles, documents).</td></tr>
+<tr><td><span class="sev e">Élevé</span></td><td><code>dam/medias.html.twig</code> 1 070 lignes : 26 tests sur <code>onglet_actif</code> pour 8 onglets, 15 macros locales, 6 tables de correspondance, alors que <code>MediasController:62-74</code> porte déjà la connaissance des onglets. Même schéma pour <code>referentiel.html.twig</code> (817 l.) et <code>dashboard/qualite.html.twig</code> (643 l.).</td><td>Un partial par onglet, macros de tableau partagées, constantes côté contrôleur. Découpage pur, HTML identique.</td></tr>
+<tr><td><span class="sev m">Moyen</span></td><td>Trois autocomplétions clavier réécrites (<code>adresse_autocomplete</code> 203 l., <code>critere_geo</code> 166, <code>recherche_suggestions</code> 127) avec 54 à 74 lignes identiques par paire. Quatre implémentations de select. Le wrapper fetch + CSRF + erreur de <code>lieu_media_controller.js:119-128</code> est réinventé dans 6 autres contrôleurs.</td><td>Classe de base Stimulus pour les listes de suggestions, module <code>assets/lib/http.js</code>.</td></tr>
+<tr><td><span class="sev m">Moyen</span></td><td>Cinq thèmes de formulaire : <code>checkbox_widget</code> défini 4 fois, <code>form_label</code> 3 fois. Dix clés <code>data-*</code> magiques (data-puce, data-interrupteur, data-wysiwyg, data-suggerer…) posées en littéral depuis 21 fichiers PHP sans constante. Classes Typography recopiées « à synchroniser » et déjà divergentes. Tables <code>gamme_libelles</code> définies 5 fois avec des valeurs différentes, <code>statut_libelles</code> 3 fois, 24 tests de gamme dans 11 templates.</td><td>Classe <code>AttrOptIn</code> de constantes, fusion des blocs, libellés sur les enums exposés par une fonction Twig, <code>fiche_url()</code> unique.</td></tr>
+<tr><td><span class="sev m">Moyen</span></td><td>Contrats implicites Twig ↔ JS : 7 <code>data-*</code> sur le formulaire de l'éditeur lus via <code>closest('form').dataset</code> sans <code>static values</code> ; <code>fiche_creation_controller</code> cible des id générés par Symfony (<code>#fiche_creation_submit</code>) ; 27 attributs Stimulus écrits en littéral dans le PHP ; <code>window.tinymce</code> global. 29 contrôleurs sur 47 chargés eager sur toutes les pages, dont des contrôleurs mono-page.</td><td>values, targets, outlets ; helper <code>StimulusAttr</code> côté PHP ; lazy par défaut hors navbar.</td></tr>
+<tr><td><span class="sev m">Moyen</span></td><td>Deux langages CSS : <code>app.css:191-372</code> re-stylise un vocabulaire hérité (.card, .btn, .badge, .table) pour 26 templates en <code>mdm/simple.html.twig</code> ; Tailwind et composants ailleurs. Rien n'empêche d'ajouter des pages « simple ». Sprite d'icônes de 309 Ko préchargé sur chaque page, 28 icônes jamais citées en littéral (usage via LOV possible, à croiser).</td><td>Geler par un test, migrer page par page ; faire lister les orphelins par <code>BuildIconSpriteCommand</code>.</td></tr>
+</table></div>
+
+<h2 id="outillage">10. Outillage, commandes, tests, doc</h2>
+<h3>Commandes console</h3>
+<p>47 commandes, toutes enregistrées. Douze sont des one-shot déjà exécutés (7 <code>app:legacy:import-*</code>, <code>app:fiches:conformite-photos</code>, les 2 de <code>src/GoLive</code> documentées « à supprimer après go-live » mais enregistrées en prod et absentes d'ARCHITECTURE.md). Cinq dépassent 200 lignes et portent la logique dans <code>execute()</code> : <code>ImportLegacyTranslationsCommand</code> (504 l., 6 requêtes SQL brutes inline), <code>ImportLegacyCollaborateursCommand</code> (461 l., ne réutilise rien de <code>Pim/Import/Legacy</code>), <code>ImportLegacyPhotosCommand</code> (460 l., 960×480 en dur alors que c'est un paramètre BDD). Ces commandes échappent au <code>RepositoryBoundaryTest</code> uniquement parce qu'Etl n'est pas dans sa liste. Quatre <code>Validate*Command</code> pour une seule <code>app:fiches:validate --gamme</code> via <code>GammeEntiteResolver</code> qui existe déjà. <code>app:icons:build-sprite</code> est absent de <code>composer build:assets</code>.</p>
+<h3>Tests</h3>
+<p>972 tests, 236 fichiers. Ratio faible sur Enrichment (3 tests pour 24 classes), Ocr (4 pour 27), et <code>Pim/Api</code> (57 fichiers, aucun test unitaire, 11 tests HTTP). Zéro test sur les 32 routes de transition de workflow, zéro sur <code>app_ocr_*</code>, zéro par validateur de gamme, zéro par processeur API. <code>TemplateJavaScriptPolicyTest:55-86</code> vérifie des chaînes littérales de 3 fichiers JS et d'un template : c'est du test de commit, pas d'architecture.</p>
+<h3>Migrations</h3>
+<p>101 migrations, nommage cohérent, toutes avec <code>down()</code>. Trois transforment ou détruisent des données de fiches réelles (<code>Version20260903100000</code> DELETE d'attributs, <code>Version20260831140000</code> renumérotation irréversible de 20 525 photos, <code>Version20260901160000</code> DROP de 5 colonnes après recopie). Le problème est de méthode : une migration ne se teste pas sur un échantillon, ne rapporte pas, ne se relance pas en dry-run. Le pattern « commande <code>--appliquer</code> avec rapport » existe déjà dans le projet.</p>
+<h3>Documentation</h3>
+<p>ARCHITECTURE.md cite <code>/recherche</code> (supprimée le 21 août), omet Vision et GoLive, dit que l'IA n'est pas livrée alors que Vision embarque OpenAI, affirme une idempotence universelle des handlers, et décrit un module Shared sans dépendance métier. README « État actuel 12 août » : 476 tests (972 aujourd'hui), exports « à faire » (livrés), migrations jusqu'au 11 août. 16 commandes non documentées, une documentée inexistante. <code>docs/exploitation/messenger.md</code> cite des transports scheduler absents de messenger.yaml (créés par <code>src/Schedule.php</code>).</p>
+<h3>Code mort résiduel hors design-system (sûr)</h3>
+<ul>
+  <li><code>src/Enrichment/Service/EnrichmentProviderInterface.php</code>, <code>src/Pim/Enum/ProviderPortal/GeographicalRangeEnum.php</code></li>
+  <li><code>templates/pim/_completeness.html.twig</code>, <code>assets/controllers/bp_select_controller.js</code>, fonction Twig <code>qualite_badge</code></li>
+  <li>méthodes : <code>QualiteRepository::suggestionsAdresse()</code>, <code>OutboxRepository::claimNext()</code>, <code>WorkerHeartbeat::workerKey()</code>, alias <code>ObjectStorageInterface</code> dans services.yaml, paramètre <code>$maximumBytes</code> de <code>FicheDocumentUploader</code></li>
+  <li>namespace <code>App\Twig\Components\</code> déclaré dans twig_component.yaml sans aucune classe</li>
+</ul>
+
+<h2 id="sain">11. Ce qui est sain et ne doit pas bouger</h2>
+<ul>
+  <li><b>Outbox et transaction</b> : ordre des middlewares correct, reçu <code>processed_message</code> inséré dans la transaction du handler et rollbacké avec elle. 42 messages, 42 handlers, tous les transports consommés, routage cohérent avec docker-compose.</li>
+  <li><b>Handlers courts</b> : 18 sur 42 font moins de 40 lignes. Le problème est le partage, pas la lisibilité.</li>
+  <li><b>Import de masse</b> : pipeline déclaratif par schéma, sain. Export Excel, fusion et OCR en dérivent correctement.</li>
+  <li><b>Paramètres applicatifs</b> : 49 clés cohérentes entre services.yaml, migrations et lectures, toujours lues à l'usage.</li>
+  <li><b>Front</b> : aucun script inline, aucune route en dur dans le JS, listeners globaux nettoyés, AssetMapper et Tailwind v4 bien en place.</li>
+  <li><b>Cœur PHPStan niveau 8</b> : 2 erreurs seulement hors code mort.</li>
+  <li><b>Style</b> : <code>final</code> partout, <code>readonly</code> presque partout, docblocks soignés, français cohérent dans le métier.</li>
+</ul>
+
+<h2 id="plan">12. Ordre d'attaque proposé</h2>
+<p>Chaque phase laisse le site dans un état livrable. Les phases 1 et 2 sont sans risque et rendent le reste lisible ; la phase 3 traite la question posée ; à partir de la phase 4, chaque chantier commence par écrire le test qui manque.</p>
+
+<div class="phase"><div class="num">1</div><div><h4>Filet de sécurité</h4><p>CI locale par hook, php-cs-fixer sur tout src/ en un commit dédié, deptrac avec baseline, PHPStan en échec bloquant. Supprimer le design-system mort, les 12 contrôleurs Stimulus, les dépendances JS inutiles, le code mort résiduel. Corriger le mock du burger.</p><p class="why">Effort M · gain ≈ 4 000 lignes, PHPStan 140 → ~28, diffs lisibles pour la suite</p></div></div>
+<div class="phase"><div class="num">2</div><div><h4>Décisions métier à prendre avant de factoriser</h4><p>Archive et delete : même comportement pour toutes les gammes ? PreUpdate : doit-il continuer à remettre en cours ? Setters sans modification : doivent-ils remettre en cours ? Clés S3 : conserver <code>lieux/</code> pour les Restaurants créés depuis l'éditeur ? Code d'usage photo Restaurant : aligner sur <code>CONFIG_PHOTO_SALLE</code> ?</p><p class="why">Effort nul · sans ces réponses, la factorisation fige des divergences accidentelles</p></div></div>
+<div class="phase"><div class="num">3</div><div><h4>Journal des traitements et workers</h4><p>Classe de base des subscribers d'échec, enum <code>EtatTraitement</code>, table de correspondance par famille fusionnant journal/echecs/comptes, conversion d'exception dans les clients marketplace et OpenAI, copie S3 temporaire partagée, <code>findParIdString</code>, retrait des flush redondants, routes Notifier mortes. Documenter les deux classes de messages (outbox et directs) et poser un stamp par middleware côté dispatch.</p><p class="why">Effort M · répond à la question initiale, protège l'alerte mail, fait tomber les 22 jetons Twig à 6</p></div></div>
+<div class="phase"><div class="num">4</div><div><h4>Registre de gamme et mutation de fiche</h4><p><code>GammeRegistry</code>, <code>FicheDetailResolver</code>, <code>TypeFiche::label/slug</code>, <code>FicheRouteResolver</code> avec section, <code>FicheMutation</code> et le test d'architecture sur <code>flush()</code>, test du piège PreUpdate, gate OCR sur le paramètre BDD, contrôleur OCR unique.</p><p class="why">Effort M · retire 135 instanceof de leur dispersion, ferme le chemin de la dépublication accidentelle</p></div></div>
+<div class="phase"><div class="num">5</div><div><h4>Suppression des doublons par gamme</h4><p>Dans l'ordre du risque croissant : Activité + Service (managers, contrôleurs de documents, validateurs, commandes), puis Restaurant, puis Lieu (uploaders, photo, documents). Processeurs et providers API génériques avec les tests d'API en garde-fou. Contrôleur de workflow unique après la phase 2.</p><p class="why">Effort M à L · ≈ 5 000 lignes en moins, une seule correction par bug au lieu de quatre</p></div></div>
+<div class="phase"><div class="num">6</div><div><h4>Découpages et rangement</h4><p><code>FicheEditeurEcran</code> en fournisseurs de bloc, <code>DoctrineAuditSubscriber</code> et <code>AuditPath</code>, bloc Médias unique, partials des grands templates, <code>GeoapifyClient</code>, <code>QualiteRepository</code>, Ocr/Vision partagés, renommages Enrichment → Translation, sous-namespaces Etl, conventions écrites.</p><p class="why">Effort L étalé · à mener chantier par chantier, chacun livrable seul</p></div></div>
+<div class="phase"><div class="num">7</div><div><h4>Après le go-live</h4><p>Supprimer <code>src/GoLive</code>, <code>Etl\Legacy</code> et les commandes de rattrapage exécutées. Racine unique des champs par gamme (label sur <code>ColumnDefinition</code>), embeddables de Lieu, formulaires déclaratifs pour les 3 gammes, migration éventuelle des colonnes <code>salle_id</code> / <code>restaurant_salle_id</code>.</p><p class="why">Effort L · seuls chantiers qui touchent au schéma ou à des contrats externes</p></div></div>
+
+<footer>
+  Audit réalisé le 3 septembre 2026 sur la branche dev, sans aucune modification du dépôt. Les six rapports détaillés par domaine (journal et workers, gammes, services Pim, modules périphériques, commandes et code mort, front) et les scripts de mesure rejouables sont dans le scratchpad de la session.
+</footer>
+</main>
+</div>
+</body>
+</html>
