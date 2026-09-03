@@ -12,8 +12,10 @@ use App\Dam\Service\LieuImageUploader;
 use App\Pim\Entity\Activite\Activite;
 use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Entity\Restaurant\Restaurant;
+use App\Pim\Entity\Restaurant\RestaurantSalle;
 use App\Pim\Entity\Service\ServiceEvenementiel;
 use App\Pim\Entity\Lieu\RessourceLieu;
+use App\Pim\Entity\Lieu\Salle;
 use App\Pim\Enum\NatureRessource;
 use App\Pim\Enum\TypeFiche;
 use App\Pim\Message\IndexFiche;
@@ -94,22 +96,36 @@ final readonly class LieuPhotoManager
     public function changeCategorie(RessourceLieu $resource, Lieu|Restaurant|Activite|ServiceEvenementiel $lieu, string $usage, ?string $salleId = null): void
     {
         if (!isset(PhotoUsageCatalog::LABELS[$usage])) { throw new \DomainException('Catégorie de photo invalide.'); }
-        if ('CONFIG_PHOTO_SALLE' === $usage) {
-            if (!$lieu instanceof Lieu) { throw new \DomainException('Les photos de salle sont réservées aux fiches Lieu.'); }
-            $salle = null;
-            if (null !== $salleId && '' !== $salleId) {
-                foreach ($lieu->salles() as $candidate) { if ($candidate->id() === $salleId) { $salle = $candidate; break; } }
-                if (null === $salle) { throw new \DomainException("La salle n'appartient pas à ce lieu."); }
-            } else {
-                $salle = $resource->salle() ?? ($lieu->salles()->first() ?: null);
-            }
-            if (null === $salle) { throw new \DomainException('Créez d’abord une salle de réunion pour y rattacher cette photo.'); }
-            $resource->changeSalle($salle);
-        } else {
-            $resource->changeSalle(null);
-        }
+        $this->rattacherSalle($resource, PhotoUsageCatalog::SALLE === $usage ? self::salleRattachee($resource, $lieu, (string) $salleId) : null);
         $resource->changeUsage($usage);
         $this->changed($lieu);
+    }
+
+    /**
+     * Salle d'une photo de salle : celle demandée (qui doit appartenir à la
+     * fiche), sinon la salle déjà rattachée, sinon la première de la fiche.
+     * Un Lieu a des salles de réunion, un Restaurant ses propres salles ;
+     * les autres gammes n'en ont pas.
+     */
+    private static function salleRattachee(RessourceLieu $resource, Lieu|Restaurant|Activite|ServiceEvenementiel $fiche, string $salleId): Salle|RestaurantSalle
+    {
+        if (!$fiche instanceof Lieu && !$fiche instanceof Restaurant) {
+            throw new \DomainException('Les photos de salle sont réservées aux fiches Lieu et Restaurant.');
+        }
+        if ('' !== $salleId) {
+            foreach ($fiche->salles() as $candidate) { if ($candidate->id() === $salleId) { return $candidate; } }
+            throw new \DomainException("La salle n'appartient pas à cette fiche.");
+        }
+        $courante = $fiche instanceof Lieu ? $resource->salle() : $resource->restaurantSalle();
+
+        return $courante ?? ($fiche->salles()->first() ?: null)
+            ?? throw new \DomainException('Créez d’abord une salle pour y rattacher cette photo.');
+    }
+
+    private function rattacherSalle(RessourceLieu $resource, Salle|RestaurantSalle|null $salle): void
+    {
+        $resource->changeSalle($salle instanceof Salle ? $salle : null);
+        $resource->changeRestaurantSalle($salle instanceof RestaurantSalle ? $salle : null);
     }
 
     /** @param array<string, mixed> $data */
@@ -117,17 +133,7 @@ final readonly class LieuPhotoManager
     {
         $usage = (string) ($data['usage'] ?? '');
         if (!isset(PhotoUsageCatalog::LABELS[$usage])) { throw new \DomainException('Catégorie de photo invalide.'); }
-        $salle = null;
-        $salleId = (string) ($data['salle_id'] ?? '');
-        if (!$lieu instanceof Lieu && ('' !== $salleId || 'CONFIG_PHOTO_SALLE' === $usage)) {
-            throw new \DomainException('Les photos de salle sont réservées aux fiches Lieu.');
-        }
-        if ($lieu instanceof Lieu && '' !== $salleId) {
-            foreach ($lieu->salles() as $candidate) { if ($candidate->id() === $salleId) { $salle = $candidate; break; } }
-            if (null === $salle) { throw new \DomainException("La salle n'appartient pas à ce lieu."); }
-        }
-        if ('CONFIG_PHOTO_SALLE' === $usage && null === $salle) { throw new \DomainException('Une photo de salle doit être associée à une salle.'); }
-        if ('CONFIG_PHOTO_SALLE' !== $usage) { $salle = null; }
+        $salle = PhotoUsageCatalog::SALLE === $usage ? self::salleRattachee($resource, $lieu, (string) ($data['salle_id'] ?? '')) : null;
         $resource->changeUsage($usage);
         $resource->changeLegende((string) ($data['legende'] ?? ''));
         $resource->changeSource((string) ($data['source'] ?? ''));
@@ -138,7 +144,7 @@ final readonly class LieuPhotoManager
             try { $expiration = new \DateTimeImmutable($expiration); } catch (\Exception) { throw new \DomainException("Date d'expiration des droits invalide."); }
         }
         $resource->changeRightsExpiresAt($expiration instanceof \DateTimeImmutable ? $expiration : null);
-        $resource->changeSalle($salle);
+        $this->rattacherSalle($resource, $salle);
         $keys = ['crop_x', 'crop_y', 'crop_width', 'crop_height'];
         $crop = array_map(static fn (string $key): ?int => '' === (string) ($data[$key] ?? '') ? null : (int) $data[$key], $keys);
         // Le rognage ne doit pas produire une image sous les minima imposés à

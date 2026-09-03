@@ -196,7 +196,8 @@ Elles existent aussi sous `/api/v1/services/{ULID}/medias`, avec la même limite
 de une à dix photos.
 
 Les mêmes opérations existent sous `/api/v1/restaurants/{ULID}/medias`. Les usages
-autorisés sont `PHOTO_DIVERSE` et `CONFIG_SALLE_PHOTO`. Une
+autorisés sont `PHOTO_DIVERSE` et `CONFIG_PHOTO_SALLE` (le même code que les
+salles de réunion d’un Lieu). Une
 photo de salle reçoit `salleId`, qui doit désigner une salle du même restaurant.
 
 Chaque mutation requiert également `If-Match`, conserve le statut de la fiche, demande

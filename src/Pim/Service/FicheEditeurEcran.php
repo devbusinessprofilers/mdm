@@ -509,6 +509,17 @@ final readonly class FicheEditeurEcran
         return ['lignes' => $lignes];
     }
 
+    /** @return array<string, string> id de salle => nom, pour la barre de rattachement des photos */
+    private static function sallesParId(Restaurant $restaurant): array
+    {
+        $salles = [];
+        foreach ($restaurant->salles() as $salle) {
+            $salles[$salle->id()] = $salle->nom();
+        }
+
+        return $salles;
+    }
+
     /** @param array{label?: ?string, name?: ?string, codePostal?: ?string, ville?: ?string}|null $proposition */
     private static function propositionAffichable(?array $proposition): string
     {
@@ -649,6 +660,9 @@ final readonly class FicheEditeurEcran
             'onglets_actifs' => self::ongletsMediasActifs($entite->fiche()->type()),
             'vars' => [
                 'photos' => $this->fichePhotos->photos($entite->fiche()),
+                // Un Restaurant a ses salles : même catégorie « Salle » et même
+                // barre de rattachement que le Lieu dans la galerie.
+                'salles' => $entite instanceof Restaurant ? self::sallesParId($entite) : [],
                 'documents' => $documents,
                 'entite_id' => (string) $entite->id(),
                 'download_route' => $route,

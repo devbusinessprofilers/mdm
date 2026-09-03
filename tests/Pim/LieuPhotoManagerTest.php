@@ -60,6 +60,34 @@ final class LieuPhotoManagerTest extends KernelTestCase
         $manager->changeCategorie($resource, $lieu, 'CATEGORIE_INCONNUE');
     }
 
+    public function testUnePhotoDeSalleDeRestaurantUtiliseLeMemeCodeQueLeLieu(): void
+    {
+        self::bootKernel();
+        $manager = self::getContainer()->get(LieuPhotoManager::class);
+
+        $restaurant = new \App\Pim\Entity\Restaurant\Restaurant();
+        $restaurant->changeLabel('Bistrot des catégories');
+        $salle = new \App\Pim\Entity\Restaurant\RestaurantSalle();
+        $salle->changeNom('Salle du fond');
+        $restaurant->addSalle($salle);
+        $resource = new RessourceLieu();
+        $resource->changeDamAssetId('asset-restaurant');
+        $resource->changeNature(NatureRessource::Photo);
+        $resource->changeUsage('PHOTO_DIVERSE');
+        $restaurant->addRessource($resource);
+
+        $manager->changeCategorie($resource, $restaurant, \App\Pim\Service\PhotoUsageCatalog::SALLE);
+        self::assertSame('CONFIG_PHOTO_SALLE', $resource->usage());
+        self::assertSame($salle, $resource->restaurantSalle());
+        self::assertNull($resource->salle());
+
+        $manager->changeCategorie($resource, $restaurant, 'PHOTO_DIVERSE');
+        self::assertNull($resource->restaurantSalle());
+
+        $this->expectException(\DomainException::class);
+        $manager->changeCategorie($resource, $restaurant, \App\Pim\Service\PhotoUsageCatalog::SALLE, 'salle-inconnue');
+    }
+
     public function testUnCropSousLePlancherEstRefuse(): void
     {
         self::bootKernel();

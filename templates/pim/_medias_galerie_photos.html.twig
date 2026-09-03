@@ -72,7 +72,7 @@
                     <twig:Form:NativeSelect
                         dark
                         :choices="salles"
-                        selected="{{ photo.resource.salle ? photo.resource.salle.id : '' }}"
+                        selected="{{ photo.resource.salle ? photo.resource.salle.id : (photo.resource.restaurantSalle ? photo.resource.restaurantSalle.id : '') }}"
                         data-action="change->lieu-media#changerSalle"
                         data-url="{{ url_categorie }}"
                         aria-label="Salle de réunion rattachée"

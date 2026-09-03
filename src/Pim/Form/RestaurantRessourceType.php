@@ -8,6 +8,7 @@ use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Entity\Restaurant\RestaurantSalle;
 use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Enum\NatureRessource;
+use App\Pim\Service\PhotoUsageCatalog;
 use App\Shared\Service\ParametreProviderInterface;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
@@ -57,7 +58,7 @@ final class RestaurantRessourceType extends AbstractType
                 'label' => 'Catégorie',
                 'choices' => [
                     'Photo diverse' => 'PHOTO_DIVERSE',
-                    'Photo de salle' => 'CONFIG_SALLE_PHOTO',
+                    'Photo de salle' => PhotoUsageCatalog::SALLE,
                 ],
                 'getter' => static fn (
                     RessourceLieu $resource,

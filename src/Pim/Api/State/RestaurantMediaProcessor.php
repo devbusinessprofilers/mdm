@@ -160,7 +160,7 @@ final readonly class RestaurantMediaProcessor implements ProcessorInterface
             $restaurant,
             $request->request->getString('salleId'),
         );
-        if ('CONFIG_SALLE_PHOTO' === $usage && null === $room) {
+        if (PhotoUsageCatalog::SALLE === $usage && null === $room) {
             throw new ApiProblemException(
                 422,
                 'room_required',
@@ -273,7 +273,7 @@ final readonly class RestaurantMediaProcessor implements ProcessorInterface
             );
         }
         if (
-            'CONFIG_SALLE_PHOTO' === $resource->usage()
+            PhotoUsageCatalog::SALLE === $resource->usage()
             && null === $resource->restaurantSalle()
         ) {
             throw new ApiProblemException(
@@ -429,7 +429,7 @@ final readonly class RestaurantMediaProcessor implements ProcessorInterface
     {
         if (!in_array(
             $usage,
-            ['PHOTO_DIVERSE', 'CONFIG_SALLE_PHOTO'],
+            ['PHOTO_DIVERSE', PhotoUsageCatalog::SALLE],
             true,
         )) {
             throw new ApiProblemException(
