@@ -54,8 +54,7 @@ class LieuTarification
 
     public function changeSeminaireJourneeDemiJourneeEtude(?string $value): void
     {
-        $this->seminaireJourneeDemiJourneeEtude = self::normalizeDecimal($value);
-        $this->lieu->markChanged();
+        $this->assign('seminaireJourneeDemiJourneeEtude', self::normalizeDecimal($value));
     }
 
     public function seminaireJourneeJourneeEtude(): ?string
@@ -65,8 +64,7 @@ class LieuTarification
 
     public function changeSeminaireJourneeJourneeEtude(?string $value): void
     {
-        $this->seminaireJourneeJourneeEtude = self::normalizeDecimal($value);
-        $this->lieu->markChanged();
+        $this->assign('seminaireJourneeJourneeEtude', self::normalizeDecimal($value));
     }
 
     public function seminaireJourneeDemiJourneeEtudeCocktail(): ?string
@@ -76,8 +74,7 @@ class LieuTarification
 
     public function changeSeminaireJourneeDemiJourneeEtudeCocktail(?string $value): void
     {
-        $this->seminaireJourneeDemiJourneeEtudeCocktail = self::normalizeDecimal($value);
-        $this->lieu->markChanged();
+        $this->assign('seminaireJourneeDemiJourneeEtudeCocktail', self::normalizeDecimal($value));
     }
 
     public function seminaireJourneeJourneeEtudeCocktail(): ?string
@@ -87,8 +84,7 @@ class LieuTarification
 
     public function changeSeminaireJourneeJourneeEtudeCocktail(?string $value): void
     {
-        $this->seminaireJourneeJourneeEtudeCocktail = self::normalizeDecimal($value);
-        $this->lieu->markChanged();
+        $this->assign('seminaireJourneeJourneeEtudeCocktail', self::normalizeDecimal($value));
     }
 
     public function seminaireNuiteeSemiResidentiel(): ?string
@@ -98,8 +94,7 @@ class LieuTarification
 
     public function changeSeminaireNuiteeSemiResidentiel(?string $value): void
     {
-        $this->seminaireNuiteeSemiResidentiel = self::normalizeDecimal($value);
-        $this->lieu->markChanged();
+        $this->assign('seminaireNuiteeSemiResidentiel', self::normalizeDecimal($value));
     }
 
     public function seminaireNuiteeResidentiel(): ?string
@@ -109,8 +104,7 @@ class LieuTarification
 
     public function changeSeminaireNuiteeResidentiel(?string $value): void
     {
-        $this->seminaireNuiteeResidentiel = self::normalizeDecimal($value);
-        $this->lieu->markChanged();
+        $this->assign('seminaireNuiteeResidentiel', self::normalizeDecimal($value));
     }
 
     public function seminaireNuiteeResidentielAllInclusive(): ?string
@@ -120,8 +114,7 @@ class LieuTarification
 
     public function changeSeminaireNuiteeResidentielAllInclusive(?string $value): void
     {
-        $this->seminaireNuiteeResidentielAllInclusive = self::normalizeDecimal($value);
-        $this->lieu->markChanged();
+        $this->assign('seminaireNuiteeResidentielAllInclusive', self::normalizeDecimal($value));
     }
 
     public function locSalleSeulDemiJournee(): ?string
@@ -131,8 +124,7 @@ class LieuTarification
 
     public function changeLocSalleSeulDemiJournee(?string $value): void
     {
-        $this->locSalleSeulDemiJournee = self::normalizeDecimal($value);
-        $this->lieu->markChanged();
+        $this->assign('locSalleSeulDemiJournee', self::normalizeDecimal($value));
     }
 
     public function locSalleSeulJournee(): ?string
@@ -142,8 +134,7 @@ class LieuTarification
 
     public function changeLocSalleSeulJournee(?string $value): void
     {
-        $this->locSalleSeulJournee = self::normalizeDecimal($value);
-        $this->lieu->markChanged();
+        $this->assign('locSalleSeulJournee', self::normalizeDecimal($value));
     }
 
     public function locSalleSeulSoiree(): ?string
@@ -153,8 +144,7 @@ class LieuTarification
 
     public function changeLocSalleSeulSoiree(?string $value): void
     {
-        $this->locSalleSeulSoiree = self::normalizeDecimal($value);
-        $this->lieu->markChanged();
+        $this->assign('locSalleSeulSoiree', self::normalizeDecimal($value));
     }
 
     public function csCocktailDejeunatoire10Pers(): ?string
@@ -164,8 +154,7 @@ class LieuTarification
 
     public function changeCsCocktailDejeunatoire10Pers(?string $value): void
     {
-        $this->csCocktailDejeunatoire10Pers = self::normalizeDecimal($value);
-        $this->lieu->markChanged();
+        $this->assign('csCocktailDejeunatoire10Pers', self::normalizeDecimal($value));
     }
 
     public function csCocktailDinatoire(): ?string
@@ -175,8 +164,7 @@ class LieuTarification
 
     public function changeCsCocktailDinatoire(?string $value): void
     {
-        $this->csCocktailDinatoire = self::normalizeDecimal($value);
-        $this->lieu->markChanged();
+        $this->assign('csCocktailDinatoire', self::normalizeDecimal($value));
     }
 
     public function csSoireeDansante(): ?string
@@ -186,8 +174,7 @@ class LieuTarification
 
     public function changeCsSoireeDansante(?string $value): void
     {
-        $this->csSoireeDansante = self::normalizeDecimal($value);
-        $this->lieu->markChanged();
+        $this->assign('csSoireeDansante', self::normalizeDecimal($value));
     }
 
     public function csSoireeDinerAssis(): ?string
@@ -197,8 +184,7 @@ class LieuTarification
 
     public function changeCsSoireeDinerAssis(?string $value): void
     {
-        $this->csSoireeDinerAssis = self::normalizeDecimal($value);
-        $this->lieu->markChanged();
+        $this->assign('csSoireeDinerAssis', self::normalizeDecimal($value));
     }
 
     public function tarifRestDejeunerAssis(): ?string
@@ -208,8 +194,7 @@ class LieuTarification
 
     public function changeTarifRestDejeunerAssis(?string $value): void
     {
-        $this->tarifRestDejeunerAssis = self::normalizeDecimal($value);
-        $this->lieu->markChanged();
+        $this->assign('tarifRestDejeunerAssis', self::normalizeDecimal($value));
     }
 
     public function tarifRestDinerAssis(): ?string
@@ -219,8 +204,7 @@ class LieuTarification
 
     public function changeTarifRestDinerAssis(?string $value): void
     {
-        $this->tarifRestDinerAssis = self::normalizeDecimal($value);
-        $this->lieu->markChanged();
+        $this->assign('tarifRestDinerAssis', self::normalizeDecimal($value));
     }
 
     public function tarifRestOptVin(): ?string
@@ -230,8 +214,7 @@ class LieuTarification
 
     public function changeTarifRestOptVin(?string $value): void
     {
-        $this->tarifRestOptVin = self::normalizeDecimal($value);
-        $this->lieu->markChanged();
+        $this->assign('tarifRestOptVin', self::normalizeDecimal($value));
     }
 
     public function tarifRestOptAlcool(): ?string
@@ -241,8 +224,7 @@ class LieuTarification
 
     public function changeTarifRestOptAlcool(?string $value): void
     {
-        $this->tarifRestOptAlcool = self::normalizeDecimal($value);
-        $this->lieu->markChanged();
+        $this->assign('tarifRestOptAlcool', self::normalizeDecimal($value));
     }
 
     public function tarifRestForfaitPersonalise(): ?string
@@ -252,8 +234,7 @@ class LieuTarification
 
     public function changeTarifRestForfaitPersonalise(?string $value): void
     {
-        $this->tarifRestForfaitPersonalise = self::normalizeDecimal($value);
-        $this->lieu->markChanged();
+        $this->assign('tarifRestForfaitPersonalise', self::normalizeDecimal($value));
     }
 
     public function hebergGroupTarifChambreSingle(): ?string
@@ -263,8 +244,7 @@ class LieuTarification
 
     public function changeHebergGroupTarifChambreSingle(?string $value): void
     {
-        $this->hebergGroupTarifChambreSingle = self::normalizeDecimal($value);
-        $this->lieu->markChanged();
+        $this->assign('hebergGroupTarifChambreSingle', self::normalizeDecimal($value));
     }
 
     public function hebergGroupTarifChambreTwin(): ?string
@@ -274,8 +254,7 @@ class LieuTarification
 
     public function changeHebergGroupTarifChambreTwin(?string $value): void
     {
-        $this->hebergGroupTarifChambreTwin = self::normalizeDecimal($value);
-        $this->lieu->markChanged();
+        $this->assign('hebergGroupTarifChambreTwin', self::normalizeDecimal($value));
     }
 
     public function hebergGroupTarifChambreDouble(): ?string
@@ -285,8 +264,7 @@ class LieuTarification
 
     public function changeHebergGroupTarifChambreDouble(?string $value): void
     {
-        $this->hebergGroupTarifChambreDouble = self::normalizeDecimal($value);
-        $this->lieu->markChanged();
+        $this->assign('hebergGroupTarifChambreDouble', self::normalizeDecimal($value));
     }
 
     public function offreSpeciale(): ?string
@@ -297,8 +275,7 @@ class LieuTarification
     public function changeOffreSpeciale(?string $value): void
     {
         $value = null === $value ? null : trim($value);
-        $this->offreSpeciale = '' === $value ? null : $value;
-        $this->lieu->markChanged();
+        $this->assign('offreSpeciale', '' === $value ? null : $value);
     }
 
     public function promotionDebut(): ?\DateTimeImmutable
@@ -308,8 +285,7 @@ class LieuTarification
 
     public function changePromotionDebut(?\DateTimeImmutable $value): void
     {
-        $this->promotionDebut = $value;
-        $this->lieu->markChanged();
+        $this->assign('promotionDebut', $value);
     }
 
     public function promotionFin(): ?\DateTimeImmutable
@@ -319,8 +295,7 @@ class LieuTarification
 
     public function changePromotionFin(?\DateTimeImmutable $value): void
     {
-        $this->promotionFin = $value;
-        $this->lieu->markChanged();
+        $this->assign('promotionFin', $value);
     }
 
     private static function normalizeDecimal(?string $value): ?string
@@ -334,5 +309,23 @@ class LieuTarification
         }
 
         return $value;
+    }
+
+    /**
+     * Affecte la propriété et marque la fiche modifiée, seulement si la valeur
+     * change : enregistrer sans rien modifier ne remet pas la fiche « en cours »
+     * (même règle que les LOV et les sites de diffusion).
+     */
+    private function assign(string $property, mixed $value): void
+    {
+        $propriete = new \ReflectionProperty($this, $property);
+        if ($propriete->isInitialized($this)) {
+            $courante = $this->{$property};
+            if ($courante === $value || (is_object($value) && is_object($courante) && $courante::class === $value::class && $courante == $value)) {
+                return;
+            }
+        }
+        $this->{$property} = $value;
+        $this->lieu->markChanged();
     }
 }

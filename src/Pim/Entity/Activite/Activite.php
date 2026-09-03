@@ -151,8 +151,7 @@ class Activite
         if (null !== $value && 'PRESTATAIRE' !== $value->attribute()->code()) {
             throw new \DomainException('La valeur sélectionnée n’est pas un prestataire.');
         }
-        $this->prestataire = $value;
-        $this->touch();
+        $this->assign('prestataire', $value);
     }
 
     public function modeIntervention(): ?ModeInterventionActivite
@@ -163,8 +162,7 @@ class Activite
     public function changeModeIntervention(
         ?ModeInterventionActivite $value,
     ): void {
-        $this->modeIntervention = $value;
-        $this->touch();
+        $this->assign('modeIntervention', $value);
     }
 
     public function touteFrance(): bool
@@ -174,8 +172,7 @@ class Activite
 
     public function changeTouteFrance(bool $value): void
     {
-        $this->touteFrance = $value;
-        $this->touch();
+        $this->assign('touteFrance', $value);
     }
 
     /** @return list<string> */
@@ -187,8 +184,7 @@ class Activite
     /** @param list<string> $value */
     public function changePaysMobiles(array $value): void
     {
-        $this->paysMobiles = self::normalizeList($value);
-        $this->touch();
+        $this->assign('paysMobiles', self::normalizeList($value));
     }
 
     /** @return list<string> */
@@ -200,8 +196,7 @@ class Activite
     /** @param list<string> $value */
     public function changeRegionsMobiles(array $value): void
     {
-        $this->regionsMobiles = self::normalizeList($value);
-        $this->touch();
+        $this->assign('regionsMobiles', self::normalizeList($value));
     }
 
     /** @return list<string> */
@@ -213,8 +208,7 @@ class Activite
     /** @param list<string> $value */
     public function changeDepartementsMobiles(array $value): void
     {
-        $this->departementsMobiles = self::normalizeList($value);
-        $this->touch();
+        $this->assign('departementsMobiles', self::normalizeList($value));
     }
 
     public function descriptionGenerale(): ?string
@@ -224,8 +218,7 @@ class Activite
 
     public function changeDescriptionGenerale(?string $value): void
     {
-        $this->descriptionGenerale = self::normalize($value);
-        $this->touch();
+        $this->assign('descriptionGenerale', self::normalize($value));
     }
 
     public function comprendPrestation(): ?string
@@ -235,8 +228,7 @@ class Activite
 
     public function changeComprendPrestation(?string $value): void
     {
-        $this->comprendPrestation = self::normalize($value);
-        $this->touch();
+        $this->assign('comprendPrestation', self::normalize($value));
     }
 
     public function participantsMin(): ?int
@@ -246,8 +238,7 @@ class Activite
 
     public function changeParticipantsMin(?int $value): void
     {
-        $this->participantsMin = $value;
-        $this->touch();
+        $this->assign('participantsMin', $value);
     }
 
     public function participantsMax(): ?int
@@ -257,8 +248,7 @@ class Activite
 
     public function changeParticipantsMax(?int $value): void
     {
-        $this->participantsMax = $value;
-        $this->touch();
+        $this->assign('participantsMax', $value);
     }
 
     public function dureeMinMinutes(): ?int
@@ -268,8 +258,7 @@ class Activite
 
     public function changeDureeMinMinutes(?int $value): void
     {
-        $this->dureeMinMinutes = $value;
-        $this->touch();
+        $this->assign('dureeMinMinutes', $value);
     }
 
     public function dureeMaxMinutes(): ?int
@@ -279,8 +268,7 @@ class Activite
 
     public function changeDureeMaxMinutes(?int $value): void
     {
-        $this->dureeMaxMinutes = $value;
-        $this->touch();
+        $this->assign('dureeMaxMinutes', $value);
     }
 
     /** @return list<string> */
@@ -292,8 +280,7 @@ class Activite
     /** @param list<string> $value */
     public function changePlus(array $value): void
     {
-        $this->plus = array_slice(self::normalizeList($value), 0, 4);
-        $this->touch();
+        $this->assign('plus', array_slice(self::normalizeList($value), 0, 4));
     }
 
     public function tarifParPersonne(): ?string
@@ -303,8 +290,7 @@ class Activite
 
     public function changeTarifParPersonne(?string $value): void
     {
-        $this->tarifParPersonne = self::normalize($value);
-        $this->touch();
+        $this->assign('tarifParPersonne', self::normalize($value));
     }
 
     public function youtubeUrl(): ?string
@@ -314,8 +300,7 @@ class Activite
 
     public function changeYoutubeUrl(?string $value): void
     {
-        $this->youtubeUrl = self::normalize($value);
-        $this->touch();
+        $this->assign('youtubeUrl', self::normalize($value));
     }
 
     /** @return Collection<int, OffreActivite> */
@@ -531,5 +516,23 @@ class Activite
         );
 
         return $normalized;
+    }
+
+    /**
+     * Affecte la propriété et marque la fiche modifiée, seulement si la valeur
+     * change : enregistrer sans rien modifier ne remet pas la fiche « en cours »
+     * (même règle que les LOV et les sites de diffusion).
+     */
+    private function assign(string $property, mixed $value): void
+    {
+        $propriete = new \ReflectionProperty($this, $property);
+        if ($propriete->isInitialized($this)) {
+            $courante = $this->{$property};
+            if ($courante === $value || (is_object($value) && is_object($courante) && $courante::class === $value::class && $courante == $value)) {
+                return;
+            }
+        }
+        $this->{$property} = $value;
+        $this->touch();
     }
 }

@@ -65,8 +65,7 @@ class LieuAdministratif
 
     public function changeInfoLegaleNom(?string $value): void
     {
-        $this->infoLegaleNom = self::normalize($value);
-        $this->lieu->markChanged();
+        $this->assign('infoLegaleNom', self::normalize($value));
     }
 
     public function infoLegaleFormeJuridique(): ?string
@@ -76,8 +75,7 @@ class LieuAdministratif
 
     public function changeInfoLegaleFormeJuridique(?string $value): void
     {
-        $this->infoLegaleFormeJuridique = self::normalize($value);
-        $this->lieu->markChanged();
+        $this->assign('infoLegaleFormeJuridique', self::normalize($value));
     }
 
     public function infoLegaleRuePostal(): ?string
@@ -87,8 +85,7 @@ class LieuAdministratif
 
     public function changeInfoLegaleRuePostal(?string $value): void
     {
-        $this->infoLegaleRuePostal = self::normalize($value);
-        $this->lieu->markChanged();
+        $this->assign('infoLegaleRuePostal', self::normalize($value));
     }
 
     public function infoLegaleAdresse2(): ?string
@@ -98,8 +95,7 @@ class LieuAdministratif
 
     public function changeInfoLegaleAdresse2(?string $value): void
     {
-        $this->infoLegaleAdresse2 = self::normalize($value);
-        $this->lieu->markChanged();
+        $this->assign('infoLegaleAdresse2', self::normalize($value));
     }
 
     public function infoLegaleCodePostal(): ?string
@@ -109,8 +105,7 @@ class LieuAdministratif
 
     public function changeInfoLegaleCodePostal(?string $value): void
     {
-        $this->infoLegaleCodePostal = self::normalize($value);
-        $this->lieu->markChanged();
+        $this->assign('infoLegaleCodePostal', self::normalize($value));
     }
 
     public function infoLegaleVille(): ?string
@@ -120,8 +115,7 @@ class LieuAdministratif
 
     public function changeInfoLegaleVille(?string $value): void
     {
-        $this->infoLegaleVille = self::normalize($value);
-        $this->lieu->markChanged();
+        $this->assign('infoLegaleVille', self::normalize($value));
     }
 
     public function inforLegalePays(): ?string
@@ -131,8 +125,7 @@ class LieuAdministratif
 
     public function changeInforLegalePays(?string $value): void
     {
-        $this->inforLegalePays = self::normalize($value);
-        $this->lieu->markChanged();
+        $this->assign('inforLegalePays', self::normalize($value));
     }
 
     public function infoLegaleSiret(): ?string
@@ -142,8 +135,7 @@ class LieuAdministratif
 
     public function changeInfoLegaleSiret(?string $value): void
     {
-        $this->infoLegaleSiret = self::normalize($value);
-        $this->lieu->markChanged();
+        $this->assign('infoLegaleSiret', self::normalize($value));
     }
 
     public function infoLegaleNumTva(): ?string
@@ -153,8 +145,7 @@ class LieuAdministratif
 
     public function changeInfoLegaleNumTva(?string $value): void
     {
-        $this->infoLegaleNumTva = self::normalize($value);
-        $this->lieu->markChanged();
+        $this->assign('infoLegaleNumTva', self::normalize($value));
     }
 
     public function infoLegaleAssujettiTva(): ?bool
@@ -164,8 +155,7 @@ class LieuAdministratif
 
     public function changeInfoLegaleAssujettiTva(?bool $value): void
     {
-        $this->infoLegaleAssujettiTva = $value;
-        $this->lieu->markChanged();
+        $this->assign('infoLegaleAssujettiTva', $value);
     }
 
     public function infoLegaleTva(): ?string
@@ -176,8 +166,7 @@ class LieuAdministratif
     public function changeInfoLegaleTva(?string $value): void
     {
         LieuLovCatalog::assertValid('INFO_LEGALE_TVA', $value);
-        $this->infoLegaleTva = self::normalize($value);
-        $this->lieu->markChanged();
+        $this->assign('infoLegaleTva', self::normalize($value));
     }
 
     public function infoLegaleTypeDeProcedureJudiciaire(): ?string
@@ -187,8 +176,7 @@ class LieuAdministratif
 
     public function changeInfoLegaleTypeDeProcedureJudiciaire(?string $value): void
     {
-        $this->infoLegaleTypeDeProcedureJudiciaire = self::normalize($value);
-        $this->lieu->markChanged();
+        $this->assign('infoLegaleTypeDeProcedureJudiciaire', self::normalize($value));
     }
 
     public function adresseFacturationNom(): ?string
@@ -198,8 +186,7 @@ class LieuAdministratif
 
     public function changeAdresseFacturationNom(?string $value): void
     {
-        $this->adresseFacturationNom = self::normalize($value);
-        $this->lieu->markChanged();
+        $this->assign('adresseFacturationNom', self::normalize($value));
     }
 
     public function adresseFacturationRuePostal(): ?string
@@ -209,8 +196,7 @@ class LieuAdministratif
 
     public function changeAdresseFacturationRuePostal(?string $value): void
     {
-        $this->adresseFacturationRuePostal = self::normalize($value);
-        $this->lieu->markChanged();
+        $this->assign('adresseFacturationRuePostal', self::normalize($value));
     }
 
     public function adresseFacturationCodePostal(): ?string
@@ -220,8 +206,7 @@ class LieuAdministratif
 
     public function changeAdresseFacturationCodePostal(?string $value): void
     {
-        $this->adresseFacturationCodePostal = self::normalize($value);
-        $this->lieu->markChanged();
+        $this->assign('adresseFacturationCodePostal', self::normalize($value));
     }
 
     public function adresseFacturationVille(): ?string
@@ -231,8 +216,7 @@ class LieuAdministratif
 
     public function changeAdresseFacturationVille(?string $value): void
     {
-        $this->adresseFacturationVille = self::normalize($value);
-        $this->lieu->markChanged();
+        $this->assign('adresseFacturationVille', self::normalize($value));
     }
 
     public function adresseFacturationPays(): ?string
@@ -242,8 +226,7 @@ class LieuAdministratif
 
     public function changeAdresseFacturationPays(?string $value): void
     {
-        $this->adresseFacturationPays = self::normalize($value);
-        $this->lieu->markChanged();
+        $this->assign('adresseFacturationPays', self::normalize($value));
     }
 
     public function adresseFacturationNumTva(): ?string
@@ -253,8 +236,7 @@ class LieuAdministratif
 
     public function changeAdresseFacturationNumTva(?string $value): void
     {
-        $this->adresseFacturationNumTva = self::normalize($value);
-        $this->lieu->markChanged();
+        $this->assign('adresseFacturationNumTva', self::normalize($value));
     }
 
     public function contactFacturationNom(): ?string
@@ -264,8 +246,7 @@ class LieuAdministratif
 
     public function changeContactFacturationNom(?string $value): void
     {
-        $this->contactFacturationNom = self::normalize($value);
-        $this->lieu->markChanged();
+        $this->assign('contactFacturationNom', self::normalize($value));
     }
 
     public function contactFacturationPrenom(): ?string
@@ -275,8 +256,7 @@ class LieuAdministratif
 
     public function changeContactFacturationPrenom(?string $value): void
     {
-        $this->contactFacturationPrenom = self::normalize($value);
-        $this->lieu->markChanged();
+        $this->assign('contactFacturationPrenom', self::normalize($value));
     }
 
     public function contactFacturationEmail(): ?string
@@ -286,8 +266,7 @@ class LieuAdministratif
 
     public function changeContactFacturationEmail(?string $value): void
     {
-        $this->contactFacturationEmail = self::normalize($value);
-        $this->lieu->markChanged();
+        $this->assign('contactFacturationEmail', self::normalize($value));
     }
 
     public function contactFacturationTelephone(): ?string
@@ -297,8 +276,7 @@ class LieuAdministratif
 
     public function changeContactFacturationTelephone(?string $value): void
     {
-        $this->contactFacturationTelephone = self::normalize($value);
-        $this->lieu->markChanged();
+        $this->assign('contactFacturationTelephone', self::normalize($value));
     }
 
     public function modePaiementBic(): ?string
@@ -308,8 +286,7 @@ class LieuAdministratif
 
     public function changeModePaiementBic(?string $value): void
     {
-        $this->modePaiementBic = self::normalize($value);
-        $this->lieu->markChanged();
+        $this->assign('modePaiementBic', self::normalize($value));
     }
 
     public function modePaiementIban(): ?string
@@ -319,8 +296,7 @@ class LieuAdministratif
 
     public function changeModePaiementIban(?string $value): void
     {
-        $this->modePaiementIban = self::normalize($value);
-        $this->lieu->markChanged();
+        $this->assign('modePaiementIban', self::normalize($value));
     }
 
     public function modePaiementAcceptDeductionCom(): ?bool
@@ -330,8 +306,7 @@ class LieuAdministratif
 
     public function changeModePaiementAcceptDeductionCom(?bool $value): void
     {
-        $this->modePaiementAcceptDeductionCom = $value;
-        $this->lieu->markChanged();
+        $this->assign('modePaiementAcceptDeductionCom', $value);
     }
 
     public function modePaiementAffacturage(): ?bool
@@ -341,8 +316,7 @@ class LieuAdministratif
 
     public function changeModePaiementAffacturage(?bool $value): void
     {
-        $this->modePaiementAffacturage = $value;
-        $this->lieu->markChanged();
+        $this->assign('modePaiementAffacturage', $value);
     }
 
     public function affacturageBic(): ?string
@@ -352,8 +326,7 @@ class LieuAdministratif
 
     public function changeAffacturageBic(?string $value): void
     {
-        $this->affacturageBic = self::normalize($value);
-        $this->lieu->markChanged();
+        $this->assign('affacturageBic', self::normalize($value));
     }
 
     public function affacturageIban(): ?string
@@ -363,8 +336,7 @@ class LieuAdministratif
 
     public function changeAffacturageIban(?string $value): void
     {
-        $this->affacturageIban = self::normalize($value);
-        $this->lieu->markChanged();
+        $this->assign('affacturageIban', self::normalize($value));
     }
 
     public function condPaieAccSignature(): ?string
@@ -375,8 +347,7 @@ class LieuAdministratif
     public function changeCondPaieAccSignature(?string $value): void
     {
         LieuLovCatalog::assertValid('COND_PAIE_ACC_SIGNATURE', $value);
-        $this->condPaieAccSignature = self::normalize($value);
-        $this->lieu->markChanged();
+        $this->assign('condPaieAccSignature', self::normalize($value));
     }
 
     public function condPaieAnnSignature(): ?string
@@ -387,8 +358,7 @@ class LieuAdministratif
     public function changeCondPaieAnnSignature(?string $value): void
     {
         LieuLovCatalog::assertValid('COND_PAIE_ANN_SIGNATURE', $value);
-        $this->condPaieAnnSignature = self::normalize($value);
-        $this->lieu->markChanged();
+        $this->assign('condPaieAnnSignature', self::normalize($value));
     }
 
     public function commissionApplicable(): ?string
@@ -398,8 +368,7 @@ class LieuAdministratif
 
     public function changeCommissionApplicable(?string $value): void
     {
-        $this->commissionApplicable = self::normalize($value);
-        $this->lieu->markChanged();
+        $this->assign('commissionApplicable', self::normalize($value));
     }
 
     public function datePaiementSold(): ?string
@@ -410,8 +379,7 @@ class LieuAdministratif
     public function changeDatePaiementSold(?string $value): void
     {
         LieuLovCatalog::assertValid('DATE_PAIEMENT_SOLD', $value);
-        $this->datePaiementSold = self::normalize($value);
-        $this->lieu->markChanged();
+        $this->assign('datePaiementSold', self::normalize($value));
     }
 
     public function convPartSigneeLe(): ?string
@@ -421,8 +389,7 @@ class LieuAdministratif
 
     public function changeConvPartSigneeLe(?string $value): void
     {
-        $this->convPartSigneeLe = self::normalize($value);
-        $this->lieu->markChanged();
+        $this->assign('convPartSigneeLe', self::normalize($value));
     }
 
     public function convPartTaux(): ?string
@@ -432,8 +399,7 @@ class LieuAdministratif
 
     public function changeConvPartTaux(?string $value): void
     {
-        $this->convPartTaux = self::normalize($value);
-        $this->lieu->markChanged();
+        $this->assign('convPartTaux', self::normalize($value));
     }
 
     public function signataireEmail(): ?string
@@ -443,8 +409,7 @@ class LieuAdministratif
 
     public function changeSignataireEmail(?string $value): void
     {
-        $this->signataireEmail = self::normalize($value);
-        $this->lieu->markChanged();
+        $this->assign('signataireEmail', self::normalize($value));
     }
 
     public function signatairePrenom(): ?string
@@ -454,8 +419,7 @@ class LieuAdministratif
 
     public function changeSignatairePrenom(?string $value): void
     {
-        $this->signatairePrenom = self::normalize($value);
-        $this->lieu->markChanged();
+        $this->assign('signatairePrenom', self::normalize($value));
     }
 
     public function signataireNom(): ?string
@@ -465,8 +429,7 @@ class LieuAdministratif
 
     public function changeSignataireNom(?string $value): void
     {
-        $this->signataireNom = self::normalize($value);
-        $this->lieu->markChanged();
+        $this->assign('signataireNom', self::normalize($value));
     }
 
     private static function normalize(?string $value): ?string
@@ -478,5 +441,23 @@ class LieuAdministratif
         $value = trim($value);
 
         return '' === $value ? null : $value;
+    }
+
+    /**
+     * Affecte la propriété et marque la fiche modifiée, seulement si la valeur
+     * change : enregistrer sans rien modifier ne remet pas la fiche « en cours »
+     * (même règle que les LOV et les sites de diffusion).
+     */
+    private function assign(string $property, mixed $value): void
+    {
+        $propriete = new \ReflectionProperty($this, $property);
+        if ($propriete->isInitialized($this)) {
+            $courante = $this->{$property};
+            if ($courante === $value || (is_object($value) && is_object($courante) && $courante::class === $value::class && $courante == $value)) {
+                return;
+            }
+        }
+        $this->{$property} = $value;
+        $this->lieu->markChanged();
     }
 }

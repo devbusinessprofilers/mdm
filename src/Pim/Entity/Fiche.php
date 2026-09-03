@@ -264,7 +264,11 @@ class Fiche
 
     public function changeLabel(?string $label): void
     {
-        $this->label = self::normalize($label);
+        $label = self::normalize($label);
+        if ($label === $this->label) {
+            return;
+        }
+        $this->label = $label;
         $this->markChanged();
     }
 
@@ -299,6 +303,9 @@ class Fiche
 
     public function changeLocalisation(?Localisation $localisation): void
     {
+        if ($localisation === $this->localisation) {
+            return;
+        }
         $this->localisation = $localisation;
         $this->markChanged();
     }

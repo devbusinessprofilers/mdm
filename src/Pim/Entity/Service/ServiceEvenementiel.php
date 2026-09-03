@@ -512,8 +512,16 @@ class ServiceEvenementiel
         $this->touch();
     }
 
+    /** Affecte la propriété et marque la fiche modifiée, seulement si la valeur change (même règle que les LOV). */
     private function set(string $property, mixed $value): void
     {
+        $propriete = new \ReflectionProperty($this, $property);
+        if ($propriete->isInitialized($this)) {
+            $courante = $this->{$property};
+            if ($courante === $value || (is_object($value) && is_object($courante) && $courante::class === $value::class && $courante == $value)) {
+                return;
+            }
+        }
         $this->{$property} = $value;
         $this->touch();
     }

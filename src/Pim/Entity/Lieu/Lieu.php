@@ -399,8 +399,7 @@ class Lieu implements AvecHorairesJours
             $value->syncLieu($this);
             $this->trackFicheLiee($value->fiche());
         }
-        $this->restaurant = $value;
-        $this->touch();
+        $this->assign('restaurant', $value);
     }
 
     /** @internal réservé à Restaurant::changeLieu — côté inverse (aucune colonne ici), sans transition de workflow. */
@@ -632,8 +631,7 @@ class Lieu implements AvecHorairesJours
 
     public function changeGeneraleEtabRp(bool $value): void
     {
-        $this->generaleEtabRp = $value;
-        $this->touch();
+        $this->assign('generaleEtabRp', $value);
     }
 
     public function generaleWebsiteUrl(): ?string
@@ -644,8 +642,7 @@ class Lieu implements AvecHorairesJours
     public function changeGeneraleWebsiteUrl(?string $value): void
     {
         $value = self::normalizeNullableString($value);
-        $this->generaleWebsiteUrl = $value;
-        $this->touch();
+        $this->assign('generaleWebsiteUrl', $value);
     }
 
     /** @return list<string> */
@@ -669,8 +666,7 @@ class Lieu implements AvecHorairesJours
     public function changeGeneraleGamme(?string $value): void
     {
         $value = self::normalizeNullableString($value);
-        $this->generaleGamme = $value;
-        $this->touch();
+        $this->assign('generaleGamme', $value);
     }
 
     public function generaleGammeLibelle(): ?string
@@ -681,8 +677,7 @@ class Lieu implements AvecHorairesJours
     public function changeGeneraleGammeLibelle(?string $value): void
     {
         $value = self::normalizeNullableString($value);
-        $this->generaleGammeLibelle = $value;
-        $this->touch();
+        $this->assign('generaleGammeLibelle', $value);
     }
 
     public function dispoLieuPrivatisable(): bool
@@ -692,8 +687,7 @@ class Lieu implements AvecHorairesJours
 
     public function changeDispoLieuPrivatisable(bool $value): void
     {
-        $this->dispoLieuPrivatisable = $value;
-        $this->touch();
+        $this->assign('dispoLieuPrivatisable', $value);
     }
 
     /** @return list<string> */
@@ -722,8 +716,7 @@ class Lieu implements AvecHorairesJours
     /** @param array<string, array{ouverture?: ?string, fermeture?: ?string}>|null $value */
     public function changeDispoHorairesJours(?array $value): void
     {
-        $this->dispoHorairesJours = HorairesJours::nettoie($value);
-        $this->touch();
+        $this->assign('dispoHorairesJours', HorairesJours::nettoie($value));
     }
 
     public function changeHoraireJour(array $valeur): void
@@ -744,8 +737,7 @@ class Lieu implements AvecHorairesJours
 
     public function changePmrAcces(bool $value): void
     {
-        $this->pmrAcces = $value;
-        $this->touch();
+        $this->assign('pmrAcces', $value);
     }
 
     public function pmrDetails(): ?string
@@ -756,8 +748,7 @@ class Lieu implements AvecHorairesJours
     public function changePmrDetails(?string $value): void
     {
         $value = self::normalizeNullableString($value);
-        $this->pmrDetails = $value;
-        $this->touch();
+        $this->assign('pmrDetails', $value);
     }
 
     /** @return list<string> */
@@ -804,8 +795,7 @@ class Lieu implements AvecHorairesJours
     public function changeDescGenerale(?string $value): void
     {
         $value = self::normalizeNullableString(self::texteBrut($value));
-        $this->descGenerale = $value;
-        $this->touch();
+        $this->assign('descGenerale', $value);
     }
 
     public function descGeneralePointInteret(): ?string
@@ -815,8 +805,7 @@ class Lieu implements AvecHorairesJours
 
     public function changeDescGeneralePointInteret(?string $value): void
     {
-        $this->descGeneralePointInteret = self::normalizeNullableString($value);
-        $this->touch();
+        $this->assign('descGeneralePointInteret', self::normalizeNullableString($value));
     }
 
     public function atout1(): ?string
@@ -827,8 +816,7 @@ class Lieu implements AvecHorairesJours
     public function changeAtout1(?string $value): void
     {
         $value = self::normalizeNullableString($value);
-        $this->atout1 = $value;
-        $this->touch();
+        $this->assign('atout1', $value);
     }
 
     public function atout2(): ?string
@@ -839,8 +827,7 @@ class Lieu implements AvecHorairesJours
     public function changeAtout2(?string $value): void
     {
         $value = self::normalizeNullableString($value);
-        $this->atout2 = $value;
-        $this->touch();
+        $this->assign('atout2', $value);
     }
 
     public function atout3(): ?string
@@ -851,8 +838,7 @@ class Lieu implements AvecHorairesJours
     public function changeAtout3(?string $value): void
     {
         $value = self::normalizeNullableString($value);
-        $this->atout3 = $value;
-        $this->touch();
+        $this->assign('atout3', $value);
     }
 
     public function atout4(): ?string
@@ -863,8 +849,7 @@ class Lieu implements AvecHorairesJours
     public function changeAtout4(?string $value): void
     {
         $value = self::normalizeNullableString($value);
-        $this->atout4 = $value;
-        $this->touch();
+        $this->assign('atout4', $value);
     }
 
     public function atout5(): ?string
@@ -875,8 +860,7 @@ class Lieu implements AvecHorairesJours
     public function changeAtout5(?string $value): void
     {
         $value = self::normalizeNullableString($value);
-        $this->atout5 = $value;
-        $this->touch();
+        $this->assign('atout5', $value);
     }
 
     public function chambreHebergement(): bool
@@ -886,8 +870,7 @@ class Lieu implements AvecHorairesJours
 
     public function changeChambreHebergement(bool $value): void
     {
-        $this->chambreHebergement = $value;
-        $this->touch();
+        $this->assign('chambreHebergement', $value);
     }
 
     public function chambreNbTotal(): ?int
@@ -897,8 +880,7 @@ class Lieu implements AvecHorairesJours
 
     public function changeChambreNbTotal(?int $value): void
     {
-        $this->chambreNbTotal = $value;
-        $this->touch();
+        $this->assign('chambreNbTotal', $value);
     }
 
     public function chambreNbTotalSingle(): ?int
@@ -908,8 +890,7 @@ class Lieu implements AvecHorairesJours
 
     public function changeChambreNbTotalSingle(?int $value): void
     {
-        $this->chambreNbTotalSingle = $value;
-        $this->touch();
+        $this->assign('chambreNbTotalSingle', $value);
     }
 
     public function chambreNbTotalTwin(): ?int
@@ -919,8 +900,7 @@ class Lieu implements AvecHorairesJours
 
     public function changeChambreNbTotalTwin(?int $value): void
     {
-        $this->chambreNbTotalTwin = $value;
-        $this->touch();
+        $this->assign('chambreNbTotalTwin', $value);
     }
 
     public function chambreDouble(): ?int
@@ -930,8 +910,7 @@ class Lieu implements AvecHorairesJours
 
     public function changeChambreDouble(?int $value): void
     {
-        $this->chambreDouble = $value;
-        $this->touch();
+        $this->assign('chambreDouble', $value);
     }
 
     public function chambreCapaciteTotale(): ?int
@@ -941,8 +920,7 @@ class Lieu implements AvecHorairesJours
 
     public function changeChambreCapaciteTotale(?int $value): void
     {
-        $this->chambreCapaciteTotale = $value;
-        $this->touch();
+        $this->assign('chambreCapaciteTotale', $value);
     }
 
     public function chambreDescGenerale(): ?string
@@ -953,8 +931,7 @@ class Lieu implements AvecHorairesJours
     public function changeChambreDescGenerale(?string $value): void
     {
         $value = self::normalizeNullableString($value);
-        $this->chambreDescGenerale = $value;
-        $this->touch();
+        $this->assign('chambreDescGenerale', $value);
     }
 
     /** @return list<string> */
@@ -976,8 +953,7 @@ class Lieu implements AvecHorairesJours
 
     public function changeSalleReunionExist(bool $value): void
     {
-        $this->salleReunionExist = $value;
-        $this->touch();
+        $this->assign('salleReunionExist', $value);
     }
 
     public function salleReunionNbTotal(): ?int
@@ -987,8 +963,7 @@ class Lieu implements AvecHorairesJours
 
     public function changeSalleReunionNbTotal(?int $value): void
     {
-        $this->salleReunionNbTotal = $value;
-        $this->touch();
+        $this->assign('salleReunionNbTotal', $value);
     }
 
     public function salleReunionCapaciteMaxCocktail(): ?int
@@ -998,8 +973,7 @@ class Lieu implements AvecHorairesJours
 
     public function changeSalleReunionCapaciteMaxCocktail(?int $value): void
     {
-        $this->salleReunionCapaciteMaxCocktail = $value;
-        $this->touch();
+        $this->assign('salleReunionCapaciteMaxCocktail', $value);
     }
 
     public function salleReunionCapaciteMaxTheatre(): ?int
@@ -1009,8 +983,7 @@ class Lieu implements AvecHorairesJours
 
     public function changeSalleReunionCapaciteMaxTheatre(?int $value): void
     {
-        $this->salleReunionCapaciteMaxTheatre = $value;
-        $this->touch();
+        $this->assign('salleReunionCapaciteMaxTheatre', $value);
     }
 
     public function salleReunionCapaciteMinTheatre(): ?int
@@ -1020,8 +993,7 @@ class Lieu implements AvecHorairesJours
 
     public function changeSalleReunionCapaciteMinTheatre(?int $value): void
     {
-        $this->salleReunionCapaciteMinTheatre = $value;
-        $this->touch();
+        $this->assign('salleReunionCapaciteMinTheatre', $value);
     }
 
     public function salleReunionSurfaceMinReunion(): ?int
@@ -1031,8 +1003,7 @@ class Lieu implements AvecHorairesJours
 
     public function changeSalleReunionSurfaceMinReunion(?int $value): void
     {
-        $this->salleReunionSurfaceMinReunion = $value;
-        $this->touch();
+        $this->assign('salleReunionSurfaceMinReunion', $value);
     }
 
     public function salleReunionSurfaceMaxReunion(): ?int
@@ -1042,8 +1013,7 @@ class Lieu implements AvecHorairesJours
 
     public function changeSalleReunionSurfaceMaxReunion(?int $value): void
     {
-        $this->salleReunionSurfaceMaxReunion = $value;
-        $this->touch();
+        $this->assign('salleReunionSurfaceMaxReunion', $value);
     }
 
     public function salleReunionDescSalleSeminaire(): ?string
@@ -1054,8 +1024,7 @@ class Lieu implements AvecHorairesJours
     public function changeSalleReunionDescSalleSeminaire(?string $value): void
     {
         $value = self::normalizeNullableString(self::texteBrut($value));
-        $this->salleReunionDescSalleSeminaire = $value;
-        $this->touch();
+        $this->assign('salleReunionDescSalleSeminaire', $value);
     }
 
     /** @return list<string> */
@@ -1113,8 +1082,7 @@ class Lieu implements AvecHorairesJours
 
     public function changeRseDescGenerale(?string $value): void
     {
-        $this->rseDescGenerale = self::normalizeNullableString($value);
-        $this->touch();
+        $this->assign('rseDescGenerale', self::normalizeNullableString($value));
     }
 
     public function demarcheRse(): bool
@@ -1124,8 +1092,7 @@ class Lieu implements AvecHorairesJours
 
     public function changeDemarcheRse(bool $value): void
     {
-        $this->demarcheRse = $value;
-        $this->touch();
+        $this->assign('demarcheRse', $value);
     }
 
     /** @return list<string> */
@@ -1210,8 +1177,7 @@ class Lieu implements AvecHorairesJours
     public function changeLoisirInterne(array $values): void
     {
         $values = array_map(static fn (string $value): string => trim($value), $values);
-        $this->loisirInterne = array_values(array_unique(array_filter($values, static fn (string $value): bool => '' !== $value)));
-        $this->touch();
+        $this->assign('loisirInterne', array_values(array_unique(array_filter($values, static fn (string $value): bool => '' !== $value))));
     }
 
     /** @return list<string> */
@@ -1224,8 +1190,7 @@ class Lieu implements AvecHorairesJours
     public function changeLoisirExterneNomPresta(array $values): void
     {
         $values = array_map(static fn (string $value): string => trim($value), $values);
-        $this->loisirExterneNomPresta = array_values(array_unique(array_filter($values, static fn (string $value): bool => '' !== $value)));
-        $this->touch();
+        $this->assign('loisirExterneNomPresta', array_values(array_unique(array_filter($values, static fn (string $value): bool => '' !== $value))));
     }
 
     /** @return list<string> */
@@ -1238,8 +1203,7 @@ class Lieu implements AvecHorairesJours
     public function changeLoisirExterneNomActivite(array $values): void
     {
         $values = array_map(static fn (string $value): string => trim($value), $values);
-        $this->loisirExterneNomActivite = array_values(array_unique(array_filter($values, static fn (string $value): bool => '' !== $value)));
-        $this->touch();
+        $this->assign('loisirExterneNomActivite', array_values(array_unique(array_filter($values, static fn (string $value): bool => '' !== $value))));
     }
 
     public function restaurantTotal(): ?int
@@ -1249,8 +1213,7 @@ class Lieu implements AvecHorairesJours
 
     public function changeRestaurantTotal(?int $value): void
     {
-        $this->restaurantTotal = $value;
-        $this->touch();
+        $this->assign('restaurantTotal', $value);
     }
 
     public function restaurantSalleRestauration(): ?int
@@ -1260,8 +1223,7 @@ class Lieu implements AvecHorairesJours
 
     public function changeRestaurantSalleRestauration(?int $value): void
     {
-        $this->restaurantSalleRestauration = $value;
-        $this->touch();
+        $this->assign('restaurantSalleRestauration', $value);
     }
 
     public function restaurantCapaciteDebout(): ?int
@@ -1271,8 +1233,7 @@ class Lieu implements AvecHorairesJours
 
     public function changeRestaurantCapaciteDebout(?int $value): void
     {
-        $this->restaurantCapaciteDebout = $value;
-        $this->touch();
+        $this->assign('restaurantCapaciteDebout', $value);
     }
 
     public function restaurantCapaciteAssis(): ?int
@@ -1282,8 +1243,7 @@ class Lieu implements AvecHorairesJours
 
     public function changeRestaurantCapaciteAssis(?int $value): void
     {
-        $this->restaurantCapaciteAssis = $value;
-        $this->touch();
+        $this->assign('restaurantCapaciteAssis', $value);
     }
 
     public function restaurantSoireeDansante(): ?bool
@@ -1293,8 +1253,7 @@ class Lieu implements AvecHorairesJours
 
     public function changeRestaurantSoireeDansante(?bool $value): void
     {
-        $this->restaurantSoireeDansante = $value;
-        $this->touch();
+        $this->assign('restaurantSoireeDansante', $value);
     }
 
     public function restaurantCocktailDinatoire(): ?bool
@@ -1304,8 +1263,7 @@ class Lieu implements AvecHorairesJours
 
     public function changeRestaurantCocktailDinatoire(?bool $value): void
     {
-        $this->restaurantCocktailDinatoire = $value;
-        $this->touch();
+        $this->assign('restaurantCocktailDinatoire', $value);
     }
 
     public function restaurantTraiteurSurPlace(): ?bool
@@ -1315,8 +1273,7 @@ class Lieu implements AvecHorairesJours
 
     public function changeRestaurantTraiteurSurPlace(?bool $value): void
     {
-        $this->restaurantTraiteurSurPlace = $value;
-        $this->touch();
+        $this->assign('restaurantTraiteurSurPlace', $value);
     }
 
     public function restaurantInterventionTraiteurExterne(): ?bool
@@ -1326,8 +1283,7 @@ class Lieu implements AvecHorairesJours
 
     public function changeRestaurantInterventionTraiteurExterne(?bool $value): void
     {
-        $this->restaurantInterventionTraiteurExterne = $value;
-        $this->touch();
+        $this->assign('restaurantInterventionTraiteurExterne', $value);
     }
 
     public function restaurantTrateurExterneClient(): ?bool
@@ -1337,8 +1293,7 @@ class Lieu implements AvecHorairesJours
 
     public function changeRestaurantTrateurExterneClient(?bool $value): void
     {
-        $this->restaurantTrateurExterneClient = $value;
-        $this->touch();
+        $this->assign('restaurantTrateurExterneClient', $value);
     }
 
     public function restaurantPrivatisable(): ?bool
@@ -1348,8 +1303,7 @@ class Lieu implements AvecHorairesJours
 
     public function changeRestaurantPrivatisable(?bool $value): void
     {
-        $this->restaurantPrivatisable = $value;
-        $this->touch();
+        $this->assign('restaurantPrivatisable', $value);
     }
 
     public function restaurantHeureInterruptionMusique(): ?string
@@ -1360,8 +1314,7 @@ class Lieu implements AvecHorairesJours
     public function changeRestaurantHeureInterruptionMusique(?string $value): void
     {
         $value = self::normalizeNullableString($value);
-        $this->restaurantHeureInterruptionMusique = $value;
-        $this->touch();
+        $this->assign('restaurantHeureInterruptionMusique', $value);
     }
 
     /** @return list<string> */
@@ -1396,8 +1349,7 @@ class Lieu implements AvecHorairesJours
     public function changeGeneraleYoutube(?string $value): void
     {
         $value = self::normalizeNullableString($value);
-        $this->generaleYoutube = $value;
-        $this->touch();
+        $this->assign('generaleYoutube', $value);
     }
 
     /** @return list<string> */
@@ -1421,8 +1373,7 @@ class Lieu implements AvecHorairesJours
     {
         LieuLovCatalog::assertValid('MICE_STATUT', $value);
         $value = self::normalizeNullableString($value);
-        $this->miceStatut = $value;
-        $this->touch();
+        $this->assign('miceStatut', $value);
     }
 
     public function afficherContact(): bool
@@ -1432,8 +1383,7 @@ class Lieu implements AvecHorairesJours
 
     public function changeAfficherContact(bool $value): void
     {
-        $this->afficherContact = $value;
-        $this->touch();
+        $this->assign('afficherContact', $value);
     }
 
     public function markChanged(): void
@@ -1490,5 +1440,23 @@ class Lieu implements AvecHorairesJours
         $value = trim($value);
 
         return '' === $value ? null : $value;
+    }
+
+    /**
+     * Affecte la propriété et marque la fiche modifiée, seulement si la valeur
+     * change : enregistrer sans rien modifier ne remet pas la fiche « en cours »
+     * (même règle que les LOV et les sites de diffusion).
+     */
+    private function assign(string $property, mixed $value): void
+    {
+        $propriete = new \ReflectionProperty($this, $property);
+        if ($propriete->isInitialized($this)) {
+            $courante = $this->{$property};
+            if ($courante === $value || (is_object($value) && is_object($courante) && $courante::class === $value::class && $courante == $value)) {
+                return;
+            }
+        }
+        $this->{$property} = $value;
+        $this->touch();
     }
 }
