@@ -36,7 +36,6 @@ final readonly class ComputeDashboardStatsHandler
         $compacted = $this->snapshots->compactOlderThan(
             new \DateTimeImmutable(self::COMPACTION_WINDOW),
         );
-        $this->entityManager->flush();
         $this->logger->info('Statistiques du tableau de bord calculées.', [
             'snapshot_id' => $snapshot->id(),
             'duration_ms' => $durationMs,

@@ -8,7 +8,6 @@ use App\Shared\Outbox\OutboxPublisherInterface;
 use App\Vision\Message\LancerRecoEnMasse;
 use App\Vision\Repository\ImageRecognitionRepository;
 use App\Vision\Service\ImageRecognitionManager;
-use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
@@ -25,7 +24,6 @@ final readonly class LancerRecoEnMasseHandler
         private ImageRecognitionManager $manager,
         private ImageRecognitionRepository $recognitions,
         private OutboxPublisherInterface $outbox,
-        private EntityManagerInterface $entityManager,
         private LoggerInterface $logger,
     ) {
     }
@@ -41,7 +39,6 @@ final readonly class LancerRecoEnMasseHandler
         }
         if ($launched > 0 && $this->recognitions->countPhotosSansMotsClesSansAnalyse() > 0) {
             $this->outbox->enqueue(new LancerRecoEnMasse($message->actor));
-            $this->entityManager->flush();
         }
     }
 }

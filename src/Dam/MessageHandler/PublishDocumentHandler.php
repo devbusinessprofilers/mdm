@@ -12,7 +12,6 @@ use App\Dam\Repository\MediaAssetRepository;
 use App\Pim\Repository\RessourceLieuRepository;
 use App\Shared\Service\PrivateObjectStorageInterface;
 use App\Shared\Service\PublicObjectStorageInterface;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
@@ -24,7 +23,6 @@ final readonly class PublishDocumentHandler
         private MediaAssetRepository $assets,
         private PrivateObjectStorageInterface $privateStorage,
         private PublicObjectStorageInterface $publicStorage,
-        private EntityManagerInterface $entityManager,
         #[Autowire(env: 'S3_PREFIX')]
         private string $storagePrefix,
     ) {
@@ -80,6 +78,5 @@ final readonly class PublishDocumentHandler
             }
         }
         $resource->confirmPublication($key);
-        $this->entityManager->flush();
     }
 }

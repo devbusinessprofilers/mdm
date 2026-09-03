@@ -8,6 +8,7 @@ use App\Dashboard\Message\ComputeDashboardStats;
 use App\Dashboard\Message\ComputeFieldFillRates;
 use App\Dashboard\MessageHandler\ComputeDashboardStatsHandler;
 use App\Dashboard\MessageHandler\ComputeFieldFillRatesHandler;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -25,6 +26,7 @@ final class RecomputeDashboardCommand extends Command
     public function __construct(
         private readonly ComputeDashboardStatsHandler $statsHandler,
         private readonly ComputeFieldFillRatesHandler $fieldFillHandler,
+        private readonly EntityManagerInterface $entityManager,
     ) {
         parent::__construct();
     }
@@ -32,9 +34,12 @@ final class RecomputeDashboardCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
+        // Appel direct, hors bus : le flush que le middleware de réception ferait est fait ici.
         ($this->statsHandler)(new ComputeDashboardStats());
+        $this->entityManager->flush();
         $io->text('Snapshot des statistiques recalculé.');
         ($this->fieldFillHandler)(new ComputeFieldFillRates());
+        $this->entityManager->flush();
         $io->text('Snapshot des taux de remplissage recalculé.');
         $io->success('Tableau de bord à jour.');
 

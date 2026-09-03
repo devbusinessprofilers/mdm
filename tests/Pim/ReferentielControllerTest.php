@@ -23,6 +23,7 @@ use App\Pim\Service\FicheSearchIndexer;
 use App\Pim\Service\ReferentielActionGroupee;
 use App\Pim\Service\ReferentielListeProvider;
 use App\Shared\Service\PrivateObjectStorageInterface;
+use App\Tests\Support\CommeUnWorker;
 use App\Tests\Support\LieuComplet;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
@@ -896,7 +897,7 @@ final class ReferentielControllerTest extends WebTestCase
         self::assertStringContainsString('"statut":"en_attente"', (string) $client->getResponse()->getContent());
 
         $handler = self::getContainer()->get(\App\Pim\MessageHandler\GenererReferentielExportHandler::class);
-        $handler(new \App\Pim\Message\GenererReferentielExport($exportId));
+        CommeUnWorker::traiter($entityManager, $handler, new \App\Pim\Message\GenererReferentielExport($exportId));
 
         $client->request('GET', $suivi.'/statut');
         self::assertStringContainsString('"statut":"terminee"', (string) $client->getResponse()->getContent());
@@ -994,7 +995,7 @@ final class ReferentielControllerTest extends WebTestCase
 
         // Le worker re-résout la sélection depuis les filtres stockés.
         $handler = self::getContainer()->get(\App\Pim\MessageHandler\GenererReferentielExportHandler::class);
-        $handler(new \App\Pim\Message\GenererReferentielExport($exportId));
+        CommeUnWorker::traiter($entityManager, $handler, new \App\Pim\Message\GenererReferentielExport($exportId));
 
         $client->request('GET', $suivi.'/fichier');
         self::assertResponseIsSuccessful();
@@ -1084,7 +1085,7 @@ final class ReferentielControllerTest extends WebTestCase
         $exportId = substr($suivi, -26);
 
         $handler = self::getContainer()->get(\App\Pim\MessageHandler\GenererReferentielExportHandler::class);
-        $handler(new \App\Pim\Message\GenererReferentielExport($exportId));
+        CommeUnWorker::traiter($entityManager, $handler, new \App\Pim\Message\GenererReferentielExport($exportId));
         self::assertCount(1, $stockage->objets);
 
         // Rétention écoulée : la purge quotidienne retire le classeur du

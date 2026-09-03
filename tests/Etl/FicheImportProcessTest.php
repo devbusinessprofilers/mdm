@@ -13,6 +13,7 @@ use App\Etl\MessageHandler\StartFicheImportHandler;
 use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Entity\SiteDiffusion;
 use App\Pim\Enum\TypeFiche;
+use App\Tests\Support\CommeUnWorker;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
 use OpenSpout\Common\Entity\Row;
@@ -115,7 +116,7 @@ final class FicheImportProcessTest extends KernelTestCase
         $entityManager->flush();
 
         $batchHandler = $container->get(ProcessFicheImportBatchHandler::class);
-        $batchHandler(new ProcessFicheImportBatch($jobId, 2));
+        CommeUnWorker::traiter($entityManager, $batchHandler, new ProcessFicheImportBatch($jobId, 2));
 
         $entityManager->clear();
         $job = $entityManager->find(FicheImportJob::class, Ulid::fromString($jobId));
@@ -160,7 +161,7 @@ final class FicheImportProcessTest extends KernelTestCase
         self::assertGreaterThan(0, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM outbox_message'));
 
         // Redélivrance du même batch : la garde lastProcessedLine évite tout retraitement.
-        $batchHandler(new ProcessFicheImportBatch($jobId, 2));
+        CommeUnWorker::traiter($entityManager, $batchHandler, new ProcessFicheImportBatch($jobId, 2));
         $entityManager->clear();
         $job = $entityManager->find(FicheImportJob::class, Ulid::fromString($jobId));
         self::assertInstanceOf(FicheImportJob::class, $job);

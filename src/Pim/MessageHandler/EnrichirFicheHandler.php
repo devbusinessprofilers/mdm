@@ -36,7 +36,6 @@ use App\Pim\Service\Wikidata\ChaineDictionnaire;
 use App\Pim\Service\Wikidata\WikidataChaineClient;
 use App\Shared\Outbox\OutboxPublisherInterface;
 use App\Shared\Service\ParametreProviderInterface;
-use Doctrine\ORM\EntityManagerInterface;
 use Monolog\Attribute\WithMonologChannel;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
@@ -77,7 +76,6 @@ final readonly class EnrichirFicheHandler
         private FicheEnrichmentRunRepository $runs,
         private ParametreProviderInterface $parametres,
         private OutboxPublisherInterface $outbox,
-        private EntityManagerInterface $entityManager,
         private LoggerInterface $logger,
     ) {
     }
@@ -175,7 +173,6 @@ final readonly class EnrichirFicheHandler
             static fn (int|string|null $valeur): int|string => $valeur ?? ResultatSourceEnrichissement::Indisponible->value,
             $resultat,
         ));
-        $this->entityManager->flush();
         $this->logger->info('Fiche enrichie à la demande.', ['fiche' => $fiche->idString(), 'resultat' => $resultat]);
     }
 
@@ -215,7 +212,6 @@ final readonly class EnrichirFicheHandler
 
             return null;
         }
-        $this->entityManager->flush();
         $this->scans->marquer([$fiche->idString()], $source, new \DateTimeImmutable());
 
         return $creees;

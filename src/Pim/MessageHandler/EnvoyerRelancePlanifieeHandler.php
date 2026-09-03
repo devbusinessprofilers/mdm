@@ -95,12 +95,10 @@ final readonly class EnvoyerRelancePlanifieeHandler
         }
         $this->entityManager->persist(new FicheRelance($fiche, $score, $emails));
         $planifiee->marquerEnvoyee();
-        $this->entityManager->flush();
     }
 
     private function ignorer(FicheRelancePlanifiee $planifiee, string $motif): void
     {
         $planifiee->marquerIgnoree($motif);
-        $this->entityManager->flush();
     }
 }

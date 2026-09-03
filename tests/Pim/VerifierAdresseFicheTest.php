@@ -14,6 +14,7 @@ use App\Pim\Message\VerifierAdresseFiche;
 use App\Pim\MessageHandler\IndexFicheHandler;
 use App\Pim\MessageHandler\VerifierAdresseFicheHandler;
 use App\Pim\Service\BanClientInterface;
+use App\Tests\Support\CommeUnWorker;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\Group;
@@ -68,7 +69,7 @@ final class VerifierAdresseFicheTest extends KernelTestCase
         self::assertSame(1, $this->outboxCount(VerifierAdresseFiche::class));
 
         $verifHandler = self::getContainer()->get(VerifierAdresseFicheHandler::class);
-        $verifHandler(new VerifierAdresseFiche($lieu->fiche()->idString()));
+        CommeUnWorker::traiter($this->entityManager, $verifHandler, new VerifierAdresseFiche($lieu->fiche()->idString()));
 
         $ligne = $this->connection->fetchAssociative(
             'SELECT latitude, ban_score, ban_ecart, ban_fingerprint, address_fingerprint FROM pim_localisation LIMIT 1',
@@ -102,7 +103,7 @@ final class VerifierAdresseFicheTest extends KernelTestCase
         ]));
 
         $verifHandler = self::getContainer()->get(VerifierAdresseFicheHandler::class);
-        $verifHandler(new VerifierAdresseFiche($lieu->fiche()->idString()));
+        CommeUnWorker::traiter($this->entityManager, $verifHandler, new VerifierAdresseFiche($lieu->fiche()->idString()));
 
         $ligne = $this->connection->fetchAssociative('SELECT ville, latitude, ban_ecart, ban_proposition FROM pim_localisation LIMIT 1');
         self::assertIsArray($ligne);
@@ -137,7 +138,7 @@ final class VerifierAdresseFicheTest extends KernelTestCase
         ]));
 
         $verifHandler = self::getContainer()->get(VerifierAdresseFicheHandler::class);
-        $verifHandler(new VerifierAdresseFiche($lieu->fiche()->idString()));
+        CommeUnWorker::traiter($this->entityManager, $verifHandler, new VerifierAdresseFiche($lieu->fiche()->idString()));
 
         $ligne = $this->connection->fetchAssociative('SELECT ban_ecart, ban_proposition FROM pim_localisation LIMIT 1');
         self::assertIsArray($ligne);

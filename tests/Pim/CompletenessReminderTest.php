@@ -23,6 +23,7 @@ use App\Pim\Repository\FicheRelanceRepository;
 use App\Pim\Repository\FicheRepository;
 use App\Pim\Service\CompletenessReminderMailer;
 use App\Pim\Service\RelanceCompletudePlanificateur;
+use App\Tests\Support\CommeUnWorker;
 use App\Tests\Support\ParametresFixes;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\Group;
@@ -181,7 +182,7 @@ final class CompletenessReminderTest extends KernelTestCase
         $this->entityManager->clear();
         $mailer = $this->mailerEspion();
         $handler = $this->envoiHandler($mailer);
-        $handler($message);
+        CommeUnWorker::traiter($this->entityManager, $handler, $message);
 
         self::assertCount(2, $mailer->messages);
         $subjects = array_map(static fn (RawMessage $mail): string => $mail instanceof Email ? (string) $mail->getSubject() : '', $mailer->messages);
@@ -195,7 +196,7 @@ final class CompletenessReminderTest extends KernelTestCase
         self::assertSame(StatutRelancePlanifiee::Envoyee, $this->ligneDeFiche($repository->lotCourant(), $chateau)->statut());
 
         // Redélivrance : la garde de statut bloque tout nouvel envoi.
-        $handler($message);
+        CommeUnWorker::traiter($this->entityManager, $handler, $message);
         self::assertCount(2, $mailer->messages);
         self::assertCount(1, self::getContainer()->get(FicheRelanceRepository::class)->findAll());
     }
@@ -214,7 +215,7 @@ final class CompletenessReminderTest extends KernelTestCase
         $this->entityManager->clear();
 
         $mailer = $this->mailerEspion();
-        $this->envoiHandler($mailer)(new EnvoyerRelancePlanifiee($ligne->id()));
+        CommeUnWorker::traiter($this->entityManager, $this->envoiHandler($mailer), new EnvoyerRelancePlanifiee($ligne->id()));
 
         self::assertSame([], $mailer->messages);
         self::assertSame([], self::getContainer()->get(FicheRelanceRepository::class)->findAll());

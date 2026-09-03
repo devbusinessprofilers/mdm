@@ -18,7 +18,6 @@ use App\Shared\Service\ParametreProviderInterface;
 use App\Shared\Service\PrivateObjectStorageInterface;
 use App\Vision\Entity\ImageRecognition;
 use App\Vision\Service\ImageRecognitionManager;
-use Doctrine\ORM\EntityManagerInterface;
 use Monolog\Attribute\WithMonologChannel;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
@@ -35,7 +34,6 @@ final readonly class MediaUploadedHandler
         private OutboxPublisherInterface $outbox,
         private ImageRecognitionManager $recognitions,
         private ParametreProviderInterface $parametres,
-        private EntityManagerInterface $entityManager,
         private LoggerInterface $logger,
     ) {
     }
@@ -109,7 +107,6 @@ final readonly class MediaUploadedHandler
                 $duplicate?->id(),
             ),
         );
-        $this->entityManager->flush();
     }
 
     private function downloadOriginal(MediaAsset $media): ?string

@@ -10,6 +10,7 @@ use App\Pim\Message\EnrichirFiche;
 use App\Pim\Message\VerifierAdresseFiche;
 use App\Pim\MessageHandler\EnrichirFicheHandler;
 use App\Shared\Service\ParametreProvider;
+use App\Tests\Support\CommeUnWorker;
 use App\Tests\Support\ParametreEnBase;
 use App\Vision\Service\OpenAiProviderException;
 use App\Vision\Service\TextSuggestionProviderInterface;
@@ -62,7 +63,7 @@ final class EnrichirFicheHandlerTest extends KernelTestCase
         $lieu = $this->lieu();
 
         $handler = self::getContainer()->get(EnrichirFicheHandler::class);
-        $handler(new EnrichirFiche($lieu->fiche()->idString()));
+        CommeUnWorker::traiter($this->entityManager, $handler, new EnrichirFiche($lieu->fiche()->idString()));
 
         self::assertSame(1, $this->outboxCount(VerifierAdresseFiche::class), 'La vérification BAN est toujours enfilée.');
         self::assertSame(0, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM pim_fiche_suggestion'));
@@ -85,8 +86,8 @@ final class EnrichirFicheHandlerTest extends KernelTestCase
         $avecDescription = $this->lieu('Déjà décrite à la main.');
 
         $handler = self::getContainer()->get(EnrichirFicheHandler::class);
-        $handler(new EnrichirFiche($sansDescription->fiche()->idString()));
-        $handler(new EnrichirFiche($avecDescription->fiche()->idString()));
+        CommeUnWorker::traiter($this->entityManager, $handler, new EnrichirFiche($sansDescription->fiche()->idString()));
+        CommeUnWorker::traiter($this->entityManager, $handler, new EnrichirFiche($avecDescription->fiche()->idString()));
 
         $suggestions = $this->connection->fetchAllAssociative('SELECT source, champ, statut, valeur_proposee, payload FROM pim_fiche_suggestion');
         self::assertCount(1, $suggestions, 'Un champ déjà rempli n\'est pas re-proposé.');
@@ -107,7 +108,7 @@ final class EnrichirFicheHandlerTest extends KernelTestCase
         $lieu = $this->lieu();
 
         $handler = self::getContainer()->get(EnrichirFicheHandler::class);
-        $handler(new EnrichirFiche($lieu->fiche()->idString()));
+        CommeUnWorker::traiter($this->entityManager, $handler, new EnrichirFiche($lieu->fiche()->idString()));
 
         self::assertSame(0, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM pim_fiche_suggestion'));
         self::assertSame(0, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM pim_fiche_enrichment_scan'), 'Une panne d\'API laisse la fiche à re-scanner.');
@@ -122,7 +123,7 @@ final class EnrichirFicheHandlerTest extends KernelTestCase
         $lieu = $this->lieu();
 
         $handler = self::getContainer()->get(EnrichirFicheHandler::class);
-        $handler(new EnrichirFiche($lieu->fiche()->idString()));
+        CommeUnWorker::traiter($this->entityManager, $handler, new EnrichirFiche($lieu->fiche()->idString()));
 
         $run = $this->connection->fetchAssociative('SELECT resultat FROM pim_fiche_enrichment_run');
         self::assertIsArray($run);

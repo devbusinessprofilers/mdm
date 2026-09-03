@@ -11,7 +11,6 @@ use App\Enrichment\Service\TranslationProviderInterface;
 use App\Etl\Service\MarketplaceSyncScheduler;
 use App\Pim\Entity\Fiche;
 use App\Pim\Repository\FicheRepository;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler]
@@ -21,7 +20,6 @@ final readonly class TranslatePublishedFicheHandler
         private FicheRepository $fiches,
         private FicheTranslationRepository $translations,
         private TranslationProviderInterface $provider,
-        private EntityManagerInterface $entityManager,
         private MarketplaceSyncScheduler $marketplaceScheduler,
     ) {
     }
@@ -50,6 +48,5 @@ final readonly class TranslatePublishedFicheHandler
         // Les traductions fraîchement disponibles redescendent vers la
         // marketplace via une resynchronisation du snapshot complet.
         $this->marketplaceScheduler->schedule($fiche);
-        $this->entityManager->flush();
     }
 }

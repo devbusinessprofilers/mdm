@@ -10,7 +10,6 @@ use App\Dam\Repository\MediaAssetRepository;
 use App\Dam\Repository\MediaPerceptualHashBandRepository;
 use App\Shared\Service\PrivateObjectStorageInterface;
 use App\Shared\Service\PublicObjectStorageInterface;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler]
@@ -21,7 +20,6 @@ final readonly class DeleteMediaHandler
         private MediaPerceptualHashBandRepository $bands,
         private PrivateObjectStorageInterface $privateStorage,
         private PublicObjectStorageInterface $publicStorage,
-        private EntityManagerInterface $entityManager,
     ) {
     }
 
@@ -40,6 +38,5 @@ final readonly class DeleteMediaHandler
         // à la détection de doublons et la table grossirait indéfiniment.
         $this->bands->deleteForMedia($media->id());
         $media->markDeleted();
-        $this->entityManager->flush();
     }
 }

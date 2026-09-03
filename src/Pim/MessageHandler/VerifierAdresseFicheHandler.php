@@ -11,7 +11,6 @@ use App\Pim\Repository\FicheRepository;
 use App\Pim\Service\GeocodeurAdresses;
 use App\Pim\Service\LocalisationBanVerifier;
 use App\Shared\Outbox\OutboxPublisherInterface;
-use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
@@ -28,7 +27,6 @@ final readonly class VerifierAdresseFicheHandler
         private FicheRepository $fiches,
         private GeocodeurAdresses $geocodeurs,
         private OutboxPublisherInterface $outbox,
-        private EntityManagerInterface $entityManager,
         private LoggerInterface $logger,
     ) {
     }
@@ -62,7 +60,6 @@ final readonly class VerifierAdresseFicheHandler
         if ($modifie) {
             $this->outbox->enqueue(new IndexFiche($fiche->idString()));
         }
-        $this->entityManager->flush();
         $this->logger->info('Adresse vérifiée.', [
             'fiche' => $fiche->idString(),
             'panier' => LocalisationBanVerifier::panier($localisation, $resultat, LocalisationBanVerifier::SEUIL_DEFAUT),

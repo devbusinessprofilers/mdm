@@ -12,6 +12,7 @@ use App\Pim\Message\VerifierAdresseFiche;
 use App\Pim\MessageHandler\IndexFicheHandler;
 use App\Pim\MessageHandler\VerifierAdresseFicheHandler;
 use App\Pim\Service\GeocodeurEtrangerInterface;
+use App\Tests\Support\CommeUnWorker;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\Group;
@@ -72,7 +73,7 @@ final class VerifierAdresseEtrangereTest extends WebTestCase
         self::assertSame(1, $this->outboxCount(VerifierAdresseFiche::class));
 
         $verifHandler = self::getContainer()->get(VerifierAdresseFicheHandler::class);
-        $verifHandler(new VerifierAdresseFiche($lieu->fiche()->idString()));
+        CommeUnWorker::traiter($this->entityManager, $verifHandler, new VerifierAdresseFiche($lieu->fiche()->idString()));
 
         $ligne = $this->connection->fetchAssociative(
             'SELECT latitude, ban_score, ban_ecart, ban_fingerprint, address_fingerprint FROM pim_localisation LIMIT 1',
@@ -106,7 +107,7 @@ final class VerifierAdresseEtrangereTest extends WebTestCase
         ]));
 
         $verifHandler = self::getContainer()->get(VerifierAdresseFicheHandler::class);
-        $verifHandler(new VerifierAdresseFiche($lieu->fiche()->idString()));
+        CommeUnWorker::traiter($this->entityManager, $verifHandler, new VerifierAdresseFiche($lieu->fiche()->idString()));
 
         $ligne = $this->connection->fetchAssociative('SELECT ville, ban_ecart, ban_proposition FROM pim_localisation LIMIT 1');
         self::assertIsArray($ligne);

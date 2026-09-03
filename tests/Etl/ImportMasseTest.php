@@ -16,6 +16,7 @@ use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Entity\Lieu\Salle;
 use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Lov\LieuLovCatalog;
+use App\Tests\Support\CommeUnWorker;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
 use OpenSpout\Common\Entity\Row;
@@ -131,7 +132,7 @@ final class ImportMasseTest extends WebTestCase
         foreach ($jobs as $job) {
             $jobId = (string) Ulid::fromBinary((string) $job['id']);
             $start(new StartFicheImport($jobId));
-            $process(new ProcessFicheImportBatch($jobId, 2));
+            CommeUnWorker::traiter($entityManager, $process, new ProcessFicheImportBatch($jobId, 2));
         }
         foreach ($this->connection->fetchAllAssociative('SELECT status, failure_message, error_count FROM etl_import_job') as $etat) {
             self::assertSame(ImportJobStatus::Termine->value, (string) $etat['status'], (string) $etat['failure_message']);
@@ -218,7 +219,7 @@ final class ImportMasseTest extends WebTestCase
         $start = self::getContainer()->get(StartFicheImportHandler::class);
         $process = self::getContainer()->get(ProcessFicheImportBatchHandler::class);
         $start(new StartFicheImport($jobId));
-        $process(new ProcessFicheImportBatch($jobId, 2));
+        CommeUnWorker::traiter($entityManager, $process, new ProcessFicheImportBatch($jobId, 2));
         $etat = $this->connection->fetchAssociative('SELECT status, failure_message FROM etl_import_job');
         self::assertIsArray($etat);
         self::assertSame(ImportJobStatus::Termine->value, (string) $etat['status'], (string) $etat['failure_message']);

@@ -73,3 +73,13 @@ Les messages de `Shared` doivent rester petits, sérialisables et stables. Les
 interfaces ne doivent pas importer les entités d'un domaine. Toute nouvelle
 règle métier reste dans son module propriétaire ; `Shared` fournit seulement le
 contrat ou l'infrastructure réutilisable.
+
+## Handlers Messenger et `flush()`
+
+`ReceivedDoctrineTransactionMiddleware` ouvre une transaction avant tout
+handler reçu par un worker et flush à la fin : un handler ne flush pas
+lui-même. Deux exceptions, à commenter sur place : un `clear()` qui suit (le
+flush sauve ce qui serait perdu), et une mutation qui doit survivre à un
+vidage de l'EntityManager par un service appelé ensuite (exporteur, processeur
+d'import). Un handler appelé hors bus (commande console, test) doit flush
+lui-même après l'appel — c'est l'appelant qui joue le rôle du middleware.

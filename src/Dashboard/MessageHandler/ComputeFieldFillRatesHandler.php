@@ -29,7 +29,6 @@ final readonly class ComputeFieldFillRatesHandler
         // Le calculateur vide l'EntityManager entre les lots : persister après.
         $snapshot = new DashboardSnapshot($payload, $durationMs, DashboardSnapshot::KIND_FIELD_FILL);
         $this->entityManager->persist($snapshot);
-        $this->entityManager->flush();
         $this->logger->info('Taux de remplissage des champs calculés.', [
             'snapshot_id' => $snapshot->id(),
             'duration_ms' => $durationMs,

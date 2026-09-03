@@ -9,6 +9,7 @@ use App\Dashboard\Message\ComputeDashboardStats;
 use App\Dashboard\MessageHandler\ComputeDashboardStatsHandler;
 use App\Dashboard\Repository\DashboardSnapshotRepository;
 use App\Dashboard\Service\DashboardStatsCalculator;
+use App\Tests\Support\CommeUnWorker;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\Group;
@@ -54,7 +55,7 @@ final class ComputeDashboardStatsHandlerTest extends KernelTestCase
 
     public function testHandlerPersistsSnapshotReturnedByLatest(): void
     {
-        ($this->handler)(new ComputeDashboardStats());
+        CommeUnWorker::traiter($this->entityManager, $this->handler, new ComputeDashboardStats());
 
         $latest = $this->repository->latest();
         self::assertNotNull($latest);
@@ -74,7 +75,7 @@ final class ComputeDashboardStatsHandlerTest extends KernelTestCase
         }
         $this->insertSnapshot(new \DateTimeImmutable('-1 hour')->format('Y-m-d H:i:s'));
 
-        ($this->handler)(new ComputeDashboardStats());
+        CommeUnWorker::traiter($this->entityManager, $this->handler, new ComputeDashboardStats());
 
         $oldCount = (int) $this->connection->fetchOne(
             'SELECT COUNT(*) FROM dashboard_snapshot WHERE DATE(computed_at) = ?',

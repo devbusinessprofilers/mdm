@@ -16,14 +16,12 @@ use App\Pim\Entity\AttributDefinition;
 use App\Pim\Entity\ValeurAttribut;
 use App\Pim\Repository\AttributDefinitionRepository;
 use App\Pim\Repository\ValeurAttributRepository;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler]
 final readonly class TranslateLovLabelHandler
 {
     public function __construct(
-        private EntityManagerInterface $entityManager,
         private AttributDefinitionRepository $attributes,
         private ValeurAttributRepository $values,
         private AttributeDefinitionTranslationRepository $definitionTranslations,
@@ -57,6 +55,5 @@ final readonly class TranslateLovLabelHandler
         if ($subject instanceof ValeurAttribut && TranslationStatus::Available === $translation->status()) {
             $this->marketplace->schedule();
         }
-        $this->entityManager->flush();
     }
 }

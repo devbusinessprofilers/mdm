@@ -6,7 +6,6 @@ namespace App\Pim\MessageHandler;
 
 use App\Pim\Repository\RessourceLieuRepository;
 use App\Shared\Message\MediaProcessed;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler]
@@ -14,7 +13,6 @@ final readonly class MediaProcessedHandler
 {
     public function __construct(
         private RessourceLieuRepository $resources,
-        private EntityManagerInterface $entityManager,
     ) {
     }
 
@@ -26,6 +24,5 @@ final readonly class MediaProcessedHandler
         }
 
         $resource->fiche()->markSystemChanged();
-        $this->entityManager->flush();
     }
 }

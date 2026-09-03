@@ -52,6 +52,7 @@ final readonly class GenererReferentielExportHandler
             return; // relivraison d'un message déjà traité
         }
         $export->demarrer();
+        // Flush voulu : l'exporteur vide l'EntityManager entre ses lots, le passage « en cours » serait perdu.
         $this->entityManager->flush();
 
         try {
@@ -90,7 +91,6 @@ final readonly class GenererReferentielExportHandler
         $export = $this->exports->find(Ulid::fromString($exportId));
         if ($export instanceof ReferentielExport) {
             $transition($export);
-            $this->entityManager->flush();
         }
     }
 }

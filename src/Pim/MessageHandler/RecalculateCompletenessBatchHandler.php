@@ -10,7 +10,6 @@ use App\Pim\Message\RecalculateCompletenessBatch;
 use App\Pim\Repository\CompletenessConfigurationRevisionRepository;
 use App\Pim\Repository\FicheRepository;
 use App\Shared\Outbox\OutboxPublisherInterface;
-use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
@@ -18,7 +17,6 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 final readonly class RecalculateCompletenessBatchHandler
 {
     public function __construct(
-        private EntityManagerInterface $entityManager,
         private FicheRepository $fiches,
         private CompletenessConfigurationRevisionRepository $revisions,
         private CompletenessManager $manager,
@@ -43,7 +41,6 @@ final readonly class RecalculateCompletenessBatchHandler
         if (count($fiches) === $limit) {
             $this->outbox->enqueue(new RecalculateCompletenessBatch($type->value, $message->revision, $lastId, $limit));
         }
-        $this->entityManager->flush();
         $this->logger->info('Lot de complétude calculé.', [
             'fiche_type' => $type->value,
             'revision' => $message->revision,

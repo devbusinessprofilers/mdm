@@ -81,6 +81,7 @@ final readonly class ProcessFicheImportBatchHandler
                 foreach ($outcome->errors as $error) {
                     $this->entityManager->persist(new FicheImportJobError($job, $error->lineNumber, $error->column, $error->message));
                 }
+                // Flush voulu : la ligne suivante peut vider l'EntityManager (clear du processeur).
                 $this->entityManager->flush();
                 ++$errors;
             } elseif (RowAction::Created === $outcome->action) {
@@ -98,7 +99,6 @@ final readonly class ProcessFicheImportBatchHandler
         } else {
             $job->finish();
         }
-        $this->entityManager->flush();
     }
 
     private function findJob(string $jobId): ?FicheImportJob

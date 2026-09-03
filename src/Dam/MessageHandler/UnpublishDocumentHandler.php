@@ -7,7 +7,6 @@ namespace App\Dam\MessageHandler;
 use App\Dam\Message\UnpublishDocument;
 use App\Pim\Repository\RessourceLieuRepository;
 use App\Shared\Service\PublicObjectStorageInterface;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler]
@@ -16,7 +15,6 @@ final readonly class UnpublishDocumentHandler
     public function __construct(
         private RessourceLieuRepository $resources,
         private PublicObjectStorageInterface $publicStorage,
-        private EntityManagerInterface $entityManager,
     ) {
     }
 
@@ -31,7 +29,6 @@ final readonly class UnpublishDocumentHandler
             && $resource->publicStorageKey() === $message->publicStorageKey
         ) {
             $resource->confirmUnpublication();
-            $this->entityManager->flush();
         }
     }
 }
