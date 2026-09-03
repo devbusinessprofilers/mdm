@@ -50,7 +50,9 @@ final class RestaurantApiTest extends WebTestCase
                 $this->connection->executeStatement('DELETE FROM '.$table);
             }
         }
-        if (isset($this->publicKeyFile)) { @unlink($this->publicKeyFile); }
+        if (isset($this->publicKeyFile)) {
+            @unlink($this->publicKeyFile);
+        }
         putenv('EXTERNAL_SITE_JWT_PUBLIC_KEY');
         unset($_ENV['EXTERNAL_SITE_JWT_PUBLIC_KEY'], $_SERVER['EXTERNAL_SITE_JWT_PUBLIC_KEY']);
 
@@ -94,6 +96,7 @@ final class RestaurantApiTest extends WebTestCase
 
     /**
      * @param array<string, string> $extra
+     *
      * @return array<string, string>
      */
     private function headers(array $extra = []): array

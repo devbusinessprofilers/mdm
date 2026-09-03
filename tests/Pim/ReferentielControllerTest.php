@@ -9,10 +9,10 @@ use App\Account\Enum\FicheAffiliationRole;
 use App\Pim\Entity\Fiche;
 use App\Pim\Entity\FicheAffiliation;
 use App\Pim\Entity\FicheCollaborateur;
-use App\Pim\Entity\Localisation;
-use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Entity\Lieu\RessourceLieu;
+use App\Pim\Entity\Localisation;
+use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Entity\SiteDiffusion;
 use App\Pim\Enum\NatureRessource;
 use App\Pim\Enum\StatutFiche;
@@ -23,12 +23,12 @@ use App\Pim\Service\FicheSearchIndexer;
 use App\Pim\Service\ReferentielActionGroupee;
 use App\Pim\Service\ReferentielListeProvider;
 use App\Shared\Service\PrivateObjectStorageInterface;
-use Symfony\Component\Uid\Ulid;
 use App\Tests\Support\LieuComplet;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\Group;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\Uid\Ulid;
 
 #[Group('database')]
 final class ReferentielControllerTest extends WebTestCase

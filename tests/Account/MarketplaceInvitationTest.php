@@ -61,5 +61,4 @@ final class MarketplaceInvitationTest extends TestCase
 
         self::assertSame(0, $client->getRequestsCount());
     }
-
 }

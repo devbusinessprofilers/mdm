@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Pim;
 
-use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Entity\Activite\Activite;
+use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Entity\Localisation;
 use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Entity\Service\ServiceEvenementiel;
@@ -322,7 +322,7 @@ final class MariaDbSearchEngineTest extends KernelTestCase
     }
 
     /** @param list<\App\Shared\Search\SearchResult> $results
-     *  @return list<string>
+     * @return list<string>
      */
     private function ids(array $results): array
     {

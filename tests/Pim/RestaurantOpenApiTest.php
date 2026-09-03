@@ -44,8 +44,7 @@ final class RestaurantOpenApiTest extends KernelTestCase
         self::assertNotNull($patch);
         self::assertTrue((bool) array_filter(
             $patch->getParameters(),
-            static fn ($parameter): bool =>
-                'If-Match' === $parameter->getName()
+            static fn ($parameter): bool => 'If-Match' === $parameter->getName()
                 && true === $parameter->getRequired(),
         ));
         self::assertNull($paths['/api/v1/restaurants']->getPost());

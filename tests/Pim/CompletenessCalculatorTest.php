@@ -45,7 +45,9 @@ final class CompletenessCalculatorTest extends TestCase
         $lieu = new Lieu();
         for ($i = 0; $i < 5; ++$i) {
             $room = new Salle();
-            if ($i < 4) { $room->changeNom('Salle '.($i + 1)); }
+            if ($i < 4) {
+                $room->changeNom('Salle '.($i + 1));
+            }
             $lieu->addSalle($room);
         }
         $configuration = new CompletenessFieldConfiguration(TypeFiche::Lieu, 'CONFIG_NOM', 'Nom de salle');

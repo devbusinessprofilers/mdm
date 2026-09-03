@@ -13,7 +13,6 @@ use App\Pim\Entity\SiteDiffusion;
 use App\Pim\Enum\StatutFiche;
 use App\Tests\Etl\RecordingMarketplaceClient;
 use App\Tests\Support\LieuComplet;
-use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\Group;
@@ -326,7 +325,7 @@ final class FicheLieuEditeurTest extends WebTestCase
     private function outboxCount(string $message): int
     {
         return (int) $this->connection->fetchOne(
-            "SELECT COUNT(*) FROM outbox_message WHERE message_type LIKE ?",
+            'SELECT COUNT(*) FROM outbox_message WHERE message_type LIKE ?',
             ['%'.$message],
         );
     }

@@ -24,32 +24,31 @@ final class ServiceOpenApiTest extends KernelTestCase
 
         foreach (
             [
-                "/api/v1/services",
-                "/api/v1/services/{id}",
-                "/api/v1/services/{serviceId}/medias",
-                "/api/v1/services/{serviceId}/medias/ordre",
-                "/api/v1/services/{serviceId}/medias/{resourceId}",
-                "/api/v1/services/{serviceId}/medias/{resourceId}/fichier",
-                "/api/v1/services/{serviceId}/documents",
-                "/api/v1/services/{serviceId}/documents/{documentId}",
-                "/api/v1/services/{serviceId}/documents/{documentId}/fichier",
-                "/api/v1/services/{serviceId}/documents/{documentId}/publication",
-                "/api/v1/services/{serviceId}/documents/{documentId}/download",
-            ]
-            as $path
+                '/api/v1/services',
+                '/api/v1/services/{id}',
+                '/api/v1/services/{serviceId}/medias',
+                '/api/v1/services/{serviceId}/medias/ordre',
+                '/api/v1/services/{serviceId}/medias/{resourceId}',
+                '/api/v1/services/{serviceId}/medias/{resourceId}/fichier',
+                '/api/v1/services/{serviceId}/documents',
+                '/api/v1/services/{serviceId}/documents/{documentId}',
+                '/api/v1/services/{serviceId}/documents/{documentId}/fichier',
+                '/api/v1/services/{serviceId}/documents/{documentId}/publication',
+                '/api/v1/services/{serviceId}/documents/{documentId}/download',
+            ] as $path
         ) {
             self::assertArrayHasKey($path, $paths);
         }
 
-        $patch = $paths["/api/v1/services/{id}"]->getPatch();
+        $patch = $paths['/api/v1/services/{id}']->getPatch();
         self::assertNotNull($patch);
         self::assertTrue(
             (bool) array_filter(
                 $patch->getParameters(),
-                static fn($parameter): bool => "If-Match" ===
+                static fn ($parameter): bool => 'If-Match' ===
                     $parameter->getName() && true === $parameter->getRequired(),
             ),
         );
-        self::assertNull($paths["/api/v1/services"]->getPost());
+        self::assertNull($paths['/api/v1/services']->getPost());
     }
 }

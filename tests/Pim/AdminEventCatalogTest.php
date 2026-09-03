@@ -6,8 +6,8 @@ namespace App\Tests\Pim;
 
 use App\Account\Message\InternalUserInvited;
 use App\Account\Message\InternalUserPasswordResetRequested;
-use App\Dam\Message\DeleteMedia;
 use App\Dam\Message\AnalyzeMedia;
+use App\Dam\Message\DeleteMedia;
 use App\Dam\Message\PublishDocument;
 use App\Dam\Message\RegenerateMedia;
 use App\Dam\Message\UnpublishDocument;

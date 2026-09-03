@@ -10,7 +10,6 @@ use App\Etl\Entity\FicheMarketplaceSync;
 use App\Etl\Message\PruneMarketplacePhotos;
 use App\Etl\Message\RemoveFicheFromMarketplace;
 use App\Etl\MessageHandler\PruneMarketplacePhotosHandler;
-use App\Etl\Repository\FicheMarketplaceSyncRepository;
 use App\Etl\Service\MarketplaceClientInterface;
 use App\Etl\Service\MarketplaceSyncScheduler;
 use App\Pim\Entity\Fiche;

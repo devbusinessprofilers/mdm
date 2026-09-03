@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Tests\Pim;
 
 use App\Pim\Entity\Activite\Activite;
-use App\Pim\Entity\Localisation;
 use App\Pim\Entity\Lieu\Lieu;
+use App\Pim\Entity\Localisation;
 use App\Pim\Service\DataTourisme\DataTourismeIndex;
 use App\Pim\Service\DataTourisme\DataTourismePoi;
 use App\Pim\Service\DataTourismeVerifier;

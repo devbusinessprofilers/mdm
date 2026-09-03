@@ -38,16 +38,16 @@ final class ServiceValidationTest extends KernelTestCase
             ValidationGroups::SUBMISSION,
         ]);
         $paths = array_map(
-            static fn(
+            static fn (
                 ConstraintViolationInterface $violation,
             ): string => $violation->getPropertyPath(),
             iterator_to_array($violations),
         );
 
         self::assertGreaterThan(10, count($violations));
-        self::assertContains("prestations", $paths);
-        self::assertContains("ressources", $paths);
-        self::assertContains("tarifParHeure", $paths);
+        self::assertContains('prestations', $paths);
+        self::assertContains('ressources', $paths);
+        self::assertContains('tarifParHeure', $paths);
     }
 
     public function testNegativeTariffsAreRejectedInDraft(): void
@@ -60,7 +60,7 @@ final class ServiceValidationTest extends KernelTestCase
         ]);
 
         self::assertSame(
-            "tarifParHeure",
+            'tarifParHeure',
             $violations->get(0)->getPropertyPath(),
         );
     }
@@ -69,19 +69,19 @@ final class ServiceValidationTest extends KernelTestCase
     {
         $service = new ServiceEvenementiel();
         $service->changeModeIntervention(ModeInterventionService::Mobile);
-        $service->changePaysMobiles(["France"]);
+        $service->changePaysMobiles(['France']);
 
         $violations = $this->validator->validate($service, null, [
             ValidationGroups::SUBMISSION,
         ]);
         $paths = array_map(
-            static fn(
+            static fn (
                 ConstraintViolationInterface $violation,
             ): string => $violation->getPropertyPath(),
             iterator_to_array($violations),
         );
 
-        self::assertContains("regionsMobiles", $paths);
-        self::assertContains("departementsMobiles", $paths);
+        self::assertContains('regionsMobiles', $paths);
+        self::assertContains('departementsMobiles', $paths);
     }
 }

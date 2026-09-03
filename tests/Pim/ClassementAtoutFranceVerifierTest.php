@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Pim;
 
-use App\Pim\Entity\Localisation;
 use App\Pim\Entity\Lieu\Lieu;
+use App\Pim\Entity\Localisation;
 use App\Pim\Repository\ClassementAtoutFranceRepository;
 use App\Pim\Service\ClassementAtoutFranceVerifier;
 use PHPUnit\Framework\TestCase;

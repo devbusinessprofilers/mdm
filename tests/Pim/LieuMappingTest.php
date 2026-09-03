@@ -5,15 +5,15 @@ declare(strict_types=1);
 namespace App\Tests\Pim;
 
 use App\Dam\Entity\MediaAsset;
-use App\Pim\Entity\Lieu\Lieu;
-use App\Pim\Entity\Localisation;
 use App\Pim\Entity\Fiche;
+use App\Pim\Entity\Lieu\AccesLieu;
+use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Entity\Lieu\LieuAdministratif;
 use App\Pim\Entity\Lieu\LieuTarification;
-use App\Pim\Entity\Lieu\AccesLieu;
 use App\Pim\Entity\Lieu\PeriodeFermeture;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Entity\Lieu\Salle;
+use App\Pim\Entity\Localisation;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Mapping\ClassMetadata;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;

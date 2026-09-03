@@ -53,8 +53,12 @@ final class LieuApiTest extends WebTestCase
                 $this->connection->executeStatement('DELETE FROM '.$table);
             }
         }
-        if (isset($this->publicKeyFile)) { @unlink($this->publicKeyFile); }
-        if (null !== $this->imageFile) { @unlink($this->imageFile); }
+        if (isset($this->publicKeyFile)) {
+            @unlink($this->publicKeyFile);
+        }
+        if (null !== $this->imageFile) {
+            @unlink($this->imageFile);
+        }
         putenv('EXTERNAL_SITE_JWT_PUBLIC_KEY');
         unset($_ENV['EXTERNAL_SITE_JWT_PUBLIC_KEY'], $_SERVER['EXTERNAL_SITE_JWT_PUBLIC_KEY']);
 
@@ -223,6 +227,7 @@ final class LieuApiTest extends WebTestCase
 
     /**
      * @param array<string, string> $extra
+     *
      * @return array<string, string>
      */
     private function headers(array $extra = []): array
@@ -267,13 +272,44 @@ final class LieuApiTest extends WebTestCase
 
 final class ApiTestObjectStorage implements PrivateObjectStorageInterface
 {
-    public function write(string $key, string $contents, array $options = []): void {}
-    public function writeStream(string $key, mixed $stream, array $options = []): void {}
-    public function read(string $key): string { return ''; }
-    public function readStream(string $key): mixed { $stream = fopen('php://temp', 'r+b'); if (false === $stream) { throw new \RuntimeException('Flux temporaire indisponible.'); } return $stream; }
-    public function exists(string $key): bool { return false; }
-    public function temporaryUrl(string $key, \DateTimeInterface $expiresAt): string { return 'https://private.example.test/'.$key; }
-    public function delete(string $key): void {}
+    public function write(string $key, string $contents, array $options = []): void
+    {
+    }
 
-    public function deleteDirectory(string $prefix): void {}
+    public function writeStream(string $key, mixed $stream, array $options = []): void
+    {
+    }
+
+    public function read(string $key): string
+    {
+        return '';
+    }
+
+    public function readStream(string $key): mixed
+    {
+        $stream = fopen('php://temp', 'r+b');
+        if (false === $stream) {
+            throw new \RuntimeException('Flux temporaire indisponible.');
+        }
+
+return $stream;
+    }
+
+    public function exists(string $key): bool
+    {
+        return false;
+    }
+
+    public function temporaryUrl(string $key, \DateTimeInterface $expiresAt): string
+    {
+        return 'https://private.example.test/'.$key;
+    }
+
+    public function delete(string $key): void
+    {
+    }
+
+    public function deleteDirectory(string $prefix): void
+    {
+    }
 }

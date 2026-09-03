@@ -28,7 +28,9 @@ final class BoxExtractProviderTest extends TestCase
             self::assertSame('box-file', $provider->upload($path, 'batch.pdf'));
             self::assertSame('Nom', $provider->extract('box-file', [['key' => 'fiche.label', 'type' => 'string']])['answer']['fiche.label']['value']);
             $provider->delete('box-file');
-        } finally { unlink($path); }
+        } finally {
+            unlink($path);
+        }
     }
 
     public function testRateLimitIsRetryableAndKeepsRetryAfter(): void
@@ -37,8 +39,13 @@ final class BoxExtractProviderTest extends TestCase
             new MockResponse('{"access_token":"token"}'),
             new MockResponse('{"error":"rate_limit"}', ['http_code' => 429, 'response_headers' => ['Retry-After: 17']]),
         ]), 'client', 'secret', 'enterprise', 'subject', 'folder', 'https://api.box.test', 'https://upload.box.test/api', 'enhanced_extract_agent');
-        try { $provider->extract('box-file', []); self::fail('Une erreur Box était attendue.'); }
-        catch (BoxProviderException $error) { self::assertTrue($error->retryable); self::assertSame(17, $error->retryAfter); }
+        try {
+            $provider->extract('box-file', []);
+            self::fail('Une erreur Box était attendue.');
+        } catch (BoxProviderException $error) {
+            self::assertTrue($error->retryable);
+            self::assertSame(17, $error->retryAfter);
+        }
     }
 
     public function testUnauthorizedResponseRefreshesTokenOnce(): void
@@ -49,9 +56,13 @@ final class BoxExtractProviderTest extends TestCase
             $requests[] = [$method, $url, $authorization];
             if (str_ends_with($url, '/oauth2/token')) {
                 $number = count(array_filter($requests, static fn (array $request): bool => str_ends_with($request[1], '/oauth2/token')));
+
                 return new MockResponse(json_encode(['access_token' => 'token-'.$number], JSON_THROW_ON_ERROR));
             }
-            if ('Authorization: Bearer token-1' === $authorization) { return new MockResponse('{}', ['http_code' => 401]); }
+            if ('Authorization: Bearer token-1' === $authorization) {
+                return new MockResponse('{}', ['http_code' => 401]);
+            }
+
             return new MockResponse('{"answer":{}}');
         }), 'client', 'secret', 'enterprise', 'subject', 'folder', 'https://api.box.test', 'https://upload.box.test/api', 'enhanced_extract_agent');
 
@@ -65,14 +76,22 @@ final class BoxExtractProviderTest extends TestCase
             new MockResponse('{"access_token":"token"}'),
             new MockResponse('{"error":"unavailable"}', ['http_code' => 503]),
         ]), 'client', 'secret', 'enterprise', 'subject', 'folder', 'https://api.box.test', 'https://upload.box.test/api', 'enhanced_extract_agent');
-        try { $serverError->extract('box-file', []); self::fail('Une erreur Box était attendue.'); }
-        catch (BoxProviderException $error) { self::assertTrue($error->retryable); }
+        try {
+            $serverError->extract('box-file', []);
+            self::fail('Une erreur Box était attendue.');
+        } catch (BoxProviderException $error) {
+            self::assertTrue($error->retryable);
+        }
 
         $invalidJson = new BoxExtractProvider(new MockHttpClient([
             new MockResponse('{"access_token":"token"}'),
             new MockResponse('not-json'),
         ]), 'client', 'secret', 'enterprise', 'subject', 'folder', 'https://api.box.test', 'https://upload.box.test/api', 'enhanced_extract_agent');
-        try { $invalidJson->extract('box-file', []); self::fail('Une erreur Box était attendue.'); }
-        catch (BoxProviderException $error) { self::assertFalse($error->retryable); }
+        try {
+            $invalidJson->extract('box-file', []);
+            self::fail('Une erreur Box était attendue.');
+        } catch (BoxProviderException $error) {
+            self::assertFalse($error->retryable);
+        }
     }
 }

@@ -21,7 +21,7 @@ final class AdvancedRightsTest extends TestCase
         self::assertSame(RightsValidityStatus::Valid, $resource->rightsValidity(new \DateTimeImmutable('2100-08-01')));
         self::assertSame(RightsValidityStatus::Expiring, $resource->rightsValidity(new \DateTimeImmutable('2100-08-05')));
         self::assertSame(RightsValidityStatus::Expired, $resource->rightsValidity(new \DateTimeImmutable('2100-09-02')));
-        self::assertTrue($resource->rightsGranted(), "Le passage de l’échéance déclenche une alerte, pas une révocation automatique.");
+        self::assertTrue($resource->rightsGranted(), 'Le passage de l’échéance déclenche une alerte, pas une révocation automatique.');
     }
 
     public function testChangingLegalMetadataRevokesAnExistingValidation(): void

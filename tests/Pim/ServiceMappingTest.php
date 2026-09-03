@@ -20,23 +20,22 @@ final class ServiceMappingTest extends KernelTestCase
         self::assertInstanceOf(EntityManagerInterface::class, $entityManager);
 
         $service = $entityManager->getClassMetadata(ServiceEvenementiel::class);
-        self::assertSame("pim_service_evenementiel", $service->getTableName());
-        self::assertTrue($service->hasAssociation("fiche"));
+        self::assertSame('pim_service_evenementiel', $service->getTableName());
+        self::assertTrue($service->hasAssociation('fiche'));
 
         foreach (
             [
-                "tarifParPrestation",
-                "tarifParPersonne",
-                "tarifParJour",
-                "tarifParDemiJournee",
-                "tarifParHeure",
-            ]
-            as $field
+                'tarifParPrestation',
+                'tarifParPersonne',
+                'tarifParJour',
+                'tarifParDemiJournee',
+                'tarifParHeure',
+            ] as $field
         ) {
-            self::assertSame("float", $service->getTypeOfField($field));
+            self::assertSame('float', $service->getTypeOfField($field));
         }
 
         $resource = $entityManager->getClassMetadata(RessourceLieu::class);
-        self::assertTrue($resource->hasAssociation("fiche"));
+        self::assertTrue($resource->hasAssociation('fiche'));
     }
 }

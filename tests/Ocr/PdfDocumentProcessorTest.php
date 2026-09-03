@@ -95,12 +95,15 @@ final class PdfDocumentProcessorTest extends TestCase
         }
         $xref = strlen($pdf);
         $pdf .= "xref\n0 ".(count($objects) + 1)."\n0000000000 65535 f \n";
-        foreach (array_keys($objects) as $number) { $pdf .= sprintf("%010d 00000 n \n", $offsets[$number]); }
+        foreach (array_keys($objects) as $number) {
+            $pdf .= sprintf("%010d 00000 n \n", $offsets[$number]);
+        }
         $pdf .= sprintf("trailer\n<< /Size %d /Root 1 0 R >>\nstartxref\n%d\n%%%%EOF\n", count($objects) + 1, $xref);
 
         $path = tempnam(sys_get_temp_dir(), 'ocr-pdf-');
         self::assertIsString($path);
         file_put_contents($path, $pdf);
+
         return $path;
     }
 }

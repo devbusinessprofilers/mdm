@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Tests\Pim;
 
 use App\Account\Entity\User;
+use App\Dam\Enum\DocumentUsage;
 use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Entity\Service\ServiceEvenementiel;
-use App\Dam\Enum\DocumentUsage;
 use App\Pim\Enum\NatureRessource;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;

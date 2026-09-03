@@ -138,14 +138,46 @@ final class FicheGammeEditeurTest extends WebTestCase
         $this->connection = self::getContainer()->get(Connection::class);
         $this->clearTables();
         self::getContainer()->set(PrivateObjectStorageInterface::class, new class implements PrivateObjectStorageInterface {
-            public function write(string $key, string $contents, array $options = []): void {}
-            public function writeStream(string $key, mixed $stream, array $options = []): void {}
-            public function read(string $key): string { return ''; }
-            public function readStream(string $key): mixed { $stream = fopen('php://temp', 'r+b'); if (false === $stream) { throw new \RuntimeException('Flux temporaire indisponible.'); } return $stream; }
-            public function exists(string $key): bool { return false; }
-            public function temporaryUrl(string $key, \DateTimeInterface $expiresAt): string { return 'https://private.example.test/'.$key; }
-            public function delete(string $key): void {}
-            public function deleteDirectory(string $prefix): void {}
+            public function write(string $key, string $contents, array $options = []): void
+            {
+            }
+
+            public function writeStream(string $key, mixed $stream, array $options = []): void
+            {
+            }
+
+            public function read(string $key): string
+            {
+                return '';
+            }
+
+            public function readStream(string $key): mixed
+            {
+                $stream = fopen('php://temp', 'r+b');
+                if (false === $stream) {
+                    throw new \RuntimeException('Flux temporaire indisponible.');
+                }
+
+return $stream;
+            }
+
+            public function exists(string $key): bool
+            {
+                return false;
+            }
+
+            public function temporaryUrl(string $key, \DateTimeInterface $expiresAt): string
+            {
+                return 'https://private.example.test/'.$key;
+            }
+
+            public function delete(string $key): void
+            {
+            }
+
+            public function deleteDirectory(string $prefix): void
+            {
+            }
         });
 
         $user = new User('support@example.test', ['ROLE_BP_VALIDATOR']);
@@ -176,7 +208,7 @@ final class FicheGammeEditeurTest extends WebTestCase
         @unlink($pdf);
 
         $document = $this->connection->fetchAssociative(
-            "SELECT nature, usage_code, legende, source FROM pim_ressource_lieu",
+            'SELECT nature, usage_code, legende, source FROM pim_ressource_lieu',
         );
         self::assertIsArray($document, 'Le support déposé doit créer une ressource document.');
         self::assertSame('document', $document['nature']);

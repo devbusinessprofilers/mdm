@@ -6,8 +6,8 @@ namespace App\Tests\Pim;
 
 use App\Pim\Entity\Activite\Activite;
 use App\Pim\Entity\Fiche;
-use App\Pim\Entity\Localisation;
 use App\Pim\Entity\Lieu\Lieu;
+use App\Pim\Entity\Localisation;
 use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Enum\StatutFiche;
 use App\Pim\Enum\TypeFiche;

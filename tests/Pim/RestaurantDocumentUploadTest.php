@@ -143,25 +143,44 @@ final class RestaurantDocumentUploadTest extends WebTestCase
 
 final class RestaurantDocumentTestStorage implements PrivateObjectStorageInterface
 {
-    public function write(string $key, string $contents, array $options = []): void {}
+    public function write(string $key, string $contents, array $options = []): void
+    {
+    }
 
-    public function writeStream(string $key, mixed $stream, array $options = []): void {}
+    public function writeStream(string $key, mixed $stream, array $options = []): void
+    {
+    }
 
-    public function read(string $key): string { return ''; }
+    public function read(string $key): string
+    {
+        return '';
+    }
 
     public function readStream(string $key): mixed
     {
         $stream = fopen('php://temp', 'r+b');
-        if (false === $stream) { throw new \RuntimeException('Flux temporaire indisponible.'); }
+        if (false === $stream) {
+            throw new \RuntimeException('Flux temporaire indisponible.');
+        }
 
         return $stream;
     }
 
-    public function exists(string $key): bool { return false; }
+    public function exists(string $key): bool
+    {
+        return false;
+    }
 
-    public function temporaryUrl(string $key, \DateTimeInterface $expiresAt): string { return 'https://private.example.test/'.$key; }
+    public function temporaryUrl(string $key, \DateTimeInterface $expiresAt): string
+    {
+        return 'https://private.example.test/'.$key;
+    }
 
-    public function delete(string $key): void {}
+    public function delete(string $key): void
+    {
+    }
 
-    public function deleteDirectory(string $prefix): void {}
+    public function deleteDirectory(string $prefix): void
+    {
+    }
 }

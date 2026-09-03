@@ -23,19 +23,38 @@ final class FailedMessageActionsTest extends TestCase
         $transport = new class($enEchec) implements TransportInterface, ListableReceiverInterface {
             public ?Envelope $rejete = null;
 
-            public function __construct(private Envelope $envelope) {}
+            public function __construct(private Envelope $envelope)
+            {
+            }
 
-            public function get(): iterable { return []; }
+            public function get(): iterable
+            {
+                return [];
+            }
 
-            public function ack(Envelope $envelope): void {}
+            public function ack(Envelope $envelope): void
+            {
+            }
 
-            public function reject(Envelope $envelope): void { $this->rejete = $envelope; }
+            public function reject(Envelope $envelope): void
+            {
+                $this->rejete = $envelope;
+            }
 
-            public function send(Envelope $envelope): Envelope { return $envelope; }
+            public function send(Envelope $envelope): Envelope
+            {
+                return $envelope;
+            }
 
-            public function all(?int $limit = null): iterable { yield $this->envelope; }
+            public function all(?int $limit = null): iterable
+            {
+                yield $this->envelope;
+            }
 
-            public function find(mixed $id): ?Envelope { return '42' === (string) $id ? $this->envelope : null; }
+            public function find(mixed $id): ?Envelope
+            {
+                return '42' === (string) $id ? $this->envelope : null;
+            }
         };
         $bus = new class implements MessageBusInterface {
             public ?Envelope $envoye = null;

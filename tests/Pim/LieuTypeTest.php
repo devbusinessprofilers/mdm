@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Pim;
 
-use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Entity\Lieu\AccesLieu;
+use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Entity\Lieu\Salle;
 use App\Pim\Form\LieuType;

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Pim;
 
-use App\Pim\Entity\Localisation;
 use App\Pim\Entity\Lieu\Lieu;
+use App\Pim\Entity\Localisation;
 use App\Pim\Repository\AeroportReferenceRepository;
 use App\Pim\Repository\GrandeVilleReferenceRepository;
 use App\Pim\Service\AccesSuggesteur;

@@ -31,9 +31,12 @@ final class CompletenessHardeningTest extends KernelTestCase
         $lieu->addRessource($this->resource($withoutRightsId, NatureRessource::Photo, false));
         $lookup = new class([$eligibleId]) implements CompletenessMediaAssetLookupInterface {
             /** @param list<string> $eligible */
-            public function __construct(private array $eligible) {}
+            public function __construct(private array $eligible)
+            {
+            }
             /** @var list<string> */
             public array $requested = [];
+
             public function processedImageIds(array $assetIds): array
             {
                 $this->requested = $assetIds;

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Tests\Etl;
 
-use App\Etl\Entity\LegacyFicheMapping;
 use Doctrine\DBAL\Connection;
 use PHPUnit\Framework\Attributes\Group;
 use Symfony\Bundle\FrameworkBundle\Console\Application;
@@ -51,14 +50,14 @@ final class ImportLegacyLieuxCommandTest extends KernelTestCase
 
         self::assertSame(3, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM pim_fiche'));
         self::assertSame(3, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM etl_legacy_fiche'));
-        self::assertSame('publiee', $this->connection->fetchOne("SELECT f.status FROM pim_fiche f JOIN etl_legacy_fiche m ON m.fiche_id = f.id WHERE m.syspad_id = 256"));
+        self::assertSame('publiee', $this->connection->fetchOne('SELECT f.status FROM pim_fiche f JOIN etl_legacy_fiche m ON m.fiche_id = f.id WHERE m.syspad_id = 256'));
         // Publié CSV mais photos annoncées sous le minimum : publication différée.
-        self::assertSame('en_cours', $this->connection->fetchOne("SELECT f.status FROM pim_fiche f JOIN etl_legacy_fiche m ON m.fiche_id = f.id WHERE m.syspad_id = 400"));
+        self::assertSame('en_cours', $this->connection->fetchOne('SELECT f.status FROM pim_fiche f JOIN etl_legacy_fiche m ON m.fiche_id = f.id WHERE m.syspad_id = 400'));
         self::assertStringContainsString('publication différée (photos)', $tester->getDisplay());
         // Le code fiche reprend l'Id syspad.
-        self::assertSame(256, (int) $this->connection->fetchOne("SELECT f.code FROM pim_fiche f JOIN etl_legacy_fiche m ON m.fiche_id = f.id WHERE m.syspad_id = 256"));
-        self::assertSame(300, (int) $this->connection->fetchOne("SELECT f.code FROM pim_fiche f JOIN etl_legacy_fiche m ON m.fiche_id = f.id WHERE m.syspad_id = 300"));
-        self::assertSame('en_cours', $this->connection->fetchOne("SELECT f.status FROM pim_fiche f JOIN etl_legacy_fiche m ON m.fiche_id = f.id WHERE m.syspad_id = 300"));
+        self::assertSame(256, (int) $this->connection->fetchOne('SELECT f.code FROM pim_fiche f JOIN etl_legacy_fiche m ON m.fiche_id = f.id WHERE m.syspad_id = 256'));
+        self::assertSame(300, (int) $this->connection->fetchOne('SELECT f.code FROM pim_fiche f JOIN etl_legacy_fiche m ON m.fiche_id = f.id WHERE m.syspad_id = 300'));
+        self::assertSame('en_cours', $this->connection->fetchOne('SELECT f.status FROM pim_fiche f JOIN etl_legacy_fiche m ON m.fiche_id = f.id WHERE m.syspad_id = 300'));
         self::assertSame(1, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM pim_salle'));
         self::assertSame(3, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM pim_fiche_search'));
         self::assertNotNull($this->connection->fetchOne('SELECT photos_json FROM etl_legacy_fiche WHERE syspad_id = 256'));

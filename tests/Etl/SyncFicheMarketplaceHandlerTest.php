@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Etl;
 
+use App\Enrichment\Entity\FicheTranslation;
+use App\Enrichment\Enum\SupportedLocale;
 use App\Etl\Entity\FicheMarketplaceSync;
 use App\Etl\Enum\MarketplaceSyncStatus;
 use App\Etl\Message\PruneMarketplacePhotos;
@@ -14,8 +16,6 @@ use App\Etl\MessageHandler\SyncFicheMarketplaceHandler;
 use App\Etl\Repository\FicheMarketplaceSyncRepository;
 use App\Etl\Service\MarketplaceClientInterface;
 use App\Etl\Service\MarketplaceSyncScheduler;
-use App\Enrichment\Entity\FicheTranslation;
-use App\Enrichment\Enum\SupportedLocale;
 use App\Pim\Entity\Fiche;
 use App\Pim\Entity\Lieu\AccesLieu;
 use App\Pim\Entity\Lieu\Lieu;

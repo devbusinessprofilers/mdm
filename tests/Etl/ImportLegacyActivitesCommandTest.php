@@ -49,9 +49,9 @@ final class ImportLegacyActivitesCommandTest extends KernelTestCase
         self::assertSame(0, $tester->getStatusCode(), $tester->getDisplay());
 
         self::assertSame(2, (int) $this->connection->fetchOne("SELECT COUNT(*) FROM pim_fiche WHERE type = 'activite'"));
-        self::assertSame(4200, (int) $this->connection->fetchOne("SELECT f.code FROM pim_fiche f JOIN etl_legacy_fiche m ON m.fiche_id = f.id WHERE m.syspad_id = 4200"));
-        self::assertSame('publiee', $this->connection->fetchOne("SELECT f.status FROM pim_fiche f JOIN etl_legacy_fiche m ON m.fiche_id = f.id WHERE m.syspad_id = 4200"));
-        self::assertSame('en_cours', $this->connection->fetchOne("SELECT f.status FROM pim_fiche f JOIN etl_legacy_fiche m ON m.fiche_id = f.id WHERE m.syspad_id = 4300"));
+        self::assertSame(4200, (int) $this->connection->fetchOne('SELECT f.code FROM pim_fiche f JOIN etl_legacy_fiche m ON m.fiche_id = f.id WHERE m.syspad_id = 4200'));
+        self::assertSame('publiee', $this->connection->fetchOne('SELECT f.status FROM pim_fiche f JOIN etl_legacy_fiche m ON m.fiche_id = f.id WHERE m.syspad_id = 4200'));
+        self::assertSame('en_cours', $this->connection->fetchOne('SELECT f.status FROM pim_fiche f JOIN etl_legacy_fiche m ON m.fiche_id = f.id WHERE m.syspad_id = 4300'));
         self::assertSame('mobile', $this->connection->fetchOne('SELECT a.mode_intervention FROM pim_activite a JOIN etl_legacy_fiche m ON m.fiche_id = a.id WHERE m.syspad_id = 4200'));
         self::assertSame('Idée', $this->connection->fetchOne('SELECT gamme FROM etl_legacy_fiche WHERE syspad_id = 4200'));
 
