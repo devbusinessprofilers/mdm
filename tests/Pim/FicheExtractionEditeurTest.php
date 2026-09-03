@@ -186,7 +186,7 @@ final class FicheExtractionEditeurTest extends WebTestCase
 
         // Seuil surchargé en table : la suggestion sûre s'applique, la
         // douteuse attend, la fiche publiée le reste (pas de transition).
-        $this->connection->executeStatement("UPDATE parametre SET valeur = '85' WHERE nom = 'ocr.seuil_application_auto'");
+        \App\Tests\Support\ParametreEnBase::fixer($this->connection, 'ocr.seuil_application_auto', '85', \App\Shared\Enum\TypeParametre::Entier);
         $provider->invalider();
         $handler(new \App\Ocr\Message\AutoApplyOcrSuggestions($extraction->id()));
 
@@ -203,7 +203,7 @@ final class FicheExtractionEditeurTest extends WebTestCase
         self::assertInstanceOf(OcrSuggestion::class, $attente);
         self::assertSame(SuggestionStatus::Pending, $attente->status());
 
-        $this->connection->executeStatement("UPDATE parametre SET valeur = NULL WHERE nom = 'ocr.seuil_application_auto'");
+        \App\Tests\Support\ParametreEnBase::fixer($this->connection, 'ocr.seuil_application_auto', null, \App\Shared\Enum\TypeParametre::Entier);
         $provider->invalider();
     }
 

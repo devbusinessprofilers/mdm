@@ -10,6 +10,7 @@ use App\Pim\Message\EnrichirFiche;
 use App\Pim\Message\VerifierAdresseFiche;
 use App\Pim\MessageHandler\EnrichirFicheHandler;
 use App\Shared\Service\ParametreProvider;
+use App\Tests\Support\ParametreEnBase;
 use App\Vision\Service\OpenAiProviderException;
 use App\Vision\Service\TextSuggestionProviderInterface;
 use Doctrine\DBAL\Connection;
@@ -41,7 +42,7 @@ final class EnrichirFicheHandlerTest extends KernelTestCase
     protected function tearDown(): void
     {
         if (isset($this->connection)) {
-            $this->connection->executeStatement("UPDATE parametre SET valeur = NULL WHERE nom = 'openai.actif'");
+            ParametreEnBase::fixer($this->connection, 'openai.actif', null);
             $this->reglerGates('1');
             $this->clear();
         }
@@ -50,10 +51,9 @@ final class EnrichirFicheHandlerTest extends KernelTestCase
 
     private function reglerGates(string $valeur): void
     {
-        $this->connection->executeStatement(
-            "UPDATE parametre SET valeur = ? WHERE nom IN ('sirene.verif_statut_actif', 'geoapify.enrichissement_places', 'datatourisme.import_actif', 'wikidata.detection_chaine')",
-            [$valeur],
-        );
+        foreach (['sirene.verif_statut_actif', 'geoapify.enrichissement_places', 'datatourisme.import_actif', 'wikidata.detection_chaine'] as $nom) {
+            ParametreEnBase::fixer($this->connection, $nom, $valeur);
+        }
         self::getContainer()->get(ParametreProvider::class)->invalider();
     }
 
@@ -117,7 +117,7 @@ final class EnrichirFicheHandlerTest extends KernelTestCase
     {
         // Gate DATAtourisme ouverte, mais DATATOURISME_FLUX_DIR vide en test :
         // le journal doit distinguer « non configurée » de « désactivée ».
-        $this->connection->executeStatement("UPDATE parametre SET valeur = '1' WHERE nom = 'datatourisme.import_actif'");
+        ParametreEnBase::fixer($this->connection, 'datatourisme.import_actif', '1');
         self::getContainer()->get(ParametreProvider::class)->invalider();
         $lieu = $this->lieu();
 
@@ -132,7 +132,7 @@ final class EnrichirFicheHandlerTest extends KernelTestCase
 
     private function activerIa(): void
     {
-        $this->connection->executeStatement("UPDATE parametre SET valeur = '1' WHERE nom = 'openai.actif'");
+        ParametreEnBase::fixer($this->connection, 'openai.actif', '1');
         self::getContainer()->get(ParametreProvider::class)->invalider();
     }
 
