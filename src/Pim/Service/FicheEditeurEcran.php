@@ -52,9 +52,10 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
  * Écran d'édition de fiche par sections (maquette front), pour les quatre
  * gammes de cette version. Chaque section soumet le formulaire complet
  * existant de la gamme en mode partiel — les champs absents de la section ne
- * sont pas touchés (submit avec clearMissing = false). Les mécanismes restent
- * ceux de l'édition classique : AdminManagers, politique de mutation interne,
- * complétude, audit.
+ * sont pas touchés (submit avec clearMissing = false), les champs rendus mais
+ * vidés côté client étant réinjectés par ChampsOmisCompleteur. Les mécanismes
+ * restent ceux de l'édition classique : AdminManagers, politique de mutation
+ * interne, complétude, audit.
  */
 final readonly class FicheEditeurEcran
 {
@@ -145,6 +146,10 @@ final readonly class FicheEditeurEcran
         if ([] === $data) {
             return false;
         }
+        // Case décochée, liste multiple vidée, collection sans ligne : le
+        // navigateur n'envoie rien, et la soumission partielle ignorerait le
+        // champ — la suppression serait perdue sans message.
+        $data = ChampsOmisCompleteur::completer($form, $data, $entite->fiche()->type());
 
         return (bool) $this->policy->execute($entite->fiche(), function () use ($form, $entite, $data): bool {
             $existing = $this->photoAssetIds($entite);
