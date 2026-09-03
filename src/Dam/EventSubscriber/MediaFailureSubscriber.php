@@ -8,57 +8,28 @@ use App\Dam\Entity\MediaAsset;
 use App\Dam\Message\DeleteMedia;
 use App\Dam\Message\RegenerateMedia;
 use App\Shared\Message\MediaUploaded;
+use App\Shared\Messenger\AbstractWorkerFailureListener;
 use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\Persistence\ManagerRegistry;
-use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\Messenger\Event\WorkerMessageFailedEvent;
 use Symfony\Component\Uid\Ulid;
 
+/** Un traitement média qui a épuisé ses relances laisse l'asset en `failed`, avec le message d'erreur. */
 #[AsEventListener]
-final readonly class MediaFailureSubscriber
+final readonly class MediaFailureSubscriber extends AbstractWorkerFailureListener
 {
-    public function __construct(
-        private ManagerRegistry $registry,
-        private LoggerInterface $logger,
-    ) {
+    protected function concerne(object $message): bool
+    {
+        return ($message instanceof MediaUploaded || $message instanceof RegenerateMedia || $message instanceof DeleteMedia)
+            && Ulid::isValid($message->mediaId);
     }
 
-    public function __invoke(WorkerMessageFailedEvent $event): void
+    protected function marquer(EntityManagerInterface $manager, object $message, WorkerMessageFailedEvent $event): void
     {
-        if ($event->willRetry()) {
-            return;
-        }
-        $message = $event->getEnvelope()->getMessage();
-        if (
-            !($message instanceof MediaUploaded)
-            && !($message instanceof RegenerateMedia)
-            && !($message instanceof DeleteMedia)
-        ) {
-            return;
-        }
-        if (!Ulid::isValid($message->mediaId)) {
-            return;
-        }
-        try {
-            // L'échec du handler peut avoir fermé l'EntityManager (exception
-            // Doctrine) : le réinitialiser avant de marquer le média.
-            $manager = $this->registry->getManagerForClass(MediaAsset::class);
-            if (!$manager instanceof EntityManagerInterface || !$manager->isOpen()) {
-                $manager = $this->registry->resetManager();
-            }
-            $media = $manager->find(MediaAsset::class, $message->mediaId);
-            if (null === $media) {
-                return;
-            }
+        /** @var MediaUploaded|RegenerateMedia|DeleteMedia $message */
+        $media = $manager->find(MediaAsset::class, $message->mediaId);
+        if ($media instanceof MediaAsset) {
             $media->markFailed($event->getThrowable()->getMessage());
-            $manager->flush();
-        } catch (\Throwable $error) {
-            // Dernier recours : un subscriber d'échec ne doit jamais relancer.
-            $this->logger->error('Impossible de marquer le média en échec.', [
-                'media_id' => $message->mediaId,
-                'exception' => $error,
-            ]);
         }
     }
 }
