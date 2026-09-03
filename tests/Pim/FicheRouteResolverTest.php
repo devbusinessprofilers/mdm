@@ -12,38 +12,29 @@ use Symfony\Component\Routing\RequestContext;
 
 final class FicheRouteResolverTest extends TestCase
 {
-    public function testResolvesShowAndEditRoutesForSupportedTypes(): void
+    public function testLeLieuEtLesAutresGammesOntChacunLeurRoute(): void
     {
-        $resolver = new FicheRouteResolver($this->urlGenerator());
-        // L'éditeur MDM est la vue unique : « voir » et « modifier » y mènent.
-        $expected = [
-            TypeFiche::Lieu->value => 'app_mdm_fiche_lieu',
-            TypeFiche::Activite->value => 'app_mdm_fiche_gamme',
-            TypeFiche::Restaurant->value => 'app_mdm_fiche_gamme',
-            TypeFiche::ServiceEvenementiel->value => 'app_mdm_fiche_gamme',
-        ];
+        $routes = new FicheRouteResolver($this->generateur());
 
-        foreach ($expected as $type => $route) {
-            self::assertSame('/'.$route.'/01ARZ', $resolver->showUrl(TypeFiche::from($type), '01ARZ'));
-            self::assertSame($resolver->showUrl(TypeFiche::from($type), '01ARZ'), $resolver->editUrl(TypeFiche::from($type), '01ARZ'));
-        }
+        self::assertSame('app_mdm_fiche_lieu?id=01ABC', $routes->editUrl(TypeFiche::Lieu, '01ABC'));
+        self::assertSame('app_mdm_fiche_lieu?id=01ABC&section=2', $routes->editUrl(TypeFiche::Lieu, '01ABC', 2));
+        self::assertSame('app_mdm_fiche_gamme?gamme=restaurants&id=01ABC&section=1', $routes->editUrl(TypeFiche::Restaurant, '01ABC', 1));
+        self::assertSame($routes->editUrl(TypeFiche::Activite, '01ABC'), $routes->showUrl(TypeFiche::Activite, '01ABC'));
     }
 
-    public function testTraiteurHasNoRoutes(): void
+    public function testUneGammeHorsPerimetreEstRefusee(): void
     {
-        $resolver = new FicheRouteResolver($this->urlGenerator());
-
         $this->expectException(\InvalidArgumentException::class);
-        $resolver->showUrl(TypeFiche::Traiteur, '01ARZ');
+        (new FicheRouteResolver($this->generateur()))->editUrl(TypeFiche::Traiteur, '01ABC');
     }
 
-    private function urlGenerator(): UrlGeneratorInterface
+    private function generateur(): UrlGeneratorInterface
     {
         return new class implements UrlGeneratorInterface {
             /** @param array<string, mixed> $parameters */
             public function generate(string $name, array $parameters = [], int $referenceType = self::ABSOLUTE_PATH): string
             {
-                return '/'.$name.'/'.($parameters['id'] ?? '');
+                return $name.'?'.http_build_query($parameters);
             }
 
             public function setContext(RequestContext $context): void
