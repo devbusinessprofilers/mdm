@@ -61,9 +61,9 @@ final class AbstractWorkerFailureListenerTest extends TestCase
 
     public function testUneErreurPendantLeMarquageEstJournaliseeSansRelancer(): void
     {
-        $manager = $this->createMock(EntityManagerInterface::class);
+        $manager = $this->createStub(EntityManagerInterface::class);
         $manager->method('isOpen')->willReturn(true);
-        $registry = $this->createMock(ManagerRegistry::class);
+        $registry = $this->createStub(ManagerRegistry::class);
         $registry->method('getManager')->willReturn($manager);
         $journal = new JournalDeTest();
         $listener = $this->listener($registry, $journal, new \ArrayObject(), static fn (): string => throw new \RuntimeException('base injoignable'));
