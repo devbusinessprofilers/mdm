@@ -248,7 +248,9 @@ final class LieuFormCatalog
             $attr['data-compteur'] = Lieu::DESCRIPTION_MAX_LENGTH;
         }
 
-        return ['label' => $label, 'type' => TextareaType::class, 'options' => ['attr' => $attr]];
+        // TexteRicheType : le modèle reste du texte brut, l'éditeur ne voit
+        // que des paragraphes HTML transitoires.
+        return ['label' => $label, 'type' => TexteRicheType::class, 'options' => ['attr' => $attr]];
     }
 
     /** @return array<string, mixed> */

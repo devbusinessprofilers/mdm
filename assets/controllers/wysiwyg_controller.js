@@ -64,8 +64,13 @@ export default class extends Controller {
             language: lang,
             menubar: false,
             statusbar: false,
-            plugins: ['link', 'lists', 'emoticons', 'wordcount'],
-            toolbar: 'undo redo bold italic alignleft aligncenter alignright alignjustify bullist emoticons',
+            // Le champ est stocké en texte brut (paragraphes, retours à la
+            // ligne, puces) : la barre d'outils n'offre que ce qui survit à
+            // l'enregistrement, et les accents sortent en UTF-8, pas en
+            // entités nommées (&eacute;).
+            plugins: ['lists', 'emoticons', 'wordcount'],
+            toolbar: 'undo redo bullist emoticons',
+            entity_encoding: 'raw',
             content_style: 'body { font-size: 0.75rem; margin: 8px; }',
             setup: (editor) => {
                 editor.on('keydown', (e) => this.onKeyDown(e, editor));

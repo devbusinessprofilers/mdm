@@ -311,7 +311,11 @@ après l'arrêt de l'import CSV legacy. État par source :
 - **PIM (sync)** : tout le contenu fiche — nom, description, téléphone,
   adresse + arrondissement, référentiels, capacités, tarifs de référence,
   atouts, salles, accès, loisirs, photos (+ compteur `nb_photos`),
-  catégories ESAT/RSE, i18n.
+  catégories ESAT/RSE, i18n. Les descriptions (`description`,
+  `salles.description`) sont du **texte brut** — paragraphes séparés par une
+  ligne vide, retours simples, puces « - » — que le front affiche en `nl2br` ;
+  le PIM convertit le HTML de TinyMCE avant stockage (`App\Shared\Text\TexteBrut`,
+  `TexteRicheType`), aucune balise ni entité ne transite (correctif 2026-09-03).
 - **Salesforce (conservé)** : les 6 notes RSE (`note*`) et tout le
   périmètre traiteurs plateaux-repas (`app:pr-import-produits`).
 - **API Google (runtime)** : `google_place_id`, `google_note`,

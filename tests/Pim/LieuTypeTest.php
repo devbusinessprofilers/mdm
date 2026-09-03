@@ -48,6 +48,30 @@ final class LieuTypeTest extends KernelTestCase
         self::assertSame('125.50', $lieu->tarification()->seminaireJourneeJourneeEtude());
     }
 
+    public function testLesDescriptionsRichesSontStockeesEnTexteBrutEtRenduesEnParagraphes(): void
+    {
+        self::bootKernel();
+        $factory = self::getContainer()->get(FormFactoryInterface::class);
+        $lieu = new Lieu();
+        $form = $factory->create(LieuType::class, $lieu, ['csrf_protection' => false]);
+
+        // TinyMCE soumet du HTML avec entités nommées : l'entité ne reçoit que du texte.
+        $form->submit([
+            'label' => 'Jeanne & The Forest',
+            'accessibiliteDescription' => ['descGenerale' => '<p>Perch&eacute;e sur l&rsquo;Oise.</p><p>Jeanne &amp; the Forest.</p>'],
+            'syntheseSalles' => ['salleReunionDescSalleSeminaire' => "<p>Envie d&rsquo;un s&eacute;minaire ?</p>\n<ul>\n<li>21 salles</li>\n</ul>"],
+        ]);
+        self::assertTrue($form->isValid(), (string) $form->getErrors(true));
+        self::assertSame("Perchée sur l’Oise.\n\nJeanne & the Forest.", $lieu->descGenerale());
+        self::assertSame("Envie d’un séminaire ?\n\n- 21 salles", $lieu->salleReunionDescSalleSeminaire());
+
+        // Réaffichage : le texte brut repart vers l'éditeur en paragraphes HTML.
+        $vue = $factory->create(LieuType::class, $lieu, ['csrf_protection' => false])->createView();
+        self::assertSame('<p>Perchée sur l’Oise.</p><p>Jeanne &amp; the Forest.</p>', $vue['accessibiliteDescription']['descGenerale']->vars['value']);
+        self::assertTrue($vue['accessibiliteDescription']['descGenerale']->vars['attr']['data-wysiwyg']);
+        self::assertContains('textarea', $vue['accessibiliteDescription']['descGenerale']->vars['block_prefixes']);
+    }
+
     public function testLaCapaciteDHebergementEstCalculeeParDefautSansEcraserLaSaisie(): void
     {
         self::bootKernel();

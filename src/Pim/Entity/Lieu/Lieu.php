@@ -16,6 +16,7 @@ use App\Pim\Repository\LieuRepository;
 use App\Pim\Enum\TypeAccesLieu;
 use App\Pim\Enum\TypeFiche;
 use App\Shared\Entity\TimestampableTrait;
+use App\Shared\Text\TexteBrut;
 use App\Pim\Validation\ValidLieu;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -800,7 +801,7 @@ class Lieu implements AvecHorairesJours
 
     public function changeDescGenerale(?string $value): void
     {
-        $value = self::normalizeNullableString($value);
+        $value = self::normalizeNullableString(self::texteBrut($value));
         $this->descGenerale = $value;
         $this->touch();
     }
@@ -1050,7 +1051,7 @@ class Lieu implements AvecHorairesJours
 
     public function changeSalleReunionDescSalleSeminaire(?string $value): void
     {
-        $value = self::normalizeNullableString($value);
+        $value = self::normalizeNullableString(self::texteBrut($value));
         $this->salleReunionDescSalleSeminaire = $value;
         $this->touch();
     }
@@ -1467,6 +1468,16 @@ class Lieu implements AvecHorairesJours
             array_map(static fn (string $value): int => LieuLovCatalog::valueId($attributeCode, $value), $values),
         );
         $this->touch();
+    }
+
+    /**
+     * Les textes de description sont saisis dans TinyMCE (ou collés depuis un
+     * site) mais stockés en texte brut : la marketplace, Salesforce, les
+     * traductions et les compteurs ne connaissent ni balises ni entités.
+     */
+    private static function texteBrut(?string $value): ?string
+    {
+        return null === $value ? null : TexteBrut::depuisHtml($value);
     }
 
     private static function normalizeNullableString(?string $value): ?string
