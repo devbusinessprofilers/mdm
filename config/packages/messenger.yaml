@@ -13,7 +13,8 @@ framework:
                 options:
                     queue_name: pim
                     redeliver_timeout: 900
-                retry_strategy:
+                # Même stratégie de relance partout, seul le délai initial change.
+                retry_strategy: &retry
                     max_retries: 5
                     delay: 1000
                     multiplier: 2
@@ -24,50 +25,40 @@ framework:
                     queue_name: dam
                     redeliver_timeout: 900
                 retry_strategy:
-                    max_retries: 5
+                    <<: *retry
                     delay: 5000
-                    multiplier: 2
-                    max_delay: 60000
             etl:
                 dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
                 options:
                     queue_name: etl
                     redeliver_timeout: 900
                 retry_strategy:
-                    max_retries: 5
+                    <<: *retry
                     delay: 10000
-                    multiplier: 2
-                    max_delay: 60000
             enrichment:
                 dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
                 options:
                     queue_name: enrichment
                     redeliver_timeout: 900
                 retry_strategy:
-                    max_retries: 5
+                    <<: *retry
                     delay: 10000
-                    multiplier: 2
-                    max_delay: 60000
             completeness:
                 dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
                 options:
                     queue_name: completeness
                     redeliver_timeout: 900
                 retry_strategy:
-                    max_retries: 5
+                    <<: *retry
                     delay: 1000
-                    multiplier: 2
-                    max_delay: 60000
             mail:
                 dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
                 options:
                     queue_name: mail
                     redeliver_timeout: 900
                 retry_strategy:
-                    max_retries: 5
+                    <<: *retry
                     delay: 10000
-                    multiplier: 2
-                    max_delay: 60000
             # Diffusion vers la marketplace : transport dédié pour qu'une
             # indisponibilité de la marketplace ne bloque pas la file pim.
             marketplace:
@@ -76,10 +67,8 @@ framework:
                     queue_name: marketplace
                     redeliver_timeout: 900
                 retry_strategy:
-                    max_retries: 5
+                    <<: *retry
                     delay: 10000
-                    multiplier: 2
-                    max_delay: 60000
             failed:
                 dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
                 options:
@@ -90,6 +79,10 @@ framework:
         buses:
             messenger.bus.default:
                 middleware:
+                    # Côté dispatch : tout message reçoit un identifiant
+                    # d'événement (l'outbox pose le sien) ; côté réception :
+                    # transaction + reçu processed_message.
+                    - App\Shared\Outbox\EventIdStampMiddleware
                     - App\Shared\Outbox\ReceivedDoctrineTransactionMiddleware
                     - App\Shared\Outbox\IdempotencyMiddleware
 
@@ -124,8 +117,6 @@ framework:
             # du worker dam, les appels IA longs restent sur enrichment.
             App\Vision\Message\ApplyImageEnhancement: dam
             'App\Vision\Message\*': enrichment
-            Symfony\Component\Notifier\Message\ChatMessage: mail
-            Symfony\Component\Notifier\Message\SmsMessage: mail
 
 when@test:
     framework:

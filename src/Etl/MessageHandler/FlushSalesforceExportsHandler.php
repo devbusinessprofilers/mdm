@@ -102,7 +102,7 @@ final readonly class FlushSalesforceExportsHandler
     {
         foreach (array_chunk($ficheIds, self::SOUS_LOT) as $chunk) {
             foreach ($chunk as $ficheId) {
-                $fiche = $this->fiches->find(Ulid::fromString($ficheId));
+                $fiche = $this->fiches->parId($ficheId);
                 if ($fiche instanceof Fiche) {
                     yield $fiche;
                 } else {

@@ -13,6 +13,7 @@ use App\Dam\Service\MediaProcessingService;
 use App\Shared\Message\MediaProcessed;
 use App\Shared\Message\MediaUploaded;
 use App\Shared\Outbox\OutboxPublisherInterface;
+use App\Shared\Service\CopieLocale;
 use App\Shared\Service\ParametreProviderInterface;
 use App\Shared\Service\PrivateObjectStorageInterface;
 use App\Vision\Entity\ImageRecognition;
@@ -117,30 +118,7 @@ final readonly class MediaUploadedHandler
             // Traitement et analyse n'y toucheront pas : inutile de télécharger.
             return null;
         }
-        $path = tempnam(sys_get_temp_dir(), 'dam-original-');
-        if (false === $path) {
-            throw new \RuntimeException('Impossible de créer la copie locale de l’original.');
-        }
-        try {
-            $source = $this->privateStorage->readStream($media->originalStorageKey());
-            try {
-                $destination = fopen($path, 'wb');
-                if (false === $destination) {
-                    throw new \RuntimeException('Impossible d’écrire la copie locale de l’original.');
-                }
-                try {
-                    stream_copy_to_stream($source, $destination);
-                } finally {
-                    fclose($destination);
-                }
-            } finally {
-                fclose($source);
-            }
-        } catch (\Throwable $error) {
-            @unlink($path);
-            throw $error;
-        }
 
-        return $path;
+        return CopieLocale::depuis($this->privateStorage, $media->originalStorageKey(), 'dam-original-');
     }
 }

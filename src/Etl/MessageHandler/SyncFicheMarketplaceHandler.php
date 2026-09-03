@@ -23,7 +23,6 @@ use Doctrine\ORM\EntityManagerInterface;
 use Monolog\Attribute\WithMonologChannel;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
-use Symfony\Component\Messenger\Exception\UnrecoverableMessageHandlingException;
 use Symfony\Component\Uid\Ulid;
 
 #[WithMonologChannel('marketplace_sync')]
@@ -45,7 +44,7 @@ final readonly class SyncFicheMarketplaceHandler
 
     public function __invoke(SyncFicheMarketplace $message): void
     {
-        $fiche = $this->fiches->find(Ulid::fromString($message->ficheId));
+        $fiche = $this->fiches->parId($message->ficheId);
         // L'état a pu changer depuis l'enfilement : la décision est réévaluée
         // ici et le payload reconstruit, un message en retard reste donc sûr.
         if (
@@ -77,13 +76,7 @@ final readonly class SyncFicheMarketplaceHandler
         try {
             $applied = $this->client->upsertFiche($fiche->code(), $payload);
         } catch (MarketplaceApiException $exception) {
-            // Refus permanent (4xx) : relancer rejouerait le même échec, le
-            // message part directement en failed et l'échec est enregistré
-            // par MarketplaceSyncFailureSubscriber.
-            if (!$exception->isRetryable()) {
-                throw new UnrecoverableMessageHandlingException($exception->getMessage(), 0, $exception);
-            }
-            throw $exception;
+            throw $exception->pourMessenger();
         }
         // Conflit de séquence : la marketplace détient déjà un état plus
         // récent, l'état local ne doit pas être marqué synchronisé avec

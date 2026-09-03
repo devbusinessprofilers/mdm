@@ -10,7 +10,6 @@ use App\Ocr\Repository\DocumentExtractionRepository;
 use App\Ocr\Service\BoxProviderException;
 use App\Ocr\Service\DocumentExtractionProviderInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
-use Symfony\Component\Messenger\Exception\RecoverableMessageHandlingException;
 
 #[AsMessageHandler]
 final readonly class CleanupBoxFileHandler
@@ -30,7 +29,7 @@ final readonly class CleanupBoxFileHandler
             $extraction->forgetTemporaryBoxFile($message->fileId);
         } catch (BoxProviderException $error) {
             if ($error->retryable) {
-                throw new RecoverableMessageHandlingException($error->getMessage(), previous: $error, retryDelay: 1000 * ($error->retryAfter ?? 60));
+                throw $error->relance(60);
             }
             throw $error;
         }

@@ -16,7 +16,6 @@ use App\Pim\Service\FicheSearchIndexer;
 use App\Pim\Service\GeocodeurAdresses;
 use App\Shared\Outbox\OutboxPublisherInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
-use Symfony\Component\Uid\Ulid;
 
 #[AsMessageHandler]
 final readonly class IndexFicheHandler
@@ -34,7 +33,7 @@ final readonly class IndexFicheHandler
 
     public function __invoke(IndexFiche $message): void
     {
-        $fiche = $this->repository->find(Ulid::fromString($message->ficheId));
+        $fiche = $this->repository->parId($message->ficheId);
         if ($fiche instanceof Fiche) {
             // Adresse créée ou modifiée depuis la dernière vérification
             // (empreintes différentes) et couverte par un géocodeur configuré

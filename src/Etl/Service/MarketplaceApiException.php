@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Etl\Service;
 
+use Symfony\Component\Messenger\Exception\UnrecoverableMessageHandlingException;
+
 final class MarketplaceApiException extends \RuntimeException
 {
     public function __construct(
@@ -23,5 +25,16 @@ final class MarketplaceApiException extends \RuntimeException
     public function isRetryable(): bool
     {
         return $this->retryable;
+    }
+
+    /**
+     * L'exception à relancer depuis un handler Messenger : une panne
+     * transitoire repart en relance, un refus permanent part directement en
+     * failed (rejouer donnerait le même échec), où l'écouteur d'échec
+     * l'enregistre.
+     */
+    public function pourMessenger(): \Throwable
+    {
+        return $this->retryable ? $this : new UnrecoverableMessageHandlingException($this->getMessage(), 0, $this);
     }
 }

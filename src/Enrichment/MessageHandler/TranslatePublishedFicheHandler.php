@@ -13,7 +13,6 @@ use App\Pim\Entity\Fiche;
 use App\Pim\Repository\FicheRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
-use Symfony\Component\Uid\Ulid;
 
 #[AsMessageHandler]
 final readonly class TranslatePublishedFicheHandler
@@ -29,7 +28,7 @@ final readonly class TranslatePublishedFicheHandler
 
     public function __invoke(TranslatePublishedFiche $message): void
     {
-        $fiche = $this->fiches->find(Ulid::fromString($message->ficheId));
+        $fiche = $this->fiches->parId($message->ficheId);
         $locale = SupportedLocale::from($message->locale);
         // Pas de garde sur le statut : la relance manuelle traduit aussi les
         // fiches non publiées, et seules des lignes déjà planifiées (jeton

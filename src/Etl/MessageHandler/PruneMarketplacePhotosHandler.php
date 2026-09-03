@@ -20,7 +20,6 @@ use App\Shared\Outbox\OutboxPublisherInterface;
 use Monolog\Attribute\WithMonologChannel;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
-use Symfony\Component\Messenger\Exception\UnrecoverableMessageHandlingException;
 use Symfony\Component\Uid\Ulid;
 
 /**
@@ -80,13 +79,7 @@ final readonly class PruneMarketplacePhotosHandler
                 $this->payloadBuilder->photoLocations($fiche),
             );
         } catch (MarketplaceApiException $exception) {
-            // Refus permanent (4xx) : relancer rejouerait le même échec, le
-            // message part directement en failed et l'échec est enregistré
-            // par MarketplaceSyncFailureSubscriber.
-            if (!$exception->isRetryable()) {
-                throw new UnrecoverableMessageHandlingException($exception->getMessage(), 0, $exception);
-            }
-            throw $exception;
+            throw $exception->pourMessenger();
         }
         // Fiche inconnue de la marketplace : rien à purger ni à décider.
         if (null === $result) {

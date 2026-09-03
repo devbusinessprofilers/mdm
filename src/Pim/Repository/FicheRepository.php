@@ -24,6 +24,17 @@ final class FicheRepository extends ServiceEntityRepository
         parent::__construct($registry, Fiche::class);
     }
 
+    /** La fiche d'un identifiant ULID reçu en chaîne (message, requête) ; null si l'identifiant est malformé ou inconnu. */
+    public function parId(string $id): ?Fiche
+    {
+        if (!Ulid::isValid($id)) {
+            return null;
+        }
+        $fiche = $this->find(Ulid::fromString($id));
+
+        return $fiche instanceof Fiche ? $fiche : null;
+    }
+
     public function findOneByTypeAndCode(TypeFiche $type, int $code): ?Fiche
     {
         return $this->findOneBy(['type' => $type, 'code' => $code]);

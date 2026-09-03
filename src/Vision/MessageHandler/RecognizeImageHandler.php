@@ -15,7 +15,6 @@ use App\Vision\Service\ImageRecognitionProviderInterface;
 use App\Vision\Service\OpenAiProviderException;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
-use Symfony\Component\Messenger\Exception\RecoverableMessageHandlingException;
 
 #[AsMessageHandler]
 final readonly class RecognizeImageHandler
@@ -72,7 +71,7 @@ final readonly class RecognizeImageHandler
             $recognition->complete($result->raw);
         } catch (OpenAiProviderException $error) {
             if ($error->retryable) {
-                throw new RecoverableMessageHandlingException($error->getMessage(), previous: $error, retryDelay: 1000 * ($error->retryAfter ?? 10));
+                throw $error->relance(10);
             }
             $recognition->fail($error->getMessage());
         } catch (\DomainException $error) {

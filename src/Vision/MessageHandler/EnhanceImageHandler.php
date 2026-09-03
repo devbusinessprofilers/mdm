@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Vision\MessageHandler;
 
 use App\Dam\Enum\MediaStatus;
+use App\Shared\Service\CopieLocale;
 use App\Shared\Service\PrivateObjectStorageInterface;
 use App\Vision\Entity\ImageEnhancement;
 use App\Vision\Enum\EnhancementProvider;
@@ -15,7 +16,6 @@ use App\Vision\Service\ImageEnhancementProviderInterface;
 use App\Vision\Service\ImageMagickEnhancementProvider;
 use App\Vision\Service\OpenAiProviderException;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
-use Symfony\Component\Messenger\Exception\RecoverableMessageHandlingException;
 
 #[AsMessageHandler]
 final readonly class EnhanceImageHandler
@@ -40,27 +40,10 @@ final readonly class EnhanceImageHandler
 
             return;
         }
-        $temp = tempnam(sys_get_temp_dir(), 'mdm-vision-source-');
-        if (false === $temp) {
-            throw new RecoverableMessageHandlingException('Impossible de créer la copie locale de l’original.');
-        }
+        // La retouche part toujours de l'original déposé, jamais d'une
+        // retouche précédente : pas de dérive par passes successives.
+        $temp = CopieLocale::depuis($this->storage, $media->originalStorageKey(), 'mdm-vision-source-');
         try {
-            // La retouche part toujours de l'original déposé, jamais d'une
-            // retouche précédente : pas de dérive par passes successives.
-            $source = $this->storage->readStream($media->originalStorageKey());
-            try {
-                $destination = fopen($temp, 'wb');
-                if (false === $destination) {
-                    throw new \RuntimeException('Impossible d’écrire la copie locale de l’original.');
-                }
-                try {
-                    stream_copy_to_stream($source, $destination);
-                } finally {
-                    fclose($destination);
-                }
-            } finally {
-                fclose($source);
-            }
             if (hash_file('sha256', $temp) !== $enhancement->sourceChecksum()) {
                 throw new \DomainException('L’empreinte de l’original ne correspond plus au lancement de la retouche.');
             }
@@ -77,15 +60,13 @@ final readonly class EnhanceImageHandler
             $enhancement->complete($key, hash('sha256', $result->bytes), strlen($result->bytes), $result->raw);
         } catch (OpenAiProviderException $error) {
             if ($error->retryable) {
-                throw new RecoverableMessageHandlingException($error->getMessage(), previous: $error, retryDelay: 1000 * ($error->retryAfter ?? 10));
+                throw $error->relance(10);
             }
             $enhancement->fail($error->getMessage());
         } catch (\DomainException $error) {
             $enhancement->fail($error->getMessage());
         } finally {
-            if (is_file($temp)) {
-                @unlink($temp);
-            }
+            CopieLocale::supprimer($temp);
         }
     }
 }

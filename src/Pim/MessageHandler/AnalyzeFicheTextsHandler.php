@@ -9,7 +9,6 @@ use App\Pim\Message\AnalyzeFicheTexts;
 use App\Pim\Repository\FicheRepository;
 use App\Pim\Service\TextDuplicateDetector;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
-use Symfony\Component\Uid\Ulid;
 
 #[AsMessageHandler]
 final readonly class AnalyzeFicheTextsHandler
@@ -22,7 +21,7 @@ final readonly class AnalyzeFicheTextsHandler
 
     public function __invoke(AnalyzeFicheTexts $message): void
     {
-        $fiche = $this->repository->find(Ulid::fromString($message->ficheId));
+        $fiche = $this->repository->parId($message->ficheId);
         if ($fiche instanceof Fiche) {
             $this->detector->analyze($fiche);
         }

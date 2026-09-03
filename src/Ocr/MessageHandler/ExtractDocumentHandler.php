@@ -20,10 +20,10 @@ use App\Ocr\Service\OcrValueAccessor;
 use App\Ocr\Service\PdfDocumentProcessor;
 use App\Pim\Import\Schema\FicheImportSchemaRegistry;
 use App\Shared\Outbox\OutboxPublisherInterface;
+use App\Shared\Service\CopieLocale;
 use App\Shared\Service\PrivateObjectStorageInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
-use Symfony\Component\Messenger\Exception\RecoverableMessageHandlingException;
 
 #[AsMessageHandler]
 final readonly class ExtractDocumentHandler
@@ -48,29 +48,12 @@ final readonly class ExtractDocumentHandler
         if (!$extraction instanceof DocumentExtraction || !in_array($extraction->status(), [ExtractionStatus::Queued, ExtractionStatus::Failed], true)) {
             return;
         }
-        $temp = tempnam(sys_get_temp_dir(), 'mdm-ocr-source-');
-        if (false === $temp) {
-            throw new RecoverableMessageHandlingException('Impossible de créer le PDF temporaire.');
-        }
+        // Copie en flux : un PDF de 50 Mo ne doit pas être chargé
+        // entièrement en mémoire par le worker.
+        $temp = CopieLocale::depuis($this->storage, $extraction->document()->originalStorageKey(), 'mdm-ocr-source-');
         $batches = [];
         $boxFilesToClean = [];
         try {
-            // Copie en flux : un PDF de 50 Mo ne doit pas être chargé
-            // entièrement en mémoire par le worker.
-            $source = $this->storage->readStream($extraction->document()->originalStorageKey());
-            try {
-                $destination = fopen($temp, 'wb');
-                if (false === $destination) {
-                    throw new \RuntimeException('Impossible de préparer le PDF DAM.');
-                }
-                try {
-                    stream_copy_to_stream($source, $destination);
-                } finally {
-                    fclose($destination);
-                }
-            } finally {
-                fclose($source);
-            }
             if (hash_file('sha256', $temp) !== $extraction->documentChecksum()) {
                 throw new \DomainException('L’empreinte du document DAM ne correspond plus à l’extraction.');
             }
@@ -135,9 +118,7 @@ final readonly class ExtractDocumentHandler
             $extraction->fail($error->getMessage());
         } finally {
             $this->pdf->cleanup($batches);
-            if (is_file($temp)) {
-                @unlink($temp);
-            }
+            CopieLocale::supprimer($temp);
         }
     }
 }

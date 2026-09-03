@@ -56,7 +56,7 @@ final readonly class SendSalesforceSallesBatchHandler
         $orphelins = [];
         foreach (array_chunk($lignes, self::SOUS_LOT, preserve_keys: true) as $chunk) {
             foreach ($chunk as $ficheId => $borne) {
-                $fiche = $this->fiches->find(Ulid::fromString($ficheId));
+                $fiche = $this->fiches->parId($ficheId);
                 if (!$fiche instanceof Fiche) {
                     $orphelins[] = $ficheId;
                 } elseif ($this->exporter->possedeDesSalles($fiche)) {
@@ -107,7 +107,7 @@ final readonly class SendSalesforceSallesBatchHandler
     {
         foreach (array_chunk($ficheIds, self::SOUS_LOT) as $chunk) {
             foreach ($chunk as $ficheId) {
-                $fiche = $this->fiches->find(Ulid::fromString($ficheId));
+                $fiche = $this->fiches->parId($ficheId);
                 if ($fiche instanceof Fiche) {
                     yield $fiche;
                 }

@@ -83,7 +83,7 @@ final readonly class EnrichirFicheHandler
 
     public function __invoke(EnrichirFiche $message): void
     {
-        $fiche = $this->fiches->find(Ulid::fromString($message->ficheId));
+        $fiche = $this->fiches->parId($message->ficheId);
         if (!$fiche instanceof Fiche) {
             return;
         }

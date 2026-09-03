@@ -14,7 +14,6 @@ use App\Shared\Outbox\OutboxPublisherInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
-use Symfony\Component\Uid\Ulid;
 
 /**
  * Vérifie l'adresse d'une fiche au fil de l'eau — BAN pour la France,
@@ -36,7 +35,7 @@ final readonly class VerifierAdresseFicheHandler
 
     public function __invoke(VerifierAdresseFiche $message): void
     {
-        $fiche = $this->fiches->find(Ulid::fromString($message->ficheId));
+        $fiche = $this->fiches->parId($message->ficheId);
         if (!$fiche instanceof Fiche) {
             return;
         }

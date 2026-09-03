@@ -17,7 +17,6 @@ use App\Pim\Repository\FicheRepository;
 use Monolog\Attribute\WithMonologChannel;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
-use Symfony\Component\Messenger\Exception\UnrecoverableMessageHandlingException;
 use Symfony\Component\Uid\Ulid;
 
 #[WithMonologChannel('marketplace_sync')]
@@ -58,13 +57,7 @@ final readonly class RemoveFicheFromMarketplaceHandler
         try {
             $applied = $this->client->removeFiche($tracked->code(), $sequence);
         } catch (MarketplaceApiException $exception) {
-            // Refus permanent (4xx) : relancer rejouerait le même échec, le
-            // message part directement en failed et l'échec est enregistré
-            // par MarketplaceSyncFailureSubscriber.
-            if (!$exception->isRetryable()) {
-                throw new UnrecoverableMessageHandlingException($exception->getMessage(), 0, $exception);
-            }
-            throw $exception;
+            throw $exception->pourMessenger();
         }
         // Conflit de séquence : la marketplace détient déjà un état plus
         // récent, l'état local ne doit pas être marqué retiré avec une

@@ -94,14 +94,26 @@ requête HTTP/commande
 
 Les transports MariaDB V1 sont séparés : `pim`, `dam`, `etl`, `enrichment`,
 `completeness`, `marketplace`, `mail` et `failed`. Les messages récurrents
-(statistiques du tableau de bord) passent par les transports `scheduler_*`,
-consommés par le service `cron-scheduler`. Les workers ne découvrent pas
-eux-mêmes du travail : ils consomment uniquement les messages déjà planifiés. Une ligne
+(statistiques du tableau de bord, purges, alerte de file, Salesforce) passent
+par les transports `scheduler_default` et `scheduler_dashboard`, consommés par
+le service `cron-scheduler`. Les workers ne découvrent pas eux-mêmes du
+travail : ils consomment uniquement les messages déjà planifiés. Une ligne
 outbox `published` confirme la remise au transport, pas la réussite du handler.
 
-Les handlers reçus sont transactionnels et idempotents grâce à l'ULID
-d'événement. Les reprises doivent passer par les commandes dédiées ; les
-messages en échec ne sont jamais rejoués implicitement.
+Deux origines de messages coexistent : les événements publiés par l'outbox
+dans la transaction métier (le cas général), et les commandes dispatchées
+directement sur le bus par un contrôleur, une commande console ou le
+planificateur. `EventIdStampMiddleware` pose un ULID d'événement sur ces
+dernières : tous les handlers reçus sont transactionnels et idempotents grâce
+au reçu `processed_message`, et la relance web d'un message échoué conserve
+son identifiant. Les reprises doivent passer par les commandes dédiées ou la
+page /admin/performance ; les messages en échec ne sont jamais rejoués
+implicitement.
+
+Un handler qui a épuisé ses relances est marqué en échec dans sa table de
+suivi par un écouteur dérivé de `AbstractWorkerFailureListener` ; le journal
+/outils et la vue des échecs lisent ces tables via une définition par famille
+(`FamilleTraitement`) et un état commun (`EtatTraitement`).
 
 ## Flux principaux
 
