@@ -9,7 +9,6 @@ use App\Dam\Message\DeleteMedia;
 use App\Dam\Service\ImageVariantRegistry;
 use App\Dam\Service\LieuImageUploader;
 use App\Enrichment\Service\FicheTranslationScheduler;
-use App\Pim\Entity\Fiche;
 use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Enum\NatureRessource;
@@ -23,6 +22,7 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 final readonly class LieuAdminManager
 {
     public function __construct(
+        private FicheMutation $mutations,
         private EntityManagerInterface $entityManager,
         private OutboxPublisherInterface $outbox,
         private LieuImageUploader $imageUploader,
@@ -69,11 +69,7 @@ final readonly class LieuAdminManager
             // Liaison Restaurant modifiée : le payload des fiches détachée/
             // attachée change aussi, sans transition de workflow (flush sous
             // suppression pour ces fiches).
-            $liees = $lieu->drainFichesLieesAResynchroniser();
-            foreach ($liees as $ficheLiee) {
-                $this->outbox->enqueue(new IndexFiche($ficheLiee->idString()));
-            }
-            Fiche::preserveWorkflowsDuring($liees, fn () => $this->entityManager->flush());
+            $this->mutations->enregistrerAvecLiees($lieu);
         } catch (\Throwable $exception) {
             $this->cleanup($uploaded);
             throw $exception;

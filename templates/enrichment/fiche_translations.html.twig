@@ -5,9 +5,7 @@
 {% block corps %}
 <main class="page">
     {# L'éditeur MDM est la vue unique d'une fiche. #}
-    {% set retour_fiche = fiche.type.value == 'lieu'
-        ? path('app_mdm_fiche_lieu', {id: fiche.idString})
-        : path('app_mdm_fiche_gamme', {gamme: {'restaurant': 'restaurants', 'activite': 'activites', 'service_evenementiel': 'services'}[fiche.type.value], id: fiche.idString}) %}
+    {% set retour_fiche = fiche_url(fiche.type, fiche.idString) %}
     <a class="back-link" href="{{ retour_fiche }}">← Retour à la fiche</a>
     <header class="page-header">
         <div>

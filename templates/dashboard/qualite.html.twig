@@ -12,10 +12,6 @@
 
 {% block title %}Qualité · {{ onglets[onglet_actif] }}{% endblock %}
 
-{% set gamme_libelles = {
-    'lieu': 'Lieux', 'restaurant': 'Restaurants',
-    'activite': 'Activités', 'service_evenementiel': 'Services',
-} %}
 {% set onglet_actions = {
     'miroir': [],
     'conflits': [['Arbitrer en masse', 'ok-circle']],
@@ -186,7 +182,7 @@
                     <tbody>
                     {% for ligne in sante %}
                         <tr class="h-11 border-t border-neutral-200 first:border-t-0">
-                            <td class="px-3"><twig:Typography variant="body-sm" bold>{{ gamme_libelles[ligne.type] ?? ligne.type }}</twig:Typography></td>
+                            <td class="px-3"><twig:Typography variant="body-sm" bold>{{ gamme_libelle(ligne.type, true) }}</twig:Typography></td>
                             <td class="px-3"><twig:Typography variant="body-sm">{{ ligne.fiches }}</twig:Typography></td>
                             {% for canal in ['global', 'marketplace', 'thematic', 'salesforce', 'portal'] %}
                                 <td class="px-3"><twig:Typography variant="body-sm">{{ attribute(ligne, canal) is null ? '—' : attribute(ligne, canal) ~ ' %' }}</twig:Typography></td>
@@ -333,9 +329,7 @@
                             <td class="px-3"><twig:Typography variant="body-sm">{{ suggestion.quand|date('d/m/Y H:i') }}</twig:Typography></td>
                             {# OCR : arbitrage dans la revue d'extraction ; IA : arbitrage sur la fiche (bloc « Suggestions en attente »). #}
                             {% if suggestion.origine == 'ia' %}
-                                {% set url_fiche = suggestion.type == 'lieu'
-                                    ? path('app_mdm_fiche_lieu', {id: suggestion.fiche_id, section: 1})
-                                    : path('app_mdm_fiche_gamme', {gamme: suggestion.type == 'restaurant' ? 'restaurants' : (suggestion.type == 'activite' ? 'activites' : 'services'), id: suggestion.fiche_id, section: 1}) %}
+                                {% set url_fiche = fiche_url(suggestion.type, suggestion.fiche_id, 1) %}
                                 <td class="px-3"><a href="{{ url_fiche }}" class="hover:underline"><twig:Typography variant="body-sm" textColor="primary-3" bold element="span">Ouvrir</twig:Typography></a></td>
                             {% else %}
                                 <td class="px-3"><a href="{{ path('app_ocr_index', {id: suggestion.fiche_id}) }}" class="hover:underline"><twig:Typography variant="body-sm" textColor="primary-3" bold element="span">Arbitrer</twig:Typography></a></td>
@@ -466,11 +460,7 @@
                                         <td class="px-3"><twig:Typography variant="body-sm" textColor="neutral-400">{{ ligne.score is null ? '—' : ligne.score ~ ' %' }}</twig:Typography></td>
                                         <td class="px-3"><twig:Typography variant="body-sm" textColor="neutral-500">{{ ligne.quand ? ligne.quand|date('d/m/Y') : '—' }}</twig:Typography></td>
                                         <td class="px-3">
-                                            {% if ligne.type == 'lieu' %}
-                                                <a href="{{ path('app_mdm_fiche_lieu', {id: ligne.fiche_id, section: 1}) }}" class="hover:underline"><twig:Typography variant="body-sm" textColor="primary-3" bold element="span">Ouvrir</twig:Typography></a>
-                                            {% else %}
-                                                <a href="{{ path('app_mdm_fiche_gamme', {gamme: ligne.type == 'restaurant' ? 'restaurants' : (ligne.type == 'activite' ? 'activites' : 'services'), id: ligne.fiche_id, section: 1}) }}" class="hover:underline"><twig:Typography variant="body-sm" textColor="primary-3" bold element="span">Ouvrir</twig:Typography></a>
-                                            {% endif %}
+                                            <a href="{{ fiche_url(ligne.type, ligne.fiche_id, 1) }}" class="hover:underline"><twig:Typography variant="body-sm" textColor="primary-3" bold element="span">Ouvrir</twig:Typography></a>
                                         </td>
                                     </tr>
                                 {% else %}
@@ -535,9 +525,7 @@
                             <td class="px-3 py-2.5"><twig:Typography variant="body-sm" bold>{{ ligne.field_label }}</twig:Typography></td>
                             {% for cote in [ligne.signalee, ligne.reference] %}
                                 <td class="px-3 py-2.5 max-w-[320px]">
-                                    <a href="{{ cote.type == 'lieu'
-                                        ? path('app_mdm_fiche_lieu', {id: cote.fiche_id, section: 1})
-                                        : path('app_mdm_fiche_gamme', {gamme: cote.type == 'restaurant' ? 'restaurants' : (cote.type == 'activite' ? 'activites' : 'services'), id: cote.fiche_id, section: 1}) }}" class="hover:underline">
+                                    <a href="{{ fiche_url(cote.type, cote.fiche_id, 1) }}" class="hover:underline">
                                         <twig:Typography variant="body-sm" textColor="primary-3" bold element="span">{{ cote.label ?? 'Sans libellé' }}</twig:Typography>
                                     </a>
                                     {% if cote.snippet %}<twig:Typography variant="body-xs" textColor="neutral-500" class="text-pretty">{{ cote.snippet }}</twig:Typography>{% endif %}

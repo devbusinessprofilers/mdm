@@ -19,10 +19,6 @@
     'lieu': 'Lieux', 'restaurant': 'Restaurants',
     'activite': 'Activités', 'service_evenementiel': 'Services événementiels',
 } %}
-{% set gamme_libelles = {
-    'lieu': 'Lieu', 'restaurant': 'Restaurant', 'activite': 'Activité',
-    'service_evenementiel': 'Service', 'traiteur': 'Plateau repas',
-} %}
 {% set statut_libelles = {
     'en_cours': 'En cours', 'en_attente_validation': 'En attente',
     'validee': 'Validée', 'publiee': 'Publiée', 'archivee': 'Archivée',
@@ -549,7 +545,7 @@
                                 </div>
                             </td>
 
-                            {{ _self.cellule(gamme_libelles[ligne.type.value] ?? ligne.type.value, 106) }}
+                            {{ _self.cellule(gamme_libelle(ligne.type.value), 106) }}
 
                             {# Colonne polymorphe : la typologie, marquée quand des valeurs IA attendent arbitrage. #}
                             <td class="pr-2.5 box-border" style="width: 168px; max-width: 168px">

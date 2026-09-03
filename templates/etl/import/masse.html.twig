@@ -66,11 +66,7 @@
         </div>
 
         {# ---- Historique des imports en masse : un import par gamme et par classeur. ---- #}
-        {% set gamme_libelles = {
-            'lieu': 'Lieux', 'restaurant': 'Restaurants',
-            'activite': 'Activités', 'service_evenementiel': 'Services',
-        } %}
-        {% set grille = 'grid gap-4 items-center px-4 grid-cols-[repeat(auto-fit,minmax(0,1fr))]' %}
+                {% set grille = 'grid gap-4 items-center px-4 grid-cols-[repeat(auto-fit,minmax(0,1fr))]' %}
         <div class="shrink-0 flex flex-col gap-3 p-6 rounded-sm bg-neutral-100 shadow-(--shadow)">
             <div class="flex items-end justify-between gap-4">
                 <twig:Typography variant="subtitle" bold>Historique des imports</twig:Typography>
@@ -101,7 +97,7 @@
                                 <twig:Typography variant="body-sm" bold ellipsis>{{ job.originalFilename }}</twig:Typography>
                             </span>
                             <span class="min-w-0">
-                                <twig:Typography variant="body-sm" ellipsis textColor="neutral-500">{{ gamme_libelles[job.type.value] ?? job.type.value }}</twig:Typography>
+                                <twig:Typography variant="body-sm" ellipsis textColor="neutral-500">{{ gamme_libelle(job.type.value, true) }}</twig:Typography>
                             </span>
                             <span class="min-w-0">
                                 <span class="inline-flex w-fit max-w-full px-[9px] py-[3px] rounded-lg {{ jeton.1 }}"

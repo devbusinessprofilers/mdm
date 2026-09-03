@@ -13,10 +13,6 @@
     s'édite pas ici.
 #}
 
-{% set gamme_libelles = {
-    'lieu': 'Lieu', 'restaurant': 'Restaurant', 'activite': 'Activité',
-    'service_evenementiel': 'Service', 'traiteur': 'Plateau repas',
-} %}
 {% set statut_libelles = {
     'en_cours': 'En cours', 'en_attente_validation': 'En attente',
     'validee': 'Validée', 'publiee': 'Publiée', 'archivee': 'Archivée',
@@ -52,7 +48,7 @@
                 <div class="flex-1 min-w-0 flex flex-col gap-1">
                     <div class="flex items-center gap-2.5 min-w-0">
                         <twig:Typography variant="heading-3" element="h1" bold ellipsis>{{ fiche.label ?? 'Sans libellé' }}</twig:Typography>
-                        <twig:Tag label="{{ gamme_libelles[fiche.type.value] ?? fiche.type.value }}" variant="neutral" size="sm" />
+                        <twig:Tag label="{{ gamme_libelle(fiche.type.value) }}" variant="neutral" size="sm" />
                         <twig:Tag label="{{ statut_libelles[fiche.status.value] ?? fiche.status.value }}"
                                   variant="{{ _self.ton_statut(fiche.status.value) }}" size="sm" />
                     </div>

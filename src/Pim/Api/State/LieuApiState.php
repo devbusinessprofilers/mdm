@@ -6,21 +6,20 @@ namespace App\Pim\Api\State;
 
 use App\Enrichment\Service\FicheTranslationScheduler;
 use App\Pim\Api\Exception\ApiProblemException;
-use App\Pim\Entity\Fiche;
 use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Message\IndexFiche;
 use App\Pim\Repository\LieuRepository;
+use App\Pim\Service\FicheMutation;
 use App\Shared\Outbox\OutboxPublisherInterface;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 
 final readonly class LieuApiState
 {
     public function __construct(
+        private FicheMutation $mutations,
         private LieuRepository $lieux,
         private RequestStack $requests,
-        private EntityManagerInterface $entityManager,
         private OutboxPublisherInterface $outbox,
         private FicheTranslationScheduler $translationScheduler,
     ) {
@@ -61,10 +60,6 @@ final readonly class LieuApiState
         $this->outbox->enqueue(new IndexFiche($lieu->fiche()->idString()));
         // Liaison Restaurant modifiée : resynchroniser les fiches liées, sans
         // transition de workflow (flush sous suppression pour ces fiches).
-        $liees = $lieu->drainFichesLieesAResynchroniser();
-        foreach ($liees as $ficheLiee) {
-            $this->outbox->enqueue(new IndexFiche($ficheLiee->idString()));
-        }
-        Fiche::preserveWorkflowsDuring($liees, fn () => $this->entityManager->flush());
+        $this->mutations->enregistrerAvecLiees($lieu);
     }
 }

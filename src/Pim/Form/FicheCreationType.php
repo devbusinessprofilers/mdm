@@ -30,13 +30,6 @@ use Symfony\Component\Validator\Context\ExecutionContextInterface;
 /** @extends AbstractType<FicheCreation> */
 final class FicheCreationType extends AbstractType
 {
-    private const GAMMES = [
-        'Lieu' => TypeFiche::Lieu,
-        'Restaurant' => TypeFiche::Restaurant,
-        'Activité' => TypeFiche::Activite,
-        'Service événementiel' => TypeFiche::ServiceEvenementiel,
-    ];
-
     public function __construct(private readonly SiteDiffusionRepository $sitesDiffusion)
     {
     }
@@ -48,7 +41,7 @@ final class FicheCreationType extends AbstractType
             // (rendu dans _form-theme-creation) — de vrais inputs soumis.
             ->add('type', ChoiceType::class, [
                 'label' => 'Gamme',
-                'choices' => self::GAMMES,
+                'choices' => self::gammes(),
                 'choice_value' => static fn (?TypeFiche $type): ?string => $type?->value,
                 'expanded' => true,
                 'constraints' => [new NotNull(message: 'Choisissez une gamme.')],
@@ -198,5 +191,16 @@ final class FicheCreationType extends AbstractType
                 ->atPath('collabPrenom')
                 ->addViolation();
         }
+    }
+
+    /** @return array<string, TypeFiche> libellé => gamme, les gammes livrées seulement */
+    private static function gammes(): array
+    {
+        $choix = [];
+        foreach (TypeFiche::operationnels() as $type) {
+            $choix[$type->libelle()] = $type;
+        }
+
+        return $choix;
     }
 }

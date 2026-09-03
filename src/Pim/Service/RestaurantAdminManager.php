@@ -11,7 +11,6 @@ use App\Dam\Service\FicheDocumentUploader;
 use App\Dam\Service\FicheImageUploader;
 use App\Dam\Service\ImageVariantRegistry;
 use App\Enrichment\Service\FicheTranslationScheduler;
-use App\Pim\Entity\Fiche;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Enum\NatureRessource;
@@ -25,6 +24,7 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 final readonly class RestaurantAdminManager
 {
     public function __construct(
+        private FicheMutation $mutations,
         private EntityManagerInterface $entityManager,
         private OutboxPublisherInterface $outbox,
         private FicheImageUploader $imageUploader,
@@ -75,11 +75,7 @@ final readonly class RestaurantAdminManager
             // Liaison Lieu modifiée : le payload des fiches détachée/attachée
             // change aussi, sans transition de workflow (flush sous
             // suppression pour ces fiches).
-            $liees = $restaurant->drainFichesLieesAResynchroniser();
-            foreach ($liees as $ficheLiee) {
-                $this->outbox->enqueue(new IndexFiche($ficheLiee->idString()));
-            }
-            Fiche::preserveWorkflowsDuring($liees, fn () => $this->entityManager->flush());
+            $this->mutations->enregistrerAvecLiees($restaurant);
         } catch (\Throwable $exception) {
             $this->cleanup($images, $documents);
             throw $exception;

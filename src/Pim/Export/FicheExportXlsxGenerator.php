@@ -41,13 +41,7 @@ final readonly class FicheExportXlsxGenerator
 
     public static function nomFeuille(TypeFiche $type): string
     {
-        return match ($type) {
-            TypeFiche::Lieu => 'Lieux',
-            TypeFiche::Restaurant => 'Restaurants',
-            TypeFiche::Activite => 'Activités',
-            TypeFiche::ServiceEvenementiel => 'Services',
-            TypeFiche::Traiteur => 'Traiteurs',
-        };
+        return $type->libellePluriel();
     }
 
     /**

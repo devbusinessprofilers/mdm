@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Dashboard\Repository;
 
+use App\Pim\Enum\TypeFiche;
 use App\Pim\Service\ChaineLovResolution;
 use App\Pim\Service\ReferentielGeographiqueFrancais;
 use Doctrine\DBAL\ArrayParameterType;
@@ -111,7 +112,7 @@ final readonly class QualiteRepository
         foreach ($data['perType'] ?? [] as $type => $infos) {
             foreach ($infos['worstFields'] ?? [] as $field) {
                 $faibles[] = [
-                    'libelle' => ($field['label'] ?? $field['code']).' — '.ucfirst(str_replace('_', ' ', (string) $type)),
+                    'libelle' => ($field['label'] ?? $field['code']).' — '.(TypeFiche::tryFrom((string) $type)?->libelle() ?? (string) $type),
                     'part' => (float) ($field['rate'] ?? 0),
                     'poids' => ($field['filled'] ?? 0).'/'.($field['applicable'] ?? 0),
                 ];

@@ -40,10 +40,9 @@
                             {% set fiche = affiliation.fiche %}
                             {% set libelle = (fiche.label ?? 'Sans libellé') ~ ' (' ~ fiche.code ~ ')' %}
                             <li>
-                                {% if fiche.type.value == 'lieu' %}
-                                    <a class="text-link" href="{{ path('app_mdm_fiche_lieu', {id: fiche.idString}) }}">{{ libelle }}</a>
-                                {% elseif fiche.type.value in ['restaurant', 'activite', 'service_evenementiel'] %}
-                                    <a class="text-link" href="{{ path('app_mdm_fiche_gamme', {gamme: {'restaurant': 'restaurants', 'activite': 'activites', 'service_evenementiel': 'services'}[fiche.type.value], id: fiche.idString}) }}">{{ libelle }}</a>
+                                {% set url_fiche = fiche_url(fiche.type, fiche.idString) %}
+                                {% if url_fiche %}
+                                    <a class="text-link" href="{{ url_fiche }}">{{ libelle }}</a>
                                 {% else %}
                                     {{ libelle }}
                                 {% endif %}

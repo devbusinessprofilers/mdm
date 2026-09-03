@@ -218,7 +218,7 @@ final readonly class DashboardPageProvider
     {
         $labels = [];
         foreach (TypeFiche::cases() as $type) {
-            $labels[$type->value] = ucfirst(str_replace('_', ' ', $type->value));
+            $labels[$type->value] = $type->libelle();
         }
 
         return $labels;

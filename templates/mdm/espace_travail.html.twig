@@ -15,9 +15,6 @@
     'en_cours': 'En cours', 'en_attente_validation': 'En attente de validation',
     'validee': 'Validée', 'publiee': 'Publiée', 'archivee': 'Archivée',
 } %}
-{% set gamme_libelles = {
-    'lieu': 'Lieu', 'restaurant': 'Restaurant', 'activite': 'Activité', 'service_evenementiel': 'Service',
-} %}
 {% set gamme_teintes = {
     'lieu': 'bg-primary', 'restaurant': 'bg-peach', 'activite': 'bg-success', 'service_evenementiel': 'bg-primary-3',
 } %}
@@ -261,7 +258,7 @@
                                     <span class="flex items-center gap-2 min-w-0 h-12 overflow-hidden">
                                         <span class="shrink-0 w-2 h-2 rounded-lg {{ gamme_teintes[ligne.type] ?? 'bg-neutral-400' }}"
                                               aria-hidden="true"></span>
-                                        <twig:Typography variant="body" ellipsis class="min-w-0">{{ gamme_libelles[ligne.type] ?? ligne.type }}</twig:Typography>
+                                        <twig:Typography variant="body" ellipsis class="min-w-0">{{ gamme_libelle(ligne.type) }}</twig:Typography>
                                     </span>
                                 </td>
                                 <td class="box-border h-12 pr-3 border-b border-neutral-200">
@@ -319,7 +316,7 @@
                                     <span class="flex items-center gap-2 min-w-0 h-12 overflow-hidden">
                                         <span class="shrink-0 w-2 h-2 rounded-lg {{ gamme_teintes[priorite.type] ?? 'bg-neutral-400' }}"
                                               aria-hidden="true"></span>
-                                        <twig:Typography variant="body" ellipsis class="min-w-0">{{ gamme_libelles[priorite.type] ?? priorite.type }}</twig:Typography>
+                                        <twig:Typography variant="body" ellipsis class="min-w-0">{{ gamme_libelle(priorite.type) }}</twig:Typography>
                                     </span>
                                 </td>
                                 <td class="box-border h-12 pr-3 border-b border-neutral-200 truncate">
