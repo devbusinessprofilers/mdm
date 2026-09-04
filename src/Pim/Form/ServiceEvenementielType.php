@@ -18,7 +18,6 @@ use App\Pim\Validation\ValidationGroups;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Symfony\Component\Form\AbstractType;
-use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\CollectionType;
 use Symfony\Component\Form\Extension\Core\Type\FileType;
@@ -57,13 +56,13 @@ final class ServiceEvenementielType extends AbstractType
                 TextType::class,
                 $this->field("Nom du prestataire", "label", "changeLabel"),
             )
-            ->add("businessPremium", CheckboxType::class, [
+            ->add("businessPremium", OuiNonType::class, [
                 "label" => "Adhérent Business Premium",
                 "required" => false,
                 "getter" => static fn (ServiceEvenementiel $service): bool => $service->fiche()->businessPremium(),
                 "setter" => static function (ServiceEvenementiel &$service, mixed $value): void { $service->fiche()->changeBusinessPremium((bool) $value); },
             ])
-            ->add("partenaireBp", CheckboxType::class, [
+            ->add("partenaireBp", OuiNonType::class, [
                 "label" => "Partenaire BP",
                 "required" => false,
                 "disabled" => $partenaireGereParSf,
@@ -189,33 +188,10 @@ final class ServiceEvenementielType extends AbstractType
                     $service->changeLocalisation($location);
                 },
             ])
-            ->add(
-                "paysMobiles",
-                StringListType::class,
-                $this->field(
-                    "Pays",
-                    "paysMobiles",
-                    "changePaysMobiles",
-                ) + ["help" => "Un pays par ligne."],
-            )
-            ->add(
-                "regionsMobiles",
-                StringListType::class,
-                $this->field(
-                    "Région(s)",
-                    "regionsMobiles",
-                    "changeRegionsMobiles",
-                ) + ["help" => "Une région par ligne."],
-            )
-            ->add(
-                "departementsMobiles",
-                StringListType::class,
-                $this->field(
-                    "Département(s)",
-                    "departementsMobiles",
-                    "changeDepartementsMobiles",
-                ) + ["help" => "Un département par ligne."],
-            );
+            // Zones mobiles : référentiel pays → régions → départements (ZonesGeographiques).
+            ->add("paysMobiles", ZoneGeoType::class, $this->field("Pays", "paysMobiles", "changePaysMobiles") + ["niveau" => "pays"])
+            ->add("regionsMobiles", ZoneGeoType::class, $this->field("Région(s)", "regionsMobiles", "changeRegionsMobiles") + ["niveau" => "region"])
+            ->add("departementsMobiles", ZoneGeoType::class, $this->field("Département(s)", "departementsMobiles", "changeDepartementsMobiles") + ["niveau" => "departement"]);
 
         foreach (
             [

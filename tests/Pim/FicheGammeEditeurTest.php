@@ -249,6 +249,7 @@ final class FicheGammeEditeurTest extends WebTestCase
         self::assertCount(1, $crawler->filter('input[name="acompte_actif[2]"][checked]'));
         self::assertSame('30', $crawler->filter('input[name="restaurant[administratif][condPaieAccPourcentage2]"]')->attr('value'));
         self::assertCount(9, $crawler->filter('input[name^="restaurant[administratif][condPaieAnnPourcentage"]'));
+        self::assertCount(1, $crawler->filter('[data-controller="annulation"] [data-annulation-target="edition"]:not(.hidden)'), 'Sans valeur, la saisie des tranches est ouverte.');
         self::assertCount(1, $crawler->filter('input[name="restaurant[administratif][commissionPaiement]"][disabled]'));
         self::assertCount(0, $crawler->filter('select[name="restaurant[administratif][condPaieAccSignature]"]'));
 
@@ -273,6 +274,16 @@ final class FicheGammeEditeurTest extends WebTestCase
         self::assertSame(30, $recharge->administratif()->condPaieAccPourcentage2());
         self::assertFalse($recharge->administratif()->modePaiementAffacturage());
         self::assertSame(1, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM pim_fiche_administratif'));
+
+        // Frise d'annulation (maquette) : tranches contiguës de même valeur fusionnées, « Modifier » ouvre la saisie.
+        $crawler = $client->request('GET', '/referentiel/restaurants/fiche/'.$restaurant->id().'?section=9');
+        $apercu = $crawler->filter('[data-annulation-target="apercu"]');
+        self::assertCount(1, $apercu);
+        self::assertSame('2', $apercu->attr('data-annulation-groupes'), 'Huit tranches vides puis 100 % : deux groupes.');
+        self::assertCount(1, $apercu->filter('li.col-span-8'));
+        self::assertStringContainsString('100 %', $apercu->text());
+        self::assertCount(1, $crawler->filter('[data-annulation-target="bouton"]'));
+        self::assertCount(1, $crawler->filter('[data-annulation-target="edition"].hidden'));
     }
 
     /**
@@ -327,11 +338,9 @@ final class FicheGammeEditeurTest extends WebTestCase
             self::assertSame([false, true], $radios->each(static fn (Crawler $r): bool => ($n = $r->getNode(0)) instanceof \DOMElement && $n->hasAttribute('checked')), $champ);
         }
         self::assertStringNotContainsString('Non renseigné', $crawler->filter('#form-fiche')->text());
-        // Toilettes PMR conditionnées par Accès PMR = Oui.
-        $cible = $crawler->filter('[data-affichage-conditionnel-target="cible"][data-source="restaurant_accesPmr"]');
-        self::assertCount(1, $cible);
-        self::assertSame('1', $cible->attr('data-valeurs'));
-        self::assertGreaterThan(0, $cible->filter('input[name="restaurant[toilettesPmr]"]')->count());
+        // Les deux questions PMR sont toujours visibles (relecture 2026-09-04).
+        self::assertCount(0, $crawler->filter('[data-affichage-conditionnel-target="cible"][data-source="restaurant_accesPmr"]'));
+        self::assertCount(2, $crawler->filter('input[type="radio"][name="restaurant[toilettesPmr]"]'));
 
         // Onglet Tarifs : six lignes interrupteur + montant, conditionnées.
         $tarifs = $crawler->filter('#form-fiche section[data-volet="6"] [data-tarif]');
@@ -364,9 +373,10 @@ final class FicheGammeEditeurTest extends WebTestCase
 
         $libelles = static fn (int $volet): array => $crawler->filter(sprintf('#form-fiche section[data-volet="%d"] label', $volet))
             ->each(static fn (Crawler $l): string => preg_replace('/\s+/', ' ', $l->text(null, true)) ?? '');
-        $sansBruit = static fn (array $l): array => array_values(array_filter($l, static fn (string $t): bool => '' !== $t && !str_starts_with($t, 'Select ')));
+        $sansBruit = static fn (array $l): array => array_values(array_filter($l, static fn (string $t): bool => !in_array($t, ['', 'Oui', 'Non'], true) && !str_starts_with($t, 'Select ')));
+        // Les cases BP sont des Oui/Non : rendues à leur place, plus repoussées en fin de carte.
         self::assertSame(
-            ['Nom de l’activité *', 'Prestataire *', 'Langue parlée', "Thématique de l'activité *", 'Type *', 'Nautiques & Aquatiques', 'Créatives, Artistiques & Musicales', 'Culinaires & Œnologiques', 'Culturelles, Réflexions & Découvertes', 'Digital & High-Tech', 'Sensations fortes & Sports mécaniques', 'Sportives & Ludiques', 'Nature & RSE', 'Bien-être & Détente', 'Adhérent Business Premium', 'Partenaire BP'],
+            ['Nom de l’activité *', 'Prestataire *', 'Langue parlée', "Thématique de l'activité *", 'Type *', 'Adhérent Business Premium', 'Partenaire BP', 'Nautiques & Aquatiques', 'Créatives, Artistiques & Musicales', 'Culinaires & Œnologiques', 'Culturelles, Réflexions & Découvertes', 'Digital & High-Tech', 'Sensations fortes & Sports mécaniques', 'Sportives & Ludiques', 'Nature & RSE', 'Bien-être & Détente'],
             $sansBruit($libelles(0)),
         );
         self::assertStringNotContainsString('Sous-thématiques —', $crawler->filter('#form-fiche')->text());
@@ -382,11 +392,12 @@ final class FicheGammeEditeurTest extends WebTestCase
         self::assertSame(['Description générale *', 'Ce que comprend la prestation', 'Objectifs de séminaire *', 'Plus n°1', 'Plus n°2', 'Plus n°3', 'Plus n°4', 'Plus n°5'], $sansBruit($libelles(2)));
         self::assertSame(['Nombre de participants minimum *', 'Nombre de participants maximum *', 'Temps minimum *', 'Temps maximum *'], $sansBruit($libelles(3)));
         self::assertCount(2, $crawler->filter('#form-fiche section[data-volet="3"] input[type="time"]'));
-        // Forfaits / options : trois emplacements par type, champs désactivés tant que non cochés.
+        // Forfaits / options : trois emplacements par type, champs jamais désactivés (relecture 2026-09-04).
         self::assertSame('Tarifs à partir de (/pers)', $sansBruit($libelles(5))[0]);
         foreach (['forfait', 'option'] as $type) {
             self::assertCount(3, $crawler->filter(sprintf('[data-offre^="%s-"]', $type)));
-            self::assertCount(3, $crawler->filter(sprintf('input[name^="activite[offres][nouveau_%s_"][name$="[type]"][disabled]', $type)));
+            self::assertCount(3, $crawler->filter(sprintf('input[name^="activite[offres][nouveau_%s_"][name$="[type]"]', $type)));
+            self::assertCount(0, $crawler->filter(sprintf('input[name^="activite[offres][nouveau_%s_"][disabled]', $type)));
             self::assertCount(0, $crawler->filter(sprintf('input[name="offre_active[%s][0]"][checked]', $type)));
         }
         self::assertSame('2', $crawler->filter('input[name="activite[offres][nouveau_option_2][position]"]')->attr('value'));
@@ -419,7 +430,7 @@ final class FicheGammeEditeurTest extends WebTestCase
         self::assertContains('Y a-t-il des contraintes logistiques ?', $infos);
         self::assertLessThan(array_search('Y a-t-il des équipements à prévoir par les participants ?', $infos, true), array_search('Y a-t-il des contraintes logistiques ?', $infos, true));
         $localisation = $sansRadios($libelles(1));
-        self::assertSame(['Rayon d’action *', 'Pays *', 'Rue *', 'Code postal *', 'Ville *', 'Arrondissement *', 'Département *', 'Région *', 'Latitude *', 'Longitude *', 'Code pays ISO', 'Région(s) *', 'Département(s) *', 'Pays *'], array_slice($localisation, 0, 14));
+        self::assertSame(['Rayon d’action *', 'Pays *', 'Rue *', 'Code postal *', 'Ville *', 'Arrondissement *', 'Département *', 'Région *', 'Latitude *', 'Longitude *', 'Code pays ISO', 'Pays *', 'Région(s) *', 'Département(s) *'], array_slice($localisation, 0, 14));
         self::assertContains('Matériel ou prestation adaptée aux publics PMR', $localisation);
         $prestations = $sansRadios($libelles(2));
         self::assertSame(['Prestations *', 'Accueil et sécurité', 'Cadeaux clients & Goodies', 'Communication & Publicité', 'Technique & Audiovisuel', 'Son & Vidéo', 'Animations & Artistes', 'Traduction & Interprétariat', 'Transports & Logistique', 'Traiteurs', 'Divers & Sur-mesure', 'Digital & Hybride'], $prestations);
@@ -432,15 +443,18 @@ final class FicheGammeEditeurTest extends WebTestCase
             self::assertCount(2, $radios, $champ);
             self::assertSame([false, true], $radios->each(static fn (Crawler $r): bool => ($n = $r->getNode(0)) instanceof \DOMElement && $n->hasAttribute('checked')), $champ);
         }
-        $cible = $crawler->filter('[data-affichage-conditionnel-target="cible"][data-source="service_evenementiel_accesPmr"]');
-        self::assertCount(1, $cible);
-        self::assertGreaterThan(0, $cible->filter('input[name="service_evenementiel[materielAdaptePmr]"]')->count());
+        self::assertCount(0, $crawler->filter('[data-affichage-conditionnel-target="cible"][data-source="service_evenementiel_accesPmr"]'));
         // Collection d'accès : quatre types maquette, bouton de suggestion.
         $prototype = (string) $crawler->filter('#form-fiche section[data-volet="1"] [data-form-collection-prototype-value]')->first()->attr('data-form-collection-prototype-value');
         foreach (['Accès par la route', 'Parking(s)', 'Gare(s)', 'Aéroport(s)'] as $type) {
             self::assertStringContainsString($type, $prototype);
         }
         self::assertStringNotContainsString('Métro', $prototype);
+        // Mêmes champs que le Lieu (distance, durée, mode de transport) et corbeille dans le gabarit.
+        foreach (['distanceKilometres', 'dureeMinutes', 'modeTransport'] as $champ) {
+            self::assertStringContainsString('[acces][__name__]['.$champ.']', $prototype, $champ);
+        }
+        self::assertStringContainsString('form-collection#remove', $prototype);
         self::assertStringContainsString('Suggérer les accès', implode(' ', $crawler->filter('#form-fiche section[data-volet="1"]')->each(static fn (Crawler $s): string => $s->text(null, true))));
     }
 

@@ -1,0 +1,59 @@
+{#
+    Conditions de paiement annulation (maquette portail) : une frise à neuf
+    tranches (LOV COND_PAIE_ANN_SIGNATURE) — en-tête des tranches, puis les
+    pourcentages fusionnés par valeur égale contiguë et colorés selon le
+    pourcentage ; « Modifier » (contrôleur annulation) dévoile les neuf champs.
+    Sans aucune valeur, la saisie est directement ouverte.
+
+    Variables : `widgets` — les neuf champs, dans l'ordre des tranches.
+#}
+{% set couleurs = {
+    0: 'bg-primary text-light-text', 10: 'bg-primary-2 text-light-text', 20: 'bg-neon', 30: 'bg-green-pastel',
+    40: 'bg-green text-light-text', 50: 'bg-yellow text-light-text', 60: 'bg-old-gold text-light-text',
+    70: 'bg-orange text-light-text', 80: 'bg-dark-orange text-light-text', 90: 'bg-peach text-light-text', 100: 'bg-peach text-light-text',
+} %}
+{% set largeurs = { 1: '', 2: 'col-span-2', 3: 'col-span-3', 4: 'col-span-4', 5: 'col-span-5', 6: 'col-span-6', 7: 'col-span-7', 8: 'col-span-8', 9: 'col-span-9' } %}
+{# Groupes de tranches contiguës de même valeur (valeur vide = tiret). #}
+{% set groupes = [] %}
+{% for widget in widgets %}
+    {% set valeur = widget.vars.value is same as('') or widget.vars.value is null ? null : widget.vars.value|number_format(0, '', '') %}
+    {% set dernier = groupes|last %}
+    {% if groupes|length > 0 and dernier.valeur == valeur %}
+        {% set groupes = groupes|slice(0, -1)|merge([{ valeur: valeur, taille: dernier.taille + 1 }]) %}
+    {% else %}
+        {% set groupes = groupes|merge([{ valeur: valeur, taille: 1 }]) %}
+    {% endif %}
+{% endfor %}
+{% set renseigne = widgets|filter(w => w.vars.value is not same as('') and w.vars.value is not null)|length > 0 %}
+<div class="flex flex-col gap-4" data-controller="annulation">
+    <div class="flex flex-row items-center gap-6 flex-wrap">
+        <twig:Typography variant="body-sm" textColor="neutral-500" class="grow text-pretty">Pourcentage du montant total retenu selon la date d'annulation, de la signature jusqu'au jour J.</twig:Typography>
+        {% if renseigne %}
+            <twig:Button variant="outline" size="sm" type="button" data-annulation-target="bouton" data-action="annulation#modifier">Modifier</twig:Button>
+        {% endif %}
+    </div>
+    <div class="overflow-x-auto scrollbar pb-2 flex flex-col gap-2">
+        <ul class="grid grid-cols-9 gap-2 min-w-[900px]">
+            {% for widget in widgets %}
+                <li class="p-2 rounded-xs bg-primary-4 flex justify-center items-center text-center">
+                    <twig:Typography variant="body-xs" bold center element="span">{{ widget.vars.label }}</twig:Typography>
+                </li>
+            {% endfor %}
+        </ul>
+        {% if renseigne %}
+            <ul class="grid grid-cols-9 gap-2 min-w-[900px]" data-annulation-target="apercu" data-annulation-groupes="{{ groupes|length }}">
+                {% for groupe in groupes %}
+                    {% set arrondi = groupe.valeur is null ? null : (groupe.valeur / 10)|round * 10 %}
+                    <li class="p-2 rounded-xs flex justify-center items-center {{ largeurs[groupe.taille] }} {{ arrondi is null ? 'bg-neutral-200' : couleurs[min(100, max(0, arrondi))] }}">
+                        <twig:Typography variant="body-sm" bold center element="span" class="text-inherit">{{ groupe.valeur is null ? '—' : groupe.valeur ~ ' %' }}</twig:Typography>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+        <ul class="grid grid-cols-9 gap-2 min-w-[900px]{{ renseigne ? ' hidden' : '' }}" data-annulation-target="edition">
+            {% for widget in widgets %}
+                <li>{{ form_widget(widget) }}{{ form_errors(widget) }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>

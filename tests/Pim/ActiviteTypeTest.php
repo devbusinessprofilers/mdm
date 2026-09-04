@@ -50,8 +50,8 @@ final class ActiviteTypeTest extends KernelTestCase
             'sousThematiquesSportivesLudiques' => ['TA_SPORTIVE_LUDIQUE_SS_1'],
             'modeIntervention' => 'mobile',
             'touteFrance' => '1',
-            'paysMobiles' => "France\nBelgique",
-            'regionsMobiles' => "Bretagne\nNormandie",
+            'paysMobiles' => ['FR', 'BE'],
+            'regionsMobiles' => ['FR-BRE', 'FR-NOR'],
             'objectifs' => ['OBJECTIF_SEMINAIRE_1'],
             'participantsMin' => '2',
             'participantsMax' => '100',
@@ -72,8 +72,8 @@ final class ActiviteTypeTest extends KernelTestCase
                 $error->getOrigin()?->getName().': '.$error->getMessage();
         }
         self::assertTrue($form->isValid(), implode('; ', $errors));
-        self::assertSame(['France', 'Belgique'], $a->paysMobiles());
-        self::assertSame(['Bretagne', 'Normandie'], $a->regionsMobiles());
+        self::assertSame(['FR', 'BE'], $a->paysMobiles());
+        self::assertSame(['FR-BRE', 'FR-NOR'], $a->regionsMobiles());
         self::assertSame(['TYPE_EXT_INT_1'], $a->types());
         self::assertSame(['TA_SPORTIVE_LUDIQUE', 'TA_NATURE_RSE'], $a->thematiques());
         self::assertSame(['TA_SPORTIVE_LUDIQUE_SS_1'], $a->sousThematiques());
@@ -86,6 +86,8 @@ final class ActiviteTypeTest extends KernelTestCase
         $form = $factory->create(ActiviteType::class, $a, ['csrf_protection' => false]);
         $form->submit(['offres' => [
             'nouveau_forfait_0' => ['type' => 'forfait', 'position' => '0', 'nom' => 'Journée', 'participantsMin' => '4', 'participantsMax' => '20', 'prix' => '90', 'modeTarification' => 'par_personne'],
+            // Emplacement vide (décoché) : ignoré, aucune offre créée.
+            'nouveau_forfait_1' => ['type' => 'forfait', 'position' => '1', 'nom' => '', 'participantsMin' => '', 'participantsMax' => '', 'prix' => '', 'modeTarification' => 'par_personne'],
             'nouveau_option_1' => ['type' => 'option', 'position' => '1', 'nom' => 'Photographe', 'prix' => '250', 'modeTarification' => 'forfait'],
         ]], false);
         self::assertTrue($form->isValid(), (string) $form->getErrors(true));

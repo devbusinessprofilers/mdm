@@ -18,8 +18,8 @@ use Psr\Log\LoggerInterface;
  * panne, ces trois types manquent simplement, le reste est servi. Les
  * distances et durées (gamme Lieu) passent par Geoapify Routing, à pied en
  * périmètre piéton et en voiture au-delà, avec repli sur le vol d'oiseau
- * sans durée quand l'itinéraire échoue. Sans distances (Restaurant, qui n'a
- * que type + nom), le vol d'oiseau est glissé dans le nom. Les types émis
+ * sans durée quand l'itinéraire échoue. Sans distances ($avecDistances à
+ * false), le vol d'oiseau est glissé dans le nom. Les types émis
  * dépendent de la gamme : le Service (TYPES_SERVICE) remplace métro et
  * tramway par le parking (Geoapify Places, catégorie `parking`).
  */

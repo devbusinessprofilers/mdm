@@ -57,9 +57,9 @@ final class ServiceTypeTest extends KernelTestCase
             "prestations" => ["TS_TECHNIQUE_AUDIOVISUEL"],
             "descriptionGenerale" => "Description simple sans HTML.",
             "modeIntervention" => "mobile",
-            "paysMobiles" => "France\nBelgique",
-            "regionsMobiles" => "Bretagne\nNormandie",
-            "departementsMobiles" => "35\n14",
+            "paysMobiles" => ["FR", "BE"],
+            "regionsMobiles" => ["FR-BRE", "FR-NOR"],
+            "departementsMobiles" => ["FR-35", "FR-14"],
             "tarifParPrestation" => "500.50",
             "ressources" => [],
             "accesPmr" => "1",
@@ -74,7 +74,7 @@ final class ServiceTypeTest extends KernelTestCase
         self::assertTrue($service->accesPmr());
         self::assertFalse($service->materielAdaptePmr(), 'Radio absente = Non.');
         self::assertSame(['parking', 'gare'], array_map(static fn ($a): string => $a->type()->value, $service->acces()->toArray()));
-        self::assertSame(["France", "Belgique"], $service->paysMobiles());
+        self::assertSame(["FR", "BE"], $service->paysMobiles());
         self::assertSame(500.5, $service->tarifParPrestation());
     }
 }

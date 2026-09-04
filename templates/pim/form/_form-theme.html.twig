@@ -171,6 +171,7 @@
             :disabled="disabled"
             :required="required"
             :limit="attr['data-max']|default(null)"
+            :selectAttributes="attr|filter((v, k) => k starts with 'data-zones-')"
             placeholder="{{ attr.placeholder|default('') }}"
         />
     {%- endif -%}

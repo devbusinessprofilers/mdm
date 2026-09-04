@@ -6,6 +6,9 @@ export default class extends Controller {
 
     dynamicChoices = [];
     selection = [];
+    // Valeurs proposables (null = toutes) : posé par un contrôleur parent
+    // (zones-geo) — les entrées hors liste sont masquées et décochées.
+    autorises = null;
 
     connect() {
         // Les choix ne voyagent plus en double (JSON + <option>) : le <select>
@@ -129,7 +132,7 @@ export default class extends Controller {
         const regex = new RegExp(search, 'i');
         const filterdedChoices = [];
         [...this.choicesValue, ...this.dynamicChoices].forEach(({ label, value }) => {
-            if (!regex.test(label)) {
+            if (!regex.test(label) || !this.estAutorise(value)) {
                 this.element.querySelector(`[data-select-value-param="${value}"]`).classList.add('hidden');
             } else {
                 this.element.querySelector(`[data-select-value-param="${value}"]`).classList.remove('hidden');
@@ -256,8 +259,37 @@ export default class extends Controller {
     resetElementVisibility() {
         const listElements = this.listTarget.querySelectorAll('li');
         listElements.forEach((listElement) => {
-            listElement.classList.toggle('hidden', this.choicesValue.length === 0);
+            listElement.classList.toggle('hidden', this.choicesValue.length === 0 || !this.estAutorise(listElement.dataset.selectValueParam));
         });
+    }
+
+    estAutorise(value) {
+        return this.autorises === null || this.autorises.includes(value);
+    }
+
+    // Restreint la liste aux valeurs données (null = tout), décoche le reste
+    // et signale le changement si la sélection a bougé.
+    restreindre(values) {
+        this.autorises = values;
+        let modifie = false;
+        this.choicesValue.forEach(({ label, value }) => {
+            const element = this.element.querySelector(`[data-select-value-param="${value}"]`);
+            if (!element) return;
+            const autorise = this.estAutorise(value);
+            element.classList.toggle('hidden', !autorise);
+            if (!autorise && this.selection.includes(label)) {
+                this.selection = this.selection.filter((item) => item !== label);
+                element.classList.remove('bg-primary-4');
+                const checkbox = element.querySelector('input');
+                if (checkbox) checkbox.checked = false;
+                modifie = true;
+            }
+        });
+        this.noOptionsTarget.classList.toggle('hidden', this.autorises === null || this.autorises.length > 0);
+        this.syncSelection();
+        if (modifie) {
+            this.dispatch('change', { target: this.selectTarget, detail: { value: null } });
+        }
     }
 
     syncSelection(options = {}) {

@@ -445,6 +445,9 @@ final readonly class MarketplaceFichePayloadBuilder
             'acces' => array_values(array_map(static fn ($acces): array => [
                 'type' => $acces->type()->value,
                 'nom' => $acces->nom(),
+                'distanceKilometres' => $acces->distanceKilometres(),
+                'dureeMinutes' => $acces->dureeMinutes(),
+                'modeTransport' => $acces->modeTransport(),
                 'position' => $acces->position(),
             ], $service->acces()->toArray())),
             'accesPmr' => $service->accesPmr(),

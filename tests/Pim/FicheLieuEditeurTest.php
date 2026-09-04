@@ -66,6 +66,23 @@ final class FicheLieuEditeurTest extends WebTestCase
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'Château des sections');
         self::assertSame(16, $crawler->filter('nav[aria-label="Sections de la fiche"] li')->count());
+        // Un bloc par titre maquette (relecture 2026-09-04) : cartes des onglets.
+        $cartes = static fn (int $volet): array => $crawler->filter(sprintf('#form-fiche section[data-volet="%d"] h2', $volet))->each(static fn (\Symfony\Component\DomCrawler\Crawler $h2): string => $h2->text(null, true));
+        self::assertSame(['Informations générales', 'Disponibilités'], $cartes(0));
+        self::assertSame(['Localisation', 'Accessibilité', 'Détails des accès PMR'], $cartes(1));
+        self::assertSame(['Salles de réunion', 'Capacités'], $cartes(5));
+        self::assertSame(['Séminaire à la journée', 'Séminaire avec nuitée', 'Location de salle seule', 'Cocktail et soirées', 'Restauration', 'Hébergement groupe', 'Offre spéciale'], $cartes(10));
+        // Les questions « dispose de… » sont des Oui/Non qui ouvrent leur bloc (retour Clem).
+        self::assertCount(2, $crawler->filter('input[type="radio"][name="lieu[hebergement][chambreHebergement]"]'));
+        self::assertCount(6, $crawler->filter('#form-fiche section[data-volet="4"] [data-affichage-conditionnel-target="cible"][data-source="lieu_hebergement_chambreHebergement"]'));
+        self::assertCount(7, $crawler->filter('#form-fiche section[data-volet="5"] [data-affichage-conditionnel-target="cible"][data-source="lieu_syntheseSalles_salleReunionExist"]'));
+        self::assertCount(1, $crawler->filter('#form-fiche section[data-volet="5"][data-affichage-conditionnel-target="cible"][data-source="lieu_syntheseSalles_salleReunionExist"]'), 'La matrice des salles suit la question.');
+        // Tout booléen est une question Oui / Non (seules les puces, les
+        // interrupteurs des jours et la matrice des salles restent des cases).
+        foreach (['lieu[disponibilites][dispoLieuPrivatisable]', 'lieu[informationsGenerales][generaleEtabRp]', 'lieu[accessibiliteDescription][pmrAcces]', 'lieu[rse][demarcheRse]', 'lieu[restauration][restaurantPrivatisable]', 'lieu[visibilite][afficherContact]', 'lieu[businessPremium]', 'lieu[syntheseSalles][salleReunionExist]'] as $champ) {
+            self::assertCount(0, $crawler->filter(sprintf('input[type="checkbox"][name="%s"]', $champ)), $champ);
+            self::assertCount(2, $crawler->filter(sprintf('input[type="radio"][name="%s"]', $champ)), $champ);
+        }
         // Un éditeur ne voit pas la suppression (réservée aux validateurs).
         self::assertSelectorNotExists('.danger-form');
 

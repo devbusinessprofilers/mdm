@@ -16,7 +16,6 @@ use App\Pim\Validation\LienVideo;
 use App\Pim\Validation\ValidationGroups;
 use Doctrine\Common\Collections\Collection;
 use Symfony\Component\Form\AbstractType;
-use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\CollectionType;
 use Symfony\Component\Form\Extension\Core\Type\FileType;
@@ -27,6 +26,8 @@ use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Extension\Core\Type\UrlType;
 use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\Form\FormEvent;
+use Symfony\Component\Form\FormEvents;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\Form\FormView;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -52,13 +53,13 @@ final class ActiviteType extends AbstractType
                 TextType::class,
                 $this->field('Nom de l’activité', 'label', 'changeLabel'),
             )
-            ->add('businessPremium', CheckboxType::class, [
+            ->add('businessPremium', OuiNonType::class, [
                 'label' => 'Adhérent Business Premium',
                 'required' => false,
                 'getter' => static fn (Activite $activite): bool => $activite->fiche()->businessPremium(),
                 'setter' => static function (Activite &$activite, mixed $value): void { $activite->fiche()->changeBusinessPremium((bool) $value); },
             ])
-            ->add('partenaireBp', CheckboxType::class, [
+            ->add('partenaireBp', OuiNonType::class, [
                 'label' => 'Partenaire BP',
                 'required' => false,
                 'disabled' => $partenaireGereParSf,
@@ -199,40 +200,17 @@ final class ActiviteType extends AbstractType
             ])
             ->add(
                 'touteFrance',
-                CheckboxType::class,
+                OuiNonType::class,
                 $this->field(
                     'Toute la France',
                     'touteFrance',
                     'changeTouteFrance',
                 ),
             )
-            ->add(
-                'paysMobiles',
-                StringListType::class,
-                $this->field(
-                    'Pays',
-                    'paysMobiles',
-                    'changePaysMobiles',
-                ) + ['help' => 'Un pays par ligne.'],
-            )
-            ->add(
-                'regionsMobiles',
-                StringListType::class,
-                $this->field(
-                    'Région(s)',
-                    'regionsMobiles',
-                    'changeRegionsMobiles',
-                ) + ['help' => 'Une région par ligne.'],
-            )
-            ->add(
-                'departementsMobiles',
-                StringListType::class,
-                $this->field(
-                    'Département(s)',
-                    'departementsMobiles',
-                    'changeDepartementsMobiles',
-                ) + ['help' => 'Un département par ligne.'],
-            )
+            // Zones mobiles : référentiel pays → régions → départements (ZonesGeographiques).
+            ->add('paysMobiles', ZoneGeoType::class, $this->field('Pays', 'paysMobiles', 'changePaysMobiles') + ['niveau' => 'pays'])
+            ->add('regionsMobiles', ZoneGeoType::class, $this->field('Région(s)', 'regionsMobiles', 'changeRegionsMobiles') + ['niveau' => 'region'])
+            ->add('departementsMobiles', ZoneGeoType::class, $this->field('Département(s)', 'departementsMobiles', 'changeDepartementsMobiles') + ['niveau' => 'departement'])
             ->add(
                 'descriptionGenerale',
                 TextareaType::class,
@@ -407,6 +385,9 @@ final class ActiviteType extends AbstractType
                 'allow_delete' => true,
                 'by_reference' => false,
                 'prototype' => true,
+                // Emplacements Forfaits / Options de l'éditeur : une ligne
+                // sans nom, participants ni prix est un emplacement vide.
+                'attr' => ['data-lignes-vides-ignorees' => true],
                 'getter' => static fn (Activite $a): Collection => $a->offres(),
                 'setter' => static function (
                     Activite &$a,
@@ -436,6 +417,28 @@ final class ActiviteType extends AbstractType
         ]);
         FicheFormCatalog::ajouterFichiers($b);
         $b->add('submit', SubmitType::class, ['label' => 'Enregistrer']);
+
+        // Emplacements Forfaits / Options : un emplacement décoché est vidé
+        // côté client ; sa ligne vide n'est pas soumise (l'offre existante
+        // disparaît par allow_delete, aucune offre vide n'est créée).
+        $b->get('offres')->addEventListener(FormEvents::PRE_SUBMIT, static function (FormEvent $event): void {
+            $lignes = $event->getData();
+            if (!is_array($lignes)) {
+                return;
+            }
+            $event->setData(array_filter($lignes, static function (mixed $ligne): bool {
+                if (!is_array($ligne)) {
+                    return true;
+                }
+                foreach (['nom', 'participantsMin', 'participantsMax', 'prix'] as $champ) {
+                    if ('' !== trim((string) ($ligne[$champ] ?? ''))) {
+                        return true;
+                    }
+                }
+
+                return false;
+            }));
+        });
     }
 
     /** @return array<string,mixed> */

@@ -7,7 +7,6 @@ namespace App\Pim\Form;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Component\Form\AbstractType;
-use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\EmailType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\MoneyType;
@@ -81,7 +80,8 @@ final class MethodMappedFieldsType extends AbstractType
         }
 
         return match ($doctrineType) {
-            'boolean' => CheckboxType::class,
+            // Maquette portail : toute case à cocher devient une question Oui / Non.
+            'boolean' => OuiNonType::class,
             'integer', 'smallint', 'bigint' => IntegerType::class,
             // Les décimaux du PIM sont des montants (grilles tarifaires) :
             // MoneyType → composant MoneyInput, l'icône € dans le champ.

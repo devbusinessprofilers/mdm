@@ -41,9 +41,12 @@ final class FicheSectionsCatalogueTest extends TestCase
                     self::assertArrayHasKey('valeurs', $condition);
                 }
             }
+            // Comparaison sur les racines : une section peut lister des feuilles
+            // pointées (Lieu : accessibiliteDescription.pmrAcces) que les cartes
+            // regroupent sous leur groupe.
             self::assertSame(
                 array_values(array_unique($racines)),
-                array_values(array_unique($section['champs'])),
+                array_values(array_unique(array_map(static fn (string $c): string => explode('.', $c, 2)[0], $section['champs']))),
                 sprintf('%s : la section « %s » et ses cartes ne listent pas les mêmes champs.', $type->value, $section['titre']),
             );
         }

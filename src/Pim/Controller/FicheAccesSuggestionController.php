@@ -59,7 +59,8 @@ final class FicheAccesSuggestionController extends AbstractController
         try {
             // Le Service n'a que route / parking / gare / aéroport (TypeAccesService).
             $types = 'services' === $gamme ? AccesSuggesteur::TYPES_SERVICE : AccesSuggesteur::TYPES_LIEU;
-            $suggestions = $suggesteur->suggerer($entite->fiche(), $exclus, 'lieux' === $gamme, $types);
+            // Toutes les gammes portent désormais distance / durée / mode de transport.
+            $suggestions = $suggesteur->suggerer($entite->fiche(), $exclus, true, $types);
         } catch (\DomainException $exception) {
             return $this->json(['error' => $exception->getMessage()], 422);
         }
