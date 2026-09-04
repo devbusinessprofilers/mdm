@@ -2,7 +2,7 @@
 
 Mesuré le 2026-09-03 sur `dev`. Les composants Twig morts (E4) ont été supprimés
 en phase 1 ; `FicheEditeurEcran::slug()`, les ternaires de route et la gate OCR
-(M4, M6) ont été traités en phases 2 et 5. M3, E2 et une partie de M5 sont traités en phase 6 (2026-09-04) ; le reste alimente la phase 7.
+(M4, M6) ont été traités en phases 2 et 5. M3, E2 et une partie de M5 sont traités en phase 6, E1 (FicheEditeurEcran) et M1 (Geoapify, ClientHttpLisse) en phase 7 (2026-09-04) ; restent M2, M5 (logique dans les contrôleurs), M7 et le renommage Enrichment → Translation.
 
 ## Réponses courtes
 

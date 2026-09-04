@@ -7,6 +7,8 @@ blancs. Les « % communs » sont une borne basse : les fichiers `ServiceEvenemen
 passe php-cs-fixer de la phase 1 ; refaire les diffs sur la branche donnera des
 scores plus élevés.
 
+**État après la phase 7 (2026-09-04) :** en plus de la phase 6, `FicheEditeurEcran` est découpé (Editeur\\*), les gabarits Médias/Référentiel/Qualité sont en partiels, `AuditPath` porte la convention des chemins d'audit ; dev (lots portail) est fusionné dans la branche.
+
 **État après la phase 6 (2026-09-04) :** documents, photos, enregistrement du formulaire, validateurs, commandes, API et workflow sont génériques (voir le suivi du rapport). Restent les formulaires, repositories, entités détail et les `*PatchProcessor`/`*ApiMapper` par gamme.
 
 **État après la phase 5 :** les « type → repository → instanceof » passent par
