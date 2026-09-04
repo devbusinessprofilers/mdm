@@ -4,19 +4,12 @@ declare(strict_types=1);
 
 namespace App\Pim\Service;
 
-use App\Dam\Enum\DocumentUsage;
 use App\Dam\Service\LieuDocumentPresenter;
 use App\Dam\Service\LieuPhotoPresenter;
 use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Enum\NatureRessource;
-use App\Pim\Form\LieuDocumentMetadataType;
-use App\Pim\Form\LieuDocumentReplaceType;
 use App\Pim\Form\LieuDocumentUploadType;
-use App\Pim\Form\LieuPhotoMetadataType;
-use App\Pim\Form\LieuPhotoReplaceType;
 use App\Pim\Form\LieuPhotoUploadType;
-use App\Shared\Form\ActionType;
-use App\Shared\Service\ParametreProviderInterface;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
@@ -29,8 +22,9 @@ final readonly class LieuAdminViewBuilder
         private UrlGeneratorInterface $urls,
         private LieuPhotoPresenter $photos,
         private LieuDocumentPresenter $documents,
+        private DocumentsModalesVue $documentsModales,
+        private PhotosModalesVue $photosModales,
         private CsrfTokenManagerInterface $csrfTokens,
-        private ParametreProviderInterface $parametres,
     ) {
     }
 
@@ -46,11 +40,11 @@ final readonly class LieuAdminViewBuilder
 
     /**
      * Variables du bloc médias (galerie + tuiles documents), rendues dans
-     * l'éditeur et re-servies seules par app_pim_lieu_medias_bloc après chaque
+     * l'éditeur et re-servies seules par app_pim_fiche_medias_bloc après chaque
      * action média — le bloc se rafraîchit sans recharger la page.
      * La page ne rend que les vignettes : les modales (et leurs formulaires,
      * coûteux à construire par photo/document) sont servies par
-     * app_pim_lieu_media_modales et préchargées en arrière-plan après le
+     * app_pim_fiche_photo_modales et préchargées en arrière-plan après le
      * chargement — voir modalesVars().
      *
      * @return array<string, mixed>
@@ -68,13 +62,9 @@ final readonly class LieuAdminViewBuilder
         // Un formulaire de dépôt par onglet du volet Médias : les usages
         // proposés sont filtrés selon l'onglet (plans, supports, autres).
         $uploadForms = [];
-        foreach ([
-            'plans' => [DocumentUsage::RoomPlan, DocumentUsage::GeneralPlan],
-            'supports' => [DocumentUsage::CommercialSupport],
-            'documents' => [DocumentUsage::RseEvidence, DocumentUsage::Urssaf, DocumentUsage::LiabilityInsurance, DocumentUsage::BankDetails, DocumentUsage::FactoringBankDetails, DocumentUsage::Terms, DocumentUsage::Convention],
-        ] as $onglet => $usages) {
+        foreach (ProfilDocumentsGamme::ONGLETS_DEPOT_LIEU as $onglet => $usages) {
             $uploadForms[$onglet] = $this->forms->createNamed('document_upload_'.$onglet, LieuDocumentUploadType::class, null, [
-                'action' => $this->urls->generate('app_pim_lieu_document_upload', ['id' => $lieu->id()]), 'method' => 'POST',
+                'action' => $this->urls->generate('app_pim_fiche_document_upload', ['gamme' => 'lieux', 'id' => $lieu->id()]), 'method' => 'POST',
                 'salles' => $lieu->salles()->toArray(), 'usages' => $usages,
             ])->createView();
         }
@@ -89,7 +79,7 @@ final readonly class LieuAdminViewBuilder
             'salles' => $salles,
             'document_upload_forms' => $uploadForms,
             'media_upload_form' => $this->forms->createNamed('lieu_photo_upload', LieuPhotoUploadType::class, null, [
-                'action' => $this->urls->generate('app_pim_lieu_photo_upload', ['id' => $lieu->id()]), 'method' => 'POST',
+                'action' => $this->urls->generate('app_pim_fiche_photo_upload', ['gamme' => 'lieux', 'id' => $lieu->id()]), 'method' => 'POST',
             ])->createView(),
             'media_csrf_token' => $this->csrfTokens->getToken('lieu-media-'.$lieu->id())->getValue(),
         ];
@@ -97,64 +87,23 @@ final readonly class LieuAdminViewBuilder
 
     /**
      * Variables des modales de paramètres des photos et documents, rendues par
-     * app_pim_lieu_media_modales et préchargées après le chargement de la page.
+     * app_pim_fiche_photo_modales et préchargées après le chargement de la page.
      *
      * @return array<string, mixed>
      */
     public function modalesVars(Lieu $lieu): array
     {
-        $photos = $this->photos->photos($lieu);
-        foreach ($photos as &$photo) {
-            $resource = $photo['resource'];
-            $crop = $resource->crop();
-            $params = ['id' => $lieu->id(), 'resourceId' => $resource->id()];
-            $photo['metadata_form'] = $this->forms->createNamed('photo_metadata_'.$resource->id(), LieuPhotoMetadataType::class, [
-                'usage' => $resource->usage(), 'legende' => $resource->legende(), 'source' => $resource->source(),
-                'keywords' => $resource->keywords(), 'rights_expires_at' => $resource->rightsExpiresAt(), 'salle_id' => $resource->salle(),
-                'crop_x' => $crop['x'] ?? null, 'crop_y' => $crop['y'] ?? null, 'crop_width' => $crop['width'] ?? null,
-                'crop_height' => $crop['height'] ?? null, 'rotation' => $resource->rotation(),
-            ], [
-                'action' => $this->urls->generate('app_pim_lieu_photo_update', $params), 'method' => 'PATCH', 'salles' => $lieu->salles()->toArray(),
-            ])->createView();
-            $photo['replace_form'] = $this->forms->createNamed('photo_replace_'.$resource->id(), LieuPhotoReplaceType::class, null, [
-                'action' => $this->urls->generate('app_pim_lieu_photo_replace', $params), 'method' => 'POST',
-            ])->createView();
-            $photo['original_url'] = $this->urls->generate('app_pim_lieu_photo_original', $params);
-        }
-        unset($photo);
+        $photos = $this->photosModales->photos($lieu);
 
+        // Les formulaires des modales sont ceux de toutes les gammes ; la vue
+        // du Lieu y ajoute la présentation du document (accès, statut, URL publique).
         $documents = [];
-        foreach ($lieu->ressources() as $resource) {
-            if (NatureRessource::Document !== $resource->nature() || null === $resource->documentUsage()) {
-                continue;
-            }
-            $params = ['id' => $lieu->id(), 'resourceId' => $resource->id()];
-            $documents[] = [
-                'view' => $this->documents->resource($resource),
-                'metadata_form' => $this->forms->createNamed('document_metadata_'.$resource->id(), LieuDocumentMetadataType::class, [
-                    'usage' => $resource->documentUsage(), 'salle' => $resource->salle(), 'title' => $resource->legende(),
-                    'source' => $resource->source(), 'keywords' => $resource->keywords(), 'rightsExpiresAt' => $resource->rightsExpiresAt(),
-                ], ['action' => $this->urls->generate('app_pim_lieu_document_update', $params), 'method' => 'POST', 'salles' => $lieu->salles()->toArray()])->createView(),
-                'replace_form' => $this->forms->createNamed('document_replace_'.$resource->id(), LieuDocumentReplaceType::class, null, [
-                    'action' => $this->urls->generate('app_pim_lieu_document_replace', $params), 'method' => 'POST',
-                ])->createView(),
-                'publication_form' => $this->forms->createNamed('document_publication_'.$resource->id(), ActionType::class, null, [
-                    'action' => $this->urls->generate('app_pim_lieu_document_publication', $params),
-                    'button_label' => 'published' === $resource->publicationStatus()?->value ? 'Dépublier' : 'Publier',
-                    'csrf_token_id' => 'document-publication-'.$resource->id(),
-                ])->createView(),
-                'delete_form' => $this->forms->createNamed('document_delete_'.$resource->id(), ActionType::class, null, [
-                    'action' => $this->urls->generate('app_pim_lieu_document_delete', $params), 'button_label' => 'Supprimer',
-                    'csrf_token_id' => 'document-delete-'.$resource->id(),
-                    'attr' => ['data-controller' => 'confirm', 'data-confirm-message-value' => 'Supprimer ce document ?', 'data-action' => 'submit->confirm#submit'],
-                ])->createView(),
-            ];
+        foreach ($this->documentsModales->documents($lieu) as $document) {
+            $documents[] = ['view' => $this->documents->resource($document['resource'])] + $document;
         }
 
         return [
-            'lieu' => $lieu, 'photos' => $photos, 'documents' => $documents,
-            'image_min_width' => $this->parametres->int('dam.image_largeur_min'),
-            'image_min_height' => $this->parametres->int('dam.image_hauteur_min'),
-        ];
+            'lieu' => $lieu, 'documents' => $documents,
+        ] + $this->photosModales->variables($lieu);
     }
 }

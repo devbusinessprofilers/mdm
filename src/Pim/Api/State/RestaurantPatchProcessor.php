@@ -21,7 +21,7 @@ use Symfony\Component\Form\FormInterface;
 final readonly class RestaurantPatchProcessor implements ProcessorInterface
 {
     public function __construct(
-        private RestaurantApiState $state,
+        private FicheApiState $state,
         private RestaurantApiMapper $mapper,
         private FormFactoryInterface $forms,
         private ExternalScopeGuard $scopes,

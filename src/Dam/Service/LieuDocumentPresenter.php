@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Dam\Service;
 
 use App\Dam\Repository\MediaAssetRepository;
-use App\Pim\Api\Dto\LieuDocumentResource;
+use App\Pim\Api\Dto\FicheDocumentResource;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Shared\Service\ParametreProviderInterface;
 use App\Shared\Service\PrivateObjectStorageInterface;
@@ -23,7 +23,7 @@ final readonly class LieuDocumentPresenter
     public function resource(
         RessourceLieu $document,
         bool $withDownload = false,
-    ): LieuDocumentResource {
+    ): FicheDocumentResource {
         $asset = $this->assets->find($document->damAssetId());
         $download = null;
         if ($withDownload && null !== $asset) {
@@ -35,7 +35,7 @@ final readonly class LieuDocumentPresenter
         $access = $document->documentAccess();
         $status = $document->publicationStatus();
 
-        return new LieuDocumentResource(
+        return new FicheDocumentResource(
             id: $document->id(),
             version: $document->fiche()?->version() ?? 0,
             damAssetId: $document->damAssetId(),

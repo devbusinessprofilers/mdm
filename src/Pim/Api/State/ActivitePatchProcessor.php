@@ -20,7 +20,7 @@ use Symfony\Component\Form\FormInterface;
 final readonly class ActivitePatchProcessor implements ProcessorInterface
 {
     public function __construct(
-        private ActiviteApiState $state,
+        private FicheApiState $state,
         private ActiviteApiMapper $mapper,
         private FormFactoryInterface $forms,
         private ValeurAttributRepository $values,

@@ -34,6 +34,21 @@ enum TypeFiche: string
         };
     }
 
+    /**
+     * Nom court de la gamme dans les noms de routes et de formulaires d'action
+     * (`app_pim_lieu_submit`, `submit_lieu`, jeton `submit-lieu-{id}`).
+     */
+    public function domaine(): string
+    {
+        return match ($this) {
+            self::Lieu => 'lieu',
+            self::Restaurant => 'restaurant',
+            self::Activite => 'activite',
+            self::ServiceEvenementiel => 'service',
+            self::Traiteur => 'traiteur',
+        };
+    }
+
     public static function depuisSlug(string $slug): ?self
     {
         foreach (self::cases() as $type) {

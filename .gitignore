@@ -24,3 +24,6 @@
 /.php-cs-fixer.php
 /.php-cs-fixer.cache
 ###< friendsofphp/php-cs-fixer ###
+
+# deptrac : cache écrit à la racine par l analyse locale (config : var/.deptrac.cache)
+/.deptrac.cache

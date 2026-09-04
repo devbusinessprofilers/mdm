@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Pim\Service;
 
+use App\Pim\Entity\Activite\Activite;
 use App\Pim\Entity\Fiche;
 use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Entity\Restaurant\Restaurant;
+use App\Pim\Entity\Service\ServiceEvenementiel;
 use App\Pim\Message\IndexFiche;
 use App\Shared\Outbox\OutboxPublisherInterface;
 use Doctrine\ORM\EntityManagerInterface;
@@ -26,14 +28,14 @@ final readonly class FicheMutation
     }
 
     /**
-     * Flush après une modification d'un Lieu ou d'un Restaurant dont la
-     * liaison a pu changer : les fiches liées détachées ou attachées sont
+     * Flush après une modification d'une fiche dont la liaison Lieu ↔
+     * Restaurant a pu changer : les fiches liées détachées ou attachées sont
      * réindexées (leur payload marketplace change) sans transition de
-     * workflow.
+     * workflow. Les autres gammes n'ont pas de liaison : simple flush.
      */
-    public function enregistrerAvecLiees(Lieu|Restaurant $entite): void
+    public function enregistrerAvecLiees(Lieu|Restaurant|Activite|ServiceEvenementiel $entite): void
     {
-        $liees = $entite->drainFichesLieesAResynchroniser();
+        $liees = $entite instanceof Lieu || $entite instanceof Restaurant ? $entite->drainFichesLieesAResynchroniser() : [];
         foreach ($liees as $fiche) {
             $this->outbox->enqueue(new IndexFiche($fiche->idString()));
         }

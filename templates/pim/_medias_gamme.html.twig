@@ -4,7 +4,7 @@
    champs du formulaire principal (panneau statique du shell) ; les plans de
    salle Restaurant se déposent depuis la matrice des salles.
    Variables : photos (FichePhotoPresenter), documents (ViewBuilder de la
-   gamme + asset + `onglet`), entite_id, download_route, gamme_slug,
+   gamme + asset + `onglet`), entite_id, gamme_slug,
    media_upload_form, media_csrf_token, photo_usages. #}
 
 {% macro tuile_document(document) %}
@@ -50,9 +50,9 @@
 
 {# ---- Photos : toute la carte est la zone de dépôt (maquette). ---- #}
 <div data-controller="lieu-media"
-     data-lieu-media-upload-url-value="{{ path('app_pim_gamme_photo_upload', {gamme: gamme_slug, id: entite_id}) }}"
-     data-lieu-media-order-url-value="{{ path('app_pim_gamme_photo_order', {gamme: gamme_slug, id: entite_id}) }}"
-     data-lieu-media-modales-url-value="{{ path('app_pim_gamme_photo_modales', {gamme: gamme_slug, id: entite_id}) }}"
+     data-lieu-media-upload-url-value="{{ path('app_pim_fiche_photo_upload', {gamme: gamme_slug, id: entite_id}) }}"
+     data-lieu-media-order-url-value="{{ path('app_pim_fiche_photo_order', {gamme: gamme_slug, id: entite_id}) }}"
+     data-lieu-media-modales-url-value="{{ path('app_pim_fiche_photo_modales', {gamme: gamme_slug, id: entite_id}) }}"
      data-lieu-media-token-value="{{ media_csrf_token }}">
 
     <section class="card lieu-media-manager"
@@ -86,7 +86,7 @@
             media_upload_form: media_upload_form,
             photo_usages: photo_usages,
             salles: {},
-            routes: { categorie: 'app_pim_gamme_photo_categorie', delete: 'app_pim_gamme_photo_delete' },
+            routes: { categorie: 'app_pim_fiche_photo_categorie', delete: 'app_pim_fiche_photo_delete' },
             route_params: { gamme: gamme_slug, id: entite_id },
         } only %}
     </section>
@@ -126,7 +126,7 @@
                 {{ form_widget(document.replace_form.submit, {attr: {'data-full': false, 'data-size': 'md', 'data-variant': 'outline'}}) }}
             {{ form_end(document.replace_form) }}
             <p>
-                <a href="{{ path(download_route, {id: entite_id, resourceId: document.resource.id}) }}" class="hover:underline">
+                <a href="{{ path('app_pim_fiche_document_download', {gamme: gamme_slug, id: entite_id, resourceId: document.resource.id}) }}" class="hover:underline">
                     <twig:Typography variant="body-sm" textColor="primary-3" bold element="span">Télécharger l'original</twig:Typography>
                 </a>
             </p>

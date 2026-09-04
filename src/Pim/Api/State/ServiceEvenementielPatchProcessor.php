@@ -19,7 +19,7 @@ use Symfony\Component\Form\FormInterface;
 final readonly class ServiceEvenementielPatchProcessor implements ProcessorInterface
 {
     public function __construct(
-        private ServiceEvenementielApiState $state,
+        private FicheApiState $state,
         private ServiceEvenementielApiMapper $mapper,
         private FormFactoryInterface $forms,
         private ExternalScopeGuard $scopes,

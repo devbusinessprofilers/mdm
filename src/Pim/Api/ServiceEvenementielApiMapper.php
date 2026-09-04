@@ -5,20 +5,18 @@ declare(strict_types=1);
 namespace App\Pim\Api;
 
 use App\Dam\Service\FichePhotoPresenter;
-use App\Pim\Api\Dto\LieuMediaResource;
+use App\Pim\Api\Dto\FicheMediaResource;
 use App\Pim\Api\Dto\ServiceEvenementielListResource;
 use App\Pim\Api\Dto\ServiceEvenementielResource;
-use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Entity\Localisation;
 use App\Pim\Entity\Service\ServiceEvenementiel;
 use App\Pim\ReadModel\ServiceEvenementielListItem;
-use App\Shared\Service\ParametreProviderInterface;
 
 final readonly class ServiceEvenementielApiMapper
 {
     public function __construct(
         private FichePhotoPresenter $photos,
-        private ParametreProviderInterface $parametres,
+        private MediaResourceFactory $medias,
     ) {
     }
 
@@ -82,69 +80,9 @@ final readonly class ServiceEvenementielApiMapper
             $service->surDevis(),
             $service->youtubeUrl(),
             array_map(
-                fn (array $photo): LieuMediaResource => $this->photo(
-                    $service,
-                    $photo,
-                ),
+                fn (array $photo): FicheMediaResource => $this->medias->depuisPresentation($fiche->version(), $photo),
                 $this->photos->photos($fiche),
             ),
-        );
-    }
-
-    public function media(
-        ServiceEvenementiel $service,
-        RessourceLieu $resource,
-    ): LieuMediaResource {
-        foreach ($this->photos->photos($service->fiche()) as $photo) {
-            if ($photo['resource'] === $resource) {
-                return $this->photo($service, $photo);
-            }
-        }
-
-        return new LieuMediaResource(
-            $resource->id(),
-            $service->fiche()->version(),
-            $resource->damAssetId(),
-            $resource->usage(),
-            $resource->legende(),
-            $resource->position(),
-            $resource->rightsGranted(),
-            $resource->source(),
-            $resource->crop(),
-            $resource->rotation(),
-            null,
-            null,
-            [],
-            $resource->keywords(),
-            $resource->rightsExpiresAt()?->format('Y-m-d'),
-            $resource->rightsValidity(alerteJours: $this->parametres->int('dam.delai_alerte_droits_jours'))->value,
-        );
-    }
-
-    /** @param array{resource:RessourceLieu,asset:\App\Dam\Entity\MediaAsset|null,url:string|null,thumbnail_url:string|null,variants:list<array{name:string,width:int,height:int,url:string|null}>} $photo */
-    private function photo(
-        ServiceEvenementiel $service,
-        array $photo,
-    ): LieuMediaResource {
-        $resource = $photo['resource'];
-
-        return new LieuMediaResource(
-            $resource->id(),
-            $service->fiche()->version(),
-            $resource->damAssetId(),
-            $resource->usage(),
-            $resource->legende(),
-            $resource->position(),
-            $resource->rightsGranted(),
-            $resource->source(),
-            $resource->crop(),
-            $resource->rotation(),
-            $photo['asset']?->status()->value,
-            $photo['url'],
-            $photo['variants'],
-            $resource->keywords(),
-            $resource->rightsExpiresAt()?->format('Y-m-d'),
-            $resource->rightsValidity(alerteJours: $this->parametres->int('dam.delai_alerte_droits_jours'))->value,
         );
     }
 

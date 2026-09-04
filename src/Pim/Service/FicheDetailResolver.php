@@ -52,6 +52,18 @@ final readonly class FicheDetailResolver
             : null;
     }
 
+    /** Repository de l'entité détail d'une gamme opérationnelle. */
+    public function repository(TypeFiche $type): LieuRepository|RestaurantRepository|ActiviteRepository|ServiceEvenementielRepository
+    {
+        return match ($type) {
+            TypeFiche::Lieu => $this->lieux,
+            TypeFiche::Restaurant => $this->restaurants,
+            TypeFiche::Activite => $this->activites,
+            TypeFiche::ServiceEvenementiel => $this->services,
+            TypeFiche::Traiteur => throw new \InvalidArgumentException('Gamme hors de cette version du MDM.'),
+        };
+    }
+
     /** Depuis le segment d'URL (`lieux`, `restaurants`, `activites`, `services`). */
     public function parSlugEtId(string $slug, string $id): Lieu|Restaurant|Activite|ServiceEvenementiel|null
     {

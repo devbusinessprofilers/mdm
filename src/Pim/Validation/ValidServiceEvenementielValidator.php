@@ -5,56 +5,30 @@ declare(strict_types=1);
 namespace App\Pim\Validation;
 
 use App\Dam\Enum\DocumentUsage;
-use App\Dam\Enum\MediaStatus;
-use App\Dam\Repository\MediaAssetRepository;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Entity\Service\ServiceEvenementiel;
 use App\Pim\Enum\ModeInterventionService;
 use App\Pim\Enum\NatureRessource;
 use App\Pim\Enum\TypeFiche;
-use App\Pim\Service\PhotoObligations;
 use Symfony\Component\Validator\Constraint;
-use Symfony\Component\Validator\ConstraintValidator;
 
-final class ValidServiceEvenementielValidator extends ConstraintValidator
+final class ValidServiceEvenementielValidator extends FicheValidateur
 {
-    public function __construct(
-        private readonly MediaAssetRepository $assets,
-        private readonly PhotoObligations $photoObligations,
-    ) {
-    }
-
     public function validate(mixed $value, Constraint $constraint): void
     {
         if (!$value instanceof ServiceEvenementiel) {
             return;
         }
 
-        $this->maximumLength($value->label(), 255, 'label');
-        $this->maximumLength($value->youtubeUrl(), 255, 'youtubeUrl');
-        if (
-            null !== $value->youtubeUrl()
-            && false === filter_var($value->youtubeUrl(), FILTER_VALIDATE_URL)
-        ) {
-            $this->violation(
-                'Le lien vidéo doit être une URL valide.',
-                'youtubeUrl',
-            );
-        } elseif (
-            null !== $value->youtubeUrl()
-            && !LienVideoValidator::estHebergeurAutorise($value->youtubeUrl())
-        ) {
-            $this->violation(
-                'Le lien vidéo doit pointer vers un hébergeur vidéo reconnu.',
-                'youtubeUrl',
-            );
-        }
+        $this->longueurMax($value->label(), 255, 'label');
+        $this->longueurMax($value->youtubeUrl(), 255, 'youtubeUrl');
+        $this->lienVideo($value->youtubeUrl(), 'youtubeUrl');
 
         foreach (
             ['paysMobiles', 'regionsMobiles', 'departementsMobiles'] as $field
         ) {
             foreach ($value->{$field}() as $index => $item) {
-                $this->maximumLength(
+                $this->longueurMax(
                     $item,
                     255,
                     sprintf('%s[%d]', $field, $index),
@@ -114,14 +88,8 @@ final class ValidServiceEvenementielValidator extends ConstraintValidator
             }
         }
 
-        $maximum = $this->photoObligations->maximum(TypeFiche::ServiceEvenementiel);
-        if (count($photos) > $maximum) {
-            $this->violation(
-                sprintf('Un Service ne peut pas contenir plus de %d photos.', $maximum),
-                'ressources',
-            );
-        }
-        if (ValidationGroups::SUBMISSION === $this->context->getGroup()) {
+        $this->plafondPhotos(TypeFiche::ServiceEvenementiel, $photos, 'Un Service ne peut pas contenir plus de %d photos.');
+        if ($this->enSoumission()) {
             $this->submission($value, $photos);
         }
     }
@@ -205,28 +173,8 @@ final class ValidServiceEvenementielValidator extends ConstraintValidator
             }
         }
 
-        // La principale étant la première photo de l'ordre, la soumission
-        // exige toujours au moins une photo même si le minimum est surchargé à 0.
-        $minimum = max(1, $this->photoObligations->minimum(TypeFiche::ServiceEvenementiel));
-        $maximum = $this->photoObligations->maximum(TypeFiche::ServiceEvenementiel);
-        if (count($photos) < $minimum || count($photos) > $maximum) {
-            $this->violation(
-                sprintf('Une fiche Service doit contenir entre %d et %d photos.', $minimum, $maximum),
-                'ressources',
-            );
-        }
-        foreach ($value->ressources() as $resource) {
-            $asset = $this->assets->find($resource->damAssetId());
-            if (
-                null === $asset
-                || MediaStatus::Processed !== $asset->status()
-            ) {
-                $this->violation(
-                    'Chaque ressource doit disposer d’un fichier DAM traité.',
-                    'ressources',
-                );
-            }
-        }
+        $this->photosSoumission(TypeFiche::ServiceEvenementiel, $photos);
+        $this->ressourcesTraitees($value->ressources());
 
         $supports = array_values(
             array_filter(
@@ -303,26 +251,5 @@ final class ValidServiceEvenementielValidator extends ConstraintValidator
             'tarifParDemiJournee' => $value->tarifParDemiJournee(),
             'tarifParHeure' => $value->tarifParHeure(),
         ];
-    }
-
-    private function maximumLength(
-        ?string $value,
-        int $maximum,
-        string $path,
-    ): void {
-        if (null !== $value && mb_strlen($value) > $maximum) {
-            $this->violation(
-                sprintf(
-                    'Cette valeur ne doit pas dépasser %d caractères.',
-                    $maximum,
-                ),
-                $path,
-            );
-        }
-    }
-
-    private function violation(string $message, string $path): void
-    {
-        $this->context->buildViolation($message)->atPath($path)->addViolation();
     }
 }

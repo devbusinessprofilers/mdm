@@ -16,9 +16,9 @@ use ApiPlatform\Metadata\Put;
 use ApiPlatform\OpenApi\Model\Operation;
 use ApiPlatform\OpenApi\Model\Parameter;
 use ApiPlatform\OpenApi\Model\RequestBody;
-use App\Pim\Api\State\RestaurantCollectionProvider;
-use App\Pim\Api\State\RestaurantItemProvider;
-use App\Pim\Api\State\RestaurantMediaProcessor;
+use App\Pim\Api\State\FicheCollectionProvider;
+use App\Pim\Api\State\FicheItemProvider;
+use App\Pim\Api\State\FicheMediaProcessor;
 use App\Pim\Api\State\RestaurantPatchProcessor;
 
 #[ApiResource(
@@ -29,7 +29,7 @@ use App\Pim\Api\State\RestaurantPatchProcessor;
         new GetCollection(
             uriTemplate: '/v1/restaurants',
             paginationEnabled: false,
-            provider: RestaurantCollectionProvider::class,
+            provider: FicheCollectionProvider::class,
             openapi: new Operation(
                 tags: ['Restaurants'],
                 summary: 'Lister les restaurants',
@@ -44,7 +44,7 @@ use App\Pim\Api\State\RestaurantPatchProcessor;
         new Get(
             uriTemplate: '/v1/restaurants/{id}',
             requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
-            provider: RestaurantItemProvider::class,
+            provider: FicheItemProvider::class,
             openapi: new Operation(
                 tags: ['Restaurants'],
                 summary: 'Consulter un restaurant',
@@ -80,10 +80,10 @@ use App\Pim\Api\State\RestaurantPatchProcessor;
                 ),
             ],
             input: false,
-            output: LieuMediaResource::class,
+            output: FicheMediaResource::class,
             deserialize: false,
             read: false,
-            processor: RestaurantMediaProcessor::class,
+            processor: FicheMediaProcessor::class,
             openapi: new Operation(
                 tags: ['Médias Restaurants'],
                 summary: 'Téléverser une photo',
@@ -119,7 +119,7 @@ use App\Pim\Api\State\RestaurantPatchProcessor;
             input: MediaOrderInput::class,
             output: self::class,
             read: false,
-            processor: RestaurantMediaProcessor::class,
+            processor: FicheMediaProcessor::class,
             openapi: new Operation(
                 tags: ['Médias Restaurants'],
                 summary: 'Réordonner les photos',
@@ -134,10 +134,10 @@ use App\Pim\Api\State\RestaurantPatchProcessor;
                 'resourceId' => new Link(fromClass: self::class, identifiers: ['id'], compositeIdentifier: false),
             ],
             input: MediaPatchInput::class,
-            output: LieuMediaResource::class,
+            output: FicheMediaResource::class,
             inputFormats: ['json' => ['application/merge-patch+json']],
             read: false,
-            processor: RestaurantMediaProcessor::class,
+            processor: FicheMediaProcessor::class,
             openapi: new Operation(
                 tags: ['Médias Restaurants'],
                 summary: 'Modifier une photo',
@@ -152,10 +152,10 @@ use App\Pim\Api\State\RestaurantPatchProcessor;
                 'resourceId' => new Link(fromClass: self::class, identifiers: ['id'], compositeIdentifier: false),
             ],
             input: false,
-            output: LieuMediaResource::class,
+            output: FicheMediaResource::class,
             deserialize: false,
             read: false,
-            processor: RestaurantMediaProcessor::class,
+            processor: FicheMediaProcessor::class,
             openapi: new Operation(
                 tags: ['Médias Restaurants'],
                 summary: 'Remplacer le fichier photo',
@@ -177,7 +177,7 @@ use App\Pim\Api\State\RestaurantPatchProcessor;
             input: false,
             output: false,
             read: false,
-            processor: RestaurantMediaProcessor::class,
+            processor: FicheMediaProcessor::class,
             openapi: new Operation(
                 tags: ['Médias Restaurants'],
                 summary: 'Supprimer une photo',
@@ -203,7 +203,7 @@ final readonly class RestaurantResource
      * @param list<string>               $services
      * @param list<string>               $equipements
      * @param list<string>               $engagementsRse
-     * @param list<LieuMediaResource>    $medias
+     * @param list<FicheMediaResource>   $medias
      */
     public function __construct(
         #[ApiProperty(identifier: true)] public string $id,

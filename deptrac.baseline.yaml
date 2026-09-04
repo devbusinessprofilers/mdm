@@ -44,9 +44,7 @@ deptrac:
       - App\Vision\Service\OpenAiProviderException
     App\Pim\Controller\FicheValiderPublierController:
       - App\Etl\Service\PhotoPublicationGuard
-    App\Pim\Controller\GammePhotoController:
-      - App\Vision\Service\ImageRecognitionManager
-    App\Pim\Controller\LieuPhotoController:
+    App\Pim\Controller\FichePhotoController:
       - App\Vision\Service\ImageRecognitionManager
     App\Pim\Controller\LovAdminController:
       - App\Audit\AuditContext

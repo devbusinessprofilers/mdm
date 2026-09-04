@@ -14,11 +14,12 @@ use ApiPlatform\Metadata\Post;
 use ApiPlatform\OpenApi\Model\Operation;
 use ApiPlatform\OpenApi\Model\Parameter;
 use ApiPlatform\OpenApi\Model\RequestBody;
-use App\Pim\Api\State\ServiceEvenementielDocumentProcessor;
-use App\Pim\Api\State\ServiceEvenementielDocumentProvider;
+use App\Pim\Api\State\FicheDocumentProcessor;
+use App\Pim\Api\State\FicheDocumentProvider;
 
 #[ApiResource(
     shortName: 'ServiceDocument',
+    formats: ['json' => ['application/json']],
     operations: [
         new GetCollection(
             uriTemplate: '/v1/services/{serviceId}/documents',
@@ -28,9 +29,9 @@ use App\Pim\Api\State\ServiceEvenementielDocumentProvider;
                     identifiers: ['id'],
                 ),
             ],
-            output: LieuDocumentResource::class,
+            output: FicheDocumentResource::class,
             paginationEnabled: false,
-            provider: ServiceEvenementielDocumentProvider::class,
+            provider: FicheDocumentProvider::class,
             openapi: new Operation(
                 tags: ['Documents Services événementiels'],
                 summary: 'Lister les supports commerciaux visibles',
@@ -46,10 +47,10 @@ use App\Pim\Api\State\ServiceEvenementielDocumentProvider;
                 ),
             ],
             input: false,
-            output: LieuDocumentResource::class,
+            output: FicheDocumentResource::class,
             deserialize: false,
             read: false,
-            processor: ServiceEvenementielDocumentProcessor::class,
+            processor: FicheDocumentProcessor::class,
             openapi: new Operation(
                 tags: ['Documents Services événementiels'],
                 summary: 'Déposer un support commercial',
@@ -101,9 +102,10 @@ use App\Pim\Api\State\ServiceEvenementielDocumentProvider;
                 ),
             ],
             input: DocumentPatchInput::class,
-            output: LieuDocumentResource::class,
+            inputFormats: ['json' => ['application/merge-patch+json']],
+            output: FicheDocumentResource::class,
             read: false,
-            processor: ServiceEvenementielDocumentProcessor::class,
+            processor: FicheDocumentProcessor::class,
             openapi: new Operation(
                 tags: ['Documents Services événementiels'],
                 summary: 'Modifier les métadonnées',
@@ -132,10 +134,10 @@ use App\Pim\Api\State\ServiceEvenementielDocumentProvider;
                 ),
             ],
             input: false,
-            output: LieuDocumentResource::class,
+            output: FicheDocumentResource::class,
             deserialize: false,
             read: false,
-            processor: ServiceEvenementielDocumentProcessor::class,
+            processor: FicheDocumentProcessor::class,
             openapi: new Operation(
                 tags: ['Documents Services événementiels'],
                 summary: 'Remplacer le fichier',
@@ -182,9 +184,9 @@ use App\Pim\Api\State\ServiceEvenementielDocumentProvider;
                 ),
             ],
             input: DocumentPublicationInput::class,
-            output: LieuDocumentResource::class,
+            output: FicheDocumentResource::class,
             read: false,
-            processor: ServiceEvenementielDocumentProcessor::class,
+            processor: FicheDocumentProcessor::class,
             openapi: new Operation(
                 tags: ['Documents Services événementiels'],
                 summary: 'Publier ou dépublier',
@@ -214,7 +216,7 @@ use App\Pim\Api\State\ServiceEvenementielDocumentProvider;
             ],
             output: false,
             read: false,
-            processor: ServiceEvenementielDocumentProcessor::class,
+            processor: FicheDocumentProcessor::class,
             openapi: new Operation(
                 tags: ['Documents Services événementiels'],
                 summary: 'Supprimer un support commercial',
@@ -242,8 +244,8 @@ use App\Pim\Api\State\ServiceEvenementielDocumentProvider;
                     identifiers: ['id'],
                 ),
             ],
-            output: LieuDocumentResource::class,
-            provider: ServiceEvenementielDocumentProvider::class,
+            output: FicheDocumentResource::class,
+            provider: FicheDocumentProvider::class,
             openapi: new Operation(
                 tags: ['Documents Services événementiels'],
                 summary: 'Obtenir une URL temporaire',

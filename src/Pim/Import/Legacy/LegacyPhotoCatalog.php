@@ -7,7 +7,7 @@ namespace App\Pim\Import\Legacy;
 /**
  * Décline le JSON "Photos" du CSV production en entrées ordonnées prêtes à
  * l'import : catégories legacy → usages PIM selon le type de fiche (gamme),
- * positions séquentielles, plafond par fiche (invariants LieuPhotoManager /
+ * positions séquentielles, plafond par fiche (invariants FichePhotoManager /
  * ValidActivite) — le surplus est retourné séparément (skipped_limit).
  */
 final class LegacyPhotoCatalog

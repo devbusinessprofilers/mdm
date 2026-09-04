@@ -31,19 +31,18 @@ final readonly class FicheImageUploader
 
     public function upload(UploadedFile $file, Fiche $fiche): MediaAsset
     {
-        $maxMo = $this->parametres->int('dam.image_poids_max_mo');
         $path = $file->getRealPath();
+        if (false === $path || !is_file($path)) {
+            throw new \DomainException('Le fichier téléversé n’est plus disponible.');
+        }
+        $maxMo = $this->parametres->int('dam.image_poids_max_mo');
         $size = $file->getSize();
-        $image = false === $path ? false : @getimagesize($path);
-        if (
-            false === $path
-            || !is_file($path)
-            || false === $size
-            || $size > $maxMo * 1024 * 1024
-            || !is_array($image)
-            || !isset(self::EXTENSIONS[$image['mime']])
-        ) {
-            throw new \DomainException(sprintf('Image PNG, JPG ou WEBP de %d Mo maximum attendue.', $maxMo));
+        if (false === $size || $size > $maxMo * 1024 * 1024) {
+            throw new \DomainException(sprintf('Une image ne peut pas dépasser %d Mo.', $maxMo));
+        }
+        $image = @getimagesize($path);
+        if (!is_array($image) || !isset(self::EXTENSIONS[$image['mime']])) {
+            throw new \DomainException('Formats autorisés : PNG, JPG, JPEG et WEBP.');
         }
         $minWidth = $this->parametres->int('dam.image_largeur_min');
         $minHeight = $this->parametres->int('dam.image_hauteur_min');

@@ -5,20 +5,18 @@ declare(strict_types=1);
 namespace App\Pim\Api;
 
 use App\Dam\Service\LieuPhotoPresenter;
+use App\Pim\Api\Dto\FicheMediaResource;
 use App\Pim\Api\Dto\LieuListResource;
-use App\Pim\Api\Dto\LieuMediaResource;
 use App\Pim\Api\Dto\LieuResource;
 use App\Pim\Entity\Lieu\Lieu;
-use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Form\LieuFormCatalog;
 use App\Pim\ReadModel\LieuListItem;
-use App\Shared\Service\ParametreProviderInterface;
 
 final readonly class LieuApiMapper
 {
     public function __construct(
         private LieuPhotoPresenter $photos,
-        private ParametreProviderInterface $parametres,
+        private MediaResourceFactory $medias,
     ) {
     }
 
@@ -148,39 +146,9 @@ final readonly class LieuApiMapper
                 ),
             ),
             medias: array_map(
-                fn (array $photo): LieuMediaResource => $this->photo($photo),
+                fn (array $photo): FicheMediaResource => $this->medias->depuisPresentation($lieu->fiche()->version(), $photo),
                 $this->photos->photos($lieu),
             ),
-        );
-    }
-
-    public function media(
-        Lieu $lieu,
-        RessourceLieu $resource,
-    ): LieuMediaResource {
-        foreach ($this->photos->photos($lieu) as $photo) {
-            if ($photo['resource'] === $resource) {
-                return $this->photo($photo);
-            }
-        }
-
-        return new LieuMediaResource(
-            $resource->id(),
-            $lieu->fiche()->version(),
-            $resource->damAssetId(),
-            $resource->usage(),
-            $resource->legende(),
-            $resource->position(),
-            $resource->rightsGranted(),
-            $resource->source(),
-            $resource->crop(),
-            $resource->rotation(),
-            null,
-            null,
-            [],
-            $resource->keywords(),
-            $resource->rightsExpiresAt()?->format('Y-m-d'),
-            $resource->rightsValidity(alerteJours: $this->parametres->int('dam.delai_alerte_droits_jours'))->value,
         );
     }
 
@@ -216,30 +184,5 @@ final readonly class LieuApiMapper
             $value instanceof \DateTimeInterface => $value->format('Y-m-d'),
             default => $value,
         };
-    }
-
-    /** @param array{resource: RessourceLieu, asset: \App\Dam\Entity\MediaAsset|null, url: string|null, thumbnail_url: string|null, variants: list<array{name: string, width: int, height: int, url: string|null}>} $photo */
-    private function photo(array $photo): LieuMediaResource
-    {
-        $resource = $photo['resource'];
-
-        return new LieuMediaResource(
-            $resource->id(),
-            $resource->lieu()?->fiche()->version() ?? 0,
-            $resource->damAssetId(),
-            $resource->usage(),
-            $resource->legende(),
-            $resource->position(),
-            $resource->rightsGranted(),
-            $resource->source(),
-            $resource->crop(),
-            $resource->rotation(),
-            $photo['asset']?->status()->value,
-            $photo['url'],
-            $photo['variants'],
-            $resource->keywords(),
-            $resource->rightsExpiresAt()?->format('Y-m-d'),
-            $resource->rightsValidity(alerteJours: $this->parametres->int('dam.delai_alerte_droits_jours'))->value,
-        );
     }
 }

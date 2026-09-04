@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Pim\Service;
 
-use App\Account\Service\CurrentActorProvider;
 use App\Audit\Repository\AuditRevisionRepository;
 use App\Dam\Repository\MediaAssetRepository;
 use App\Dam\Service\FichePhotoPresenter;
@@ -57,7 +56,7 @@ use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
  * existant de la gamme en mode partiel — les champs absents de la section ne
  * sont pas touchés (submit avec clearMissing = false), les champs rendus mais
  * vidés côté client étant réinjectés par ChampsOmisCompleteur. Les mécanismes
- * restent ceux de l'édition classique : AdminManagers, politique de mutation
+ * restent ceux de l'édition classique : FicheAdminManager, politique de mutation
  * interne, complétude, audit.
  */
 final readonly class FicheEditeurEcran
@@ -82,15 +81,9 @@ final readonly class FicheEditeurEcran
     public function __construct(
         private FormFactoryInterface $forms,
         private UrlGeneratorInterface $urls,
-        private LieuAdminManager $lieux,
-        private RestaurantAdminManager $restaurants,
-        private ActiviteAdminManager $activites,
-        private ServiceEvenementielAdminManager $services,
+        private FicheAdminManager $admin,
         private LieuAdminViewBuilder $lieuVue,
-        private RestaurantAdminViewBuilder $restaurantVue,
-        private ActiviteAdminViewBuilder $activiteVue,
-        private ServiceEvenementielAdminViewBuilder $serviceVue,
-        private CurrentActorProvider $actor,
+        private DocumentsModalesVue $documentsVue,
         private InternalFicheMutationPolicy $policy,
         private CompletenessFieldConfigurationRepository $configurations,
         private CompletenessFieldCatalog $catalog,
@@ -163,7 +156,7 @@ final readonly class FicheEditeurEcran
         // champ — la suppression serait perdue sans message.
         $data = ChampsOmisCompleteur::completer($form, $data, $entite->fiche()->type());
         $fiche = $entite->fiche();
-        $existing = $this->photoAssetIds($entite);
+        $existing = $this->admin->photoAssetIds($entite);
         $avant = $entite instanceof Lieu ? $this->obligations->manquants($entite) : [];
         $dateAvant = $fiche->updatedAt();
 
@@ -207,7 +200,7 @@ final readonly class FicheEditeurEcran
                 $fiche->markChanged();
             }
             try {
-                $this->enregistrer($entite, $form, $existing);
+                $this->admin->save($entite, $form, $existing);
             } catch (\DomainException $exception) {
                 $form->addError(new FormError($exception->getMessage()));
 
@@ -369,7 +362,7 @@ final readonly class FicheEditeurEcran
         $section = $sections[$index];
         $id = $fiche->idString();
         $statut = $fiche->status()->value;
-        $domaine = self::domaine($type);
+        $domaine = $type->domaine();
 
         return [
             'onglets' => $onglets,
@@ -608,7 +601,7 @@ final readonly class FicheEditeurEcran
 
             return [
                 'gamme' => 'lieu',
-                'bloc_url' => $this->urls->generate('app_pim_lieu_medias_bloc', ['id' => $entite->id()]),
+                'bloc_url' => $this->urls->generate('app_pim_fiche_medias_bloc', ['gamme' => 'lieux', 'id' => $entite->id()]),
                 'onglets_actifs' => self::ongletsMediasActifs(TypeFiche::Lieu),
                 'vars' => [
                     'lieu' => $entite,
@@ -623,11 +616,7 @@ final readonly class FicheEditeurEcran
                 ],
             ];
         }
-        [$documentsVue, $route] = match (true) {
-            $entite instanceof Restaurant => [$this->restaurantVue->documents($entite), 'app_pim_restaurant_document_download'],
-            $entite instanceof Activite => [$this->activiteVue->documents($entite), 'app_pim_activite_document_download'],
-            default => [$this->serviceVue->documents($entite), 'app_pim_service_document_download'],
-        };
+        $documentsVue = $this->documentsVue->documents($entite);
 
         // Même présentation que le lieu : les vignettes réelles des photos
         // (déposées par le portail prestataire) et le poids des documents.
@@ -650,7 +639,7 @@ final readonly class FicheEditeurEcran
 
         return [
             'gamme' => $entite->fiche()->type()->value,
-            'bloc_url' => $this->urls->generate('app_pim_gamme_medias_bloc', ['gamme' => $slug, 'id' => (string) $entite->id()]),
+            'bloc_url' => $this->urls->generate('app_pim_fiche_medias_bloc', ['gamme' => $slug, 'id' => (string) $entite->id()]),
             'onglets_actifs' => self::ongletsMediasActifs($entite->fiche()->type()),
             'vars' => [
                 'photos' => $this->fichePhotos->photos($entite->fiche()),
@@ -659,11 +648,10 @@ final readonly class FicheEditeurEcran
                 'salles' => $entite instanceof Restaurant ? self::sallesParId($entite) : [],
                 'documents' => $documents,
                 'entite_id' => (string) $entite->id(),
-                'download_route' => $route,
                 // Galerie gérée comme le Lieu : dépôt AJAX + modales préchargées.
                 'gamme_slug' => $slug,
                 'media_upload_form' => $this->forms->createNamed('gamme_photo_upload', LieuPhotoUploadType::class, null, [
-                    'action' => $this->urls->generate('app_pim_gamme_photo_upload', ['gamme' => $slug, 'id' => (string) $entite->id()]),
+                    'action' => $this->urls->generate('app_pim_fiche_photo_upload', ['gamme' => $slug, 'id' => (string) $entite->id()]),
                     'method' => 'POST',
                 ])->createView(),
                 'media_csrf_token' => $this->csrfTokens->getToken('lieu-media-'.$entite->id())->getValue(),
@@ -771,43 +759,6 @@ final readonly class FicheEditeurEcran
         $configuration = ['medias', 'collaborateurs', 'sites', 'salesforce', 'historique'];
 
         return array_intersect($blocs, $configuration) !== [] ? 'parametres' : 'ma_fiche';
-    }
-
-    /** Domaine des routes d'action existantes (app_pim_<domaine>_submit…). */
-    private static function domaine(TypeFiche $type): string
-    {
-        return match ($type) {
-            TypeFiche::Lieu => 'lieu',
-            TypeFiche::Restaurant => 'restaurant',
-            TypeFiche::Activite => 'activite',
-            TypeFiche::ServiceEvenementiel => 'service',
-            TypeFiche::Traiteur => throw new \InvalidArgumentException('Gamme hors de cette version du MDM.'),
-        };
-    }
-
-    /** @return list<string> */
-    private function photoAssetIds(Lieu|Restaurant|Activite|ServiceEvenementiel $entite): array
-    {
-        return match (true) {
-            $entite instanceof Lieu => $this->lieux->photoAssetIds($entite),
-            $entite instanceof Restaurant => $this->restaurants->photoAssetIds($entite),
-            $entite instanceof Activite => $this->activites->photoAssetIds($entite),
-            default => $this->services->photoAssetIds($entite),
-        };
-    }
-
-    /**
-     * @param FormInterface<mixed> $form
-     * @param list<string>         $existing
-     */
-    private function enregistrer(Lieu|Restaurant|Activite|ServiceEvenementiel $entite, FormInterface $form, array $existing): void
-    {
-        match (true) {
-            $entite instanceof Lieu => $this->lieux->save($entite, $form, $existing),
-            $entite instanceof Restaurant => $this->restaurants->save($entite, $form, $existing, $this->actor->id()),
-            $entite instanceof Activite => $this->activites->save($entite, $form, $existing, $this->actor->id()),
-            default => $this->services->save($entite, $form, $existing, $this->actor->id()),
-        };
     }
 
     /**

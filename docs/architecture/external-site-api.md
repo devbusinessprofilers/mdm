@@ -141,7 +141,7 @@ aéroport, les réponses conditionnelles et une à dix photos DAM avec exactemen
 photo principale. L’autocomplétion et la minicarte sont reportées au passage au
 front. L’historique append-only se consulte sur
 `/referentiel/restaurants/fiche/{ULID}/historique`. La commande
-`app:restaurants:validate --submission` contrôle les fiches sans les modifier.
+`app:fiches:validate --gamme=restaurants --submission` contrôle les fiches sans les modifier.
 
 ## Administration des Activités
 
@@ -159,7 +159,7 @@ UTF-8 doit contenir `code;label`. `--dry-run` contrôle le fichier sans écrire.
 
 Les validateurs ouvrent `/referentiel/activites/fiche/{ULID}/historique` pour consulter l’audit
 append-only par champ, sans restauration. Avant un déploiement, exécuter
-`app:activites:validate` et ajouter `--submission` pour simuler la soumission.
+`app:fiches:validate --gamme=activites` et ajouter `--submission` pour simuler la soumission.
 
 ## Administration des Services événementiels
 
@@ -173,8 +173,8 @@ l’adresse et les coordonnées complètes ; le mode mobile exige au moins un pa
 une région et un département saisis en texte. La fiche doit aussi posséder une à
 dix photos DAM traitées, exactement une photo principale et au moins un support
 commercial traité, titré, sourcé et assorti de droits validés. L’audit se consulte
-sur `/referentiel/services/fiche/{ULID}/historique`. La commande `app:services:validate
---submission` effectue le contrôle sans modifier les données.
+sur `/referentiel/services/fiche/{ULID}/historique`. La commande `app:fiches:validate
+--gamme=services --submission` effectue le contrôle sans modifier les données.
 
 ## Médias
 

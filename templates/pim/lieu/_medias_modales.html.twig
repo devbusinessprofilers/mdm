@@ -1,5 +1,5 @@
 {# Modales de paramètres des photos et documents du lieu — markup identique à
-   celui qui vivait dans _medias.html.twig, servi par app_pim_lieu_media_modales
+   celui qui vivait dans _medias.html.twig, servi par app_pim_fiche_photo_modales
    et préchargé en arrière-plan juste après le chargement de la page (contrôleur
    lieu-media) : la fiche s'affiche sans payer le rendu d'une modale + ses
    formulaires par média, et le clic sur une vignette reste instantané.
@@ -33,15 +33,15 @@
                 <div class="flex justify-end pt-1">{{ form_widget(photo.metadata_form.save, {attr: {'data-full': false, 'data-size': 'md'}}) }}</div>
             {{ form_end(photo.metadata_form) }}
             <div class="flex flex-wrap items-center gap-3 pt-2 border-t border-neutral-200">
-                <button type="button" data-action="lieu-media#enrich" data-url="{{ path('app_pim_lieu_photo_enrich', {id: lieu.id, resourceId: photo.resource.id}) }}"
+                <button type="button" data-action="lieu-media#enrich" data-url="{{ path('app_pim_fiche_photo_enrich', {gamme: 'lieux', id: lieu.id, resourceId: photo.resource.id}) }}"
                         class="cursor-pointer"><twig:Typography variant="body-sm" textColor="primary-3" bold element="span">Enrichir l’image (IA)</twig:Typography></button>
-                <button type="button" data-action="lieu-media#retry" data-url="{{ path('app_pim_lieu_photo_retry', {id: lieu.id, resourceId: photo.resource.id}) }}"
+                <button type="button" data-action="lieu-media#retry" data-url="{{ path('app_pim_fiche_photo_retry', {gamme: 'lieux', id: lieu.id, resourceId: photo.resource.id}) }}"
                         class="cursor-pointer"><twig:Typography variant="body-sm" textColor="primary-3" bold element="span">Relancer le traitement</twig:Typography></button>
                 {{ form_start(photo.replace_form, {attr: {class: 'button-label'}}) }}
                     {{ form_widget(photo.replace_form.photo, {attr: {'data-url': photo.replace_form.vars.action}}) }}
                 {{ form_end(photo.replace_form) }}
                 <span class="flex-1"></span>
-                <button type="button" data-action="lieu-media#remove" data-url="{{ path('app_pim_lieu_photo_delete', {id: lieu.id, resourceId: photo.resource.id}) }}"
+                <button type="button" data-action="lieu-media#remove" data-url="{{ path('app_pim_fiche_photo_delete', {gamme: 'lieux', id: lieu.id, resourceId: photo.resource.id}) }}"
                         class="cursor-pointer"><twig:Typography variant="body-sm" textColor="error" bold element="span">Supprimer la photo</twig:Typography></button>
             </div>
         </div>
@@ -76,7 +76,8 @@
             {{ form_end(document.replace_form) }}
             {% if document.view.access != 'private' or is_granted('ROLE_BP_VALIDATOR') %}
                 <p>
-                    <a href="{{ path('app_pim_lieu_document_download', {
+                    <a href="{{ path('app_pim_fiche_document_download', {
+                        gamme: 'lieux',
                         id: lieu.id,
                         resourceId: document.view.id
                     }) }}" class="hover:underline"><twig:Typography variant="body-sm" textColor="primary-3" bold element="span">Télécharger l’original</twig:Typography></a>

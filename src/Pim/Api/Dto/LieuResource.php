@@ -16,9 +16,9 @@ use ApiPlatform\Metadata\Put;
 use ApiPlatform\OpenApi\Model\Operation;
 use ApiPlatform\OpenApi\Model\Parameter;
 use ApiPlatform\OpenApi\Model\RequestBody;
-use App\Pim\Api\State\LieuCollectionProvider;
-use App\Pim\Api\State\LieuItemProvider;
-use App\Pim\Api\State\LieuMediaProcessor;
+use App\Pim\Api\State\FicheCollectionProvider;
+use App\Pim\Api\State\FicheItemProvider;
+use App\Pim\Api\State\FicheMediaProcessor;
 use App\Pim\Api\State\LieuPatchProcessor;
 
 #[ApiResource(
@@ -29,7 +29,7 @@ use App\Pim\Api\State\LieuPatchProcessor;
         new GetCollection(
             uriTemplate: '/v1/lieux',
             paginationEnabled: false,
-            provider: LieuCollectionProvider::class,
+            provider: FicheCollectionProvider::class,
             openapi: new Operation(
                 tags: ['Lieux'],
                 summary: 'Lister les lieux',
@@ -74,7 +74,7 @@ use App\Pim\Api\State\LieuPatchProcessor;
         new Get(
             uriTemplate: '/v1/lieux/{id}',
             requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
-            provider: LieuItemProvider::class,
+            provider: FicheItemProvider::class,
             openapi: new Operation(
                 tags: ['Lieux'],
                 summary: 'Consulter un lieu',
@@ -116,10 +116,10 @@ use App\Pim\Api\State\LieuPatchProcessor;
                 ),
             ],
             input: false,
-            output: LieuMediaResource::class,
+            output: FicheMediaResource::class,
             deserialize: false,
             read: false,
-            processor: LieuMediaProcessor::class,
+            processor: FicheMediaProcessor::class,
             openapi: new Operation(
                 tags: ['Médias Lieux'],
                 summary: 'Téléverser une image',
@@ -175,7 +175,7 @@ use App\Pim\Api\State\LieuPatchProcessor;
             output: self::class,
             denormalizationContext: ['allow_extra_attributes' => false],
             read: false,
-            processor: LieuMediaProcessor::class,
+            processor: FicheMediaProcessor::class,
             openapi: new Operation(
                 tags: ['Médias Lieux'],
                 summary: 'Réordonner toutes les images',
@@ -206,11 +206,11 @@ use App\Pim\Api\State\LieuPatchProcessor;
                 ),
             ],
             input: MediaPatchInput::class,
-            output: LieuMediaResource::class,
+            output: FicheMediaResource::class,
             inputFormats: ['json' => ['application/merge-patch+json']],
             denormalizationContext: ['allow_extra_attributes' => false],
             read: false,
-            processor: LieuMediaProcessor::class,
+            processor: FicheMediaProcessor::class,
             openapi: new Operation(
                 tags: ['Médias Lieux'],
                 summary: 'Modifier les métadonnées, le recadrage ou la rotation',
@@ -241,10 +241,10 @@ use App\Pim\Api\State\LieuPatchProcessor;
                 ),
             ],
             input: false,
-            output: LieuMediaResource::class,
+            output: FicheMediaResource::class,
             deserialize: false,
             read: false,
-            processor: LieuMediaProcessor::class,
+            processor: FicheMediaProcessor::class,
             openapi: new Operation(
                 tags: ['Médias Lieux'],
                 summary: 'Remplacer le fichier source',
@@ -295,7 +295,7 @@ use App\Pim\Api\State\LieuPatchProcessor;
             input: false,
             output: false,
             read: false,
-            processor: LieuMediaProcessor::class,
+            processor: FicheMediaProcessor::class,
             openapi: new Operation(
                 tags: ['Médias Lieux'],
                 summary: 'Supprimer une image',
@@ -333,7 +333,7 @@ final readonly class LieuResource
      * @param list<array<string, mixed>> $salles
      * @param list<array<string, mixed>> $periodesFermeture
      * @param list<array<string, mixed>> $acces
-     * @param list<LieuMediaResource>    $medias
+     * @param list<FicheMediaResource>   $medias
      */
     public function __construct(
         #[ApiProperty(identifier: true)] public string $id,

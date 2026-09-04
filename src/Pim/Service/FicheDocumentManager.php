@@ -10,7 +10,9 @@ use App\Dam\Message\PublishDocument;
 use App\Dam\Message\UnpublishDocument;
 use App\Dam\Service\FicheDocumentUploader;
 use App\Pim\Entity\Fiche;
+use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Entity\Lieu\RessourceLieu;
+use App\Pim\Entity\Lieu\Salle;
 use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Entity\Restaurant\RestaurantSalle;
 use App\Pim\Message\IndexFiche;
@@ -18,6 +20,12 @@ use App\Shared\Outbox\OutboxPublisherInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
+/**
+ * Documents d'une fiche, toutes gammes : dépôt (Lieu et Restaurant, avec
+ * leurs salles), métadonnées, remplacement du fichier, publication et
+ * suppression. Chaque geste s'exécute sous la politique de mutation interne
+ * et réindexe la fiche.
+ */
 final readonly class FicheDocumentManager
 {
     public function __construct(
@@ -29,50 +37,42 @@ final readonly class FicheDocumentManager
     }
 
     /**
-     * Dépôt documentaire du Restaurant — pendant de LieuDocumentManager::upload,
-     * la salle rattachée étant une RestaurantSalle (l'entité porte les gardes
-     * d'appartenance dans addRessource).
-     *
-     * @param list<UploadedFile>                                                                                $files
-     * @param array{usage: DocumentUsage, salle: RestaurantSalle|null, title: string|null, source: string|null} $data
+     * @param list<UploadedFile>                                                                                      $files
+     * @param array{usage: DocumentUsage, salle: Salle|RestaurantSalle|null, title: string|null, source: string|null} $data
      */
-    public function upload(Restaurant $restaurant, array $files, array $data, string $actor): int
+    public function upload(Lieu|Restaurant $entite, array $files, array $data): int
     {
         return $this->mutationPolicy->execute(
-            $restaurant->fiche(),
-            fn (): int => $this->uploadWithinMutation($restaurant, $files, $data, $actor),
+            $entite->fiche(),
+            fn (): int => $this->uploadWithinMutation($entite, $files, $data),
         );
     }
 
     /**
-     * @param list<UploadedFile>                                                                                $files
-     * @param array{usage: DocumentUsage, salle: RestaurantSalle|null, title: string|null, source: string|null} $data
+     * @param list<UploadedFile>                                                                                      $files
+     * @param array{usage: DocumentUsage, salle: Salle|RestaurantSalle|null, title: string|null, source: string|null} $data
      */
-    private function uploadWithinMutation(Restaurant $restaurant, array $files, array $data, string $actor): int
+    private function uploadWithinMutation(Lieu|Restaurant $entite, array $files, array $data): int
     {
         $usage = $data['usage'];
         $salle = $data['salle'];
-        if ($usage->requiresRoom() && null === $salle) {
-            throw new \DomainException('Un plan de salle doit être rattaché à une salle.');
-        }
-        if (!$this->withinMaximum($restaurant->fiche(), $usage, $salle, count($files))) {
-            throw new \DomainException('Le nombre maximal de documents pour cet usage serait dépassé.');
-        }
+        $this->assertSalle($entite->fiche(), $usage, $salle, count($files));
         $uploaded = [];
         try {
             foreach ($files as $file) {
-                $asset = $this->uploader->upload($file, $restaurant->fiche(), $usage);
+                $asset = $this->uploader->upload($file, $entite->fiche(), $usage);
                 $uploaded[] = $asset;
                 $document = new RessourceLieu();
                 $document->configureDocument($usage);
                 $document->changeDamAssetId($asset->id());
-                $document->changeRestaurantSalle($salle);
+                $document->rattacherSalle($salle);
                 $document->changeLegende($data['title']);
                 $document->changeSource($data['source']);
-                $restaurant->addRessource($document);
+                // L'entité vérifie l'appartenance de la salle.
+                $entite->addRessource($document);
                 $this->entityManager->persist($asset);
             }
-            $this->changed($restaurant->fiche());
+            $this->changed($entite->fiche());
         } catch (\Throwable $exception) {
             foreach ($uploaded as $asset) {
                 try {
@@ -86,29 +86,35 @@ final readonly class FicheDocumentManager
         return count($uploaded);
     }
 
-    /** @param array<string, mixed> $data */
-    public function updateMetadata(RessourceLieu $document, Fiche $fiche, array $data, string $actor): void
+    /**
+     * Métadonnées : titre, source, mots-clés, échéance des droits ; la salle
+     * rattachée quand la clé est présente (Lieu, Restaurant) et l'usage quand
+     * il l'est (Lieu). Un document publié qui perd ses droits est dépublié.
+     *
+     * @param array<string, mixed> $data
+     */
+    public function updateMetadata(RessourceLieu $document, Fiche $fiche, array $data): void
     {
-        $this->mutationPolicy->execute($fiche, function () use ($document, $fiche, $data, $actor): void {
-            $this->updateMetadataWithinMutation($document, $fiche, $data, $actor);
+        $this->mutationPolicy->execute($fiche, function () use ($document, $fiche, $data): void {
+            $this->updateMetadataWithinMutation($document, $fiche, $data);
         });
     }
 
     /** @param array<string, mixed> $data */
-    private function updateMetadataWithinMutation(RessourceLieu $document, Fiche $fiche, array $data, string $actor): void
+    private function updateMetadataWithinMutation(RessourceLieu $document, Fiche $fiche, array $data): void
     {
-        // Le formulaire Restaurant expose la salle rattachée : appliquée
-        // seulement quand la clé est présente, les autres gammes ne l'ont pas.
-        if (\array_key_exists('salle', $data)) {
-            $salle = ($data['salle'] ?? null) instanceof RestaurantSalle ? $data['salle'] : null;
-            $usage = $document->documentUsage();
-            if (null !== $usage && $usage->requiresRoom() && null === $salle) {
-                throw new \DomainException('Un plan de salle doit être rattaché à une salle.');
+        $usage = ($data['usage'] ?? null) instanceof DocumentUsage ? $data['usage'] : $document->documentUsage();
+        if (\array_key_exists('salle', $data) || \array_key_exists('usage', $data)) {
+            $salle = \array_key_exists('salle', $data) ? $data['salle'] : $document->salleRattachee();
+            $salle = $salle instanceof Salle || $salle instanceof RestaurantSalle ? $salle : null;
+            if (null !== $usage && ($usage !== $document->documentUsage() || $salle !== $document->salleRattachee())) {
+                $this->assertSalle($fiche, $usage, $salle, 1, $document);
             }
-            if (null !== $usage && $salle !== $document->restaurantSalle() && !$this->withinMaximum($fiche, $usage, $salle, 1, $document)) {
-                throw new \DomainException('Le nombre maximal de documents pour cet usage serait dépassé.');
+            if (null !== $usage && $usage !== $document->documentUsage()) {
+                $this->unpublish($document);
+                $document->configureDocument($usage);
             }
-            $document->changeRestaurantSalle($salle);
+            $document->rattacherSalle($salle);
         }
         $document->changeLegende(is_string($data['title'] ?? null) ? $data['title'] : null);
         $wasPublished = 'published' === $document->publicationStatus()?->value;
@@ -121,15 +127,17 @@ final readonly class FicheDocumentManager
         $this->changed($fiche);
     }
 
-    public function replace(RessourceLieu $document, Fiche $fiche, UploadedFile $file, DocumentUsage $usage): void
+    /** Remplace le fichier en conservant l'usage du document ; la copie publique est retirée. */
+    public function replace(RessourceLieu $document, Fiche $fiche, UploadedFile $file): void
     {
-        $this->mutationPolicy->execute($fiche, function () use ($document, $fiche, $file, $usage): void {
-            $this->replaceWithinMutation($document, $fiche, $file, $usage);
+        $this->mutationPolicy->execute($fiche, function () use ($document, $fiche, $file): void {
+            $this->replaceWithinMutation($document, $fiche, $file);
         });
     }
 
-    private function replaceWithinMutation(RessourceLieu $document, Fiche $fiche, UploadedFile $file, DocumentUsage $usage): void
+    private function replaceWithinMutation(RessourceLieu $document, Fiche $fiche, UploadedFile $file): void
     {
+        $usage = $document->documentUsage() ?? throw new \DomainException('Usage documentaire invalide.');
         $asset = $this->uploader->upload($file, $fiche, $usage);
         $old = $document->damAssetId();
         try {
@@ -176,19 +184,32 @@ final readonly class FicheDocumentManager
     {
         $this->unpublish($document);
         $this->outbox->enqueue(new DeleteMedia($document->damAssetId()));
+        // Le Lieu tient sa propre collection miroir des ressources.
+        $document->lieu()?->removeRessource($document);
         $fiche->removeResource($document);
         $this->entityManager->remove($document);
         $this->changed($fiche);
     }
 
-    private function withinMaximum(Fiche $fiche, DocumentUsage $usage, ?RestaurantSalle $salle, int $added, ?RessourceLieu $current = null): bool
+    /** Un plan de salle exige une salle ; le plafond par usage (et par salle) ne doit pas être dépassé. */
+    private function assertSalle(Fiche $fiche, DocumentUsage $usage, Salle|RestaurantSalle|null $salle, int $added, ?RessourceLieu $current = null): void
+    {
+        if ($usage->requiresRoom() && null === $salle) {
+            throw new \DomainException('Un plan de salle doit être rattaché à une salle.');
+        }
+        if (!$this->withinMaximum($fiche, $usage, $salle, $added, $current)) {
+            throw new \DomainException('Le nombre maximal de documents pour cet usage serait dépassé.');
+        }
+    }
+
+    private function withinMaximum(Fiche $fiche, DocumentUsage $usage, Salle|RestaurantSalle|null $salle, int $added, ?RessourceLieu $current): bool
     {
         if (null === $usage->maximumCount()) {
             return true;
         }
         $count = 0;
         foreach ($fiche->resources() as $resource) {
-            if ($resource !== $current && $resource->usage() === $usage->value && (!$usage->requiresRoom() || $resource->restaurantSalle() === $salle)) {
+            if ($resource !== $current && $resource->usage() === $usage->value && (!$usage->requiresRoom() || $resource->salleRattachee() === $salle)) {
                 ++$count;
             }
         }

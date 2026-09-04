@@ -11,6 +11,7 @@ use App\Pim\Entity\Service\ServiceEvenementiel;
 use App\Shared\Service\PrivateObjectStorageInterface;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -127,7 +128,24 @@ final class FicheGammeEditeurTest extends WebTestCase
     // Le dépôt de supports commerciaux passe par le formulaire principal de la
     // fiche : la soumission partielle doit fusionner $request->files, sinon les
     // fichiers sont ignorés en silence (fiche « enregistrée », aucun document).
-    public function testDepotSupportCommercialParLaSectionMedias(): void
+    /** @return iterable<string, array{class-string<Activite|Restaurant|ServiceEvenementiel>, string, string, string, string}> */
+    public static function depotsDocumentaires(): iterable
+    {
+        // gamme, champ fichier, champ titre, champ source, usage attendu
+        yield 'service : support commercial' => [ServiceEvenementiel::class, 'supportsCommerciaux', 'supportTitle', 'supportSource', 'PJ_SUPPORT_COMMERCIAUX'];
+        yield 'activité : support commercial' => [Activite::class, 'supportsCommerciaux', 'supportTitle', 'supportSource', 'PJ_SUPPORT_COMMERCIAUX'];
+        yield 'restaurant : menu' => [Restaurant::class, 'menus', 'documentTitle', 'documentSource', 'MENUS'];
+        yield 'restaurant : support commercial' => [Restaurant::class, 'supportsCommerciaux', 'documentTitle', 'documentSource', 'PJ_SUPPORT_COMMERCIAUX'];
+    }
+
+    /**
+     * Le formulaire principal dépose des documents avec le titre et la source
+     * saisis à côté : même mécanique pour les trois gammes (FicheAdminManager).
+     *
+     * @param class-string<Activite|Restaurant|ServiceEvenementiel> $classe
+     */
+    #[DataProvider('depotsDocumentaires')]
+    public function testDepotDeDocumentParLeFormulairePrincipal(string $classe, string $champFichier, string $champTitre, string $champSource, string $usage): void
     {
         $client = self::createClient();
         // Le stub de stockage doit survivre aux deux requêtes (GET puis POST) :
@@ -158,7 +176,7 @@ final class FicheGammeEditeurTest extends WebTestCase
                     throw new \RuntimeException('Flux temporaire indisponible.');
                 }
 
-return $stream;
+                return $stream;
             }
 
             public function exists(string $key): bool
@@ -183,9 +201,9 @@ return $stream;
         $user = new User('support@example.test', ['ROLE_BP_VALIDATOR']);
         $user->setPassword('not-used-by-login-user');
         $entityManager->persist($user);
-        $service = new ServiceEvenementiel();
-        $service->changeLabel('Service à supports');
-        $entityManager->persist($service);
+        $entite = new $classe();
+        $entite->changeLabel('Fiche à documents');
+        $entityManager->persist($entite);
         $entityManager->flush();
         $client->loginUser($user);
 
@@ -193,14 +211,14 @@ return $stream;
         self::assertIsString($pdf);
         file_put_contents($pdf, "%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF");
 
-        $crawler = $client->request('GET', '/referentiel/services/fiche/'.$service->id());
+        $crawler = $client->request('GET', '/referentiel/'.$entite->fiche()->type()->slug().'/fiche/'.$entite->id());
         self::assertResponseIsSuccessful();
         $form = $crawler->filter('button[form="form-fiche"]')->form();
         $values = $form->getPhpValues();
         $nom = (string) array_key_first($values);
-        $values[$nom]['supportTitle'] = 'Plaquette 2026';
-        $values[$nom]['supportSource'] = 'Prestataire';
-        $fichiers = [$nom => ['supportsCommerciaux' => [
+        $values[$nom][$champTitre] = 'Plaquette 2026';
+        $values[$nom][$champSource] = 'Prestataire';
+        $fichiers = [$nom => [$champFichier => [
             new UploadedFile($pdf, 'plaquette.pdf', 'application/pdf', null, true),
         ]]];
         $client->request($form->getMethod(), $form->getUri(), $values, $fichiers);
@@ -210,9 +228,9 @@ return $stream;
         $document = $this->connection->fetchAssociative(
             'SELECT nature, usage_code, legende, source FROM pim_ressource_lieu',
         );
-        self::assertIsArray($document, 'Le support déposé doit créer une ressource document.');
+        self::assertIsArray($document, 'Le document déposé doit créer une ressource document.');
         self::assertSame('document', $document['nature']);
-        self::assertSame('PJ_SUPPORT_COMMERCIAUX', $document['usage_code']);
+        self::assertSame($usage, $document['usage_code']);
         self::assertSame('Plaquette 2026', $document['legende']);
         self::assertSame('Prestataire', $document['source']);
         self::assertSame(1, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM dam_media_asset'));

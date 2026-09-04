@@ -71,7 +71,7 @@ final readonly class FicheDocumentUploader
         $prefix = trim($this->storagePrefix, '/');
         $key =
             ('' === $prefix ? '' : $prefix.'/').
-            $fiche->type()->value.
+            FicheImageUploader::segment($fiche->type()).
             '/'.
             $fiche->idString().
             '/documents/'.

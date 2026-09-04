@@ -6,8 +6,8 @@ namespace App\Pim\Controller;
 
 use App\Account\Security\FicheVoter;
 use App\Pim\Entity\Lieu\Lieu;
+use App\Pim\Service\FicheDetailResolver;
 use App\Pim\Service\FicheEditeurEcran;
-use App\Pim\Service\GammeEntiteResolver;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -20,25 +20,17 @@ use Symfony\Component\Routing\Attribute\Route;
  */
 final class FicheMediasBlocController extends AbstractController
 {
-    #[Route('/referentiel/lieux/fiche/{id}/medias/bloc', name: 'app_pim_lieu_medias_bloc', methods: ['GET'], requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'])]
-    public function lieu(Lieu $lieu, FicheEditeurEcran $ecran): Response
+    #[Route('/referentiel/{gamme}/fiche/{id}/medias/bloc', name: 'app_pim_fiche_medias_bloc', methods: ['GET'], requirements: ['gamme' => 'lieux|restaurants|activites|services', 'id' => '[0-9A-HJKMNP-TV-Z]{26}'])]
+    public function __invoke(string $gamme, string $id, FicheDetailResolver $resolver, FicheEditeurEcran $ecran): Response
     {
+        $entite = $resolver->parSlugEtId($gamme, $id) ?? throw $this->createNotFoundException('Fiche introuvable.');
         // Même visibilité que la page fiche, qui rend ce bloc d'office ; les
         // mutations gardent EDIT + CSRF sur leurs propres routes.
-        $this->denyAccessUnlessGranted(FicheVoter::VIEW, $lieu->fiche());
-
-        return $this->render('pim/lieu/_medias.html.twig', $ecran->medias($lieu)['vars']);
-    }
-
-    #[Route('/referentiel/{gamme}/fiche/{id}/medias/bloc', name: 'app_pim_gamme_medias_bloc', methods: ['GET'], requirements: ['gamme' => 'restaurants|activites|services', 'id' => '[0-9A-HJKMNP-TV-Z]{26}'])]
-    public function gamme(string $gamme, string $id, GammeEntiteResolver $resolver, FicheEditeurEcran $ecran): Response
-    {
-        $entite = $resolver->resolve($gamme, $id);
-        if (null === $entite) {
-            throw $this->createNotFoundException('Fiche introuvable.');
-        }
         $this->denyAccessUnlessGranted(FicheVoter::VIEW, $entite->fiche());
 
-        return $this->render('pim/_medias_gamme.html.twig', $ecran->medias($entite)['vars']);
+        return $this->render(
+            $entite instanceof Lieu ? 'pim/lieu/_medias.html.twig' : 'pim/_medias_gamme.html.twig',
+            $ecran->medias($entite)['vars'],
+        );
     }
 }

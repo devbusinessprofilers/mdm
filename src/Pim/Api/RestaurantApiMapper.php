@@ -5,21 +5,19 @@ declare(strict_types=1);
 namespace App\Pim\Api;
 
 use App\Dam\Service\FichePhotoPresenter;
-use App\Pim\Api\Dto\LieuMediaResource;
+use App\Pim\Api\Dto\FicheMediaResource;
 use App\Pim\Api\Dto\RestaurantListResource;
 use App\Pim\Api\Dto\RestaurantResource;
 use App\Pim\Entity\HorairesJours;
-use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Entity\Localisation;
 use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\ReadModel\RestaurantListItem;
-use App\Shared\Service\ParametreProviderInterface;
 
 final readonly class RestaurantApiMapper
 {
     public function __construct(
         private FichePhotoPresenter $photos,
-        private ParametreProviderInterface $parametres,
+        private MediaResourceFactory $medias,
     ) {
     }
 
@@ -118,64 +116,9 @@ final readonly class RestaurantApiMapper
             $restaurant->engagementsRse(),
             $restaurant->youtubeUrl(),
             array_map(
-                fn (array $photo): LieuMediaResource => $this->photo($restaurant, $photo),
+                fn (array $photo): FicheMediaResource => $this->medias->depuisPresentation($fiche->version(), $photo),
                 $this->photos->photos($fiche),
             ),
-        );
-    }
-
-    public function media(
-        Restaurant $restaurant,
-        RessourceLieu $resource,
-    ): LieuMediaResource {
-        foreach ($this->photos->photos($restaurant->fiche()) as $photo) {
-            if ($photo['resource'] === $resource) {
-                return $this->photo($restaurant, $photo);
-            }
-        }
-
-        return new LieuMediaResource(
-            $resource->id(),
-            $restaurant->fiche()->version(),
-            $resource->damAssetId(),
-            $resource->usage(),
-            $resource->legende(),
-            $resource->position(),
-            $resource->rightsGranted(),
-            $resource->source(),
-            $resource->crop(),
-            $resource->rotation(),
-            null,
-            null,
-            [],
-            $resource->keywords(),
-            $resource->rightsExpiresAt()?->format('Y-m-d'),
-            $resource->rightsValidity(alerteJours: $this->parametres->int('dam.delai_alerte_droits_jours'))->value,
-        );
-    }
-
-    /** @param array{resource:RessourceLieu,asset:\App\Dam\Entity\MediaAsset|null,url:string|null,thumbnail_url:string|null,variants:list<array{name:string,width:int,height:int,url:string|null}>} $photo */
-    private function photo(Restaurant $restaurant, array $photo): LieuMediaResource
-    {
-        $resource = $photo['resource'];
-
-        return new LieuMediaResource(
-            $resource->id(),
-            $restaurant->fiche()->version(),
-            $resource->damAssetId(),
-            $resource->usage(),
-            $resource->legende(),
-            $resource->position(),
-            $resource->rightsGranted(),
-            $resource->source(),
-            $resource->crop(),
-            $resource->rotation(),
-            $photo['asset']?->status()->value,
-            $photo['url'],
-            $photo['variants'],
-            $resource->keywords(),
-            $resource->rightsExpiresAt()?->format('Y-m-d'),
-            $resource->rightsValidity(alerteJours: $this->parametres->int('dam.delai_alerte_droits_jours'))->value,
         );
     }
 

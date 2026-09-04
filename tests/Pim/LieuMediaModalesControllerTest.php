@@ -18,7 +18,7 @@ use Symfony\Component\Uid\Ulid;
 /**
  * Les modales de paramètres des médias sont préchargées en arrière-plan : la
  * page fiche ne porte que les vignettes et l'URL de préchargement, l'endpoint
- * app_pim_lieu_media_modales rend toutes les modales d'un coup.
+ * app_pim_fiche_photo_modales rend toutes les modales d’un coup.
  */
 #[Group('database')]
 final class LieuMediaModalesControllerTest extends WebTestCase

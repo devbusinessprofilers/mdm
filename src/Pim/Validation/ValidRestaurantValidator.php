@@ -5,51 +5,34 @@ declare(strict_types=1);
 namespace App\Pim\Validation;
 
 use App\Dam\Enum\DocumentUsage;
-use App\Dam\Enum\MediaStatus;
-use App\Dam\Repository\MediaAssetRepository;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Enum\NatureRessource;
 use App\Pim\Enum\TypeAccesRestaurant;
 use App\Pim\Enum\TypeFiche;
 use App\Pim\Lov\RestaurantLovCatalog;
-use App\Pim\Service\PhotoObligations;
 use Symfony\Component\Validator\Constraint;
-use Symfony\Component\Validator\ConstraintValidator;
 
-final class ValidRestaurantValidator extends ConstraintValidator
+final class ValidRestaurantValidator extends FicheValidateur
 {
-    public function __construct(
-        private readonly MediaAssetRepository $assets,
-        private readonly PhotoObligations $photoObligations,
-    ) {
-    }
-
     public function validate(mixed $value, Constraint $constraint): void
     {
         if (!$value instanceof Restaurant) {
             return;
         }
 
-        $this->maximumLength($value->label(), 255, 'label');
-        $this->validUrl($value->siteOfficiel(), Restaurant::WEBSITE_MAX_LENGTH, 'siteOfficiel');
-        $this->validUrl($value->youtubeUrl(), 255, 'youtubeUrl');
-        if (
-            null !== $value->youtubeUrl()
-            && !LienVideoValidator::estHebergeurAutorise($value->youtubeUrl())
-        ) {
-            $this->violation(
-                'Le lien vidéo doit pointer vers un hébergeur vidéo reconnu.',
-                'youtubeUrl',
-            );
-        }
+        $this->longueurMax($value->label(), 255, 'label');
+        $this->longueurMax($value->siteOfficiel(), Restaurant::WEBSITE_MAX_LENGTH, 'siteOfficiel');
+        $this->url($value->siteOfficiel(), 'siteOfficiel');
+        $this->longueurMax($value->youtubeUrl(), 255, 'youtubeUrl');
+        $this->lienVideo($value->youtubeUrl(), 'youtubeUrl');
 
         if (count($value->atouts()) > 5) {
             $this->violation('Un Restaurant ne peut avoir que cinq atouts.', 'atouts');
         }
 
         foreach ($value->atouts() as $index => $atout) {
-            $this->maximumLength($atout, 255, sprintf('atouts[%d]', $index));
+            $this->longueurMax($atout, 255, sprintf('atouts[%d]', $index));
         }
 
         foreach ($this->capacities($value) as $path => $capacity) {
@@ -71,7 +54,7 @@ final class ValidRestaurantValidator extends ConstraintValidator
         }
 
         foreach ($value->periodesFermeture() as $index => $period) {
-            $this->maximumLength(
+            $this->longueurMax(
                 $period->nom(),
                 255,
                 sprintf('periodesFermeture[%d].nom', $index),
@@ -89,7 +72,7 @@ final class ValidRestaurantValidator extends ConstraintValidator
         }
 
         foreach ($value->acces() as $index => $access) {
-            $this->maximumLength(
+            $this->longueurMax(
                 $access->nom(),
                 255,
                 sprintf('acces[%d].nom', $index),
@@ -103,7 +86,7 @@ final class ValidRestaurantValidator extends ConstraintValidator
         }
 
         foreach ($value->salles() as $index => $room) {
-            $this->maximumLength(
+            $this->longueurMax(
                 $room->nom(),
                 255,
                 sprintf('salles[%d].nom', $index),
@@ -131,14 +114,8 @@ final class ValidRestaurantValidator extends ConstraintValidator
             }
         }
 
-        $photos = $this->photos($value);
-        $maximum = $this->photoObligations->maximum(TypeFiche::Restaurant);
-        if (count($photos) > $maximum) {
-            $this->violation(
-                sprintf('Un Restaurant ne peut pas contenir plus de %d photos.', $maximum),
-                'ressources',
-            );
-        }
+        $photos = $this->photos($value->ressources());
+        $this->plafondPhotos(TypeFiche::Restaurant, $photos, 'Un Restaurant ne peut pas contenir plus de %d photos.');
 
         foreach ($value->ressources() as $resource) {
             if (null !== $resource->lieu() || null !== $resource->salle()) {
@@ -187,7 +164,7 @@ final class ValidRestaurantValidator extends ConstraintValidator
             }
         }
 
-        if (ValidationGroups::SUBMISSION === $this->context->getGroup()) {
+        if ($this->enSoumission()) {
             $this->submission($value, $photos);
         }
     }
@@ -298,26 +275,8 @@ final class ValidRestaurantValidator extends ConstraintValidator
             );
         }
 
-        // La principale étant la première photo de l'ordre, la soumission
-        // exige toujours au moins une photo même si le minimum est surchargé à 0.
-        $minimum = max(1, $this->photoObligations->minimum(TypeFiche::Restaurant));
-        $maximum = $this->photoObligations->maximum(TypeFiche::Restaurant);
-        if (count($photos) < $minimum || count($photos) > $maximum) {
-            $this->violation(
-                sprintf('Une fiche Restaurant doit contenir entre %d et %d photos.', $minimum, $maximum),
-                'ressources',
-            );
-        }
-
-        foreach ($value->ressources() as $resource) {
-            $asset = $this->assets->find($resource->damAssetId());
-            if (null === $asset || MediaStatus::Processed !== $asset->status()) {
-                $this->violation(
-                    'Chaque ressource doit disposer d’un fichier DAM traité.',
-                    'ressources',
-                );
-            }
-        }
+        $this->photosSoumission(TypeFiche::Restaurant, $photos);
+        $this->ressourcesTraitees($value->ressources());
     }
 
     /** @return array<string, ?int> */
@@ -329,39 +288,5 @@ final class ValidRestaurantValidator extends ConstraintValidator
             'capaciteBanquet' => $value->capaciteBanquet(),
             'capaciteCocktail' => $value->capaciteCocktail(),
         ];
-    }
-
-    /** @return list<RessourceLieu> */
-    private function photos(Restaurant $value): array
-    {
-        return array_values(
-            array_filter(
-                $value->ressources()->toArray(),
-                static fn (RessourceLieu $resource): bool => NatureRessource::Photo === $resource->nature(),
-            ),
-        );
-    }
-
-    private function validUrl(?string $value, int $maximum, string $path): void
-    {
-        $this->maximumLength($value, $maximum, $path);
-        if (null !== $value && false === filter_var($value, FILTER_VALIDATE_URL)) {
-            $this->violation('Cette valeur doit être une URL valide.', $path);
-        }
-    }
-
-    private function maximumLength(?string $value, int $maximum, string $path): void
-    {
-        if (null !== $value && mb_strlen($value) > $maximum) {
-            $this->violation(
-                sprintf('Cette valeur ne doit pas dépasser %d caractères.', $maximum),
-                $path,
-            );
-        }
-    }
-
-    private function violation(string $message, string $path): void
-    {
-        $this->context->buildViolation($message)->atPath($path)->addViolation();
     }
 }

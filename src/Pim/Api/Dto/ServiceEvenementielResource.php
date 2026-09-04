@@ -16,9 +16,9 @@ use ApiPlatform\Metadata\Put;
 use ApiPlatform\OpenApi\Model\Operation;
 use ApiPlatform\OpenApi\Model\Parameter;
 use ApiPlatform\OpenApi\Model\RequestBody;
-use App\Pim\Api\State\ServiceEvenementielCollectionProvider;
-use App\Pim\Api\State\ServiceEvenementielItemProvider;
-use App\Pim\Api\State\ServiceEvenementielMediaProcessor;
+use App\Pim\Api\State\FicheCollectionProvider;
+use App\Pim\Api\State\FicheItemProvider;
+use App\Pim\Api\State\FicheMediaProcessor;
 use App\Pim\Api\State\ServiceEvenementielPatchProcessor;
 
 #[ApiResource(
@@ -29,7 +29,7 @@ use App\Pim\Api\State\ServiceEvenementielPatchProcessor;
         new GetCollection(
             uriTemplate: '/v1/services',
             paginationEnabled: false,
-            provider: ServiceEvenementielCollectionProvider::class,
+            provider: FicheCollectionProvider::class,
             openapi: new Operation(
                 tags: ['Services événementiels'],
                 summary: 'Lister les services',
@@ -63,7 +63,7 @@ use App\Pim\Api\State\ServiceEvenementielPatchProcessor;
         new Get(
             uriTemplate: '/v1/services/{id}',
             requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
-            provider: ServiceEvenementielItemProvider::class,
+            provider: FicheItemProvider::class,
             openapi: new Operation(
                 tags: ['Services événementiels'],
                 summary: 'Consulter un service',
@@ -105,10 +105,10 @@ use App\Pim\Api\State\ServiceEvenementielPatchProcessor;
                 ),
             ],
             input: false,
-            output: LieuMediaResource::class,
+            output: FicheMediaResource::class,
             deserialize: false,
             read: false,
-            processor: ServiceEvenementielMediaProcessor::class,
+            processor: FicheMediaProcessor::class,
             openapi: new Operation(
                 tags: ['Médias Services événementiels'],
                 summary: 'Téléverser une photo',
@@ -164,7 +164,7 @@ use App\Pim\Api\State\ServiceEvenementielPatchProcessor;
             input: MediaOrderInput::class,
             output: self::class,
             read: false,
-            processor: ServiceEvenementielMediaProcessor::class,
+            processor: FicheMediaProcessor::class,
             openapi: new Operation(
                 tags: ['Médias Services événementiels'],
                 summary: 'Réordonner les photos',
@@ -195,10 +195,10 @@ use App\Pim\Api\State\ServiceEvenementielPatchProcessor;
                 ),
             ],
             input: MediaPatchInput::class,
-            output: LieuMediaResource::class,
+            output: FicheMediaResource::class,
             inputFormats: ['json' => ['application/merge-patch+json']],
             read: false,
-            processor: ServiceEvenementielMediaProcessor::class,
+            processor: FicheMediaProcessor::class,
             openapi: new Operation(
                 tags: ['Médias Services événementiels'],
                 summary: 'Modifier une photo',
@@ -229,10 +229,10 @@ use App\Pim\Api\State\ServiceEvenementielPatchProcessor;
                 ),
             ],
             input: false,
-            output: LieuMediaResource::class,
+            output: FicheMediaResource::class,
             deserialize: false,
             read: false,
-            processor: ServiceEvenementielMediaProcessor::class,
+            processor: FicheMediaProcessor::class,
             openapi: new Operation(
                 tags: ['Médias Services événementiels'],
                 summary: 'Remplacer le fichier photo',
@@ -283,7 +283,7 @@ use App\Pim\Api\State\ServiceEvenementielPatchProcessor;
             input: false,
             output: false,
             read: false,
-            processor: ServiceEvenementielMediaProcessor::class,
+            processor: FicheMediaProcessor::class,
             openapi: new Operation(
                 tags: ['Médias Services événementiels'],
                 summary: 'Supprimer une photo',
@@ -310,7 +310,7 @@ final readonly class ServiceEvenementielResource
      * @param list<string>             $regionsMobiles
      * @param list<string>             $departementsMobiles
      * @param array<string,mixed>|null $localisation
-     * @param list<LieuMediaResource>  $medias
+     * @param list<FicheMediaResource> $medias
      */
     public function __construct(
         #[ApiProperty(identifier: true)] public string $id,

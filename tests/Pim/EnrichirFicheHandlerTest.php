@@ -52,7 +52,7 @@ final class EnrichirFicheHandlerTest extends KernelTestCase
 
     private function reglerGates(string $valeur): void
     {
-        foreach (['sirene.verif_statut_actif', 'geoapify.enrichissement_places', 'datatourisme.import_actif', 'wikidata.detection_chaine'] as $nom) {
+        foreach (['sirene.verif_statut_actif', 'geoapify.enrichissement_places', 'datatourisme.import_actif', 'wikidata.detection_chaine', 'atout_france.classement_actif'] as $nom) {
             ParametreEnBase::fixer($this->connection, $nom, $valeur);
         }
         self::getContainer()->get(ParametreProvider::class)->invalider();

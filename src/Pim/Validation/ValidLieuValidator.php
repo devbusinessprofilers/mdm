@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace App\Pim\Validation;
 
-use App\Dam\Enum\MediaStatus;
 use App\Dam\Repository\MediaAssetRepository;
 use App\Pim\Entity\Lieu\Lieu;
-use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Enum\NatureRessource;
 use App\Pim\Enum\TypeAccesLieu;
 use App\Pim\Enum\TypeFiche;
@@ -16,15 +14,15 @@ use App\Pim\Lov\LieuLovCatalog;
 use App\Pim\Service\LieuObligationsPublication;
 use App\Pim\Service\PhotoObligations;
 use Symfony\Component\Validator\Constraint;
-use Symfony\Component\Validator\ConstraintValidator;
 
-final class ValidLieuValidator extends ConstraintValidator
+final class ValidLieuValidator extends FicheValidateur
 {
     public function __construct(
-        private readonly MediaAssetRepository $assets,
-        private readonly PhotoObligations $photoObligations,
+        MediaAssetRepository $assets,
+        PhotoObligations $photoObligations,
         private readonly LieuObligationsPublication $obligations,
     ) {
+        parent::__construct($assets, $photoObligations);
     }
 
     public function validate(mixed $value, Constraint $constraint): void
@@ -32,7 +30,7 @@ final class ValidLieuValidator extends ConstraintValidator
         if (!$value instanceof Lieu) {
             return;
         }
-        $this->length(
+        $this->longueurMax(
             $value->label(),
             Lieu::LABEL_MAX_LENGTH,
             'label',
@@ -47,51 +45,34 @@ final class ValidLieuValidator extends ConstraintValidator
                 'label',
             );
         }
-        $this->length(
+        $this->longueurMax(
             $value->generaleWebsiteUrl(),
             Lieu::WEBSITE_MAX_LENGTH,
             'generaleWebsiteUrl',
             'Le site officiel ne peut pas dépasser 100 caractères.',
         );
-        if (
-            null !== $value->generaleWebsiteUrl()
-            && false ===
-                filter_var($value->generaleWebsiteUrl(), FILTER_VALIDATE_URL)
-        ) {
-            $this->violation(
-                'Le site officiel doit être une URL valide.',
-                'generaleWebsiteUrl',
-            );
-        }
-        if (
-            null !== $value->generaleYoutube()
-            && !LienVideoValidator::estHebergeurAutorise($value->generaleYoutube())
-        ) {
-            $this->violation(
-                'Le lien vidéo doit pointer vers un hébergeur vidéo reconnu.',
-                'generaleYoutube',
-            );
-        }
-        $this->length(
+        $this->url($value->generaleWebsiteUrl(), 'generaleWebsiteUrl', 'Le site officiel doit être une URL valide.');
+        $this->lienVideo($value->generaleYoutube(), 'generaleYoutube');
+        $this->longueurMax(
             $value->descGenerale(),
             Lieu::DESCRIPTION_MAX_LENGTH,
             'accessibiliteDescription.descGenerale',
             'La description générale ne peut pas dépasser 1 000 caractères.',
         );
-        $this->length(
+        $this->longueurMax(
             $value->chambreDescGenerale(),
             Lieu::DESCRIPTION_MAX_LENGTH,
             'hebergement.chambreDescGenerale',
             'La description de l’hébergement ne peut pas dépasser 1 000 caractères.',
         );
-        $this->length(
+        $this->longueurMax(
             $value->pmrDetails(),
             Lieu::PMR_DETAILS_MAX_LENGTH,
             'accessibiliteDescription.pmrDetails',
             'Les détails PMR ne peuvent pas dépasser 150 caractères.',
         );
         foreach (['atout1', 'atout2', 'atout3', 'atout4', 'atout5'] as $field) {
-            $this->length(
+            $this->longueurMax(
                 $value->{$field}(),
                 Lieu::ATOUT_MAX_LENGTH,
                 'accessibiliteDescription.'.$field,
@@ -102,13 +83,7 @@ final class ValidLieuValidator extends ConstraintValidator
         $this->nonNegativeNumbers($value);
         $this->businessCollections($value);
         $this->resources($value);
-        if (
-            in_array(
-                $this->context->getGroup(),
-                [ValidationGroups::SUBMISSION],
-                true,
-            )
-        ) {
+        if ($this->enSoumission()) {
             $this->submission($value);
         }
     }
@@ -365,13 +340,7 @@ final class ValidLieuValidator extends ConstraintValidator
                 }
             }
         }
-        $maximum = $this->photoObligations->maximum(TypeFiche::Lieu);
-        if (count($photos) > $maximum) {
-            $this->violation(
-                sprintf('Un lieu ne peut pas contenir plus de %d photos.', $maximum),
-                'ressources',
-            );
-        }
+        $this->plafondPhotos(TypeFiche::Lieu, $photos, 'Un lieu ne peut pas contenir plus de %d photos.');
     }
 
     private function submission(Lieu $lieu): void
@@ -390,55 +359,7 @@ final class ValidLieuValidator extends ConstraintValidator
                 $chemin,
             );
         }
-        $photos = array_values(
-            array_filter(
-                $lieu->ressources()->toArray(),
-                static fn (
-                    RessourceLieu $resource,
-                ): bool => NatureRessource::Photo === $resource->nature(),
-            ),
-        );
-        // La principale étant la première photo de l'ordre, la soumission
-        // exige toujours au moins une photo même si le minimum est surchargé à 0.
-        $minimum = max(1, $this->photoObligations->minimum(TypeFiche::Lieu));
-        $maximum = $this->photoObligations->maximum(TypeFiche::Lieu);
-        if (count($photos) < $minimum || count($photos) > $maximum) {
-            $this->violation(
-                sprintf('La soumission exige entre %d et %d photos.', $minimum, $maximum),
-                'ressources',
-            );
-        }
-        foreach ($lieu->ressources() as $resource) {
-            $asset =
-                '' === $resource->damAssetId()
-                    ? null
-                    : $this->assets->find($resource->damAssetId());
-            if (
-                null === $asset
-                || MediaStatus::Processed !== $asset->status()
-            ) {
-                $this->violation(
-                    'Chaque ressource doit posséder un fichier DAM valide et traité.',
-                    'ressources',
-                );
-                break;
-            }
-        }
-    }
-
-    private function length(
-        ?string $value,
-        int $max,
-        string $path,
-        string $message,
-    ): void {
-        if (null !== $value && mb_strlen($value) > $max) {
-            $this->violation($message, $path);
-        }
-    }
-
-    private function violation(string $message, string $path): void
-    {
-        $this->context->buildViolation($message)->atPath($path)->addViolation();
+        $this->photosSoumission(TypeFiche::Lieu, $this->photos($lieu->ressources()));
+        $this->ressourcesTraitees($lieu->ressources());
     }
 }

@@ -4,53 +4,26 @@ declare(strict_types=1);
 
 namespace App\Pim\Validation;
 
-use App\Dam\Enum\MediaStatus;
-use App\Dam\Repository\MediaAssetRepository;
 use App\Pim\Entity\Activite\Activite;
-use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Enum\ModeInterventionActivite;
 use App\Pim\Enum\NatureRessource;
 use App\Pim\Enum\TypeFiche;
 use App\Pim\Enum\TypeOffreActivite;
 use App\Pim\Lov\ActiviteLovCatalog;
-use App\Pim\Service\PhotoObligations;
 use Symfony\Component\Validator\Constraint;
-use Symfony\Component\Validator\ConstraintValidator;
 
-final class ValidActiviteValidator extends ConstraintValidator
+final class ValidActiviteValidator extends FicheValidateur
 {
-    public function __construct(
-        private readonly MediaAssetRepository $assets,
-        private readonly PhotoObligations $photoObligations,
-    ) {
-    }
-
     public function validate(mixed $value, Constraint $constraint): void
     {
         if (!$value instanceof Activite) {
             return;
         }
-        $this->maxLength($value->label(), 255, 'label');
-        $this->maxLength($value->youtubeUrl(), 255, 'youtubeUrl');
-        if (
-            null !== $value->youtubeUrl()
-            && false === filter_var($value->youtubeUrl(), FILTER_VALIDATE_URL)
-        ) {
-            $this->violation(
-                'Le lien vidéo doit être une URL valide.',
-                'youtubeUrl',
-            );
-        } elseif (
-            null !== $value->youtubeUrl()
-            && !LienVideoValidator::estHebergeurAutorise($value->youtubeUrl())
-        ) {
-            $this->violation(
-                'Le lien vidéo doit pointer vers un hébergeur vidéo reconnu.',
-                'youtubeUrl',
-            );
-        }
+        $this->longueurMax($value->label(), 255, 'label');
+        $this->longueurMax($value->youtubeUrl(), 255, 'youtubeUrl');
+        $this->lienVideo($value->youtubeUrl(), 'youtubeUrl');
         foreach ($value->plus() as $index => $plus) {
-            $this->maxLength($plus, 255, sprintf('plus[%d]', $index));
+            $this->longueurMax($plus, 255, sprintf('plus[%d]', $index));
         }
         foreach (
             [
@@ -60,7 +33,7 @@ final class ValidActiviteValidator extends ConstraintValidator
             ] as $items
         ) {
             foreach ($items as $item) {
-                $this->maxLength($item, 255, 'rayonAction');
+                $this->longueurMax($item, 255, 'rayonAction');
             }
         }
         $this->range($value->participantsMin(), 'participantsMin');
@@ -114,11 +87,7 @@ final class ValidActiviteValidator extends ConstraintValidator
                 );
             }
             if (
-                in_array(
-                    $this->context->getGroup(),
-                    [ValidationGroups::SUBMISSION],
-                    true,
-                )
+                $this->enSoumission()
                 && (null === $offer->nom()
                     || null === $offer->prix()
                     || null === $offer->participantsMin()
@@ -159,13 +128,7 @@ final class ValidActiviteValidator extends ConstraintValidator
                 );
             }
         }
-        $maximum = $this->photoObligations->maximum(TypeFiche::Activite);
-        if (count($photos) > $maximum) {
-            $this->violation(
-                sprintf('Une activité ne peut pas contenir plus de %d photos.', $maximum),
-                'ressources',
-            );
-        }
+        $this->plafondPhotos(TypeFiche::Activite, $photos, 'Une activité ne peut pas contenir plus de %d photos.');
         foreach ($value->sousThematiques() as $sousThematique) {
             try {
                 $parent = ActiviteLovCatalog::parentOf($sousThematique);
@@ -181,7 +144,7 @@ final class ValidActiviteValidator extends ConstraintValidator
                 break;
             }
         }
-        if (ValidationGroups::SUBMISSION === $this->context->getGroup()) {
+        if ($this->enSoumission()) {
             $this->submission($value);
         }
     }
@@ -277,40 +240,8 @@ final class ValidActiviteValidator extends ConstraintValidator
                 'dureeMinMinutes',
             );
         }
-        $photos = array_values(
-            array_filter(
-                $value->ressources()->toArray(),
-                static fn (
-                    RessourceLieu $resource,
-                ): bool => NatureRessource::Photo === $resource->nature(),
-            ),
-        );
-        // La principale étant la première photo de l'ordre, la soumission
-        // exige toujours au moins une photo même si le minimum est surchargé à 0.
-        $minimum = max(1, $this->photoObligations->minimum(TypeFiche::Activite));
-        $maximum = $this->photoObligations->maximum(TypeFiche::Activite);
-        if (count($photos) < $minimum || count($photos) > $maximum) {
-            $this->violation(
-                sprintf('La soumission exige entre %d et %d photos.', $minimum, $maximum),
-                'ressources',
-            );
-        }
-        foreach ($value->ressources() as $resource) {
-            $asset =
-                '' === $resource->damAssetId()
-                    ? null
-                    : $this->assets->find($resource->damAssetId());
-            if (
-                null === $asset
-                || MediaStatus::Processed !== $asset->status()
-            ) {
-                $this->violation(
-                    'Chaque ressource doit posséder un fichier DAM valide et traité.',
-                    'ressources',
-                );
-                break;
-            }
-        }
+        $this->photosSoumission(TypeFiche::Activite, $this->photos($value->ressources()));
+        $this->ressourcesTraitees($value->ressources());
     }
 
     private function range(?int $value, string $path): void
@@ -328,20 +259,5 @@ final class ValidActiviteValidator extends ConstraintValidator
                 $path,
             );
         }
-    }
-
-    private function maxLength(?string $value, int $max, string $path): void
-    {
-        if (null !== $value && mb_strlen($value) > $max) {
-            $this->violation(
-                sprintf('La valeur ne peut pas dépasser %d caractères.', $max),
-                $path,
-            );
-        }
-    }
-
-    private function violation(string $message, string $path): void
-    {
-        $this->context->buildViolation($message)->atPath($path)->addViolation();
     }
 }

@@ -7,17 +7,15 @@ namespace App\Pim\Api;
 use App\Dam\Service\FichePhotoPresenter;
 use App\Pim\Api\Dto\ActiviteListResource;
 use App\Pim\Api\Dto\ActiviteResource;
-use App\Pim\Api\Dto\LieuMediaResource;
+use App\Pim\Api\Dto\FicheMediaResource;
 use App\Pim\Entity\Activite\Activite;
-use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\ReadModel\ActiviteListItem;
-use App\Shared\Service\ParametreProviderInterface;
 
 final readonly class ActiviteApiMapper
 {
     public function __construct(
         private FichePhotoPresenter $photos,
-        private ParametreProviderInterface $parametres,
+        private MediaResourceFactory $medias,
     ) {
     }
 
@@ -107,64 +105,9 @@ final readonly class ActiviteApiMapper
                 ),
             ),
             array_map(
-                fn (array $photo): LieuMediaResource => $this->photo($a, $photo),
+                fn (array $photo): FicheMediaResource => $this->medias->depuisPresentation($f->version(), $photo),
                 $this->photos->photos($f),
             ),
-        );
-    }
-
-    public function media(
-        Activite $a,
-        RessourceLieu $resource,
-    ): LieuMediaResource {
-        foreach ($this->photos->photos($a->fiche()) as $photo) {
-            if ($photo['resource'] === $resource) {
-                return $this->photo($a, $photo);
-            }
-        }
-
-        return new LieuMediaResource(
-            $resource->id(),
-            $a->fiche()->version(),
-            $resource->damAssetId(),
-            $resource->usage(),
-            $resource->legende(),
-            $resource->position(),
-            $resource->rightsGranted(),
-            $resource->source(),
-            $resource->crop(),
-            $resource->rotation(),
-            null,
-            null,
-            [],
-            $resource->keywords(),
-            $resource->rightsExpiresAt()?->format('Y-m-d'),
-            $resource->rightsValidity(alerteJours: $this->parametres->int('dam.delai_alerte_droits_jours'))->value,
-        );
-    }
-
-    /** @param array{resource:RessourceLieu,asset:\App\Dam\Entity\MediaAsset|null,url:string|null,thumbnail_url:string|null,variants:list<array{name:string,width:int,height:int,url:string|null}>} $photo */
-    private function photo(Activite $a, array $photo): LieuMediaResource
-    {
-        $r = $photo['resource'];
-
-        return new LieuMediaResource(
-            $r->id(),
-            $a->fiche()->version(),
-            $r->damAssetId(),
-            $r->usage(),
-            $r->legende(),
-            $r->position(),
-            $r->rightsGranted(),
-            $r->source(),
-            $r->crop(),
-            $r->rotation(),
-            $photo['asset']?->status()->value,
-            $photo['url'],
-            $photo['variants'],
-            $r->keywords(),
-            $r->rightsExpiresAt()?->format('Y-m-d'),
-            $r->rightsValidity(alerteJours: $this->parametres->int('dam.delai_alerte_droits_jours'))->value,
         );
     }
 

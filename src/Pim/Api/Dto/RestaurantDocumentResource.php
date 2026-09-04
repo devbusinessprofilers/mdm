@@ -14,11 +14,12 @@ use ApiPlatform\Metadata\Post;
 use ApiPlatform\OpenApi\Model\Operation;
 use ApiPlatform\OpenApi\Model\Parameter;
 use ApiPlatform\OpenApi\Model\RequestBody;
-use App\Pim\Api\State\RestaurantDocumentProcessor;
-use App\Pim\Api\State\RestaurantDocumentProvider;
+use App\Pim\Api\State\FicheDocumentProcessor;
+use App\Pim\Api\State\FicheDocumentProvider;
 
 #[ApiResource(
     shortName: 'RestaurantDocument',
+    formats: ['json' => ['application/json']],
     operations: [
         new GetCollection(
             uriTemplate: '/v1/restaurants/{restaurantId}/documents',
@@ -28,9 +29,9 @@ use App\Pim\Api\State\RestaurantDocumentProvider;
                     identifiers: ['id'],
                 ),
             ],
-            output: LieuDocumentResource::class,
+            output: FicheDocumentResource::class,
             paginationEnabled: false,
-            provider: RestaurantDocumentProvider::class,
+            provider: FicheDocumentProvider::class,
             openapi: new Operation(
                 tags: ['Documents Restaurants'],
                 summary: 'Lister les documents visibles',
@@ -43,10 +44,10 @@ use App\Pim\Api\State\RestaurantDocumentProvider;
                 'restaurantId' => new Link(fromClass: RestaurantResource::class, identifiers: ['id']),
             ],
             input: false,
-            output: LieuDocumentResource::class,
+            output: FicheDocumentResource::class,
             deserialize: false,
             read: false,
-            processor: RestaurantDocumentProcessor::class,
+            processor: FicheDocumentProcessor::class,
             openapi: new Operation(
                 tags: ['Documents Restaurants'],
                 summary: 'Déposer un menu, un plan de salle ou un support commercial',
@@ -81,9 +82,10 @@ use App\Pim\Api\State\RestaurantDocumentProvider;
                 'documentId' => new Link(fromClass: self::class, identifiers: ['id']),
             ],
             input: DocumentPatchInput::class,
-            output: LieuDocumentResource::class,
+            inputFormats: ['json' => ['application/merge-patch+json']],
+            output: FicheDocumentResource::class,
             read: false,
-            processor: RestaurantDocumentProcessor::class,
+            processor: FicheDocumentProcessor::class,
             openapi: new Operation(
                 tags: ['Documents Restaurants'],
                 summary: 'Modifier les métadonnées',
@@ -98,10 +100,10 @@ use App\Pim\Api\State\RestaurantDocumentProvider;
                 'documentId' => new Link(fromClass: self::class, identifiers: ['id']),
             ],
             input: false,
-            output: LieuDocumentResource::class,
+            output: FicheDocumentResource::class,
             deserialize: false,
             read: false,
-            processor: RestaurantDocumentProcessor::class,
+            processor: FicheDocumentProcessor::class,
             openapi: new Operation(
                 tags: ['Documents Restaurants'],
                 summary: 'Remplacer le fichier',
@@ -121,9 +123,9 @@ use App\Pim\Api\State\RestaurantDocumentProvider;
                 'documentId' => new Link(fromClass: self::class, identifiers: ['id']),
             ],
             input: DocumentPublicationInput::class,
-            output: LieuDocumentResource::class,
+            output: FicheDocumentResource::class,
             read: false,
-            processor: RestaurantDocumentProcessor::class,
+            processor: FicheDocumentProcessor::class,
             openapi: new Operation(
                 tags: ['Documents Restaurants'],
                 summary: 'Publier ou dépublier',
@@ -139,7 +141,7 @@ use App\Pim\Api\State\RestaurantDocumentProvider;
             ],
             output: false,
             read: false,
-            processor: RestaurantDocumentProcessor::class,
+            processor: FicheDocumentProcessor::class,
             openapi: new Operation(
                 tags: ['Documents Restaurants'],
                 summary: 'Supprimer un document',
@@ -153,8 +155,8 @@ use App\Pim\Api\State\RestaurantDocumentProvider;
                 'restaurantId' => new Link(fromClass: RestaurantResource::class, identifiers: ['id']),
                 'documentId' => new Link(fromClass: self::class, identifiers: ['id']),
             ],
-            output: LieuDocumentResource::class,
-            provider: RestaurantDocumentProvider::class,
+            output: FicheDocumentResource::class,
+            provider: FicheDocumentProvider::class,
             openapi: new Operation(
                 tags: ['Documents Restaurants'],
                 summary: 'Obtenir une URL temporaire',

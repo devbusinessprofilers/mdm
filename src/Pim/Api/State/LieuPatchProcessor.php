@@ -20,7 +20,7 @@ use Symfony\Component\HttpFoundation\Response;
 final readonly class LieuPatchProcessor implements ProcessorInterface
 {
     public function __construct(
-        private LieuApiState $state,
+        private FicheApiState $state,
         private LieuApiMapper $mapper,
         private FormFactoryInterface $forms,
         private ExternalScopeGuard $scopes,

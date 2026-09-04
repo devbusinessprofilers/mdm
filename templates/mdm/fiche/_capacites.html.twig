@@ -29,8 +29,8 @@
    déjà rattachés à chaque salle. #}
 {% set entite = widget.parent.vars.data %}
 {% set config_fichiers = {
-    'lieu': { url: path('app_pim_lieu_document_upload', {id: entite.id}), formulaire: 'document_upload' },
-    'restaurant': { url: path('app_pim_restaurant_document_upload', {id: entite.id}), formulaire: 'restaurant_document_upload' },
+    'lieu': { url: path('app_pim_fiche_document_upload', {gamme: 'lieux', id: entite.id}), formulaire: 'document_upload' },
+    'restaurant': { url: path('app_pim_fiche_document_upload', {gamme: 'restaurants', id: entite.id}), formulaire: 'restaurant_document_upload' },
 }[gamme]|default(null) %}
 {% set avec_fichiers = config_fichiers is not null %}
 {% set fichiers_par_salle = {} %}

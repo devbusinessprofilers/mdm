@@ -40,6 +40,14 @@ final readonly class FicheRouteResolver
             : $this->urlGenerator->generate('app_mdm_fiche_gamme', ['gamme' => $type->slug()] + $params);
     }
 
+    /** La liste du référentiel de la gamme (retour après une suppression). */
+    public function listeUrl(TypeFiche $type): string
+    {
+        return TypeFiche::Lieu === $type
+            ? $this->urlGenerator->generate('app_mdm_lieux')
+            : $this->urlGenerator->generate('app_mdm_referentiel_gamme', ['gamme' => $type->slug()]);
+    }
+
     public function historyUrl(TypeFiche $type, string $id): string
     {
         return $this->urlGenerator->generate(match ($type) {

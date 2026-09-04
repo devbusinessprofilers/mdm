@@ -238,6 +238,26 @@ class RessourceLieu
         ];
     }
 
+    /** Salle rattachée, celle du Lieu ou celle du Restaurant. */
+    public function salleRattachee(): Salle|RestaurantSalle|null
+    {
+        return $this->salle ?? $this->restaurantSalle;
+    }
+
+    /** Rattache la ressource à une salle de Lieu ou de Restaurant (null : détache). */
+    public function rattacherSalle(Salle|RestaurantSalle|null $salle): void
+    {
+        if ($salle instanceof RestaurantSalle) {
+            $this->changeRestaurantSalle($salle);
+
+            return;
+        }
+        if (null === $salle) {
+            $this->restaurantSalle = null;
+        }
+        $this->changeSalle($salle);
+    }
+
     public function changeSalle(?Salle $value): void
     {
         $this->salle = $value;

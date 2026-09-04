@@ -73,9 +73,9 @@
 
 {% if not creation %}
     <div data-controller="lieu-media"
-         data-lieu-media-upload-url-value="{{ path('app_pim_lieu_photo_upload', {id: lieu.id}) }}"
-         data-lieu-media-order-url-value="{{ path('app_pim_lieu_photo_order', {id: lieu.id}) }}"
-         data-lieu-media-modales-url-value="{{ path('app_pim_lieu_media_modales', {id: lieu.id}) }}"
+         data-lieu-media-upload-url-value="{{ path('app_pim_fiche_photo_upload', {gamme: 'lieux', id: lieu.id}) }}"
+         data-lieu-media-order-url-value="{{ path('app_pim_fiche_photo_order', {gamme: 'lieux', id: lieu.id}) }}"
+         data-lieu-media-modales-url-value="{{ path('app_pim_fiche_photo_modales', {gamme: 'lieux', id: lieu.id}) }}"
          data-lieu-media-token-value="{{ media_csrf_token }}">
 
         {# ---- Photos : toute la carte est la zone de dépôt (maquette). ---- #}
@@ -110,8 +110,8 @@
                 media_upload_form: media_upload_form,
                 photo_usages: photo_usages,
                 salles: salles,
-                routes: { categorie: 'app_pim_lieu_photo_categorie', delete: 'app_pim_lieu_photo_delete' },
-                route_params: { id: lieu.id },
+                routes: { categorie: 'app_pim_fiche_photo_categorie', delete: 'app_pim_fiche_photo_delete' },
+                route_params: { gamme: 'lieux', id: lieu.id },
             } only %}
 
             {# Paramètres de chaque photo : une modale par vignette, dans

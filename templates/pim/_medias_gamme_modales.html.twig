@@ -1,5 +1,5 @@
 {# Modales de paramètres des photos d'une fiche de gamme — même mécanique que
-   la fiche Lieu (_medias_modales) : servies par app_pim_gamme_photo_modales et
+   la fiche Lieu (_medias_modales) : servies par app_pim_fiche_photo_modales et
    préchargées en arrière-plan par le contrôleur lieu-media, le clic sur une
    vignette reste instantané. Pas d'association de salle hors fiche Lieu.
    Variables : gamme, entite_id, photos, image_min_width, image_min_height. #}
@@ -31,15 +31,15 @@
                 <div class="flex justify-end pt-1">{{ form_widget(photo.metadata_form.save, {attr: {'data-full': false, 'data-size': 'md'}}) }}</div>
             {{ form_end(photo.metadata_form) }}
             <div class="flex flex-wrap items-center gap-3 pt-2 border-t border-neutral-200">
-                <button type="button" data-action="lieu-media#enrich" data-url="{{ path('app_pim_gamme_photo_enrich', {gamme: gamme, id: entite_id, resourceId: photo.resource.id}) }}"
+                <button type="button" data-action="lieu-media#enrich" data-url="{{ path('app_pim_fiche_photo_enrich', {gamme: gamme, id: entite_id, resourceId: photo.resource.id}) }}"
                         class="cursor-pointer"><twig:Typography variant="body-sm" textColor="primary-3" bold element="span">Enrichir l’image (IA)</twig:Typography></button>
-                <button type="button" data-action="lieu-media#retry" data-url="{{ path('app_pim_gamme_photo_retry', {gamme: gamme, id: entite_id, resourceId: photo.resource.id}) }}"
+                <button type="button" data-action="lieu-media#retry" data-url="{{ path('app_pim_fiche_photo_retry', {gamme: gamme, id: entite_id, resourceId: photo.resource.id}) }}"
                         class="cursor-pointer"><twig:Typography variant="body-sm" textColor="primary-3" bold element="span">Relancer le traitement</twig:Typography></button>
                 {{ form_start(photo.replace_form, {attr: {class: 'button-label'}}) }}
                     {{ form_widget(photo.replace_form.photo, {attr: {'data-url': photo.replace_form.vars.action}}) }}
                 {{ form_end(photo.replace_form) }}
                 <span class="flex-1"></span>
-                <button type="button" data-action="lieu-media#remove" data-url="{{ path('app_pim_gamme_photo_delete', {gamme: gamme, id: entite_id, resourceId: photo.resource.id}) }}"
+                <button type="button" data-action="lieu-media#remove" data-url="{{ path('app_pim_fiche_photo_delete', {gamme: gamme, id: entite_id, resourceId: photo.resource.id}) }}"
                         class="cursor-pointer"><twig:Typography variant="body-sm" textColor="error" bold element="span">Supprimer la photo</twig:Typography></button>
             </div>
         </div>

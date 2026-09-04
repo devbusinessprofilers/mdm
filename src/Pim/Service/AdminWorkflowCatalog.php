@@ -86,7 +86,7 @@ final class AdminWorkflowCatalog
                 'domain' => 'Ops',
                 'summary' => 'La migration, l’application web et les workers DAM doivent connaître le même contrat.',
                 'steps' => [
-                    'Exécuter app:lieux:validate, app:activites:validate, app:restaurants:validate et app:services:validate avant la migration et corriger explicitement toute donnée incompatible.',
+                    'Exécuter app:fiches:validate (toutes gammes, ou --gamme=lieux|restaurants|activites|services) avant la migration et corriger explicitement toute donnée incompatible.',
                     'Appliquer doctrine:migrations:migrate, puis redémarrer worker-dam, worker-pim et worker-outbox.',
                     'Planifier les pHash historiques avec app:dam:analyze-media, puis traiter les alertes dans /admin/dam.',
                     'Contrôler doctrine:schema:validate et la supervision de l’outbox et des files ci-dessus.',

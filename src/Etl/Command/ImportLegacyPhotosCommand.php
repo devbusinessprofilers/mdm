@@ -6,7 +6,6 @@ namespace App\Etl\Command;
 
 use App\Dam\Entity\MediaAsset;
 use App\Dam\Service\FicheImageUploader;
-use App\Dam\Service\LieuImageUploader;
 use App\Dam\Service\MediaProcessingService;
 use App\Etl\Entity\LegacyPhotoImport;
 use App\Etl\Enum\LegacyPhotoStatus;
@@ -50,7 +49,6 @@ final class ImportLegacyPhotosCommand extends Command
         private readonly LegacyFicheMappingRepository $mappings,
         private readonly LegacyPhotoImportRepository $photos,
         private readonly LegacyPhotoCatalog $catalog,
-        private readonly LieuImageUploader $lieuUploader,
         private readonly FicheImageUploader $ficheUploader,
         private readonly MediaProcessingService $processing,
         private readonly PrivateObjectStorageInterface $privateStorage,
@@ -317,7 +315,6 @@ final class ImportLegacyPhotosCommand extends Command
             LegacyPhotoCatalog::GAMME_RESTAURANT => Restaurant::class,
             default => null,
         };
-        $uploader = null !== $ficheEntityClass ? $this->ficheUploader : $this->lieuUploader;
 
         $asset = null;
         $resource = null;
@@ -339,7 +336,7 @@ final class ImportLegacyPhotosCommand extends Command
                 if (!$lieu instanceof Lieu) {
                     throw new \RuntimeException('Lieu introuvable pour ce syspad.');
                 }
-                $asset = $this->lieuUploader->upload($file, $lieu);
+                $asset = $this->ficheUploader->upload($file, $lieu->fiche());
                 $fiche = $lieu->fiche();
                 $owner = $lieu;
             }
@@ -361,11 +358,11 @@ final class ImportLegacyPhotosCommand extends Command
         } catch (\DomainException $exception) {
             ++$counters['invalides'];
             $photo->markFailed(LegacyPhotoStatus::Invalid, $exception->getMessage());
-            $this->rollbackAsset($uploader, $asset, $resource, $owner, $fiche, $flushed);
+            $this->rollbackAsset($asset, $resource, $owner, $fiche, $flushed);
         } catch (\Throwable $exception) {
             ++$counters['erreurs'];
             $photo->markFailed(LegacyPhotoStatus::Error, $exception->getMessage());
-            $this->rollbackAsset($uploader, $asset, $resource, $owner, $fiche, $flushed);
+            $this->rollbackAsset($asset, $resource, $owner, $fiche, $flushed);
         }
     }
 
@@ -376,7 +373,6 @@ final class ImportLegacyPhotosCommand extends Command
      * crée un doublon au rejeu.
      */
     private function rollbackAsset(
-        LieuImageUploader|FicheImageUploader $uploader,
         ?MediaAsset $asset,
         ?RessourceLieu $resource,
         Activite|ServiceEvenementiel|Restaurant|Lieu|null $owner,
@@ -395,7 +391,7 @@ final class ImportLegacyPhotosCommand extends Command
                 $this->entityManager->flush();
             });
         }
-        $uploader->delete($asset);
+        $this->ficheUploader->delete($asset);
     }
 
     /**

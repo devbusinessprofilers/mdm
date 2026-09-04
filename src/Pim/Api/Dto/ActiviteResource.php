@@ -16,10 +16,10 @@ use ApiPlatform\Metadata\Put;
 use ApiPlatform\OpenApi\Model\Operation;
 use ApiPlatform\OpenApi\Model\Parameter;
 use ApiPlatform\OpenApi\Model\RequestBody;
-use App\Pim\Api\State\ActiviteCollectionProvider;
-use App\Pim\Api\State\ActiviteItemProvider;
-use App\Pim\Api\State\ActiviteMediaProcessor;
 use App\Pim\Api\State\ActivitePatchProcessor;
+use App\Pim\Api\State\FicheCollectionProvider;
+use App\Pim\Api\State\FicheItemProvider;
+use App\Pim\Api\State\FicheMediaProcessor;
 
 #[ApiResource(
     shortName: 'Activite',
@@ -29,7 +29,7 @@ use App\Pim\Api\State\ActivitePatchProcessor;
         new GetCollection(
             uriTemplate: '/v1/activites',
             paginationEnabled: false,
-            provider: ActiviteCollectionProvider::class,
+            provider: FicheCollectionProvider::class,
             openapi: new Operation(
                 tags: ['Activités'],
                 summary: 'Lister les activités',
@@ -63,7 +63,7 @@ use App\Pim\Api\State\ActivitePatchProcessor;
         new Get(
             uriTemplate: '/v1/activites/{id}',
             requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'],
-            provider: ActiviteItemProvider::class,
+            provider: FicheItemProvider::class,
             openapi: new Operation(
                 tags: ['Activités'],
                 summary: 'Consulter une activité',
@@ -105,10 +105,10 @@ use App\Pim\Api\State\ActivitePatchProcessor;
                 ),
             ],
             input: false,
-            output: LieuMediaResource::class,
+            output: FicheMediaResource::class,
             deserialize: false,
             read: false,
-            processor: ActiviteMediaProcessor::class,
+            processor: FicheMediaProcessor::class,
             openapi: new Operation(
                 tags: ['Médias Activités'],
                 summary: 'Téléverser une photo',
@@ -164,7 +164,7 @@ use App\Pim\Api\State\ActivitePatchProcessor;
             input: MediaOrderInput::class,
             output: self::class,
             read: false,
-            processor: ActiviteMediaProcessor::class,
+            processor: FicheMediaProcessor::class,
             openapi: new Operation(
                 tags: ['Médias Activités'],
                 summary: 'Réordonner les photos',
@@ -195,10 +195,10 @@ use App\Pim\Api\State\ActivitePatchProcessor;
                 ),
             ],
             input: MediaPatchInput::class,
-            output: LieuMediaResource::class,
+            output: FicheMediaResource::class,
             inputFormats: ['json' => ['application/merge-patch+json']],
             read: false,
-            processor: ActiviteMediaProcessor::class,
+            processor: FicheMediaProcessor::class,
             openapi: new Operation(
                 tags: ['Médias Activités'],
                 summary: 'Modifier une photo',
@@ -229,10 +229,10 @@ use App\Pim\Api\State\ActivitePatchProcessor;
                 ),
             ],
             input: false,
-            output: LieuMediaResource::class,
+            output: FicheMediaResource::class,
             deserialize: false,
             read: false,
-            processor: ActiviteMediaProcessor::class,
+            processor: FicheMediaProcessor::class,
             openapi: new Operation(
                 tags: ['Médias Activités'],
                 summary: 'Remplacer le fichier photo',
@@ -283,7 +283,7 @@ use App\Pim\Api\State\ActivitePatchProcessor;
             input: false,
             output: false,
             read: false,
-            processor: ActiviteMediaProcessor::class,
+            processor: FicheMediaProcessor::class,
             openapi: new Operation(
                 tags: ['Médias Activités'],
                 summary: 'Supprimer une photo',
@@ -317,7 +317,7 @@ final readonly class ActiviteResource
      * @param list<string>                         $objectifs
      * @param list<string>                         $plus
      * @param list<array<string,mixed>>            $offres
-     * @param list<LieuMediaResource>              $medias
+     * @param list<FicheMediaResource>             $medias
      */
     public function __construct(
         #[ApiProperty(identifier: true)] public string $id,
