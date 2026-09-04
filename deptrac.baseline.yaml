@@ -75,15 +75,17 @@ deptrac:
       - App\Vision\Service\OpenAiProviderException
     App\Pim\Service\EspaceTravailEcran:
       - App\Dashboard\Repository\QualiteRepository
-    App\Pim\Service\FicheEditeurEcran:
+    App\Pim\Service\Editeur\EditeurEntete:
       - App\Audit\Repository\AuditRevisionRepository
       - App\Etl\Repository\FicheSalesforceRepository
-      - App\Etl\Service\MarketplaceRetrait
       - App\Etl\Service\SalesforceCsvSettings
+    App\Pim\Service\Editeur\EditeurExtraction:
       - App\Ocr\Form\OcrReviewFormFactory
       - App\Ocr\Form\OcrUploadType
       - App\Ocr\Repository\DocumentExtractionRepository
       - App\Ocr\Service\OcrCategoryPolicy
+    App\Pim\Service\FicheEditeurEcran:
+      - App\Etl\Service\MarketplaceRetrait
     App\Pim\Service\FicheWorkflowManager:
       - App\Etl\Service\PhotoPublicationGuard
     App\Pim\Service\LovAdminManager:

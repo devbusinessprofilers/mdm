@@ -7,7 +7,7 @@ namespace App\Pim\Controller;
 use App\Pim\Entity\Fiche;
 use App\Pim\Form\AdresseSuggestionFormFactory;
 use App\Pim\Service\AdresseSuggestionArbitre;
-use App\Pim\Service\FicheEditeurEcran;
+use App\Pim\Service\Editeur\EditeurNavigation;
 use App\Pim\Service\FicheSectionsCatalogue;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -34,7 +34,7 @@ final class FicheAdresseSuggestionController extends AbstractController
         string $decision,
         AdresseSuggestionFormFactory $forms,
         AdresseSuggestionArbitre $arbitre,
-        FicheEditeurEcran $ecran,
+        EditeurNavigation $navigation,
     ): RedirectResponse {
         $this->denyAccessUnlessGranted('ROLE_BP_VALIDATOR');
         $filtre = $request->query->get('adresses');
@@ -43,7 +43,7 @@ final class FicheAdresseSuggestionController extends AbstractController
                 'onglet' => 'conflits',
                 'adresses' => in_array($filtre, ['avec', 'sans'], true) ? $filtre : null,
             ]))
-            : $ecran->urlSection(
+            : $navigation->urlSection(
                 $fiche->type(),
                 $fiche->idString(),
                 FicheSectionsCatalogue::indexBloc($fiche->type(), 'suggestions_attente'),

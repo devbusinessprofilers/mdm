@@ -8,8 +8,8 @@ use App\Account\Service\CurrentActorProvider;
 use App\Pim\Entity\FicheSuggestion;
 use App\Pim\Form\EnrichissementSuggestionFormFactory;
 use App\Pim\Repository\FicheSuggestionRepository;
+use App\Pim\Service\Editeur\EditeurNavigation;
 use App\Pim\Service\EnrichissementSuggestionArbitre;
-use App\Pim\Service\FicheEditeurEcran;
 use App\Pim\Service\FicheSectionsCatalogue;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -38,7 +38,7 @@ final class EnrichissementSuggestionController extends AbstractController
         EnrichissementSuggestionFormFactory $forms,
         EnrichissementSuggestionArbitre $arbitre,
         CurrentActorProvider $actor,
-        FicheEditeurEcran $ecran,
+        EditeurNavigation $navigation,
     ): RedirectResponse {
         $this->denyAccessUnlessGranted('ROLE_BP_VALIDATOR');
         $suggestion = $suggestions->find(\Symfony\Component\Uid\Ulid::fromString($id));
@@ -48,7 +48,7 @@ final class EnrichissementSuggestionController extends AbstractController
         $fiche = $suggestion->fiche();
         $retour = new RedirectResponse('qualite' === $request->query->get('retour')
             ? $this->generateUrl('app_mdm_qualite', ['onglet' => 'conflits'])
-            : $ecran->urlSection(
+            : $navigation->urlSection(
                 $fiche->type(),
                 $fiche->idString(),
                 FicheSectionsCatalogue::indexBloc($fiche->type(), 'suggestions_attente'),

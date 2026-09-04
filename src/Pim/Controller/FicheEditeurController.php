@@ -5,11 +5,10 @@ declare(strict_types=1);
 namespace App\Pim\Controller;
 
 use App\Account\Security\FicheVoter;
-use App\Pim\Entity\Activite\Activite;
-use App\Pim\Entity\Restaurant\Restaurant;
-use App\Pim\Entity\Service\ServiceEvenementiel;
+use App\Pim\Service\Editeur\EditeurSitesDiffusion;
 use App\Pim\Service\FicheDetailResolver;
 use App\Pim\Service\FicheEditeurEcran;
+use App\Pim\Service\FicheRouteResolver;
 use App\Pim\Service\FicheSectionsCatalogue;
 use App\Pim\Service\SoumissionSection;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -18,53 +17,50 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
 /**
- * Éditeur de fiche par sections pour les gammes Restaurant, Activité et
- * Service événementiel — même patron que l'éditeur Lieu. La gamme Traiteur
- * (plateaux repas) est hors de cette version du MDM.
+ * Éditeur de fiche par sections, toutes gammes, à l'emplacement de la
+ * maquette front. Le rail des sections porte la complétude par section ;
+ * chaque section enregistre ses seuls champs (soumission partielle du
+ * formulaire complet de la gamme). Les deux noms de routes historiques sont
+ * conservés : app_mdm_fiche_lieu et app_mdm_fiche_gamme.
  */
-final class FicheGammeController extends AbstractController
+final class FicheEditeurController extends AbstractController
 {
-    #[Route(
-        '/referentiel/{gamme}/fiche/{id}',
-        name: 'app_mdm_fiche_gamme',
-        requirements: ['gamme' => 'restaurants|activites|services', 'id' => '[0-9A-HJKMNP-TV-Z]{26}'],
-        methods: ['GET', 'POST'],
-    ),]
+    #[Route('/referentiel/lieux/fiche/{id}', name: 'app_mdm_fiche_lieu', defaults: ['gamme' => 'lieux'], requirements: ['id' => '[0-9A-HJKMNP-TV-Z]{26}'], methods: ['GET', 'POST'])]
+    #[Route('/referentiel/{gamme}/fiche/{id}', name: 'app_mdm_fiche_gamme', requirements: ['gamme' => 'restaurants|activites|services', 'id' => '[0-9A-HJKMNP-TV-Z]{26}'], methods: ['GET', 'POST'])]
     public function __invoke(
         Request $request,
         string $gamme,
         string $id,
         FicheDetailResolver $details,
         FicheEditeurEcran $ecran,
+        EditeurSitesDiffusion $sites,
+        FicheRouteResolver $routes,
     ): Response {
-        $entite = $details->parSlugEtId($gamme, $id);
-        if (!$entite instanceof Restaurant && !$entite instanceof Activite && !$entite instanceof ServiceEvenementiel) {
-            throw $this->createNotFoundException('Fiche introuvable.');
-        }
-        $type = $entite->fiche()->type();
+        $entite = $details->parSlugEtId($gamme, $id) ?? throw $this->createNotFoundException('Fiche introuvable.');
         $this->denyAccessUnlessGranted(FicheVoter::VIEW, $entite->fiche());
+        $type = $entite->fiche()->type();
         $section = FicheSectionsCatalogue::indexValide($type, $request->query->getInt('section'));
 
         $form = $ecran->formSection($entite);
-        $formSites = $ecran->formSites($entite);
-        $formSitesGeo = $ecran->formSitesGeo($entite);
+        $formSites = $sites->formSites($entite);
+        $formSitesGeo = $sites->formSitesGeo($entite);
         $resultat = SoumissionSection::nonSoumise();
         if ($request->isMethod('POST')) {
             $this->denyAccessUnlessGranted(FicheVoter::EDIT, $entite->fiche());
             if ($request->request->has('sites_geo')) {
-                $ajoutes = $ecran->soumettreSitesGeo($request, $entite, $formSitesGeo);
+                $ajoutes = $sites->soumettreSitesGeo($request, $entite, $formSitesGeo);
                 if (null !== $ajoutes) {
                     $this->addFlash('success', $ajoutes > 0
                         ? sprintf('%d site(s) ajouté(s) selon les critères géographiques.', $ajoutes)
                         : 'Aucun site à ajouter : la fiche est déjà couverte.');
 
-                    return $this->redirectToRoute('app_mdm_fiche_gamme', ['gamme' => $gamme, 'id' => $id, 'section' => $section]);
+                    return $this->redirect($routes->editUrl($type, $id, $section));
                 }
             } elseif ($request->request->has('sites_diffusion')) {
-                if ($ecran->soumettreSites($request, $entite, $formSites)) {
+                if ($sites->soumettreSites($request, $entite, $formSites)) {
                     $this->addFlash('success', 'Diffusion mise à jour.');
 
-                    return $this->redirectToRoute('app_mdm_fiche_gamme', ['gamme' => $gamme, 'id' => $id, 'section' => $section]);
+                    return $this->redirect($routes->editUrl($type, $id, $section));
                 }
             } else {
                 $resultat = $ecran->soumettreSection($request, $entite, $form);
@@ -74,7 +70,7 @@ final class FicheGammeController extends AbstractController
                         $this->addFlash('warning', 'Fiche dépubliée : champs obligatoires vidés — '.implode(', ', $resultat->champsVides).'.');
                     }
 
-                    return $this->redirectToRoute('app_mdm_fiche_gamme', ['gamme' => $gamme, 'id' => $id, 'section' => $section]);
+                    return $this->redirect($routes->editUrl($type, $id, $section));
                 }
             }
         }

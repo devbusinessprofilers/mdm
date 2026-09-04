@@ -9,7 +9,7 @@ use App\Account\Service\CurrentActorProvider;
 use App\Ocr\Repository\DocumentExtractionRepository;
 use App\Ocr\Service\OcrActions;
 use App\Pim\Entity\Fiche;
-use App\Pim\Service\FicheEditeurEcran;
+use App\Pim\Service\Editeur\EditeurNavigation;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -30,7 +30,7 @@ final class FicheExtractionController extends AbstractController
         Fiche $fiche,
         OcrActions $actions,
         CurrentActorProvider $actor,
-        FicheEditeurEcran $ecran,
+        EditeurNavigation $navigation,
     ): RedirectResponse {
         if (!$actions->actif()) {
             throw $this->createNotFoundException();
@@ -39,7 +39,7 @@ final class FicheExtractionController extends AbstractController
         [$type, $message] = $actions->deposer($request, $fiche, $actor->id());
         $this->addFlash($type, $message);
 
-        return new RedirectResponse($ecran->urlExtraction($fiche->type(), $fiche->idString()));
+        return new RedirectResponse($navigation->urlExtraction($fiche->type(), $fiche->idString()));
     }
 
     #[Route('/{extractionId}/valider', name: 'valider', requirements: ['extractionId' => '[0-9A-HJKMNP-TV-Z]{26}'], methods: ['POST'])]
@@ -50,7 +50,7 @@ final class FicheExtractionController extends AbstractController
         DocumentExtractionRepository $extractions,
         OcrActions $actions,
         CurrentActorProvider $actor,
-        FicheEditeurEcran $ecran,
+        EditeurNavigation $navigation,
     ): RedirectResponse {
         if (!$actions->actif()) {
             throw $this->createNotFoundException();
@@ -62,6 +62,6 @@ final class FicheExtractionController extends AbstractController
             $this->addFlash($type, $message);
         }
 
-        return new RedirectResponse($ecran->urlExtraction($fiche->type(), $fiche->idString()));
+        return new RedirectResponse($navigation->urlExtraction($fiche->type(), $fiche->idString()));
     }
 }

@@ -6,8 +6,8 @@ namespace App\Pim\Controller;
 
 use App\Account\Security\FicheVoter;
 use App\Pim\Entity\Lieu\Lieu;
+use App\Pim\Service\Editeur\EditeurMedias;
 use App\Pim\Service\FicheDetailResolver;
-use App\Pim\Service\FicheEditeurEcran;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -21,7 +21,7 @@ use Symfony\Component\Routing\Attribute\Route;
 final class FicheMediasBlocController extends AbstractController
 {
     #[Route('/referentiel/{gamme}/fiche/{id}/medias/bloc', name: 'app_pim_fiche_medias_bloc', methods: ['GET'], requirements: ['gamme' => 'lieux|restaurants|activites|services', 'id' => '[0-9A-HJKMNP-TV-Z]{26}'])]
-    public function __invoke(string $gamme, string $id, FicheDetailResolver $resolver, FicheEditeurEcran $ecran): Response
+    public function __invoke(string $gamme, string $id, FicheDetailResolver $resolver, EditeurMedias $medias): Response
     {
         $entite = $resolver->parSlugEtId($gamme, $id) ?? throw $this->createNotFoundException('Fiche introuvable.');
         // Même visibilité que la page fiche, qui rend ce bloc d'office ; les
@@ -30,7 +30,7 @@ final class FicheMediasBlocController extends AbstractController
 
         return $this->render(
             $entite instanceof Lieu ? 'pim/lieu/_medias.html.twig' : 'pim/_medias_gamme.html.twig',
-            $ecran->medias($entite)['vars'],
+            $medias->variables($entite)['vars'],
         );
     }
 }
