@@ -138,6 +138,9 @@ final class CompletenessFieldCatalog
             'CAP_BANQUET' => ['Capacité banquet', 'capaciteBanquet'], 'CAP_COCKTAIL' => ['Capacité cocktail', 'capaciteCocktail'],
             'SERVICE_RESTAURANT' => ['Services', 'services'], 'EQUIPEMENT_RESTAURANT' => ['Équipements', 'equipements'],
             'ENGAGEMENT_RSE_RESTAURANT' => ['Engagements RSE', 'engagementsRse'], 'GENERALE_YOUTUBE' => ['Lien vidéo', 'youtubeUrl'],
+            'TARIF_DEJEUNER_ASSIS' => ['Tarif déjeuner assis', 'tarifDejeunerAssis'], 'TARIF_COCKTAIL_DEJEUNATOIRE' => ['Tarif cocktail déjeunatoire', 'tarifCocktailDejeunatoire'],
+            'TARIF_DINER_ASSIS' => ['Tarif dîner assis', 'tarifDinerAssis'], 'TARIF_COCKTAIL_DINATOIRE' => ['Tarif cocktail dînatoire', 'tarifCocktailDinatoire'],
+            'TARIF_FORFAIT_VIN' => ['Tarif forfait vin', 'tarifForfaitVin'], 'TARIF_FORFAIT_ALCOOL' => ['Tarif forfait alcool', 'tarifForfaitAlcool'],
             'PHOTO' => ['Photos', 'ressources'],
         ];
         foreach ($map as $code => [$label, $path]) {

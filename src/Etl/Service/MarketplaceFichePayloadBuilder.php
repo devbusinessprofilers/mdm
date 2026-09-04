@@ -325,6 +325,15 @@ final readonly class MarketplaceFichePayloadBuilder
                 'banquet' => $restaurant->capaciteBanquet(),
                 'cocktail' => $restaurant->capaciteCocktail(),
             ],
+            // Montants HT « à partir de » (chaînes décimales), null = non proposé.
+            'tarifs' => [
+                'dejeunerAssis' => $restaurant->tarifDejeunerAssis(),
+                'cocktailDejeunatoire' => $restaurant->tarifCocktailDejeunatoire(),
+                'dinerAssis' => $restaurant->tarifDinerAssis(),
+                'cocktailDinatoire' => $restaurant->tarifCocktailDinatoire(),
+                'forfaitVin' => $restaurant->tarifForfaitVin(),
+                'forfaitAlcool' => $restaurant->tarifForfaitAlcool(),
+            ],
             'typesRestaurant' => $restaurant->typesRestaurant(),
             'typesCuisine' => $restaurant->typesCuisine(),
             'specificitesAlimentaires' => $restaurant->specificitesAlimentaires(),

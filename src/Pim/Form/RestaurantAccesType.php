@@ -26,7 +26,7 @@ final class RestaurantAccesType extends AbstractType
                     'Gare' => TypeAccesRestaurant::Gare,
                     'Métro' => TypeAccesRestaurant::Metro,
                     'Tramway' => TypeAccesRestaurant::Tramway,
-                    'Grande ville proche' => TypeAccesRestaurant::GrandeVille,
+                    'Accès par la route' => TypeAccesRestaurant::GrandeVille,
                 ],
                 'choice_value' => static fn (
                     ?TypeAccesRestaurant $type,

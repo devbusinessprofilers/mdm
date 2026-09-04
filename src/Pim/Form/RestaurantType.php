@@ -10,6 +10,7 @@ use App\Pim\Entity\Localisation;
 use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Enum\NatureRessource;
 use App\Pim\Lov\RestaurantLovCatalog;
+use App\Pim\Service\RestaurantObligationsPublication;
 use App\Pim\Validation\LienVideo;
 use App\Pim\Validation\ValidationGroups;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -20,11 +21,14 @@ use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\CollectionType;
 use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
+use Symfony\Component\Form\Extension\Core\Type\MoneyType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Extension\Core\Type\UrlType;
 use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\Form\FormInterface;
+use Symfony\Component\Form\FormView;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\All;
 use Symfony\Component\Validator\Constraints\File;
@@ -32,6 +36,16 @@ use Symfony\Component\Validator\Constraints\File;
 /** @extends AbstractType<Restaurant> */
 final class RestaurantType extends AbstractType
 {
+    /** Les six tarifs de l'onglet Tarifs : nom => [libellé maquette, setter]. */
+    public const TARIFS = [
+        'tarifDejeunerAssis' => ['Déjeuner assis', 'changeTarifDejeunerAssis'],
+        'tarifCocktailDejeunatoire' => ['Cocktail déjeunatoire 10 pers', 'changeTarifCocktailDejeunatoire'],
+        'tarifDinerAssis' => ['Diner assis', 'changeTarifDinerAssis'],
+        'tarifCocktailDinatoire' => ['Cocktail dînatoire 10 pers', 'changeTarifCocktailDinatoire'],
+        'tarifForfaitVin' => ['Forfait vin', 'changeTarifForfaitVin'],
+        'tarifForfaitAlcool' => ['Forfait alcool (apéritif digestif)', 'changeTarifForfaitAlcool'],
+    ];
+
     public function __construct(private readonly FicheSalesforceRepository $salesforce)
     {
     }
@@ -74,28 +88,28 @@ final class RestaurantType extends AbstractType
         $this->selection(
             $builder,
             'typesRestaurant',
-            'Types de restaurant',
+            'Typologie de restaurant',
             'TYPE_RESTAURANT',
             'changeTypesRestaurant',
         );
         $this->selection(
             $builder,
             'typesCuisine',
-            'Types de cuisine',
+            'Type de cuisine',
             'TYPE_CUISINE',
             'changeTypesCuisine',
         );
         $this->selection(
             $builder,
             'specificitesAlimentaires',
-            'Spécificités alimentaires',
+            'Spécificité alimentaire',
             'SPECIFICITE_ALIMENTAIRE',
             'changeSpecificitesAlimentaires',
         );
         $this->selection(
             $builder,
             'typesEvenement',
-            "Types d'événements",
+            "Type d'évènement",
             'TYPE_EVENEMENT',
             'changeTypesEvenement',
         );
@@ -105,25 +119,25 @@ final class RestaurantType extends AbstractType
                 'siteOfficiel',
                 UrlType::class,
                 $this->field(
-                    'Site web officiel',
+                    'Site officiel',
                     'siteOfficiel',
                     'changeSiteOfficiel',
                 ),
             )
             ->add(
                 'privatisationTotale',
-                ChoiceType::class,
-                $this->booleanField(
-                    'Privatisation totale',
+                OuiNonType::class,
+                $this->field(
+                    'Privatisation totale du restaurant',
                     'privatisationTotale',
                     'changePrivatisationTotale',
                 ),
             )
             ->add(
                 'privatisationPartielle',
-                ChoiceType::class,
-                $this->booleanField(
-                    'Privatisation partielle',
+                OuiNonType::class,
+                $this->field(
+                    'Privatisation partielle (salon, étage, terrasse)',
                     'privatisationPartielle',
                     'changePrivatisationPartielle',
                 ),
@@ -179,6 +193,7 @@ final class RestaurantType extends AbstractType
             ])
             ->add('acces', CollectionType::class, [
                 'label' => 'Accès',
+                'help' => 'Ajouter jusqu\'à 3 options par catégorie de transports. Au moins un aéroport et une gare sont requis pour la publication.',
                 'entry_type' => RestaurantAccesType::class,
                 'allow_add' => true,
                 'allow_delete' => true,
@@ -187,8 +202,8 @@ final class RestaurantType extends AbstractType
             ] + $this->collectionAccessors('acces', 'addAcces', 'removeAcces'))
             ->add(
                 'accesPmr',
-                ChoiceType::class,
-                $this->booleanField(
+                OuiNonType::class,
+                $this->field(
                     'Accès PMR',
                     'accesPmr',
                     'changeAccesPmr',
@@ -196,9 +211,9 @@ final class RestaurantType extends AbstractType
             )
             ->add(
                 'toilettesPmr',
-                ChoiceType::class,
-                $this->booleanField(
-                    'Toilettes adaptées PMR',
+                OuiNonType::class,
+                $this->field(
+                    'Toilettes adaptées aux PMR',
                     'toilettesPmr',
                     'changeToilettesPmr',
                 ),
@@ -214,30 +229,30 @@ final class RestaurantType extends AbstractType
             )
             ->add(
                 'atouts',
-                StringListType::class,
+                ListeIndexeeType::class,
                 $this->field(
                     'Atouts',
                     'atouts',
                     'changeAtouts',
-                ) + ['help' => 'Cinq maximum, un par ligne.'],
+                ) + ['label' => false, 'nombre' => 5, 'libelle_format' => 'Les plus / atouts %d', 'entry_attr' => ['maxlength' => 255]],
             );
 
         foreach (
             [
                 'capaciteAssiseMax' => [
-                    'Capacité maximale assise',
+                    'Capacité assise maximum du restaurant (couverts)',
                     'changeCapaciteAssiseMax',
                 ],
                 'capaciteEspacePrivatisable' => [
-                    "Capacité de l'espace privatisable",
+                    'Capacité en salle privatisable ou espace clos',
                     'changeCapaciteEspacePrivatisable',
                 ],
                 'capaciteBanquet' => [
-                    'Capacité maximale banquet',
+                    'Capacité banquet (repas assis festif)',
                     'changeCapaciteBanquet',
                 ],
                 'capaciteCocktail' => [
-                    'Capacité maximale cocktail',
+                    'Capacité cocktail (maximum debout)',
                     'changeCapaciteCocktail',
                 ],
             ] as $name => [$label, $setter]
@@ -246,6 +261,16 @@ final class RestaurantType extends AbstractType
                 $name,
                 IntegerType::class,
                 $this->field($label, $name, $setter),
+            );
+        }
+
+        // Onglet Tarifs (maquette) : montants HT « à partir de », null =
+        // prestation non proposée (interrupteur du partial _tarifs_restaurant).
+        foreach (self::TARIFS as $name => [$label, $setter]) {
+            $builder->add(
+                $name,
+                MoneyType::class,
+                $this->field($label, $name, $setter) + ['currency' => 'EUR', 'input' => 'string', 'scale' => 2],
             );
         }
 
@@ -374,6 +399,19 @@ final class RestaurantType extends AbstractType
         ]);
     }
 
+    /**
+     * Astérisque permanent des champs bloquants à la soumission (marqueur
+     * `obligatoire` lu par le thème de l'éditeur, jamais l'option `required`).
+     *
+     * @param FormView             $view
+     * @param FormInterface<mixed> $form
+     * @param array<string, mixed> $options
+     */
+    public function finishView(FormView $view, FormInterface $form, array $options): void
+    {
+        RestaurantObligationsPublication::marquer($view);
+    }
+
     /** @param FormBuilderInterface<Restaurant|null> $builder */
     private function selection(
         FormBuilderInterface $builder,
@@ -392,21 +430,6 @@ final class RestaurantType extends AbstractType
                 'expanded' => $expanded,
             ],
         );
-    }
-
-    /** @return array<string, mixed> */
-    private function booleanField(
-        string $label,
-        string $getter,
-        string $setter,
-    ): array {
-        return $this->field($label, $getter, $setter) + [
-            'choices' => ['Oui' => true, 'Non' => false],
-            'placeholder' => 'Non renseigné',
-            'choice_value' => static fn (
-                ?bool $value,
-            ): string => null === $value ? '' : ($value ? '1' : '0'),
-        ];
     }
 
     /** @return array<string, mixed> */

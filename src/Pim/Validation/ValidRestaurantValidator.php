@@ -58,6 +58,12 @@ final class ValidRestaurantValidator extends ConstraintValidator
             }
         }
 
+        foreach ($value->tarifs() as $path => $tarif) {
+            if (null !== $tarif && (!is_numeric($tarif) || (float) $tarif < 0)) {
+                $this->violation('Le tarif doit être un montant positif ou nul.', $path);
+            }
+        }
+
         $libellesJours = RestaurantLovCatalog::values('DISPO_JOUR_OUVERTURE');
         foreach ($value->horairesJours() ?? [] as $jour => $heures) {
             $ouverture = $heures['ouverture'] ?? null;
@@ -211,22 +217,6 @@ final class ValidRestaurantValidator extends ConstraintValidator
             if (null === $field || '' === $field) {
                 $this->violation(
                     'Ce champ est obligatoire avant soumission.',
-                    $path,
-                );
-            }
-        }
-
-        foreach (
-            [
-                'privatisationTotale' => $value->privatisationTotale(),
-                'privatisationPartielle' => $value->privatisationPartielle(),
-                'accesPmr' => $value->accesPmr(),
-                'toilettesPmr' => $value->toilettesPmr(),
-            ] as $path => $answer
-        ) {
-            if (null === $answer) {
-                $this->violation(
-                    'Une réponse Oui ou Non est obligatoire.',
                     $path,
                 );
             }

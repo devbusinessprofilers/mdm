@@ -122,6 +122,12 @@ final readonly class RestaurantApiMapper
                     $this->photo($restaurant, $photo),
                 $this->photos->photos($fiche),
             ),
+            $restaurant->tarifDejeunerAssis(),
+            $restaurant->tarifCocktailDejeunatoire(),
+            $restaurant->tarifDinerAssis(),
+            $restaurant->tarifCocktailDinatoire(),
+            $restaurant->tarifForfaitVin(),
+            $restaurant->tarifForfaitAlcool(),
         );
     }
 

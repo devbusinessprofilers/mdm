@@ -13,6 +13,7 @@ use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\Group;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\DomCrawler\Crawler;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 /** Listes et éditeurs par gamme (Restaurant, Activité, Service) sur le patron du Lieu. */
@@ -92,12 +93,15 @@ final class FicheGammeEditeurTest extends WebTestCase
         self::assertStringStartsWith('RES-', $crawler->filter('.page-description')->first()->text(null, true));
         // L'éditeur est la vue unique : un validateur y voit la suppression.
         self::assertSelectorExists('.danger-form');
-        // Section Médias & menus : galerie au design de la fiche Lieu —
-        // photos de la fiche et tuiles de documents.
-        $client->request('GET', '/referentiel/restaurants/fiche/'.$restaurant->id().'?section=7');
+        $this->assertEditeurRestaurantIsoMaquette($crawler);
+        // Section Médias : galerie au design de la fiche Lieu — photos de la
+        // fiche et tuiles de documents, onglet interne « Menus » (maquette).
+        $crawler = $client->request('GET', '/referentiel/restaurants/fiche/'.$restaurant->id().'?section=7');
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('main', 'Photos de la fiche');
         self::assertSelectorTextContains('main', 'Documents');
+        self::assertSelectorTextContains('main [role="tab"][data-media-tabs-onglet-param="plans"]', 'Menus');
+        self::assertGreaterThan(0, $crawler->filter('[data-onglet="plans"] input[name="restaurant[menus][]"]')->count(), 'La dropzone Menus vit dans l\'onglet interne Menus.');
         $crawler = $client->request('GET', '/referentiel/restaurants/fiche/'.$restaurant->id());
         $form = $crawler->filter('button[form="form-fiche"]')->form();
         $values = $form->getPhpValues();
@@ -184,6 +188,78 @@ final class FicheGammeEditeurTest extends WebTestCase
         self::assertSame('Plaquette 2026', $document['legende']);
         self::assertSame('Prestataire', $document['source']);
         self::assertSame(1, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM dam_media_asset'));
+    }
+
+    /**
+     * Onglets, cartes et champs du Restaurant dans l'ordre de la maquette
+     * portail prestataire (Correction FRONT Champs, 2026-09).
+     */
+    private function assertEditeurRestaurantIsoMaquette(Crawler $crawler): void
+    {
+        $rail = $crawler->filter('nav[aria-label="Sections de la fiche"] li')->each(static fn (Crawler $li): string => trim(preg_replace('/\s*\d+ %$/', '', $li->text(null, true)) ?? ''));
+        self::assertSame(
+            ['Informations générales', 'Localisation & accessibilité', 'Description', 'Capacités', 'Services & équipements', 'RSE', 'Tarifs', 'Médias', 'Booster ma visibilité', 'Utilisateurs', 'Templates de message'],
+            $rail,
+        );
+        self::assertStringNotContainsString('Classification', $crawler->filter('nav[aria-label="Sections de la fiche"]')->text());
+
+        // Cartes de chaque volet, dans l'ordre (titres h2 des sections de formulaire).
+        $cartes = static fn (int $volet): array => $crawler->filter(sprintf('#form-fiche section[data-volet="%d"] h2', $volet))->each(static fn (Crawler $h2): string => $h2->text(null, true));
+        self::assertSame(['Informations générales', 'Disponibilités'], $cartes(0));
+        self::assertSame(['Localisation', 'Accessibilité', 'Détails des accès PMR'], $cartes(1));
+        self::assertSame(['Description'], $cartes(2));
+        self::assertSame(['Capacité assise (Groupe)', 'Capacité cocktail / debout', 'Salles & espaces privatisables'], $cartes(3));
+        self::assertSame(['Tarifs'], $cartes(6));
+
+        // Libellés dans l'ordre maquette ; les champs de Classification ouvrent la carte.
+        $libelles = static fn (int $volet): array => $crawler->filter(sprintf('#form-fiche section[data-volet="%d"] label', $volet))
+            ->each(static fn (Crawler $l): string => preg_replace('/\s+/', ' ', $l->text(null, true)) ?? '');
+        $infos = $libelles(0);
+        self::assertSame('Nom du restaurant *', $infos[0]);
+        self::assertContains('Typologie de restaurant *', $infos);
+        self::assertContains("Type d'évènement *", $infos);
+        self::assertLessThan(array_search('Site officiel *', $infos, true), array_search('Typologie de restaurant *', $infos, true));
+        self::assertContains('Privatisation totale du restaurant', $infos);
+        self::assertContains('Privatisation partielle (salon, étage, terrasse)', $infos);
+        self::assertSame(
+            ['Pays *', 'Rue *', 'Code postal *', 'Ville *', 'Arrondissement', 'Département *', 'Région *', 'Latitude *', 'Longitude *', 'Code pays ISO'],
+            array_slice($libelles(1), 0, 10),
+        );
+        self::assertSame(['Description générale *', 'Les plus / atouts 1 *', 'Les plus / atouts 2 *', 'Les plus / atouts 3 *', 'Les plus / atouts 4 *', 'Les plus / atouts 5 *'], $libelles(2));
+        // Les quatre capacités, autrefois rendues nulle part, sont saisissables.
+        self::assertSame(
+            ['Capacité assise maximum du restaurant (couverts) *', 'Capacité en salle privatisable ou espace clos *', 'Capacité banquet (repas assis festif) *', 'Capacité cocktail (maximum debout) *'],
+            $libelles(3),
+        );
+        // Trois capacités assises + la capacité cocktail : quatre tiers de largeur.
+        self::assertCount(4, $crawler->filter('#form-fiche section[data-volet="3"] .w-\\[calc\\(33\\.333\\%-16px\\)\\]'));
+
+        // Oui / Non : radios, « Non » coché par défaut, plus de « Non renseigné ».
+        foreach (['privatisationTotale', 'privatisationPartielle', 'accesPmr', 'toilettesPmr'] as $champ) {
+            $radios = $crawler->filter(sprintf('input[type="radio"][name="restaurant[%s]"]', $champ));
+            self::assertCount(2, $radios, $champ);
+            self::assertSame(['1', '0'], $radios->each(static fn (Crawler $r): string => (string) $r->attr('value')));
+            self::assertSame([false, true], $radios->each(static fn (Crawler $r): bool => (bool) $r->getNode(0)?->hasAttribute('checked')), $champ);
+        }
+        self::assertStringNotContainsString('Non renseigné', $crawler->filter('#form-fiche')->text());
+        // Toilettes PMR conditionnées par Accès PMR = Oui.
+        $cible = $crawler->filter('[data-affichage-conditionnel-target="cible"][data-source="restaurant_accesPmr"]');
+        self::assertCount(1, $cible);
+        self::assertSame('1', $cible->attr('data-valeurs'));
+        self::assertGreaterThan(0, $cible->filter('input[name="restaurant[toilettesPmr]"]')->count());
+
+        // Onglet Tarifs : six lignes interrupteur + montant, conditionnées.
+        $tarifs = $crawler->filter('#form-fiche section[data-volet="6"] [data-tarif]');
+        self::assertSame(
+            ['tarifDejeunerAssis', 'tarifCocktailDejeunatoire', 'tarifDinerAssis', 'tarifCocktailDinatoire', 'tarifForfaitVin', 'tarifForfaitAlcool'],
+            $tarifs->each(static fn (Crawler $t): string => (string) $t->attr('data-tarif')),
+        );
+        self::assertSelectorTextContains('#form-fiche section[data-volet="6"]', 'Indiquez vos tarifs "à partir de"');
+        self::assertSelectorTextContains('#form-fiche section[data-volet="6"]', 'Entrée + plat + dessert + eau + café');
+        self::assertCount(6, $crawler->filter('#form-fiche section[data-volet="6"] [data-affichage-conditionnel-target="cible"][data-vider]'));
+        self::assertCount(6, $crawler->filter('#form-fiche section[data-volet="6"] input[name^="restaurant[tarif"]'));
+        // Accès par la route (ex-« Grande ville proche »).
+        self::assertStringContainsString('Accès par la route', (string) $crawler->filter('#form-fiche section[data-volet="1"] [data-form-collection-prototype-value]')->first()->attr('data-form-collection-prototype-value'));
     }
 
     private function clearTables(): void

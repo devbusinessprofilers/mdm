@@ -45,14 +45,14 @@ enum DocumentUsage: string
     }
 
     /**
-     * Onglet du volet Médias où le document s'affiche : plans, supports
-     * commerciaux, ou documents administratifs.
+     * Onglet du volet Médias où le document s'affiche : plans (« Menus »
+     * pour le Restaurant), supports commerciaux, ou documents administratifs.
      */
     public function ongletMedia(): string
     {
         return match ($this) {
-            self::RoomPlan, self::GeneralPlan => 'plans',
-            self::CommercialSupport, self::RestaurantMenu => 'supports',
+            self::RoomPlan, self::GeneralPlan, self::RestaurantMenu => 'plans',
+            self::CommercialSupport => 'supports',
             default => 'documents',
         };
     }

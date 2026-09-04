@@ -76,6 +76,22 @@ final class RestaurantApiTest extends WebTestCase
         self::assertResponseIsSuccessful();
         self::assertSame($restaurant->id(), $this->json($client)[0]['id']);
 
+        // Onglet Tarifs : montants décimaux nullables (les null sont omis de la
+        // réponse, comme les autres champs vides), exposés et modifiables.
+        self::assertNull($read['tarifDejeunerAssis'] ?? null);
+        $client->request(
+            'PATCH',
+            '/api/v1/restaurants/'.$restaurant->id(),
+            server: $this->headers(['HTTP_IF_MATCH' => (string) $read['version'], 'CONTENT_TYPE' => 'application/merge-patch+json']),
+            content: json_encode(['tarifDejeunerAssis' => '45.50', 'tarifForfaitVin' => null, 'atouts' => ['Terrasse', 'Cave'], 'privatisationTotale' => true], JSON_THROW_ON_ERROR),
+        );
+        self::assertResponseIsSuccessful();
+        $modifie = $this->json($client);
+        self::assertSame('45.50', $modifie['tarifDejeunerAssis']);
+        self::assertNull($modifie['tarifForfaitVin'] ?? null);
+        self::assertSame(['Terrasse', 'Cave'], $modifie['atouts']);
+        self::assertTrue($modifie['privatisationTotale']);
+
         $client->request('GET', '/api/v1/restaurants/'.$restaurant->id());
         self::assertResponseStatusCodeSame(401);
     }

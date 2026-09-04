@@ -32,10 +32,6 @@ final readonly class FicheExportColonnesCatalogue
             'horaireJour' => 'Informations générales',
         ],
         'restaurant' => [
-            'capaciteAssiseMax' => 'Salles & capacités',
-            'capaciteEspacePrivatisable' => 'Salles & capacités',
-            'capaciteBanquet' => 'Salles & capacités',
-            'capaciteCocktail' => 'Salles & capacités',
             'horaireJour' => 'Informations générales',
         ],
         'activite' => ['touteFrance' => 'Localisation & zone d\'intervention'],

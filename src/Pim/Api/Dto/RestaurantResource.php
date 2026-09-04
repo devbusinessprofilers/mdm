@@ -247,6 +247,13 @@ final readonly class RestaurantResource
         public array $engagementsRse,
         public ?string $youtubeUrl,
         public array $medias,
+        /** Onglet Tarifs : montants HT « à partir de » (chaîne décimale), null = non proposé. */
+        public ?string $tarifDejeunerAssis = null,
+        public ?string $tarifCocktailDejeunatoire = null,
+        public ?string $tarifDinerAssis = null,
+        public ?string $tarifCocktailDinatoire = null,
+        public ?string $tarifForfaitVin = null,
+        public ?string $tarifForfaitAlcool = null,
     ) {
     }
 }

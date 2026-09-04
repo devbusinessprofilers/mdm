@@ -22,7 +22,20 @@ use App\Pim\Lov\ServiceLovCatalog;
  */
 final class FicheSectionsCatalogue
 {
-    /** @return list<array{titre: string, champs: list<string>, proprietes: list<string>, blocs: list<string>, groupe?: string}> */
+    /** Les six montants « à partir de » de l'onglet Tarifs du Restaurant (ordre maquette). */
+    public const TARIFS_RESTAURANT = ['tarifDejeunerAssis', 'tarifCocktailDejeunatoire', 'tarifDinerAssis', 'tarifCocktailDinatoire', 'tarifForfaitVin', 'tarifForfaitAlcool'];
+
+    /**
+     * Une section peut porter des `cartes` (découpage visuel maquette) :
+     * chaque carte = {titre: ?string, champs: list<string> (feuilles pointées
+     * admises), colonnes: 2|3, pleins?: list<string>, bloc?: string,
+     * conditions?: array<string, array{source: string, valeurs: string, vider?: bool}>}.
+     * L'union des racines des champs des cartes est exactement `champs`
+     * (test FicheSectionsCatalogueTest) : les consommateurs à plat
+     * (champs omis, complétude, export) ne lisent jamais les cartes.
+     *
+     * @return list<array{titre: string, champs: list<string>, proprietes: list<string>, blocs: list<string>, groupe?: string, cartes?: list<array<string, mixed>>}>
+     */
     public static function pour(TypeFiche $type): array
     {
         return match ($type) {
@@ -200,31 +213,45 @@ final class FicheSectionsCatalogue
         ];
     }
 
-    /** @return list<array{titre: string, champs: list<string>, proprietes: list<string>, blocs: list<string>, groupe?: string}> */
+    /**
+     * Onglets de la maquette portail prestataire (2026-09) : les cartes
+     * déclarent le découpage visuel de chaque onglet (titre, champs dans
+     * l'ordre maquette, colonnes, bloc spécialisé). Les champs restent à plat
+     * dans `champs`/`proprietes` (complétude, export, champs omis).
+     *
+     * @return list<array{titre: string, champs: list<string>, proprietes: list<string>, blocs: list<string>, groupe?: string, cartes?: list<array<string, mixed>>}>
+     */
     private static function restaurant(): array
     {
         return [
             [
                 'titre' => 'Informations générales',
-                'champs' => ['label', 'lieu', 'siteOfficiel', 'businessPremium', 'partenaireBp', 'privatisationTotale', 'privatisationPartielle', 'horairesJours', 'joursOuverture', 'periodesFermeture'],
-                'proprietes' => ['label', 'lieu', 'siteOfficiel', 'privatisationTotale', 'privatisationPartielle', 'horairesJours', 'joursOuverture', 'periodesFermeture'],
-                'blocs' => ['disponibilites'],
+                'champs' => ['label', 'typesRestaurant', 'typesCuisine', 'specificitesAlimentaires', 'typesEvenement', 'siteOfficiel', 'lieu', 'businessPremium', 'partenaireBp', 'privatisationTotale', 'privatisationPartielle', 'joursOuverture', 'horairesJours', 'periodesFermeture'],
+                'proprietes' => ['label', 'typesRestaurant', 'typesCuisine', 'specificitesAlimentaires', 'typesEvenement', 'siteOfficiel', 'lieu', 'privatisationTotale', 'privatisationPartielle', 'joursOuverture', 'horairesJours', 'periodesFermeture'],
+                'blocs' => [],
                 'groupe' => 'ma_fiche',
+                'cartes' => [
+                    ['titre' => null, 'champs' => ['label', 'typesRestaurant', 'typesCuisine', 'specificitesAlimentaires', 'typesEvenement', 'siteOfficiel', 'lieu', 'businessPremium', 'partenaireBp'], 'colonnes' => 2],
+                    ['titre' => 'Disponibilités', 'champs' => ['privatisationTotale', 'privatisationPartielle', 'joursOuverture', 'horairesJours', 'periodesFermeture'], 'colonnes' => 2, 'bloc' => 'horaires'],
+                ],
             ],
             [
                 'titre' => 'Localisation & accessibilité',
-                // Accessibilité PMR avant la collection Accès (ordre maquette).
-                'champs' => ['localisation', 'accesPmr', 'toilettesPmr', 'acces'],
-                'proprietes' => ['localisation', 'accesPmr', 'toilettesPmr', 'acces'],
+                'champs' => ['localisation', 'acces', 'accesPmr', 'toilettesPmr'],
+                'proprietes' => ['localisation', 'acces', 'accesPmr', 'toilettesPmr'],
                 'blocs' => [],
                 'groupe' => 'ma_fiche',
-            ],
-            [
-                'titre' => 'Classification',
-                'champs' => ['typesRestaurant', 'typesCuisine', 'specificitesAlimentaires', 'typesEvenement'],
-                'proprietes' => ['typesRestaurant', 'typesCuisine', 'specificitesAlimentaires', 'typesEvenement'],
-                'blocs' => [],
-                'groupe' => 'ma_fiche',
+                'cartes' => [
+                    self::carteLocalisation(),
+                    ['titre' => 'Accessibilité', 'champs' => ['acces'], 'colonnes' => 2, 'bloc' => 'collection'],
+                    [
+                        'titre' => 'Détails des accès PMR',
+                        'champs' => ['accesPmr', 'toilettesPmr'],
+                        'colonnes' => 2,
+                        // Toilettes PMR : visible seulement si Accès PMR = Oui (maquette).
+                        'conditions' => ['toilettesPmr' => ['source' => 'accesPmr', 'valeurs' => '1', 'vider' => true]],
+                    ],
+                ],
             ],
             [
                 'titre' => 'Description',
@@ -232,15 +259,22 @@ final class FicheSectionsCatalogue
                 'proprietes' => ['descriptionGenerale', 'atouts'],
                 'blocs' => [],
                 'groupe' => 'ma_fiche',
+                'cartes' => [
+                    ['titre' => null, 'champs' => ['descriptionGenerale', 'atouts'], 'colonnes' => 2],
+                ],
             ],
             [
-                'titre' => 'Salles & capacités',
-                // La collection se rend en matrice maquette (mdm/fiche/_capacites),
-                // comme la section Réunion du Lieu.
-                'champs' => ['salles'],
-                'proprietes' => ['salles'],
-                'blocs' => ['capacites'],
+                'titre' => 'Capacités',
+                'champs' => ['capaciteAssiseMax', 'capaciteEspacePrivatisable', 'capaciteBanquet', 'capaciteCocktail', 'salles'],
+                'proprietes' => ['capaciteAssiseMax', 'capaciteEspacePrivatisable', 'capaciteBanquet', 'capaciteCocktail', 'salles'],
+                'blocs' => [],
                 'groupe' => 'ma_fiche',
+                'cartes' => [
+                    ['titre' => 'Capacité assise (Groupe)', 'champs' => ['capaciteAssiseMax', 'capaciteEspacePrivatisable', 'capaciteBanquet'], 'colonnes' => 3],
+                    ['titre' => 'Capacité cocktail / debout', 'champs' => ['capaciteCocktail'], 'colonnes' => 3],
+                    // Matrice des salles (mdm/fiche/_capacites), absente de la maquette, conservée.
+                    ['titre' => 'Salles & espaces privatisables', 'champs' => ['salles'], 'colonnes' => 2, 'bloc' => 'salles'],
+                ],
             ],
             [
                 'titre' => 'Services & équipements',
@@ -258,11 +292,21 @@ final class FicheSectionsCatalogue
                 'groupe' => 'ma_fiche',
             ],
             [
+                'titre' => 'Tarifs',
+                'champs' => self::TARIFS_RESTAURANT,
+                'proprietes' => self::TARIFS_RESTAURANT,
+                'blocs' => [],
+                'groupe' => 'ma_fiche',
+                'cartes' => [
+                    ['titre' => null, 'champs' => self::TARIFS_RESTAURANT, 'colonnes' => 2, 'bloc' => 'tarifs_restaurant'],
+                ],
+            ],
+            [
                 // Champs de dépôt (menus, supports, titre/source) et lien
                 // vidéo rendus dans les onglets internes du volet (shell
                 // _medias_onglets), rattachés au formulaire principal par
                 // form="form-fiche".
-                'titre' => 'Médias & menus',
+                'titre' => 'Médias',
                 'champs' => [],
                 'proprietes' => ['ressources', 'menus', 'youtubeUrl'],
                 'blocs' => ['medias'],
@@ -289,6 +333,29 @@ final class FicheSectionsCatalogue
                 'blocs' => ['templates'],
                 'groupe' => 'parametres',
             ],
+        ];
+    }
+
+    /**
+     * Carte « Localisation » commune aux gammes alignées sur la maquette :
+     * pays seul sur sa ligne, puis trois champs par ligne. Feuilles pointées
+     * de LocalisationType, dont l'ordre interne (partagé avec le Lieu) ne
+     * change pas.
+     *
+     * @return array<string, mixed>
+     */
+    public static function carteLocalisation(): array
+    {
+        return [
+            'titre' => 'Localisation',
+            'champs' => [
+                'localisation.pays',
+                'localisation.ruePostale', 'localisation.codePostal', 'localisation.ville',
+                'localisation.arrondissement', 'localisation.departement', 'localisation.region',
+                'localisation.latitude', 'localisation.longitude', 'localisation.countryCode',
+            ],
+            'colonnes' => 3,
+            'pleins' => ['localisation.pays'],
         ];
     }
 

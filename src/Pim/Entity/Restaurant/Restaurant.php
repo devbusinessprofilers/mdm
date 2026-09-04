@@ -96,6 +96,26 @@ class Restaurant implements AvecHorairesJours
     #[ORM\Column(nullable: true)]
     private ?int $capaciteCocktail = null;
 
+    // Onglet Tarifs (maquette portail) : six montants HT « à partir de »,
+    // null = prestation non proposée (interrupteur décoché).
+    #[ORM\Column(type: Types::DECIMAL, precision: 12, scale: 2, nullable: true)]
+    private ?string $tarifDejeunerAssis = null;
+
+    #[ORM\Column(type: Types::DECIMAL, precision: 12, scale: 2, nullable: true)]
+    private ?string $tarifCocktailDejeunatoire = null;
+
+    #[ORM\Column(type: Types::DECIMAL, precision: 12, scale: 2, nullable: true)]
+    private ?string $tarifDinerAssis = null;
+
+    #[ORM\Column(type: Types::DECIMAL, precision: 12, scale: 2, nullable: true)]
+    private ?string $tarifCocktailDinatoire = null;
+
+    #[ORM\Column(type: Types::DECIMAL, precision: 12, scale: 2, nullable: true)]
+    private ?string $tarifForfaitVin = null;
+
+    #[ORM\Column(type: Types::DECIMAL, precision: 12, scale: 2, nullable: true)]
+    private ?string $tarifForfaitAlcool = null;
+
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $youtubeUrl = null;
 
@@ -463,6 +483,79 @@ class Restaurant implements AvecHorairesJours
     public function changeCapaciteCocktail(?int $value): void
     {
         $this->set('capaciteCocktail', $value);
+    }
+
+    public function tarifDejeunerAssis(): ?string
+    {
+        return $this->tarifDejeunerAssis;
+    }
+
+    public function changeTarifDejeunerAssis(?string $value): void
+    {
+        $this->setString('tarifDejeunerAssis', $value);
+    }
+
+    public function tarifCocktailDejeunatoire(): ?string
+    {
+        return $this->tarifCocktailDejeunatoire;
+    }
+
+    public function changeTarifCocktailDejeunatoire(?string $value): void
+    {
+        $this->setString('tarifCocktailDejeunatoire', $value);
+    }
+
+    public function tarifDinerAssis(): ?string
+    {
+        return $this->tarifDinerAssis;
+    }
+
+    public function changeTarifDinerAssis(?string $value): void
+    {
+        $this->setString('tarifDinerAssis', $value);
+    }
+
+    public function tarifCocktailDinatoire(): ?string
+    {
+        return $this->tarifCocktailDinatoire;
+    }
+
+    public function changeTarifCocktailDinatoire(?string $value): void
+    {
+        $this->setString('tarifCocktailDinatoire', $value);
+    }
+
+    public function tarifForfaitVin(): ?string
+    {
+        return $this->tarifForfaitVin;
+    }
+
+    public function changeTarifForfaitVin(?string $value): void
+    {
+        $this->setString('tarifForfaitVin', $value);
+    }
+
+    public function tarifForfaitAlcool(): ?string
+    {
+        return $this->tarifForfaitAlcool;
+    }
+
+    public function changeTarifForfaitAlcool(?string $value): void
+    {
+        $this->setString('tarifForfaitAlcool', $value);
+    }
+
+    /** @return array<string, ?string> Les six tarifs, indexés par nom de propriété (ordre maquette). */
+    public function tarifs(): array
+    {
+        return [
+            'tarifDejeunerAssis' => $this->tarifDejeunerAssis,
+            'tarifCocktailDejeunatoire' => $this->tarifCocktailDejeunatoire,
+            'tarifDinerAssis' => $this->tarifDinerAssis,
+            'tarifCocktailDinatoire' => $this->tarifCocktailDinatoire,
+            'tarifForfaitVin' => $this->tarifForfaitVin,
+            'tarifForfaitAlcool' => $this->tarifForfaitAlcool,
+        ];
     }
 
     public function changeYoutubeUrl(?string $value): void
