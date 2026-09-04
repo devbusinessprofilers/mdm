@@ -8,7 +8,6 @@ use App\Enrichment\Service\FicheTranslationScheduler;
 use App\Ocr\Entity\DocumentExtraction;
 use App\Ocr\Entity\OcrSuggestion;
 use App\Ocr\Enum\ExtractionStatus;
-use App\Ocr\Enum\SuggestionStatus;
 use App\Pim\Entity\Localisation;
 use App\Pim\Import\Dto\ConvertedValue;
 use App\Pim\Import\Dto\RawCsvRow;
@@ -21,6 +20,7 @@ use App\Pim\Message\CalculateFicheCompleteness;
 use App\Pim\Message\IndexFiche;
 use App\Pim\Repository\ValeurAttributRepository;
 use App\Pim\Validation\ValidationGroups;
+use App\Shared\Enum\DecisionStatus;
 use App\Shared\Outbox\OutboxPublisherInterface;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\EntityManagerInterface;
@@ -158,7 +158,7 @@ final readonly class OcrSuggestionApplier
             }
             foreach ($decisions as [$suggestion, $input]) {
                 $suggestion->correct($input['value']);
-                $suggestion->decide($input['accept'] ? SuggestionStatus::Accepted : SuggestionStatus::Rejected, $actor);
+                $suggestion->decide($input['accept'] ? DecisionStatus::Accepted : DecisionStatus::Rejected, $actor);
             }
             $extraction->refreshReviewStatus();
             if ([] !== $accepted) {

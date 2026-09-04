@@ -9,8 +9,8 @@ use App\Dam\Entity\MediaAsset;
 use App\Dam\Enum\MediaKind;
 use App\Ocr\Entity\DocumentExtraction;
 use App\Ocr\Entity\OcrSuggestion;
-use App\Ocr\Enum\SuggestionStatus;
 use App\Pim\Entity\Lieu\Lieu;
+use App\Shared\Enum\DecisionStatus;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\Group;
@@ -151,7 +151,7 @@ final class FicheExtractionEditeurTest extends WebTestCase
         $entityManager->clear();
         $rejouee = $entityManager->find(OcrSuggestion::class, $suggestion->id());
         self::assertInstanceOf(OcrSuggestion::class, $rejouee);
-        self::assertSame(SuggestionStatus::Rejected, $rejouee->status());
+        self::assertSame(DecisionStatus::Rejected, $rejouee->status());
     }
 
     public function testLApplicationAutomatiqueRespecteLeSeuilParametre(): void
@@ -197,11 +197,11 @@ final class FicheExtractionEditeurTest extends WebTestCase
         self::assertSame('publiee', $this->connection->fetchOne('SELECT status FROM pim_fiche'));
         $decidee = $entityManager->find(OcrSuggestion::class, $sure->id());
         self::assertInstanceOf(OcrSuggestion::class, $decidee);
-        self::assertSame(SuggestionStatus::Accepted, $decidee->status());
+        self::assertSame(DecisionStatus::Accepted, $decidee->status());
         self::assertStringContainsString('automatique', (string) $decidee->decidedBy());
         $attente = $entityManager->find(OcrSuggestion::class, $douteuse->id());
         self::assertInstanceOf(OcrSuggestion::class, $attente);
-        self::assertSame(SuggestionStatus::Pending, $attente->status());
+        self::assertSame(DecisionStatus::Pending, $attente->status());
 
         \App\Tests\Support\ParametreEnBase::fixer($this->connection, 'ocr.seuil_application_auto', null, \App\Shared\Enum\TypeParametre::Entier);
         $provider->invalider();

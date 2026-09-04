@@ -9,10 +9,10 @@ use App\Dam\Enum\MediaKind;
 use App\Ocr\Entity\DocumentExtraction;
 use App\Ocr\Entity\OcrSuggestion;
 use App\Ocr\Enum\ExtractionStatus;
-use App\Ocr\Enum\SuggestionStatus;
 use App\Ocr\Service\OcrExtractionConsolidator;
 use App\Pim\Entity\Fiche;
 use App\Pim\Enum\TypeFiche;
+use App\Shared\Enum\DecisionStatus;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Ulid;
 
@@ -54,7 +54,7 @@ final class OcrCoreTest extends TestCase
         $first = new OcrSuggestion($extraction, 'fiche.label', 'Libellé', 'string', 'Nouveau', 'Ancien', .9, [1]);
         new OcrSuggestion($extraction, 'descGenerale', 'Description', 'string', 'Texte', null, .8, [2]);
         $extraction->complete([], 'enhanced', 'model');
-        $first->decide(SuggestionStatus::Accepted, 'validator');
+        $first->decide(DecisionStatus::Accepted, 'validator');
         $extraction->refreshReviewStatus();
         self::assertSame(ExtractionStatus::PartiallyReviewed, $extraction->status());
         $this->expectException(\DomainException::class);

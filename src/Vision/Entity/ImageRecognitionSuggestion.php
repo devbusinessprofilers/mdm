@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Vision\Entity;
 
-use App\Vision\Enum\SuggestionStatus;
+use App\Shared\Enum\DecisionStatus;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Uid\Ulid;
@@ -47,8 +47,8 @@ final class ImageRecognitionSuggestion
     #[ORM\Column(type: Types::JSON, nullable: true)]
     private mixed $observedValue;
 
-    #[ORM\Column(length: 16, enumType: SuggestionStatus::class)]
-    private SuggestionStatus $status = SuggestionStatus::Pending;
+    #[ORM\Column(length: 16, enumType: DecisionStatus::class)]
+    private DecisionStatus $status = DecisionStatus::Pending;
 
     #[ORM\Column(length: 180, nullable: true)]
     private ?string $decidedBy = null;
@@ -103,19 +103,19 @@ final class ImageRecognitionSuggestion
         return $this->observedValue;
     }
 
-    public function status(): SuggestionStatus
+    public function status(): DecisionStatus
     {
         return $this->status;
     }
 
     public function isPending(): bool
     {
-        return SuggestionStatus::Pending === $this->status;
+        return DecisionStatus::Pending === $this->status;
     }
 
     public function isAccepted(): bool
     {
-        return SuggestionStatus::Accepted === $this->status;
+        return DecisionStatus::Accepted === $this->status;
     }
 
     public function decidedBy(): ?string
@@ -136,12 +136,12 @@ final class ImageRecognitionSuggestion
         $this->correctedValue = $value;
     }
 
-    public function decide(SuggestionStatus $status, string $actor): void
+    public function decide(DecisionStatus $status, string $actor): void
     {
         if (!$this->isPending()) {
             throw new \DomainException('Une décision de reconnaissance sauvegardée est immuable.');
         }
-        if (SuggestionStatus::Pending === $status) {
+        if (DecisionStatus::Pending === $status) {
             return;
         }
         $this->status = $status;

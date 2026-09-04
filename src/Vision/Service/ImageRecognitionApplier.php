@@ -6,10 +6,10 @@ namespace App\Vision\Service;
 
 use App\Pim\Message\CalculateFicheCompleteness;
 use App\Pim\Message\IndexFiche;
+use App\Shared\Enum\DecisionStatus;
 use App\Shared\Outbox\OutboxPublisherInterface;
 use App\Vision\Entity\ImageRecognition;
 use App\Vision\Entity\ImageRecognitionSuggestion;
-use App\Vision\Enum\SuggestionStatus;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
@@ -39,7 +39,7 @@ final readonly class ImageRecognitionApplier
             $text = trim((string) $input['value']);
             $value = ImageRecognitionSuggestion::PATH_KEYWORDS === $suggestion->fieldPath() ? self::keywordList($text) : $text;
             $suggestion->correct($value);
-            $suggestion->decide($input['accept'] ? SuggestionStatus::Accepted : SuggestionStatus::Rejected, $actor);
+            $suggestion->decide($input['accept'] ? DecisionStatus::Accepted : DecisionStatus::Rejected, $actor);
             if (!$input['accept']) {
                 continue;
             }

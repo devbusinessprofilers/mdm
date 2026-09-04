@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Ocr\Entity;
 
-use App\Ocr\Enum\SuggestionStatus;
+use App\Shared\Enum\DecisionStatus;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Uid\Ulid;
@@ -37,8 +37,8 @@ final class OcrSuggestion
     /** @var list<int> */
     #[ORM\Column(type: Types::JSON)]
     private array $pageReferences;
-    #[ORM\Column(length: 16, enumType: SuggestionStatus::class)]
-    private SuggestionStatus $status = SuggestionStatus::Pending;
+    #[ORM\Column(length: 16, enumType: DecisionStatus::class)]
+    private DecisionStatus $status = DecisionStatus::Pending;
     #[ORM\Column(length: 180, nullable: true)]
     private ?string $decidedBy = null;
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
@@ -114,14 +114,14 @@ final class OcrSuggestion
         return $this->pageReferences;
     }
 
-    public function status(): SuggestionStatus
+    public function status(): DecisionStatus
     {
         return $this->status;
     }
 
     public function isPending(): bool
     {
-        return SuggestionStatus::Pending === $this->status;
+        return DecisionStatus::Pending === $this->status;
     }
 
     public function decidedBy(): ?string
@@ -142,12 +142,12 @@ final class OcrSuggestion
         $this->correctedValue = $value;
     }
 
-    public function decide(SuggestionStatus $status, string $actor): void
+    public function decide(DecisionStatus $status, string $actor): void
     {
         if (!$this->isPending()) {
             throw new \DomainException('Une décision OCR sauvegardée est immuable.');
         }
-        if (SuggestionStatus::Pending === $status) {
+        if (DecisionStatus::Pending === $status) {
             return;
         }
         $this->status = $status;

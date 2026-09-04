@@ -8,12 +8,12 @@ use App\Dam\Entity\MediaAsset;
 use App\Pim\Entity\Fiche;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Enum\TypeFiche;
+use App\Shared\Enum\DecisionStatus;
 use App\Vision\Entity\ImageEnhancement;
 use App\Vision\Entity\ImageRecognition;
 use App\Vision\Entity\ImageRecognitionSuggestion;
 use App\Vision\Enum\EnhancementStatus;
 use App\Vision\Enum\RecognitionStatus;
-use App\Vision\Enum\SuggestionStatus;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Ulid;
 
@@ -92,13 +92,13 @@ final class VisionCoreTest extends TestCase
         self::assertSame(RecognitionStatus::Ready, $recognition->status());
 
         $legende->correct('Salle de réunion baignée de lumière.');
-        $legende->decide(SuggestionStatus::Accepted, 'validator');
+        $legende->decide(DecisionStatus::Accepted, 'validator');
         $recognition->refreshReviewStatus();
         self::assertSame(RecognitionStatus::PartiallyReviewed, $recognition->status());
 
         foreach ($recognition->suggestions() as $suggestion) {
             if ($suggestion->isPending()) {
-                $suggestion->decide(SuggestionStatus::Rejected, 'validator');
+                $suggestion->decide(DecisionStatus::Rejected, 'validator');
             }
         }
         $recognition->refreshReviewStatus();
