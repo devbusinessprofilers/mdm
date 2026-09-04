@@ -46,6 +46,31 @@ final class ChampsOmisCompleteurTest extends KernelTestCase
         self::assertArrayNotHasKey('restaurant', $data);
     }
 
+    /** Radios Oui/Non (Restaurant) : sans bouton coché, le champ est soumis null → « Non ». */
+    public function testLesRadiosOuiNonAbsentesSontSoumisesNulles(): void
+    {
+        self::bootKernel();
+        $factory = self::getContainer()->get(FormFactoryInterface::class);
+        self::assertInstanceOf(FormFactoryInterface::class, $factory);
+        $restaurant = new \App\Pim\Entity\Restaurant\Restaurant();
+        $restaurant->changeAccesPmr(true);
+        $form = $factory->create(\App\Pim\Form\RestaurantType::class, $restaurant, ['csrf_protection' => false]);
+
+        $data = ChampsOmisCompleteur::completer($form, ['label' => 'Bistrot'], TypeFiche::Restaurant);
+
+        self::assertArrayHasKey('accesPmr', $data);
+        self::assertNull($data['accesPmr']);
+        self::assertNull($data['typesRestaurant']);
+        // Emplacements d'atouts : des champs texte, toujours envoyés par le navigateur.
+        self::assertArrayNotHasKey('atouts', $data);
+        // Hors écran : intact.
+        self::assertArrayNotHasKey('menus', $data);
+
+        $form->submit($data, false);
+        self::assertTrue($form->isValid(), (string) $form->getErrors(true));
+        self::assertFalse($restaurant->accesPmr());
+    }
+
     public function testLaDerniereTypologieRetireeEstBienAppliquee(): void
     {
         $lieu = self::lieu();

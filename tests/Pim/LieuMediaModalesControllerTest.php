@@ -127,7 +127,7 @@ final class LieuMediaModalesControllerTest extends WebTestCase
         $this->connection->executeStatement('DELETE FROM dam_media_rendition');
         $this->connection->executeStatement('DELETE FROM dam_media_asset');
         $this->connection->executeStatement('DELETE FROM pim_salle');
-        $this->connection->executeStatement('DELETE FROM pim_lieu_administratif');
+        $this->connection->executeStatement('DELETE FROM pim_fiche_administratif');
         $this->connection->executeStatement('DELETE FROM pim_lieu_tarification');
         $this->connection->executeStatement('DELETE FROM pim_fiche_search');
         $this->connection->executeStatement('DELETE FROM pim_fiche_attribute_value');

@@ -22,6 +22,10 @@ final class ServiceMappingTest extends KernelTestCase
         $service = $entityManager->getClassMetadata(ServiceEvenementiel::class);
         self::assertSame('pim_service_evenementiel', $service->getTableName());
         self::assertTrue($service->hasAssociation('fiche'));
+        self::assertTrue($service->hasAssociation('acces'));
+        self::assertSame('pim_service_acces', $entityManager->getClassMetadata(\App\Pim\Entity\Service\ServiceAcces::class)->getTableName());
+        self::assertSame('boolean', $service->getTypeOfField('accesPmr'));
+        self::assertSame('boolean', $service->getTypeOfField('materielAdaptePmr'));
 
         foreach (
             [

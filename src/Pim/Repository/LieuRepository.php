@@ -103,7 +103,7 @@ final class LieuRepository extends ServiceEntityRepository
             ->addSelect('f', 'loc', 'administratif', 'tarification', 'restaurant')
             ->innerJoin('l.fiche', 'f')
             ->leftJoin('f.localisation', 'loc')
-            ->leftJoin('l.administratif', 'administratif')
+            ->leftJoin('f.administratif', 'administratif')
             ->leftJoin('l.tarification', 'tarification')
             ->leftJoin('l.restaurant', 'restaurant')
             ->where('l.fiche = :fiche')
@@ -173,7 +173,7 @@ final class LieuRepository extends ServiceEntityRepository
         }
         $rows = $this->getEntityManager()->getConnection()->fetchFirstColumn(
             "SELECT l.fiche_id FROM pim_lieu l
-             INNER JOIN pim_lieu_administratif a ON a.lieu_id = l.id
+             INNER JOIN pim_fiche_administratif a ON a.fiche_id = l.fiche_id
              WHERE REPLACE(a.info_legale_siret, ' ', '') = :siret",
             ['siret' => $siret],
             ['siret' => ParameterType::STRING],
@@ -206,7 +206,7 @@ final class LieuRepository extends ServiceEntityRepository
             // l'hydratation : le fetch-join évite une requête par lieu.
             ->addSelect('f', 'a', 'loc', 'restaurant')
             ->join('l.fiche', 'f')
-            ->join('l.administratif', 'a')
+            ->leftJoin('f.administratif', 'a')
             ->leftJoin('f.localisation', 'loc')
             ->leftJoin('l.restaurant', 'restaurant')
             ->orderBy('l.id', 'ASC')

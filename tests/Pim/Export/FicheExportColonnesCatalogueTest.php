@@ -67,10 +67,11 @@ final class FicheExportColonnesCatalogueTest extends KernelTestCase
         self::assertSame('Booster ma visibilité', $ongletDe($lieu, 'lieu:attribution_visibilite'));
 
         $restaurant = $catalogue->groupesPour(TypeFiche::Restaurant);
-        self::assertSame('Salles & capacités', $ongletDe($restaurant, 'restaurant:capacite_banquet'));
+        self::assertSame('Capacités', $ongletDe($restaurant, 'restaurant:capacite_banquet'));
+        self::assertSame('Tarifs', $ongletDe($restaurant, 'restaurant:tarif_forfait_vin'));
 
         $activite = $catalogue->groupesPour(TypeFiche::Activite);
-        self::assertSame('Localisation & zone d\'intervention', $ongletDe($activite, 'activite:toute_france'));
+        self::assertSame('Localisation & accessibilité', $ongletDe($activite, 'activite:toute_france'));
 
         // L'ordre des onglets est celui du détail de la fiche.
         self::assertSame('Informations générales', $lieu[0]['titre']);

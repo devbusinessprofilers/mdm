@@ -82,6 +82,83 @@
     </fieldset>
 {% endmacro %}
 
+{#
+    Carte déclarative (FicheSectionsCatalogue, clé `cartes`) : la grille
+    maquette à 2 ou 3 colonnes. Les groupes sont aplatis (noms de soumission
+    inchangés), un champ riche / dropzone / zone de texte / groupe ou listé
+    dans `pleins` prend toute la largeur, les cases à cocher passent en fin de
+    carte sauf celles de `cases_en_ligne`. `conditions` (nom => {source,
+    valeurs, vider}) enveloppe un champ dans une cible du contrôleur
+    affichage-conditionnel, pilotée par le widget `source` (chemin pointé).
+#}
+{% macro carte_champs(form, widgets, colonnes, pleins, cases_en_ligne, conditions, fichiers = {}) %}
+    {% set largeur = colonnes == 3 ? 'w-[calc(33.333%-16px)]' : 'w-[calc(50%-12px)]' %}
+    {% set aplatis = widgets|reduce(
+        (acc, w) => w.vars.compound|default(false)
+            and w.vars.prototype is not defined
+            and not w.vars.expanded|default(false)
+            ? w.children|reduce((a, e) => a|merge([e]), acc)
+            : acc|merge([w]),
+        []) %}
+    <div class="flex flex-row flex-wrap gap-x-6 gap-y-5">
+        {% for widget in aplatis|filter(w => 'checkbox' not in w.vars.block_prefixes or w.vars.name in cases_en_ligne) %}
+            {% set champ = widget.vars.name %}
+            {# `pleins` liste des chemins pointés : seule la feuille compte. #}
+            {% set pleine = widget.vars.prototype is defined
+                or widget.vars.attr['data-wysiwyg']|default(false)
+                or widget.vars.attr['data-dropzone']|default(false)
+                or 'textarea' in widget.vars.block_prefixes
+                or champ in pleins|map(p => p|split('.')|last) %}
+            {% set classe = pleine ? 'w-full' : largeur %}
+            {% set condition = conditions[champ]|default(null) %}
+            {% if condition %}
+                {% set source = condition.source|split('.')|reduce((f, p) => attribute(f, p), form) %}
+                <div class="{{ classe }} data-[masque]:hidden"
+                     data-affichage-conditionnel-target="cible"
+                     data-source="{{ source.vars.id }}"
+                     data-valeurs="{{ condition.valeurs }}"
+                     {% if condition.vider|default(false) %}data-vider="1"{% endif %}>
+                    {% if widget.vars.prototype is defined %}
+                        {{ _self.collection(widget, widget.vars.label ?? champ) }}
+                    {% else %}
+                        {{ form_row(widget) }}
+                    {% endif %}
+                </div>
+            {% elseif widget.vars.prototype is defined %}
+                <div class="w-full">{{ _self.collection(widget, widget.vars.label ?? champ) }}</div>
+            {% else %}
+                {{ form_row(widget, { row_attr: { class: classe } }) }}
+            {% endif %}
+            {# Dropzone administrative : le fichier courant, remplacé par un nouveau dépôt. #}
+            {% if fichiers[champ] is defined %}
+                <twig:Typography variant="body-sm" textColor="neutral-500" class="w-full -mt-3" data-fichier-actuel="{{ champ }}">Fichier actuel : {{ fichiers[champ] }}</twig:Typography>
+            {% endif %}
+        {% endfor %}
+        {% for widget in aplatis|filter(w => 'checkbox' in w.vars.block_prefixes and w.vars.name not in cases_en_ligne) %}
+            {{ form_row(widget, { row_attr: { class: largeur } }) }}
+        {% endfor %}
+    </div>
+{% endmacro %}
+
+{# Carte « Disponibilités » d'une gamme à champs plats : les champs simples
+   (privatisations…) en grille, puis les horaires par jour et les périodes de
+   fermeture (partials partagés avec le Lieu). #}
+{% macro carte_horaires(form, widgets, colonnes, cases_en_ligne) %}
+    {% set w_jours = widgets|reduce((acc, w) => w.vars.name == 'joursOuverture' ? w : acc, null) %}
+    {% set w_horaires = widgets|reduce((acc, w) => w.vars.name == 'horairesJours' ? w : acc, null) %}
+    {% set w_periodes = widgets|reduce((acc, w) => w.vars.name == 'periodesFermeture' ? w : acc, null) %}
+    {% set simples = widgets|filter(w => w.vars.name not in ['joursOuverture', 'horairesJours', 'periodesFermeture']) %}
+    {% if simples|length > 0 %}
+        {{ _self.carte_champs(form, simples, colonnes, [], cases_en_ligne, {}) }}
+    {% endif %}
+    {% if w_jours is not null and w_horaires is not null %}
+        {% include 'mdm/fiche/_horaires_jours.html.twig' with { jours: w_jours, horaires: w_horaires } only %}
+    {% endif %}
+    {% if w_periodes is not null %}
+        {% include 'mdm/fiche/_periodes_fermeture.html.twig' with { periodes: w_periodes } only %}
+    {% endif %}
+{% endmacro %}
+
 {# Une entrée du rail : l'état actif est porté par aria-current (piloté par le
    contrôleur `fiche-onglets` — les styles suivent via les variantes de groupe). #}
 {% macro rail_entree(onglet) %}
@@ -107,9 +184,12 @@
 {% endmacro %}
 
 {# Volet d'une section : visible seulement quand son onglet est actif. #}
-{% macro volet_ouvre(i, actif) %}
+{# `condition` (optionnel) : la carte entière devient une cible du contrôleur
+   affichage-conditionnel (data-masque, indépendant du `hidden` des onglets). #}
+{% macro volet_ouvre(i, actif, condition = null) %}
     <section data-fiche-onglets-target="volet" data-volet="{{ i }}" {{ actif ? '' : 'hidden' }}
-             class="shrink-0 box-border flex flex-col gap-6 p-14 rounded-[32px] bg-neutral-100 shadow-(--shadow)">
+             {% if condition %}data-affichage-conditionnel-target="cible" data-source="{{ condition.source }}" data-valeurs="{{ condition.valeurs }}"{% if condition.vider %} data-vider="1"{% endif %}{% endif %}
+             class="shrink-0 box-border flex flex-col gap-6 p-14 rounded-[32px] bg-neutral-100 shadow-(--shadow) data-[masque]:hidden">
 {% endmacro %}
 
 {# En-tête de carte maquette : titre, compteur de champs, légende des autorités —
@@ -259,9 +339,13 @@
     {# ---------------- Volets de champs : un seul formulaire pour toutes les sections #}
     {# Chrome « autorité » par champ : ce thème ne s'applique qu'ici. #}
     {% form_theme form 'pim/form/_form-theme-fiche.html.twig' %}
+    {# affichage-conditionnel : cibles (cartes ou champs) montrées selon la
+       valeur d'un champ source, dans toutes les sections du formulaire. #}
     {{ form_start(form, { attr: {
         id: 'form-fiche',
         class: 'contents',
+        'data-controller': 'affichage-conditionnel',
+        'data-action': 'change->affichage-conditionnel#maj select:change->affichage-conditionnel#maj',
         'data-fiche-gamme': gamme_slug,
         'data-fiche-id': fiche.idString,
         'data-fiche-suggerer-url': path('app_pim_fiche_suggerer'),
@@ -271,7 +355,46 @@
         'data-ia-suggestion-active': ia_suggestion_active ? '1' : '0',
     } }) }}
         {% for i, s in sections %}
-            {% if s.champs is not empty %}
+            {% if s.champs is not empty and s.cartes is defined %}
+                {# ---- Cartes déclaratives (gammes alignées sur la maquette portail) ---- #}
+                {% for carte in s.cartes %}
+                    {% set widgets = carte.champs|map(c => c|split('.')|reduce((f, p) => attribute(f, p), form)) %}
+                    {% set bloc = carte.bloc|default(null) %}
+                    {% set condition = carte.condition|default(null) %}
+                    {{ _self.volet_ouvre(i, i == section_index, condition ? {
+                        source: condition.source|split('.')|reduce((f, p) => attribute(f, p), form).vars.id,
+                        valeurs: condition.valeurs,
+                        vider: condition.vider|default(false),
+                    } : null) }}
+                        {{ _self.volet_titre(carte.titre ?? s.titre, loop.first ? onglets[i].completude : null, loop.first ? s.nb_champs|default(null) : null, loop.first) }}
+                        {% if carte.intro|default(null) %}
+                            <twig:Typography variant="body-sm" textColor="neutral-500" class="text-pretty -mt-3">{{ carte.intro }}</twig:Typography>
+                        {% endif %}
+                        {% if bloc == 'horaires' %}
+                            {{ _self.carte_horaires(form, widgets, carte.colonnes|default(2), cases_en_ligne) }}
+                        {% elseif bloc == 'salles' %}
+                            {# min-w-0 : la matrice défile au lieu d'élargir la carte. #}
+                            <div class="w-full min-w-0">{% include 'mdm/fiche/_capacites.html.twig' with { widget: widgets|first, gamme: fiche.type.value } only %}</div>
+                        {% elseif bloc == 'collection' %}
+                            {% for widget in widgets %}
+                                {{ _self.collection(widget, widget.vars.label ?? widget.vars.name) }}
+                            {% endfor %}
+                        {% elseif bloc == 'acomptes' %}
+                            {% include 'mdm/fiche/_acomptes.html.twig' with { widgets: widgets } only %}
+                        {% elseif bloc == 'tarifs_restaurant' %}
+                            {% include 'mdm/fiche/_tarifs_restaurant.html.twig' with { widgets: widgets } only %}
+                        {% elseif bloc == 'offres_activite' %}
+                            {# Le prototype ne se rend qu'une fois : gabarit partagé par les cartes Forfaits et Options. #}
+                            {% if gabarit_offre is not defined %}
+                                {% set gabarit_offre = include('mdm/fiche/_offre_gabarit.html.twig', { proto: (widgets|first).vars.prototype }, with_context = false) %}
+                            {% endif %}
+                            {% include 'mdm/fiche/_offres_activite.html.twig' with { widget: widgets|first, type: carte.type_offre|default('forfait'), gabarit: gabarit_offre } only %}
+                        {% else %}
+                            {{ _self.carte_champs(form, widgets, carte.colonnes|default(2), carte.pleins|default([]), cases_en_ligne, carte.conditions|default({}), documents_administratifs|default({})) }}
+                        {% endif %}
+                    </section>
+                {% endfor %}
+            {% elseif s.champs is not empty %}
                 {{ _self.volet_ouvre(i, i == section_index) }}
                     {{ _self.volet_titre(s.titre, onglets[i].completude, s.nb_champs|default(null), true) }}
                     {# Grille maquette : champ simple en demi-largeur, riche/groupe/collection en

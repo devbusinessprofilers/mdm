@@ -80,9 +80,9 @@ final class ValidServiceEvenementielValidator extends FicheValidateur
             }
             if (NatureRessource::Photo === $resource->nature()) {
                 $photos[] = $resource;
-            } elseif ('PJ_SUPPORT_COMMERCIAUX' !== $resource->usage()) {
+            } elseif ('PJ_SUPPORT_COMMERCIAUX' !== $resource->usage() && !DocumentUsage::estAdministratif($resource->documentUsage())) {
                 $this->violation(
-                    'Un Service accepte uniquement les supports commerciaux comme documents.',
+                    'Un Service accepte uniquement les supports commerciaux et les pièces de facturation comme documents.',
                     'ressources',
                 );
             }
@@ -119,14 +119,7 @@ final class ValidServiceEvenementielValidator extends FicheValidateur
             );
         }
 
-        foreach ($this->booleans($value) as $path => $answer) {
-            if (null === $answer) {
-                $this->violation(
-                    'Une réponse Oui ou Non est obligatoire.',
-                    $path,
-                );
-            }
-        }
+        // Plus de réponse Oui/Non exigée : « Non » est la valeur par défaut.
         foreach ($this->tariffs($value) as $path => $amount) {
             if (null === $amount) {
                 $this->violation('Ce tarif en euros est obligatoire.', $path);
@@ -222,23 +215,6 @@ final class ValidServiceEvenementielValidator extends FicheValidateur
                 );
             }
         }
-    }
-
-    /** @return array<string, ?bool> */
-    private function booleans(ServiceEvenementiel $value): array
-    {
-        return [
-            'prestataireEsat' => $value->prestataireEsat(),
-            'demarcheRse' => $value->demarcheRse(),
-            'adapteFemmesEnceintes' => $value->adapteFemmesEnceintes(),
-            'adapteMalentendants' => $value->adapteMalentendants(),
-            'adapteMalvoyants' => $value->adapteMalvoyants(),
-            'materielInclus' => $value->materielInclus(),
-            'equipementParticipantsRequis' => $value->equipementParticipantsRequis(),
-            'equipementReceptionRequis' => $value->equipementReceptionRequis(),
-            'contraintesLogistiques' => $value->contraintesLogistiques(),
-            'surDevis' => $value->surDevis(),
-        ];
     }
 
     /** @return array<string, ?float> */

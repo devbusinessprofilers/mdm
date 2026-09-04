@@ -86,9 +86,11 @@ final class ChampsOmisCompleteur
     private static function completerChamp(FormInterface $champ, mixed $recu): mixed
     {
         $config = $champ->getConfig();
-        $prefixe = $config->getType()->getBlockPrefix();
+        $prefixe = self::prefixeRacine($champ);
+        // Un choix étendu simple (radios Oui/Non) sans bouton coché n'est pas
+        // envoyé non plus : soumis null, il retombe sur sa valeur par défaut.
         $omissible = 'checkbox' === $prefixe
-            || ('choice' === $prefixe && true === $config->getOption('multiple'))
+            || ('choice' === $prefixe && (true === $config->getOption('multiple') || true === $config->getOption('expanded')))
             || 'collection' === $prefixe;
         if (self::ABSENT === $recu) {
             return $omissible ? null : self::completerGroupe($champ, self::ABSENT);
@@ -114,6 +116,26 @@ final class ChampsOmisCompleteur
     }
 
     /**
+     * Préfixe de bloc du type de base (checkbox, choice, collection…) : un
+     * type dérivé (OuiNonType → ChoiceType) est traité comme son parent.
+     *
+     * @param FormInterface<mixed> $champ
+     */
+    private static function prefixeRacine(FormInterface $champ): string
+    {
+        $type = $champ->getConfig()->getType();
+        $prefixe = $type->getBlockPrefix();
+        while (null !== $type) {
+            if (in_array($type->getBlockPrefix(), ['checkbox', 'choice', 'collection'], true)) {
+                return $type->getBlockPrefix();
+            }
+            $type = $type->getParent();
+        }
+
+        return $prefixe;
+    }
+
+    /**
      * Complète les enfants d'un champ composé (groupe inherit_data, ligne de
      * collection, sous-formulaire) ; un champ simple rend sa valeur telle quelle.
      *
@@ -122,7 +144,7 @@ final class ChampsOmisCompleteur
     private static function completerGroupe(FormInterface $groupe, mixed $recu): mixed
     {
         $config = $groupe->getConfig();
-        if (!$config->getCompound() || 'choice' === $config->getType()->getBlockPrefix()) {
+        if (!$config->getCompound() || 'choice' === self::prefixeRacine($groupe)) {
             return $recu;
         }
         $donnees = is_array($recu) ? $recu : [];

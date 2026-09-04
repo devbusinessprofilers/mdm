@@ -163,6 +163,36 @@ final class RestaurantPatchInput
         $this->payload['youtubeUrl'] = $value;
     }
 
+    public function setTarifDejeunerAssis(?string $value): void
+    {
+        $this->payload['tarifDejeunerAssis'] = $value;
+    }
+
+    public function setTarifCocktailDejeunatoire(?string $value): void
+    {
+        $this->payload['tarifCocktailDejeunatoire'] = $value;
+    }
+
+    public function setTarifDinerAssis(?string $value): void
+    {
+        $this->payload['tarifDinerAssis'] = $value;
+    }
+
+    public function setTarifCocktailDinatoire(?string $value): void
+    {
+        $this->payload['tarifCocktailDinatoire'] = $value;
+    }
+
+    public function setTarifForfaitVin(?string $value): void
+    {
+        $this->payload['tarifForfaitVin'] = $value;
+    }
+
+    public function setTarifForfaitAlcool(?string $value): void
+    {
+        $this->payload['tarifForfaitAlcool'] = $value;
+    }
+
     /** @return array<string, mixed> */
     public function payload(): array
     {

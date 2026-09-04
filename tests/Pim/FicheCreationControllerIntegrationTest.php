@@ -45,7 +45,7 @@ final class FicheCreationControllerIntegrationTest extends WebTestCase
             'pim_fiche_search',
             'pim_fiche_attribute_value',
             'pim_fiche_affiliation',
-            'pim_lieu_administratif',
+            'pim_fiche_administratif',
             'pim_lieu_tarification',
             'pim_lieu',
             'pim_restaurant',
@@ -213,7 +213,7 @@ final class FicheCreationControllerIntegrationTest extends WebTestCase
         ]);
         self::assertResponseRedirects();
 
-        $administratif = $this->connection->fetchAssociative('SELECT * FROM pim_lieu_administratif');
+        $administratif = $this->connection->fetchAssociative('SELECT * FROM pim_fiche_administratif');
         self::assertNotFalse($administratif);
         // Raison sociale en capitales (Sirene) ; adresse et signataire en nom propre.
         self::assertSame('CHATEAU DES TESTS', $administratif['info_legale_nom']);

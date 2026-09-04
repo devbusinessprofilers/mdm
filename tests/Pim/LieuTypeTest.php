@@ -31,7 +31,8 @@ final class LieuTypeTest extends KernelTestCase
         self::assertTrue($form->has('restaurant'));
         self::assertTrue($form->get('accessibiliteDescription')->has('descGeneralePointInteret'));
         self::assertTrue($form->get('rse')->has('rseDescGenerale'));
-        self::assertCount(37, $form->get('administratif'));
+        // 37 champs historiques − 2 LOV retirées (acompte/annulation) + carte bancaire, cartes acceptées, 3 acomptes (date, %), 9 tranches, 2 rappels en lecture seule.
+        self::assertCount(54, $form->get('administratif'));
         self::assertCount(25, $form->get('tarification'));
 
         $form->submit([

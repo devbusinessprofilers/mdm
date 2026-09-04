@@ -19,7 +19,9 @@ use Psr\Log\LoggerInterface;
  * distances et durées (gamme Lieu) passent par Geoapify Routing, à pied en
  * périmètre piéton et en voiture au-delà, avec repli sur le vol d'oiseau
  * sans durée quand l'itinéraire échoue. Sans distances (Restaurant, qui n'a
- * que type + nom), le vol d'oiseau est glissé dans le nom.
+ * que type + nom), le vol d'oiseau est glissé dans le nom. Les types émis
+ * dépendent de la gamme : le Service (TYPES_SERVICE) remplace métro et
+ * tramway par le parking (Geoapify Places, catégorie `parking`).
  */
 final class AccesSuggesteur
 {
@@ -38,7 +40,17 @@ final class AccesSuggesteur
         'gare' => 'public_transport.train',
         'metro' => 'public_transport.subway',
         'tramway' => 'public_transport.tram',
+        'parking' => 'parking',
     ];
+
+    /** Types proposés au Lieu et au Restaurant (TypeAccesLieu / TypeAccesRestaurant). */
+    public const TYPES_LIEU = ['aeroport', 'gare', 'metro', 'tramway', 'grande_ville'];
+
+    /** Types proposés au Service (TypeAccesService). */
+    public const TYPES_SERVICE = ['aeroport', 'gare', 'parking', 'grande_ville'];
+
+    /** Ordre de lecture du bloc : du plus lointain cadre (aéroport) au plus local. */
+    private const ORDRE = ['aeroport', 'gare', 'metro', 'tramway', 'parking', 'grande_ville'];
 
     public function __construct(
         private readonly AeroportReferenceRepository $aeroports,
@@ -49,13 +61,14 @@ final class AccesSuggesteur
     }
 
     /**
-     * @param list<string> $typesExclus types (valeurs TypeAccesLieu) déjà présents dans le formulaire
+     * @param list<string>      $typesExclus types (valeurs d'enum d'accès) déjà présents dans le formulaire
+     * @param list<string>|null $types       types à émettre (TYPES_LIEU par défaut)
      *
      * @return list<AccesSuggere>
      *
      * @throws \DomainException quand la fiche n'a pas de coordonnées GPS
      */
-    public function suggerer(Fiche $fiche, array $typesExclus, bool $avecDistances): array
+    public function suggerer(Fiche $fiche, array $typesExclus, bool $avecDistances, ?array $types = null): array
     {
         $latitude = $fiche->localisation()?->latitude();
         $longitude = $fiche->localisation()?->longitude();
@@ -64,23 +77,23 @@ final class AccesSuggesteur
         }
         $lat = (float) $latitude;
         $lon = (float) $longitude;
-        $manque = static fn (TypeAccesLieu $type): bool => !in_array($type->value, $typesExclus, true);
+        $types ??= self::TYPES_LIEU;
+        $manque = static fn (string $type): bool => in_array($type, $types, true) && !in_array($type, $typesExclus, true);
 
         $suggestions = [];
-        if ($manque(TypeAccesLieu::Aeroport) && null !== ($aeroport = $this->aeroports->plusProche($lat, $lon, self::RAYON_AEROPORT_KM))) {
+        if ($manque(TypeAccesLieu::Aeroport->value) && null !== ($aeroport = $this->aeroports->plusProche($lat, $lon, self::RAYON_AEROPORT_KM))) {
             $nom = null === $aeroport['codeIata'] ? $aeroport['nom'] : sprintf('%s (%s)', $aeroport['nom'], $aeroport['codeIata']);
-            $suggestions[] = $this->entree(TypeAccesLieu::Aeroport, $nom, $latitude, $longitude, $aeroport['latitude'], $aeroport['longitude'], $aeroport['distanceKm'], $avecDistances);
+            $suggestions[] = $this->entree(TypeAccesLieu::Aeroport->value, $nom, $latitude, $longitude, $aeroport['latitude'], $aeroport['longitude'], $aeroport['distanceKm'], $avecDistances);
         }
-        foreach ($this->transportsProches($latitude, $longitude, $typesExclus) as $type => $poi) {
-            $suggestions[] = $this->entree(TypeAccesLieu::from($type), $poi['nom'], $latitude, $longitude, (float) $poi['latitude'], (float) $poi['longitude'], (float) ($poi['distanceMetres'] ?? 0) / 1000.0, $avecDistances);
+        $exclusOuHorsGamme = array_values(array_filter(array_keys(self::CATEGORIES), static fn (string $type): bool => !$manque($type)));
+        foreach ($this->transportsProches($latitude, $longitude, $exclusOuHorsGamme) as $type => $poi) {
+            $suggestions[] = $this->entree($type, $poi['nom'], $latitude, $longitude, (float) $poi['latitude'], (float) $poi['longitude'], (float) ($poi['distanceMetres'] ?? 0) / 1000.0, $avecDistances);
         }
-        if ($manque(TypeAccesLieu::GrandeVille) && null !== ($ville = $this->grandesVilles->plusProche($lat, $lon, self::RAYON_GRANDE_VILLE_KM, self::POPULATION_MIN))
+        if ($manque(TypeAccesLieu::GrandeVille->value) && null !== ($ville = $this->grandesVilles->plusProche($lat, $lon, self::RAYON_GRANDE_VILLE_KM, self::POPULATION_MIN))
             && $ville['distanceKm'] >= self::VILLE_TROP_PROCHE_KM) {
-            $suggestions[] = $this->entree(TypeAccesLieu::GrandeVille, $ville['nom'], $latitude, $longitude, $ville['latitude'], $ville['longitude'], $ville['distanceKm'], $avecDistances);
+            $suggestions[] = $this->entree(TypeAccesLieu::GrandeVille->value, $ville['nom'], $latitude, $longitude, $ville['latitude'], $ville['longitude'], $ville['distanceKm'], $avecDistances);
         }
-        // Ordre de lecture du bloc : du plus lointain cadre (aéroport) au plus
-        // local, aligné sur l'ordre de l'enum.
-        $ordre = array_flip(array_map(static fn (TypeAccesLieu $type): string => $type->value, TypeAccesLieu::cases()));
+        $ordre = array_flip(self::ORDRE);
         usort($suggestions, static fn (AccesSuggere $a, AccesSuggere $b): int => ($ordre[$a->type] ?? 99) <=> ($ordre[$b->type] ?? 99));
 
         return $suggestions;
@@ -114,6 +127,7 @@ final class AccesSuggesteur
                 if (isset($retenus[$type]) || !in_array($categorie, $poi['categories'], true)) {
                     continue;
                 }
+                // Métro, tram et parking ne sont des accès qu'à portée de marche.
                 if ('gare' !== $type && ($poi['distanceMetres'] ?? 0) > self::RAYON_STATION_METRES) {
                     continue;
                 }
@@ -133,14 +147,14 @@ final class AccesSuggesteur
      * Une entrée finalisée : itinéraire réel quand la gamme porte des
      * distances, vol d'oiseau dans le nom sinon.
      */
-    private function entree(TypeAccesLieu $type, string $nom, string $deLatitude, string $deLongitude, float $versLatitude, float $versLongitude, float $volOiseauKm, bool $avecDistances): AccesSuggere
+    private function entree(string $type, string $nom, string $deLatitude, string $deLongitude, float $versLatitude, float $versLongitude, float $volOiseauKm, bool $avecDistances): AccesSuggere
     {
         $volOiseauKm = $volOiseauKm > 0.0 ? $volOiseauKm : self::haversineKm((float) $deLatitude, (float) $deLongitude, $versLatitude, $versLongitude);
         if (!$avecDistances) {
             // Virgule décimale : ce nom part tel quel dans un champ texte.
-            return new AccesSuggere($type->value, sprintf('%s (%s km)', $nom, str_replace('.', ',', self::kmLisible($volOiseauKm))));
+            return new AccesSuggere($type, sprintf('%s (%s km)', $nom, str_replace('.', ',', self::kmLisible($volOiseauKm))));
         }
-        $aPied = in_array($type, [TypeAccesLieu::Metro, TypeAccesLieu::Tramway], true) || $volOiseauKm <= self::SEUIL_MARCHE_KM;
+        $aPied = in_array($type, ['metro', 'tramway', 'parking'], true) || $volOiseauKm <= self::SEUIL_MARCHE_KM;
         $itineraire = null;
         try {
             $itineraire = $this->geoapify->itineraire($deLatitude, $deLongitude, (string) $versLatitude, (string) $versLongitude, $aPied ? 'walk' : 'drive');
@@ -149,7 +163,7 @@ final class AccesSuggesteur
         }
 
         return new AccesSuggere(
-            $type->value,
+            $type,
             $nom,
             null === $itineraire ? self::kmLisible($volOiseauKm) : self::kmLisible($itineraire['distanceMetres'] / 1000.0),
             null === $itineraire ? null : max(1, (int) round($itineraire['dureeSecondes'] / 60.0)),

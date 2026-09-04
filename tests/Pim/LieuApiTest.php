@@ -49,7 +49,7 @@ final class LieuApiTest extends WebTestCase
     protected function tearDown(): void
     {
         if (isset($this->connection)) {
-            foreach (['pim_ressource_lieu', 'dam_media_duplicate_alert', 'dam_media_rendition', 'dam_media_phash_band', 'dam_media_asset', 'pim_fiche_search', 'pim_fiche_attribute_value', 'pim_salle', 'pim_periode_fermeture', 'pim_acces_lieu', 'pim_lieu_administratif', 'pim_lieu_tarification', 'pim_lieu', 'pim_fiche', 'pim_localisation', 'outbox_message'] as $table) {
+            foreach (['pim_ressource_lieu', 'dam_media_duplicate_alert', 'dam_media_rendition', 'dam_media_phash_band', 'dam_media_asset', 'pim_fiche_search', 'pim_fiche_attribute_value', 'pim_salle', 'pim_periode_fermeture', 'pim_acces_lieu', 'pim_fiche_administratif', 'pim_lieu_tarification', 'pim_lieu', 'pim_fiche', 'pim_localisation', 'outbox_message'] as $table) {
                 $this->connection->executeStatement('DELETE FROM '.$table);
             }
         }
@@ -218,7 +218,7 @@ final class LieuApiTest extends WebTestCase
         $this->connection = self::getContainer()->get(Connection::class);
         $this->entityManager = self::getContainer()->get(EntityManagerInterface::class);
         self::getContainer()->set(PrivateObjectStorageInterface::class, new ApiTestObjectStorage());
-        foreach (['pim_ressource_lieu', 'dam_media_duplicate_alert', 'dam_media_rendition', 'dam_media_phash_band', 'dam_media_asset', 'pim_fiche_search', 'pim_fiche_attribute_value', 'pim_salle', 'pim_periode_fermeture', 'pim_acces_lieu', 'pim_lieu_administratif', 'pim_lieu_tarification', 'pim_lieu', 'pim_fiche', 'pim_localisation', 'outbox_message'] as $table) {
+        foreach (['pim_ressource_lieu', 'dam_media_duplicate_alert', 'dam_media_rendition', 'dam_media_phash_band', 'dam_media_asset', 'pim_fiche_search', 'pim_fiche_attribute_value', 'pim_salle', 'pim_periode_fermeture', 'pim_acces_lieu', 'pim_fiche_administratif', 'pim_lieu_tarification', 'pim_lieu', 'pim_fiche', 'pim_localisation', 'outbox_message'] as $table) {
             $this->connection->executeStatement('DELETE FROM '.$table);
         }
 
@@ -292,7 +292,7 @@ final class ApiTestObjectStorage implements PrivateObjectStorageInterface
             throw new \RuntimeException('Flux temporaire indisponible.');
         }
 
-return $stream;
+        return $stream;
     }
 
     public function exists(string $key): bool

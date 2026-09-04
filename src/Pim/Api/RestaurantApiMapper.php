@@ -119,6 +119,12 @@ final readonly class RestaurantApiMapper
                 fn (array $photo): FicheMediaResource => $this->medias->depuisPresentation($fiche->version(), $photo),
                 $this->photos->photos($fiche),
             ),
+            $restaurant->tarifDejeunerAssis(),
+            $restaurant->tarifCocktailDejeunatoire(),
+            $restaurant->tarifDinerAssis(),
+            $restaurant->tarifCocktailDinatoire(),
+            $restaurant->tarifForfaitVin(),
+            $restaurant->tarifForfaitAlcool(),
         );
     }
 

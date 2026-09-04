@@ -156,37 +156,19 @@ final class LieuFormCatalog
             'generaleYoutube' => ['label' => 'Lien vidéo', 'type' => UrlType::class, 'options' => ['constraints' => [new Url(requireTld: true), new LienVideo()]]],
             'miceStatut' => self::choice('MICE_STATUT', 'Statut Premium'),
             'afficherContact' => ['label' => 'Afficher le contact'],
-            'modePaiementCarteListe' => self::choice('MODE_PAIEMENT_CARTE_LISTE', 'Cartes bancaires acceptées', true),
+            // Cartes bancaires acceptées : dans Facturation & partenariat (FicheFormCatalog).
         ];
     }
 
-    /** @return array<string, array<string, mixed>> */
+    /**
+     * Facturation & partenariat : bloc commun à toutes les gammes depuis
+     * 2026-09 (FicheAdministratif), défini dans FicheFormCatalog.
+     *
+     * @return array<string, array<string, mixed>>
+     */
     public static function administrative(): array
     {
-        $fields = self::labels([
-            'infoLegaleNom' => 'Raison sociale', 'infoLegaleFormeJuridique' => 'Forme juridique',
-            'infoLegaleRuePostal' => 'Rue postale', 'infoLegaleAdresse2' => "Complément d'adresse",
-            'infoLegaleCodePostal' => 'Code postal', 'infoLegaleVille' => 'Ville', 'inforLegalePays' => 'Pays',
-            'infoLegaleSiret' => 'N° de SIRET', 'infoLegaleNumTva' => 'N° de TVA',
-            'infoLegaleAssujettiTva' => 'Assujetti à la TVA', 'infoLegaleTypeDeProcedureJudiciaire' => 'Procédure judiciaire',
-            'adresseFacturationNom' => 'Nom de facturation', 'adresseFacturationRuePostal' => 'Rue de facturation',
-            'adresseFacturationCodePostal' => 'Code postal de facturation', 'adresseFacturationVille' => 'Ville de facturation',
-            'adresseFacturationPays' => 'Pays de facturation', 'adresseFacturationNumTva' => 'TVA de facturation',
-            'contactFacturationNom' => 'Nom du contact de facturation', 'contactFacturationPrenom' => 'Prénom du contact de facturation',
-            'contactFacturationEmail' => 'Email de facturation', 'contactFacturationTelephone' => 'Téléphone de facturation',
-            'modePaiementBic' => 'BIC', 'modePaiementIban' => 'IBAN',
-            'modePaiementAcceptDeductionCom' => 'Accepte la déduction de commission', 'modePaiementAffacturage' => 'Affacturage',
-            'affacturageBic' => 'BIC d’affacturage', 'affacturageIban' => 'IBAN d’affacturage',
-            'commissionApplicable' => 'Champ d’application de la commission',
-            'convPartSigneeLe' => 'Convention signée le', 'convPartTaux' => 'Taux de commission',
-            'signataireEmail' => 'Email du signataire', 'signatairePrenom' => 'Prénom du signataire', 'signataireNom' => 'Nom du signataire',
-        ]);
-        $fields['infoLegaleTva'] = self::choice('INFO_LEGALE_TVA', 'TVA au débit ou à l’encaissement');
-        $fields['condPaieAccSignature'] = self::choice('COND_PAIE_ACC_SIGNATURE', 'Conditions de paiement de l’acompte');
-        $fields['condPaieAnnSignature'] = self::choice('COND_PAIE_ANN_SIGNATURE', 'Conditions d’annulation');
-        $fields['datePaiementSold'] = self::choice('DATE_PAIEMENT_SOLD', 'Date du paiement du solde');
-
-        return $fields;
+        return FicheFormCatalog::administrative();
     }
 
     /** @return array<string, array<string, mixed>> */

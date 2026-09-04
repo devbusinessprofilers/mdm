@@ -29,6 +29,9 @@ final class RestaurantMappingTest extends KernelTestCase
         self::assertTrue($restaurant->hasAssociation('acces'));
         self::assertTrue($restaurant->hasAssociation('periodesFermeture'));
         self::assertSame('json', $restaurant->getTypeOfField('horairesJours'));
+        foreach (['tarifDejeunerAssis', 'tarifCocktailDejeunatoire', 'tarifDinerAssis', 'tarifCocktailDinatoire', 'tarifForfaitVin', 'tarifForfaitAlcool'] as $tarif) {
+            self::assertSame('decimal', $restaurant->getTypeOfField($tarif), $tarif);
+        }
 
         foreach (
             [

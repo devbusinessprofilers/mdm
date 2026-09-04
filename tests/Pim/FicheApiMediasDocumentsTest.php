@@ -31,7 +31,7 @@ final class FicheApiMediasDocumentsTest extends WebTestCase
 
     private const TABLES = [
         'pim_ressource_lieu', 'dam_media_duplicate_alert', 'dam_media_rendition', 'dam_media_phash_band', 'dam_media_asset',
-        'pim_salle', 'pim_periode_fermeture', 'pim_acces_lieu', 'pim_lieu_administratif', 'pim_lieu_tarification', 'pim_lieu',
+        'pim_salle', 'pim_periode_fermeture', 'pim_acces_lieu', 'pim_fiche_administratif', 'pim_lieu_tarification', 'pim_lieu',
         'pim_restaurant_salle', 'pim_restaurant_periode_fermeture', 'pim_restaurant_acces', 'pim_restaurant',
         'pim_activite_offre', 'pim_activite', 'pim_service_evenementiel',
         'pim_fiche_search', 'pim_fiche_attribute_value', 'pim_fiche', 'pim_localisation', 'outbox_message',

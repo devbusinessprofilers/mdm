@@ -193,7 +193,7 @@ final class MarketplaceSyncSchedulerTest extends KernelTestCase
                 'outbox_message',
                 'etl_fiche_marketplace',
                 'pim_fiche_site_diffusion',
-                'pim_lieu_administratif',
+                'pim_fiche_administratif',
                 'pim_lieu_tarification',
                 'pim_lieu',
                 'pim_fiche',

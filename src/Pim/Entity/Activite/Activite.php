@@ -6,6 +6,7 @@ namespace App\Pim\Entity\Activite;
 
 use App\Pim\Entity\CompletenessScoresTrait;
 use App\Pim\Entity\Fiche;
+use App\Pim\Entity\FicheAdministratif;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Entity\Localisation;
 use App\Pim\Entity\ValeurAttribut;
@@ -33,6 +34,8 @@ class Activite
         touch as touchDetail;
     }
     use CompletenessScoresTrait;
+    /** Emplacements « Plus n°1 » à « Plus n°5 » de la maquette portail. */
+    public const PLUS_MAX = 5;
     #[ORM\Id]
     #[ORM\Column(type: 'ulid', unique: true)]
     private Ulid $id;
@@ -113,6 +116,12 @@ class Activite
     public function fiche(): Fiche
     {
         return $this->fiche;
+    }
+
+    /** Facturation & partenariat (maquette portail), porté par la fiche. */
+    public function administratif(): FicheAdministratif
+    {
+        return $this->fiche->administratif();
     }
 
     public function code(): int
@@ -280,7 +289,7 @@ class Activite
     /** @param list<string> $value */
     public function changePlus(array $value): void
     {
-        $this->assign('plus', array_slice(self::normalizeList($value), 0, 4));
+        $this->assign('plus', array_slice(self::normalizeList($value), 0, self::PLUS_MAX));
     }
 
     public function tarifParPersonne(): ?string

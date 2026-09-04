@@ -28,17 +28,15 @@ final readonly class FicheExportColonnesCatalogue
     private const RATTACHEMENTS = [
         'lieu' => [
             'generaleGammeLibelle' => 'Informations générales',
+            // Cartes bancaires acceptées : dans Facturation & partenariat depuis 2026-09.
+            'modePaiementCarteListe' => 'Facturation & partenariat',
             // Colonnes horaires_* (une par jour) : la carte Disponibilités.
             'horaireJour' => 'Informations générales',
         ],
         'restaurant' => [
-            'capaciteAssiseMax' => 'Salles & capacités',
-            'capaciteEspacePrivatisable' => 'Salles & capacités',
-            'capaciteBanquet' => 'Salles & capacités',
-            'capaciteCocktail' => 'Salles & capacités',
             'horaireJour' => 'Informations générales',
         ],
-        'activite' => ['touteFrance' => 'Localisation & zone d\'intervention'],
+        'activite' => ['touteFrance' => 'Localisation & accessibilité'],
     ];
 
     public function __construct(private FicheImportSchemaRegistry $schemas)

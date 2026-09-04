@@ -55,9 +55,9 @@ final class ActiviteTypeTest extends KernelTestCase
             'objectifs' => ['OBJECTIF_SEMINAIRE_1'],
             'participantsMin' => '2',
             'participantsMax' => '100',
-            'dureeMinMinutes' => '60',
-            'dureeMaxMinutes' => '120',
-            'plus' => "Encadré\nClé en main",
+            'dureeMinMinutes' => '01:00',
+            'dureeMaxMinutes' => '02:00',
+            'plus' => ['Encadré', 'Clé en main'],
             'tarifParPersonne' => '25.50',
             'offres' => [],
             'ressources' => [],
@@ -77,5 +77,19 @@ final class ActiviteTypeTest extends KernelTestCase
         self::assertSame(['TYPE_EXT_INT_1'], $a->types());
         self::assertSame(['TA_SPORTIVE_LUDIQUE', 'TA_NATURE_RSE'], $a->thematiques());
         self::assertSame(['TA_SPORTIVE_LUDIQUE_SS_1'], $a->sousThematiques());
+        self::assertSame(60, $a->dureeMinMinutes());
+        self::assertSame(120, $a->dureeMaxMinutes());
+        self::assertSame(['Encadré', 'Clé en main'], $a->plus());
+        self::assertSame('01:00', $form->createView()['dureeMinMinutes']->vars['value']);
+
+        // Emplacements Forfaits / Options : clé arbitraire, type et position cachés.
+        $form = $factory->create(ActiviteType::class, $a, ['csrf_protection' => false]);
+        $form->submit(['offres' => [
+            'nouveau_forfait_0' => ['type' => 'forfait', 'position' => '0', 'nom' => 'Journée', 'participantsMin' => '4', 'participantsMax' => '20', 'prix' => '90', 'modeTarification' => 'par_personne'],
+            'nouveau_option_1' => ['type' => 'option', 'position' => '1', 'nom' => 'Photographe', 'prix' => '250', 'modeTarification' => 'forfait'],
+        ]], false);
+        self::assertTrue($form->isValid(), (string) $form->getErrors(true));
+        self::assertSame(['forfait', 'option'], array_map(static fn ($o): string => $o->type()->value, $a->offres()->toArray()));
+        self::assertSame([0, 1], array_map(static fn ($o): int => $o->position(), $a->offres()->toArray()));
     }
 }

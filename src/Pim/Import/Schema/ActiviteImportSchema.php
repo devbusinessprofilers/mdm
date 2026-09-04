@@ -51,7 +51,7 @@ final class ActiviteImportSchema extends AbstractFicheImportSchema
             $this->int('participantsMax'),
             $this->int('dureeMinMinutes'),
             $this->int('dureeMaxMinutes'),
-            $this->list('plus', '4 atouts maximum, séparés par |'),
+            $this->list('plus', '5 atouts maximum, séparés par |'),
             $this->decimal('tarifParPersonne'),
             $this->text('youtubeUrl', 255),
         ];

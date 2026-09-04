@@ -24,7 +24,7 @@ use Symfony\Component\Console\Tester\CommandTester;
 #[Group('database')]
 final class ImportLegacyPhotosWorkflowTest extends KernelTestCase
 {
-    private const TABLES = ['etl_legacy_photo', 'etl_legacy_fiche', 'pim_ressource_lieu', 'dam_media_rendition', 'dam_media_asset', 'pim_fiche_search', 'pim_fiche_attribute_value', 'pim_lieu_administratif', 'pim_lieu_tarification', 'pim_lieu', 'pim_fiche', 'pim_localisation', 'outbox_message'];
+    private const TABLES = ['etl_legacy_photo', 'etl_legacy_fiche', 'pim_ressource_lieu', 'dam_media_rendition', 'dam_media_asset', 'pim_fiche_search', 'pim_fiche_attribute_value', 'pim_fiche_administratif', 'pim_lieu_tarification', 'pim_lieu', 'pim_fiche', 'pim_localisation', 'outbox_message'];
 
     private Connection $connection;
     private string $imagesDir;

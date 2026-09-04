@@ -51,7 +51,7 @@ final class FicheImportProcessTest extends KernelTestCase
                 'etl_import_job_error', 'etl_import_job', 'pim_fiche_search', 'pim_fiche_attribute_value',
                 'pim_fiche_site_diffusion', 'pim_site_diffusion',
                 'pim_salle', 'pim_periode_fermeture', 'pim_acces_lieu', 'pim_ressource_lieu',
-                'pim_lieu_administratif', 'pim_lieu_tarification', 'pim_lieu', 'pim_fiche',
+                'pim_fiche_administratif', 'pim_lieu_tarification', 'pim_lieu', 'pim_fiche',
                 'pim_localisation', 'outbox_message', 'account_user',
             ] as $table) {
                 $this->connection->executeStatement('DELETE FROM '.$table);
@@ -67,7 +67,7 @@ final class FicheImportProcessTest extends KernelTestCase
         $container = self::getContainer();
         $entityManager = $container->get(EntityManagerInterface::class);
         $this->connection = $container->get(Connection::class);
-        foreach (['etl_import_job_error', 'etl_import_job', 'pim_salle', 'pim_lieu_administratif', 'pim_lieu_tarification', 'pim_lieu', 'pim_fiche_attribute_value', 'pim_fiche_site_diffusion', 'pim_site_diffusion', 'pim_fiche', 'pim_localisation', 'outbox_message'] as $table) {
+        foreach (['etl_import_job_error', 'etl_import_job', 'pim_salle', 'pim_fiche_administratif', 'pim_lieu_tarification', 'pim_lieu', 'pim_fiche_attribute_value', 'pim_fiche_site_diffusion', 'pim_site_diffusion', 'pim_fiche', 'pim_localisation', 'outbox_message'] as $table) {
             $this->connection->executeStatement('DELETE FROM '.$table);
         }
 

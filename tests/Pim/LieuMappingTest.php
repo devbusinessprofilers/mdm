@@ -6,9 +6,9 @@ namespace App\Tests\Pim;
 
 use App\Dam\Entity\MediaAsset;
 use App\Pim\Entity\Fiche;
+use App\Pim\Entity\FicheAdministratif;
 use App\Pim\Entity\Lieu\AccesLieu;
 use App\Pim\Entity\Lieu\Lieu;
-use App\Pim\Entity\Lieu\LieuAdministratif;
 use App\Pim\Entity\Lieu\LieuTarification;
 use App\Pim\Entity\Lieu\PeriodeFermeture;
 use App\Pim\Entity\Lieu\RessourceLieu;
@@ -40,11 +40,13 @@ final class LieuMappingTest extends KernelTestCase
         self::assertSame(150, $lieuMetadata->getFieldMapping('pmrDetails')->length);
         self::assertSame(1000, $lieuMetadata->getFieldMapping('descGenerale')->length);
         self::assertSame(35, $lieuMetadata->getFieldMapping('atout1')->length);
-        foreach (['fiche', 'administratif', 'tarification', 'salles', 'periodesFermeture', 'acces', 'ressources'] as $association) {
+        foreach (['fiche', 'tarification', 'salles', 'periodesFermeture', 'acces', 'ressources'] as $association) {
             self::assertTrue($lieuMetadata->hasAssociation($association));
         }
         self::assertSame(Fiche::class, $lieuMetadata->getAssociationTargetClass('fiche'));
-        self::assertSame(LieuAdministratif::class, $lieuMetadata->getAssociationTargetClass('administratif'));
+        // Facturation & partenariat : porté par la fiche depuis 2026-09 (toutes gammes).
+        self::assertSame(FicheAdministratif::class, $ficheMetadata->getAssociationTargetClass('administratif'));
+        self::assertSame('pim_fiche_administratif', $entityManager->getClassMetadata(FicheAdministratif::class)->getTableName());
         self::assertSame(LieuTarification::class, $lieuMetadata->getAssociationTargetClass('tarification'));
         self::assertFalse($lieuMetadata->hasField('pays'));
         self::assertFalse($lieuMetadata->hasField('latitude'));
@@ -83,7 +85,8 @@ final class LieuMappingTest extends KernelTestCase
             self::assertTrue($ficheMetadata->hasAssociation($association));
         }
 
-        self::assertCount(37, $entityManager->getClassMetadata(LieuAdministratif::class)->getFieldNames());
+        // 37 colonnes historiques + carte bancaire + 3 acomptes (date, %) + 9 tranches d’annulation.
+        self::assertCount(53, $entityManager->getClassMetadata(FicheAdministratif::class)->getFieldNames());
         self::assertCount(25, $entityManager->getClassMetadata(LieuTarification::class)->getFieldNames());
 
         // Nine source fields, three normalized/indexed fields, the BAN

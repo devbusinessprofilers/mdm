@@ -160,7 +160,7 @@ final class VisionControllersTest extends WebTestCase
             'dam_media_duplicate_alert',
             'dam_media_rendition',
             'dam_media_asset',
-            'pim_lieu_administratif',
+            'pim_fiche_administratif',
             'pim_lieu_tarification',
             'pim_lieu',
             'pim_fiche',

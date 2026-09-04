@@ -159,6 +159,9 @@ final readonly class LieuApiMapper
      */
     private function fields(object $source, array $definitions): array
     {
+        // Les rappels en lecture seule de l'éditeur (commission) n'ont pas d'accesseur.
+        $definitions = array_filter($definitions, static fn (array $definition): bool => true !== ($definition['lecture_seule'] ?? false));
+
         return $this->namedFields($source, array_keys($definitions));
     }
 

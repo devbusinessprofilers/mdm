@@ -94,11 +94,15 @@
 
 {# ---- Documents, répartis par onglet maquette (dépôt par le formulaire
        principal — panneau statique du shell — ou la matrice des salles). ---- #}
-{{ _self.panneau_documents('plans', 'Plans',
-    'Plans de salle déposés depuis la matrice des salles. Les originaux restent privés, une copie publique n’est créée qu’après validation des droits.',
+{# Restaurant : l'onglet « Plans » devient « Menus » (maquette) — menus déposés
+   par le formulaire principal et plans de salle de la matrice y cohabitent. #}
+{{ _self.panneau_documents('plans', gamme_slug == 'restaurants' ? 'Menus' : 'Plans',
+    gamme_slug == 'restaurants'
+        ? 'Menus déposés par le champ ci-dessous et plans de salle déposés depuis la matrice des salles. Les originaux restent privés, une copie publique n’est créée qu’après validation des droits.'
+        : 'Plans de salle déposés depuis la matrice des salles. Les originaux restent privés, une copie publique n’est créée qu’après validation des droits.',
     documents|filter(d => d.onglet == 'plans')) }}
 {{ _self.panneau_documents('supports', 'Supports commerciaux',
-    'Menus et supports de présentation. Les originaux restent privés, une copie publique n’est créée qu’après validation des droits. Le dépôt se fait par les champs ci-dessous.',
+    'Supports de présentation. Les originaux restent privés, une copie publique n’est créée qu’après validation des droits. Le dépôt se fait par les champs ci-dessous.',
     documents|filter(d => d.onglet == 'supports')) }}
 {{ _self.panneau_documents('documents', 'Documents administratifs',
     'Pièces administratives de la fiche — toujours privées.',

@@ -2,19 +2,31 @@
 
 declare(strict_types=1);
 
-namespace App\Pim\Entity\Lieu;
+namespace App\Pim\Entity;
 
 use App\Pim\Lov\LieuLovCatalog;
 use Doctrine\ORM\Mapping as ORM;
 
+/**
+ * Bloc « Facturation & partenariat » d'une fiche, toutes gammes (maquette
+ * portail prestataire) : porté par la Fiche depuis 2026-09, après avoir été
+ * propre au Lieu (LieuAdministratif). Les LOV et validations restent celles
+ * de la bible Lieu (LieuLovCatalog).
+ */
 #[ORM\Entity]
-#[ORM\Table(name: 'pim_lieu_administratif')]
-class LieuAdministratif
+#[ORM\Table(name: 'pim_fiche_administratif')]
+class FicheAdministratif
 {
+    /** Emplacements d'acompte de la maquette (« Ajouter un acompte » ×3). */
+    public const ACOMPTES = 3;
+
+    /** Tranches d'annulation (LOV COND_PAIE_ANN_SIGNATURE), un pourcentage chacune. */
+    public const TRANCHES_ANNULATION = 9;
+
     #[ORM\Id]
     #[ORM\OneToOne(inversedBy: 'administratif')]
-    #[ORM\JoinColumn(name: 'lieu_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
-    private Lieu $lieu;
+    #[ORM\JoinColumn(name: 'fiche_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
+    private Fiche $fiche;
 
     #[ORM\Column(name: 'info_legale_nom', length: 255, nullable: true)] private ?string $infoLegaleNom = null;
     #[ORM\Column(name: 'info_legale_forme_juridique', length: 255, nullable: true)] private ?string $infoLegaleFormeJuridique = null;
@@ -53,9 +65,32 @@ class LieuAdministratif
     #[ORM\Column(name: 'signataire_email', length: 255, nullable: true)] private ?string $signataireEmail = null;
     #[ORM\Column(name: 'signataire_prenom', length: 255, nullable: true)] private ?string $signatairePrenom = null;
     #[ORM\Column(name: 'signataire_nom', length: 255, nullable: true)] private ?string $signataireNom = null;
-    public function __construct(Lieu $lieu)
+    // Maquette portail : paiement par carte (Oui/Non), acomptes (3 emplacements
+    // date LOV + %), un pourcentage par tranche d'annulation (9 tranches LOV).
+    #[ORM\Column(name: 'mode_paiement_carte', nullable: true)] private ?bool $modePaiementCarte = null;
+    #[ORM\Column(name: 'cond_paie_acc_date_1', length: 255, nullable: true)] private ?string $condPaieAccDate1 = null;
+    #[ORM\Column(name: 'cond_paie_acc_date_2', length: 255, nullable: true)] private ?string $condPaieAccDate2 = null;
+    #[ORM\Column(name: 'cond_paie_acc_date_3', length: 255, nullable: true)] private ?string $condPaieAccDate3 = null;
+    #[ORM\Column(name: 'cond_paie_acc_pourcentage_1', nullable: true)] private ?int $condPaieAccPourcentage1 = null;
+    #[ORM\Column(name: 'cond_paie_acc_pourcentage_2', nullable: true)] private ?int $condPaieAccPourcentage2 = null;
+    #[ORM\Column(name: 'cond_paie_acc_pourcentage_3', nullable: true)] private ?int $condPaieAccPourcentage3 = null;
+    #[ORM\Column(name: 'cond_paie_ann_pourcentage_1', nullable: true)] private ?int $condPaieAnnPourcentage1 = null;
+    #[ORM\Column(name: 'cond_paie_ann_pourcentage_2', nullable: true)] private ?int $condPaieAnnPourcentage2 = null;
+    #[ORM\Column(name: 'cond_paie_ann_pourcentage_3', nullable: true)] private ?int $condPaieAnnPourcentage3 = null;
+    #[ORM\Column(name: 'cond_paie_ann_pourcentage_4', nullable: true)] private ?int $condPaieAnnPourcentage4 = null;
+    #[ORM\Column(name: 'cond_paie_ann_pourcentage_5', nullable: true)] private ?int $condPaieAnnPourcentage5 = null;
+    #[ORM\Column(name: 'cond_paie_ann_pourcentage_6', nullable: true)] private ?int $condPaieAnnPourcentage6 = null;
+    #[ORM\Column(name: 'cond_paie_ann_pourcentage_7', nullable: true)] private ?int $condPaieAnnPourcentage7 = null;
+    #[ORM\Column(name: 'cond_paie_ann_pourcentage_8', nullable: true)] private ?int $condPaieAnnPourcentage8 = null;
+    #[ORM\Column(name: 'cond_paie_ann_pourcentage_9', nullable: true)] private ?int $condPaieAnnPourcentage9 = null;
+    public function __construct(Fiche $fiche)
     {
-        $this->lieu = $lieu;
+        $this->fiche = $fiche;
+    }
+
+    public function fiche(): Fiche
+    {
+        return $this->fiche;
     }
 
     public function infoLegaleNom(): ?string
@@ -432,6 +467,184 @@ class LieuAdministratif
         $this->assign('signataireNom', self::normalize($value));
     }
 
+    public function modePaiementCarte(): ?bool
+    {
+        return $this->modePaiementCarte;
+    }
+
+    public function changeModePaiementCarte(?bool $value): void
+    {
+        $this->assign('modePaiementCarte', $value);
+    }
+
+    /** @return list<string> Cartes acceptées (LOV MODE_PAIEMENT_CARTE_LISTE), stockées en valeurs d'attribut de la fiche. */
+    public function modePaiementCarteListe(): array
+    {
+        return array_map(static fn (int $valueId): string => LieuLovCatalog::valueCode($valueId), $this->fiche->valueIdsFor('MODE_PAIEMENT_CARTE_LISTE'));
+    }
+
+    /** @param list<string> $values */
+    public function changeModePaiementCarteListe(array $values): void
+    {
+        $values = array_values(array_unique(array_filter(array_map(static fn (string $value): string => trim($value), $values), static fn (string $value): bool => '' !== $value)));
+        LieuLovCatalog::assertValidMany('MODE_PAIEMENT_CARTE_LISTE', $values);
+        $this->fiche->replaceAttributeValues('MODE_PAIEMENT_CARTE_LISTE', array_map(static fn (string $value): int => LieuLovCatalog::valueId('MODE_PAIEMENT_CARTE_LISTE', $value), $values));
+        $this->fiche->markChanged();
+    }
+
+    public function condPaieAccDate1(): ?string
+    {
+        return $this->condPaieAccDate1;
+    }
+
+    public function changeCondPaieAccDate1(?string $value): void
+    {
+        LieuLovCatalog::assertValid('COND_PAIE_ACC_SIGNATURE', $value);
+        $this->assign('condPaieAccDate1', self::normalize($value));
+    }
+
+    public function condPaieAccPourcentage1(): ?int
+    {
+        return $this->condPaieAccPourcentage1;
+    }
+
+    public function changeCondPaieAccPourcentage1(?int $value): void
+    {
+        $this->assign('condPaieAccPourcentage1', $value);
+    }
+
+    public function condPaieAccDate2(): ?string
+    {
+        return $this->condPaieAccDate2;
+    }
+
+    public function changeCondPaieAccDate2(?string $value): void
+    {
+        LieuLovCatalog::assertValid('COND_PAIE_ACC_SIGNATURE', $value);
+        $this->assign('condPaieAccDate2', self::normalize($value));
+    }
+
+    public function condPaieAccPourcentage2(): ?int
+    {
+        return $this->condPaieAccPourcentage2;
+    }
+
+    public function changeCondPaieAccPourcentage2(?int $value): void
+    {
+        $this->assign('condPaieAccPourcentage2', $value);
+    }
+
+    public function condPaieAccDate3(): ?string
+    {
+        return $this->condPaieAccDate3;
+    }
+
+    public function changeCondPaieAccDate3(?string $value): void
+    {
+        LieuLovCatalog::assertValid('COND_PAIE_ACC_SIGNATURE', $value);
+        $this->assign('condPaieAccDate3', self::normalize($value));
+    }
+
+    public function condPaieAccPourcentage3(): ?int
+    {
+        return $this->condPaieAccPourcentage3;
+    }
+
+    public function changeCondPaieAccPourcentage3(?int $value): void
+    {
+        $this->assign('condPaieAccPourcentage3', $value);
+    }
+
+    public function condPaieAnnPourcentage1(): ?int
+    {
+        return $this->condPaieAnnPourcentage1;
+    }
+
+    public function changeCondPaieAnnPourcentage1(?int $value): void
+    {
+        $this->assign('condPaieAnnPourcentage1', $value);
+    }
+
+    public function condPaieAnnPourcentage2(): ?int
+    {
+        return $this->condPaieAnnPourcentage2;
+    }
+
+    public function changeCondPaieAnnPourcentage2(?int $value): void
+    {
+        $this->assign('condPaieAnnPourcentage2', $value);
+    }
+
+    public function condPaieAnnPourcentage3(): ?int
+    {
+        return $this->condPaieAnnPourcentage3;
+    }
+
+    public function changeCondPaieAnnPourcentage3(?int $value): void
+    {
+        $this->assign('condPaieAnnPourcentage3', $value);
+    }
+
+    public function condPaieAnnPourcentage4(): ?int
+    {
+        return $this->condPaieAnnPourcentage4;
+    }
+
+    public function changeCondPaieAnnPourcentage4(?int $value): void
+    {
+        $this->assign('condPaieAnnPourcentage4', $value);
+    }
+
+    public function condPaieAnnPourcentage5(): ?int
+    {
+        return $this->condPaieAnnPourcentage5;
+    }
+
+    public function changeCondPaieAnnPourcentage5(?int $value): void
+    {
+        $this->assign('condPaieAnnPourcentage5', $value);
+    }
+
+    public function condPaieAnnPourcentage6(): ?int
+    {
+        return $this->condPaieAnnPourcentage6;
+    }
+
+    public function changeCondPaieAnnPourcentage6(?int $value): void
+    {
+        $this->assign('condPaieAnnPourcentage6', $value);
+    }
+
+    public function condPaieAnnPourcentage7(): ?int
+    {
+        return $this->condPaieAnnPourcentage7;
+    }
+
+    public function changeCondPaieAnnPourcentage7(?int $value): void
+    {
+        $this->assign('condPaieAnnPourcentage7', $value);
+    }
+
+    public function condPaieAnnPourcentage8(): ?int
+    {
+        return $this->condPaieAnnPourcentage8;
+    }
+
+    public function changeCondPaieAnnPourcentage8(?int $value): void
+    {
+        $this->assign('condPaieAnnPourcentage8', $value);
+    }
+
+    public function condPaieAnnPourcentage9(): ?int
+    {
+        return $this->condPaieAnnPourcentage9;
+    }
+
+    public function changeCondPaieAnnPourcentage9(?int $value): void
+    {
+        $this->assign('condPaieAnnPourcentage9', $value);
+    }
+
     private static function normalize(?string $value): ?string
     {
         if (null === $value) {
@@ -458,6 +671,6 @@ class LieuAdministratif
             }
         }
         $this->{$property} = $value;
-        $this->lieu->markChanged();
+        $this->fiche->markChanged();
     }
 }

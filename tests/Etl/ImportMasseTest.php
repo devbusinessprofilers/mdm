@@ -52,7 +52,7 @@ final class ImportMasseTest extends WebTestCase
             foreach ([
                 'etl_import_job_error', 'etl_import_job', 'pim_fiche_search', 'pim_fiche_attribute_value',
                 'pim_fiche_site_diffusion', 'pim_salle', 'pim_periode_fermeture', 'pim_acces_lieu',
-                'pim_ressource_lieu', 'pim_lieu_administratif', 'pim_lieu_tarification', 'pim_lieu',
+                'pim_ressource_lieu', 'pim_fiche_administratif', 'pim_lieu_tarification', 'pim_lieu',
                 'pim_restaurant_salle', 'pim_restaurant_periode_fermeture', 'pim_restaurant_acces', 'pim_restaurant',
                 'pim_fiche', 'pim_localisation', 'outbox_message', 'account_user',
             ] as $table) {

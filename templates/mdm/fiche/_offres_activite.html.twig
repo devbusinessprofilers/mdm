@@ -1,0 +1,49 @@
+{#
+    Forfaits / options d'une Activité (maquette portail) : trois emplacements
+    fixes par type. Chaque emplacement = case « Ajouter forfait n » (hors
+    formulaire) + cible affichage-conditionnel contenant les champs de l'offre.
+    Un emplacement décoché voit ses champs désactivés (data-desactiver) :
+    rien n'est soumis, l'offre existante disparaît (allow_delete) et aucune
+    offre vide n'est créée. Les entrées existantes occupent les premiers
+    emplacements (par position), les suivants reçoivent le prototype de la
+    collection, nommé nouveau_<type>_<n> (clé arbitraire acceptée par
+    ResizeFormListener). Le type est un champ caché fixé par le bloc.
+
+    Variables : `widget` — la collection `offres` ; `type` — 'forfait' | 'option' ;
+    `gabarit` — le prototype rendu une fois (mdm/fiche/_offre_gabarit), à placeholders.
+#}
+{% set libelle = type == 'forfait' ? 'forfait' : 'option' %}
+{% set existantes = widget|filter(o => o.children.type.vars.value == type)|reduce((acc, o) => acc|merge([o]), []) %}
+<div class="flex flex-col divide-y divide-neutral-200">
+    {% for n in 0..2 %}
+        {% set entree = existantes[n]|default(null) %}
+        {% set nom_slot = 'nouveau_' ~ type ~ '_' ~ n %}
+        {% set id_case = widget.vars.id ~ '_' ~ type ~ '_' ~ n ~ '_actif' %}
+        <div class="flex flex-col gap-4 py-4" data-offre="{{ type }}-{{ n }}">
+            <label for="{{ id_case }}" class="flex flex-row items-center gap-3 cursor-pointer w-fit">
+                <twig:Form:Checkbox id="{{ id_case }}" name="offre_active[{{ type }}][{{ n }}]" value="1" :checked="entree is not null" />
+                <twig:Typography variant="body" bold element="span">Ajouter {{ libelle }} {{ n + 1 }}</twig:Typography>
+            </label>
+            <div class="flex flex-row flex-wrap gap-x-6 gap-y-5 data-[masque]:hidden"
+                 data-affichage-conditionnel-target="cible"
+                 data-source="{{ id_case }}"
+                 data-valeurs="1"
+                 data-desactiver="1">
+                {% if entree is not null %}
+                    {{ form_widget(entree.children.type) }}
+                    {{ form_widget(entree.children.position, { value: n }) }}
+                    <div class="w-full">{{ form_row(entree.children.nom, { label: 'Nom ' ~ libelle }) }}</div>
+                    <div class="w-[calc(50%-12px)]">{{ form_row(entree.children.participantsMin, { label: 'Nombre de participants minimum' }) }}</div>
+                    <div class="w-[calc(50%-12px)]">{{ form_row(entree.children.participantsMax, { label: 'Participants maximum' }) }}</div>
+                    <div class="w-[calc(50%-12px)]">{{ form_row(entree.children.prix, { label: 'Montant HT à partir de (/pers)' }) }}</div>
+                    <div class="w-[calc(50%-12px)]">{{ form_row(entree.children.modeTarification) }}</div>
+                    {% do entree.setRendered %}
+                {% else %}
+                    {# Emplacement libre : gabarit du prototype, désactivé tant que la case n'est pas cochée. #}
+                    {{ gabarit|replace({ '__name__': nom_slot, '__type__': type, '__position__': n, '__libelle__': libelle })|raw }}
+                {% endif %}
+            </div>
+        </div>
+    {% endfor %}
+</div>
+{% do widget.setRendered %}

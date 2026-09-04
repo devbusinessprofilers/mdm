@@ -28,7 +28,7 @@ final class OutilsJournalPaginationTest extends WebTestCase
     protected function tearDown(): void
     {
         if (isset($this->connection)) {
-            foreach (['pim_fiche_enrichment_run', 'pim_fiche_search', 'pim_lieu_administratif', 'pim_lieu_tarification', 'pim_lieu', 'pim_fiche', 'account_user'] as $table) {
+            foreach (['pim_fiche_enrichment_run', 'pim_fiche_search', 'pim_fiche_administratif', 'pim_lieu_tarification', 'pim_lieu', 'pim_fiche', 'account_user'] as $table) {
                 $this->connection->executeStatement('DELETE FROM '.$table);
             }
         }

@@ -68,10 +68,23 @@ final class FicheLieuEditeurTest extends WebTestCase
         // Un éditeur ne voit pas la suppression (réservée aux validateurs).
         self::assertSelectorNotExists('.danger-form');
 
-        // Section Médias : le gestionnaire de photos/documents du DAM est intégré.
-        $client->request('GET', '/referentiel/lieux/fiche/'.$id.'?section=11');
+        // Section Médias : le gestionnaire de photos/documents du DAM est intégré ;
+        // les pièces de facturation (URSSAF, RIB…) n'y sont plus proposées.
+        $crawler = $client->request('GET', '/referentiel/lieux/fiche/'.$id.'?section=11');
         self::assertResponseIsSuccessful();
         self::assertSelectorExists('[data-controller="lieu-media"]');
+        self::assertStringNotContainsString('INFO_LEGALE_ATTESTATION_VIGILANCE_URSSAF', (string) $client->getResponse()->getContent());
+
+        // Section Facturation & partenariat : cartes maquette + six dropzones dans l'onglet.
+        $crawler = $client->request('GET', '/referentiel/lieux/fiche/'.$id.'?section=13');
+        self::assertResponseIsSuccessful();
+        self::assertSame(
+            ['Informations légales', 'Adresse de facturation', 'Contact de facturation', 'Mode de paiements acceptés', 'Conditions de paiement de l\'acompte', 'Conditions de paiement annulation', 'Paiement des soldes', 'Commission', 'Convention de partenariat', 'Conditions générales de ventes'],
+            $crawler->filter('#form-fiche section[data-volet="13"] h2')->each(static fn (\Symfony\Component\DomCrawler\Crawler $h2): string => $h2->text(null, true)),
+        );
+        self::assertCount(6, $crawler->filter('#form-fiche section[data-volet="13"] input[type="file"]'));
+        self::assertCount(1, $crawler->filter('select[name="lieu[administratif][modePaiementCarteListe][]"]'));
+        self::assertCount(0, $crawler->filter('select[name="lieu[visibilite][modePaiementCarteListe][]"]'));
 
         // Section Salles : les collections gardent l'ajout/retrait Stimulus.
         $client->request('GET', '/referentiel/lieux/fiche/'.$id.'?section=5');
@@ -342,7 +355,7 @@ final class FicheLieuEditeurTest extends WebTestCase
         $this->connection->executeStatement('DELETE FROM pim_acces_lieu');
         $this->connection->executeStatement('DELETE FROM pim_periode_fermeture');
         $this->connection->executeStatement('DELETE FROM pim_salle');
-        $this->connection->executeStatement('DELETE FROM pim_lieu_administratif');
+        $this->connection->executeStatement('DELETE FROM pim_fiche_administratif');
         $this->connection->executeStatement('DELETE FROM pim_lieu_tarification');
         $this->connection->executeStatement('DELETE FROM pim_fiche_search');
         $this->connection->executeStatement('DELETE FROM pim_fiche_attribute_value');

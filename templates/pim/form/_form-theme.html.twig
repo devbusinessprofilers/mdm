@@ -170,6 +170,7 @@
             :multiple="multiple"
             :disabled="disabled"
             :required="required"
+            :limit="attr['data-max']|default(null)"
             placeholder="{{ attr.placeholder|default('') }}"
         />
     {%- endif -%}

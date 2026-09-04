@@ -71,7 +71,7 @@ final class FieldFillRateCalculatorTest extends KernelTestCase
     private function clearTables(): void
     {
         $connection = $this->entityManager->getConnection();
-        foreach (['pim_fiche_attribute_value', 'pim_ressource_lieu', 'pim_lieu_administratif', 'pim_lieu_tarification', 'pim_lieu', 'pim_fiche', 'pim_localisation'] as $table) {
+        foreach (['pim_fiche_attribute_value', 'pim_ressource_lieu', 'pim_fiche_administratif', 'pim_lieu_tarification', 'pim_lieu', 'pim_fiche', 'pim_localisation'] as $table) {
             $connection->executeStatement('DELETE FROM '.$table);
         }
     }

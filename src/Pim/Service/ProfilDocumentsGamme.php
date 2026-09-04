@@ -34,7 +34,8 @@ final readonly class ProfilDocumentsGamme
     public const ONGLETS_DEPOT_LIEU = [
         'plans' => [DocumentUsage::RoomPlan, DocumentUsage::GeneralPlan],
         'supports' => [DocumentUsage::CommercialSupport],
-        'documents' => [DocumentUsage::RseEvidence, DocumentUsage::Urssaf, DocumentUsage::LiabilityInsurance, DocumentUsage::BankDetails, DocumentUsage::FactoringBankDetails, DocumentUsage::Terms, DocumentUsage::Convention],
+        // Les pièces de facturation se déposent dans l'onglet Facturation & partenariat.
+        'documents' => [DocumentUsage::RseEvidence],
     ];
 
     /**

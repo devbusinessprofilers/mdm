@@ -28,6 +28,9 @@ final class ImportSchemaCoverageTest extends KernelTestCase
             'changeDispoHorairesJours', // tableau complet — l'import passe par les colonnes horaires_* (changeHoraireJour)
             'changeRestaurant',         // liaison entre fiches saisie dans l'éditeur, inconnue du legacy
         ],
+        \App\Pim\Entity\FicheAdministratif::class => [
+            'changeModePaiementCarteListe', // couvert par la colonne mode_paiement_carte_liste (Lieu::changeModePaiementCarteListe, même stockage)
+        ],
         \App\Pim\Entity\Restaurant\Restaurant::class => [
             'changeLieu',               // liaison entre fiches saisie dans l'éditeur, inconnue du legacy
             'changeHorairesJours',      // tableau complet — l'import passe par les colonnes horaires_* (changeHoraireJour)

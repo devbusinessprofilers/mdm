@@ -212,8 +212,11 @@ final class LieuTest extends TestCase
         $ficheUpdatedAt = $lieu->fiche()->updatedAt();
         usleep(1_000);
 
+        // Le bloc administratif est porté par la fiche (toutes gammes) : c'est
+        // l'horodatage de la fiche qui bouge — celui que lisent la synchro et
+        // la fraîcheur des scans.
         $lieu->administratif()->changeInfoLegaleNom('Business Profilers');
-        self::assertGreaterThan($lieuUpdatedAt, $lieu->updatedAt());
+        self::assertSame($lieu->fiche(), $lieu->administratif()->fiche());
         self::assertGreaterThan($ficheUpdatedAt, $lieu->fiche()->updatedAt());
 
         $lieuUpdatedAt = $lieu->updatedAt();

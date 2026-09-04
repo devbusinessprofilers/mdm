@@ -8,7 +8,9 @@ use App\Pim\Entity\Activite\OffreActivite;
 use App\Pim\Enum\ModeTarificationActivite;
 use App\Pim\Enum\TypeOffreActivite;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\CallbackTransformer;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
+use Symfony\Component\Form\Extension\Core\Type\HiddenType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\MoneyType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
@@ -30,18 +32,14 @@ final class OffreActiviteType extends AbstractType
                 $o->{$set}($v);
             },
         ];
+        // Le type est fixé par le bloc Forfaits / Options de l'éditeur (champ
+        // caché) ; l'API PATCH continue d'envoyer 'forfait' / 'option'.
         $b->add(
-            'type',
-            ChoiceType::class,
-            $field('Type', 'type', 'changeType') + [
-                'choices' => [
-                    'Forfait' => TypeOffreActivite::Forfait,
-                    'Option' => TypeOffreActivite::Option,
-                ],
-                'choice_value' => static fn (
-                    ?TypeOffreActivite $type,
-                ): ?string => $type?->value,
-            ],
+            $b->create('type', HiddenType::class, $field('Type', 'type', 'changeType'))
+                ->addModelTransformer(new CallbackTransformer(
+                    static fn (?TypeOffreActivite $type): string => null === $type ? '' : $type->value,
+                    static fn (?string $value): TypeOffreActivite => TypeOffreActivite::tryFrom((string) $value) ?? TypeOffreActivite::Forfait,
+                )),
         )
             ->add('nom', TextType::class, $field('Nom', 'nom', 'changeNom'))
             ->add(
@@ -87,10 +85,13 @@ final class OffreActiviteType extends AbstractType
                     ): ?string => $mode?->value,
                 ],
             )
+            // Position = n° d'emplacement du bloc Forfaits / Options (caché).
             ->add(
-                'position',
-                IntegerType::class,
-                $field('Position', 'position', 'changePosition'),
+                $b->create('position', HiddenType::class, $field('Position', 'position', 'changePosition'))
+                    ->addModelTransformer(new CallbackTransformer(
+                        static fn (?int $position): string => (string) ($position ?? 0),
+                        static fn (?string $value): ?int => null === $value || '' === trim($value) ? null : (int) $value,
+                    )),
             );
     }
 

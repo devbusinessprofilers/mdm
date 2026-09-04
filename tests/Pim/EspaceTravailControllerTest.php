@@ -108,7 +108,7 @@ final class EspaceTravailControllerTest extends WebTestCase
     {
         $this->connection->executeStatement('DELETE FROM pim_saved_view');
         $this->connection->executeStatement('DELETE FROM pim_fiche_search');
-        $this->connection->executeStatement('DELETE FROM pim_lieu_administratif');
+        $this->connection->executeStatement('DELETE FROM pim_fiche_administratif');
         $this->connection->executeStatement('DELETE FROM pim_lieu_tarification');
         $this->connection->executeStatement('DELETE FROM pim_lieu');
         $this->connection->executeStatement('DELETE FROM pim_fiche');

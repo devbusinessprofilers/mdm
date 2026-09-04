@@ -32,7 +32,7 @@ final class FicheSuggestionEnregistreurTest extends KernelTestCase
     {
         if (isset($this->connection)) {
             $this->connection->executeStatement('DELETE FROM pim_fiche_suggestion');
-            $this->connection->executeStatement('DELETE FROM pim_lieu_administratif');
+            $this->connection->executeStatement('DELETE FROM pim_fiche_administratif');
             $this->connection->executeStatement('DELETE FROM pim_lieu');
             $this->connection->executeStatement('DELETE FROM pim_fiche');
         }

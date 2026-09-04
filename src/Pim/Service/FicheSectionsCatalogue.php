@@ -22,7 +22,20 @@ use App\Pim\Lov\ServiceLovCatalog;
  */
 final class FicheSectionsCatalogue
 {
-    /** @return list<array{titre: string, champs: list<string>, proprietes: list<string>, blocs: list<string>, groupe?: string}> */
+    /** Les six montants « à partir de » de l'onglet Tarifs du Restaurant (ordre maquette). */
+    public const TARIFS_RESTAURANT = ['tarifDejeunerAssis', 'tarifCocktailDejeunatoire', 'tarifDinerAssis', 'tarifCocktailDinatoire', 'tarifForfaitVin', 'tarifForfaitAlcool'];
+
+    /**
+     * Une section peut porter des `cartes` (découpage visuel maquette) :
+     * chaque carte = {titre: ?string, champs: list<string> (feuilles pointées
+     * admises), colonnes: 2|3, pleins?: list<string>, bloc?: string,
+     * conditions?: array<string, array{source: string, valeurs: string, vider?: bool}>}.
+     * L'union des racines des champs des cartes est exactement `champs`
+     * (test FicheSectionsCatalogueTest) : les consommateurs à plat
+     * (champs omis, complétude, export) ne lisent jamais les cartes.
+     *
+     * @return list<array{titre: string, champs: list<string>, proprietes: list<string>, blocs: list<string>, groupe?: string, cartes?: list<array<string, mixed>>}>
+     */
     public static function pour(TypeFiche $type): array
     {
         return match ($type) {
@@ -32,6 +45,12 @@ final class FicheSectionsCatalogue
             TypeFiche::ServiceEvenementiel => self::service(),
             TypeFiche::Traiteur => [],
         };
+    }
+
+    /** @return array{titre: string, champs: list<string>, proprietes: list<string>, blocs: list<string>, groupe?: string, cartes?: list<array<string, mixed>>} */
+    public static function section(TypeFiche $type, int $index): array
+    {
+        return self::pour($type)[$index] ?? self::pour($type)[0];
     }
 
     public static function indexValide(TypeFiche $type, int $index): int
@@ -163,18 +182,12 @@ final class FicheSectionsCatalogue
                 // réglages réels de visibilité et les sites de diffusion.
                 // Feuilles pointées : generaleYoutube vit dans Médias › Vidéo.
                 'titre' => 'Booster ma visibilité',
-                'champs' => ['visibilite.miceStatut', 'visibilite.afficherContact', 'visibilite.modePaiementCarteListe'],
-                'proprietes' => ['miceStatut', 'afficherContact', 'modePaiementCarteListe'],
+                'champs' => ['visibilite.miceStatut', 'visibilite.afficherContact'],
+                'proprietes' => ['miceStatut', 'afficherContact'],
                 'blocs' => ['formules', 'sites'],
                 'groupe' => 'ma_fiche',
             ],
-            [
-                'titre' => 'Facturation & partenariat',
-                'champs' => ['administratif'],
-                'proprietes' => ['administratif'],
-                'blocs' => [],
-                'groupe' => 'parametres',
-            ],
+            self::sectionFacturation(),
             [
                 'titre' => 'Utilisateurs',
                 'champs' => [],
@@ -194,31 +207,45 @@ final class FicheSectionsCatalogue
         ];
     }
 
-    /** @return list<array{titre: string, champs: list<string>, proprietes: list<string>, blocs: list<string>, groupe?: string}> */
+    /**
+     * Onglets de la maquette portail prestataire (2026-09) : les cartes
+     * déclarent le découpage visuel de chaque onglet (titre, champs dans
+     * l'ordre maquette, colonnes, bloc spécialisé). Les champs restent à plat
+     * dans `champs`/`proprietes` (complétude, export, champs omis).
+     *
+     * @return list<array{titre: string, champs: list<string>, proprietes: list<string>, blocs: list<string>, groupe?: string, cartes?: list<array<string, mixed>>}>
+     */
     private static function restaurant(): array
     {
         return [
             [
                 'titre' => 'Informations générales',
-                'champs' => ['label', 'lieu', 'siteOfficiel', 'businessPremium', 'partenaireBp', 'privatisationTotale', 'privatisationPartielle', 'horairesJours', 'joursOuverture', 'periodesFermeture'],
-                'proprietes' => ['label', 'lieu', 'siteOfficiel', 'privatisationTotale', 'privatisationPartielle', 'horairesJours', 'joursOuverture', 'periodesFermeture'],
-                'blocs' => ['disponibilites'],
+                'champs' => ['label', 'typesRestaurant', 'typesCuisine', 'specificitesAlimentaires', 'typesEvenement', 'siteOfficiel', 'lieu', 'businessPremium', 'partenaireBp', 'privatisationTotale', 'privatisationPartielle', 'joursOuverture', 'horairesJours', 'periodesFermeture'],
+                'proprietes' => ['label', 'typesRestaurant', 'typesCuisine', 'specificitesAlimentaires', 'typesEvenement', 'siteOfficiel', 'lieu', 'privatisationTotale', 'privatisationPartielle', 'joursOuverture', 'horairesJours', 'periodesFermeture'],
+                'blocs' => [],
                 'groupe' => 'ma_fiche',
+                'cartes' => [
+                    ['titre' => null, 'champs' => ['label', 'typesRestaurant', 'typesCuisine', 'specificitesAlimentaires', 'typesEvenement', 'siteOfficiel', 'lieu', 'businessPremium', 'partenaireBp'], 'colonnes' => 2],
+                    ['titre' => 'Disponibilités', 'champs' => ['privatisationTotale', 'privatisationPartielle', 'joursOuverture', 'horairesJours', 'periodesFermeture'], 'colonnes' => 2, 'bloc' => 'horaires'],
+                ],
             ],
             [
                 'titre' => 'Localisation & accessibilité',
-                // Accessibilité PMR avant la collection Accès (ordre maquette).
-                'champs' => ['localisation', 'accesPmr', 'toilettesPmr', 'acces'],
-                'proprietes' => ['localisation', 'accesPmr', 'toilettesPmr', 'acces'],
+                'champs' => ['localisation', 'acces', 'accesPmr', 'toilettesPmr'],
+                'proprietes' => ['localisation', 'acces', 'accesPmr', 'toilettesPmr'],
                 'blocs' => [],
                 'groupe' => 'ma_fiche',
-            ],
-            [
-                'titre' => 'Classification',
-                'champs' => ['typesRestaurant', 'typesCuisine', 'specificitesAlimentaires', 'typesEvenement'],
-                'proprietes' => ['typesRestaurant', 'typesCuisine', 'specificitesAlimentaires', 'typesEvenement'],
-                'blocs' => [],
-                'groupe' => 'ma_fiche',
+                'cartes' => [
+                    self::carteLocalisation(),
+                    ['titre' => 'Accessibilité', 'champs' => ['acces'], 'colonnes' => 2, 'bloc' => 'collection'],
+                    [
+                        'titre' => 'Détails des accès PMR',
+                        'champs' => ['accesPmr', 'toilettesPmr'],
+                        'colonnes' => 2,
+                        // Toilettes PMR : visible seulement si Accès PMR = Oui (maquette).
+                        'conditions' => ['toilettesPmr' => ['source' => 'accesPmr', 'valeurs' => '1', 'vider' => true]],
+                    ],
+                ],
             ],
             [
                 'titre' => 'Description',
@@ -226,15 +253,22 @@ final class FicheSectionsCatalogue
                 'proprietes' => ['descriptionGenerale', 'atouts'],
                 'blocs' => [],
                 'groupe' => 'ma_fiche',
+                'cartes' => [
+                    ['titre' => null, 'champs' => ['descriptionGenerale', 'atouts'], 'colonnes' => 2],
+                ],
             ],
             [
-                'titre' => 'Salles & capacités',
-                // La collection se rend en matrice maquette (mdm/fiche/_capacites),
-                // comme la section Réunion du Lieu.
-                'champs' => ['salles'],
-                'proprietes' => ['salles'],
-                'blocs' => ['capacites'],
+                'titre' => 'Capacités',
+                'champs' => ['capaciteAssiseMax', 'capaciteEspacePrivatisable', 'capaciteBanquet', 'capaciteCocktail', 'salles'],
+                'proprietes' => ['capaciteAssiseMax', 'capaciteEspacePrivatisable', 'capaciteBanquet', 'capaciteCocktail', 'salles'],
+                'blocs' => [],
                 'groupe' => 'ma_fiche',
+                'cartes' => [
+                    ['titre' => 'Capacité assise (Groupe)', 'champs' => ['capaciteAssiseMax', 'capaciteEspacePrivatisable', 'capaciteBanquet'], 'colonnes' => 3],
+                    ['titre' => 'Capacité cocktail / debout', 'champs' => ['capaciteCocktail'], 'colonnes' => 3],
+                    // Matrice des salles (mdm/fiche/_capacites), absente de la maquette, conservée.
+                    ['titre' => 'Salles & espaces privatisables', 'champs' => ['salles'], 'colonnes' => 2, 'bloc' => 'salles'],
+                ],
             ],
             [
                 'titre' => 'Services & équipements',
@@ -252,11 +286,21 @@ final class FicheSectionsCatalogue
                 'groupe' => 'ma_fiche',
             ],
             [
+                'titre' => 'Tarifs',
+                'champs' => self::TARIFS_RESTAURANT,
+                'proprietes' => self::TARIFS_RESTAURANT,
+                'blocs' => [],
+                'groupe' => 'ma_fiche',
+                'cartes' => [
+                    ['titre' => null, 'champs' => self::TARIFS_RESTAURANT, 'colonnes' => 2, 'bloc' => 'tarifs_restaurant'],
+                ],
+            ],
+            [
                 // Champs de dépôt (menus, supports, titre/source) et lien
                 // vidéo rendus dans les onglets internes du volet (shell
                 // _medias_onglets), rattachés au formulaire principal par
                 // form="form-fiche".
-                'titre' => 'Médias & menus',
+                'titre' => 'Médias',
                 'champs' => [],
                 'proprietes' => ['ressources', 'menus', 'youtubeUrl'],
                 'blocs' => ['medias'],
@@ -269,6 +313,7 @@ final class FicheSectionsCatalogue
                 'blocs' => ['formules', 'sites'],
                 'groupe' => 'ma_fiche',
             ],
+            self::sectionFacturation(),
             [
                 'titre' => 'Utilisateurs',
                 'champs' => [],
@@ -286,30 +331,142 @@ final class FicheSectionsCatalogue
         ];
     }
 
-    /** @return list<array{titre: string, champs: list<string>, proprietes: list<string>, blocs: list<string>, groupe?: string}> */
+    /**
+     * Onglet « Facturation & partenariat » (groupe Paramètres), identique
+     * pour les quatre gammes : le bloc FicheAdministratif (feuilles pointées
+     * `administratif.*`) et les six pièces jointes en dropzone, dans les
+     * cartes de la maquette portail. Les six fichiers sont des champs de
+     * premier niveau non mappés (FicheFormCatalog::ajouterFichiers).
+     *
+     * @return array{titre: string, champs: list<string>, proprietes: list<string>, blocs: list<string>, groupe: string, cartes: list<array<string, mixed>>}
+     */
+    public static function sectionFacturation(): array
+    {
+        $a = static fn (string ...$champs): array => array_map(static fn (string $c): string => 'administratif.'.$c, $champs);
+        $acomptes = [];
+        for ($i = 1; $i <= 3; ++$i) {
+            $acomptes[] = 'administratif.condPaieAccDate'.$i;
+            $acomptes[] = 'administratif.condPaieAccPourcentage'.$i;
+        }
+        $annulation = $a(...array_map(static fn (int $i): string => 'condPaieAnnPourcentage'.$i, range(1, 9)));
+
+        return [
+            'titre' => 'Facturation & partenariat',
+            'champs' => ['administratif', 'urssafFichier', 'rcProFichier', 'ribFichier', 'affacturageRibFichier', 'conventionFichier', 'cgvFichier'],
+            'proprietes' => ['administratif'],
+            'blocs' => [],
+            'groupe' => 'parametres',
+            'cartes' => [
+                [
+                    'titre' => 'Informations légales',
+                    'champs' => [...$a('infoLegaleNom', 'infoLegaleFormeJuridique', 'infoLegaleRuePostal', 'infoLegaleAdresse2', 'infoLegaleCodePostal', 'infoLegaleVille', 'inforLegalePays', 'infoLegaleSiret', 'infoLegaleNumTva'), 'urssafFichier', 'rcProFichier', ...$a('infoLegaleAssujettiTva', 'infoLegaleTva', 'infoLegaleTypeDeProcedureJudiciaire')],
+                    'colonnes' => 2,
+                    'conditions' => ['infoLegaleTva' => ['source' => 'administratif.infoLegaleAssujettiTva', 'valeurs' => '1', 'vider' => true]],
+                ],
+                ['titre' => 'Adresse de facturation', 'champs' => $a('adresseFacturationNom', 'adresseFacturationNumTva', 'adresseFacturationRuePostal', 'adresseFacturationCodePostal', 'adresseFacturationVille', 'adresseFacturationPays'), 'colonnes' => 3],
+                ['titre' => 'Contact de facturation', 'champs' => $a('contactFacturationNom', 'contactFacturationPrenom', 'contactFacturationEmail', 'contactFacturationTelephone'), 'colonnes' => 2],
+                [
+                    'titre' => 'Mode de paiements acceptés',
+                    'champs' => [...$a('modePaiementBic', 'modePaiementIban'), 'ribFichier', ...$a('modePaiementAffacturage', 'affacturageBic', 'affacturageIban'), 'affacturageRibFichier', ...$a('modePaiementCarte', 'modePaiementCarteListe', 'modePaiementAcceptDeductionCom')],
+                    'colonnes' => 2,
+                    'conditions' => [
+                        'affacturageBic' => ['source' => 'administratif.modePaiementAffacturage', 'valeurs' => '1', 'vider' => true],
+                        'affacturageIban' => ['source' => 'administratif.modePaiementAffacturage', 'valeurs' => '1', 'vider' => true],
+                        'affacturageRibFichier' => ['source' => 'administratif.modePaiementAffacturage', 'valeurs' => '1'],
+                        'modePaiementCarteListe' => ['source' => 'administratif.modePaiementCarte', 'valeurs' => '1', 'vider' => true],
+                    ],
+                ],
+                ['titre' => 'Conditions de paiement de l\'acompte', 'champs' => $acomptes, 'colonnes' => 2, 'bloc' => 'acomptes'],
+                ['titre' => 'Conditions de paiement annulation', 'champs' => $annulation, 'colonnes' => 3],
+                ['titre' => 'Paiement des soldes', 'champs' => $a('datePaiementSold'), 'colonnes' => 2],
+                ['titre' => 'Commission', 'champs' => $a('commissionTaux', 'commissionPaiement', 'commissionApplicable'), 'colonnes' => 3],
+                ['titre' => 'Convention de partenariat', 'champs' => [...$a('convPartSigneeLe', 'convPartTaux'), 'conventionFichier', ...$a('signataireEmail', 'signataireNom', 'signatairePrenom')], 'colonnes' => 2],
+                ['titre' => 'Conditions générales de ventes', 'champs' => ['cgvFichier'], 'colonnes' => 2],
+            ],
+        ];
+    }
+
+    /**
+     * Carte « Localisation » commune aux gammes alignées sur la maquette :
+     * pays seul sur sa ligne, puis trois champs par ligne. Feuilles pointées
+     * de LocalisationType, dont l'ordre interne (partagé avec le Lieu) ne
+     * change pas.
+     *
+     * @return array<string, mixed>
+     */
+    public static function carteLocalisation(): array
+    {
+        return [
+            'titre' => 'Localisation',
+            'champs' => [
+                'localisation.pays',
+                'localisation.ruePostale', 'localisation.codePostal', 'localisation.ville',
+                'localisation.arrondissement', 'localisation.departement', 'localisation.region',
+                'localisation.latitude', 'localisation.longitude', 'localisation.countryCode',
+            ],
+            'colonnes' => 3,
+            'pleins' => ['localisation.pays'],
+        ];
+    }
+
+    /**
+     * Onglets de la maquette portail prestataire (Activité) : Classification
+     * fondue dans Informations générales (sous-thématiques affichées selon
+     * les thématiques cochées), rayon d'action en radios pilotant les cartes
+     * Localisation fixe / mobile, cinq « plus », durées en hh:mm, forfaits et
+     * options en deux cartes de trois emplacements.
+     *
+     * @return list<array{titre: string, champs: list<string>, proprietes: list<string>, blocs: list<string>, groupe?: string, cartes?: list<array<string, mixed>>}>
+     */
     private static function activite(): array
     {
+        // Sous-thématiques dans l'ordre maquette, chacune conditionnée à sa thématique parente.
+        $sousThematiques = [];
+        $conditions = [];
+        foreach ([
+            'TA_NAUTIQUE_AQUATIQUE_SS', 'TA_CREATIVE_ARTISTIQUE_MUSICALE_SS', 'TA_CULINAIRE_OENOLOGIQUE_SS',
+            'TA_CULTURELLE_REFLEXION_DECOUVERTE_SS', 'TA_DIGITAL_HIGH_TECH_SS', 'TA_SENSATION_SPORT_MECA_SS',
+            'TA_SPORTIVE_LUDIQUE_SS', 'TA_NATURE_RSE_SS', 'TA_BIEN_ETRE_DETENTE_SS',
+        ] as $attribut) {
+            $champ = ActiviteLovCatalog::SOUS_THEMATIQUE_FIELDS[$attribut];
+            $sousThematiques[] = $champ;
+            $conditions[$champ] = ['source' => 'thematiques', 'valeurs' => ActiviteLovCatalog::thematiqueOf($attribut)];
+        }
+
         return [
             [
                 'titre' => 'Informations générales',
-                'champs' => ['label', 'prestataire', 'types', 'langues', 'businessPremium', 'partenaireBp'],
-                'proprietes' => ['label', 'prestataire', 'types', 'langues'],
+                'champs' => ['label', 'prestataire', 'langues', 'thematiques', 'types', 'businessPremium', 'partenaireBp', ...$sousThematiques],
+                'proprietes' => ['label', 'prestataire', 'langues', 'thematiques', 'types', 'sousThematiques'],
                 'blocs' => [],
                 'groupe' => 'ma_fiche',
+                'cartes' => [
+                    [
+                        'titre' => null,
+                        'champs' => ['label', 'prestataire', 'langues', 'thematiques', 'types', 'businessPremium', 'partenaireBp', ...$sousThematiques],
+                        'colonnes' => 2,
+                        'pleins' => $sousThematiques,
+                        'conditions' => $conditions,
+                    ],
+                ],
             ],
             [
-                'titre' => 'Localisation & zone d\'intervention',
-                'champs' => ['modeIntervention', 'localisation', 'touteFrance', 'paysMobiles', 'regionsMobiles', 'departementsMobiles'],
+                'titre' => 'Localisation & accessibilité',
+                'champs' => ['modeIntervention', 'localisation', 'paysMobiles', 'regionsMobiles', 'departementsMobiles', 'touteFrance'],
                 'proprietes' => ['modeIntervention', 'localisation', 'paysMobiles', 'regionsMobiles', 'departementsMobiles'],
                 'blocs' => [],
                 'groupe' => 'ma_fiche',
-            ],
-            [
-                'titre' => 'Classification',
-                'champs' => ['thematiques', ...array_values(ActiviteLovCatalog::SOUS_THEMATIQUE_FIELDS)],
-                'proprietes' => ['thematiques', 'sousThematiques'],
-                'blocs' => [],
-                'groupe' => 'ma_fiche',
+                'cartes' => [
+                    ['titre' => 'Rayon d\'action géographique', 'champs' => ['modeIntervention'], 'colonnes' => 2, 'pleins' => ['modeIntervention']],
+                    ['titre' => 'Localisation fixe', 'condition' => ['source' => 'modeIntervention', 'valeurs' => 'fixe']] + self::carteLocalisation(),
+                    [
+                        'titre' => 'Localisation mobile',
+                        'champs' => ['paysMobiles', 'regionsMobiles', 'departementsMobiles', 'touteFrance'],
+                        'colonnes' => 2,
+                        'pleins' => ['departementsMobiles'],
+                        'condition' => ['source' => 'modeIntervention', 'valeurs' => 'mobile'],
+                    ],
+                ],
             ],
             [
                 'titre' => 'Description',
@@ -317,13 +474,21 @@ final class FicheSectionsCatalogue
                 'proprietes' => ['descriptionGenerale', 'comprendPrestation', 'objectifs', 'plus'],
                 'blocs' => [],
                 'groupe' => 'ma_fiche',
+                'cartes' => [
+                    ['titre' => null, 'champs' => ['descriptionGenerale', 'comprendPrestation', 'objectifs'], 'colonnes' => 2],
+                    ['titre' => 'Les plus', 'champs' => ['plus'], 'colonnes' => 2],
+                ],
             ],
             [
-                'titre' => 'Capacités & durées',
+                'titre' => 'Capacités',
                 'champs' => ['participantsMin', 'participantsMax', 'dureeMinMinutes', 'dureeMaxMinutes'],
                 'proprietes' => ['participantsMin', 'participantsMax', 'dureeMinMinutes', 'dureeMaxMinutes'],
                 'blocs' => [],
                 'groupe' => 'ma_fiche',
+                'cartes' => [
+                    ['titre' => 'Capacité globale', 'champs' => ['participantsMin', 'participantsMax'], 'colonnes' => 2],
+                    ['titre' => 'Durée de l\'activité / Séminaire', 'champs' => ['dureeMinMinutes', 'dureeMaxMinutes'], 'colonnes' => 2],
+                ],
             ],
             [
                 'titre' => 'RSE',
@@ -338,6 +503,11 @@ final class FicheSectionsCatalogue
                 'proprietes' => ['tarifParPersonne', 'offres'],
                 'blocs' => [],
                 'groupe' => 'ma_fiche',
+                'cartes' => [
+                    ['titre' => 'Mes tarifs', 'champs' => ['tarifParPersonne'], 'colonnes' => 3],
+                    ['titre' => 'Forfaits', 'champs' => ['offres'], 'colonnes' => 2, 'bloc' => 'offres_activite', 'type_offre' => 'forfait'],
+                    ['titre' => 'Options', 'champs' => ['offres'], 'colonnes' => 2, 'bloc' => 'offres_activite', 'type_offre' => 'option'],
+                ],
             ],
             [
                 // Champs de dépôt et lien vidéo rendus dans les onglets
@@ -355,6 +525,7 @@ final class FicheSectionsCatalogue
                 'blocs' => ['formules', 'sites'],
                 'groupe' => 'ma_fiche',
             ],
+            self::sectionFacturation(),
             [
                 'titre' => 'Utilisateurs',
                 'champs' => [],
@@ -372,44 +543,59 @@ final class FicheSectionsCatalogue
         ];
     }
 
-    /** @return list<array{titre: string, champs: list<string>, proprietes: list<string>, blocs: list<string>, groupe?: string}> */
+    /**
+     * Onglets de la maquette portail prestataire (Service événementiel) :
+     * Description, Prestation & accessibilité et RSE fondus dans
+     * Informations générales, onglet Prestations créé pour les
+     * sous-prestations, accès + PMR ajoutés à Localisation & accessibilité.
+     *
+     * @return list<array{titre: string, champs: list<string>, proprietes: list<string>, blocs: list<string>, groupe?: string, cartes?: list<array<string, mixed>>}>
+     */
     private static function service(): array
     {
         return [
             [
                 'titre' => 'Informations générales',
-                'champs' => ['label', 'prestations', ...array_values(ServiceLovCatalog::SOUS_PRESTATION_FIELDS), 'businessPremium', 'partenaireBp', 'prestataireEsat'],
-                'proprietes' => ['label', 'prestations', 'sousPrestations', 'prestataireEsat'],
-                'blocs' => [],
-                'groupe' => 'ma_fiche',
-            ],
-            [
-                'titre' => 'Localisation & zone d\'intervention',
-                'champs' => ['modeIntervention', 'localisation', 'paysMobiles', 'regionsMobiles', 'departementsMobiles'],
-                'proprietes' => ['modeIntervention', 'localisation', 'paysMobiles', 'regionsMobiles', 'departementsMobiles'],
-                'blocs' => [],
-                'groupe' => 'ma_fiche',
-            ],
-            [
-                'titre' => 'Prestation & accessibilité',
-                'champs' => ['participantsMin', 'participantsMax', 'dureeMinutes', 'adapteFemmesEnceintes', 'adapteMalentendants', 'adapteMalvoyants', 'materielInclus', 'equipementParticipantsRequis', 'equipementReceptionRequis', 'contraintesLogistiques'],
-                'proprietes' => ['participantsMin', 'participantsMax', 'dureeMinutes', 'adapteFemmesEnceintes', 'adapteMalentendants', 'adapteMalvoyants', 'materielInclus', 'equipementParticipantsRequis', 'equipementReceptionRequis', 'contraintesLogistiques'],
-                'blocs' => [],
-                'groupe' => 'ma_fiche',
-            ],
-            [
-                'titre' => 'Description',
-                'champs' => ['descriptionGenerale'],
-                'proprietes' => ['descriptionGenerale'],
-                'blocs' => [],
-                'groupe' => 'ma_fiche',
-            ],
-            [
-                'titre' => 'RSE',
-                'champs' => ['demarcheRse'],
-                'proprietes' => ['demarcheRse'],
+                'champs' => ['label', 'prestataireEsat', 'demarcheRse', 'businessPremium', 'partenaireBp', 'descriptionGenerale', 'adapteFemmesEnceintes', 'adapteMalentendants', 'adapteMalvoyants', 'participantsMin', 'participantsMax', 'dureeMinutes', 'materielInclus', 'contraintesLogistiques', 'equipementParticipantsRequis', 'equipementReceptionRequis'],
+                'proprietes' => ['label', 'prestataireEsat', 'demarcheRse', 'descriptionGenerale', 'adapteFemmesEnceintes', 'adapteMalentendants', 'adapteMalvoyants', 'participantsMin', 'participantsMax', 'dureeMinutes', 'materielInclus', 'contraintesLogistiques', 'equipementParticipantsRequis', 'equipementReceptionRequis'],
+                // Les notes RSE Salesforce (lecture seule) suivent l'onglet RSE fondu ici.
                 'blocs' => ['salesforce'],
                 'groupe' => 'ma_fiche',
+                'cartes' => [
+                    ['titre' => null, 'champs' => ['label', 'prestataireEsat', 'demarcheRse', 'businessPremium', 'partenaireBp'], 'colonnes' => 3, 'pleins' => ['label']],
+                    ['titre' => 'Description générale', 'champs' => ['descriptionGenerale'], 'colonnes' => 2],
+                    ['titre' => 'Prestations', 'champs' => ['adapteFemmesEnceintes', 'adapteMalentendants', 'adapteMalvoyants', 'participantsMin', 'participantsMax', 'dureeMinutes'], 'colonnes' => 3],
+                    ['titre' => 'Matériel', 'champs' => ['materielInclus', 'contraintesLogistiques', 'equipementParticipantsRequis', 'equipementReceptionRequis'], 'colonnes' => 3],
+                ],
+            ],
+            [
+                'titre' => 'Localisation & accessibilité',
+                'champs' => ['modeIntervention', 'localisation', 'regionsMobiles', 'departementsMobiles', 'paysMobiles', 'acces', 'accesPmr', 'materielAdaptePmr'],
+                'proprietes' => ['modeIntervention', 'localisation', 'paysMobiles', 'regionsMobiles', 'departementsMobiles', 'acces', 'accesPmr', 'materielAdaptePmr'],
+                'blocs' => [],
+                'groupe' => 'ma_fiche',
+                'cartes' => [
+                    // Le rayon d'action (MDM) ouvre la carte, puis l'adresse maquette.
+                    ['titre' => 'Localisation', 'champs' => ['modeIntervention', ...self::carteLocalisation()['champs']], 'colonnes' => 3, 'pleins' => ['modeIntervention', 'localisation.pays']],
+                    ['titre' => 'Zone d\'intervention principale', 'champs' => ['regionsMobiles', 'departementsMobiles', 'paysMobiles'], 'colonnes' => 2],
+                    ['titre' => 'Accessibilité', 'champs' => ['acces'], 'colonnes' => 2, 'bloc' => 'collection'],
+                    [
+                        'titre' => 'Détails des accès PMR',
+                        'champs' => ['accesPmr', 'materielAdaptePmr'],
+                        'colonnes' => 2,
+                        'conditions' => ['materielAdaptePmr' => ['source' => 'accesPmr', 'valeurs' => '1', 'vider' => true]],
+                    ],
+                ],
+            ],
+            [
+                'titre' => 'Prestations',
+                'champs' => ['prestations', ...array_values(ServiceLovCatalog::SOUS_PRESTATION_FIELDS)],
+                'proprietes' => ['prestations', 'sousPrestations'],
+                'blocs' => [],
+                'groupe' => 'ma_fiche',
+                'cartes' => [
+                    ['titre' => null, 'champs' => ['prestations', ...array_values(ServiceLovCatalog::SOUS_PRESTATION_FIELDS)], 'colonnes' => 2, 'pleins' => ['prestations']],
+                ],
             ],
             [
                 'titre' => 'Tarifs',
@@ -417,6 +603,9 @@ final class FicheSectionsCatalogue
                 'proprietes' => ['tarifParPrestation', 'tarifParPersonne', 'tarifParJour', 'tarifParDemiJournee', 'tarifParHeure', 'surDevis'],
                 'blocs' => [],
                 'groupe' => 'ma_fiche',
+                'cartes' => [
+                    ['titre' => null, 'champs' => ['tarifParPrestation', 'tarifParPersonne', 'tarifParJour', 'tarifParDemiJournee', 'tarifParHeure', 'surDevis'], 'colonnes' => 3],
+                ],
             ],
             [
                 // Champs de dépôt et lien vidéo rendus dans les onglets
@@ -434,6 +623,7 @@ final class FicheSectionsCatalogue
                 'blocs' => ['formules', 'sites'],
                 'groupe' => 'ma_fiche',
             ],
+            self::sectionFacturation(),
             [
                 'titre' => 'Utilisateurs',
                 'champs' => [],

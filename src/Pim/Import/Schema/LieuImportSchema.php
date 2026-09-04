@@ -149,6 +149,13 @@ final class LieuImportSchema extends AbstractFicheImportSchema
             $this->text('signataireEmail', targetPath: 'administratif'),
             $this->text('signatairePrenom', targetPath: 'administratif'),
             $this->text('signataireNom', targetPath: 'administratif'),
+            // Maquette portail : carte bancaire, acomptes (date LOV + %), annulation par tranche.
+            $this->boolNull('modePaiementCarte', targetPath: 'administratif'),
+            ...array_merge(...array_map(fn (int $i): array => [
+                $this->lovMono('condPaieAccDate'.$i, 'COND_PAIE_ACC_SIGNATURE', 'administratif'),
+                new ColumnDefinition('admin_cond_paie_acc_pourcentage_'.$i, ColumnKind::Int, 'condPaieAccPourcentage'.$i, targetPath: 'administratif', help: 'pourcentage entier'),
+            ], [1, 2, 3])),
+            ...array_map(static fn (int $i): ColumnDefinition => new ColumnDefinition('admin_cond_paie_ann_pourcentage_'.$i, ColumnKind::Int, 'condPaieAnnPourcentage'.$i, targetPath: 'administratif', help: 'pourcentage entier, tranche '.$i.' de COND_PAIE_ANN_SIGNATURE'), range(1, 9)),
             // Bloc tarification
             $this->text('offreSpeciale', targetPath: 'tarification'),
             new ColumnDefinition('tarification_promotion_debut', ColumnKind::Date, 'promotionDebut', targetPath: 'tarification', help: 'date AAAA-MM-JJ'),

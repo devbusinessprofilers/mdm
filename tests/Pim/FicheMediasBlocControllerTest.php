@@ -233,7 +233,7 @@ final class FicheMediasBlocControllerTest extends WebTestCase
     {
         $this->connection->executeStatement('DELETE FROM pim_ressource_lieu');
         $this->connection->executeStatement('DELETE FROM pim_salle');
-        $this->connection->executeStatement('DELETE FROM pim_lieu_administratif');
+        $this->connection->executeStatement('DELETE FROM pim_fiche_administratif');
         $this->connection->executeStatement('DELETE FROM pim_lieu_tarification');
         $this->connection->executeStatement('DELETE FROM pim_restaurant_salle');
         $this->connection->executeStatement('DELETE FROM pim_restaurant_periode_fermeture');

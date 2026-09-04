@@ -68,6 +68,36 @@ final class AccesSuggesteurTest extends TestCase
         self::assertSame('À pied', $metro->modeTransport);
     }
 
+    /** Gamme Service : route / parking / gare / aéroport, jamais métro ni tram. */
+    public function testLesTypesDuServiceRemplacentMetroEtTramParLeParking(): void
+    {
+        $http = new MockHttpClient(function (string $method, string $url): MockResponse {
+            if (str_contains($url, '/v2/places')) {
+                self::assertStringContainsString('categories=public_transport.train%2Cparking', $url);
+                self::assertStringNotContainsString('subway', $url);
+
+                return new MockResponse((string) json_encode(['features' => [
+                    ['properties' => ['name' => 'Bastille', 'lat' => 48.853, 'lon' => 2.369, 'distance' => 300, 'categories' => ['public_transport', 'public_transport.subway']]],
+                    ['properties' => ['name' => 'Parking Saemes', 'lat' => 48.855, 'lon' => 2.355, 'distance' => 250, 'categories' => ['parking', 'parking.cars']]],
+                    ['properties' => ['name' => 'Gare de Lyon', 'lat' => 48.844, 'lon' => 2.373, 'distance' => 1200, 'categories' => ['public_transport', 'public_transport.train']]],
+                ]]));
+            }
+
+            return new MockResponse((string) json_encode(['features' => [['properties' => ['distance' => 800, 'time' => 600]]]]));
+        });
+        $suggesteur = $this->suggesteur(
+            ['nom' => 'Orly', 'codeIata' => 'ORY', 'latitude' => 48.72, 'longitude' => 2.37, 'distanceKm' => 15.0],
+            ['nom' => 'Lille', 'population' => 236_000, 'latitude' => 50.63, 'longitude' => 3.06, 'distanceKm' => 204.0],
+            $http,
+            'cle-de-test',
+        );
+
+        $suggestions = $suggesteur->suggerer($this->fiche(['48.8566', '2.3522']), [], false, AccesSuggesteur::TYPES_SERVICE);
+
+        self::assertSame(['aeroport', 'gare', 'parking', 'grande_ville'], array_map(static fn ($s): string => $s->type, $suggestions));
+        self::assertSame('Parking Saemes (0,3 km)', $suggestions[2]->nom);
+    }
+
     public function testSansCleGeoapifyLesReferentielsStatiquesServentSeulsAvecRepliVolOiseau(): void
     {
         $suggesteur = $this->suggesteur(

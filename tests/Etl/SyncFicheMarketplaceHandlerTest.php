@@ -277,7 +277,7 @@ final class SyncFicheMarketplaceHandlerTest extends KernelTestCase
                 'pim_ressource_lieu',
                 'pim_acces_lieu',
                 'pim_periode_fermeture',
-                'pim_lieu_administratif',
+                'pim_fiche_administratif',
                 'pim_lieu_tarification',
                 'pim_restaurant',
                 'pim_lieu',

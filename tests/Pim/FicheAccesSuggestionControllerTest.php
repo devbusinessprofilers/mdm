@@ -96,6 +96,31 @@ final class FicheAccesSuggestionControllerTest extends WebTestCase
         $reponse = json_decode((string) $client->getResponse()->getContent(), true);
         self::assertIsArray($reponse);
         self::assertSame(['grande_ville'], array_column($reponse['acces'], 'type'));
+
+        // Gamme Service : même endpoint, types route / parking / gare / aéroport,
+        // sans distances (type + nom seuls, vol d'oiseau dans le nom).
+        $service = new \App\Pim\Entity\Service\ServiceEvenementiel();
+        $service->changeLabel('Traiteur des accès');
+        $localisationService = new Localisation();
+        $localisationService->changeLatitude('48.4040');
+        $localisationService->changeLongitude('2.7024');
+        $entityManager->persist($localisationService);
+        $service->fiche()->changeLocalisation($localisationService);
+        $entityManager->persist($service);
+        $entityManager->flush();
+        $crawler = $client->request('GET', '/referentiel/services/fiche/'.$service->id().'?section=1');
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('body', 'Suggérer les accès');
+        $client->request('POST', '/referentiel/fiche/suggerer-acces', [], [], [
+            'CONTENT_TYPE' => 'application/json',
+            'HTTP_X_CSRF_TOKEN' => $csrf,
+        ], (string) json_encode(['gamme' => 'services', 'id' => $service->id(), 'exclus' => []]));
+        self::assertResponseIsSuccessful();
+        $reponse = json_decode((string) $client->getResponse()->getContent(), true);
+        self::assertIsArray($reponse);
+        self::assertSame(['aeroport', 'grande_ville'], array_column($reponse['acces'], 'type'));
+        self::assertNull($reponse['acces'][0]['distanceKilometres']);
+        self::assertStringContainsString(' km)', $reponse['acces'][0]['nom']);
     }
 
     private function clearTables(): void
@@ -104,9 +129,11 @@ final class FicheAccesSuggestionControllerTest extends WebTestCase
             'outbox_message',
             'pim_fiche_search',
             'pim_fiche_attribute_value',
-            'pim_lieu_administratif',
+            'pim_fiche_administratif',
             'pim_lieu_tarification',
             'pim_lieu',
+            'pim_service_acces',
+            'pim_service_evenementiel',
             'pim_fiche',
             'pim_localisation',
             'pim_aeroport_reference',

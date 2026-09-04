@@ -87,7 +87,7 @@ final class AdminAccessControlTest extends WebTestCase
     private function clearTables(): void
     {
         $this->connection->executeStatement('DELETE FROM pim_ressource_lieu');
-        $this->connection->executeStatement('DELETE FROM pim_lieu_administratif');
+        $this->connection->executeStatement('DELETE FROM pim_fiche_administratif');
         $this->connection->executeStatement('DELETE FROM pim_lieu_tarification');
         $this->connection->executeStatement('DELETE FROM pim_lieu');
         $this->connection->executeStatement('DELETE FROM pim_fiche');

@@ -6,11 +6,14 @@ namespace App\Pim\Service;
 
 use App\Etl\Service\MarketplaceRetrait;
 use App\Pim\Entity\Activite\Activite;
+use App\Pim\Entity\Fiche;
 use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Entity\Service\ServiceEvenementiel;
+use App\Pim\Enum\NatureRessource;
 use App\Pim\Enum\StatutFiche;
 use App\Pim\Form\ActiviteType;
+use App\Pim\Form\FicheFormCatalog;
 use App\Pim\Form\LieuType;
 use App\Pim\Form\RestaurantType;
 use App\Pim\Form\ServiceEvenementielType;
@@ -199,6 +202,27 @@ final readonly class FicheEditeurEcran
                 // le jeton couvre l'endpoint de suggestion d'accès.
                 'acces_suggestion_csrf' => $this->csrfTokens->getToken('fiche-acces-suggestion')->getValue(),
                 'gamme_slug' => $fiche->type()->slug(),
+                'documents_administratifs' => self::documentsAdministratifs($fiche),
             ];
+    }
+
+    /**
+     * Onglet Facturation & partenariat : nom du fichier courant sous chaque
+     * dropzone (un document par usage administratif).
+     *
+     * @return array<string, string>
+     */
+    private static function documentsAdministratifs(Fiche $fiche): array
+    {
+        $documents = [];
+        foreach (FicheFormCatalog::FICHIERS as $champ => [, $usage]) {
+            foreach ($fiche->resources() as $ressource) {
+                if (NatureRessource::Document === $ressource->nature() && $ressource->usage() === $usage->value) {
+                    $documents[$champ] = $ressource->legende() ?? 'document déposé';
+                }
+            }
+        }
+
+        return $documents;
     }
 }

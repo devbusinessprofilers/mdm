@@ -25,6 +25,9 @@ final class ValidActiviteValidator extends FicheValidateur
         foreach ($value->plus() as $index => $plus) {
             $this->longueurMax($plus, 255, sprintf('plus[%d]', $index));
         }
+        if (count($value->objectifs()) > 5) {
+            $this->violation('Cinq objectifs de séminaire au maximum.', 'objectifs');
+        }
         foreach (
             [
                 $value->paysMobiles(),
@@ -121,9 +124,10 @@ final class ValidActiviteValidator extends FicheValidateur
             } elseif (
                 NatureRessource::Document === $resource->nature()
                 && 'PJ_SUPPORT_COMMERCIAUX' !== $resource->usage()
+                && !\App\Dam\Enum\DocumentUsage::estAdministratif($resource->documentUsage())
             ) {
                 $this->violation(
-                    'Une Activité accepte uniquement les supports commerciaux comme documents.',
+                    'Une Activité accepte uniquement les supports commerciaux et les pièces de facturation comme documents.',
                     'ressources',
                 );
             }

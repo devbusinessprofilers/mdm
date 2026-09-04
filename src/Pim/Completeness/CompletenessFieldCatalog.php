@@ -120,6 +120,9 @@ final class CompletenessFieldCatalog
             $fields[] = $this->field($type, 'RAYON_ACTION_'.self::code($path), $label, $path, null, 'modeIntervention', 'mobile', 'Applicable pour une activité mobile');
         }
 
+        // Facturation & partenariat (maquette portail), commun aux quatre gammes.
+        $fields = [...$fields, ...$this->fromMap($type, LieuFormCatalog::administrative(), 'administratif.')];
+
         return $fields;
     }
 
@@ -140,6 +143,9 @@ final class CompletenessFieldCatalog
             'CAP_BANQUET' => ['Capacité banquet', 'capaciteBanquet'], 'CAP_COCKTAIL' => ['Capacité cocktail', 'capaciteCocktail'],
             'SERVICE_RESTAURANT' => ['Services', 'services'], 'EQUIPEMENT_RESTAURANT' => ['Équipements', 'equipements'],
             'ENGAGEMENT_RSE_RESTAURANT' => ['Engagements RSE', 'engagementsRse'], 'GENERALE_YOUTUBE' => ['Lien vidéo', 'youtubeUrl'],
+            'TARIF_DEJEUNER_ASSIS' => ['Tarif déjeuner assis', 'tarifDejeunerAssis'], 'TARIF_COCKTAIL_DEJEUNATOIRE' => ['Tarif cocktail déjeunatoire', 'tarifCocktailDejeunatoire'],
+            'TARIF_DINER_ASSIS' => ['Tarif dîner assis', 'tarifDinerAssis'], 'TARIF_COCKTAIL_DINATOIRE' => ['Tarif cocktail dînatoire', 'tarifCocktailDinatoire'],
+            'TARIF_FORFAIT_VIN' => ['Tarif forfait vin', 'tarifForfaitVin'], 'TARIF_FORFAIT_ALCOOL' => ['Tarif forfait alcool', 'tarifForfaitAlcool'],
             'PHOTO' => ['Photos', 'ressources'],
         ];
         foreach ($map as $code => [$label, $path]) {
@@ -156,6 +162,9 @@ final class CompletenessFieldCatalog
         foreach (['nom' => 'Nom de la salle', 'superficie' => 'Superficie', 'capaciteReunion' => 'Capacité réunion', 'capaciteU' => 'Capacité en U', 'capaciteClasse' => 'Capacité classe', 'capaciteTheatre' => 'Capacité théâtre', 'capaciteCabaret' => 'Capacité cabaret', 'capaciteBanquet' => 'Capacité banquet', 'capaciteCocktail' => 'Capacité cocktail', 'capaciteAuditorium' => 'Capacité auditorium', 'lumiereJour' => 'Lumière du jour', 'accesPmr' => 'Accès PMR', 'espaceDansant' => 'Dansant', 'climatisee' => 'Climatisée'] as $name => $label) {
             $fields[] = $this->field($type, 'CONFIG_SALLE_'.self::code($name), $label, 'salles.*.'.$name);
         }
+
+        // Facturation & partenariat (maquette portail), commun aux quatre gammes.
+        $fields = [...$fields, ...$this->fromMap($type, LieuFormCatalog::administrative(), 'administratif.')];
 
         return $fields;
     }
@@ -178,6 +187,9 @@ final class CompletenessFieldCatalog
             'PAR_PRESTATION' => ['Tarif par prestation', 'tarifParPrestation'], 'PAR_PERSONNE' => ['Tarif par personne', 'tarifParPersonne'],
             'PAR_JOUR' => ['Tarif par jour', 'tarifParJour'], 'PAR_DEMI_JOURNNEE' => ['Tarif par demi-journée', 'tarifParDemiJournee'],
             'PAR_HEURE' => ['Tarif par heure', 'tarifParHeure'], 'SUR_DEVIS' => ['Sur devis', 'surDevis'],
+            'PMR_ACCES' => ['Accès PMR', 'accesPmr'], 'PMR_MATERIEL_ADAPTE' => ['Matériel ou prestation adaptée aux publics PMR', 'materielAdaptePmr'],
+            'ACCESSIBILITE_GRANDE_VILLE' => ['Accès par la route', 'accesGrandeVille'], 'ACCESSIBILITE_PARKING' => ['Parking(s)', 'accesParking'],
+            'ACCESSIBILITE_GARE' => ['Gare(s)', 'accesGare'], 'ACCESSIBILITE_AEROPORT' => ['Aéroport(s)', 'accesAeroport'],
             'GENERALE_YOUTUBE' => ['Lien vidéo', 'youtubeUrl'], 'PHOTO' => ['Photos', 'ressources'],
         ];
         foreach ($map as $code => [$label, $path]) {
@@ -187,6 +199,9 @@ final class CompletenessFieldCatalog
         foreach (['paysMobiles' => 'Pays mobiles', 'regionsMobiles' => 'Régions mobiles', 'departementsMobiles' => 'Départements mobiles'] as $path => $label) {
             $fields[] = $this->field($type, 'RAYON_ACTION_'.self::code($path), $label, $path, null, 'modeIntervention', 'mobile', 'Applicable pour un service mobile');
         }
+
+        // Facturation & partenariat (maquette portail), commun aux quatre gammes.
+        $fields = [...$fields, ...$this->fromMap($type, LieuFormCatalog::administrative(), 'administratif.')];
 
         return $fields;
     }
@@ -218,6 +233,10 @@ final class CompletenessFieldCatalog
     {
         $fields = [];
         foreach ($map as $name => $options) {
+            // Champs de lecture seule de l'écran (rappel d'une autre valeur) : pas de complétude.
+            if (true === ($options['lecture_seule'] ?? false)) {
+                continue;
+            }
             $target = '' === $prefix && in_array($name, ['generaleWebsiteUrl', 'pmrDetails', 'descGenerale', 'chambreDescGenerale', 'atout1', 'atout2', 'atout3', 'atout4', 'atout5'], true)
                 ? $this->target(Lieu::class, $name)
                 : null;

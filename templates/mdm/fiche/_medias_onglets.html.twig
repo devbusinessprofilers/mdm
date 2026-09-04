@@ -13,7 +13,7 @@
 #}
 {% set onglets_medias = [
     { cle: 'photos', titre: 'Photos' },
-    { cle: 'plans', titre: 'Plans' },
+    { cle: 'plans', titre: medias.gamme == 'restaurant' ? 'Menus' : 'Plans' },
     { cle: 'supports', titre: 'Supports commerciaux' },
     { cle: 'video', titre: 'Vidéo' },
     { cle: 'documents', titre: 'Documents' },
@@ -64,13 +64,23 @@
             <twig:Typography variant="body-sm" textColor="neutral-500">
                 Les fichiers déposés ici partent avec « Enregistrer les modifications ».
             </twig:Typography>
-            {% set champs_depot = ['menus', 'supportsCommerciaux', 'documentTitle', 'documentSource', 'supportTitle', 'supportSource'] %}
+            {% set champs_depot = ['supportsCommerciaux', 'documentTitle', 'documentSource', 'supportTitle', 'supportSource'] %}
             {% for nom in champs_depot %}
                 {% if form.children[nom] is defined %}
                     {% set champ = form.children[nom] %}
                     {{ form_row(champ, { attr: champ.vars.attr|merge({ form: 'form-fiche' }) }) }}
                 {% endif %}
             {% endfor %}
+        </div>
+    {% endif %}
+
+    {# ---- Menus (Restaurant) : onglet interne « Menus » de la maquette, dépôt par le formulaire principal. ---- #}
+    {% if medias.gamme == 'restaurant' and form.children.menus is defined %}
+        <div data-media-tabs-target="panel" data-onglet="plans" hidden class="flex flex-col gap-4">
+            <twig:Typography variant="body-sm" textColor="neutral-500">
+                Les menus déposés ici partent avec « Enregistrer les modifications » (titre et source : onglet Supports commerciaux).
+            </twig:Typography>
+            {{ form_row(form.children.menus, { attr: form.children.menus.vars.attr|merge({ form: 'form-fiche' }) }) }}
         </div>
     {% endif %}
 </div>

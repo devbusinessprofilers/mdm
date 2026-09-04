@@ -58,6 +58,12 @@ final class RestaurantImportSchema extends AbstractFicheImportSchema
             $this->int('capaciteEspacePrivatisable'),
             $this->int('capaciteBanquet'),
             $this->int('capaciteCocktail'),
+            $this->decimal('tarifDejeunerAssis'),
+            $this->decimal('tarifCocktailDejeunatoire'),
+            $this->decimal('tarifDinerAssis'),
+            $this->decimal('tarifCocktailDinatoire'),
+            $this->decimal('tarifForfaitVin'),
+            $this->decimal('tarifForfaitAlcool'),
             $this->text('youtubeUrl', 255),
         ];
     }

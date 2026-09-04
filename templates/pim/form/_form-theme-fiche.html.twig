@@ -38,6 +38,42 @@
     {%- endif -%}
 {%- endblock -%}
 
+{#- Oui / Non (OuiNonType, opt-in `attr['data-oui-non']`) et radios maquette
+    (opt-in `attr['data-radio']`, ex. rayon d'action) : des pilules radio,
+    l'input sr-only reste le vrai champ soumis, coche en pur CSS
+    `has-checked`. Les autres choix étendus gardent le rendu du layout. -#}
+{%- block choice_widget_expanded -%}
+    {%- if attr['data-oui-non']|default(false) or attr['data-radio']|default(false) -%}
+        <div {{ block('widget_container_attributes') }} class="flex flex-row flex-wrap gap-2.5">
+            {%- for enfant in form -%}
+                <label for="{{ enfant.vars.id }}"
+                       class="group/puce h-10 box-border shrink-0 flex items-center gap-1 px-4 py-2 rounded-full
+                              cursor-pointer bg-neutral-100 inset-ring-1 inset-ring-neutral-300
+                              has-checked:bg-primary has-checked:inset-ring-0 has-disabled:cursor-not-allowed">
+                    <input type="radio"
+                           id="{{ enfant.vars.id }}"
+                           name="{{ enfant.vars.full_name }}"
+                           value="{{ enfant.vars.value }}"
+                           {% if enfant.vars.checked %}checked{% endif %}
+                           {% if enfant.vars.disabled %}disabled{% endif %}
+                           class="sr-only">
+                    <twig:Icon name="check" class="w-4 h-4 shrink-0 text-neutral-100 hidden group-has-checked/puce:block" />
+                    <twig:Typography variant="body-sm" bold element="span"
+                                     class="whitespace-nowrap group-has-checked/puce:text-neutral-100!">{{ enfant.vars.label }}</twig:Typography>
+                </label>
+                {%- do enfant.setRendered -%}
+            {%- endfor -%}
+        </div>
+    {%- else -%}
+        <div {{ block('widget_container_attributes') }}>
+            {%- for enfant in form -%}
+                {{ form_widget(enfant) }}
+                {{ form_label(enfant) }}
+            {%- endfor -%}
+        </div>
+    {%- endif -%}
+{%- endblock -%}
+
 {#- Sous-formulaires : la grille 2 colonnes de la maquette s'applique à chaque
     niveau — champ simple en demi-largeur ; riche, collection ou groupe en
     pleine largeur. Les cases à cocher passent toutes SOUS les autres champs,

@@ -6,10 +6,12 @@ namespace App\Pim\Form;
 
 use App\Etl\Repository\FicheSalesforceRepository;
 use App\Pim\Entity\Activite\Activite;
+use App\Pim\Entity\FicheAdministratif;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Entity\Localisation;
 use App\Pim\Enum\ModeInterventionActivite;
 use App\Pim\Lov\ActiviteLovCatalog;
+use App\Pim\Service\ActiviteObligationsPublication;
 use App\Pim\Validation\LienVideo;
 use App\Pim\Validation\ValidationGroups;
 use Doctrine\Common\Collections\Collection;
@@ -25,6 +27,8 @@ use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Extension\Core\Type\UrlType;
 use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\Form\FormInterface;
+use Symfony\Component\Form\FormView;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\All;
 use Symfony\Component\Validator\Constraints\File;
@@ -49,21 +53,21 @@ final class ActiviteType extends AbstractType
             $this->field('Nom de l’activité', 'label', 'changeLabel'),
         )
             ->add('businessPremium', CheckboxType::class, [
-            'label' => 'Adhérent Business Premium',
-            'required' => false,
-            'getter' => static fn (Activite $activite): bool => $activite->fiche()->businessPremium(),
-            'setter' => static function (Activite &$activite, mixed $value): void { $activite->fiche()->changeBusinessPremium((bool) $value); },
-        ])
+                'label' => 'Adhérent Business Premium',
+                'required' => false,
+                'getter' => static fn (Activite $activite): bool => $activite->fiche()->businessPremium(),
+                'setter' => static function (Activite &$activite, mixed $value): void { $activite->fiche()->changeBusinessPremium((bool) $value); },
+            ])
             ->add('partenaireBp', CheckboxType::class, [
-            'label' => 'Partenaire BP',
-            'required' => false,
-            'disabled' => $partenaireGereParSf,
-            'help' => $partenaireGereParSf ? 'Géré par Salesforce.' : null,
-            // Chrome « autorité » : seul champ réellement piloté par Salesforce (défaut MDM ailleurs).
-            'label_attr' => $partenaireGereParSf ? ['data-autorite' => \App\Pim\Enum\Autorite::Salesforce->value] : [],
-            'getter' => static fn (Activite $activite): bool => $activite->fiche()->partenaireBp(),
-            'setter' => static function (Activite &$activite, mixed $value): void { $activite->fiche()->changePartenaireBp((bool) $value); },
-        ])
+                'label' => 'Partenaire BP',
+                'required' => false,
+                'disabled' => $partenaireGereParSf,
+                'help' => $partenaireGereParSf ? 'Géré par Salesforce.' : null,
+                // Chrome « autorité » : seul champ réellement piloté par Salesforce (défaut MDM ailleurs).
+                'label_attr' => $partenaireGereParSf ? ['data-autorite' => \App\Pim\Enum\Autorite::Salesforce->value] : [],
+                'getter' => static fn (Activite $activite): bool => $activite->fiche()->partenaireBp(),
+                'setter' => static function (Activite &$activite, mixed $value): void { $activite->fiche()->changePartenaireBp((bool) $value); },
+            ])
             ->add(
                 'prestataire',
                 PrestataireAutocompleteType::class,
@@ -73,7 +77,7 @@ final class ActiviteType extends AbstractType
                 'types',
                 ChoiceType::class,
                 $this->field(
-                    'Intérieur / extérieur',
+                    'Type',
                     'types',
                     'changeTypes',
                 ) + [
@@ -88,7 +92,7 @@ final class ActiviteType extends AbstractType
                 'thematiques',
                 ChoiceType::class,
                 $this->field(
-                    'Thématiques',
+                    "Thématique de l'activité",
                     'thematiques',
                     'changeThematiques',
                 ) + [
@@ -101,14 +105,15 @@ final class ActiviteType extends AbstractType
                 ],
             );
 
-        // Un select de sous-thématiques par thématique — tous visibles, la
-        // thématique figure dans le libellé.
+        // Un select de sous-thématiques par thématique, libellé = la
+        // thématique ; l'éditeur ne montre que ceux des thématiques cochées
+        // (affichage-conditionnel, FicheSectionsCatalogue::activite).
         foreach (ActiviteLovCatalog::sousThematiqueAttributes() as $attribute => $thematique) {
             $b->add(
                 ActiviteLovCatalog::SOUS_THEMATIQUE_FIELDS[$attribute],
                 ChoiceType::class,
                 [
-                    'label' => 'Sous-thématiques — '.$thematique,
+                    'label' => $thematique,
                     'required' => false,
                     'getter' => static fn (
                         Activite $activite,
@@ -135,7 +140,7 @@ final class ActiviteType extends AbstractType
             ->add(
                 'langues',
                 ChoiceType::class,
-                $this->field('Langues parlées', 'langues', 'changeLangues') + [
+                $this->field('Langue parlée', 'langues', 'changeLangues') + [
                     'choices' => array_flip(
                         ActiviteLovCatalog::choicesFor('LANGUE_PARLEE'),
                     ),
@@ -171,7 +176,11 @@ final class ActiviteType extends AbstractType
                     'choice_value' => static fn (
                         ?ModeInterventionActivite $mode,
                     ): ?string => $mode?->value,
-                    'placeholder' => 'Choisir…',
+                    // Radios maquette (bloc data-radio du thème) : pilotent
+                    // les cartes Localisation fixe / mobile.
+                    'expanded' => true,
+                    'placeholder' => false,
+                    'attr' => ['data-radio' => true],
                 ],
             )
             ->add('localisation', LocalisationType::class, [
@@ -201,7 +210,7 @@ final class ActiviteType extends AbstractType
                 'paysMobiles',
                 StringListType::class,
                 $this->field(
-                    'Pays mobiles',
+                    'Pays',
                     'paysMobiles',
                     'changePaysMobiles',
                 ) + ['help' => 'Un pays par ligne.'],
@@ -210,7 +219,7 @@ final class ActiviteType extends AbstractType
                 'regionsMobiles',
                 StringListType::class,
                 $this->field(
-                    'Régions mobiles',
+                    'Région(s)',
                     'regionsMobiles',
                     'changeRegionsMobiles',
                 ) + ['help' => 'Une région par ligne.'],
@@ -219,7 +228,7 @@ final class ActiviteType extends AbstractType
                 'departementsMobiles',
                 StringListType::class,
                 $this->field(
-                    'Départements mobiles',
+                    'Département(s)',
                     'departementsMobiles',
                     'changeDepartementsMobiles',
                 ) + ['help' => 'Un département par ligne.'],
@@ -254,13 +263,15 @@ final class ActiviteType extends AbstractType
                         ActiviteLovCatalog::choicesFor('OBJECTIF_SEMINAIRE'),
                     ),
                     'multiple' => true,
+                    'help' => 'Cinq objectifs au maximum.',
+                    'attr' => ['data-max' => 5],
                 ],
             )
             ->add(
                 'participantsMin',
                 IntegerType::class,
                 $this->field(
-                    'Participants minimum',
+                    'Nombre de participants minimum',
                     'participantsMin',
                     'changeParticipantsMin',
                 ),
@@ -269,43 +280,43 @@ final class ActiviteType extends AbstractType
                 'participantsMax',
                 IntegerType::class,
                 $this->field(
-                    'Participants maximum',
+                    'Nombre de participants maximum',
                     'participantsMax',
                     'changeParticipantsMax',
                 ),
             )
             ->add(
                 'dureeMinMinutes',
-                IntegerType::class,
+                DureeMinutesType::class,
                 $this->field(
-                    'Durée minimale en minutes',
+                    'Temps minimum',
                     'dureeMinMinutes',
                     'changeDureeMinMinutes',
                 ),
             )
             ->add(
                 'dureeMaxMinutes',
-                IntegerType::class,
+                DureeMinutesType::class,
                 $this->field(
-                    'Durée maximale en minutes',
+                    'Temps maximum',
                     'dureeMaxMinutes',
                     'changeDureeMaxMinutes',
                 ),
             )
             ->add(
                 'plus',
-                StringListType::class,
+                ListeIndexeeType::class,
                 $this->field(
                     'Les plus',
                     'plus',
                     'changePlus',
-                ) + ['help' => 'Quatre maximum, un par ligne.'],
+                ) + ['nombre' => Activite::PLUS_MAX, 'libelle_format' => 'Plus n°%d', 'entry_attr' => ['maxlength' => 255]],
             )
             ->add(
                 'tarifParPersonne',
                 MoneyType::class,
                 $this->field(
-                    'Tarif par personne (à partir de)',
+                    'Tarifs à partir de (/pers)',
                     'tarifParPersonne',
                     'changeTarifParPersonne',
                 ) + ['currency' => 'EUR', 'input' => 'string'],
@@ -413,8 +424,18 @@ final class ActiviteType extends AbstractType
                         $a->addOffre($offer);
                     }
                 },
-            ])
-            ->add('submit', SubmitType::class, ['label' => 'Enregistrer']);
+            ]);
+
+        // Facturation & partenariat (maquette portail) : bloc commun porté par la fiche.
+        $b->add('administratif', MethodMappedFieldsType::class, [
+            'mapped_class' => FicheAdministratif::class,
+            'data_class' => FicheAdministratif::class,
+            'fields' => FicheFormCatalog::administrative(),
+            'getter' => static fn (Activite $entite): FicheAdministratif => $entite->administratif(),
+            'setter' => static function (Activite &$entite, FicheAdministratif $value): void {},
+        ]);
+        FicheFormCatalog::ajouterFichiers($b);
+        $b->add('submit', SubmitType::class, ['label' => 'Enregistrer']);
     }
 
     /** @return array<string,mixed> */
@@ -437,8 +458,18 @@ final class ActiviteType extends AbstractType
         $r->setDefaults([
             'data_class' => Activite::class,
             'validation_groups' => [ValidationGroups::DRAFT],
-            // Racine du contrôleur Stimulus qui filtre les sous-thématiques
-            // par thématique cochée (les cibles sont dans ce formulaire).
         ]);
+    }
+
+    /**
+     * Astérisque permanent des champs bloquants à la soumission (marqueur
+     * `obligatoire` lu par le thème de l'éditeur, jamais l'option `required`).
+     *
+     * @param FormInterface<mixed> $form
+     * @param array<string, mixed> $options
+     */
+    public function finishView(FormView $view, FormInterface $form, array $options): void
+    {
+        ActiviteObligationsPublication::marquer($view);
     }
 }

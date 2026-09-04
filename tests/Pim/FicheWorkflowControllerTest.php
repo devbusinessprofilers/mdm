@@ -27,7 +27,7 @@ final class FicheWorkflowControllerTest extends WebTestCase
 {
     private const TABLES = [
         'outbox_message', 'pim_ressource_lieu', 'pim_acces_lieu', 'pim_fiche_search', 'pim_fiche_attribute_value', 'pim_fiche_site_diffusion',
-        'pim_lieu_administratif', 'pim_lieu_tarification', 'pim_lieu',
+        'pim_fiche_administratif', 'pim_lieu_tarification', 'pim_lieu',
         'pim_restaurant_salle', 'pim_restaurant_periode_fermeture', 'pim_restaurant_acces', 'pim_restaurant',
         'pim_activite_offre', 'pim_activite', 'pim_service_evenementiel',
         'pim_fiche', 'pim_localisation', 'account_user',

@@ -178,7 +178,7 @@ final class DoctrineAuditSubscriberTest extends KernelTestCase
             'DELETE FROM pim_fiche_attribute_value',
         );
         $this->connection->executeStatement(
-            'DELETE FROM pim_lieu_administratif',
+            'DELETE FROM pim_fiche_administratif',
         );
         $this->connection->executeStatement(
             'DELETE FROM pim_lieu_tarification',

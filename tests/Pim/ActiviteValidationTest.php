@@ -43,6 +43,21 @@ final class ActiviteValidationTest extends KernelTestCase
         self::assertContains('ressources', $paths);
     }
 
+    /** Maquette portail : cinq « plus » et cinq objectifs de séminaire au maximum. */
+    public function testCinqPlusEtCinqObjectifsAuMaximum(): void
+    {
+        $a = new Activite();
+        $a->changePlus(['1', '2', '3', '4', '5', '6']);
+        self::assertSame(['1', '2', '3', '4', '5'], $a->plus());
+
+        $a->changeObjectifs(['OBJECTIF_SEMINAIRE_1', 'OBJECTIF_SEMINAIRE_2', 'OBJECTIF_SEMINAIRE_3', 'OBJECTIF_SEMINAIRE_4', 'OBJECTIF_SEMINAIRE_5', 'OBJECTIF_SEMINAIRE_6']);
+        $messages = array_map(
+            static fn ($v): string => (string) $v->getMessage(),
+            iterator_to_array($this->validator->validate($a, null, [ValidationGroups::DRAFT])),
+        );
+        self::assertContains('Cinq objectifs de séminaire au maximum.', $messages);
+    }
+
     public function testRangesAmountsAndCollectionLimitsAreCheckedInDraft(): void
     {
         $a = new Activite();

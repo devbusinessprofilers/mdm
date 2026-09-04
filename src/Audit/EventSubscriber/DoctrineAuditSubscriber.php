@@ -11,11 +11,11 @@ use App\Audit\ValueNormalizer;
 use App\Pim\Entity\Activite\Activite;
 use App\Pim\Entity\Activite\OffreActivite;
 use App\Pim\Entity\Fiche;
+use App\Pim\Entity\FicheAdministratif;
 use App\Pim\Entity\FicheAttributValeur;
 use App\Pim\Entity\FicheSiteDiffusion;
 use App\Pim\Entity\Lieu\AccesLieu;
 use App\Pim\Entity\Lieu\Lieu;
-use App\Pim\Entity\Lieu\LieuAdministratif;
 use App\Pim\Entity\Lieu\LieuTarification;
 use App\Pim\Entity\Lieu\PeriodeFermeture;
 use App\Pim\Entity\Lieu\RessourceLieu;
@@ -25,6 +25,7 @@ use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Entity\Restaurant\RestaurantAcces;
 use App\Pim\Entity\Restaurant\RestaurantPeriodeFermeture;
 use App\Pim\Entity\Restaurant\RestaurantSalle;
+use App\Pim\Entity\Service\ServiceAcces;
 use App\Pim\Entity\Service\ServiceEvenementiel;
 use App\Pim\Enum\NatureRessource;
 use Doctrine\Bundle\DoctrineBundle\Attribute\AsDoctrineListener;
@@ -67,9 +68,10 @@ final readonly class DoctrineAuditSubscriber
         RestaurantSalle::class,
         RestaurantPeriodeFermeture::class,
         RestaurantAcces::class,
+        ServiceAcces::class,
         OffreActivite::class,
         Localisation::class,
-        LieuAdministratif::class,
+        FicheAdministratif::class,
         LieuTarification::class,
         Salle::class,
         PeriodeFermeture::class,
@@ -436,6 +438,12 @@ final readonly class DoctrineAuditSubscriber
         ) {
             return $entity->restaurant()?->fiche();
         }
+        if ($entity instanceof ServiceAcces) {
+            return $entity->service()?->fiche();
+        }
+        if ($entity instanceof FicheAdministratif) {
+            return $entity->fiche();
+        }
         $fiche =
             $entity instanceof Fiche
                 ? $entity
@@ -447,8 +455,6 @@ final readonly class DoctrineAuditSubscriber
                 ($fiche instanceof Fiche && $lieu->fiche() === $fiche)
                 || ($entity instanceof Localisation
                     && $lieu->localisation() === $entity)
-                || ($entity instanceof LieuAdministratif
-                    && $lieu->administratif() === $entity)
                 || ($entity instanceof LieuTarification
                     && $lieu->tarification() === $entity)
             ) {
@@ -558,7 +564,7 @@ final readonly class DoctrineAuditSubscriber
                 $field,
             ),
             $entity instanceof Localisation => 'localisation.'.$field,
-            $entity instanceof LieuAdministratif => 'administratif.'.$field,
+            $entity instanceof FicheAdministratif => 'administratif.'.$field,
             $entity instanceof LieuTarification => 'tarification.'.$field,
             $entity instanceof Salle => sprintf(
                 'salles[%s].%s',
@@ -586,6 +592,11 @@ final readonly class DoctrineAuditSubscriber
                 $field,
             ),
             $entity instanceof RestaurantAcces => sprintf(
+                'acces[%s].%s',
+                $entity->id(),
+                $field,
+            ),
+            $entity instanceof ServiceAcces => sprintf(
                 'acces[%s].%s',
                 $entity->id(),
                 $field,

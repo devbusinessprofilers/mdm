@@ -1,0 +1,47 @@
+{#
+    Onglet Tarifs du Restaurant (maquette portail) : six lignes fixes, chacune
+    avec un interrupteur, une description figée et le montant HT « à partir
+    de ». L'interrupteur n'est pas un champ du formulaire : il pilote
+    l'affichage du montant (contrôleur affichage-conditionnel du formulaire,
+    `data-vider` efface le montant quand la ligne est décochée — null = non
+    proposé). Coché à l'ouverture si un montant est enregistré.
+
+    Variables : `widgets` — les six champs MoneyType, dans l'ordre maquette.
+#}
+{% set descriptions = {
+    tarifDejeunerAssis: 'Entrée + plat + dessert + eau + café',
+    tarifCocktailDejeunatoire: '1 espace de réception pour le déjeuner + 1 cocktail comprenant 15 pièces /pers + 1 bouteille de vin /3pers · 10 participants minimum',
+    tarifDinerAssis: 'Entrée + plat + dessert + eau + café',
+    tarifCocktailDinatoire: '1 espace de réception pour le déjeuner + 1 cocktail comprenant 15 pièces /pers + 1 bouteille de vin /3pers · 10 participants minimum',
+} %}
+<div class="flex flex-col gap-6">
+    <twig:Typography variant="body-sm" textColor="neutral-500" class="text-pretty">
+        Référencement en ligne : ciblez les événements sur lesquels vous souhaitez être visible.
+        Indiquez vos tarifs "à partir de" pour nous permettre de qualifier au mieux les demandes.
+    </twig:Typography>
+    <div class="flex flex-col divide-y divide-neutral-200">
+        {% for widget in widgets %}
+            {% set nom = widget.vars.name %}
+            {% set actif = widget.vars.value is not empty %}
+            <div class="flex flex-row flex-wrap items-start gap-x-6 gap-y-3 py-4" data-tarif="{{ nom }}">
+                <div class="w-[calc(50%-12px)] flex flex-col gap-1">
+                    {# Interrupteur hors formulaire (nom hors du namespace `restaurant`) : jamais soumis au formulaire. #}
+                    <label for="{{ widget.vars.id }}_actif" class="flex flex-row items-center gap-3 cursor-pointer">
+                        <twig:Form:SwitchButton id="{{ widget.vars.id }}_actif" name="tarif_actif[{{ nom }}]" value="1" :checked="actif" class="shrink-0" />
+                        <twig:Typography variant="body" bold element="span">{{ widget.vars.label }}</twig:Typography>
+                    </label>
+                    {% if descriptions[nom]|default(null) %}
+                        <twig:Typography variant="body-sm" textColor="neutral-500" class="pl-[52px] text-pretty">{{ descriptions[nom] }}</twig:Typography>
+                    {% endif %}
+                </div>
+                <div class="w-[calc(50%-12px)] data-[masque]:hidden"
+                     data-affichage-conditionnel-target="cible"
+                     data-source="{{ widget.vars.id }}_actif"
+                     data-valeurs="1"
+                     data-vider="1">
+                    {{ form_row(widget, { label: 'Montant HT à partir de' }) }}
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>

@@ -66,7 +66,7 @@ final class RestaurantDocumentUploadTest extends WebTestCase
 
         // La matrice de la fiche porte le contrôleur salle-plan et son jeton :
         // c'est là que le navigateur prend ce que le test rejoue en fetch.
-        $crawler = $client->request('GET', '/referentiel/restaurants/fiche/'.$restaurant->id().'?section=4');
+        $crawler = $client->request('GET', '/referentiel/restaurants/fiche/'.$restaurant->id().'?section=3');
         self::assertResponseIsSuccessful();
         $fieldset = $crawler->filter('[data-salle-plan-token-value]');
         self::assertGreaterThan(0, $fieldset->count(), 'La matrice des salles doit porter le contrôleur salle-plan.');

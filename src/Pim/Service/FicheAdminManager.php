@@ -29,7 +29,8 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
  * Enregistrement du formulaire principal d'une fiche, toutes gammes : photos
  * de la collection `ressources`, documents déposés par les champs de fichiers
  * de la gamme (menus, supports commerciaux) avec le titre et la source saisis
- * à côté, médias retirés, traductions replanifiées, réindexation.
+ * à côté, pièces administratives (DocumentsAdministratifsDepot), médias
+ * retirés, traductions replanifiées, réindexation.
  */
 final readonly class FicheAdminManager
 {
@@ -40,6 +41,7 @@ final readonly class FicheAdminManager
         private FicheDocumentUploader $documentUploader,
         private FicheTranslationScheduler $translationScheduler,
         private FicheMutation $mutations,
+        private DocumentsAdministratifsDepot $depotAdministratif,
     ) {
     }
 
@@ -123,6 +125,8 @@ final readonly class FicheAdminManager
                     }
                 }
             }
+            // Pièces de l'onglet Facturation & partenariat, toutes gammes (un fichier par usage).
+            $this->depotAdministratif->deposer($form, $entite, $documents);
             foreach (array_diff($existingMediaIds, $this->photoAssetIds($entite)) as $removed) {
                 if ('' !== $removed) {
                     $this->outbox->enqueue(new DeleteMedia($removed));
