@@ -341,7 +341,7 @@
         id: 'form-fiche',
         class: 'contents',
         'data-controller': 'affichage-conditionnel',
-        'data-action': 'change->affichage-conditionnel#maj',
+        'data-action': 'change->affichage-conditionnel#maj select:change->affichage-conditionnel#maj',
         'data-fiche-gamme': gamme_slug,
         'data-fiche-id': fiche.idString,
         'data-fiche-suggerer-url': path('app_pim_fiche_suggerer'),
@@ -378,7 +378,11 @@
                         {% elseif bloc == 'tarifs_restaurant' %}
                             {% include 'mdm/fiche/_tarifs_restaurant.html.twig' with { widgets: widgets } only %}
                         {% elseif bloc == 'offres_activite' %}
-                            {% include 'mdm/fiche/_offres_activite.html.twig' with { widget: widgets|first } only %}
+                            {# Le prototype ne se rend qu'une fois : gabarit partagé par les cartes Forfaits et Options. #}
+                            {% if gabarit_offre is not defined %}
+                                {% set gabarit_offre = include('mdm/fiche/_offre_gabarit.html.twig', { proto: (widgets|first).vars.prototype }, with_context = false) %}
+                            {% endif %}
+                            {% include 'mdm/fiche/_offres_activite.html.twig' with { widget: widgets|first, type: carte.type_offre|default('forfait'), gabarit: gabarit_offre } only %}
                         {% else %}
                             {{ _self.carte_champs(form, widgets, carte.colonnes|default(2), carte.pleins|default([]), cases_en_ligne, carte.conditions|default({})) }}
                         {% endif %}

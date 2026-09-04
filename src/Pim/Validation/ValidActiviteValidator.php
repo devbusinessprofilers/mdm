@@ -52,6 +52,9 @@ final class ValidActiviteValidator extends ConstraintValidator
         foreach ($value->plus() as $index => $plus) {
             $this->maxLength($plus, 255, sprintf('plus[%d]', $index));
         }
+        if (count($value->objectifs()) > 5) {
+            $this->violation('Cinq objectifs de séminaire au maximum.', 'objectifs');
+        }
         foreach (
             [
                 $value->paysMobiles(),

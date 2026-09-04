@@ -119,7 +119,7 @@ final class FicheGammeEditeurTest extends WebTestCase
         // Les éditeurs Activité et Service rendent avec leurs sections.
         $crawler = $client->request('GET', '/referentiel/activites/fiche/'.$activite->id());
         self::assertResponseIsSuccessful();
-        self::assertGreaterThanOrEqual(7, $crawler->filter('nav[aria-label="Sections de la fiche"] li')->count());
+        $this->assertEditeurActiviteIsoMaquette($crawler);
         $crawler = $client->request('GET', '/referentiel/services/fiche/'.$service->id().'?section=1');
         self::assertResponseIsSuccessful();
         $this->assertEditeurServiceIsoMaquette($crawler);
@@ -257,6 +257,53 @@ final class FicheGammeEditeurTest extends WebTestCase
         self::assertCount(6, $crawler->filter('#form-fiche section[data-volet="6"] input[name^="restaurant[tarif"]'));
         // Accès par la route (ex-« Grande ville proche »).
         self::assertStringContainsString('Accès par la route', (string) $crawler->filter('#form-fiche section[data-volet="1"] [data-form-collection-prototype-value]')->first()->attr('data-form-collection-prototype-value'));
+    }
+
+    /** Onglets, cartes et champs de l'Activité dans l'ordre de la maquette. */
+    private function assertEditeurActiviteIsoMaquette(Crawler $crawler): void
+    {
+        $rail = $crawler->filter('nav[aria-label="Sections de la fiche"] li')->each(static fn (Crawler $li): string => trim(preg_replace('/\s*\d+ %$/', '', $li->text(null, true)) ?? ''));
+        self::assertSame(
+            ['Informations générales', 'Localisation & accessibilité', 'Description', 'Capacités', 'RSE', 'Tarifs', 'Médias', 'Booster ma visibilité', 'Utilisateurs', 'Templates de message'],
+            $rail,
+        );
+        $cartes = static fn (int $volet): array => $crawler->filter(sprintf('#form-fiche section[data-volet="%d"] h2', $volet))->each(static fn (Crawler $h2): string => $h2->text(null, true));
+        self::assertSame(['Informations générales'], $cartes(0));
+        self::assertSame(['Rayon d\'action géographique', 'Localisation fixe', 'Localisation mobile'], $cartes(1));
+        self::assertSame(['Description', 'Les plus'], $cartes(2));
+        self::assertSame(['Capacité globale', 'Durée de l\'activité / Séminaire'], $cartes(3));
+        self::assertSame(['Mes tarifs', 'Forfaits', 'Options'], $cartes(5));
+
+        $libelles = static fn (int $volet): array => $crawler->filter(sprintf('#form-fiche section[data-volet="%d"] label', $volet))
+            ->each(static fn (Crawler $l): string => preg_replace('/\s+/', ' ', $l->text(null, true)) ?? '');
+        $sansBruit = static fn (array $l): array => array_values(array_filter($l, static fn (string $t): bool => '' !== $t && !str_starts_with($t, 'Select ')));
+        self::assertSame(
+            ['Nom de l’activité *', 'Prestataire *', 'Langue parlée', "Thématique de l'activité *", 'Type *', 'Nautiques & Aquatiques', 'Créatives, Artistiques & Musicales', 'Culinaires & Œnologiques', 'Culturelles, Réflexions & Découvertes', 'Digital & High-Tech', 'Sensations fortes & Sports mécaniques', 'Sportives & Ludiques', 'Nature & RSE', 'Bien-être & Détente', 'Adhérent Business Premium', 'Partenaire BP'],
+            $sansBruit($libelles(0)),
+        );
+        self::assertStringNotContainsString('Sous-thématiques —', $crawler->filter('#form-fiche')->text());
+        // Sous-thématiques : une cible par thématique parente.
+        $cibles = $crawler->filter('#form-fiche section[data-volet="0"] [data-affichage-conditionnel-target="cible"][data-source="activite_thematiques"]');
+        self::assertCount(9, $cibles);
+        self::assertSame('TA_NAUTIQUE_AQUATIQUE', $cibles->first()->attr('data-valeurs'));
+        // Rayon d'action en radios, cartes fixe / mobile conditionnées.
+        self::assertCount(2, $crawler->filter('input[type="radio"][name="activite[modeIntervention]"]'));
+        $volets = $crawler->filter('#form-fiche section[data-volet="1"][data-affichage-conditionnel-target="cible"]');
+        self::assertSame(['fixe', 'mobile'], $volets->each(static fn (Crawler $s): string => (string) $s->attr('data-valeurs')));
+        self::assertSame(['Pays', 'Rue', 'Code postal', 'Ville *', 'Arrondissement', 'Département', 'Région', 'Latitude', 'Longitude', 'Code pays ISO', 'Pays', 'Région(s) *', 'Département(s)', 'Toute la France'], array_slice($sansBruit($libelles(1)), 3));
+        self::assertSame(['Description générale *', 'Ce que comprend la prestation', 'Objectifs de séminaire *', 'Plus n°1', 'Plus n°2', 'Plus n°3', 'Plus n°4', 'Plus n°5'], $sansBruit($libelles(2)));
+        self::assertSame(['Nombre de participants minimum *', 'Nombre de participants maximum *', 'Temps minimum *', 'Temps maximum *'], $sansBruit($libelles(3)));
+        self::assertCount(2, $crawler->filter('#form-fiche section[data-volet="3"] input[type="time"]'));
+        // Forfaits / options : trois emplacements par type, champs désactivés tant que non cochés.
+        self::assertSame('Tarifs à partir de (/pers)', $sansBruit($libelles(5))[0]);
+        foreach (['forfait', 'option'] as $type) {
+            self::assertCount(3, $crawler->filter(sprintf('[data-offre^="%s-"]', $type)));
+            self::assertCount(3, $crawler->filter(sprintf('input[name^="activite[offres][nouveau_%s_"][name$="[type]"][disabled]', $type)));
+            self::assertCount(0, $crawler->filter(sprintf('input[name="offre_active[%s][0]"][checked]', $type)));
+        }
+        self::assertSame('2', $crawler->filter('input[name="activite[offres][nouveau_option_2][position]"]')->attr('value'));
+        self::assertSame('hidden', $crawler->filter('input[name="activite[offres][nouveau_option_2][position]"]')->attr('type'));
+        self::assertStringContainsString('Nom option', $crawler->filter('[data-offre="option-0"]')->text());
     }
 
     /** Onglets, cartes et champs du Service événementiel dans l'ordre de la maquette. */

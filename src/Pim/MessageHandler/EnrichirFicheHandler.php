@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Pim\MessageHandler;
 
+use App\Pim\Entity\Activite\Activite;
 use App\Pim\Entity\Fiche;
 use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Enum\SuggestionSource;
@@ -158,7 +159,7 @@ final readonly class EnrichirFicheHandler
                 static fn (?string $atout): bool => null !== $atout && '' !== trim($atout),
             )), 5, Lieu::ATOUT_MAX_LENGTH],
             null !== $restaurant => ['restaurant_atouts', $restaurant->atouts(), 5, 80],
-            null !== $activite => ['activite_plus', $activite->plus(), 4, 80],
+            null !== $activite => ['activite_plus', $activite->plus(), Activite::PLUS_MAX, 80],
             default => [null, [], 0, 0],
         };
         if (null !== $champIa) {

@@ -88,4 +88,26 @@ final class FicheSectionsCatalogueTest extends TestCase
         self::assertSame(['Informations générales', 'Description générale', 'Prestations', 'Matériel'], array_map(static fn (array $c): string => $c['titre'] ?? 'Informations générales', $infos['cartes'] ?? []));
         self::assertContains('acces', FicheSectionsCatalogue::section(TypeFiche::ServiceEvenementiel, 1)['champs']);
     }
+
+    public function testLesOngletsActiviteSuiventLaMaquette(): void
+    {
+        $titres = array_column(FicheSectionsCatalogue::pour(TypeFiche::Activite), 'titre');
+
+        self::assertSame(
+            ['Informations générales', 'Localisation & accessibilité', 'Description', 'Capacités', 'RSE', 'Tarifs', 'Médias', 'Booster ma visibilité', 'Utilisateurs', 'Templates de message'],
+            $titres,
+        );
+        $infos = FicheSectionsCatalogue::section(TypeFiche::Activite, 0);
+        self::assertContains('thematiques', $infos['champs']);
+        self::assertContains('sousThematiquesNautiquesAquatiques', $infos['champs']);
+        // Chaque sous-thématique est conditionnée à sa thématique parente.
+        $conditions = $infos['cartes'][0]['conditions'] ?? [];
+        self::assertSame(['source' => 'thematiques', 'valeurs' => 'TA_NAUTIQUE_AQUATIQUE'], $conditions['sousThematiquesNautiquesAquatiques']);
+        self::assertCount(9, $conditions);
+        // Les cartes Localisation fixe / mobile sont conditionnées au rayon d'action.
+        $cartes = FicheSectionsCatalogue::section(TypeFiche::Activite, 1)['cartes'] ?? [];
+        self::assertSame(['fixe', 'mobile'], [$cartes[1]['condition']['valeurs'], $cartes[2]['condition']['valeurs']]);
+        $tarifs = FicheSectionsCatalogue::section(TypeFiche::Activite, 5)['cartes'] ?? [];
+        self::assertSame(['forfait', 'option'], [$tarifs[1]['type_offre'], $tarifs[2]['type_offre']]);
+    }
 }

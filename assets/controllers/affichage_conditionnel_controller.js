@@ -7,7 +7,9 @@ import { Controller } from '@hotwired/stimulus';
  * Une cible (`data-affichage-conditionnel-target="cible"`) porte :
  *  - data-source   : l'id du widget source (groupe de radios/cases, ou <select>) ;
  *  - data-valeurs  : les valeurs qui la montrent, séparées par « | » ;
- *  - data-vider    : si présent, ses champs sont vidés quand elle se masque.
+ *  - data-vider    : si présent, ses champs sont vidés quand elle se masque ;
+ *  - data-desactiver : si présent, ses champs sont désactivés tant qu'elle
+ *    est masquée (rien n'est soumis) et réactivés quand elle se montre.
  * Le masquage passe par `data-masque` (classe `data-[masque]:hidden`), sans
  * toucher au `hidden` que le contrôleur des onglets pose sur les volets.
  */
@@ -27,6 +29,9 @@ export default class extends Controller {
             const valeurs = this.valeursSource(cible.dataset.source);
             const attendues = (cible.dataset.valeurs || '').split('|');
             const visible = attendues.some((valeur) => valeurs.includes(valeur));
+            if ('desactiver' in cible.dataset) {
+                cible.querySelectorAll('input, select, textarea').forEach((champ) => { champ.disabled = !visible; });
+            }
             if (visible) {
                 delete cible.dataset.masque;
                 return;

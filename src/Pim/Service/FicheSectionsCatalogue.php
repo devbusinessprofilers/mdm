@@ -359,30 +359,64 @@ final class FicheSectionsCatalogue
         ];
     }
 
-    /** @return list<array{titre: string, champs: list<string>, proprietes: list<string>, blocs: list<string>, groupe?: string}> */
+    /**
+     * Onglets de la maquette portail prestataire (Activité) : Classification
+     * fondue dans Informations générales (sous-thématiques affichées selon
+     * les thématiques cochées), rayon d'action en radios pilotant les cartes
+     * Localisation fixe / mobile, cinq « plus », durées en hh:mm, forfaits et
+     * options en deux cartes de trois emplacements.
+     *
+     * @return list<array{titre: string, champs: list<string>, proprietes: list<string>, blocs: list<string>, groupe?: string, cartes?: list<array<string, mixed>>}>
+     */
     private static function activite(): array
     {
+        // Sous-thématiques dans l'ordre maquette, chacune conditionnée à sa thématique parente.
+        $sousThematiques = [];
+        $conditions = [];
+        foreach ([
+            'TA_NAUTIQUE_AQUATIQUE_SS', 'TA_CREATIVE_ARTISTIQUE_MUSICALE_SS', 'TA_CULINAIRE_OENOLOGIQUE_SS',
+            'TA_CULTURELLE_REFLEXION_DECOUVERTE_SS', 'TA_DIGITAL_HIGH_TECH_SS', 'TA_SENSATION_SPORT_MECA_SS',
+            'TA_SPORTIVE_LUDIQUE_SS', 'TA_NATURE_RSE_SS', 'TA_BIEN_ETRE_DETENTE_SS',
+        ] as $attribut) {
+            $champ = ActiviteLovCatalog::SOUS_THEMATIQUE_FIELDS[$attribut];
+            $sousThematiques[] = $champ;
+            $conditions[$champ] = ['source' => 'thematiques', 'valeurs' => ActiviteLovCatalog::thematiqueOf($attribut)];
+        }
+
         return [
             [
                 'titre' => 'Informations générales',
-                'champs' => ['label', 'prestataire', 'types', 'langues', 'businessPremium', 'partenaireBp'],
-                'proprietes' => ['label', 'prestataire', 'types', 'langues'],
+                'champs' => ['label', 'prestataire', 'langues', 'thematiques', 'types', 'businessPremium', 'partenaireBp', ...$sousThematiques],
+                'proprietes' => ['label', 'prestataire', 'langues', 'thematiques', 'types', 'sousThematiques'],
                 'blocs' => [],
                 'groupe' => 'ma_fiche',
+                'cartes' => [
+                    [
+                        'titre' => null,
+                        'champs' => ['label', 'prestataire', 'langues', 'thematiques', 'types', 'businessPremium', 'partenaireBp', ...$sousThematiques],
+                        'colonnes' => 2,
+                        'pleins' => $sousThematiques,
+                        'conditions' => $conditions,
+                    ],
+                ],
             ],
             [
-                'titre' => 'Localisation & zone d\'intervention',
-                'champs' => ['modeIntervention', 'localisation', 'touteFrance', 'paysMobiles', 'regionsMobiles', 'departementsMobiles'],
+                'titre' => 'Localisation & accessibilité',
+                'champs' => ['modeIntervention', 'localisation', 'paysMobiles', 'regionsMobiles', 'departementsMobiles', 'touteFrance'],
                 'proprietes' => ['modeIntervention', 'localisation', 'paysMobiles', 'regionsMobiles', 'departementsMobiles'],
                 'blocs' => [],
                 'groupe' => 'ma_fiche',
-            ],
-            [
-                'titre' => 'Classification',
-                'champs' => ['thematiques', ...array_values(ActiviteLovCatalog::SOUS_THEMATIQUE_FIELDS)],
-                'proprietes' => ['thematiques', 'sousThematiques'],
-                'blocs' => [],
-                'groupe' => 'ma_fiche',
+                'cartes' => [
+                    ['titre' => 'Rayon d\'action géographique', 'champs' => ['modeIntervention'], 'colonnes' => 2, 'pleins' => ['modeIntervention']],
+                    ['titre' => 'Localisation fixe', 'condition' => ['source' => 'modeIntervention', 'valeurs' => 'fixe']] + self::carteLocalisation(),
+                    [
+                        'titre' => 'Localisation mobile',
+                        'champs' => ['paysMobiles', 'regionsMobiles', 'departementsMobiles', 'touteFrance'],
+                        'colonnes' => 2,
+                        'pleins' => ['departementsMobiles'],
+                        'condition' => ['source' => 'modeIntervention', 'valeurs' => 'mobile'],
+                    ],
+                ],
             ],
             [
                 'titre' => 'Description',
@@ -390,13 +424,21 @@ final class FicheSectionsCatalogue
                 'proprietes' => ['descriptionGenerale', 'comprendPrestation', 'objectifs', 'plus'],
                 'blocs' => [],
                 'groupe' => 'ma_fiche',
+                'cartes' => [
+                    ['titre' => null, 'champs' => ['descriptionGenerale', 'comprendPrestation', 'objectifs'], 'colonnes' => 2],
+                    ['titre' => 'Les plus', 'champs' => ['plus'], 'colonnes' => 2],
+                ],
             ],
             [
-                'titre' => 'Capacités & durées',
+                'titre' => 'Capacités',
                 'champs' => ['participantsMin', 'participantsMax', 'dureeMinMinutes', 'dureeMaxMinutes'],
                 'proprietes' => ['participantsMin', 'participantsMax', 'dureeMinMinutes', 'dureeMaxMinutes'],
                 'blocs' => [],
                 'groupe' => 'ma_fiche',
+                'cartes' => [
+                    ['titre' => 'Capacité globale', 'champs' => ['participantsMin', 'participantsMax'], 'colonnes' => 2],
+                    ['titre' => 'Durée de l\'activité / Séminaire', 'champs' => ['dureeMinMinutes', 'dureeMaxMinutes'], 'colonnes' => 2],
+                ],
             ],
             [
                 'titre' => 'RSE',
@@ -411,6 +453,11 @@ final class FicheSectionsCatalogue
                 'proprietes' => ['tarifParPersonne', 'offres'],
                 'blocs' => [],
                 'groupe' => 'ma_fiche',
+                'cartes' => [
+                    ['titre' => 'Mes tarifs', 'champs' => ['tarifParPersonne'], 'colonnes' => 3],
+                    ['titre' => 'Forfaits', 'champs' => ['offres'], 'colonnes' => 2, 'bloc' => 'offres_activite', 'type_offre' => 'forfait'],
+                    ['titre' => 'Options', 'champs' => ['offres'], 'colonnes' => 2, 'bloc' => 'offres_activite', 'type_offre' => 'option'],
+                ],
             ],
             [
                 // Champs de dépôt et lien vidéo rendus dans les onglets

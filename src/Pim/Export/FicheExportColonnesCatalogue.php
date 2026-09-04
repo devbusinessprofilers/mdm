@@ -34,7 +34,7 @@ final readonly class FicheExportColonnesCatalogue
         'restaurant' => [
             'horaireJour' => 'Informations générales',
         ],
-        'activite' => ['touteFrance' => 'Localisation & zone d\'intervention'],
+        'activite' => ['touteFrance' => 'Localisation & accessibilité'],
     ];
 
     public function __construct(private FicheImportSchemaRegistry $schemas)

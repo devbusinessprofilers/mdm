@@ -38,11 +38,12 @@
     {%- endif -%}
 {%- endblock -%}
 
-{#- Oui / Non (OuiNonType, opt-in `attr['data-oui-non']`) : deux pilules
-    radio maquette, l'input sr-only reste le vrai champ soumis, coche en pur
-    CSS `has-checked`. Les autres choix étendus gardent le rendu du layout. -#}
+{#- Oui / Non (OuiNonType, opt-in `attr['data-oui-non']`) et radios maquette
+    (opt-in `attr['data-radio']`, ex. rayon d'action) : des pilules radio,
+    l'input sr-only reste le vrai champ soumis, coche en pur CSS
+    `has-checked`. Les autres choix étendus gardent le rendu du layout. -#}
 {%- block choice_widget_expanded -%}
-    {%- if attr['data-oui-non']|default(false) -%}
+    {%- if attr['data-oui-non']|default(false) or attr['data-radio']|default(false) -%}
         <div {{ block('widget_container_attributes') }} class="flex flex-row flex-wrap gap-2.5">
             {%- for enfant in form -%}
                 <label for="{{ enfant.vars.id }}"

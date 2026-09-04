@@ -29,6 +29,9 @@ use Symfony\Component\Uid\Ulid;
 #[ValidActivite(groups: ['Submission'])]
 class Activite
 {
+    /** Emplacements « Plus n°1 » à « Plus n°5 » de la maquette portail. */
+    public const PLUS_MAX = 5;
+
     use TimestampableTrait {
         touch as touchDetail;
     }
@@ -300,7 +303,7 @@ class Activite
     /** @param list<string> $value */
     public function changePlus(array $value): void
     {
-        $this->plus = array_slice(self::normalizeList($value), 0, 4);
+        $this->plus = array_slice(self::normalizeList($value), 0, self::PLUS_MAX);
         $this->touch();
     }
 
