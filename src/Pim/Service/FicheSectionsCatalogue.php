@@ -6,6 +6,7 @@ namespace App\Pim\Service;
 
 use App\Pim\Enum\TypeFiche;
 use App\Pim\Form\LieuFormCatalog;
+use App\Pim\Geo\ZonesGeographiques;
 use App\Pim\Lov\ActiviteLovCatalog;
 use App\Pim\Lov\ServiceLovCatalog;
 
@@ -71,48 +72,79 @@ final class FicheSectionsCatalogue
     }
 
     /**
-     * Les 16 onglets de la maquette, dans son ordre. Un champ peut être une
-     * feuille pointée (`groupe.champ`) : le gabarit la résout dans le
-     * formulaire sans changer la structure de soumission — c'est ainsi que le
-     * groupe accessibiliteDescription se répartit sur trois onglets maquette.
-     * Les fonctions back sans onglet maquette rejoignent l'onglet cohérent :
-     * disponibilités → Informations générales (carte annexe maquette),
-     * sites de diffusion + visibilité → Booster ma visibilité,
-     * données Salesforce (notes RSE) → RSE ; l'extraction OCR vit au pied.
+     * Les 16 onglets de la maquette portail (Place), dans son ordre, en
+     * cartes déclaratives : un bloc par titre maquette. Un champ peut être
+     * une feuille pointée (`groupe.champ`) : le gabarit la résout dans le
+     * formulaire sans changer la structure de soumission. Les blocs
+     * hébergement et salles de réunion s'ouvrent quand leur question Oui/Non
+     * est à Oui (retour Clem, bible VERSION BP). Les fonctions back sans
+     * onglet maquette rejoignent l'onglet cohérent (sites de diffusion →
+     * Booster ma visibilité, notes Salesforce → RSE).
      *
-     * @return list<array{titre: string, champs: list<string>, proprietes: list<string>, blocs: list<string>, groupe: string}>
+     * @return list<array{titre: string, champs: list<string>, proprietes: list<string>, blocs: list<string>, groupe: string, cartes?: list<array<string, mixed>>}>
      */
     private static function lieu(): array
     {
+        /** @var \Closure(string, string ...): list<string> $chemins */
+        $chemins = static fn (string $groupe, string ...$champs): array => array_map(static fn (string $c): string => $groupe.'.'.$c, array_values($champs));
+        $conditions = static function (string $source, string ...$champs): array {
+            $conditions = [];
+            foreach ($champs as $champ) {
+                $conditions[$champ] = ['source' => $source, 'valeurs' => '1'];
+            }
+
+            return $conditions;
+        };
+        $hebergement = ['chambreNbTotal', 'chambreNbTotalSingle', 'chambreNbTotalTwin', 'chambreDouble', 'chambreCapaciteTotale', 'chambreDescGenerale'];
+        $synthese = ['salleReunionNbTotal', 'salleReunionCapaciteMaxCocktail', 'salleReunionCapaciteMaxTheatre', 'salleReunionCapaciteMinTheatre', 'salleReunionSurfaceMinReunion', 'salleReunionSurfaceMaxReunion', 'salleReunionDescSalleSeminaire'];
+        $restauration = ['restaurantTotal', 'restaurantSalleRestauration', 'restaurantCapaciteDebout', 'restaurantCapaciteAssis', 'restaurantSoireeDansante', 'restaurantCocktailDinatoire', 'restaurantTraiteurSurPlace', 'restaurantInterventionTraiteurExterne', 'restaurantTrateurExterneClient', 'restaurantPrivatisable', 'restaurantHeureInterruptionMusique', 'typeCuisine', 'serviceRestauration'];
+        $rse = ['achatResponsable', 'impactEnv', 'impactSocial', 'volumeAchatCatEsatStpa', 'mobilite', 'certification'];
+        $tarifs = static fn (string $titre, string ...$champs): array => ['titre' => $titre, 'champs' => $chemins('tarification', ...$champs), 'colonnes' => 3];
+
         return [
             [
                 'titre' => 'Informations générales',
                 'champs' => ['label', 'generaleTypologie', 'informationsGenerales', 'generaleWebsiteUrl', 'businessPremium', 'partenaireBp', 'disponibilites', 'periodesFermeture'],
                 'proprietes' => ['label', 'generaleTypologie', 'generaleWebsiteUrl', 'periodesFermeture', ...array_keys(LieuFormCatalog::general()), ...array_keys(LieuFormCatalog::availability())],
-                'blocs' => ['disponibilites'],
+                'blocs' => [],
                 'groupe' => 'ma_fiche',
+                'cartes' => [
+                    ['titre' => null, 'champs' => ['label', 'generaleTypologie', ...$chemins('informationsGenerales', 'generaleChainesGroupeHot', 'evenementsPredilection', 'generaleEtabRp'), 'generaleWebsiteUrl', 'businessPremium', 'partenaireBp'], 'colonnes' => 2],
+                    // Lieu privatisable, horaires par jour, périodes de fermeture (partial _disponibilites).
+                    ['titre' => 'Disponibilités', 'champs' => ['disponibilites', 'periodesFermeture'], 'colonnes' => 2, 'bloc' => 'disponibilites_lieu'],
+                ],
             ],
             [
                 'titre' => 'Localisation & accessibilité',
-                // Accessibilité PMR avant la collection Accès (ordre maquette).
-                'champs' => ['localisation', 'accessibiliteDescription.pmrAcces', 'accessibiliteDescription.pmrDetails', 'acces'],
+                'champs' => ['localisation', 'acces', 'accessibiliteDescription.pmrAcces', 'accessibiliteDescription.pmrDetails'],
                 'proprietes' => ['localisation', 'pmrAcces', 'pmrDetails', 'acces'],
                 'blocs' => [],
                 'groupe' => 'ma_fiche',
+                'cartes' => [
+                    self::carteLocalisation(),
+                    ['titre' => 'Accessibilité', 'champs' => ['acces'], 'colonnes' => 2, 'bloc' => 'collection'],
+                    ['titre' => 'Détails des accès PMR', 'champs' => $chemins('accessibiliteDescription', 'pmrAcces', 'pmrDetails'), 'colonnes' => 2],
+                ],
             ],
             [
                 'titre' => 'Thématiques & ambiances',
-                'champs' => ['accessibiliteDescription.taThematique', 'accessibiliteDescription.taCadreEnv', 'accessibiliteDescription.taAmbiance'],
+                'champs' => $chemins('accessibiliteDescription', 'taThematique', 'taCadreEnv', 'taAmbiance'),
                 'proprietes' => ['taThematique', 'taCadreEnv', 'taAmbiance'],
                 'blocs' => [],
                 'groupe' => 'ma_fiche',
+                'cartes' => [
+                    ['titre' => null, 'champs' => $chemins('accessibiliteDescription', 'taThematique', 'taCadreEnv', 'taAmbiance'), 'colonnes' => 2],
+                ],
             ],
             [
                 'titre' => 'Description',
-                'champs' => ['accessibiliteDescription.descGenerale', 'accessibiliteDescription.atout1', 'accessibiliteDescription.atout2', 'accessibiliteDescription.atout3', 'accessibiliteDescription.atout4', 'accessibiliteDescription.atout5', 'accessibiliteDescription.descGeneralePointInteret'],
+                'champs' => $chemins('accessibiliteDescription', 'descGenerale', 'atout1', 'atout2', 'atout3', 'atout4', 'atout5', 'descGeneralePointInteret'),
                 'proprietes' => ['descGenerale', 'atout1', 'atout2', 'atout3', 'atout4', 'atout5', 'descGeneralePointInteret'],
                 'blocs' => [],
                 'groupe' => 'ma_fiche',
+                'cartes' => [
+                    ['titre' => null, 'champs' => $chemins('accessibiliteDescription', 'descGenerale', 'atout1', 'atout2', 'atout3', 'atout4', 'atout5', 'descGeneralePointInteret'), 'colonnes' => 2],
+                ],
             ],
             [
                 'titre' => 'Hébergement',
@@ -120,14 +152,22 @@ final class FicheSectionsCatalogue
                 'proprietes' => array_keys(LieuFormCatalog::accommodation()),
                 'blocs' => [],
                 'groupe' => 'ma_fiche',
+                'cartes' => [
+                    // La question ouvre le bloc (retour Clem) : le reste n'apparaît que si Oui.
+                    ['titre' => null, 'champs' => $chemins('hebergement', 'chambreHebergement', ...$hebergement), 'colonnes' => 2, 'pleins' => ['hebergement.chambreHebergement'], 'conditions' => $conditions('hebergement.chambreHebergement', ...$hebergement)],
+                ],
             ],
             [
                 'titre' => 'Réunion',
                 'champs' => ['syntheseSalles', 'salles'],
                 'proprietes' => ['salles', ...array_keys(LieuFormCatalog::meetingRooms())],
-                // La collection des salles se rend en matrice (mdm/fiche/_capacites).
-                'blocs' => ['capacites'],
+                'blocs' => [],
                 'groupe' => 'ma_fiche',
+                'cartes' => [
+                    ['titre' => 'Salles de réunion', 'champs' => $chemins('syntheseSalles', 'salleReunionExist', ...$synthese), 'colonnes' => 2, 'pleins' => ['syntheseSalles.salleReunionExist'], 'conditions' => $conditions('syntheseSalles.salleReunionExist', ...$synthese)],
+                    // Matrice des salles (mdm/fiche/_capacites), visible si des salles existent.
+                    ['titre' => 'Capacités', 'champs' => ['salles'], 'colonnes' => 2, 'bloc' => 'salles', 'condition' => ['source' => 'syntheseSalles.salleReunionExist', 'valeurs' => '1']],
+                ],
             ],
             [
                 'titre' => 'Restauration',
@@ -136,6 +176,9 @@ final class FicheSectionsCatalogue
                 'proprietes' => ['restaurant', ...array_keys(LieuFormCatalog::restaurant())],
                 'blocs' => [],
                 'groupe' => 'ma_fiche',
+                'cartes' => [
+                    ['titre' => null, 'champs' => ['restaurant', ...$chemins('restauration', ...$restauration)], 'colonnes' => 2, 'pleins' => ['restaurant']],
+                ],
             ],
             [
                 'titre' => 'Loisirs & team building',
@@ -143,14 +186,21 @@ final class FicheSectionsCatalogue
                 'proprietes' => array_keys(LieuFormCatalog::leisure()),
                 'blocs' => [],
                 'groupe' => 'ma_fiche',
+                'cartes' => [
+                    ['titre' => null, 'champs' => $chemins('loisirs', 'loisirInterne'), 'colonnes' => 2, 'pleins' => ['loisirs.loisirInterne']],
+                    ['titre' => 'Team buildings', 'champs' => $chemins('loisirs', 'loisirExterneNomPresta', 'loisirExterneNomActivite'), 'colonnes' => 2],
+                ],
             ],
             [
                 'titre' => 'Services & équipements',
                 'champs' => ['equipementsServices'],
                 'proprietes' => array_keys(LieuFormCatalog::equipmentAndServices()),
                 // Rendu en groupes de puces cochables (partial mdm/fiche/_puces).
-                'blocs' => ['puces'],
+                'blocs' => [],
                 'groupe' => 'ma_fiche',
+                'cartes' => [
+                    ['titre' => null, 'champs' => ['equipementsServices'], 'colonnes' => 2, 'bloc' => 'puces'],
+                ],
             ],
             [
                 'titre' => 'RSE',
@@ -159,6 +209,9 @@ final class FicheSectionsCatalogue
                 // Les notes RSE Salesforce (lecture seule) accompagnent l'onglet.
                 'blocs' => ['salesforce'],
                 'groupe' => 'ma_fiche',
+                'cartes' => [
+                    ['titre' => null, 'champs' => $chemins('rse', 'demarcheRse', ...[...$rse, 'rseDescGenerale']), 'colonnes' => 2, 'pleins' => ['rse.demarcheRse']],
+                ],
             ],
             [
                 'titre' => 'Tarifs',
@@ -166,6 +219,15 @@ final class FicheSectionsCatalogue
                 'proprietes' => ['tarification'],
                 'blocs' => [],
                 'groupe' => 'ma_fiche',
+                'cartes' => [
+                    ['intro' => 'Référencement en ligne : ciblez les événements sur lesquels vous souhaitez être visible. Indiquez vos tarifs "à partir de" pour nous permettre de qualifier au mieux les demandes.'] + $tarifs('Séminaire à la journée', 'seminaireJourneeDemiJourneeEtude', 'seminaireJourneeJourneeEtude', 'seminaireJourneeDemiJourneeEtudeCocktail', 'seminaireJourneeJourneeEtudeCocktail'),
+                    $tarifs('Séminaire avec nuitée', 'seminaireNuiteeSemiResidentiel', 'seminaireNuiteeResidentiel', 'seminaireNuiteeResidentielAllInclusive'),
+                    $tarifs('Location de salle seule', 'locSalleSeulDemiJournee', 'locSalleSeulJournee', 'locSalleSeulSoiree'),
+                    $tarifs('Cocktail et soirées', 'csCocktailDejeunatoire10Pers', 'csCocktailDinatoire', 'csSoireeDansante', 'csSoireeDinerAssis'),
+                    $tarifs('Restauration', 'tarifRestDejeunerAssis', 'tarifRestDinerAssis', 'tarifRestOptVin', 'tarifRestOptAlcool', 'tarifRestForfaitPersonalise'),
+                    $tarifs('Hébergement groupe', 'hebergGroupTarifChambreSingle', 'hebergGroupTarifChambreTwin', 'hebergGroupTarifChambreDouble'),
+                    ['titre' => 'Offre spéciale', 'champs' => $chemins('tarification', 'offreSpeciale', 'promotionDebut', 'promotionFin'), 'colonnes' => 2],
+                ],
             ],
             [
                 // Le lien vidéo (visibilite.generaleYoutube) est rendu dans
@@ -180,12 +242,14 @@ final class FicheSectionsCatalogue
             [
                 // Formules maquette (désactivées, pas d'entité back) + les
                 // réglages réels de visibilité et les sites de diffusion.
-                // Feuilles pointées : generaleYoutube vit dans Médias › Vidéo.
                 'titre' => 'Booster ma visibilité',
                 'champs' => ['visibilite.miceStatut', 'visibilite.afficherContact'],
                 'proprietes' => ['miceStatut', 'afficherContact'],
                 'blocs' => ['formules', 'sites'],
                 'groupe' => 'ma_fiche',
+                'cartes' => [
+                    ['titre' => 'Gérer sa visibilité', 'champs' => ['visibilite.miceStatut', 'visibilite.afficherContact'], 'colonnes' => 2],
+                ],
             ],
             self::sectionFacturation(),
             [
@@ -238,13 +302,8 @@ final class FicheSectionsCatalogue
                 'cartes' => [
                     self::carteLocalisation(),
                     ['titre' => 'Accessibilité', 'champs' => ['acces'], 'colonnes' => 2, 'bloc' => 'collection'],
-                    [
-                        'titre' => 'Détails des accès PMR',
-                        'champs' => ['accesPmr', 'toilettesPmr'],
-                        'colonnes' => 2,
-                        // Toilettes PMR : visible seulement si Accès PMR = Oui (maquette).
-                        'conditions' => ['toilettesPmr' => ['source' => 'accesPmr', 'valeurs' => '1', 'vider' => true]],
-                    ],
+                    // Les deux questions PMR toujours visibles (retour de relecture 2026-09-04).
+                    ['titre' => 'Détails des accès PMR', 'champs' => ['accesPmr', 'toilettesPmr'], 'colonnes' => 2],
                 ],
             ],
             [
@@ -377,7 +436,7 @@ final class FicheSectionsCatalogue
                     ],
                 ],
                 ['titre' => 'Conditions de paiement de l\'acompte', 'champs' => $acomptes, 'colonnes' => 2, 'bloc' => 'acomptes'],
-                ['titre' => 'Conditions de paiement annulation', 'champs' => $annulation, 'colonnes' => 3],
+                ['titre' => 'Conditions de paiement annulation', 'champs' => $annulation, 'colonnes' => 3, 'bloc' => 'annulation'],
                 ['titre' => 'Paiement des soldes', 'champs' => $a('datePaiementSold'), 'colonnes' => 2],
                 ['titre' => 'Commission', 'champs' => $a('commissionTaux', 'commissionPaiement', 'commissionApplicable'), 'colonnes' => 3],
                 ['titre' => 'Convention de partenariat', 'champs' => [...$a('convPartSigneeLe', 'convPartTaux'), 'conventionFichier', ...$a('signataireEmail', 'signataireNom', 'signatairePrenom')], 'colonnes' => 2],
@@ -465,6 +524,8 @@ final class FicheSectionsCatalogue
                         'colonnes' => 2,
                         'pleins' => ['departementsMobiles'],
                         'condition' => ['source' => 'modeIntervention', 'valeurs' => 'mobile'],
+                        // Pays → régions → départements (référentiel ZonesGeographiques).
+                        'attributs' => ZonesGeographiques::attributsStimulus(),
                     ],
                 ],
             ],
@@ -570,21 +631,17 @@ final class FicheSectionsCatalogue
             ],
             [
                 'titre' => 'Localisation & accessibilité',
-                'champs' => ['modeIntervention', 'localisation', 'regionsMobiles', 'departementsMobiles', 'paysMobiles', 'acces', 'accesPmr', 'materielAdaptePmr'],
+                'champs' => ['modeIntervention', 'localisation', 'paysMobiles', 'regionsMobiles', 'departementsMobiles', 'acces', 'accesPmr', 'materielAdaptePmr'],
                 'proprietes' => ['modeIntervention', 'localisation', 'paysMobiles', 'regionsMobiles', 'departementsMobiles', 'acces', 'accesPmr', 'materielAdaptePmr'],
                 'blocs' => [],
                 'groupe' => 'ma_fiche',
                 'cartes' => [
                     // Le rayon d'action (MDM) ouvre la carte, puis l'adresse maquette.
                     ['titre' => 'Localisation', 'champs' => ['modeIntervention', ...self::carteLocalisation()['champs']], 'colonnes' => 3, 'pleins' => ['modeIntervention', 'localisation.pays']],
-                    ['titre' => 'Zone d\'intervention principale', 'champs' => ['regionsMobiles', 'departementsMobiles', 'paysMobiles'], 'colonnes' => 2],
+                    // Pays → régions → départements, comme la Localisation mobile de l'Activité.
+                    ['titre' => 'Zone d\'intervention principale', 'champs' => ['paysMobiles', 'regionsMobiles', 'departementsMobiles'], 'colonnes' => 2, 'pleins' => ['departementsMobiles'], 'attributs' => ZonesGeographiques::attributsStimulus()],
                     ['titre' => 'Accessibilité', 'champs' => ['acces'], 'colonnes' => 2, 'bloc' => 'collection'],
-                    [
-                        'titre' => 'Détails des accès PMR',
-                        'champs' => ['accesPmr', 'materielAdaptePmr'],
-                        'colonnes' => 2,
-                        'conditions' => ['materielAdaptePmr' => ['source' => 'accesPmr', 'valeurs' => '1', 'vider' => true]],
-                    ],
+                    ['titre' => 'Détails des accès PMR', 'champs' => ['accesPmr', 'materielAdaptePmr'], 'colonnes' => 2],
                 ],
             ],
             [

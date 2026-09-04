@@ -98,7 +98,7 @@ final class FicheAccesSuggestionControllerTest extends WebTestCase
         self::assertSame(['grande_ville'], array_column($reponse['acces'], 'type'));
 
         // Gamme Service : même endpoint, types route / parking / gare / aéroport,
-        // sans distances (type + nom seuls, vol d'oiseau dans le nom).
+        // avec distance / durée / mode de transport comme le Lieu.
         $service = new \App\Pim\Entity\Service\ServiceEvenementiel();
         $service->changeLabel('Traiteur des accès');
         $localisationService = new Localisation();
@@ -119,8 +119,9 @@ final class FicheAccesSuggestionControllerTest extends WebTestCase
         $reponse = json_decode((string) $client->getResponse()->getContent(), true);
         self::assertIsArray($reponse);
         self::assertSame(['aeroport', 'grande_ville'], array_column($reponse['acces'], 'type'));
-        self::assertNull($reponse['acces'][0]['distanceKilometres']);
-        self::assertStringContainsString(' km)', $reponse['acces'][0]['nom']);
+        self::assertNotNull($reponse['acces'][0]['distanceKilometres']);
+        self::assertSame('Voiture', $reponse['acces'][0]['modeTransport']);
+        self::assertStringNotContainsString(' km)', $reponse['acces'][0]['nom']);
     }
 
     private function clearTables(): void

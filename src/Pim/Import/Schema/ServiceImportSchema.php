@@ -46,9 +46,9 @@ final class ServiceImportSchema extends AbstractFicheImportSchema
             $this->int('participantsMax'),
             $this->int('dureeMinutes'),
             $this->enum('modeIntervention', ModeInterventionService::class),
-            $this->list('paysMobiles'),
-            $this->list('regionsMobiles'),
-            $this->list('departementsMobiles'),
+            $this->list('paysMobiles', 'codes ISO pays séparés par | (FR, BE…)'),
+            $this->list('regionsMobiles', 'codes région du référentiel séparés par | (FR-IDF, FR-ARA…)'),
+            $this->list('departementsMobiles', 'codes département du référentiel séparés par | (FR-75, FR-78…)'),
             $this->boolNull('accesPmr'),
             $this->boolNull('materielAdaptePmr'),
             $this->float('tarifParPrestation'),
@@ -67,6 +67,9 @@ final class ServiceImportSchema extends AbstractFicheImportSchema
             new CollectionSchema('acces', self::MAX_ACCES, ServiceAcces::class, 'addAcces', 'acces', [
                 new ColumnDefinition('type', ColumnKind::Enum, 'type', enumClass: TypeAccesService::class, required: true, nullable: false),
                 new ColumnDefinition('nom', ColumnKind::Text, 'nom', required: true, nullable: false),
+                new ColumnDefinition('distance_kilometres', ColumnKind::Decimal, 'distanceKilometres', help: 'décimal, point comme séparateur'),
+                new ColumnDefinition('duree_minutes', ColumnKind::Int, 'dureeMinutes'),
+                new ColumnDefinition('mode_transport', ColumnKind::Text, 'modeTransport'),
             ]),
         ];
     }

@@ -44,6 +44,19 @@
 #}
 {# Titre en `subtitle` gras + bouton d'ajout sur la même rangée, sans encadré :
    c'est la hiérarchie de la maquette (« Périodes de fermeture », « Accès »…). #}
+{# Une ligne de collection : les champs en grille + la corbeille maquette
+   (même gabarit pour les lignes existantes et le prototype, donc le
+   contrôleur form-collection n'ajoute pas de bouton « Retirer »). #}
+{% macro ligne_collection(item) %}
+    <fieldset data-form-collection-item class="flex items-start gap-2 border-0 p-0 m-0">
+        <div class="flex-1 min-w-0">{{ form_widget(item) }}</div>
+        <twig:Button variant="text" size="sm" type="button" icon="trash" data-action="form-collection#remove"
+                     class="p-0! px-0! h-10! shrink-0 mt-7 text-neutral-900 hover:text-error [&>:first-child]:w-[18px] [&>:first-child]:h-[18px]">
+            <span class="sr-only">Retirer</span>
+        </twig:Button>
+    </fieldset>
+{% endmacro %}
+
 {% macro collection(field, title) %}
     {# Le bloc Accès embarque en plus le bouton « Suggérer les accès »
        (contrôleur acces-suggestion, porté par la rangée d'en-tête : la policy
@@ -54,7 +67,7 @@
     <fieldset class="flex flex-col gap-4 border-0 p-0 m-0"
         data-controller="form-collection"
         data-form-collection-index-value="{{ field|length }}"
-        data-form-collection-prototype-value="{{ form_widget(field.vars.prototype)|e('html_attr') }}"
+        data-form-collection-prototype-value="{{ _self.ligne_collection(field.vars.prototype)|e('html_attr') }}"
     >
         <div class="flex flex-row items-center gap-6"{% if avec_suggestion %} data-controller="acces-suggestion"{% endif %}>
             <legend class="contents"><twig:Typography variant="subtitle" bold element="span">{{ title }}{% if field.vars.obligatoire|default(false) %} *{% endif %}</twig:Typography></legend>
@@ -73,10 +86,7 @@
         {% endif %}
         <div class="flex flex-col gap-3" data-form-collection-target="items">
             {% for item in field %}
-                <fieldset data-form-collection-item class="flex items-start gap-2 border-0 p-0 m-0">
-                    <div class="flex-1">{{ form_widget(item) }}</div>
-                    <twig:Button variant="outline" size="sm" type="button" data-action="form-collection#remove">Retirer</twig:Button>
-                </fieldset>
+                {{ _self.ligne_collection(item) }}
             {% endfor %}
         </div>
     </fieldset>
@@ -186,8 +196,9 @@
 {# Volet d'une section : visible seulement quand son onglet est actif. #}
 {# `condition` (optionnel) : la carte entière devient une cible du contrôleur
    affichage-conditionnel (data-masque, indépendant du `hidden` des onglets). #}
-{% macro volet_ouvre(i, actif, condition = null) %}
+{% macro volet_ouvre(i, actif, condition = null, attributs = {}) %}
     <section data-fiche-onglets-target="volet" data-volet="{{ i }}" {{ actif ? '' : 'hidden' }}
+             {% for nom, valeur in attributs %}{{ nom }}="{{ valeur }}" {% endfor %}
              {% if condition %}data-affichage-conditionnel-target="cible" data-source="{{ condition.source }}" data-valeurs="{{ condition.valeurs }}"{% if condition.vider %} data-vider="1"{% endif %}{% endif %}
              class="shrink-0 box-border flex flex-col gap-6 p-14 rounded-[32px] bg-neutral-100 shadow-(--shadow) data-[masque]:hidden">
 {% endmacro %}
@@ -365,13 +376,20 @@
                         source: condition.source|split('.')|reduce((f, p) => attribute(f, p), form).vars.id,
                         valeurs: condition.valeurs,
                         vider: condition.vider|default(false),
-                    } : null) }}
+                    } : null, carte.attributs|default({})) }}
                         {{ _self.volet_titre(carte.titre ?? s.titre, loop.first ? onglets[i].completude : null, loop.first ? s.nb_champs|default(null) : null, loop.first) }}
                         {% if carte.intro|default(null) %}
                             <twig:Typography variant="body-sm" textColor="neutral-500" class="text-pretty -mt-3">{{ carte.intro }}</twig:Typography>
                         {% endif %}
                         {% if bloc == 'horaires' %}
                             {{ _self.carte_horaires(form, widgets, carte.colonnes|default(2), cases_en_ligne) }}
+                        {% elseif bloc == 'disponibilites_lieu' %}
+                            {# Lieu : compound disponibilites (privatisable, horaires par jour) + périodes. #}
+                            {% include 'mdm/fiche/_disponibilites.html.twig' with { widget: widgets|first, periodes: widgets|length > 1 ? widgets[1] : null } only %}
+                        {% elseif bloc == 'puces' %}
+                            {% for widget in widgets %}
+                                <div class="w-full">{% include 'mdm/fiche/_puces.html.twig' with { widget: widget } only %}</div>
+                            {% endfor %}
                         {% elseif bloc == 'salles' %}
                             {# min-w-0 : la matrice défile au lieu d'élargir la carte. #}
                             <div class="w-full min-w-0">{% include 'mdm/fiche/_capacites.html.twig' with { widget: widgets|first, gamme: fiche.type.value } only %}</div>
@@ -379,6 +397,8 @@
                             {% for widget in widgets %}
                                 {{ _self.collection(widget, widget.vars.label ?? widget.vars.name) }}
                             {% endfor %}
+                        {% elseif bloc == 'annulation' %}
+                            {% include 'mdm/fiche/_annulation.html.twig' with { widgets: widgets } only %}
                         {% elseif bloc == 'acomptes' %}
                             {% include 'mdm/fiche/_acomptes.html.twig' with { widgets: widgets } only %}
                         {% elseif bloc == 'tarifs_restaurant' %}

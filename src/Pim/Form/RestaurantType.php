@@ -17,7 +17,6 @@ use App\Pim\Validation\ValidationGroups;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Symfony\Component\Form\AbstractType;
-use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\CollectionType;
 use Symfony\Component\Form\Extension\Core\Type\FileType;
@@ -69,13 +68,13 @@ final class RestaurantType extends AbstractType
                 LieuAutocompleteType::class,
                 $this->field('Lieu associé', 'lieu', 'changeLieu'),
             )
-            ->add('businessPremium', CheckboxType::class, [
+            ->add('businessPremium', OuiNonType::class, [
                 'label' => 'Adhérent Business Premium',
                 'required' => false,
                 'getter' => static fn (Restaurant $restaurant): bool => $restaurant->fiche()->businessPremium(),
                 'setter' => static function (Restaurant &$restaurant, mixed $value): void { $restaurant->fiche()->changeBusinessPremium((bool) $value); },
             ])
-            ->add('partenaireBp', CheckboxType::class, [
+            ->add('partenaireBp', OuiNonType::class, [
                 'label' => 'Partenaire BP',
                 'required' => false,
                 'disabled' => $partenaireGereParSf,

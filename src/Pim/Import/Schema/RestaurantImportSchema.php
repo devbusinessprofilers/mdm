@@ -97,6 +97,9 @@ final class RestaurantImportSchema extends AbstractFicheImportSchema
             new CollectionSchema('acces', self::MAX_ACCES, RestaurantAcces::class, 'addAcces', 'acces', [
                 new ColumnDefinition('type', ColumnKind::Enum, 'type', enumClass: TypeAccesRestaurant::class, required: true, nullable: false),
                 new ColumnDefinition('nom', ColumnKind::Text, 'nom', required: true, nullable: false),
+                new ColumnDefinition('distance_kilometres', ColumnKind::Decimal, 'distanceKilometres', help: 'décimal, point comme séparateur'),
+                new ColumnDefinition('duree_minutes', ColumnKind::Int, 'dureeMinutes'),
+                new ColumnDefinition('mode_transport', ColumnKind::Text, 'modeTransport'),
             ]),
         ];
     }

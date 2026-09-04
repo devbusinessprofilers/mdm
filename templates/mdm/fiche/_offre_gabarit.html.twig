@@ -4,15 +4,15 @@
     de rendre deux fois le même champ. Placeholders remplacés par
     _offres_activite : __name__ (clé de la ligne), __type__ (forfait|option),
     __position__ (n° d'emplacement), __libelle__ (« forfait » / « option »).
-    Les champs naissent désactivés : le contrôleur affichage-conditionnel les
-    active quand l'emplacement est coché.
+    Les champs ne sont jamais désactivés (relecture 2026-09-04) : un
+    emplacement décoché est vidé et sa ligne vide ignorée à la soumission.
 
     Variable : `proto` — le FormView prototype de la collection.
 #}
-{{ form_widget(proto.children.type, { value: '__type__', disabled: true }) }}
-{{ form_widget(proto.children.position, { value: '__position__', disabled: true }) }}
-<div class="w-full">{{ form_row(proto.children.nom, { label: 'Nom __libelle__', disabled: true }) }}</div>
-<div class="w-[calc(50%-12px)]">{{ form_row(proto.children.participantsMin, { label: 'Nombre de participants minimum', disabled: true }) }}</div>
-<div class="w-[calc(50%-12px)]">{{ form_row(proto.children.participantsMax, { label: 'Participants maximum', disabled: true }) }}</div>
-<div class="w-[calc(50%-12px)]">{{ form_row(proto.children.prix, { label: 'Montant HT à partir de (/pers)', disabled: true }) }}</div>
-<div class="w-[calc(50%-12px)]">{{ form_row(proto.children.modeTarification, { disabled: true }) }}</div>
+{{ form_widget(proto.children.type, { value: '__type__' }) }}
+{{ form_widget(proto.children.position, { value: '__position__' }) }}
+<div class="w-full">{{ form_row(proto.children.nom, { label: 'Nom __libelle__' }) }}</div>
+<div class="w-[calc(50%-12px)]">{{ form_row(proto.children.participantsMin, { label: 'Nombre de participants minimum' }) }}</div>
+<div class="w-[calc(50%-12px)]">{{ form_row(proto.children.participantsMax, { label: 'Participants maximum' }) }}</div>
+<div class="w-[calc(50%-12px)]">{{ form_row(proto.children.prix, { label: 'Montant HT à partir de (/pers)' }) }}</div>
+<div class="w-[calc(50%-12px)]">{{ form_row(proto.children.modeTarification) }}</div>

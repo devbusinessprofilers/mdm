@@ -14,7 +14,6 @@ use App\Pim\Service\LieuObligationsPublication;
 use App\Pim\Validation\ValidationGroups;
 use Doctrine\Common\Collections\Collection;
 use Symfony\Component\Form\AbstractType;
-use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\CollectionType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
@@ -45,13 +44,13 @@ final class LieuType extends AbstractType
             && $this->salesforce->existePourFiche($data->fiche()->id());
         $builder
             ->add('label', TextType::class, $this->field('Nom du lieu', 'label', 'changeLabel'))
-            ->add('businessPremium', CheckboxType::class, [
+            ->add('businessPremium', OuiNonType::class, [
                 'label' => 'Adhérent Business Premium',
                 'required' => false,
                 'getter' => static fn (Lieu $lieu): bool => $lieu->fiche()->businessPremium(),
                 'setter' => static function (Lieu &$lieu, mixed $value): void { $lieu->fiche()->changeBusinessPremium((bool) $value); },
             ])
-            ->add('partenaireBp', CheckboxType::class, [
+            ->add('partenaireBp', OuiNonType::class, [
                 'label' => 'Partenaire BP',
                 'required' => false,
                 'disabled' => $partenaireGereParSf,

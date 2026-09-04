@@ -6,6 +6,7 @@ namespace App\Pim\Entity\Restaurant;
 
 use App\Pim\Enum\TypeAccesRestaurant;
 use App\Shared\Entity\TimestampableTrait;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Uid\Ulid;
 
@@ -30,6 +31,16 @@ class RestaurantAcces
 
     #[ORM\Column(length: 255)]
     private string $nom = '';
+
+    // Comme AccesLieu : distance, durée et mode de transport (maquette).
+    #[ORM\Column(type: Types::DECIMAL, precision: 8, scale: 2, nullable: true)]
+    private ?string $distanceKilometres = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?int $dureeMinutes = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $modeTransport = null;
 
     #[ORM\Column(options: ['default' => 0])]
     private int $position = 0;
@@ -63,6 +74,39 @@ class RestaurantAcces
     public function position(): int
     {
         return $this->position;
+    }
+
+    public function distanceKilometres(): ?string
+    {
+        return $this->distanceKilometres;
+    }
+
+    public function dureeMinutes(): ?int
+    {
+        return $this->dureeMinutes;
+    }
+
+    public function modeTransport(): ?string
+    {
+        return $this->modeTransport;
+    }
+
+    public function changeDistanceKilometres(?string $value): void
+    {
+        $this->distanceKilometres = null === $value || '' === trim($value) ? null : trim($value);
+        $this->touch();
+    }
+
+    public function changeDureeMinutes(?int $value): void
+    {
+        $this->dureeMinutes = $value;
+        $this->touch();
+    }
+
+    public function changeModeTransport(?string $value): void
+    {
+        $this->modeTransport = null === $value || '' === trim($value) ? null : trim($value);
+        $this->touch();
     }
 
     public function changeType(TypeAccesRestaurant $value): void
