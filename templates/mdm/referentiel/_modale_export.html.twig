@@ -1,0 +1,53 @@
+{%- import 'mdm/referentiel/_macros.html.twig' as m -%}
+    {# --------------------- Modale d'export Excel : colonnes par onglet #}
+    {# Dans le formulaire de sélection : les cases des colonnes partent avec
+       les cases des lignes, le bouton Exporter soumet l'ensemble. #}
+    <twig:Modal identifier="export-colonnes">
+        <div class="w-[820px] max-w-full flex flex-col gap-3.5" data-controller="export-colonnes">
+            <twig:Typography variant="subtitle" bold>Exporter la sélection vers Excel</twig:Typography>
+            <twig:Typography variant="body-sm" textColor="neutral-500">
+                Les colonnes sont rangées par onglet, comme dans le détail de la fiche : décochez celles à écarter.
+                La colonne code est toujours exportée ; les listes de valeurs s'écrivent en libellés, avec une
+                liste déroulante par colonne et la feuille LOV en correspondance. Le classeur retravaillé se
+                réimporte par Outils&nbsp;→ Import en masse (un code = mise à jour, sans code = création).
+                Les fiches Plateaux repas ne sont pas exportées.
+            </twig:Typography>
+
+            {% for gamme in export_modale %}
+                <div class="flex flex-col gap-2.5 {{ not loop.first ? 'pt-2.5 border-t border-neutral-200' : '' }}">
+                    {% if export_modale|length > 1 %}
+                        <twig:Typography variant="body" bold textColor="primary-3">{{ gamme.libelle }}</twig:Typography>
+                    {% endif %}
+                    {% for onglet in gamme.onglets %}
+                        <div class="flex flex-col gap-1.5" data-export-colonnes-onglet>
+                            <div class="flex items-baseline gap-3">
+                                <twig:Typography variant="body-sm" bold>{{ onglet.titre }}</twig:Typography>
+                                <button type="button" data-action="export-colonnes#decocherOnglet"
+                                        class="shrink-0 text-[0.75rem] leading-5 text-primary hover:underline cursor-pointer">Décocher tout</button>
+                            </div>
+                            <div class="grid grid-cols-3 gap-x-5 gap-y-1">
+                                {% for colonne in onglet.colonnes %}
+                                    {% set case = form_selection.colonnes.children[colonne.index] %}
+                                    <label for="{{ case.vars.id }}" class="flex items-center gap-1.5 min-w-0 cursor-pointer">
+                                        {{ form_widget(case) }}
+                                        <twig:Typography variant="body-xs" ellipsis>{{ colonne.libelle }}</twig:Typography>
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+
+            <div class="flex items-center justify-between gap-2 pt-1">
+                <button type="button" data-action="export-colonnes#decocherTout"
+                        class="shrink-0 text-[0.75rem] leading-5 text-primary hover:underline cursor-pointer">Tout décocher</button>
+                {# La génération peut être longue : la sélection part vers la
+                   vue d'attente dans un nouvel onglet, la modale se referme. #}
+                <twig:Button variant="primary" size="sm" type="submit"
+                             formaction="{{ export_url }}" formtarget="_blank"
+                             data-action="modal#close">Exporter</twig:Button>
+            </div>
+        </div>
+    </twig:Modal>
+    {{ form_end(form_selection) }}

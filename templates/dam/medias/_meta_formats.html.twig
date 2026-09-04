@@ -1,0 +1,77 @@
+{%- import 'dam/medias/_macros.html.twig' as m -%}
+    {# ------------------------------------------------- Onglets descriptifs : le réel, tableau maquette #}
+    {% if onglet_actif == 'meta' %}
+        {# Carte maquette : les métadonnées d'un média, toutes réelles côté fiche. #}
+        <div class="shrink-0 flex flex-row gap-4 flex-wrap">
+            <a href="{{ path('app_mdm_referentiel_general') }}"
+               class="{{ carte }} flex-1 basis-80 min-w-0 text-left cursor-pointer hover:bg-primary-5">
+                {{ m.carte_contenu('note', 'Métadonnées d\'un média', '6 champs', false,
+                    'Nature · usage · légende · mots-clés · droits d\'usage · échéance. Tous portés par la ressource et saisis sur la fiche — les mots-clés sont indexés : une recherche « terrasse été » retrouve les visuels tagués ainsi.',
+                    'Ouvrir une fiche') }}
+            </a>
+        </div>
+
+        {# Le tableau maquette des types de fichiers : le réel, le reste grisé. #}
+        <div class="shrink-0 flex flex-col rounded-sm overflow-hidden bg-neutral-100 shadow-(--shadow)">
+            {{ m.entete([['Type'], ['Extensions'], ['Médias', 'text-right'], ['Ce que le DAM en fait']], grille) }}
+            <div class="flex flex-col">
+                <div role="row" class="{{ grille }} w-full min-h-[56px] py-2 box-border hover:bg-primary-5">
+                    {{ m.txt('Image', gras = true) }}
+                    {{ m.txt('JPEG · PNG · WebP', discret = true) }}
+                    {{ m.txt(stats.images|number_format(0, ',', ' '), gras = true, aligne = 'text-right') }}
+                    {{ m.phrase_cellule('Recadrage, rotation, variantes par canal servies par le CDN') }}
+                </div>
+                <div role="row" class="{{ grille }} w-full min-h-[56px] py-2 box-border hover:bg-primary-5 border-t border-neutral-200">
+                    {{ m.txt('PDF', gras = true) }}
+                    {{ m.txt('PDF', discret = true) }}
+                    {{ m.txt(stats.documents|number_format(0, ',', ' '), gras = true, aligne = 'text-right') }}
+                    {{ m.phrase_cellule('Extraction du contenu (OCR), publication sur le stockage public') }}
+                </div>
+                {% for futur in [
+                    ['Vidéo', 'MP4 · MOV', 'Vignette extraite, transcodage web'],
+                    ['Présentation', 'PPT · PPTX', 'Vignette, extraction du texte'],
+                    ['Tableur', 'XLS · XLSX', 'Extraction des tableaux tarifaires'],
+                ] %}
+                    <div role="row" title="{{ a_venir }}"
+                         class="{{ grille }} w-full min-h-[56px] py-2 box-border border-t border-neutral-200 opacity-60">
+                        {{ m.txt(futur.0, gras = true) }}
+                        {{ m.txt(futur.1, discret = true) }}
+                        {{ m.jeton('À venir', 'bg-neutral-200', aligne = 'text-right') }}
+                        {{ m.phrase_cellule(futur.2) }}
+                    </div>
+                {% endfor %}
+            </div>
+            <div class="shrink-0 flex items-center h-[50px] px-4 border-t border-neutral-200">
+                <twig:Typography variant="body-sm" textColor="neutral-500">2 types pris en charge · {{ (stats.images + stats.documents)|number_format(0, ',', ' ') }} médias</twig:Typography>
+            </div>
+        </div>
+    {% elseif onglet_actif == 'formats' %}
+        {% if manquantes > 0 %}
+            <div class="shrink-0 flex flex-row gap-4 flex-wrap">
+                <a href="{{ path('app_mdm_medias', { filter: 'missing_renditions' }) }}"
+                   class="{{ carte }} flex-1 basis-80 min-w-0 text-left cursor-pointer hover:bg-primary-5">
+                    {{ m.carte_contenu('warning', m.nombre(manquantes) ~ ' déclinaisons manquantes', m.nombre(manquantes), true,
+                        'Des médias traités n\'ont pas toutes leurs variantes : les canaux qui les demandent restent bloqués.',
+                        'Voir les anomalies') }}
+                </a>
+            </div>
+        {% endif %}
+        <div class="shrink-0 flex flex-col rounded-sm overflow-hidden bg-neutral-100 shadow-(--shadow)">
+            {{ m.entete([['Format'], ['Dimensions cibles'], ['Fichiers générés', 'text-right'], ['Volume', 'text-right']], grille) }}
+            <div class="flex flex-col">
+                {% for nom, taille in variantes %}
+                    {% set stat = formats|filter(f => f.name == nom)|first %}
+                    <div role="row" class="{{ grille }} w-full min-h-[56px] py-2 box-border hover:bg-primary-5
+                                           {{ loop.first ? '' : 'border-t border-neutral-200' }}">
+                        {{ m.txt(nom|capitalize, gras = true) }}
+                        {{ m.txt(taille.width ~ ' × ' ~ taille.height, discret = true) }}
+                        {{ m.txt(stat ? m.nombre(stat.nb) : '0', gras = true, aligne = 'text-right') }}
+                        {{ m.txt(stat ? m.poids(stat.octets) : '—', gras = true, aligne = 'text-right') }}
+                    </div>
+                {% endfor %}
+            </div>
+            <div class="shrink-0 flex items-center h-[50px] px-4 border-t border-neutral-200">
+                <twig:Typography variant="body-sm" textColor="neutral-500">{{ variantes|length }} formats par image · servis par le CDN public avec cache long</twig:Typography>
+            </div>
+        </div>
+    {% endif %}

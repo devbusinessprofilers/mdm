@@ -1,0 +1,30 @@
+    <div class="dam-stats shrink-0 flex flex-row gap-4 flex-wrap" aria-label="Écarts de forme">
+            {% for carte in [
+                { libelle: 'Localisations sans code pays', valeur: formes.sans_pays, icone: 'pin', texte: 'Le pays manque : la fiche ne sort dans aucun filtre géographique.', filtre: 'sans_pays' },
+                { libelle: 'Localisations sans GPS', valeur: formes.sans_gps, icone: 'area', texte: 'Sans coordonnées, pas de carte ni de recherche par proximité.', filtre: 'sans_gps' },
+                { libelle: 'Fiches sans libellé', valeur: formes.sans_libelle, icone: 'warning', texte: 'Une fiche sans nom est invisible partout — à compléter en priorité.', filtre: 'sans_libelle' },
+            ] %}
+                <a class="dam-stat flex flex-col box-border gap-3 px-[26px] py-6 rounded-md bg-neutral-100 shadow-(--shadow) flex-1 basis-72 min-w-0 hover:bg-primary-5"
+                   href="{{ path('app_mdm_referentiel_general', {f: {formes: [carte.filtre]}}) }}">
+                    <div class="flex items-center gap-3">
+                        <twig:Icon name="{{ carte.icone }}" aria-hidden="true"
+                                   class="shrink-0 w-6 h-6 {{ carte.valeur > 0 ? 'text-error' : 'text-primary' }}" />
+                        <twig:Typography variant="subtitle" ellipsis
+                                         class="flex-1 min-w-0 text-[1.125rem]! leading-[1.625rem]! font-[700]!">{{ carte.libelle }}</twig:Typography>
+                        <span class="inline-flex shrink-0"><twig:Tag label="{{ carte.valeur }}" size="sm"
+                                  variant="{{ carte.valeur > 0 ? 'error' : 'success-pastel' }}" class="whitespace-nowrap" /></span>
+                    </div>
+                    <twig:Typography variant="body" textColor="neutral-500" class="text-pretty">{{ carte.texte }}</twig:Typography>
+                </a>
+            {% endfor %}
+        </div>
+        {# Normalisations automatiques de la maquette : pas de back → grisées. #}
+        <div title="Fonction à venir — en développement"
+             class="shrink-0 flex items-center gap-3 px-[26px] py-5 rounded-md bg-neutral-100 shadow-(--shadow) opacity-60">
+            <twig:Icon name="list" aria-hidden="true" class="shrink-0 w-6 h-6 text-neutral-400" />
+            <div class="flex flex-col gap-0.5 flex-1 min-w-0">
+                <twig:Typography variant="subtitle" class="text-[1.125rem]! leading-[1.625rem]! font-[700]!">Normalisations automatiques</twig:Typography>
+                <twig:Typography variant="body" textColor="neutral-500">Casse, formats et unités appliqués en masse — la liste des règles est à définir avec le métier.</twig:Typography>
+            </div>
+            <twig:Tag label="À venir" variant="neutral" size="sm" class="shrink-0" />
+        </div>

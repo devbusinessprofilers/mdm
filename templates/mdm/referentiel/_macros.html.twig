@@ -1,0 +1,48 @@
+{# Macros de l'écran Référentiel (facettes, cellules, pastilles), partagées par ses partiels. #}
+{# Tons de statut de la maquette (En attente n'y figure pas → neutre). #}
+{% macro ton_statut(statut) %}
+    {%- if 'publiee' == statut -%}success-pastel
+    {%- elseif 'validee' == statut -%}primary-3
+    {%- elseif 'en_cours' == statut -%}peach
+    {%- else -%}neutral
+    {%- endif -%}
+{% endmacro %}
+
+{# Une facette : case (vraie, soumise) + libellé + compteur. #}
+{% macro facette(case, compte, libelle = null) %}
+    <label for="{{ case.vars.id }}"
+           class="group flex items-center gap-2.5 w-full p-1.5 rounded-xs cursor-pointer
+                  hover:bg-primary-4 has-checked:bg-primary-4">
+        {{ form_widget(case) }}
+        <twig:Typography variant="body-sm" class="flex-1 min-w-0 truncate
+                         group-has-checked:font-black group-has-checked:text-primary-3">{{ libelle ?? case.vars.label }}</twig:Typography>
+        <twig:Typography variant="body-xs" textColor="neutral-500" class="shrink-0">{{ compte }}</twig:Typography>
+    </label>
+{% endmacro %}
+
+{# Tête de groupe de facettes : libellé haute-casse + filet. #}
+{% macro tete_groupe(nom) %}
+    <div class="flex items-center gap-2 px-1.5 pb-1.5">
+        <span class="uppercase tracking-[0.8px]">
+            <twig:Typography variant="body-xs" textColor="neutral-500" bold>{{ nom }}</twig:Typography>
+        </span>
+        <span class="flex-1 h-px bg-neutral-200"></span>
+    </div>
+{% endmacro %}
+
+{% macro cellule(valeur, largeur) %}
+    <td class="pr-2.5 box-border truncate" style="width: {{ largeur }}px; max-width: {{ largeur }}px">
+        <twig:Typography variant="body">{{ valeur }}</twig:Typography>
+    </td>
+{% endmacro %}
+
+{# Pastille de densité : l'état actif est porté par `data-actif` (contrôleur `liste`). #}
+{% macro densite(libelle, actif, valeur) %}
+    <button type="button" data-liste-target="densite" data-action="liste#basculerDensite"
+            data-liste-densite-param="{{ valeur }}" {{ actif ? 'data-actif' : '' }}
+            class="group/densite h-[30px] px-3 box-border flex items-center rounded-full whitespace-nowrap
+                   cursor-pointer data-[actif]:bg-linear-(--primary-gradient)">
+        <span class="antialiased text-[0.875rem] leading-[1.375rem] font-sans
+                     text-neutral-500 group-data-[actif]/densite:text-neutral-100 group-data-[actif]/densite:font-black">{{ libelle }}</span>
+    </button>
+{% endmacro %}

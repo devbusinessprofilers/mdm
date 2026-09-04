@@ -1,0 +1,193 @@
+{%- import 'dam/medias/_macros.html.twig' as m -%}
+    {# ------------------------------------------------- Onglet Reconnaissance IA #}
+    {% if onglet_actif == 'ia' and reco is not null %}
+        {% if reco_stats is defined and reco_stats %}
+            <div class="shrink-0 flex flex-row gap-4 flex-wrap">
+                <div class="{{ carte }} flex-1 basis-80 min-w-0">
+                    <div class="flex items-center gap-3">
+                        <twig:Icon name="note" aria-hidden="true"
+                                   class="shrink-0 w-6 h-6 {{ reco_stats.sans_mots_cles > 0 ? 'text-error' : 'text-primary' }}" />
+                        <twig:Typography variant="subtitle" ellipsis
+                                         class="flex-1 min-w-0 text-[1.125rem]! leading-[1.625rem]! font-[700]!">Photos sans mots-clés</twig:Typography>
+                        <span class="inline-flex shrink-0"><twig:Tag label="{{ reco_stats.sans_mots_cles|number_format(0, ',', ' ') }}" size="sm"
+                                  variant="{{ reco_stats.sans_mots_cles > 0 ? 'error' : 'success-pastel' }}" class="whitespace-nowrap" /></span>
+                    </div>
+                    <twig:Typography variant="body" textColor="neutral-500" class="text-pretty">Sur
+                        {{ reco_stats.photos|number_format(0, ',', ' ') }} photos rattachées à une fiche. Un seul clic
+                        les envoie toutes en reconnaissance, par vagues successives en tâche de fond — les mots-clés ne
+                        s'écrivent qu'après validation des suggestions, ligne par ligne ci-dessous.</twig:Typography>
+                    {% if lancement_reco_masse_form is defined and lancement_reco_masse_form %}
+                        <div class="[&_button]:w-auto!">{{ form(lancement_reco_masse_form) }}</div>
+                    {% else %}
+                        <div title="Activez l'IA (paramètre « openai.actif ») pour lancer la reconnaissance en masse.">
+                            <twig:Button variant="outline" size="md" disabled>Lancer sur les photos sans mots-clés</twig:Button>
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="{{ carte }} flex-1 basis-80 min-w-0">
+                    <div class="flex items-center gap-3">
+                        <twig:Icon name="ok-circle" aria-hidden="true"
+                                   class="shrink-0 w-6 h-6 {{ reco_stats.a_valider > 0 ? 'text-error' : 'text-primary' }}" />
+                        <twig:Typography variant="subtitle" ellipsis
+                                         class="flex-1 min-w-0 text-[1.125rem]! leading-[1.625rem]! font-[700]!">Suggestions à valider</twig:Typography>
+                        <span class="inline-flex shrink-0"><twig:Tag label="{{ reco_stats.a_valider|number_format(0, ',', ' ') }}" size="sm"
+                                  variant="{{ reco_stats.a_valider > 0 ? 'error' : 'success-pastel' }}" class="whitespace-nowrap" /></span>
+                    </div>
+                    <twig:Typography variant="body" textColor="neutral-500" class="text-pretty">Analyses terminées en
+                        attente d'une décision humaine : accepter, corriger ou rejeter chaque champ proposé. Rien n'est
+                        écrit sur la fiche sans cette revue.</twig:Typography>
+                </div>
+                <div class="{{ carte }} flex-1 basis-80 min-w-0">
+                    <div class="flex items-center gap-3">
+                        <twig:Icon name="spinner" aria-hidden="true"
+                                   class="shrink-0 w-6 h-6 {{ reco_stats.echecs > 0 ? 'text-error' : 'text-primary' }}" />
+                        <twig:Typography variant="subtitle" ellipsis
+                                         class="flex-1 min-w-0 text-[1.125rem]! leading-[1.625rem]! font-[700]!">File d'analyse</twig:Typography>
+                        <span class="inline-flex shrink-0"><twig:Tag label="{{ reco_stats.en_file|number_format(0, ',', ' ') }}" size="sm"
+                                  variant="{{ reco_stats.en_file > 0 ? 'primary-3' : 'neutral' }}" class="whitespace-nowrap" /></span>
+                    </div>
+                    <twig:Typography variant="body" textColor="neutral-500" class="text-pretty">Photos en file ou en
+                        cours d'analyse par les workers{{ reco_stats.echecs > 0 ? ', et ' ~ reco_stats.echecs|number_format(0, ',', ' ') ~ ' en échec à relancer depuis la liste ci-dessous' : ' — aucun échec à relancer' }}.</twig:Typography>
+                </div>
+            </div>
+        {% endif %}
+        {% if ia_active %}
+            <div class="shrink-0 {{ carte }}">
+                <div class="flex items-center gap-3">
+                    <twig:Icon name="rocket" aria-hidden="true" class="shrink-0 w-6 h-6 text-primary" />
+                    <twig:Typography variant="subtitle" class="flex-1 min-w-0 text-[1.125rem]! leading-[1.625rem]! font-[700]!">Lancer une reconnaissance IA</twig:Typography>
+                    <span class="inline-flex shrink-0"><twig:Tag label="{{ reco_auto_active ? 'Auto à l\'import : activée' : 'Auto à l\'import : coupée' }}"
+                              variant="{{ reco_auto_active ? 'success-pastel' : 'neutral' }}" size="sm" /></span>
+                </div>
+                <twig:Typography variant="body" textColor="neutral-500" class="text-pretty">L'IA propose une légende,
+                    des mots-clés et le contexte de chaque photo des fiches sélectionnées. Tout reste en suggestions :
+                    rien n'est écrit sur la fiche sans validation ligne par ligne.</twig:Typography>
+                {% if lancement_reco_form %}
+                    <div class="max-w-[560px] [&_button]:w-auto!">{{ form(lancement_reco_form) }}</div>
+                {% endif %}
+            </div>
+        {% else %}
+            <div class="shrink-0 {{ carte }}">
+                <div class="flex items-center gap-3">
+                    <twig:Icon name="rocket" aria-hidden="true" class="shrink-0 w-6 h-6 text-neutral-400" />
+                    <twig:Typography variant="subtitle" class="flex-1 min-w-0 text-[1.125rem]! leading-[1.625rem]! font-[700]!">Reconnaissance IA désactivée</twig:Typography>
+                    <span class="inline-flex shrink-0"><twig:Tag label="Inactive" variant="neutral" size="sm" /></span>
+                </div>
+                <twig:Typography variant="body" textColor="neutral-500" class="text-pretty">Renseignez la clé API
+                    OpenAI puis activez la fonction (OPENAI_ENABLED, surchargeable par le paramètre « openai.actif »
+                    dans Administration → Paramètres) pour générer légendes et mots-clés à l'import et à la demande.</twig:Typography>
+            </div>
+        {% endif %}
+
+        {% set reco_jetons = {
+            'queued': ['En file', 'bg-primary-4'],
+            'processing': ['En analyse', 'bg-primary-4'],
+            'ready': ['À valider', 'bg-peach-pastel'],
+            'partially_reviewed': ['Partiellement revue', 'bg-peach-pastel'],
+            'reviewed': ['Revue', 'bg-success-pastel'],
+            'failed': ['En échec', 'bg-error-pastel'],
+        } %}
+        {% for item in reco.items %}
+            {% set r = item.recognition %}
+            <div class="shrink-0 flex flex-col rounded-sm overflow-hidden bg-neutral-100 shadow-(--shadow)">
+                <div class="flex items-center gap-3 px-4 py-3 {{ r.suggestions|length > 0 or item.retry_form is defined ? 'border-b border-neutral-200' : '' }}">
+                    {% if item.apercu_url %}
+                        <img src="{{ item.apercu_url }}" alt="" loading="lazy" class="h-12 w-20 shrink-0 rounded-xs object-cover bg-neutral-200">
+                    {% endif %}
+                    <span class="flex flex-col flex-1 min-w-0">
+                        <twig:Typography variant="body-sm" bold ellipsis>{{ r.media.originalFilename }}</twig:Typography>
+                        {% if item.fiche_url %}
+                            <a href="{{ item.fiche_url }}" class="hover:underline decoration-primary-3 min-w-0">
+                                <twig:Typography variant="body-xs" bold textColor="primary-3" ellipsis>{{ item.fiche_label }}</twig:Typography>
+                            </a>
+                        {% else %}
+                            <twig:Typography variant="body-xs" textColor="neutral-400" ellipsis>{{ item.fiche_label }}</twig:Typography>
+                        {% endif %}
+                    </span>
+                    <twig:Typography variant="body-xs" textColor="neutral-500" class="shrink-0">
+                        {{- r.createdBy == 'auto' ? 'Auto à l\'import' : 'Lancée manuellement' }} · {{ r.createdAt|date('d/m/Y H:i') -}}
+                    </twig:Typography>
+                    {% set jeton = reco_jetons[r.status.value]|default([r.status.value, 'bg-neutral-200']) %}
+                    {{ m.jeton(jeton.0, jeton.1) }}
+                </div>
+                {% if r.status.value == 'failed' %}
+                    <div class="flex items-center gap-3 px-4 py-3 flex-wrap [&_form]:contents [&_button]:w-auto!">
+                        {{ m.phrase_cellule(r.errorMessage ?: 'L\'analyse a échoué.', 'error') }}
+                        {% if ia_active and item.retry_form is defined %}{{ form(item.retry_form) }}{% endif %}
+                    </div>
+                {% elseif item.review_form is defined and ia_active and is_granted('ROLE_BP_VALIDATOR') %}
+                    {{ form_start(item.review_form) }}
+                        {{ form_widget(attribute(item.review_form, '_token')) }}
+                        <div class="flex flex-col">
+                            {% for suggestion in r.suggestions %}
+                                <div class="grid grid-cols-[180px_1fr_1fr_auto] gap-4 items-start px-4 py-3
+                                            {{ loop.first ? '' : 'border-t border-neutral-200' }}">
+                                    <span class="flex flex-col min-w-0 pt-1">
+                                        <twig:Typography variant="body-sm" bold ellipsis>{{ suggestion.label }}</twig:Typography>
+                                        {% if suggestion.observedValue is not null and suggestion.observedValue != suggestion.correctedValue %}
+                                            {{ m.jeton('Écrasement', 'bg-peach-pastel') }}
+                                        {% endif %}
+                                    </span>
+                                    <span class="flex flex-col min-w-0 pt-1">
+                                        <twig:Typography variant="body-xs" textColor="neutral-400">Valeur actuelle</twig:Typography>
+                                        <twig:Typography variant="body-sm" textColor="neutral-500" class="text-pretty">
+                                            {{- suggestion.observedValue is iterable ? suggestion.observedValue|join(', ') : (suggestion.observedValue ?? '—') -}}
+                                        </twig:Typography>
+                                    </span>
+                                    {% if suggestion.status.value == 'pending' %}
+                                        {% set row_form = attribute(item.review_form, suggestion.id) %}
+                                        <span class="min-w-0">{{ form_widget(row_form.value) }}</span>
+                                        <span class="flex items-center gap-3 shrink-0 pt-1">{{ form_row(row_form.accept) }}{{ form_row(row_form.reject) }}</span>
+                                    {% else %}
+                                        <span class="min-w-0 pt-1">
+                                            <twig:Typography variant="body-sm" class="text-pretty">
+                                                {{- suggestion.correctedValue is iterable ? suggestion.correctedValue|join(', ') : suggestion.correctedValue -}}
+                                            </twig:Typography>
+                                        </span>
+                                        {{ m.jeton(suggestion.status.value == 'accepted' ? 'Validée' : 'Refusée',
+                                            suggestion.status.value == 'accepted' ? 'bg-success-pastel' : 'bg-neutral-200', aligne = 'text-right') }}
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <div class="flex items-center justify-end px-4 py-3 border-t border-neutral-200 [&_button]:w-auto!">
+                            {{ form_widget(item.review_form.save) }}
+                        </div>
+                    {{ form_end(item.review_form, { render_rest: false }) }}
+                {% elseif r.suggestions|length > 0 %}
+                    <div class="flex flex-col">
+                        {% for suggestion in r.suggestions %}
+                            <div class="grid grid-cols-[180px_1fr_auto] gap-4 items-start px-4 py-3
+                                        {{ loop.first ? '' : 'border-t border-neutral-200' }}">
+                                {{ m.txt(suggestion.label, gras = true) }}
+                                {{ m.phrase_cellule(suggestion.correctedValue is iterable ? suggestion.correctedValue|join(', ') : (suggestion.correctedValue ?? '—')) }}
+                                {{ m.jeton(suggestion.status.value == 'accepted' ? 'Validée' : (suggestion.status.value == 'rejected' ? 'Refusée' : 'En attente'),
+                                    suggestion.status.value == 'accepted' ? 'bg-success-pastel' : 'bg-neutral-200', aligne = 'text-right') }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        {% else %}
+            <div class="shrink-0 flex items-center gap-3 px-4 min-h-[56px] rounded-sm bg-neutral-100 shadow-(--shadow)">
+                <twig:Icon name="ok-circle" aria-hidden="true" class="shrink-0 w-5 h-5 text-success" />
+                <twig:Typography variant="body-sm" textColor="neutral-500">Aucune reconnaissance lancée pour le moment.</twig:Typography>
+            </div>
+        {% endfor %}
+        {% if reco.items is not empty %}
+            <div class="shrink-0 flex items-center gap-3 h-[50px] px-4 rounded-sm bg-neutral-100 shadow-(--shadow)">
+                <twig:Typography variant="body-sm" textColor="neutral-500">
+                    {{- reco.items|length }} affichée{{ reco.items|length > 1 ? 's' : '' }} sur {{ reco.total|number_format(0, ',', ' ') }} · page {{ reco.page }} / {{ max(reco.pages, 1) -}}
+                </twig:Typography>
+                <span class="flex-1"></span>
+                {% if reco.page > 1 %}
+                    <twig:Button variant="text" size="sm" asLink class="inset-ring-1 inset-ring-neutral-200 rounded-full!"
+                                 href="{{ path('app_mdm_medias', { onglet: 'ia', page: reco.page - 1 }) }}">Précédent</twig:Button>
+                {% endif %}
+                {% if reco.page < reco.pages %}
+                    <twig:Button variant="text" size="sm" asLink class="inset-ring-1 inset-ring-neutral-200 rounded-full!"
+                                 href="{{ path('app_mdm_medias', { onglet: 'ia', page: reco.page + 1 }) }}">Suivant</twig:Button>
+                {% endif %}
+            </div>
+        {% endif %}
+    {% endif %}

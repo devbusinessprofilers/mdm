@@ -1,0 +1,101 @@
+    {# ---- Bloc santé maquette, sur données réelles : score pondéré par
+             les volumes de fiches, un axe par canal de diffusion. ---- #}
+        {% set total_fiches = sante|reduce((s, l) => s + l.fiches, 0) %}
+        {% if total_fiches > 0 %}
+            {% set score = (sante|reduce((s, l) => s + l.fiches * (l.global ?? 0), 0) / total_fiches)|round %}
+            {% set palier = score >= 75 ? 'complet' : (score >= 60 ? 'publiable' : 'insuffisant') %}
+            <div class="shrink-0 flex flex-col min-[1200px]:flex-row gap-4 items-stretch">
+                <div class="flex flex-col box-border gap-4 px-[26px] py-6 rounded-md bg-neutral-100 shadow-(--shadow) w-full min-[1200px]:w-[400px] shrink-0">
+                    <twig:Typography variant="body" bold>Santé du référentiel</twig:Typography>
+                    <div class="flex items-end gap-3.5">
+                        <twig:Typography variant="heading-1" element="p"
+                                         class="shrink-0 whitespace-nowrap sm:text-[3.25rem]! sm:leading-[3.625rem]! font-[700]!">{{ score }} %</twig:Typography>
+                        <div class="flex flex-col gap-[3px] pb-1.5">
+                            <span class="w-fit px-[9px] py-[3px] rounded-lg {{ palier == 'complet' ? 'bg-success-pastel' : (palier == 'publiable' ? 'bg-peach-pastel' : 'bg-error-pastel') }}">
+                                <twig:Typography variant="body-xs" bold textColor="primary-3">{{ palier == 'complet' ? 'Complet' : (palier == 'publiable' ? 'Publiable' : 'Insuffisant') }}</twig:Typography>
+                            </span>
+                            <twig:Typography variant="body-sm" textColor="neutral-500">complétude moyenne pondérée sur {{ total_fiches }} fiches</twig:Typography>
+                        </div>
+                    </div>
+                    <div class="w-full h-2 rounded-lg bg-neutral-200 overflow-hidden">
+                        <div class="h-full rounded-lg {{ score >= 60 ? 'bg-linear-(--primary-gradient)' : 'bg-peach' }}"
+                             style="width: {{ score }}%"></div>
+                    </div>
+                    <div class="flex flex-col gap-2.5">
+                        {% for canal, libelle in { 'global': 'Global', 'marketplace': 'Marketplace', 'thematic': 'Sites thématiques', 'salesforce': 'Salesforce', 'portal': 'Portail' } %}
+                            {% set part = (sante|reduce((s, l) => s + l.fiches * (attribute(l, canal) ?? 0), 0) / total_fiches)|round %}
+                            {% set palier_axe = part >= 75 ? 'complet' : (part >= 60 ? 'publiable' : 'insuffisant') %}
+                            <div class="flex flex-col gap-1">
+                                <div class="flex items-baseline justify-between gap-3">
+                                    <twig:Typography variant="body-sm" bold class="min-w-0">{{ libelle }}</twig:Typography>
+                                    <twig:Typography variant="body" bold
+                                                     textColor="{{ palier_axe == 'complet' ? 'success' : (palier_axe == 'publiable' ? 'primary-3' : 'error') }}">{{ part }} %</twig:Typography>
+                                </div>
+                                <div class="w-full h-1 rounded-lg bg-neutral-200 overflow-hidden">
+                                    <div class="h-full rounded-lg {{ palier_axe == 'complet' ? 'bg-success' : (palier_axe == 'publiable' ? 'bg-peach' : 'bg-error') }}"
+                                         style="width: {{ part }}%"></div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="flex flex-col box-border gap-4 px-[26px] py-6 rounded-md bg-neutral-100 shadow-(--shadow) flex-1 min-w-0">
+                    <twig:Typography variant="body" bold>Champs les moins renseignés</twig:Typography>
+                    <div class="flex flex-col gap-0.5">
+                        {% for faible in champs_faibles %}
+                            <div class="flex items-center gap-2.5 px-2.5 py-2 rounded-xs">
+                                <span class="shrink-0 w-1.5 h-1.5 rounded-lg bg-peach" aria-hidden="true"></span>
+                                <twig:Typography variant="body-sm" ellipsis class="flex-1 min-w-0">{{ faible.libelle }}</twig:Typography>
+                                <twig:Typography variant="body-sm" bold textColor="error"
+                                                 class="w-[46px] shrink-0 text-right">{{ faible.part }} %</twig:Typography>
+                                <twig:Typography variant="body-xs" textColor="neutral-400"
+                                                 class="w-24 shrink-0 text-right">{{ faible.poids }}</twig:Typography>
+                            </div>
+                        {% else %}
+                            <twig:Typography variant="body-sm" textColor="neutral-500">Le relevé des champs arrivera au prochain calcul des statistiques.</twig:Typography>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+
+        {# Comparaison inter-sources de la maquette : pas de back → grisée. #}
+        <div title="Fonction à venir — en développement"
+             class="shrink-0 flex items-center gap-3 px-[26px] py-5 rounded-md bg-neutral-100 shadow-(--shadow) opacity-60">
+            <twig:Icon name="warning" aria-hidden="true" class="shrink-0 w-6 h-6 text-neutral-400" />
+            <div class="flex flex-col gap-0.5 flex-1 min-w-0">
+                <twig:Typography variant="subtitle" class="text-[1.125rem]! leading-[1.625rem]! font-[700]!">Comparaison Salesforce / MDM / portail</twig:Typography>
+                <twig:Typography variant="body" textColor="neutral-500">Le miroir champ à champ entre les trois sources arrivera avec l'intégration Salesforce.</twig:Typography>
+            </div>
+            <twig:Tag label="À venir" variant="neutral" size="sm" class="shrink-0" />
+        </div>
+
+        <section class="shrink-0 flex flex-col gap-3 p-6 rounded-[20px] bg-neutral-100 shadow-(--shadow)" aria-label="Santé des données">
+            <twig:Typography variant="heading-3" element="h2" bold>Complétude par gamme et par canal</twig:Typography>
+            <div class="overflow-x-auto rounded-md inset-ring-1 inset-ring-neutral-200">
+                <table class="w-full border-collapse">
+                    <thead class="bg-primary-5"><tr class="text-left h-10 border-b border-neutral-200">
+                        {% for col in ['Gamme', 'Fiches', 'Global', 'Marketplace', 'Sites thématiques', 'Salesforce', 'Portail', 'Insuffisantes (< 60 %)'] %}
+                            <th class="px-3"><twig:Typography variant="body-xs" textColor="neutral-500" bold>{{ col }}</twig:Typography></th>
+                        {% endfor %}
+                    </tr></thead>
+                    <tbody>
+                    {% for ligne in sante %}
+                        <tr class="h-11 border-t border-neutral-200 first:border-t-0">
+                            <td class="px-3"><twig:Typography variant="body-sm" bold>{{ gamme_libelle(ligne.type, true) }}</twig:Typography></td>
+                            <td class="px-3"><twig:Typography variant="body-sm">{{ ligne.fiches }}</twig:Typography></td>
+                            {% for canal in ['global', 'marketplace', 'thematic', 'salesforce', 'portal'] %}
+                                <td class="px-3"><twig:Typography variant="body-sm">{{ attribute(ligne, canal) is null ? '—' : attribute(ligne, canal) ~ ' %' }}</twig:Typography></td>
+                            {% endfor %}
+                            <td class="px-3">
+                                {% if ligne.insuffisantes > 0 %}
+                                    <a href="{{ path('app_mdm_referentiel_general', {f: {gammes: [ligne.type], completudes: ['insuffisant']}}) }}" class="hover:underline"><twig:Typography variant="body-sm" textColor="primary-3" bold element="span">{{ ligne.insuffisantes }}</twig:Typography></a>
+                                {% else %}<twig:Typography variant="body-sm">0</twig:Typography>{% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>

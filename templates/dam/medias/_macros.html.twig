@@ -1,0 +1,202 @@
+{# Macros de cellules et de cartes de l'écran Médias, partagées par ses partiels. #}
+{# ------------------------------------------------- Macros de cellules #}
+{% macro nombre(valeur) %}{{ valeur|number_format(0, ',', ' ') }}{% endmacro %}
+
+{% macro poids(octets) %}
+    {%- if octets >= 1099511627776 %}{{ (octets / 1099511627776)|round(2)|replace({'.': ','}) }} To
+    {%- elseif octets >= 1073741824 %}{{ (octets / 1073741824)|round(1)|replace({'.': ','}) }} Go
+    {%- elseif octets >= 1048576 %}{{ (octets / 1048576)|round(1)|replace({'.': ','}) }} Mo
+    {%- else %}{{ (octets / 1024)|round }} Ko
+    {%- endif %}
+{%- endmacro %}
+
+{% macro txt(texte, gras = false, discret = false, aligne = 'text-left', teinte = '') %}
+    <span class="min-w-0 {{ aligne }}">
+        <twig:Typography variant="body-sm" bold="{{ gras }}" ellipsis
+                         textColor="{{ teinte ?: (discret ? 'neutral-500' : 'neutral-900') }}">{{ texte }}</twig:Typography>
+    </span>
+{% endmacro %}
+
+{% macro duo(texte, note) %}
+    <span class="flex flex-col min-w-0">
+        <twig:Typography variant="body-sm" bold ellipsis>{{ texte }}</twig:Typography>
+        <twig:Typography variant="body-xs" textColor="neutral-400" ellipsis>{{ note }}</twig:Typography>
+    </span>
+{% endmacro %}
+
+{% macro jeton(texte, fond, aligne = 'text-left') %}
+    <span class="min-w-0 {{ 'text-right' == aligne ? 'flex justify-end' : '' }}">
+        <span class="inline-flex w-fit max-w-full px-[9px] py-[3px] rounded-lg {{ fond }}">
+            <twig:Typography variant="body-xs" bold ellipsis
+                             textColor="{{ 'bg-neutral-200' == fond ? 'neutral-500' : 'primary-3' }}">{{ texte }}</twig:Typography>
+        </span>
+    </span>
+{% endmacro %}
+
+{% macro lien_cellule(texte, url) %}
+    <span class="flex items-center justify-end min-w-0">
+        {% if url %}
+            <a href="{{ url }}" class="flex items-center gap-1.5 rounded-xs hover:underline decoration-primary-3">
+                <twig:Typography variant="body-sm" bold textColor="primary-3">{{ texte }}</twig:Typography>
+                <twig:Icon name="arrow-right" aria-hidden="true" class="shrink-0 w-3 h-3 text-primary" />
+            </a>
+        {% else %}
+            <twig:Typography variant="body-sm" textColor="neutral-400">—</twig:Typography>
+        {% endif %}
+    </span>
+{% endmacro %}
+
+{% macro phrase_cellule(texte, teinte = 'neutral-500') %}
+    <span class="min-w-0">
+        <twig:Typography variant="body-sm" textColor="{{ teinte }}" class="text-pretty">{{ texte }}</twig:Typography>
+    </span>
+{% endmacro %}
+
+{% macro barre_cellule(part) %}
+    <span class="flex items-center gap-2.5 min-w-0">
+        <span class="flex-1 min-w-0 h-1.5 rounded-lg bg-neutral-200 overflow-hidden">
+            <span class="block h-full rounded-lg bg-linear-(--primary-gradient)" style="width: {{ part }}%"></span>
+        </span>
+        <twig:Typography variant="body-xs" bold textColor="neutral-500"
+                         class="w-[34px] shrink-0 text-right">{{ part }} %</twig:Typography>
+    </span>
+{% endmacro %}
+
+{% macro entete(colonnes, grille) %}
+    <div class="{{ grille }} h-9 shrink-0 bg-primary-5 border-b border-neutral-200" role="row">
+        {% for colonne in colonnes %}
+            <span class="min-w-0 truncate {{ colonne.1|default('text-left') }}" role="columnheader">
+                <twig:Typography variant="body-xs" bold textColor="neutral-500"
+                                 class="tracking-[0.3px] uppercase">{{ colonne.0 }}</twig:Typography>
+            </span>
+        {% endfor %}
+    </div>
+{% endmacro %}
+
+{% macro indicateur(libelle, valeur, note, icone, fond) %}
+    <div class="flex flex-col flex-1 basis-48 min-w-0 box-border gap-1.5 px-5 py-4
+                rounded-sm bg-neutral-100 shadow-(--shadow)">
+        <div class="flex items-center gap-2">
+            <span class="flex items-center justify-center shrink-0 w-7 h-7 rounded-lg {{ fond }}">
+                <twig:Icon name="{{ icone }}" aria-hidden="true" class="w-4 h-4 text-primary-3" />
+            </span>
+            <twig:Typography variant="body-xs" bold textColor="neutral-500" ellipsis
+                             class="min-w-0 tracking-[0.3px] uppercase">{{ libelle }}</twig:Typography>
+        </div>
+        <twig:Typography variant="subtitle" class="font-[700]!">{{ valeur }}</twig:Typography>
+        <twig:Typography variant="body-sm" textColor="neutral-500">{{ note }}</twig:Typography>
+    </div>
+{% endmacro %}
+
+{% macro carte_contenu(icone, titre, valeur, alerte, texte, lien) %}
+    <div class="flex items-center gap-3">
+        <twig:Icon name="{{ icone }}" aria-hidden="true"
+                   class="shrink-0 w-6 h-6 {{ alerte ? 'text-error' : 'text-primary' }}" />
+        <twig:Typography variant="subtitle" ellipsis
+                         class="flex-1 min-w-0 text-[1.125rem]! leading-[1.625rem]! font-[700]!">{{ titre }}</twig:Typography>
+        <span class="inline-flex shrink-0"><twig:Tag label="{{ valeur }}" size="sm"
+                  variant="{{ alerte ? 'error' : 'success-pastel' }}" class="whitespace-nowrap" /></span>
+    </div>
+    <twig:Typography variant="body" textColor="neutral-500" class="text-pretty">{{ texte }}</twig:Typography>
+    <div class="flex items-center gap-2">
+        <twig:Typography variant="body-sm" bold textColor="primary-3">{{ lien }}</twig:Typography>
+        <twig:Icon name="arrow-right" aria-hidden="true" class="shrink-0 w-3 h-3 text-primary" />
+    </div>
+{% endmacro %}
+
+{# Tableau avant/après d'une file de retouche (IA ou automatique) : mêmes
+   colonnes et décisions, seuls changent la liste, la disponibilité des
+   actions et le paramètre de pagination. #}
+{% macro retouche_tableau(liste, grille, actions_actives, page_param) %}
+    {% set jetons = {
+        'queued': ['En file', 'bg-primary-4'],
+        'processing': ['En traitement', 'bg-primary-4'],
+        'ready': ['À valider', 'bg-peach-pastel'],
+        'accepted': ['Appliquée', 'bg-success-pastel'],
+        'rejected': ['Rejetée', 'bg-neutral-200'],
+        'failed': ['En échec', 'bg-error-pastel'],
+    } %}
+    <div class="shrink-0 flex flex-col rounded-sm overflow-hidden bg-neutral-100 shadow-(--shadow)">
+        {{ _self.entete([['Média'], ['Fiche'], ['Statut'], ['Avant'], ['Après'], ['Actions', 'text-right']], grille) }}
+        <div class="flex flex-col">
+            {% for item in liste.items %}
+                {% set e = item.enhancement %}
+                <div role="row" class="{{ grille }} w-full min-h-[64px] py-2 box-border hover:bg-primary-5
+                                       {{ loop.first ? '' : 'border-t border-neutral-200' }}">
+                    {{ _self.duo(e.media.originalFilename, e.createdAt|date('d/m/Y H:i')) }}
+                    <span class="flex flex-col min-w-0">
+                        {% if item.fiche_url %}
+                            <a href="{{ item.fiche_url }}" class="hover:underline decoration-primary-3 min-w-0">
+                                <twig:Typography variant="body-sm" bold textColor="primary-3" ellipsis>{{ item.fiche_label }}</twig:Typography>
+                            </a>
+                        {% else %}
+                            <twig:Typography variant="body-sm" textColor="neutral-400" ellipsis>{{ item.fiche_label }}</twig:Typography>
+                        {% endif %}
+                    </span>
+                    <span class="flex flex-col gap-0.5 min-w-0">
+                        {% set jeton = jetons[e.status.value]|default([e.status.value, 'bg-neutral-200']) %}
+                        {{ _self.jeton(jeton.0, jeton.1) }}
+                        {% if e.status.value == 'failed' and e.errorMessage %}
+                            <twig:Typography variant="body-xs" textColor="error" ellipsis>{{ e.errorMessage }}</twig:Typography>
+                        {% endif %}
+                    </span>
+                    <span class="flex items-center min-w-0">
+                        {% if item.avant_url and actions_actives %}
+                            <a href="{{ path('app_mdm_retouche_apercu_avant', { id: e.id }) }}" target="_blank" rel="noopener"
+                               title="Ouvrir l'original en taille réelle pour comparer avec l'après">
+                                <img src="{{ item.avant_url }}" alt="Avant retouche" loading="lazy"
+                                     class="h-12 w-20 rounded-xs object-cover bg-neutral-200">
+                            </a>
+                        {% elseif item.avant_url %}
+                            <img src="{{ item.avant_url }}" alt="Avant retouche" loading="lazy"
+                                 class="h-12 w-20 rounded-xs object-cover bg-neutral-200">
+                        {% else %}
+                            <twig:Typography variant="body-sm" textColor="neutral-400">—</twig:Typography>
+                        {% endif %}
+                    </span>
+                    <span class="flex items-center min-w-0">
+                        {% if actions_actives and e.resultStorageKey and e.status.value in ['ready', 'accepted'] %}
+                            <a href="{{ path('app_mdm_retouche_apercu', { id: e.id }) }}" target="_blank" rel="noopener"
+                               title="Ouvrir l'aperçu de la version retouchée en taille réelle">
+                                <img src="{{ path('app_mdm_retouche_apercu', { id: e.id }) }}" alt="Après retouche" loading="lazy"
+                                     class="h-12 w-20 rounded-xs object-cover bg-neutral-200">
+                            </a>
+                        {% else %}
+                            <twig:Typography variant="body-sm" textColor="neutral-400">—</twig:Typography>
+                        {% endif %}
+                    </span>
+                    <span class="flex items-center justify-end gap-2 min-w-0 flex-wrap [&_form]:contents [&_button]:w-auto!">
+                        {% if actions_actives and is_granted('ROLE_BP_VALIDATOR') %}
+                            {% if item.accept_form is defined %}{{ form(item.accept_form) }}{% endif %}
+                            {% if item.reject_form is defined %}{{ form(item.reject_form) }}{% endif %}
+                            {% if item.revert_form is defined %}{{ form(item.revert_form) }}{% endif %}
+                        {% elseif e.status.value == 'ready' %}
+                            <twig:Typography variant="body-sm" textColor="neutral-400">Décision validateur</twig:Typography>
+                        {% endif %}
+                        {% if actions_actives and item.retry_form is defined %}{{ form(item.retry_form) }}{% endif %}
+                    </span>
+                </div>
+            {% endfor %}
+        </div>
+        {% if liste.items is empty %}
+            <div class="flex items-center gap-3 px-4 min-h-[56px]">
+                <twig:Icon name="ok-circle" aria-hidden="true" class="shrink-0 w-5 h-5 text-success" />
+                <twig:Typography variant="body-sm" textColor="neutral-500">Aucune retouche lancée pour le moment.</twig:Typography>
+            </div>
+        {% endif %}
+        <div class="shrink-0 flex items-center gap-3 h-[50px] px-4 border-t border-neutral-200">
+            <twig:Typography variant="body-sm" textColor="neutral-500">
+                {{- liste.items|length }} affichée{{ liste.items|length > 1 ? 's' : '' }} sur {{ liste.total|number_format(0, ',', ' ') }} · page {{ liste.page }} / {{ max(liste.pages, 1) -}}
+            </twig:Typography>
+            <span class="flex-1"></span>
+            {% if liste.page > 1 %}
+                <twig:Button variant="text" size="sm" asLink class="inset-ring-1 inset-ring-neutral-200 rounded-full!"
+                             href="{{ path('app_mdm_medias', { onglet: 'import', (page_param): liste.page - 1 }) }}">Précédent</twig:Button>
+            {% endif %}
+            {% if liste.page < liste.pages %}
+                <twig:Button variant="text" size="sm" asLink class="inset-ring-1 inset-ring-neutral-200 rounded-full!"
+                             href="{{ path('app_mdm_medias', { onglet: 'import', (page_param): liste.page + 1 }) }}">Suivant</twig:Button>
+            {% endif %}
+        </div>
+    </div>
+{% endmacro %}

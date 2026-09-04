@@ -1,0 +1,23 @@
+    <section class="shrink-0 flex flex-col gap-3 p-6 rounded-[20px] bg-neutral-100 shadow-(--shadow)" aria-label="Décisions d'arbitrage">
+            <twig:Typography variant="heading-3" element="h2" bold>Derniers arbitrages</twig:Typography>
+            <div class="overflow-x-auto rounded-md inset-ring-1 inset-ring-neutral-200">
+                <table class="w-full border-collapse">
+                    <thead class="bg-primary-5"><tr class="text-left h-10 border-b border-neutral-200">
+                        {% for col in ['Quand', 'Fiche', 'Décision', 'Détail', 'Par'] %}<th class="px-3"><twig:Typography variant="body-xs" textColor="neutral-500" bold>{{ col }}</twig:Typography></th>{% endfor %}
+                    </tr></thead>
+                    <tbody>
+                    {% for decision in decisions %}
+                        <tr class="h-11 border-t border-neutral-200 first:border-t-0">
+                            <td class="px-3"><twig:Typography variant="body-sm">{{ decision.quand|date('d/m/Y H:i') }}</twig:Typography></td>
+                            <td class="px-3"><twig:Typography variant="body-sm" bold>{{ decision.label ?? 'Sans libellé' }}</twig:Typography></td>
+                            <td class="px-3"><twig:Tag label="{{ decision.genre }}" variant="neutral" size="sm" /></td>
+                            <td class="px-3"><twig:Typography variant="body-sm">{{ decision.detail }}</twig:Typography></td>
+                            <td class="px-3"><twig:Typography variant="body-sm">{{ decision.acteur }}</twig:Typography></td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="5" class="p-6 text-center"><twig:Typography variant="body-sm" textColor="neutral-500">Aucun arbitrage enregistré.</twig:Typography></td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>

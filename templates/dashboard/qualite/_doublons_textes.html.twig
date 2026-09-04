@@ -1,0 +1,37 @@
+    <section class="shrink-0 flex flex-col gap-3 p-6 rounded-[20px] bg-neutral-100 shadow-(--shadow)" aria-label="Doublons de textes">
+            <twig:Typography variant="heading-3" element="h2" bold>Champs de texte en doublon</twig:Typography>
+            <twig:Typography variant="body-sm" textColor="neutral-500">Descriptions identiques (copier-coller) ou proches d'une fiche à l'autre. Confirmer acte un doublon légitime, Ignorer écarte un faux positif ; les deux le sortent de la file.</twig:Typography>
+            <div class="overflow-x-auto rounded-md inset-ring-1 inset-ring-neutral-200">
+                <table class="w-full border-collapse">
+                    <thead class="bg-primary-5"><tr class="text-left h-10 border-b border-neutral-200">
+                        {% for col in ['Champ', 'Fiche signalée', 'Fiche de référence', 'Similarité'] %}<th class="px-3"><twig:Typography variant="body-xs" textColor="neutral-500" bold>{{ col }}</twig:Typography></th>{% endfor %}
+                        {% if is_granted('ROLE_BP_VALIDATOR') %}<th class="px-3"></th><th class="px-3"></th>{% endif %}
+                    </tr></thead>
+                    <tbody>
+                    {% for ligne in doublons_textes %}
+                        <tr class="border-t border-neutral-200 first:border-t-0 align-top [&_form]:contents">
+                            <td class="px-3 py-2.5"><twig:Typography variant="body-sm" bold>{{ ligne.field_label }}</twig:Typography></td>
+                            {% for cote in [ligne.signalee, ligne.reference] %}
+                                <td class="px-3 py-2.5 max-w-[320px]">
+                                    <a href="{{ fiche_url(cote.type, cote.fiche_id, 1) }}" class="hover:underline">
+                                        <twig:Typography variant="body-sm" textColor="primary-3" bold element="span">{{ cote.label ?? 'Sans libellé' }}</twig:Typography>
+                                    </a>
+                                    {% if cote.snippet %}<twig:Typography variant="body-xs" textColor="neutral-500" class="text-pretty">{{ cote.snippet }}</twig:Typography>{% endif %}
+                                </td>
+                            {% endfor %}
+                            <td class="px-3 py-2.5 whitespace-nowrap">
+                                <twig:Tag label="{{ ligne.kind == 'exact' ? 'Identique' : 'Proche' }}" size="sm" variant="{{ ligne.kind == 'exact' ? 'error' : 'neutral' }}" />
+                                {% if ligne.kind == 'near' and ligne.distance is not null %}<twig:Typography variant="body-xs" textColor="neutral-500" element="span"> · distance {{ ligne.distance }}</twig:Typography>{% endif %}
+                            </td>
+                            {% if is_granted('ROLE_BP_VALIDATOR') %}
+                                <td class="px-3 py-2.5">{{ form(ligne.confirmer) }}</td>
+                                <td class="px-3 py-2.5">{{ form(ligne.ignorer) }}</td>
+                            {% endif %}
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="{{ is_granted('ROLE_BP_VALIDATOR') ? 6 : 4 }}" class="p-6 text-center"><twig:Typography variant="body-sm" textColor="neutral-500">Aucun doublon de texte en attente d'arbitrage.</twig:Typography></td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>

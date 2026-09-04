@@ -1,0 +1,144 @@
+{%- import 'mdm/referentiel/_macros.html.twig' as m -%}
+    {# ------------------------------------------- Bandeau : filtres ou sélection #}
+    <div class="shrink-0 min-h-14 mx-[30px] mb-2.5 px-[18px] py-2 box-border flex items-center rounded-[14px]
+                bg-neutral-100 inset-ring-1 inset-ring-neutral-200"
+         data-liste-target="bandeau" data-total="{{ vue.total|number_format(0, ',', ' ') }}">
+
+        {# -- Filtres actifs -- #}
+        <div class="flex items-center gap-2.5 w-full min-w-0" data-liste-target="vueFiltres">
+            <twig:Typography variant="subtitle" element="span" bold class="shrink-0">{{ vue.total|number_format(0, ',', ' ') }}</twig:Typography>
+            <span class="shrink-0 w-px h-5 bg-neutral-200"></span>
+            <div class="flex-1 min-w-0 flex items-center gap-2 flex-wrap overflow-hidden">
+                {% for badge in filtres_actifs %}
+                    <span class="shrink-0 flex items-center gap-1.5 pl-2.5 pr-2 py-[5px] rounded-full bg-primary-4">
+                        <twig:Typography variant="body-xs" textColor="neutral-500">{{ badge.cle }}</twig:Typography>
+                        <twig:Typography variant="body-sm" textColor="primary-3" bold>{{ badge.valeur }}</twig:Typography>
+                        <a href="{{ path(route_courante, badge.filtre is empty ? params_courants : params_courants|merge({ f: badge.filtre })) }}"
+                           class="inline-flex shrink-0" aria-label="Retirer le filtre {{ badge.cle }} : {{ badge.valeur }}">
+                            <twig:Icon name="cross" class="w-3 h-3 text-primary-3 cursor-pointer" />
+                        </a>
+                    </span>
+                {% endfor %}
+                {% if filtres_actifs is empty %}
+                    <twig:Typography variant="body-sm" textColor="neutral-500">Aucun filtre actif — les {{ vue.totalReferentiel|number_format(0, ',', ' ') }} fiches du référentiel.</twig:Typography>
+                {% else %}
+                    <a href="{{ path(route_courante, params_courants) }}" class="shrink-0">
+                        <twig:Typography variant="body-sm" textColor="neutral-500" bold>Tout effacer</twig:Typography>
+                    </a>
+                {% endif %}
+            </div>
+            <twig:Typography variant="body-sm" textColor="primary-3" bold class="shrink-0">Tri : {{ tri.libelle }}</twig:Typography>
+        </div>
+
+        {# -- Actions groupées -- #}
+        <div class="hidden items-center gap-2.5 w-full min-w-0" data-liste-target="vueActions">
+            <twig:Typography variant="subtitle" element="span" textColor="primary-3" bold
+                             class="shrink-0" data-liste-target="compteSelection"></twig:Typography>
+
+            <label for="{{ form_selection.tout.vars.id }}" class="shrink-0 flex items-center gap-2 cursor-pointer">
+                {{ form_widget(form_selection.tout, { attr: { 'data-liste-target': 'tout', 'data-action': 'change->liste#majBandeau' } }) }}
+                <twig:Typography variant="body-sm">Tout le résultat filtré ({{ vue.total|number_format(0, ',', ' ') }})</twig:Typography>
+            </label>
+
+            <span class="flex-1"></span>
+
+            <div class="flex items-center gap-2 shrink-0">
+                {% for action in actions.principales %}
+                    {#
+                        Une grande sélection n'est pas une petite en plus gros :
+                        passé son plafond, l'action est désactivée (contrôleur
+                        `liste`, re-vérifié côté serveur).
+                    #}
+                    <twig:Button variant="text" size="sm" icon="{{ action.icone }}" type="submit"
+                                 name="selection[action]" value="{{ action.code }}"
+                                 data-plafond="{{ action.plafond }}"
+                                 class="bg-neutral-100! inset-ring-1 inset-ring-neutral-200 h-8! rounded-full!">{{ action.label }}</twig:Button>
+                {% endfor %}
+
+                <div class="relative shrink-0">
+                    <twig:Button variant="text" size="sm" icon="caret-down" type="button"
+                                 class="bg-neutral-100! inset-ring-1 inset-ring-neutral-200 h-8! rounded-full! flex-row-reverse"
+                                 data-action="liste#basculerPlus" aria-expanded="false">Plus d'actions</twig:Button>
+
+                    <div class="absolute right-0 top-[38px] z-8 w-[360px] p-1.5 rounded-[14px] bg-neutral-100
+                                shadow-[0_16px_40px_rgba(3,74,94,0.22)] flex flex-col gap-px"
+                         data-liste-target="plus" hidden>
+                        {% for action in actions.secondaires %}
+                            <div class="flex flex-col w-full rounded-xs" data-ligne-action>
+                                <div class="flex items-center gap-2 w-full px-3 py-2.5">
+                                    <twig:Icon name="{{ action.icone }}" class="w-[15px] h-[15px] shrink-0 text-primary-3" />
+                                    {% if action.irreversible %}
+                                        {# Confirmation explicite : l'envoi des accès ne se rattrape pas. #}
+                                        <twig:Button variant="text" size="sm" type="submit"
+                                                     name="selection[action]" value="{{ action.code }}"
+                                                     data-plafond="{{ action.plafond }}"
+                                                     data-controller="confirm"
+                                                     data-confirm-message-value="Envoyer les accès extranet est irréversible : chaque utilisateur des fiches sélectionnées recevra un email. Continuer ?"
+                                                     data-action="confirm#submit"
+                                                     class="flex-1 min-w-0 justify-start! px-0! whitespace-nowrap font-black">{{ action.label }}</twig:Button>
+                                    {% elseif action.modale %}
+                                        {# Le clic ouvre la modale de l'action (choix des colonnes), qui soumet.
+                                           Pas de data-plafond : l'export n'est pas plafonné. #}
+                                        <twig:Modal:TriggerButton variant="text" size="sm" type="button"
+                                                                  modalIdentifier="{{ action.modale }}"
+                                                                  class="flex-1 min-w-0 justify-start! px-0! whitespace-nowrap font-black">{{ action.label }}</twig:Modal:TriggerButton>
+                                    {% elseif action.route %}
+                                        {# Route dédiée : la sélection part vers son propre flux (écran de fusion). #}
+                                        <twig:Button variant="text" size="sm" type="submit"
+                                                     formaction="{{ path(action.route, parametres_filtre) }}"
+                                                     data-plafond="{{ action.plafond }}"
+                                                     class="flex-1 min-w-0 justify-start! px-0! whitespace-nowrap font-black">{{ action.label }}</twig:Button>
+                                    {% else %}
+                                        <twig:Button variant="text" size="sm" type="submit"
+                                                     name="selection[action]" value="{{ action.code }}"
+                                                     data-plafond="{{ action.plafond }}"
+                                                     class="flex-1 min-w-0 justify-start! px-0! whitespace-nowrap font-black">{{ action.label }}</twig:Button>
+                                    {% endif %}
+                                    {#
+                                        Deux faits indépendants, deux emplacements :
+                                        l'irréversibilité appartient à l'action et
+                                        survit au plafond de volume.
+                                    #}
+                                    {% if action.irreversible %}
+                                        <twig:Tag label="Irréversible" variant="peach" size="sm" />
+                                    {% endif %}
+                                    {% if action.plafond %}
+                                        <span data-plafond-tag hidden>
+                                            <twig:Tag label="Plafond {{ action.plafond|number_format(0, ',', ' ') }}"
+                                                      variant="neutral" size="sm" class="bg-neutral-100!" />
+                                        </span>
+                                    {% endif %}
+                                </div>
+
+                            </div>
+                        {% endfor %}
+
+                        {# Bloc « Attribuer » : deux selects, un seul Valider —
+                           séparé des autres options du menu. #}
+                        <div class="flex flex-col gap-2.5 mt-1 pt-2.5 px-3 pb-2.5 border-t border-neutral-200" data-ligne-action>
+                            <div class="flex items-center gap-2">
+                                <twig:Icon name="user" class="w-[15px] h-[15px] shrink-0 text-primary-3" />
+                                <twig:Typography variant="body-sm" bold class="flex-1 min-w-0 whitespace-nowrap">Assigner un contributeur</twig:Typography>
+                            </div>
+                            {{ form_widget(form_selection.contributeur) }}
+
+                            <div class="flex items-center gap-2">
+                                <twig:Icon name="eye" class="w-[15px] h-[15px] shrink-0 text-primary-3" />
+                                <twig:Typography variant="body-sm" bold class="flex-1 min-w-0 whitespace-nowrap">Attribuer la visibilité</twig:Typography>
+                            </div>
+                            {{ form_widget(form_selection.sites) }}
+
+                            <div class="flex items-center justify-end gap-2 pt-0.5">
+                                <span data-plafond-tag hidden>
+                                    <twig:Tag label="Plafond 5 000" variant="neutral" size="sm" class="bg-neutral-100!" />
+                                </span>
+                                <twig:Button variant="primary" size="sm" type="submit"
+                                             name="selection[action]" value="attribuer"
+                                             data-plafond="5000">Valider</twig:Button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>

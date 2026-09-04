@@ -1,0 +1,62 @@
+{%- import 'mdm/referentiel/_macros.html.twig' as m -%}
+    {# ------------------------------------------- Modale d'édition rapide #}
+    <div class="fixed inset-0 z-40 flex items-start justify-center pt-[60px] px-6 pb-6 bg-background-transparency"
+         data-edition-rapide-target="modale" hidden>
+        <div class="w-[min(1240px,calc(100vw-48px))] max-h-[calc(100vh-100px)] flex flex-col min-h-0">
+            <turbo-frame id="edition-rapide" data-edition-rapide-target="cadre"
+                         class="block flex-1 min-h-0 overflow-y-auto scrollbar rounded-3xl">
+                <div class="p-10 rounded-3xl bg-neutral-100 flex items-center justify-center">
+                    <twig:Typography variant="body-sm" textColor="neutral-500">Chargement…</twig:Typography>
+                </div>
+            </turbo-frame>
+        </div>
+    </div>
+
+    {# ------------------------------------------------- Gestion des vues #}
+    <div class="fixed inset-0 z-30 flex items-start justify-center pt-[120px] bg-background-transparency"
+         data-liste-target="vues" hidden>
+        <div class="w-[min(680px,calc(100vw-48px))] max-h-[calc(100vh-200px)] flex flex-col overflow-hidden
+                    rounded-3xl bg-neutral-100 shadow-[0_24px_60px_rgba(3,74,94,0.28)]"
+             role="dialog" aria-modal="true" aria-label="Vues enregistrées">
+
+            <div class="shrink-0 flex items-start justify-between gap-5 px-[26px] pt-[22px] pb-4 border-b border-neutral-200">
+                <div class="flex flex-col gap-[3px] min-w-0">
+                    <twig:Typography variant="heading-3" bold>Vues enregistrées</twig:Typography>
+                    <twig:Typography variant="body-sm" textColor="neutral-500">Une vue retient ses filtres.
+                        Les vues partagées sont visibles par toute l'équipe.</twig:Typography>
+                </div>
+                <button type="button" class="w-8 h-8 shrink-0 flex items-center justify-center rounded-full
+                                             bg-neutral-200 cursor-pointer"
+                        data-action="liste#basculerVues">
+                    <span class="sr-only">Fermer</span>
+                    <twig:Icon name="cross" class="w-[15px] h-[15px] text-neutral-500" />
+                </button>
+            </div>
+
+            <div class="flex-1 min-h-0 max-h-[420px] overflow-y-auto px-4 py-3 scrollbar">
+                {% for entree in vues_enregistrees %}
+                    <div class="flex items-center gap-3 px-2.5 py-2.5 rounded-[10px]">
+                        <twig:Icon name="layout" class="w-[18px] h-[18px] shrink-0 text-primary" />
+                        <div class="flex-1 min-w-0 flex flex-col gap-px">
+                            <a href="{{ entree.url }}" class="min-w-0 hover:underline">
+                                <twig:Typography variant="body" bold class="whitespace-nowrap">{{ entree.vue.name }}</twig:Typography>
+                            </a>
+                        </div>
+                        <twig:Typography variant="body-xs" textColor="neutral-500"
+                                         class="shrink-0 whitespace-nowrap">{{ entree.vue.shared ? 'Partagée' : 'Perso' }}</twig:Typography>
+                        {% if entree.suppression %}
+                            <span class="shrink-0 [&_button]:p-0!">{{ form(entree.suppression) }}</span>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <twig:Typography variant="body-sm" textColor="neutral-500" class="px-2.5 py-2">Aucune vue enregistrée pour l'instant.</twig:Typography>
+                {% endfor %}
+            </div>
+
+            <div class="shrink-0 flex items-center gap-3 px-[26px] py-4 border-t border-neutral-200
+                        [&_form]:flex [&_form]:flex-1 [&_form]:items-center [&_form]:gap-2">
+                {{ form(form_vue) }}
+            </div>
+        </div>
+    </div>
+</div>
