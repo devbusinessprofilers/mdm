@@ -54,21 +54,21 @@ final class ActiviteType extends AbstractType
             $this->field('Nom de l’activité', 'label', 'changeLabel'),
         )
             ->add('businessPremium', OuiNonType::class, [
-            'label' => 'Adhérent Business Premium',
-            'required' => false,
-            'getter' => static fn (Activite $activite): bool => $activite->fiche()->businessPremium(),
-            'setter' => static function (Activite &$activite, mixed $value): void { $activite->fiche()->changeBusinessPremium((bool) $value); },
-        ])
+                'label' => 'Adhérent Business Premium',
+                'required' => false,
+                'getter' => static fn (Activite $activite): bool => $activite->fiche()->businessPremium(),
+                'setter' => static function (Activite &$activite, mixed $value): void { $activite->fiche()->changeBusinessPremium((bool) $value); },
+            ])
             ->add('partenaireBp', OuiNonType::class, [
-            'label' => 'Partenaire BP',
-            'required' => false,
-            'disabled' => $partenaireGereParSf,
-            'help' => $partenaireGereParSf ? 'Géré par Salesforce.' : null,
-            // Chrome « autorité » : seul champ réellement piloté par Salesforce (défaut MDM ailleurs).
-            'label_attr' => $partenaireGereParSf ? ['data-autorite' => \App\Pim\Enum\Autorite::Salesforce->value] : [],
-            'getter' => static fn (Activite $activite): bool => $activite->fiche()->partenaireBp(),
-            'setter' => static function (Activite &$activite, mixed $value): void { $activite->fiche()->changePartenaireBp((bool) $value); },
-        ])
+                'label' => 'Partenaire BP',
+                'required' => false,
+                'disabled' => $partenaireGereParSf,
+                'help' => $partenaireGereParSf ? 'Géré par Salesforce.' : null,
+                // Chrome « autorité » : seul champ réellement piloté par Salesforce (défaut MDM ailleurs).
+                'label_attr' => $partenaireGereParSf ? ['data-autorite' => \App\Pim\Enum\Autorite::Salesforce->value] : [],
+                'getter' => static fn (Activite $activite): bool => $activite->fiche()->partenaireBp(),
+                'setter' => static function (Activite &$activite, mixed $value): void { $activite->fiche()->changePartenaireBp((bool) $value); },
+            ])
             ->add(
                 'prestataire',
                 PrestataireAutocompleteType::class,
