@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Pim\Service;
 
-use Symfony\Contracts\HttpClient\Exception\ExceptionInterface;
+use App\Pim\Service\Geoapify\GeoapifyHttp;
+use App\Pim\Service\Geoapify\OsmTagsExtracteur;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
-use Symfony\Contracts\HttpClient\ResponseInterface;
 
 use function Symfony\Component\String\u;
 
@@ -17,36 +17,31 @@ use function Symfony\Component\String\u;
  * passe par l'API batch asynchrone (~moitié du coût en crédits) : un job par
  * pays — le filtre countrycode borne la recherche et écarte les homonymes —
  * soumis puis interrogé jusqu'au résultat. Clé absente = client désactivé.
+ * Le transport (clé, lissage, 429) est GeoapifyHttp ; la lecture des tags OSM,
+ * OsmTagsExtracteur.
  *
  * Attribution requise par le plan gratuit : « © Geoapify — données
  * © OpenStreetMap contributors » sur les écrans qui affichent ces données.
  */
-final class GeoapifyClient implements GeocodeurEtrangerInterface
+final readonly class GeoapifyClient implements GeocodeurEtrangerInterface
 {
     /** Un job batch accepte 1 000 adresses au plus (plafond Geoapify). */
     private const TAILLE_JOB = 1000;
     private const ESSAIS_POLLING = 60;
-    /** Le plan gratuit est limité à 5 req/s : on lisse en dessous. */
-    private const INTERVALLE_MIN_SECONDES = 0.25;
-
-    private readonly HttpClientInterface $httpClient;
-    private float $derniereRequete = 0.0;
+    private GeoapifyHttp $http;
 
     public function __construct(
         HttpClientInterface $httpClient,
-        private readonly string $endpoint,
-        #[\SensitiveParameter] private readonly string $apiKey,
-        private readonly int $intervallePolling = 5,
+        string $endpoint,
+        #[\SensitiveParameter] string $apiKey,
+        private int $intervallePolling = 5,
     ) {
-        $this->httpClient = $httpClient->withOptions([
-            'timeout' => 30,
-            'max_duration' => 120,
-        ]);
+        $this->http = new GeoapifyHttp($httpClient, $endpoint, $apiKey);
     }
 
     public function isConfigured(): bool
     {
-        return '' !== trim($this->apiKey) && '' !== trim($this->endpoint);
+        return $this->http->isConfigured();
     }
 
     /**
@@ -64,7 +59,7 @@ final class GeoapifyClient implements GeocodeurEtrangerInterface
             return null;
         }
         try {
-            $donnees = $this->requete('GET', '/v2/place-details', [
+            $donnees = $this->http->requete('GET', '/v2/place-details', [
                 'lat' => trim($latitude),
                 'lon' => trim($longitude),
                 'features' => 'details',
@@ -97,7 +92,7 @@ final class GeoapifyClient implements GeocodeurEtrangerInterface
             return null;
         }
 
-        return self::extraireAttributs($raw);
+        return OsmTagsExtracteur::extraire($raw);
     }
 
     /**
@@ -121,7 +116,7 @@ final class GeoapifyClient implements GeocodeurEtrangerInterface
             return [];
         }
         try {
-            $donnees = $this->requete('GET', '/v2/places', [
+            $donnees = $this->http->requete('GET', '/v2/places', [
                 'categories' => implode(',', $categories),
                 'filter' => sprintf('circle:%s,%s,%d', $lon, $lat, $rayonMetres),
                 'bias' => sprintf('proximity:%s,%s', $lon, $lat),
@@ -169,7 +164,7 @@ final class GeoapifyClient implements GeocodeurEtrangerInterface
             return null;
         }
         try {
-            $donnees = $this->requete('GET', '/v1/routing', [
+            $donnees = $this->http->requete('GET', '/v1/routing', [
                 'waypoints' => sprintf('%s,%s|%s,%s', trim($deLatitude), trim($deLongitude), trim($versLatitude), trim($versLongitude)),
                 'mode' => $mode,
             ], attendus: [200, 400]);
@@ -196,101 +191,6 @@ final class GeoapifyClient implements GeocodeurEtrangerInterface
         $nom = $feature['properties']['name'] ?? $brut['name'] ?? null;
 
         return is_string($nom) && NomSimilarite::score($nomAttendu, $nom) >= NomSimilarite::SEUIL_DEFAUT;
-    }
-
-    /**
-     * @param array<string, mixed> $raw tags OSM bruts
-     */
-    private static function extraireAttributs(array $raw): PlaceAttributs
-    {
-        $tag = static fn (string $cle): ?string => is_string($raw[$cle] ?? null) && '' !== trim($raw[$cle]) ? strtolower(trim($raw[$cle])) : null;
-        $cuisines = null === $tag('cuisine') ? [] : array_values(array_filter(array_map('trim', explode(';', $tag('cuisine')))));
-        $regimes = [];
-        foreach (['vegan', 'vegetarian', 'halal', 'kosher'] as $regime) {
-            if (in_array($tag('diet:'.$regime), ['yes', 'only'], true)) {
-                $regimes[] = $regime;
-            }
-        }
-        if (in_array($tag('organic'), ['yes', 'only'], true)) {
-            $regimes[] = 'organic';
-        }
-
-        return new PlaceAttributs(
-            cuisines: $cuisines,
-            regimes: $regimes,
-            accesPmr: self::triState($tag('wheelchair'), ['yes', 'limited', 'designated']),
-            toilettesPmr: self::triState($tag('toilets:wheelchair'), ['yes']),
-            terrasse: self::triState($tag('outdoor_seating'), ['yes']),
-            climatisation: self::triState($tag('air_conditioning'), ['yes']),
-            wifi: self::triState($tag('internet_access'), ['yes', 'wlan', 'wifi']),
-            siteWeb: self::premiereChaine($raw, ['website', 'contact:website', 'url']),
-            // `brand` seulement : `operator` est l'exploitant, pas l'enseigne.
-            marque: self::premiereChaine($raw, ['brand']),
-            etoiles: self::etoiles($tag('stars')),
-            // Un `swimming_pool=yes` sans type ne permet pas de choisir entre
-            // les deux entrées de la liste bien-être : on s'abstient.
-            piscineInterieure: 'indoor' === $tag('swimming_pool') ? true : null,
-            piscineExterieure: 'outdoor' === $tag('swimming_pool') ? true : null,
-            sauna: self::triState($tag('sauna'), ['yes']),
-            spa: self::triState($tag('spa'), ['yes']),
-            jardin: 'garden' === $tag('leisure') ? true : self::triState($tag('garden'), ['yes']),
-            // `parking` porte le type d'aire (surface, underground…) : toute
-            // valeur autre que « no » signale une offre de stationnement.
-            parking: null === $tag('parking') ? null : 'no' !== $tag('parking'),
-            ascenseur: self::triState($tag('elevator'), ['yes']),
-            chambres: self::chambres($tag('rooms')),
-            horairesOuverture: self::premiereChaine($raw, ['opening_hours']),
-            categorie: $tag('tourism') ?? $tag('amenity'),
-        );
-    }
-
-    /** Nombre de chambres OSM `rooms` : entier plausible 1..2000, sinon null. */
-    private static function chambres(?string $valeur): ?int
-    {
-        if (null === $valeur || 1 !== preg_match('/^\d{1,4}$/', $valeur)) {
-            return null;
-        }
-        $nombre = (int) $valeur;
-
-        return $nombre >= 1 && $nombre <= 2000 ? $nombre : null;
-    }
-
-    /** Classement OSM `stars` : « 4 » ou « 4S » (supérieur) → 4 ; hors 1..5 → null. */
-    private static function etoiles(?string $valeur): ?int
-    {
-        if (null === $valeur || 1 !== preg_match('/^([1-5])s?$/', $valeur, $trouve)) {
-            return null;
-        }
-
-        return (int) $trouve[1];
-    }
-
-    /**
-     * @param array<string, mixed> $raw
-     * @param list<string>         $cles
-     */
-    private static function premiereChaine(array $raw, array $cles): ?string
-    {
-        foreach ($cles as $cle) {
-            if (is_string($raw[$cle] ?? null) && '' !== trim($raw[$cle])) {
-                return trim($raw[$cle]);
-            }
-        }
-
-        return null;
-    }
-
-    /** @param list<string> $vrais valeurs OSM comptant pour « oui » ; « no » vaut faux, le reste null (inconnu). */
-    private static function triState(?string $valeur, array $vrais): ?bool
-    {
-        if (null === $valeur) {
-            return null;
-        }
-        if (in_array($valeur, $vrais, true)) {
-            return true;
-        }
-
-        return 'no' === $valeur ? false : null;
     }
 
     /** Adresses (flux texte) retenues au plus par recherche. */
@@ -413,7 +313,7 @@ final class GeoapifyClient implements GeocodeurEtrangerInterface
         if (!$this->isConfigured() || '' === $texte || '' === $pays) {
             return [];
         }
-        $donnees = $this->requete('GET', '/v1/geocode/autocomplete', array_filter([
+        $donnees = $this->http->requete('GET', '/v1/geocode/autocomplete', array_filter([
             'text' => $texte,
             'filter' => 'countrycode:'.$pays,
             'limit' => (string) max(1, $limite),
@@ -489,7 +389,7 @@ final class GeoapifyClient implements GeocodeurEtrangerInterface
      */
     private function simple(array $ligne, string $pays): array
     {
-        $donnees = $this->requete('GET', '/v1/geocode/search', [
+        $donnees = $this->http->requete('GET', '/v1/geocode/search', [
             'text' => self::texte($ligne),
             'filter' => 'countrycode:'.$pays,
             'limit' => '1',
@@ -510,7 +410,7 @@ final class GeoapifyClient implements GeocodeurEtrangerInterface
      */
     private function batch(array $tranche, string $pays): array
     {
-        $soumission = $this->requete('POST', '/v1/batch/geocode/search', [
+        $soumission = $this->http->requete('POST', '/v1/batch/geocode/search', [
             'filter' => 'countrycode:'.$pays,
             'format' => 'json',
         ], array_map(self::texte(...), $tranche));
@@ -519,7 +419,7 @@ final class GeoapifyClient implements GeocodeurEtrangerInterface
             throw new \RuntimeException('Geoapify n\'a pas retourné d\'identifiant de job batch.');
         }
         for ($essai = 0; $essai < self::ESSAIS_POLLING; ++$essai) {
-            $donnees = $this->requete('GET', '/v1/batch/geocode/search', ['id' => $jobId, 'format' => 'json'], attendus: [200, 202]);
+            $donnees = $this->http->requete('GET', '/v1/batch/geocode/search', ['id' => $jobId, 'format' => 'json'], attendus: [200, 202]);
             // Résultat : liste nue ou enveloppe {results: [...]}, dans
             // l'ordre de soumission. Tout autre corps = job encore en cours.
             $liste = null === $donnees ? null : (array_is_list($donnees) ? $donnees : ($donnees['results'] ?? null));
@@ -538,68 +438,6 @@ final class GeoapifyClient implements GeocodeurEtrangerInterface
         }
 
         throw new \RuntimeException(sprintf('Le job batch Geoapify %s n\'a pas abouti dans le délai imparti.', $jobId));
-    }
-
-    /**
-     * @param array<string, string> $query
-     * @param mixed                 $json     corps JSON éventuel (POST)
-     * @param list<int>             $attendus codes HTTP acceptés ; 202 (job en cours) → null
-     *
-     * @return array<array-key, mixed>|null
-     */
-    private function requete(string $method, string $chemin, array $query, mixed $json = null, array $attendus = [200, 202]): ?array
-    {
-        $options = ['query' => $query + ['apiKey' => $this->apiKey]];
-        if (null !== $json) {
-            $options['json'] = $json;
-        }
-        try {
-            $response = $this->executer($method, $chemin, $options);
-            if (429 === $response->getStatusCode()) {
-                // Quota dépassé malgré le lissage : un seul réessai, après Retry-After.
-                sleep(self::retryAfter($response));
-                $response = $this->executer($method, $chemin, $options);
-            }
-            $status = $response->getStatusCode();
-            $body = $response->getContent(false);
-        } catch (ExceptionInterface $exception) {
-            // Pas de chaînage de l'exception d'origine : son message contient
-            // l'URL appelée, clé API incluse.
-            throw new \RuntimeException('Geoapify est injoignable : '.$this->sansCle($exception->getMessage()));
-        }
-        if (!in_array($status, $attendus, true)) {
-            throw new \RuntimeException(sprintf('Geoapify a répondu HTTP %d.', $status));
-        }
-        if (202 === $status && 'GET' === $method) {
-            return null;
-        }
-        $donnees = json_decode($body, true);
-
-        return is_array($donnees) ? $donnees : null;
-    }
-
-    /** @param array<string, mixed> $options */
-    private function executer(string $method, string $chemin, array $options): ResponseInterface
-    {
-        $ecoule = microtime(true) - $this->derniereRequete;
-        if ($ecoule < self::INTERVALLE_MIN_SECONDES) {
-            usleep((int) ((self::INTERVALLE_MIN_SECONDES - $ecoule) * 1_000_000));
-        }
-        $this->derniereRequete = microtime(true);
-
-        return $this->httpClient->request($method, rtrim($this->endpoint, '/').$chemin, $options);
-    }
-
-    private static function retryAfter(ResponseInterface $response): int
-    {
-        $valeur = (int) ($response->getHeaders(false)['retry-after'][0] ?? 0);
-
-        return max(1, min(30, $valeur));
-    }
-
-    private function sansCle(string $message): string
-    {
-        return '' === $this->apiKey ? $message : str_replace($this->apiKey, '***', $message);
     }
 
     /**

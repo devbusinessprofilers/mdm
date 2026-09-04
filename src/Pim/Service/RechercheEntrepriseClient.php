@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Pim\Service;
 
+use App\Shared\Http\ClientHttpLisse;
 use Monolog\Attribute\WithMonologChannel;
 use Psr\Log\LoggerInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
@@ -26,13 +27,14 @@ final class RechercheEntrepriseClient
     /** L'API publique est limitée à 7 req/s : on lisse en dessous. */
     private const INTERVALLE_MIN_SECONDES = 0.16;
 
-    private float $derniereRequete = 0.0;
+    private readonly ClientHttpLisse $transport;
 
     public function __construct(
-        private readonly HttpClientInterface $httpClient,
+        HttpClientInterface $httpClient,
         private readonly LoggerInterface $logger,
         private readonly string $endpoint,
     ) {
+        $this->transport = new ClientHttpLisse($httpClient, self::INTERVALLE_MIN_SECONDES);
     }
 
     /**
@@ -300,10 +302,6 @@ final class RechercheEntrepriseClient
     {
         try {
             $response = $this->executer($parameters);
-            if (429 === $response->getStatusCode()) {
-                sleep(self::retryAfter($response));
-                $response = $this->executer($parameters);
-            }
 
             return $response->toArray();
         } catch (\Throwable $exception) {
@@ -318,23 +316,10 @@ final class RechercheEntrepriseClient
     /** @param array<string, int|string> $parameters */
     private function executer(array $parameters): ResponseInterface
     {
-        $ecoule = microtime(true) - $this->derniereRequete;
-        if ($ecoule < self::INTERVALLE_MIN_SECONDES) {
-            usleep((int) ((self::INTERVALLE_MIN_SECONDES - $ecoule) * 1_000_000));
-        }
-        $this->derniereRequete = microtime(true);
-
-        return $this->httpClient->request('GET', rtrim($this->endpoint, '/').'/search', [
+        return $this->transport->request('GET', rtrim($this->endpoint, '/').'/search', [
             'query' => $parameters,
             'timeout' => 5,
         ]);
-    }
-
-    private static function retryAfter(ResponseInterface $response): int
-    {
-        $valeur = (int) ($response->getHeaders(false)['retry-after'][0] ?? 0);
-
-        return max(1, min(30, $valeur));
     }
 
     /**
