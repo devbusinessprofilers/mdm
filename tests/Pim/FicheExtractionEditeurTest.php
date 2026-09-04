@@ -213,7 +213,7 @@ final class FicheExtractionEditeurTest extends WebTestCase
         $this->connection->executeStatement('DELETE FROM ocr_document_extraction');
         $this->connection->executeStatement('DELETE FROM pim_ressource_lieu');
         $this->connection->executeStatement('DELETE FROM dam_media_asset');
-        $this->connection->executeStatement('DELETE FROM pim_lieu_administratif');
+        $this->connection->executeStatement('DELETE FROM pim_fiche_administratif');
         $this->connection->executeStatement('DELETE FROM pim_lieu_tarification');
         $this->connection->executeStatement('DELETE FROM pim_lieu');
         $this->connection->executeStatement('DELETE FROM pim_fiche');

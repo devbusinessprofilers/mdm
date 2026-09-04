@@ -88,7 +88,7 @@ final class LiaisonAutocompleteIntegrationTest extends WebTestCase
         foreach (
             [
                 'outbox_message',
-                'pim_lieu_administratif',
+                'pim_fiche_administratif',
                 'pim_lieu_tarification',
                 'pim_restaurant',
                 'pim_lieu',

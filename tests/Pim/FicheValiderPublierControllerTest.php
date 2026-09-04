@@ -142,7 +142,7 @@ final class FicheValiderPublierControllerTest extends WebTestCase
             'pim_fiche_search',
             'pim_fiche_attribute_value',
             'pim_fiche_site_diffusion',
-            'pim_lieu_administratif',
+            'pim_fiche_administratif',
             'pim_lieu_tarification',
             'pim_lieu',
             'pim_fiche',

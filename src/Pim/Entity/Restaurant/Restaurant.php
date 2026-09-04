@@ -8,6 +8,7 @@ use App\Pim\Attribute\CompletenessTarget;
 use App\Pim\Entity\AvecHorairesJours;
 use App\Pim\Entity\CompletenessScoresTrait;
 use App\Pim\Entity\Fiche;
+use App\Pim\Entity\FicheAdministratif;
 use App\Pim\Entity\HorairesJours;
 use App\Pim\Entity\Lieu\Lieu;
 use App\Pim\Entity\Lieu\RessourceLieu;
@@ -152,6 +153,12 @@ class Restaurant implements AvecHorairesJours
     public function fiche(): Fiche
     {
         return $this->fiche;
+    }
+
+    /** Facturation & partenariat (maquette portail), porté par la fiche. */
+    public function administratif(): FicheAdministratif
+    {
+        return $this->fiche->administratif();
     }
 
     public function code(): int

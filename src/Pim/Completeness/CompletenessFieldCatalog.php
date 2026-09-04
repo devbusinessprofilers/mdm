@@ -118,6 +118,9 @@ final class CompletenessFieldCatalog
             $fields[] = $this->field($type, 'RAYON_ACTION_'.self::code($path), $label, $path, null, 'modeIntervention', 'mobile', 'Applicable pour une activité mobile');
         }
 
+        // Facturation & partenariat (maquette portail), commun aux quatre gammes.
+        $fields = [...$fields, ...$this->fromMap($type, LieuFormCatalog::administrative(), 'administratif.')];
+
         return $fields;
     }
 
@@ -152,6 +155,9 @@ final class CompletenessFieldCatalog
         foreach (['nom' => 'Nom de l’accès'] as $name => $label) { $fields[] = $this->field($type, 'ACCESSIBILITE_'.self::code($name), $label, 'acces.*.'.$name); }
         foreach (['nom' => 'Nom de la salle', 'superficie' => 'Superficie', 'capaciteReunion' => 'Capacité réunion', 'capaciteU' => 'Capacité en U', 'capaciteClasse' => 'Capacité classe', 'capaciteTheatre' => 'Capacité théâtre', 'capaciteCabaret' => 'Capacité cabaret', 'capaciteBanquet' => 'Capacité banquet', 'capaciteCocktail' => 'Capacité cocktail', 'capaciteAuditorium' => 'Capacité auditorium', 'lumiereJour' => 'Lumière du jour', 'accesPmr' => 'Accès PMR', 'espaceDansant' => 'Dansant', 'climatisee' => 'Climatisée'] as $name => $label) { $fields[] = $this->field($type, 'CONFIG_SALLE_'.self::code($name), $label, 'salles.*.'.$name); }
 
+        // Facturation & partenariat (maquette portail), commun aux quatre gammes.
+        $fields = [...$fields, ...$this->fromMap($type, LieuFormCatalog::administrative(), 'administratif.')];
+
         return $fields;
     }
 
@@ -181,6 +187,9 @@ final class CompletenessFieldCatalog
         foreach ($map as $code => [$label, $path]) { $fields[] = $this->field($type, $code, $label, $path); }
         $fields = [...$fields, ...$this->localisation($type, 'modeIntervention', 'fixe', 'Applicable pour une localisation fixe')];
         foreach (['paysMobiles' => 'Pays mobiles', 'regionsMobiles' => 'Régions mobiles', 'departementsMobiles' => 'Départements mobiles'] as $path => $label) { $fields[] = $this->field($type, 'RAYON_ACTION_'.self::code($path), $label, $path, null, 'modeIntervention', 'mobile', 'Applicable pour un service mobile'); }
+
+        // Facturation & partenariat (maquette portail), commun aux quatre gammes.
+        $fields = [...$fields, ...$this->fromMap($type, LieuFormCatalog::administrative(), 'administratif.')];
 
         return $fields;
     }
@@ -212,6 +221,10 @@ final class CompletenessFieldCatalog
     {
         $fields = [];
         foreach ($map as $name => $options) {
+            // Champs de lecture seule de l'écran (rappel d'une autre valeur) : pas de complétude.
+            if (true === ($options['lecture_seule'] ?? false)) {
+                continue;
+            }
             $target = '' === $prefix && in_array($name, ['generaleWebsiteUrl', 'pmrDetails', 'descGenerale', 'chambreDescGenerale', 'atout1', 'atout2', 'atout3', 'atout4', 'atout5'], true)
                 ? $this->target(Lieu::class, $name)
                 : null;

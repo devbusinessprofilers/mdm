@@ -14,7 +14,7 @@ use Symfony\Component\Console\Tester\CommandTester;
 #[Group('database')]
 final class ImportLegacyLieuxCommandTest extends KernelTestCase
 {
-    private const TABLES = ['etl_legacy_photo', 'etl_legacy_fiche', 'pim_salle', 'pim_acces_lieu', 'pim_ressource_lieu', 'pim_lieu_administratif', 'pim_lieu_tarification', 'pim_fiche_search', 'pim_fiche_attribute_value', 'pim_periode_fermeture', 'pim_lieu', 'pim_fiche', 'pim_localisation', 'outbox_message'];
+    private const TABLES = ['etl_legacy_photo', 'etl_legacy_fiche', 'pim_salle', 'pim_acces_lieu', 'pim_ressource_lieu', 'pim_fiche_administratif', 'pim_lieu_tarification', 'pim_fiche_search', 'pim_fiche_attribute_value', 'pim_periode_fermeture', 'pim_lieu', 'pim_fiche', 'pim_localisation', 'outbox_message'];
 
     private Connection $connection;
     private ?string $csvFile = null;

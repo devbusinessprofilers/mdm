@@ -24,6 +24,7 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 final readonly class LieuAdminManager
 {
     public function __construct(
+        private readonly DocumentsAdministratifsDepot $depotAdministratif,
         private EntityManagerInterface $entityManager,
         private OutboxPublisherInterface $outbox,
         private LieuImageUploader $imageUploader,
@@ -44,6 +45,7 @@ final readonly class LieuAdminManager
     public function save(Lieu $lieu, FormInterface $form, array $existingMediaIds): void
     {
         $uploaded = [];
+        $documents = [];
         try {
             foreach ($form->get('ressources') as $resourceForm) {
                 $file = $resourceForm->get('image')->getData();
@@ -56,6 +58,7 @@ final readonly class LieuAdminManager
                 $resource->changeNature(NatureRessource::Photo);
                 $this->outbox->enqueue(new MediaUploaded($media->id(), $media->originalStorageKey(), $media->checksum(), ImageVariantRegistry::names()));
             }
+            $this->depotAdministratif->deposer($form, $lieu, $documents);
             foreach (array_diff($existingMediaIds, $this->photoAssetIds($lieu)) as $removed) {
                 if ('' !== $removed) { $this->outbox->enqueue(new DeleteMedia($removed)); }
             }
@@ -72,6 +75,7 @@ final readonly class LieuAdminManager
             Fiche::preserveWorkflowsDuring($liees, fn () => $this->entityManager->flush());
         } catch (\Throwable $exception) {
             $this->cleanup($uploaded);
+            $this->depotAdministratif->nettoyer($documents);
             throw $exception;
         }
     }

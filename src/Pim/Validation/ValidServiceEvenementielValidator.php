@@ -107,9 +107,9 @@ final class ValidServiceEvenementielValidator extends ConstraintValidator
             }
             if (NatureRessource::Photo === $resource->nature()) {
                 $photos[] = $resource;
-            } elseif ("PJ_SUPPORT_COMMERCIAUX" !== $resource->usage()) {
+            } elseif ("PJ_SUPPORT_COMMERCIAUX" !== $resource->usage() && !DocumentUsage::estAdministratif($resource->documentUsage())) {
                 $this->violation(
-                    "Un Service accepte uniquement les supports commerciaux comme documents.",
+                    "Un Service accepte uniquement les supports commerciaux et les pièces de facturation comme documents.",
                     "ressources",
                 );
             }

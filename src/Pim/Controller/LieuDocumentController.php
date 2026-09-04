@@ -38,7 +38,7 @@ final class LieuDocumentController extends AbstractController
         $usagesParNom = [
             'document_upload_plans' => [DocumentUsage::RoomPlan, DocumentUsage::GeneralPlan],
             'document_upload_supports' => [DocumentUsage::CommercialSupport],
-            'document_upload_documents' => [DocumentUsage::RseEvidence, DocumentUsage::Urssaf, DocumentUsage::LiabilityInsurance, DocumentUsage::BankDetails, DocumentUsage::FactoringBankDetails, DocumentUsage::Terms, DocumentUsage::Convention],
+            'document_upload_documents' => [DocumentUsage::RseEvidence],
             'document_upload' => [],
         ];
         $nom = 'document_upload';

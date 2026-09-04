@@ -155,9 +155,10 @@ final class ValidActiviteValidator extends ConstraintValidator
             } elseif (
                 NatureRessource::Document === $resource->nature()
                 && 'PJ_SUPPORT_COMMERCIAUX' !== $resource->usage()
+                && !\App\Dam\Enum\DocumentUsage::estAdministratif($resource->documentUsage())
             ) {
                 $this->violation(
-                    'Une Activité accepte uniquement les supports commerciaux comme documents.',
+                    'Une Activité accepte uniquement les supports commerciaux et les pièces de facturation comme documents.',
                     'ressources',
                 );
             }

@@ -24,6 +24,7 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 final readonly class ServiceEvenementielAdminManager
 {
     public function __construct(
+        private readonly DocumentsAdministratifsDepot $depotAdministratif,
         private EntityManagerInterface $entityManager,
         private OutboxPublisherInterface $outbox,
         private FicheImageUploader $imageUploader,
@@ -78,6 +79,7 @@ final readonly class ServiceEvenementielAdminManager
                 $resource->changeSource(is_string($source) ? $source : null);
                 $service->addRessource($resource);
             }
+            $this->depotAdministratif->deposer($form, $service, $uploadedDocuments);
             foreach (array_diff($existingMediaIds, $this->photoAssetIds($service)) as $removed) {
                 if ('' !== $removed) {
                     $this->outbox->enqueue(new DeleteMedia($removed));

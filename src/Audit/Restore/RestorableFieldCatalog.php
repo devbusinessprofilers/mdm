@@ -7,7 +7,7 @@ namespace App\Audit\Restore;
 use App\Pim\Entity\Activite\Activite;
 use App\Pim\Entity\Fiche;
 use App\Pim\Entity\Lieu\Lieu;
-use App\Pim\Entity\Lieu\LieuAdministratif;
+use App\Pim\Entity\FicheAdministratif;
 use App\Pim\Entity\Lieu\LieuTarification;
 use App\Pim\Entity\Localisation;
 use App\Pim\Entity\Restaurant\Restaurant;
@@ -29,7 +29,7 @@ final readonly class RestorableFieldCatalog
         'service' => ServiceEvenementiel::class,
         'restaurant' => Restaurant::class,
         'localisation' => Localisation::class,
-        'administratif' => LieuAdministratif::class,
+        'administratif' => FicheAdministratif::class,
         'tarification' => LieuTarification::class,
     ];
 
@@ -204,9 +204,8 @@ final readonly class RestorableFieldCatalog
         $detailClass = self::PREFIX_CLASSES[$prefix];
         $entity = match ($prefix) {
             'localisation' => $detail->localisation(),
-            'administratif' => $detail instanceof Lieu
-                ? $detail->administratif()
-                : null,
+            // Facturation & partenariat : porté par la fiche, toutes gammes.
+            'administratif' => $fiche->administratif(),
             'tarification' => $detail instanceof Lieu
                 ? $detail->tarification()
                 : null,

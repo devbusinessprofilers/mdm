@@ -91,7 +91,7 @@
     valeurs, vider}) enveloppe un champ dans une cible du contrôleur
     affichage-conditionnel, pilotée par le widget `source` (chemin pointé).
 #}
-{% macro carte_champs(form, widgets, colonnes, pleins, cases_en_ligne, conditions) %}
+{% macro carte_champs(form, widgets, colonnes, pleins, cases_en_ligne, conditions, fichiers = {}) %}
     {% set largeur = colonnes == 3 ? 'w-[calc(33.333%-16px)]' : 'w-[calc(50%-12px)]' %}
     {% set aplatis = widgets|reduce(
         (acc, w) => w.vars.compound|default(false)
@@ -128,6 +128,10 @@
                 <div class="w-full">{{ _self.collection(widget, widget.vars.label ?? champ) }}</div>
             {% else %}
                 {{ form_row(widget, { row_attr: { class: classe } }) }}
+            {% endif %}
+            {# Dropzone administrative : le fichier courant, remplacé par un nouveau dépôt. #}
+            {% if fichiers[champ] is defined %}
+                <twig:Typography variant="body-sm" textColor="neutral-500" class="w-full -mt-3" data-fichier-actuel="{{ champ }}">Fichier actuel : {{ fichiers[champ] }}</twig:Typography>
             {% endif %}
         {% endfor %}
         {% for widget in aplatis|filter(w => 'checkbox' in w.vars.block_prefixes and w.vars.name not in cases_en_ligne) %}
@@ -375,6 +379,8 @@
                             {% for widget in widgets %}
                                 {{ _self.collection(widget, widget.vars.label ?? widget.vars.name) }}
                             {% endfor %}
+                        {% elseif bloc == 'acomptes' %}
+                            {% include 'mdm/fiche/_acomptes.html.twig' with { widgets: widgets } only %}
                         {% elseif bloc == 'tarifs_restaurant' %}
                             {% include 'mdm/fiche/_tarifs_restaurant.html.twig' with { widgets: widgets } only %}
                         {% elseif bloc == 'offres_activite' %}
@@ -384,7 +390,7 @@
                             {% endif %}
                             {% include 'mdm/fiche/_offres_activite.html.twig' with { widget: widgets|first, type: carte.type_offre|default('forfait'), gabarit: gabarit_offre } only %}
                         {% else %}
-                            {{ _self.carte_champs(form, widgets, carte.colonnes|default(2), carte.pleins|default([]), cases_en_ligne, carte.conditions|default({})) }}
+                            {{ _self.carte_champs(form, widgets, carte.colonnes|default(2), carte.pleins|default([]), cases_en_ligne, carte.conditions|default({}), documents_administratifs|default({})) }}
                         {% endif %}
                     </section>
                 {% endfor %}

@@ -15,7 +15,7 @@ use Symfony\Component\Console\Tester\CommandTester;
 #[Group('database')]
 final class ImportLegacyTranslationsCommandTest extends KernelTestCase
 {
-    private const TABLES = ['enrichment_fiche_translation', 'pim_attribute_value_translation', 'etl_legacy_fiche', 'pim_lieu_administratif', 'pim_lieu_tarification', 'pim_lieu', 'pim_fiche_search', 'pim_fiche', 'pim_localisation', 'outbox_message'];
+    private const TABLES = ['enrichment_fiche_translation', 'pim_attribute_value_translation', 'etl_legacy_fiche', 'pim_fiche_administratif', 'pim_lieu_tarification', 'pim_lieu', 'pim_fiche_search', 'pim_fiche', 'pim_localisation', 'outbox_message'];
 
     private Connection $connection;
     private ?string $dumpFile = null;

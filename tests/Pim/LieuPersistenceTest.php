@@ -230,7 +230,7 @@ final class LieuPersistenceTest extends KernelTestCase
         $this->connection->executeStatement('DELETE FROM pim_acces_lieu');
         $this->connection->executeStatement('DELETE FROM pim_periode_fermeture');
         $this->connection->executeStatement('DELETE FROM pim_salle');
-        $this->connection->executeStatement('DELETE FROM pim_lieu_administratif');
+        $this->connection->executeStatement('DELETE FROM pim_fiche_administratif');
         $this->connection->executeStatement('DELETE FROM pim_lieu_tarification');
         $this->connection->executeStatement('DELETE FROM pim_fiche_search');
         $this->connection->executeStatement('DELETE FROM pim_fiche_attribute_value');

@@ -111,7 +111,7 @@ final class MarketplaceRetraitTest extends KernelTestCase
 
     private function clear(): void
     {
-        foreach (['outbox_message', 'etl_fiche_marketplace', 'pim_lieu_administratif', 'pim_lieu_tarification', 'pim_lieu', 'pim_fiche', 'pim_localisation'] as $table) {
+        foreach (['outbox_message', 'etl_fiche_marketplace', 'pim_fiche_administratif', 'pim_lieu_tarification', 'pim_lieu', 'pim_fiche', 'pim_localisation'] as $table) {
             $this->connection->executeStatement('DELETE FROM '.$table);
         }
     }

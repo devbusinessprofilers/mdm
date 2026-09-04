@@ -34,7 +34,7 @@ final class FicheEnrichmentScanTest extends KernelTestCase
     {
         if (isset($this->connection)) {
             $this->connection->executeStatement('DELETE FROM pim_fiche_enrichment_scan');
-            $this->connection->executeStatement('DELETE FROM pim_lieu_administratif');
+            $this->connection->executeStatement('DELETE FROM pim_fiche_administratif');
             $this->connection->executeStatement('DELETE FROM pim_lieu');
             $this->connection->executeStatement('DELETE FROM pim_restaurant');
             $this->connection->executeStatement('DELETE FROM pim_activite');

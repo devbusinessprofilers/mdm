@@ -244,7 +244,7 @@ final class DashboardStatsCalculatorTest extends KernelTestCase
         $this->connection->executeStatement('DELETE FROM dashboard_snapshot');
         $this->connection->executeStatement('DELETE FROM pim_fiche_search');
         $this->connection->executeStatement('DELETE FROM pim_fiche_attribute_value');
-        $this->connection->executeStatement('DELETE FROM pim_lieu_administratif');
+        $this->connection->executeStatement('DELETE FROM pim_fiche_administratif');
         $this->connection->executeStatement('DELETE FROM pim_lieu_tarification');
         $this->connection->executeStatement('DELETE FROM pim_activite');
         $this->connection->executeStatement('DELETE FROM pim_restaurant');

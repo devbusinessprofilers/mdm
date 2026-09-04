@@ -92,7 +92,7 @@ final class RestoreControllerTest extends WebTestCase
                 'audit_revision',
                 'outbox_message',
                 'account_user',
-                'pim_lieu_administratif',
+                'pim_fiche_administratif',
                 'pim_lieu_tarification',
                 'pim_lieu',
                 'pim_fiche',

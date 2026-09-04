@@ -63,7 +63,7 @@ final class FicheSectionsCatalogueTest extends TestCase
         $titres = array_column(FicheSectionsCatalogue::pour(TypeFiche::Restaurant), 'titre');
 
         self::assertSame(
-            ['Informations générales', 'Localisation & accessibilité', 'Description', 'Capacités', 'Services & équipements', 'RSE', 'Tarifs', 'Médias', 'Booster ma visibilité', 'Utilisateurs', 'Templates de message'],
+            ['Informations générales', 'Localisation & accessibilité', 'Description', 'Capacités', 'Services & équipements', 'RSE', 'Tarifs', 'Médias', 'Booster ma visibilité', 'Facturation & partenariat', 'Utilisateurs', 'Templates de message'],
             $titres,
         );
         // Les quatre capacités, jadis absentes de toute section, sont rendues.
@@ -77,7 +77,7 @@ final class FicheSectionsCatalogueTest extends TestCase
         $titres = array_column(FicheSectionsCatalogue::pour(TypeFiche::ServiceEvenementiel), 'titre');
 
         self::assertSame(
-            ['Informations générales', 'Localisation & accessibilité', 'Prestations', 'Tarifs', 'Médias', 'Booster ma visibilité', 'Utilisateurs', 'Templates de message'],
+            ['Informations générales', 'Localisation & accessibilité', 'Prestations', 'Tarifs', 'Médias', 'Booster ma visibilité', 'Facturation & partenariat', 'Utilisateurs', 'Templates de message'],
             $titres,
         );
         // Les onglets fondus dans Informations générales gardent leurs champs (RSE, description, accessibilité).
@@ -94,7 +94,7 @@ final class FicheSectionsCatalogueTest extends TestCase
         $titres = array_column(FicheSectionsCatalogue::pour(TypeFiche::Activite), 'titre');
 
         self::assertSame(
-            ['Informations générales', 'Localisation & accessibilité', 'Description', 'Capacités', 'RSE', 'Tarifs', 'Médias', 'Booster ma visibilité', 'Utilisateurs', 'Templates de message'],
+            ['Informations générales', 'Localisation & accessibilité', 'Description', 'Capacités', 'RSE', 'Tarifs', 'Médias', 'Booster ma visibilité', 'Facturation & partenariat', 'Utilisateurs', 'Templates de message'],
             $titres,
         );
         $infos = FicheSectionsCatalogue::section(TypeFiche::Activite, 0);

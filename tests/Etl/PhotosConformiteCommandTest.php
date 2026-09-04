@@ -153,7 +153,7 @@ final class PhotosConformiteCommandTest extends KernelTestCase
                 'outbox_message',
                 'etl_fiche_marketplace',
                 'pim_ressource_lieu',
-                'pim_lieu_administratif',
+                'pim_fiche_administratif',
                 'pim_lieu_tarification',
                 'pim_lieu',
                 'pim_activite',

@@ -6,6 +6,7 @@ namespace App\Pim\Entity\Activite;
 
 use App\Pim\Entity\CompletenessScoresTrait;
 use App\Pim\Entity\Fiche;
+use App\Pim\Entity\FicheAdministratif;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Entity\Localisation;
 use App\Pim\Entity\ValeurAttribut;
@@ -124,6 +125,12 @@ class Activite
     public function fiche(): Fiche
     {
         return $this->fiche;
+    }
+
+    /** Facturation & partenariat (maquette portail), porté par la fiche. */
+    public function administratif(): FicheAdministratif
+    {
+        return $this->fiche->administratif();
     }
 
     public function code(): int

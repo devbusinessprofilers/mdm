@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Pim\Form;
 
 use App\Etl\Repository\FicheSalesforceRepository;
+use App\Pim\Entity\FicheAdministratif;
 use App\Pim\Entity\Activite\Activite;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Entity\Localisation;
@@ -423,8 +424,18 @@ final class ActiviteType extends AbstractType
                         $a->addOffre($offer);
                     }
                 },
-            ])
-            ->add('submit', SubmitType::class, ['label' => 'Enregistrer']);
+            ]);
+
+        // Facturation & partenariat (maquette portail) : bloc commun porté par la fiche.
+        $b->add('administratif', MethodMappedFieldsType::class, [
+            'mapped_class' => FicheAdministratif::class,
+            'data_class' => FicheAdministratif::class,
+            'fields' => FicheFormCatalog::administrative(),
+            'getter' => static fn (Activite $entite): FicheAdministratif => $entite->administratif(),
+            'setter' => static function (Activite &$entite, FicheAdministratif $value): void {},
+        ]);
+        FicheFormCatalog::ajouterFichiers($b);
+        $b->add('submit', SubmitType::class, ['label' => 'Enregistrer']);
     }
 
     /** @return array<string,mixed> */

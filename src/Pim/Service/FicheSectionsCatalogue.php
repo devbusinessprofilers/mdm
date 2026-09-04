@@ -182,18 +182,12 @@ final class FicheSectionsCatalogue
                 // réglages réels de visibilité et les sites de diffusion.
                 // Feuilles pointées : generaleYoutube vit dans Médias › Vidéo.
                 'titre' => 'Booster ma visibilité',
-                'champs' => ['visibilite.miceStatut', 'visibilite.afficherContact', 'visibilite.modePaiementCarteListe'],
-                'proprietes' => ['miceStatut', 'afficherContact', 'modePaiementCarteListe'],
+                'champs' => ['visibilite.miceStatut', 'visibilite.afficherContact'],
+                'proprietes' => ['miceStatut', 'afficherContact'],
                 'blocs' => ['formules', 'sites'],
                 'groupe' => 'ma_fiche',
             ],
-            [
-                'titre' => 'Facturation & partenariat',
-                'champs' => ['administratif'],
-                'proprietes' => ['administratif'],
-                'blocs' => [],
-                'groupe' => 'parametres',
-            ],
+            self::sectionFacturation(),
             [
                 'titre' => 'Utilisateurs',
                 'champs' => [],
@@ -319,6 +313,7 @@ final class FicheSectionsCatalogue
                 'blocs' => ['formules', 'sites'],
                 'groupe' => 'ma_fiche',
             ],
+            self::sectionFacturation(),
             [
                 'titre' => 'Utilisateurs',
                 'champs' => [],
@@ -332,6 +327,61 @@ final class FicheSectionsCatalogue
                 'proprietes' => [],
                 'blocs' => ['templates'],
                 'groupe' => 'parametres',
+            ],
+        ];
+    }
+
+    /**
+     * Onglet « Facturation & partenariat » (groupe Paramètres), identique
+     * pour les quatre gammes : le bloc FicheAdministratif (feuilles pointées
+     * `administratif.*`) et les six pièces jointes en dropzone, dans les
+     * cartes de la maquette portail. Les six fichiers sont des champs de
+     * premier niveau non mappés (FicheFormCatalog::ajouterFichiers).
+     *
+     * @return array{titre: string, champs: list<string>, proprietes: list<string>, blocs: list<string>, groupe: string, cartes: list<array<string, mixed>>}
+     */
+    public static function sectionFacturation(): array
+    {
+        $a = static fn (string ...$champs): array => array_map(static fn (string $c): string => 'administratif.'.$c, $champs);
+        $acomptes = [];
+        for ($i = 1; $i <= 3; ++$i) {
+            $acomptes[] = 'administratif.condPaieAccDate'.$i;
+            $acomptes[] = 'administratif.condPaieAccPourcentage'.$i;
+        }
+        $annulation = $a(...array_map(static fn (int $i): string => 'condPaieAnnPourcentage'.$i, range(1, 9)));
+
+        return [
+            'titre' => 'Facturation & partenariat',
+            'champs' => ['administratif', 'urssafFichier', 'rcProFichier', 'ribFichier', 'affacturageRibFichier', 'conventionFichier', 'cgvFichier'],
+            'proprietes' => ['administratif'],
+            'blocs' => [],
+            'groupe' => 'parametres',
+            'cartes' => [
+                [
+                    'titre' => 'Informations légales',
+                    'champs' => [...$a('infoLegaleNom', 'infoLegaleFormeJuridique', 'infoLegaleRuePostal', 'infoLegaleAdresse2', 'infoLegaleCodePostal', 'infoLegaleVille', 'inforLegalePays', 'infoLegaleSiret', 'infoLegaleNumTva'), 'urssafFichier', 'rcProFichier', ...$a('infoLegaleAssujettiTva', 'infoLegaleTva', 'infoLegaleTypeDeProcedureJudiciaire')],
+                    'colonnes' => 2,
+                    'conditions' => ['infoLegaleTva' => ['source' => 'administratif.infoLegaleAssujettiTva', 'valeurs' => '1', 'vider' => true]],
+                ],
+                ['titre' => 'Adresse de facturation', 'champs' => $a('adresseFacturationNom', 'adresseFacturationNumTva', 'adresseFacturationRuePostal', 'adresseFacturationCodePostal', 'adresseFacturationVille', 'adresseFacturationPays'), 'colonnes' => 3],
+                ['titre' => 'Contact de facturation', 'champs' => $a('contactFacturationNom', 'contactFacturationPrenom', 'contactFacturationEmail', 'contactFacturationTelephone'), 'colonnes' => 2],
+                [
+                    'titre' => 'Mode de paiements acceptés',
+                    'champs' => [...$a('modePaiementBic', 'modePaiementIban'), 'ribFichier', ...$a('modePaiementAffacturage', 'affacturageBic', 'affacturageIban'), 'affacturageRibFichier', ...$a('modePaiementCarte', 'modePaiementCarteListe', 'modePaiementAcceptDeductionCom')],
+                    'colonnes' => 2,
+                    'conditions' => [
+                        'affacturageBic' => ['source' => 'administratif.modePaiementAffacturage', 'valeurs' => '1', 'vider' => true],
+                        'affacturageIban' => ['source' => 'administratif.modePaiementAffacturage', 'valeurs' => '1', 'vider' => true],
+                        'affacturageRibFichier' => ['source' => 'administratif.modePaiementAffacturage', 'valeurs' => '1'],
+                        'modePaiementCarteListe' => ['source' => 'administratif.modePaiementCarte', 'valeurs' => '1', 'vider' => true],
+                    ],
+                ],
+                ['titre' => 'Conditions de paiement de l\'acompte', 'champs' => $acomptes, 'colonnes' => 2, 'bloc' => 'acomptes'],
+                ['titre' => 'Conditions de paiement annulation', 'champs' => $annulation, 'colonnes' => 3],
+                ['titre' => 'Paiement des soldes', 'champs' => $a('datePaiementSold'), 'colonnes' => 2],
+                ['titre' => 'Commission', 'champs' => $a('commissionTaux', 'commissionPaiement', 'commissionApplicable'), 'colonnes' => 3],
+                ['titre' => 'Convention de partenariat', 'champs' => [...$a('convPartSigneeLe', 'convPartTaux'), 'conventionFichier', ...$a('signataireEmail', 'signataireNom', 'signatairePrenom')], 'colonnes' => 2],
+                ['titre' => 'Conditions générales de ventes', 'champs' => ['cgvFichier'], 'colonnes' => 2],
             ],
         ];
     }
@@ -475,6 +525,7 @@ final class FicheSectionsCatalogue
                 'blocs' => ['formules', 'sites'],
                 'groupe' => 'ma_fiche',
             ],
+            self::sectionFacturation(),
             [
                 'titre' => 'Utilisateurs',
                 'champs' => [],
@@ -572,6 +623,7 @@ final class FicheSectionsCatalogue
                 'blocs' => ['formules', 'sites'],
                 'groupe' => 'ma_fiche',
             ],
+            self::sectionFacturation(),
             [
                 'titre' => 'Utilisateurs',
                 'champs' => [],

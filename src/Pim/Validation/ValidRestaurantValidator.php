@@ -185,6 +185,7 @@ final class ValidRestaurantValidator extends ConstraintValidator
                     ],
                     true,
                 )
+                && !DocumentUsage::estAdministratif($resource->documentUsage())
             ) {
                 $this->violation(
                     'Usage documentaire interdit pour un Restaurant.',

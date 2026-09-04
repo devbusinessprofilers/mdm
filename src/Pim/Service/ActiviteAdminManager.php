@@ -24,6 +24,7 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 final readonly class ActiviteAdminManager
 {
     public function __construct(
+        private readonly DocumentsAdministratifsDepot $depotAdministratif,
         private EntityManagerInterface $entityManager,
         private OutboxPublisherInterface $outbox,
         private FicheImageUploader $imageUploader,
@@ -78,6 +79,7 @@ final readonly class ActiviteAdminManager
                 $resource->changeSource(is_string($source) ? $source : null);
                 $activite->addRessource($resource);
             }
+            $this->depotAdministratif->deposer($form, $activite, $uploadedDocuments);
             foreach (array_diff($existingMediaIds, $this->photoAssetIds($activite)) as $removed) {
                 if ('' !== $removed) {
                     $this->outbox->enqueue(new DeleteMedia($removed));

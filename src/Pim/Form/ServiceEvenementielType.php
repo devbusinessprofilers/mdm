@@ -7,6 +7,7 @@ namespace App\Pim\Form;
 use App\Etl\Repository\FicheSalesforceRepository;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Entity\Localisation;
+use App\Pim\Entity\FicheAdministratif;
 use App\Pim\Entity\Service\ServiceEvenementiel;
 use App\Pim\Enum\ModeInterventionService;
 use App\Pim\Enum\NatureRessource;
@@ -321,8 +322,18 @@ final class ServiceEvenementielType extends AbstractType
                 "label" => "Source des nouveaux supports",
                 "mapped" => false,
                 "required" => false,
-            ])
-            ->add("submit", SubmitType::class, ["label" => "Enregistrer"]);
+            ]);
+
+        // Facturation & partenariat (maquette portail) : bloc commun porté par la fiche.
+        $builder->add('administratif', MethodMappedFieldsType::class, [
+            'mapped_class' => FicheAdministratif::class,
+            'data_class' => FicheAdministratif::class,
+            'fields' => FicheFormCatalog::administrative(),
+            'getter' => static fn (ServiceEvenementiel $entite): FicheAdministratif => $entite->administratif(),
+            'setter' => static function (ServiceEvenementiel &$entite, FicheAdministratif $value): void {},
+        ]);
+        FicheFormCatalog::ajouterFichiers($builder);
+        $builder->add('submit', SubmitType::class, ['label' => 'Enregistrer']);
     }
 
     public function configureOptions(OptionsResolver $resolver): void

@@ -170,7 +170,7 @@ final class EnrichirFicheHandlerTest extends KernelTestCase
             'pim_fiche_enrichment_run',
             'pim_fiche_search',
             'pim_fiche_attribute_value',
-            'pim_lieu_administratif',
+            'pim_fiche_administratif',
             'pim_lieu_tarification',
             'pim_lieu',
             'pim_fiche',

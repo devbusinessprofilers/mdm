@@ -227,7 +227,7 @@ final class ImageEnhancementManagerTest extends KernelTestCase
             'pim_ressource_lieu',
             'dam_media_rendition',
             'dam_media_asset',
-            'pim_lieu_administratif',
+            'pim_fiche_administratif',
             'pim_lieu_tarification',
             'pim_lieu',
             'pim_fiche',

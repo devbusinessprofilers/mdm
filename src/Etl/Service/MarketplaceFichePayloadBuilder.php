@@ -15,7 +15,8 @@ use App\Pim\Entity\Fiche;
 use App\Pim\Entity\HorairesJours;
 use App\Pim\Entity\Lieu\AccesLieu;
 use App\Pim\Entity\Lieu\Lieu;
-use App\Pim\Entity\Lieu\LieuAdministratif;
+use App\Pim\Entity\FicheAdministratif;
+use App\Pim\Lov\LieuLovCatalog;
 use App\Pim\Entity\Lieu\LieuTarification;
 use App\Pim\Entity\Lieu\PeriodeFermeture;
 use App\Pim\Entity\Lieu\RessourceLieu;
@@ -300,6 +301,7 @@ final readonly class MarketplaceFichePayloadBuilder
     private function restaurant(Restaurant $restaurant): array
     {
         return [
+            'administratif' => self::administratif($restaurant->administratif()),
             // Clé toujours présente : null propage aussi le désappariement.
             'lieuAssocie' => null === $restaurant->lieu() ? null : [
                 'pimId' => $restaurant->lieu()->fiche()->idString(),
@@ -363,6 +365,7 @@ final readonly class MarketplaceFichePayloadBuilder
         }
 
         return [
+            'administratif' => self::administratif($activite->administratif()),
             'description' => $activite->descriptionGenerale(),
             'comprendPrestation' => $activite->comprendPrestation(),
             'atouts' => $activite->plus(),
@@ -405,6 +408,7 @@ final readonly class MarketplaceFichePayloadBuilder
         }
 
         return [
+            'administratif' => self::administratif($service->administratif()),
             'description' => $service->descriptionGenerale(),
             'prestations' => $service->prestations(),
             ...$sousPrestations,
@@ -506,7 +510,7 @@ final readonly class MarketplaceFichePayloadBuilder
     }
 
     /** @return array<string, array<string, mixed>> */
-    private static function administratif(LieuAdministratif $administratif): array
+    private static function administratif(FicheAdministratif $administratif): array
     {
         return [
             'infoLegale' => [
@@ -548,6 +552,17 @@ final readonly class MarketplaceFichePayloadBuilder
                 'condPaieAnnSignature' => $administratif->condPaieAnnSignature(),
                 'commissionApplicable' => $administratif->commissionApplicable(),
                 'datePaiementSold' => $administratif->datePaiementSold(),
+                // Maquette portail : carte bancaire, acomptes (date LOV + %), annulation par tranche LOV.
+                'carte' => $administratif->modePaiementCarte(),
+                'cartesAcceptees' => $administratif->modePaiementCarteListe(),
+                'acomptes' => array_values(array_filter(array_map(static fn (int $i): array => [
+                    'date' => $administratif->{'condPaieAccDate'.$i}(),
+                    'pourcentage' => $administratif->{'condPaieAccPourcentage'.$i}(),
+                ], range(1, FicheAdministratif::ACOMPTES)), static fn (array $a): bool => null !== $a['date'] || null !== $a['pourcentage'])),
+                'annulation' => array_combine(
+                    array_keys(LieuLovCatalog::choicesFor('COND_PAIE_ANN_SIGNATURE')),
+                    array_map(static fn (int $i): ?int => $administratif->{'condPaieAnnPourcentage'.$i}(), range(1, FicheAdministratif::TRANCHES_ANNULATION)),
+                ),
             ],
             'convention' => [
                 'signeeLe' => $administratif->convPartSigneeLe(),

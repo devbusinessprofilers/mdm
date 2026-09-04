@@ -53,8 +53,17 @@ enum DocumentUsage: string
         return match ($this) {
             self::RoomPlan, self::GeneralPlan, self::RestaurantMenu => 'plans',
             self::CommercialSupport => 'supports',
+            // Pièces de l'onglet Facturation & partenariat : déposées et
+            // affichées là-bas, pas dans le volet Médias.
+            self::Urssaf, self::LiabilityInsurance, self::BankDetails, self::FactoringBankDetails, self::Terms, self::Convention => 'administratif',
             default => 'documents',
         };
+    }
+
+    /** Pièces de l'onglet Facturation & partenariat (déposables sur toutes les gammes). */
+    public static function estAdministratif(?self $usage): bool
+    {
+        return null !== $usage && 'administratif' === $usage->ongletMedia();
     }
 
     /** @return array<string, self> */

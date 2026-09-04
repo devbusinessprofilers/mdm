@@ -185,6 +185,94 @@ final class FicheGammeEditeurTest extends WebTestCase
         self::assertSame('Plaquette 2026', $document['legende']);
         self::assertSame('Prestataire', $document['source']);
         self::assertSame(1, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM dam_media_asset'));
+
+        // Facturation & partenariat : l'attestation URSSAF se dépose en dropzone
+        // dans l'onglet (1 fichier par usage), un nouveau dépôt remplace l'ancien.
+        foreach (['urssaf-v1', 'urssaf-v2'] as $version) {
+            $urssaf = tempnam(sys_get_temp_dir(), 'mdm-urssaf-');
+            self::assertIsString($urssaf);
+            file_put_contents($urssaf, "%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF");
+            $crawler = $client->request('GET', '/referentiel/services/fiche/'.$service->id());
+            $form = $crawler->filter('button[form="form-fiche"]')->form();
+            $values = $form->getPhpValues();
+            $client->request($form->getMethod(), $form->getUri(), $values, [$nom => ['urssafFichier' => new UploadedFile($urssaf, $version.'.pdf', 'application/pdf', null, true)]]);
+            self::assertResponseRedirects();
+            @unlink($urssaf);
+        }
+        $pieces = $this->connection->fetchAllAssociative("SELECT usage_code, legende FROM pim_ressource_lieu WHERE usage_code = 'INFO_LEGALE_ATTESTATION_VIGILANCE_URSSAF'");
+        self::assertCount(1, $pieces, 'Un seul document URSSAF : le second dépôt remplace le premier.');
+        self::assertSame('urssaf-v2', $pieces[0]['legende']);
+        $crawler = $client->request('GET', '/referentiel/services/fiche/'.$service->id());
+        self::assertSelectorTextContains('[data-fichier-actuel="urssafFichier"]', 'urssaf-v2');
+    }
+
+    /** Onglet Facturation & partenariat (maquette portail) : cartes et dropzones, identiques pour les gammes. */
+    public function testOngletFacturationEtPartenariatDesGammes(): void
+    {
+        $client = self::createClient();
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $this->connection = self::getContainer()->get(Connection::class);
+        $this->clearTables();
+        $user = new User('facturation@example.test', ['ROLE_BP_VALIDATOR']);
+        $user->setPassword('not-used-by-login-user');
+        $entityManager->persist($user);
+        $restaurant = new Restaurant();
+        $restaurant->changeLabel('Bistrot facturé');
+        $restaurant->administratif()->changeInfoLegaleNom('Bistrot SAS');
+        $restaurant->administratif()->changeCondPaieAccDate2('COND_PAIE_ACC_SIGNATURE_2');
+        $restaurant->administratif()->changeCondPaieAccPourcentage2(30);
+        $entityManager->persist($restaurant);
+        $entityManager->flush();
+        $client->loginUser($user);
+
+        $crawler = $client->request('GET', '/referentiel/restaurants/fiche/'.$restaurant->id().'?section=9');
+        self::assertResponseIsSuccessful();
+        $cartes = $crawler->filter('#form-fiche section[data-volet="9"] h2')->each(static fn (Crawler $h2): string => $h2->text(null, true));
+        self::assertSame(
+            ['Informations légales', 'Adresse de facturation', 'Contact de facturation', 'Mode de paiements acceptés', 'Conditions de paiement de l\'acompte', 'Conditions de paiement annulation', 'Paiement des soldes', 'Commission', 'Convention de partenariat', 'Conditions générales de ventes'],
+            $cartes,
+        );
+        self::assertSame('Bistrot SAS', $crawler->filter('input[name="restaurant[administratif][infoLegaleNom]"]')->attr('value'));
+        foreach (['urssafFichier', 'rcProFichier', 'ribFichier', 'affacturageRibFichier', 'conventionFichier', 'cgvFichier'] as $fichier) {
+            self::assertCount(1, $crawler->filter(sprintf('input[type="file"][name="restaurant[%s]"]', $fichier)), $fichier);
+        }
+        // Oui/Non en radios défaut Non ; TVA, affacturage et cartes conditionnés.
+        foreach (['infoLegaleAssujettiTva', 'modePaiementAffacturage', 'modePaiementCarte'] as $champ) {
+            self::assertCount(2, $crawler->filter(sprintf('input[type="radio"][name="restaurant[administratif][%s]"]', $champ)), $champ);
+        }
+        self::assertCount(1, $crawler->filter('[data-affichage-conditionnel-target="cible"][data-source="restaurant_administratif_infoLegaleAssujettiTva"]'));
+        self::assertCount(3, $crawler->filter('[data-affichage-conditionnel-target="cible"][data-source="restaurant_administratif_modePaiementAffacturage"]'));
+        self::assertCount(1, $crawler->filter('[data-affichage-conditionnel-target="cible"][data-source="restaurant_administratif_modePaiementCarte"]'));
+        // Acomptes : 3 emplacements, le 2ᵉ pré-coché ; annulation : 9 pourcentages ; commission en lecture seule.
+        self::assertCount(3, $crawler->filter('[data-acompte]'));
+        self::assertCount(0, $crawler->filter('input[name="acompte_actif[1]"][checked]'));
+        self::assertCount(1, $crawler->filter('input[name="acompte_actif[2]"][checked]'));
+        self::assertSame('30', $crawler->filter('input[name="restaurant[administratif][condPaieAccPourcentage2]"]')->attr('value'));
+        self::assertCount(9, $crawler->filter('input[name^="restaurant[administratif][condPaieAnnPourcentage"]'));
+        self::assertCount(1, $crawler->filter('input[name="restaurant[administratif][commissionPaiement]"][disabled]'));
+        self::assertCount(0, $crawler->filter('select[name="restaurant[administratif][condPaieAccSignature]"]'));
+
+        // Enregistrement : cases, radios et acomptes passent par le bloc administratif de la fiche.
+        $form = $crawler->filter('button[form="form-fiche"]')->form();
+        $values = $form->getPhpValues();
+        $values['restaurant']['administratif']['infoLegaleAssujettiTva'] = '1';
+        $values['restaurant']['administratif']['infoLegaleTva'] = 'INFO_LEGALE_TVA_2';
+        $values['restaurant']['administratif']['modePaiementCarte'] = '1';
+        $values['restaurant']['administratif']['modePaiementCarteListe'] = ['MODE_PAIEMENT_CARTE_LISTE_1'];
+        $values['restaurant']['administratif']['condPaieAnnPourcentage9'] = '100';
+        $client->request($form->getMethod(), $form->getUri(), $values);
+        self::assertResponseRedirects();
+        $entityManager->clear();
+        $recharge = $entityManager->find(Restaurant::class, $restaurant->id());
+        self::assertInstanceOf(Restaurant::class, $recharge);
+        self::assertTrue($recharge->administratif()->infoLegaleAssujettiTva());
+        self::assertSame('INFO_LEGALE_TVA_2', $recharge->administratif()->infoLegaleTva());
+        self::assertTrue($recharge->administratif()->modePaiementCarte());
+        self::assertSame(['MODE_PAIEMENT_CARTE_LISTE_1'], $recharge->administratif()->modePaiementCarteListe());
+        self::assertSame(100, $recharge->administratif()->condPaieAnnPourcentage9());
+        self::assertSame(30, $recharge->administratif()->condPaieAccPourcentage2());
+        self::assertFalse($recharge->administratif()->modePaiementAffacturage());
+        self::assertSame(1, (int) $this->connection->fetchOne('SELECT COUNT(*) FROM pim_fiche_administratif'));
     }
 
     /**
@@ -195,7 +283,7 @@ final class FicheGammeEditeurTest extends WebTestCase
     {
         $rail = $crawler->filter('nav[aria-label="Sections de la fiche"] li')->each(static fn (Crawler $li): string => trim(preg_replace('/\s*\d+ %$/', '', $li->text(null, true)) ?? ''));
         self::assertSame(
-            ['Informations générales', 'Localisation & accessibilité', 'Description', 'Capacités', 'Services & équipements', 'RSE', 'Tarifs', 'Médias', 'Booster ma visibilité', 'Utilisateurs', 'Templates de message'],
+            ['Informations générales', 'Localisation & accessibilité', 'Description', 'Capacités', 'Services & équipements', 'RSE', 'Tarifs', 'Médias', 'Booster ma visibilité', 'Facturation & partenariat', 'Utilisateurs', 'Templates de message'],
             $rail,
         );
         self::assertStringNotContainsString('Classification', $crawler->filter('nav[aria-label="Sections de la fiche"]')->text());
@@ -264,7 +352,7 @@ final class FicheGammeEditeurTest extends WebTestCase
     {
         $rail = $crawler->filter('nav[aria-label="Sections de la fiche"] li')->each(static fn (Crawler $li): string => trim(preg_replace('/\s*\d+ %$/', '', $li->text(null, true)) ?? ''));
         self::assertSame(
-            ['Informations générales', 'Localisation & accessibilité', 'Description', 'Capacités', 'RSE', 'Tarifs', 'Médias', 'Booster ma visibilité', 'Utilisateurs', 'Templates de message'],
+            ['Informations générales', 'Localisation & accessibilité', 'Description', 'Capacités', 'RSE', 'Tarifs', 'Médias', 'Booster ma visibilité', 'Facturation & partenariat', 'Utilisateurs', 'Templates de message'],
             $rail,
         );
         $cartes = static fn (int $volet): array => $crawler->filter(sprintf('#form-fiche section[data-volet="%d"] h2', $volet))->each(static fn (Crawler $h2): string => $h2->text(null, true));
@@ -311,7 +399,7 @@ final class FicheGammeEditeurTest extends WebTestCase
     {
         $rail = $crawler->filter('nav[aria-label="Sections de la fiche"] li')->each(static fn (Crawler $li): string => trim(preg_replace('/\s*\d+ %$/', '', $li->text(null, true)) ?? ''));
         self::assertSame(
-            ['Informations générales', 'Localisation & accessibilité', 'Prestations', 'Tarifs', 'Médias', 'Booster ma visibilité', 'Utilisateurs', 'Templates de message'],
+            ['Informations générales', 'Localisation & accessibilité', 'Prestations', 'Tarifs', 'Médias', 'Booster ma visibilité', 'Facturation & partenariat', 'Utilisateurs', 'Templates de message'],
             $rail,
         );
         $cartes = static fn (int $volet): array => $crawler->filter(sprintf('#form-fiche section[data-volet="%d"] h2', $volet))->each(static fn (Crawler $h2): string => $h2->text(null, true));
@@ -370,6 +458,7 @@ final class FicheGammeEditeurTest extends WebTestCase
         $this->connection->executeStatement('DELETE FROM pim_restaurant_periode_fermeture');
         $this->connection->executeStatement('DELETE FROM pim_restaurant_acces');
         $this->connection->executeStatement('DELETE FROM pim_service_acces');
+        $this->connection->executeStatement('DELETE FROM pim_fiche_administratif');
         $this->connection->executeStatement('DELETE FROM pim_activite_offre');
         $this->connection->executeStatement('DELETE FROM pim_restaurant');
         $this->connection->executeStatement('DELETE FROM pim_activite');

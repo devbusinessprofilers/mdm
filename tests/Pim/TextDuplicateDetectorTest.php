@@ -52,7 +52,7 @@ final class TextDuplicateDetectorTest extends KernelTestCase
     {
         foreach ([
             'pim_text_duplicate_alert', 'pim_text_simhash_band', 'pim_text_fingerprint',
-            'pim_fiche_search', 'pim_fiche_attribute_value', 'pim_lieu_administratif',
+            'pim_fiche_search', 'pim_fiche_attribute_value', 'pim_fiche_administratif',
             'pim_lieu_tarification', 'pim_lieu', 'pim_fiche', 'pim_localisation',
         ] as $table) {
             $this->connection->executeStatement('DELETE FROM '.$table);

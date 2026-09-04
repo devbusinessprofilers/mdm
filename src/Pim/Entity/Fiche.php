@@ -120,6 +120,9 @@ class Fiche
         ),
     ]
     private ?Localisation $localisation = null;
+    /** Facturation & partenariat (toutes gammes), créé à la première lecture. */
+    #[ORM\OneToOne(mappedBy: 'fiche', targetEntity: FicheAdministratif::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
+    private ?FicheAdministratif $administratif = null;
     /** @var Collection<int, FicheAttributValeur> */
     #[
         ORM\OneToMany(
@@ -167,6 +170,12 @@ class Fiche
     public function id(): Ulid
     {
         return $this->id;
+    }
+
+    /** Bloc Facturation & partenariat, créé paresseusement (persisté en cascade). */
+    public function administratif(): FicheAdministratif
+    {
+        return $this->administratif ??= new FicheAdministratif($this);
     }
 
     public function idString(): string

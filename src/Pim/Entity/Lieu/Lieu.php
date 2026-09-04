@@ -9,6 +9,7 @@ use App\Pim\Entity\AvecHorairesJours;
 use App\Pim\Entity\CompletenessScoresTrait;
 use App\Pim\Entity\HorairesJours;
 use App\Pim\Entity\Fiche;
+use App\Pim\Entity\FicheAdministratif;
 use App\Pim\Entity\Localisation;
 use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Lov\LieuLovCatalog;
@@ -48,9 +49,6 @@ class Lieu implements AvecHorairesJours
     #[ORM\OneToOne(cascade: ['persist', 'remove'], orphanRemoval: true)]
     #[ORM\JoinColumn(name: 'fiche_id', referencedColumnName: 'id', nullable: false, unique: true, onDelete: 'CASCADE')]
     private Fiche $fiche;
-
-    #[ORM\OneToOne(mappedBy: 'lieu', cascade: ['persist', 'remove'], orphanRemoval: true)]
-    private LieuAdministratif $administratif;
 
     #[ORM\OneToOne(mappedBy: 'lieu', cascade: ['persist', 'remove'], orphanRemoval: true)]
     private LieuTarification $tarification;
@@ -335,7 +333,6 @@ class Lieu implements AvecHorairesJours
     {
         $this->id = new Ulid();
         $this->fiche = new Fiche(TypeFiche::Lieu, $this->id);
-        $this->administratif = new LieuAdministratif($this);
         $this->tarification = new LieuTarification($this);
         $this->salles = new ArrayCollection();
         $this->periodesFermeture = new ArrayCollection();
@@ -354,9 +351,10 @@ class Lieu implements AvecHorairesJours
         return $this->fiche;
     }
 
-    public function administratif(): LieuAdministratif
+    /** Facturation & partenariat : porté par la fiche depuis 2026-09 (toutes gammes). */
+    public function administratif(): FicheAdministratif
     {
-        return $this->administratif;
+        return $this->fiche->administratif();
     }
 
     public function tarification(): LieuTarification

@@ -386,7 +386,7 @@ final class EnrichissementSuggestionArbitreDescriptionsTest extends KernelTestCa
             'pim_restaurant',
             'pim_activite',
             'pim_service_evenementiel',
-            'pim_lieu_administratif',
+            'pim_fiche_administratif',
             'pim_lieu_tarification',
             'pim_lieu',
             'pim_fiche',

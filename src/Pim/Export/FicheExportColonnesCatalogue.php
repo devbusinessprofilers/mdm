@@ -28,6 +28,8 @@ final readonly class FicheExportColonnesCatalogue
     private const RATTACHEMENTS = [
         'lieu' => [
             'generaleGammeLibelle' => 'Informations générales',
+            // Cartes bancaires acceptées : dans Facturation & partenariat depuis 2026-09.
+            'modePaiementCarteListe' => 'Facturation & partenariat',
             // Colonnes horaires_* (une par jour) : la carte Disponibilités.
             'horaireJour' => 'Informations générales',
         ],

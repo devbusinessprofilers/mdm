@@ -25,6 +25,7 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 final readonly class RestaurantAdminManager
 {
     public function __construct(
+        private readonly DocumentsAdministratifsDepot $depotAdministratif,
         private EntityManagerInterface $entityManager,
         private OutboxPublisherInterface $outbox,
         private FicheImageUploader $imageUploader,
@@ -61,6 +62,7 @@ final readonly class RestaurantAdminManager
             }
             $this->uploadDocuments($form, 'menus', DocumentUsage::RestaurantMenu, $restaurant, $documents, $actor);
             $this->uploadDocuments($form, 'supportsCommerciaux', DocumentUsage::CommercialSupport, $restaurant, $documents, $actor);
+            $this->depotAdministratif->deposer($form, $restaurant, $documents);
             foreach (array_diff($existingMediaIds, $this->photoAssetIds($restaurant)) as $removed) {
                 if ('' !== $removed) { $this->outbox->enqueue(new DeleteMedia($removed)); }
             }

@@ -24,7 +24,9 @@ use App\Pim\Entity\Service\ServiceEvenementiel;
 use App\Pim\Entity\SiteDiffusion;
 use App\Pim\Entity\VisibiliteGeoRun;
 use App\Pim\Enum\StatutFiche;
+use App\Pim\Enum\NatureRessource;
 use App\Pim\Enum\TypeFiche;
+use App\Pim\Form\FicheFormCatalog;
 use App\Pim\Form\ActiviteType;
 use App\Pim\Form\AdresseSuggestionFormFactory;
 use App\Pim\Form\EnrichissementSuggestionFormFactory;
@@ -353,6 +355,15 @@ final readonly class FicheEditeurEcran
             $sections[$i]['nb_champs'] = $nb;
         }
         $parSection = $this->completudesParSection($entite);
+        // Onglet Facturation & partenariat : nom du fichier courant sous chaque dropzone.
+        $documentsAdministratifs = [];
+        foreach (FicheFormCatalog::FICHIERS as $champ => [, $usage]) {
+            foreach ($fiche->resources() as $ressource) {
+                if (NatureRessource::Document === $ressource->nature() && $ressource->usage() === $usage->value) {
+                    $documentsAdministratifs[$champ] = $ressource->legende() ?? 'document déposé';
+                }
+            }
+        }
         $lienSection = fn (int $i): string => TypeFiche::Lieu === $type
             ? $this->urls->generate('app_mdm_fiche_lieu', ['id' => $fiche->idString(), 'section' => $i])
             : $this->urls->generate('app_mdm_fiche_gamme', ['gamme' => self::slug($type), 'id' => $fiche->idString(), 'section' => $i]);
@@ -376,6 +387,7 @@ final readonly class FicheEditeurEcran
         return [
             'onglets' => $onglets,
             'sections' => $sections,
+            'documents_administratifs' => $documentsAdministratifs,
             'section' => $section,
             'section_index' => $index,
             'entete' => [

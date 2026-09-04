@@ -6,7 +6,7 @@ namespace App\Pim\Form;
 
 use App\Etl\Repository\FicheSalesforceRepository;
 use App\Pim\Entity\Lieu\Lieu;
-use App\Pim\Entity\Lieu\LieuAdministratif;
+use App\Pim\Entity\FicheAdministratif;
 use App\Pim\Entity\Lieu\LieuTarification;
 use App\Pim\Entity\Localisation;
 use App\Pim\Lov\LieuLovCatalog;
@@ -87,11 +87,11 @@ final class LieuType extends AbstractType
                 'setter' => static function (Lieu &$lieu, ?Localisation $value): void { $lieu->changeLocalisation($value); },
             ])
             ->add('administratif', MethodMappedFieldsType::class, [
-                'mapped_class' => LieuAdministratif::class,
-                'data_class' => LieuAdministratif::class,
-                'fields' => LieuFormCatalog::administrative(),
-                'getter' => static fn (Lieu $lieu): LieuAdministratif => $lieu->administratif(),
-                'setter' => static function (Lieu &$lieu, LieuAdministratif $value): void {},
+                'mapped_class' => FicheAdministratif::class,
+                'data_class' => FicheAdministratif::class,
+                'fields' => FicheFormCatalog::administrative(),
+                'getter' => static fn (Lieu $lieu): FicheAdministratif => $lieu->administratif(),
+                'setter' => static function (Lieu &$lieu, FicheAdministratif $value): void {},
             ])
             ->add('tarification', MethodMappedFieldsType::class, [
                 'mapped_class' => LieuTarification::class,
@@ -107,6 +107,7 @@ final class LieuType extends AbstractType
         $this->collection($builder, 'ressources', RessourceLieuType::class, 'ressources', 'addRessource', 'removeRessource', [
             'salle_choices' => $options['data'] instanceof Lieu ? $options['data']->salles()->toArray() : [],
         ]);
+        FicheFormCatalog::ajouterFichiers($builder);
         $builder->add('submit', SubmitType::class, ['label' => 'Enregistrer']);
         // Bouton « Oui, dépublier » de la modale de l'éditeur : seul ce
         // submitter l'envoie (isClicked), une soumission ordinaire l'ignore.

@@ -68,7 +68,8 @@ final readonly class LieuAdminViewBuilder
         foreach ([
             'plans' => [DocumentUsage::RoomPlan, DocumentUsage::GeneralPlan],
             'supports' => [DocumentUsage::CommercialSupport],
-            'documents' => [DocumentUsage::RseEvidence, DocumentUsage::Urssaf, DocumentUsage::LiabilityInsurance, DocumentUsage::BankDetails, DocumentUsage::FactoringBankDetails, DocumentUsage::Terms, DocumentUsage::Convention],
+            // Les pièces de facturation se déposent dans l'onglet Facturation & partenariat.
+            'documents' => [DocumentUsage::RseEvidence],
         ] as $onglet => $usages) {
             $uploadForms[$onglet] = $this->forms->createNamed('document_upload_'.$onglet, LieuDocumentUploadType::class, null, [
                 'action' => $this->urls->generate('app_pim_lieu_document_upload', ['id' => $lieu->id()]), 'method' => 'POST',

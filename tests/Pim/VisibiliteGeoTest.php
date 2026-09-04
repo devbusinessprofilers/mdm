@@ -263,7 +263,7 @@ final class VisibiliteGeoTest extends WebTestCase
             'pim_fiche_site_diffusion',
             'pim_fiche_attribute_value',
             'pim_fiche_affiliation',
-            'pim_lieu_administratif',
+            'pim_fiche_administratif',
             'pim_lieu_tarification',
             'pim_lieu',
             'pim_restaurant',

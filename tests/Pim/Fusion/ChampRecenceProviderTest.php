@@ -102,7 +102,7 @@ final class ChampRecenceProviderTest extends KernelTestCase
         $this->connection->executeStatement('DELETE FROM audit_revision');
         $this->connection->executeStatement('DELETE FROM pim_ressource_lieu');
         $this->connection->executeStatement('DELETE FROM pim_fiche_attribute_value');
-        $this->connection->executeStatement('DELETE FROM pim_lieu_administratif');
+        $this->connection->executeStatement('DELETE FROM pim_fiche_administratif');
         $this->connection->executeStatement('DELETE FROM pim_lieu_tarification');
         $this->connection->executeStatement('DELETE FROM pim_lieu');
         $this->connection->executeStatement('DELETE FROM pim_fiche');

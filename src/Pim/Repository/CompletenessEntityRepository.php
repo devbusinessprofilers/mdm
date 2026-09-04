@@ -41,7 +41,7 @@ final readonly class CompletenessEntityRepository
         $this->restrictToObjects($qb, 'fiche', $fiches);
         if (TypeFiche::Lieu === $type) {
             $qb->addSelect('administratif', 'tarification')
-                ->leftJoin('entity.administratif', 'administratif')
+                ->leftJoin('fiche.administratif', 'administratif')
                 ->leftJoin('entity.tarification', 'tarification');
         }
         /** @var list<object> $entities */
