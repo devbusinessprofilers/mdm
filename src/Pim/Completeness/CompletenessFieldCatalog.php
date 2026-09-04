@@ -173,6 +173,9 @@ final class CompletenessFieldCatalog
             'PAR_PRESTATION' => ['Tarif par prestation', 'tarifParPrestation'], 'PAR_PERSONNE' => ['Tarif par personne', 'tarifParPersonne'],
             'PAR_JOUR' => ['Tarif par jour', 'tarifParJour'], 'PAR_DEMI_JOURNNEE' => ['Tarif par demi-journée', 'tarifParDemiJournee'],
             'PAR_HEURE' => ['Tarif par heure', 'tarifParHeure'], 'SUR_DEVIS' => ['Sur devis', 'surDevis'],
+            'PMR_ACCES' => ['Accès PMR', 'accesPmr'], 'PMR_MATERIEL_ADAPTE' => ['Matériel ou prestation adaptée aux publics PMR', 'materielAdaptePmr'],
+            'ACCESSIBILITE_GRANDE_VILLE' => ['Accès par la route', 'accesGrandeVille'], 'ACCESSIBILITE_PARKING' => ['Parking(s)', 'accesParking'],
+            'ACCESSIBILITE_GARE' => ['Gare(s)', 'accesGare'], 'ACCESSIBILITE_AEROPORT' => ['Aéroport(s)', 'accesAeroport'],
             'GENERALE_YOUTUBE' => ['Lien vidéo', 'youtubeUrl'], 'PHOTO' => ['Photos', 'ressources'],
         ];
         foreach ($map as $code => [$label, $path]) { $fields[] = $this->field($type, $code, $label, $path); }

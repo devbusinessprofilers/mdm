@@ -313,6 +313,7 @@ final readonly class ServiceEvenementielResource
      * @param list<string>             $departementsMobiles
      * @param array<string,mixed>|null $localisation
      * @param list<LieuMediaResource>  $medias
+     * @param list<array<string, mixed>> $acces
      */
     public function __construct(
         #[ApiProperty(identifier: true)] public string $id,
@@ -354,5 +355,9 @@ final readonly class ServiceEvenementielResource
         public ?bool $surDevis,
         public ?string $youtubeUrl,
         public array $medias,
+        /** Bloc Accessibilité : accès (type, nom, position) et réponses PMR. */
+        public array $acces = [],
+        public ?bool $accesPmr = null,
+        public ?bool $materielAdaptePmr = null,
     ) {}
 }

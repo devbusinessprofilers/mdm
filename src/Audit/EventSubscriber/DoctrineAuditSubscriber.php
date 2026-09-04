@@ -26,6 +26,7 @@ use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Entity\Restaurant\RestaurantAcces;
 use App\Pim\Entity\Restaurant\RestaurantPeriodeFermeture;
 use App\Pim\Entity\Restaurant\RestaurantSalle;
+use App\Pim\Entity\Service\ServiceAcces;
 use App\Pim\Enum\NatureRessource;
 use Doctrine\Bundle\DoctrineBundle\Attribute\AsDoctrineListener;
 use Doctrine\ORM\Event\OnFlushEventArgs;
@@ -67,6 +68,7 @@ final readonly class DoctrineAuditSubscriber
         RestaurantSalle::class,
         RestaurantPeriodeFermeture::class,
         RestaurantAcces::class,
+        ServiceAcces::class,
         OffreActivite::class,
         Localisation::class,
         LieuAdministratif::class,
@@ -436,6 +438,9 @@ final readonly class DoctrineAuditSubscriber
         ) {
             return $entity->restaurant()?->fiche();
         }
+        if ($entity instanceof ServiceAcces) {
+            return $entity->service()?->fiche();
+        }
         $fiche =
             $entity instanceof Fiche
                 ? $entity
@@ -586,6 +591,11 @@ final readonly class DoctrineAuditSubscriber
                 $field,
             ),
             $entity instanceof RestaurantAcces => sprintf(
+                'acces[%s].%s',
+                $entity->id(),
+                $field,
+            ),
+            $entity instanceof ServiceAcces => sprintf(
                 'acces[%s].%s',
                 $entity->id(),
                 $field,

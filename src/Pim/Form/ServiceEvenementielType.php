@@ -11,6 +11,7 @@ use App\Pim\Entity\Service\ServiceEvenementiel;
 use App\Pim\Enum\ModeInterventionService;
 use App\Pim\Enum\NatureRessource;
 use App\Pim\Lov\ServiceLovCatalog;
+use App\Pim\Service\ServiceEvenementielObligationsPublication;
 use App\Pim\Validation\LienVideo;
 use App\Pim\Validation\ValidationGroups;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -27,6 +28,8 @@ use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Extension\Core\Type\UrlType;
 use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\Form\FormInterface;
+use Symfony\Component\Form\FormView;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\All;
 use Symfony\Component\Validator\Constraints\File;
@@ -84,14 +87,14 @@ final class ServiceEvenementielType extends AbstractType
                 ],
             );
 
-        // Un select de sous-prestations par famille — tous visibles, la
-        // famille figure dans le libellé.
+        // Un select de sous-prestations par famille — tous visibles dans
+        // l'onglet Prestations, libellé = la famille (maquette).
         foreach (ServiceLovCatalog::sousPrestationAttributes() as $attribute => $famille) {
             $builder->add(
                 ServiceLovCatalog::SOUS_PRESTATION_FIELDS[$attribute],
                 ChoiceType::class,
                 [
-                    "label" => "Sous-prestations — ".$famille,
+                    "label" => $famille,
                     "required" => false,
                     "getter" => static fn (
                         ServiceEvenementiel $service,
@@ -122,21 +125,12 @@ final class ServiceEvenementielType extends AbstractType
                     "Description générale",
                     "descriptionGenerale",
                     "changeDescriptionGenerale",
-                ),
+                ) + ["attr" => ["data-suggerer" => true]],
             );
 
+        // Oui / Non maquette : radios, « Non » par défaut (OuiNonType).
         foreach ($this->booleanFields() as $name => [$label, $setter]) {
-            $builder->add(
-                $name,
-                ChoiceType::class,
-                $this->field($label, $name, $setter) + [
-                    "choices" => ["Oui" => true, "Non" => false],
-                    "placeholder" => "Non renseigné",
-                    "choice_value" => static fn(
-                        ?bool $value,
-                    ): string => null === $value ? "" : ($value ? "1" : "0"),
-                ],
-            );
+            $builder->add($name, OuiNonType::class, $this->field($label, $name, $setter));
         }
 
         $builder
@@ -159,6 +153,27 @@ final class ServiceEvenementielType extends AbstractType
                     "placeholder" => "Choisir…",
                 ],
             )
+            ->add("acces", CollectionType::class, [
+                "label" => "Accès",
+                "help" => "Ajouter jusqu'à 3 options par catégorie de transports.",
+                "entry_type" => ServiceAccesType::class,
+                "allow_add" => true,
+                "allow_delete" => true,
+                "by_reference" => false,
+                "prototype" => true,
+                "getter" => static fn (ServiceEvenementiel $service): Collection => $service->acces(),
+                "setter" => static function (ServiceEvenementiel &$service, iterable $submitted): void {
+                    $submitted = is_array($submitted) ? $submitted : iterator_to_array($submitted);
+                    foreach ($service->acces()->toArray() as $existing) {
+                        if (!in_array($existing, $submitted, true)) {
+                            $service->removeAcces($existing);
+                        }
+                    }
+                    foreach ($submitted as $item) {
+                        $service->addAcces($item);
+                    }
+                },
+            ])
             ->add("localisation", LocalisationType::class, [
                 "label" => "Localisation fixe",
                 "required" => false,
@@ -177,7 +192,7 @@ final class ServiceEvenementielType extends AbstractType
                 "paysMobiles",
                 StringListType::class,
                 $this->field(
-                    "Pays mobiles",
+                    "Pays",
                     "paysMobiles",
                     "changePaysMobiles",
                 ) + ["help" => "Un pays par ligne."],
@@ -186,7 +201,7 @@ final class ServiceEvenementielType extends AbstractType
                 "regionsMobiles",
                 StringListType::class,
                 $this->field(
-                    "Régions mobiles",
+                    "Région(s)",
                     "regionsMobiles",
                     "changeRegionsMobiles",
                 ) + ["help" => "Une région par ligne."],
@@ -195,7 +210,7 @@ final class ServiceEvenementielType extends AbstractType
                 "departementsMobiles",
                 StringListType::class,
                 $this->field(
-                    "Départements mobiles",
+                    "Département(s)",
                     "departementsMobiles",
                     "changeDepartementsMobiles",
                 ) + ["help" => "Un département par ligne."],
@@ -203,8 +218,8 @@ final class ServiceEvenementielType extends AbstractType
 
         foreach (
             [
-                "participantsMin" => ["Prestation à partir de (personnes)", "changeParticipantsMin"],
-                "participantsMax" => ["Prestation jusqu'à (personnes)", "changeParticipantsMax"],
+                "participantsMin" => ["Prestation à partir de combien de personnes ?", "changeParticipantsMin"],
+                "participantsMax" => ["Prestation jusqu'à combien de personnes ?", "changeParticipantsMax"],
                 "dureeMinutes" => ["Durée de la prestation (minutes)", "changeDureeMinutes"],
             ] as $name => [$label, $setter]
         ) {
@@ -318,62 +333,65 @@ final class ServiceEvenementielType extends AbstractType
         ]);
     }
 
-    /** @return array<string, array{string, string}> */
+    /**
+     * Astérisque permanent des champs bloquants à la soumission (marqueur
+     * `obligatoire` lu par le thème de l'éditeur, jamais l'option `required`).
+     *
+     * @param FormView             $view
+     * @param FormInterface<mixed> $form
+     * @param array<string, mixed> $options
+     */
+    public function finishView(FormView $view, FormInterface $form, array $options): void
+    {
+        ServiceEvenementielObligationsPublication::marquer($view);
+    }
+
+    /** @return array<string, array{string, string}> Libellés maquette portail. */
     private function booleanFields(): array
     {
         return [
-            "prestataireEsat" => ["Prestataire ESAT", "changePrestataireEsat"],
-            "demarcheRse" => [
-                "Engagé dans une démarche RSE",
-                "changeDemarcheRse",
-            ],
+            "prestataireEsat" => ["Êtes-vous un prestataire ESAT ?", "changePrestataireEsat"],
+            "demarcheRse" => ["Êtes-vous un prestataire RSE ?", "changeDemarcheRse"],
             "adapteFemmesEnceintes" => [
-                "Adapté aux femmes enceintes",
+                "Votre prestation est-elle adaptée aux femmes enceintes ?",
                 "changeAdapteFemmesEnceintes",
             ],
             "adapteMalentendants" => [
-                "Adapté aux personnes malentendantes",
+                "Votre prestation est-elle adaptée aux personnes malentendantes ?",
                 "changeAdapteMalentendants",
             ],
             "adapteMalvoyants" => [
-                "Adapté aux personnes malvoyantes",
+                "Votre prestation est-elle adaptée aux personnes malvoyantes ?",
                 "changeAdapteMalvoyants",
             ],
-            "materielInclus" => ["Matériel inclus", "changeMaterielInclus"],
+            "materielInclus" => ["Y a-t-il du matériel fourni ?", "changeMaterielInclus"],
+            "contraintesLogistiques" => [
+                "Y a-t-il des contraintes logistiques ?",
+                "changeContraintesLogistiques",
+            ],
             "equipementParticipantsRequis" => [
-                "Équipement requis pour les participants",
+                "Y a-t-il des équipements à prévoir par les participants ?",
                 "changeEquipementParticipantsRequis",
             ],
             "equipementReceptionRequis" => [
-                "Équipement requis dans l’espace de réception",
+                "Y a-t-il des équipements à prévoir sur l'espace de réception ?",
                 "changeEquipementReceptionRequis",
             ],
-            "contraintesLogistiques" => [
-                "Contraintes logistiques à prévoir",
-                "changeContraintesLogistiques",
-            ],
-            "surDevis" => ["Tarification sur devis", "changeSurDevis"],
+            "accesPmr" => ["Accès PMR", "changeAccesPmr"],
+            "materielAdaptePmr" => ["Matériel ou prestation adaptée aux publics PMR", "changeMaterielAdaptePmr"],
+            "surDevis" => ["Sur devis", "changeSurDevis"],
         ];
     }
 
-    /** @return array<string, array{string, string}> */
+    /** @return array<string, array{string, string}> Libellés maquette portail. */
     private function tariffFields(): array
     {
         return [
-            "tarifParPrestation" => [
-                "Tarif par prestation",
-                "changeTarifParPrestation",
-            ],
-            "tarifParPersonne" => [
-                "Tarif par personne",
-                "changeTarifParPersonne",
-            ],
-            "tarifParJour" => ["Tarif par jour", "changeTarifParJour"],
-            "tarifParDemiJournee" => [
-                "Tarif par demi-journée",
-                "changeTarifParDemiJournee",
-            ],
-            "tarifParHeure" => ["Tarif par heure", "changeTarifParHeure"],
+            "tarifParPrestation" => ["Par prestation", "changeTarifParPrestation"],
+            "tarifParPersonne" => ["Par personne", "changeTarifParPersonne"],
+            "tarifParJour" => ["Par jour", "changeTarifParJour"],
+            "tarifParDemiJournee" => ["Par demi journée", "changeTarifParDemiJournee"],
+            "tarifParHeure" => ["Par heure", "changeTarifParHeure"],
         ];
     }
 

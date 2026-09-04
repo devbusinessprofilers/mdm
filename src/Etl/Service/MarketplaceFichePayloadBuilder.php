@@ -437,6 +437,14 @@ final readonly class MarketplaceFichePayloadBuilder
             ],
             'demarcheRse' => $service->demarcheRse(),
             'prestataireEsat' => $service->prestataireEsat(),
+            // Bloc Accessibilité (maquette portail) : accès et réponses PMR.
+            'acces' => array_values(array_map(static fn ($acces): array => [
+                'type' => $acces->type()->value,
+                'nom' => $acces->nom(),
+                'position' => $acces->position(),
+            ], $service->acces()->toArray())),
+            'accesPmr' => $service->accesPmr(),
+            'materielAdaptePmr' => $service->materielAdaptePmr(),
         ];
     }
 

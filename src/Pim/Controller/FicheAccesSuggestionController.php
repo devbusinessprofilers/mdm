@@ -46,7 +46,7 @@ final class FicheAccesSuggestionController extends AbstractController
         $gamme = is_string($data['gamme'] ?? null) ? $data['gamme'] : '';
         $id = is_string($data['id'] ?? null) ? $data['id'] : '';
         $exclus = array_values(array_filter((array) ($data['exclus'] ?? []), is_string(...)));
-        if (!in_array($gamme, ['lieux', 'restaurants'], true)) {
+        if (!in_array($gamme, ['lieux', 'restaurants', 'services'], true)) {
             return $this->json(['error' => 'Cette gamme n\'a pas de bloc Accès.'], 400);
         }
 
@@ -57,7 +57,9 @@ final class FicheAccesSuggestionController extends AbstractController
         $this->denyAccessUnlessGranted(FicheVoter::EDIT, $entite->fiche());
 
         try {
-            $suggestions = $suggesteur->suggerer($entite->fiche(), $exclus, 'lieux' === $gamme);
+            // Le Service n'a que route / parking / gare / aéroport (TypeAccesService).
+            $types = 'services' === $gamme ? AccesSuggesteur::TYPES_SERVICE : AccesSuggesteur::TYPES_LIEU;
+            $suggestions = $suggesteur->suggerer($entite->fiche(), $exclus, 'lieux' === $gamme, $types);
         } catch (\DomainException $exception) {
             return $this->json(['error' => $exception->getMessage()], 422);
         }

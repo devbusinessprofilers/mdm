@@ -120,12 +120,9 @@ final class FicheGammeEditeurTest extends WebTestCase
         $crawler = $client->request('GET', '/referentiel/activites/fiche/'.$activite->id());
         self::assertResponseIsSuccessful();
         self::assertGreaterThanOrEqual(7, $crawler->filter('nav[aria-label="Sections de la fiche"] li')->count());
-        $client->request('GET', '/referentiel/services/fiche/'.$service->id().'?section=1');
+        $crawler = $client->request('GET', '/referentiel/services/fiche/'.$service->id().'?section=1');
         self::assertResponseIsSuccessful();
-        // Le rail des sections vit désormais dans son propre créneau (coquille front),
-        // hors du <main> : on y retrouve le titre de la section « Localisation & zone
-        // d'intervention », preuve que l'éditeur Service rend bien toutes ses sections.
-        self::assertSelectorTextContains('nav[aria-label="Sections de la fiche"]', 'zone d\'intervention');
+        $this->assertEditeurServiceIsoMaquette($crawler);
     }
 
     // Le dépôt de supports commerciaux passe par le formulaire principal de la
@@ -239,7 +236,7 @@ final class FicheGammeEditeurTest extends WebTestCase
             $radios = $crawler->filter(sprintf('input[type="radio"][name="restaurant[%s]"]', $champ));
             self::assertCount(2, $radios, $champ);
             self::assertSame(['1', '0'], $radios->each(static fn (Crawler $r): string => (string) $r->attr('value')));
-            self::assertSame([false, true], $radios->each(static fn (Crawler $r): bool => (bool) $r->getNode(0)?->hasAttribute('checked')), $champ);
+            self::assertSame([false, true], $radios->each(static fn (Crawler $r): bool => ($n = $r->getNode(0)) instanceof \DOMElement && $n->hasAttribute('checked')), $champ);
         }
         self::assertStringNotContainsString('Non renseigné', $crawler->filter('#form-fiche')->text());
         // Toilettes PMR conditionnées par Accès PMR = Oui.
@@ -262,6 +259,56 @@ final class FicheGammeEditeurTest extends WebTestCase
         self::assertStringContainsString('Accès par la route', (string) $crawler->filter('#form-fiche section[data-volet="1"] [data-form-collection-prototype-value]')->first()->attr('data-form-collection-prototype-value'));
     }
 
+    /** Onglets, cartes et champs du Service événementiel dans l'ordre de la maquette. */
+    private function assertEditeurServiceIsoMaquette(Crawler $crawler): void
+    {
+        $rail = $crawler->filter('nav[aria-label="Sections de la fiche"] li')->each(static fn (Crawler $li): string => trim(preg_replace('/\s*\d+ %$/', '', $li->text(null, true)) ?? ''));
+        self::assertSame(
+            ['Informations générales', 'Localisation & accessibilité', 'Prestations', 'Tarifs', 'Médias', 'Booster ma visibilité', 'Utilisateurs', 'Templates de message'],
+            $rail,
+        );
+        $cartes = static fn (int $volet): array => $crawler->filter(sprintf('#form-fiche section[data-volet="%d"] h2', $volet))->each(static fn (Crawler $h2): string => $h2->text(null, true));
+        self::assertSame(['Informations générales', 'Description générale', 'Prestations', 'Matériel'], $cartes(0));
+        self::assertSame(['Localisation', 'Zone d\'intervention principale', 'Accessibilité', 'Détails des accès PMR'], $cartes(1));
+        self::assertSame(['Prestations'], $cartes(2));
+        self::assertSame(['Tarifs'], $cartes(3));
+
+        $libelles = static fn (int $volet): array => $crawler->filter(sprintf('#form-fiche section[data-volet="%d"] label', $volet))
+            ->each(static fn (Crawler $l): string => preg_replace('/\s+/', ' ', $l->text(null, true)) ?? '');
+        $sansRadios = static fn (array $l): array => array_values(array_filter($l, static fn (string $t): bool => !in_array($t, ['Oui', 'Non', ''], true) && !str_starts_with($t, 'Select ')));
+        $infos = $sansRadios($libelles(0));
+        self::assertSame('Nom du prestataire *', $infos[0]);
+        self::assertSame(['Êtes-vous un prestataire ESAT ?', 'Êtes-vous un prestataire RSE ?'], array_slice($infos, 1, 2));
+        self::assertContains('Description générale *', $infos);
+        self::assertContains('Votre prestation est-elle adaptée aux femmes enceintes ?', $infos);
+        self::assertContains('Y a-t-il des contraintes logistiques ?', $infos);
+        self::assertLessThan(array_search('Y a-t-il des équipements à prévoir par les participants ?', $infos, true), array_search('Y a-t-il des contraintes logistiques ?', $infos, true));
+        $localisation = $sansRadios($libelles(1));
+        self::assertSame(['Rayon d’action *', 'Pays *', 'Rue *', 'Code postal *', 'Ville *', 'Arrondissement *', 'Département *', 'Région *', 'Latitude *', 'Longitude *', 'Code pays ISO', 'Région(s) *', 'Département(s) *', 'Pays *'], array_slice($localisation, 0, 14));
+        self::assertContains('Matériel ou prestation adaptée aux publics PMR', $localisation);
+        $prestations = $sansRadios($libelles(2));
+        self::assertSame(['Prestations *', 'Accueil et sécurité', 'Cadeaux clients & Goodies', 'Communication & Publicité', 'Technique & Audiovisuel', 'Son & Vidéo', 'Animations & Artistes', 'Traduction & Interprétariat', 'Transports & Logistique', 'Traiteurs', 'Divers & Sur-mesure', 'Digital & Hybride'], $prestations);
+        self::assertSame(['Par prestation *', 'Par personne *', 'Par jour *', 'Par demi journée *', 'Par heure *', 'Sur devis'], $sansRadios($libelles(3)));
+        self::assertStringNotContainsString('Sous-prestations —', $crawler->filter('#form-fiche')->text());
+
+        // Oui/Non en radios « Non » par défaut ; matériel PMR conditionné à Accès PMR.
+        foreach (['prestataireEsat', 'demarcheRse', 'surDevis', 'accesPmr', 'materielAdaptePmr'] as $champ) {
+            $radios = $crawler->filter(sprintf('input[type="radio"][name="service_evenementiel[%s]"]', $champ));
+            self::assertCount(2, $radios, $champ);
+            self::assertSame([false, true], $radios->each(static fn (Crawler $r): bool => ($n = $r->getNode(0)) instanceof \DOMElement && $n->hasAttribute('checked')), $champ);
+        }
+        $cible = $crawler->filter('[data-affichage-conditionnel-target="cible"][data-source="service_evenementiel_accesPmr"]');
+        self::assertCount(1, $cible);
+        self::assertGreaterThan(0, $cible->filter('input[name="service_evenementiel[materielAdaptePmr]"]')->count());
+        // Collection d'accès : quatre types maquette, bouton de suggestion.
+        $prototype = (string) $crawler->filter('#form-fiche section[data-volet="1"] [data-form-collection-prototype-value]')->first()->attr('data-form-collection-prototype-value');
+        foreach (['Accès par la route', 'Parking(s)', 'Gare(s)', 'Aéroport(s)'] as $type) {
+            self::assertStringContainsString($type, $prototype);
+        }
+        self::assertStringNotContainsString('Métro', $prototype);
+        self::assertStringContainsString('Suggérer les accès', implode(' ', $crawler->filter('#form-fiche section[data-volet="1"]')->each(static fn (Crawler $s): string => $s->text(null, true))));
+    }
+
     private function clearTables(): void
     {
         $this->connection->executeStatement('DELETE FROM pim_fiche_site_diffusion');
@@ -275,6 +322,7 @@ final class FicheGammeEditeurTest extends WebTestCase
         $this->connection->executeStatement('DELETE FROM pim_restaurant_salle');
         $this->connection->executeStatement('DELETE FROM pim_restaurant_periode_fermeture');
         $this->connection->executeStatement('DELETE FROM pim_restaurant_acces');
+        $this->connection->executeStatement('DELETE FROM pim_service_acces');
         $this->connection->executeStatement('DELETE FROM pim_activite_offre');
         $this->connection->executeStatement('DELETE FROM pim_restaurant');
         $this->connection->executeStatement('DELETE FROM pim_activite');

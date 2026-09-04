@@ -174,6 +174,22 @@ final class ServiceEvenementielPatchInput
         $this->payload["youtubeUrl"] = $value;
     }
 
+    /** @param list<array<string, mixed>> $value */
+    public function setAcces(array $value): void
+    {
+        $this->payload["acces"] = $value;
+    }
+
+    public function setAccesPmr(?bool $value): void
+    {
+        $this->payload["accesPmr"] = $value;
+    }
+
+    public function setMaterielAdaptePmr(?bool $value): void
+    {
+        $this->payload["materielAdaptePmr"] = $value;
+    }
+
     /** @return array<string, mixed> */
     public function payload(): array
     {

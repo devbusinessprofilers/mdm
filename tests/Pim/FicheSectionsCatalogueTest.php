@@ -71,4 +71,21 @@ final class FicheSectionsCatalogueTest extends TestCase
         self::assertSame(['capaciteAssiseMax', 'capaciteEspacePrivatisable', 'capaciteBanquet', 'capaciteCocktail', 'salles'], $capacites['champs']);
         self::assertSame(7, FicheSectionsCatalogue::indexBloc(TypeFiche::Restaurant, 'medias'));
     }
+
+    public function testLesOngletsServiceSuiventLaMaquette(): void
+    {
+        $titres = array_column(FicheSectionsCatalogue::pour(TypeFiche::ServiceEvenementiel), 'titre');
+
+        self::assertSame(
+            ['Informations générales', 'Localisation & accessibilité', 'Prestations', 'Tarifs', 'Médias', 'Booster ma visibilité', 'Utilisateurs', 'Templates de message'],
+            $titres,
+        );
+        // Les onglets fondus dans Informations générales gardent leurs champs (RSE, description, accessibilité).
+        $infos = FicheSectionsCatalogue::section(TypeFiche::ServiceEvenementiel, 0);
+        self::assertContains('demarcheRse', $infos['champs']);
+        self::assertContains('descriptionGenerale', $infos['champs']);
+        self::assertContains('salesforce', $infos['blocs']);
+        self::assertSame(['Informations générales', 'Description générale', 'Prestations', 'Matériel'], array_map(static fn (array $c): string => $c['titre'] ?? 'Informations générales', $infos['cartes'] ?? []));
+        self::assertContains('acces', FicheSectionsCatalogue::section(TypeFiche::ServiceEvenementiel, 1)['champs']);
+    }
 }

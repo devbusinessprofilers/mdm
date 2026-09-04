@@ -87,6 +87,17 @@ final readonly class ServiceEvenementielApiMapper
                 ),
                 $this->photos->photos($fiche),
             ),
+            array_values(array_map(
+                static fn ($access): array => [
+                    'id' => $access->id(),
+                    'type' => $access->type()->value,
+                    'nom' => $access->nom(),
+                    'position' => $access->position(),
+                ],
+                $service->acces()->toArray(),
+            )),
+            $service->accesPmr(),
+            $service->materielAdaptePmr(),
         );
     }
 

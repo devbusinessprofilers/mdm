@@ -9,11 +9,13 @@ use App\Pim\Entity\Fiche;
 use App\Pim\Entity\Lieu\RessourceLieu;
 use App\Pim\Entity\Localisation;
 use App\Pim\Enum\ModeInterventionService;
+use App\Pim\Enum\TypeAccesService;
 use App\Pim\Enum\TypeFiche;
 use App\Pim\Lov\ServiceLovCatalog;
 use App\Pim\Repository\ServiceEvenementielRepository;
 use App\Pim\Validation\ValidServiceEvenementiel;
 use App\Shared\Entity\TimestampableTrait;
+use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
@@ -77,6 +79,18 @@ class ServiceEvenementiel
     #[ORM\Column(nullable: true)]
     private ?bool $contraintesLogistiques = null;
 
+    // Bloc « Détails des accès PMR » (maquette portail) : null = Non.
+    #[ORM\Column(nullable: true)]
+    private ?bool $accesPmr = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?bool $materielAdaptePmr = null;
+
+    /** @var Collection<int, ServiceAcces> */
+    #[ORM\OneToMany(mappedBy: 'service', targetEntity: ServiceAcces::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
+    #[ORM\OrderBy(['type' => 'ASC', 'position' => 'ASC', 'id' => 'ASC'])]
+    private Collection $acces;
+
     // CDC « Prestation à partir de / jusqu'à combien de personnes ».
     #[ORM\Column(nullable: true)]
     private ?int $participantsMin = null;
@@ -134,6 +148,7 @@ class ServiceEvenementiel
     {
         $this->id = new Ulid();
         $this->fiche = new Fiche(TypeFiche::ServiceEvenementiel, $this->id);
+        $this->acces = new ArrayCollection();
         $this->initializeTimestamps();
     }
 
@@ -387,6 +402,82 @@ class ServiceEvenementiel
         ?ModeInterventionService $value,
     ): void {
         $this->set("modeIntervention", $value);
+    }
+
+    public function accesPmr(): ?bool
+    {
+        return $this->accesPmr;
+    }
+
+    public function changeAccesPmr(?bool $value): void
+    {
+        $this->set("accesPmr", $value);
+    }
+
+    public function materielAdaptePmr(): ?bool
+    {
+        return $this->materielAdaptePmr;
+    }
+
+    public function changeMaterielAdaptePmr(?bool $value): void
+    {
+        $this->set("materielAdaptePmr", $value);
+    }
+
+    /** @return Collection<int, ServiceAcces> */
+    public function acces(): Collection
+    {
+        return $this->acces;
+    }
+
+    /** @return list<ServiceAcces> */
+    public function accesParType(TypeAccesService $type): array
+    {
+        return array_values(array_filter(
+            $this->acces->toArray(),
+            static fn (ServiceAcces $acces): bool => $acces->type() === $type,
+        ));
+    }
+
+    /** @return list<ServiceAcces> */
+    public function accesGrandeVille(): array
+    {
+        return $this->accesParType(TypeAccesService::GrandeVille);
+    }
+
+    /** @return list<ServiceAcces> */
+    public function accesParking(): array
+    {
+        return $this->accesParType(TypeAccesService::Parking);
+    }
+
+    /** @return list<ServiceAcces> */
+    public function accesGare(): array
+    {
+        return $this->accesParType(TypeAccesService::Gare);
+    }
+
+    /** @return list<ServiceAcces> */
+    public function accesAeroport(): array
+    {
+        return $this->accesParType(TypeAccesService::Aeroport);
+    }
+
+    public function addAcces(ServiceAcces $value): void
+    {
+        if (!$this->acces->contains($value)) {
+            $this->acces->add($value);
+            $value->attachTo($this);
+            $this->touch();
+        }
+    }
+
+    public function removeAcces(ServiceAcces $value): void
+    {
+        if ($this->acces->removeElement($value)) {
+            $value->detachFrom($this);
+            $this->touch();
+        }
     }
 
     /** @return list<string> */

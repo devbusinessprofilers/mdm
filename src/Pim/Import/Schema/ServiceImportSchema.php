@@ -5,14 +5,18 @@ declare(strict_types=1);
 namespace App\Pim\Import\Schema;
 
 use App\Pim\Entity\Fiche;
+use App\Pim\Entity\Service\ServiceAcces;
 use App\Pim\Entity\Service\ServiceEvenementiel;
 use App\Pim\Enum\ModeInterventionService;
+use App\Pim\Enum\TypeAccesService;
 use App\Pim\Enum\TypeFiche;
 use App\Pim\Lov\ServiceLovCatalog;
 use App\Pim\Repository\ServiceEvenementielRepository;
 
 final class ServiceImportSchema extends AbstractFicheImportSchema
 {
+    public const MAX_ACCES = 12;
+
     public function __construct(private readonly ServiceEvenementielRepository $services)
     {
     }
@@ -45,6 +49,8 @@ final class ServiceImportSchema extends AbstractFicheImportSchema
             $this->list('paysMobiles'),
             $this->list('regionsMobiles'),
             $this->list('departementsMobiles'),
+            $this->boolNull('accesPmr'),
+            $this->boolNull('materielAdaptePmr'),
             $this->float('tarifParPrestation'),
             $this->float('tarifParPersonne'),
             $this->float('tarifParJour'),
@@ -57,7 +63,12 @@ final class ServiceImportSchema extends AbstractFicheImportSchema
 
     public function collections(): array
     {
-        return [];
+        return [
+            new CollectionSchema('acces', self::MAX_ACCES, ServiceAcces::class, 'addAcces', 'acces', [
+                new ColumnDefinition('type', ColumnKind::Enum, 'type', enumClass: TypeAccesService::class, required: true, nullable: false),
+                new ColumnDefinition('nom', ColumnKind::Text, 'nom', required: true, nullable: false),
+            ]),
+        ];
     }
 
     public function lovChoices(): array

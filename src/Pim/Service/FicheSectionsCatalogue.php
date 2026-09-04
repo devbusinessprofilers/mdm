@@ -47,7 +47,7 @@ final class FicheSectionsCatalogue
         };
     }
 
-    /** @return array{titre: string, champs: list<string>, proprietes: list<string>, blocs: list<string>} */
+    /** @return array{titre: string, champs: list<string>, proprietes: list<string>, blocs: list<string>, groupe?: string, cartes?: list<array<string, mixed>>} */
     public static function section(TypeFiche $type, int $index): array
     {
         return self::pour($type)[$index] ?? self::pour($type)[0];
@@ -445,44 +445,59 @@ final class FicheSectionsCatalogue
         ];
     }
 
-    /** @return list<array{titre: string, champs: list<string>, proprietes: list<string>, blocs: list<string>, groupe?: string}> */
+    /**
+     * Onglets de la maquette portail prestataire (Service événementiel) :
+     * Description, Prestation & accessibilité et RSE fondus dans
+     * Informations générales, onglet Prestations créé pour les
+     * sous-prestations, accès + PMR ajoutés à Localisation & accessibilité.
+     *
+     * @return list<array{titre: string, champs: list<string>, proprietes: list<string>, blocs: list<string>, groupe?: string, cartes?: list<array<string, mixed>>}>
+     */
     private static function service(): array
     {
         return [
             [
                 'titre' => 'Informations générales',
-                'champs' => ['label', 'prestations', ...array_values(ServiceLovCatalog::SOUS_PRESTATION_FIELDS), 'businessPremium', 'partenaireBp', 'prestataireEsat'],
-                'proprietes' => ['label', 'prestations', 'sousPrestations', 'prestataireEsat'],
-                'blocs' => [],
-                'groupe' => 'ma_fiche',
-            ],
-            [
-                'titre' => 'Localisation & zone d\'intervention',
-                'champs' => ['modeIntervention', 'localisation', 'paysMobiles', 'regionsMobiles', 'departementsMobiles'],
-                'proprietes' => ['modeIntervention', 'localisation', 'paysMobiles', 'regionsMobiles', 'departementsMobiles'],
-                'blocs' => [],
-                'groupe' => 'ma_fiche',
-            ],
-            [
-                'titre' => 'Prestation & accessibilité',
-                'champs' => ['participantsMin', 'participantsMax', 'dureeMinutes', 'adapteFemmesEnceintes', 'adapteMalentendants', 'adapteMalvoyants', 'materielInclus', 'equipementParticipantsRequis', 'equipementReceptionRequis', 'contraintesLogistiques'],
-                'proprietes' => ['participantsMin', 'participantsMax', 'dureeMinutes', 'adapteFemmesEnceintes', 'adapteMalentendants', 'adapteMalvoyants', 'materielInclus', 'equipementParticipantsRequis', 'equipementReceptionRequis', 'contraintesLogistiques'],
-                'blocs' => [],
-                'groupe' => 'ma_fiche',
-            ],
-            [
-                'titre' => 'Description',
-                'champs' => ['descriptionGenerale'],
-                'proprietes' => ['descriptionGenerale'],
-                'blocs' => [],
-                'groupe' => 'ma_fiche',
-            ],
-            [
-                'titre' => 'RSE',
-                'champs' => ['demarcheRse'],
-                'proprietes' => ['demarcheRse'],
+                'champs' => ['label', 'prestataireEsat', 'demarcheRse', 'businessPremium', 'partenaireBp', 'descriptionGenerale', 'adapteFemmesEnceintes', 'adapteMalentendants', 'adapteMalvoyants', 'participantsMin', 'participantsMax', 'dureeMinutes', 'materielInclus', 'contraintesLogistiques', 'equipementParticipantsRequis', 'equipementReceptionRequis'],
+                'proprietes' => ['label', 'prestataireEsat', 'demarcheRse', 'descriptionGenerale', 'adapteFemmesEnceintes', 'adapteMalentendants', 'adapteMalvoyants', 'participantsMin', 'participantsMax', 'dureeMinutes', 'materielInclus', 'contraintesLogistiques', 'equipementParticipantsRequis', 'equipementReceptionRequis'],
+                // Les notes RSE Salesforce (lecture seule) suivent l'onglet RSE fondu ici.
                 'blocs' => ['salesforce'],
                 'groupe' => 'ma_fiche',
+                'cartes' => [
+                    ['titre' => null, 'champs' => ['label', 'prestataireEsat', 'demarcheRse', 'businessPremium', 'partenaireBp'], 'colonnes' => 3, 'pleins' => ['label']],
+                    ['titre' => 'Description générale', 'champs' => ['descriptionGenerale'], 'colonnes' => 2],
+                    ['titre' => 'Prestations', 'champs' => ['adapteFemmesEnceintes', 'adapteMalentendants', 'adapteMalvoyants', 'participantsMin', 'participantsMax', 'dureeMinutes'], 'colonnes' => 3],
+                    ['titre' => 'Matériel', 'champs' => ['materielInclus', 'contraintesLogistiques', 'equipementParticipantsRequis', 'equipementReceptionRequis'], 'colonnes' => 3],
+                ],
+            ],
+            [
+                'titre' => 'Localisation & accessibilité',
+                'champs' => ['modeIntervention', 'localisation', 'regionsMobiles', 'departementsMobiles', 'paysMobiles', 'acces', 'accesPmr', 'materielAdaptePmr'],
+                'proprietes' => ['modeIntervention', 'localisation', 'paysMobiles', 'regionsMobiles', 'departementsMobiles', 'acces', 'accesPmr', 'materielAdaptePmr'],
+                'blocs' => [],
+                'groupe' => 'ma_fiche',
+                'cartes' => [
+                    // Le rayon d'action (MDM) ouvre la carte, puis l'adresse maquette.
+                    ['titre' => 'Localisation', 'champs' => ['modeIntervention', ...self::carteLocalisation()['champs']], 'colonnes' => 3, 'pleins' => ['modeIntervention', 'localisation.pays']],
+                    ['titre' => 'Zone d\'intervention principale', 'champs' => ['regionsMobiles', 'departementsMobiles', 'paysMobiles'], 'colonnes' => 2],
+                    ['titre' => 'Accessibilité', 'champs' => ['acces'], 'colonnes' => 2, 'bloc' => 'collection'],
+                    [
+                        'titre' => 'Détails des accès PMR',
+                        'champs' => ['accesPmr', 'materielAdaptePmr'],
+                        'colonnes' => 2,
+                        'conditions' => ['materielAdaptePmr' => ['source' => 'accesPmr', 'valeurs' => '1', 'vider' => true]],
+                    ],
+                ],
+            ],
+            [
+                'titre' => 'Prestations',
+                'champs' => ['prestations', ...array_values(ServiceLovCatalog::SOUS_PRESTATION_FIELDS)],
+                'proprietes' => ['prestations', 'sousPrestations'],
+                'blocs' => [],
+                'groupe' => 'ma_fiche',
+                'cartes' => [
+                    ['titre' => null, 'champs' => ['prestations', ...array_values(ServiceLovCatalog::SOUS_PRESTATION_FIELDS)], 'colonnes' => 2, 'pleins' => ['prestations']],
+                ],
             ],
             [
                 'titre' => 'Tarifs',
@@ -490,6 +505,9 @@ final class FicheSectionsCatalogue
                 'proprietes' => ['tarifParPrestation', 'tarifParPersonne', 'tarifParJour', 'tarifParDemiJournee', 'tarifParHeure', 'surDevis'],
                 'blocs' => [],
                 'groupe' => 'ma_fiche',
+                'cartes' => [
+                    ['titre' => null, 'champs' => ['tarifParPrestation', 'tarifParPersonne', 'tarifParJour', 'tarifParDemiJournee', 'tarifParHeure', 'surDevis'], 'colonnes' => 3],
+                ],
             ],
             [
                 // Champs de dépôt et lien vidéo rendus dans les onglets

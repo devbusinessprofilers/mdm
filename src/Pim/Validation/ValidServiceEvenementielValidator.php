@@ -153,14 +153,7 @@ final class ValidServiceEvenementielValidator extends ConstraintValidator
             );
         }
 
-        foreach ($this->booleans($value) as $path => $answer) {
-            if (null === $answer) {
-                $this->violation(
-                    "Une réponse Oui ou Non est obligatoire.",
-                    $path,
-                );
-            }
-        }
+        // Plus de réponse Oui/Non exigée : « Non » est la valeur par défaut.
         foreach ($this->tariffs($value) as $path => $amount) {
             if (null === $amount) {
                 $this->violation("Ce tarif en euros est obligatoire.", $path);
@@ -280,22 +273,6 @@ final class ValidServiceEvenementielValidator extends ConstraintValidator
         }
     }
 
-    /** @return array<string, ?bool> */
-    private function booleans(ServiceEvenementiel $value): array
-    {
-        return [
-            "prestataireEsat" => $value->prestataireEsat(),
-            "demarcheRse" => $value->demarcheRse(),
-            "adapteFemmesEnceintes" => $value->adapteFemmesEnceintes(),
-            "adapteMalentendants" => $value->adapteMalentendants(),
-            "adapteMalvoyants" => $value->adapteMalvoyants(),
-            "materielInclus" => $value->materielInclus(),
-            "equipementParticipantsRequis" => $value->equipementParticipantsRequis(),
-            "equipementReceptionRequis" => $value->equipementReceptionRequis(),
-            "contraintesLogistiques" => $value->contraintesLogistiques(),
-            "surDevis" => $value->surDevis(),
-        ];
-    }
 
     /** @return array<string, ?float> */
     private function tariffs(ServiceEvenementiel $value): array
