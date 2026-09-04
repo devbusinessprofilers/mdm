@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace App\Dashboard\Repository;
 
+use App\Pim\Enum\DuplicateReviewStatus;
+use App\Pim\Enum\SuggestionStatut;
 use App\Pim\Enum\TypeFiche;
 use App\Pim\Service\ChaineLovResolution;
 use App\Pim\Service\ReferentielGeographiqueFrancais;
+use App\Shared\Enum\DecisionStatus;
 use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
 use Symfony\Component\Uid\Ulid;
@@ -24,6 +27,9 @@ final readonly class QualiteRepository
         'activite' => 'pim_activite',
         'service_evenementiel' => 'pim_service_evenementiel',
     ];
+
+    /** Une fiche et son adresse : la jointure de tous les blocs « adresses ». */
+    private const JOINTURE_LOCALISATION = 'INNER JOIN pim_localisation loc ON loc.id = f.localisation_id';
 
     public function __construct(private Connection $connection)
     {
@@ -76,17 +82,17 @@ final readonly class QualiteRepository
 
         return [
             'conflits' => (int) $this->connection->fetchOne(
-                "SELECT (SELECT COUNT(*) FROM ocr_suggestion WHERE status = 'pending')
+                "SELECT (SELECT COUNT(*) FROM ocr_suggestion WHERE status = '".DecisionStatus::Pending->value."')
                     + (SELECT COUNT(*) FROM pim_localisation WHERE ban_ecart = 1)
-                    + (SELECT COUNT(*) FROM pim_fiche_suggestion WHERE statut = 'en_attente')",
+                    + (SELECT COUNT(*) FROM pim_fiche_suggestion WHERE statut = '".SuggestionStatut::EnAttente->value."')",
             ),
             'doublons_textes' => (int) $this->connection->fetchOne(
-                "SELECT COUNT(*) FROM pim_text_duplicate_alert WHERE status = 'pending'",
+                "SELECT COUNT(*) FROM pim_text_duplicate_alert WHERE status = '".DuplicateReviewStatus::Pending->value."'",
             ),
             'formes' => $formes['sans_pays'] + $formes['sans_gps'] + $formes['sans_libelle'],
             'notifs' => (int) $this->connection->fetchOne('SELECT COUNT(*) FROM pim_fiche_relance'),
             'decisions' => (int) $this->connection->fetchOne(
-                "SELECT (SELECT COUNT(*) FROM ocr_suggestion WHERE status IN ('accepted', 'rejected'))
+                "SELECT (SELECT COUNT(*) FROM ocr_suggestion WHERE status IN ('".DecisionStatus::Accepted->value."', '".DecisionStatus::Rejected->value."'))
                     + (SELECT COUNT(*) FROM audit_revision WHERE action = 'restore')",
             ),
         ];
@@ -176,65 +182,6 @@ final readonly class QualiteRepository
     }
 
     /**
-     * Écarts relevés par la vérification BAN (score douteux ou CP/ville
-     * proposés différents) : le bloc « Suggestions d'adresse » des conflits.
-     * $avecProposition sépare les écarts arbitrables en un clic (la BAN
-     * propose autre chose) de ceux sans résultat fiable (correction manuelle).
-     *
-     * @return list<array{fiche_id: string, code: int, type: string, label: ?string, adresse: string, source: string, proposition: ?string, score: ?float, quand: ?string}>
-     */
-    public function suggestionsAdresse(int $limit = 20, ?bool $avecProposition = null): array
-    {
-        $rows = $this->connection->fetchAllAssociative(
-            'SELECT f.id, f.code, f.type, f.label,
-                loc.rue_postale, loc.code_postal, loc.ville,
-                loc.country_code, loc.pays,
-                loc.ban_proposition, loc.ban_score, loc.ban_verifie_le
-             FROM pim_fiche f
-             INNER JOIN pim_localisation loc ON loc.id = f.localisation_id
-             WHERE loc.ban_ecart = 1'
-            .match ($avecProposition) {
-                true => ' AND loc.ban_proposition IS NOT NULL',
-                false => ' AND loc.ban_proposition IS NULL',
-                null => '',
-            }.'
-             ORDER BY loc.ban_score IS NULL, loc.ban_score DESC
-             LIMIT '.$limit,
-        );
-
-        return array_map(static function (array $row): array {
-            $proposition = null;
-            if (null !== $row['ban_proposition']) {
-                $decoded = json_decode((string) $row['ban_proposition'], true);
-                if (is_array($decoded)) {
-                    $proposition = trim(sprintf(
-                        '%s %s %s',
-                        $decoded['label'] ?? '',
-                        $decoded['codePostal'] ?? '',
-                        '' !== (string) ($decoded['label'] ?? '') ? '' : ($decoded['ville'] ?? ''),
-                    ));
-                    $proposition = '' === $proposition ? null : $proposition;
-                }
-            }
-
-            return [
-                'fiche_id' => (string) Ulid::fromBinary((string) $row['id']),
-                'code' => (int) $row['code'],
-                'type' => (string) $row['type'],
-                'label' => null === $row['label'] ? null : (string) $row['label'],
-                'adresse' => trim(sprintf('%s, %s %s', $row['rue_postale'] ?? '—', $row['code_postal'] ?? '', $row['ville'] ?? '')),
-                'source' => 'FR' === $row['country_code']
-                    || (null !== $row['pays'] && 'france' === ReferentielGeographiqueFrancais::cle((string) $row['pays']))
-                    ? 'BAN'
-                    : 'Geoapify',
-                'proposition' => $proposition,
-                'score' => null === $row['ban_score'] ? null : (float) $row['ban_score'],
-                'quand' => null === $row['ban_verifie_le'] ? null : (string) $row['ban_verifie_le'],
-            ];
-        }, $rows);
-    }
-
-    /**
      * Effectifs des deux filtres du bloc « Suggestions d'adresse ».
      *
      * @return array{avec: int, sans: int}
@@ -245,7 +192,7 @@ final readonly class QualiteRepository
             'SELECT COALESCE(SUM(loc.ban_proposition IS NOT NULL), 0) AS avec,
                 COALESCE(SUM(loc.ban_proposition IS NULL), 0) AS sans
              FROM pim_fiche f
-             INNER JOIN pim_localisation loc ON loc.id = f.localisation_id
+             '.self::JOINTURE_LOCALISATION.'
              WHERE loc.ban_ecart = 1',
         );
 
@@ -265,7 +212,7 @@ final readonly class QualiteRepository
     public function comptesSuggestionsParSource(): array
     {
         $adresses = (int) $this->connection->fetchOne(
-            'SELECT COUNT(*) FROM pim_fiche f INNER JOIN pim_localisation loc ON loc.id = f.localisation_id WHERE loc.ban_ecart = 1',
+            'SELECT COUNT(*) FROM pim_fiche f '.self::JOINTURE_LOCALISATION.' WHERE loc.ban_ecart = 1',
         );
         /** @var array<string, int> $comptes */
         $comptes = ['adresses' => $adresses];
@@ -300,16 +247,16 @@ final readonly class QualiteRepository
     private function pageAdresses(int $offset, int $taille, string $tri, string $ordreSql): array
     {
         $total = (int) $this->connection->fetchOne(
-            'SELECT COUNT(*) FROM pim_fiche f INNER JOIN pim_localisation loc ON loc.id = f.localisation_id WHERE loc.ban_ecart = 1',
+            'SELECT COUNT(*) FROM pim_fiche f '.self::JOINTURE_LOCALISATION.' WHERE loc.ban_ecart = 1',
         );
         // Tri : par confiance (défaut) ou par code fiche ; les scores nuls en fin.
         $ordreBy = 'code' === $tri
             ? "f.code $ordreSql"
             : "loc.ban_score IS NULL, loc.ban_score $ordreSql";
         $rows = $this->connection->fetchAllAssociative(
-            "SELECT f.id, f.code, f.type, f.label, loc.rue_postale, loc.code_postal, loc.ville,
+            'SELECT f.id, f.code, f.type, f.label, loc.rue_postale, loc.code_postal, loc.ville,
                 loc.country_code, loc.pays, loc.ban_proposition, loc.ban_score, loc.ban_verifie_le
-             FROM pim_fiche f INNER JOIN pim_localisation loc ON loc.id = f.localisation_id
+             FROM pim_fiche f '.self::JOINTURE_LOCALISATION."
              WHERE loc.ban_ecart = 1
              ORDER BY $ordreBy
              LIMIT $taille OFFSET $offset",
@@ -405,7 +352,7 @@ final readonly class QualiteRepository
         $empreintes = $this->connection->fetchFirstColumn(
             'SELECT loc.address_fingerprint
              FROM pim_fiche f
-             INNER JOIN pim_localisation loc ON loc.id = f.localisation_id
+             '.self::JOINTURE_LOCALISATION.'
              WHERE loc.address_fingerprint IS NOT NULL
              GROUP BY loc.address_fingerprint
              HAVING COUNT(*) > 1
@@ -417,7 +364,7 @@ final readonly class QualiteRepository
             $rows = $this->connection->fetchAllAssociative(
                 'SELECT f.id, f.label, loc.ville
                  FROM pim_fiche f
-                 INNER JOIN pim_localisation loc ON loc.id = f.localisation_id
+                 '.self::JOINTURE_LOCALISATION.'
                  WHERE loc.address_fingerprint = :empreinte
                  ORDER BY f.updated_at DESC',
                 ['empreinte' => $empreinte],
@@ -515,12 +462,12 @@ final readonly class QualiteRepository
         return [
             'sans_pays' => (int) $this->connection->fetchOne(
                 'SELECT COUNT(*) FROM pim_fiche f
-                 INNER JOIN pim_localisation loc ON loc.id = f.localisation_id
+                 '.self::JOINTURE_LOCALISATION.'
                  WHERE loc.country_code IS NULL',
             ),
             'sans_gps' => (int) $this->connection->fetchOne(
                 'SELECT COUNT(*) FROM pim_fiche f
-                 INNER JOIN pim_localisation loc ON loc.id = f.localisation_id
+                 '.self::JOINTURE_LOCALISATION.'
                  WHERE loc.latitude IS NULL OR loc.longitude IS NULL',
             ),
             'sans_libelle' => (int) $this->connection->fetchOne(

@@ -112,11 +112,8 @@ final class VerifierAdresseFicheTest extends KernelTestCase
         self::assertNull($ligne['latitude'], 'Pas d\'enrichissement sur une adresse divergente.');
         self::assertSame(1, (int) $ligne['ban_ecart']);
         self::assertStringContainsString('Queyrac', (string) $ligne['ban_proposition']);
-
-        $suggestions = self::getContainer()->get(QualiteRepository::class)->suggestionsAdresse();
-        self::assertCount(1, $suggestions);
-        self::assertSame((int) $code, $suggestions[0]['code']);
-        self::assertStringContainsString('Queyrac', (string) $suggestions[0]['proposition']);
+        // L'écart apparaît dans l'onglet Adresses de l'écran Qualité.
+        self::assertSame(['avec' => 1, 'sans' => 0], self::getContainer()->get(QualiteRepository::class)->comptesSuggestionsAdresse());
     }
 
     public function testUnResultatVideNeLaisseAucunePropositionAArbitrer(): void
