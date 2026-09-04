@@ -67,7 +67,7 @@ final readonly class FusionChampsCatalogue
     }
 
     /**
-     * Path d'audit du champ (convention DoctrineAuditSubscriber::path()),
+     * Path d'audit du champ (convention AuditPath::pour()),
      * pour dater sa dernière modification. Null pour les champs d'union,
      * qui ne demandent pas de présélection.
      */
@@ -83,13 +83,10 @@ final readonly class FusionChampsCatalogue
         return match ($column->targetPath) {
             'localisation', 'administratif', 'tarification' => $column->targetPath.'.'.$column->target,
             self::CIBLE_FICHE => 'fiche.'.$column->target,
-            null => match ($type) {
-                TypeFiche::Lieu => 'lieu.',
-                TypeFiche::Activite => 'activite.',
-                TypeFiche::Restaurant => 'restaurant.',
-                TypeFiche::ServiceEvenementiel => 'service.',
-                TypeFiche::Traiteur => throw new \DomainException('La fusion Traiteur n’est pas disponible.'),
-            }.$column->target,
+            // Préfixe de gamme de AuditPath : le nom court de TypeFiche.
+            null => $type->estOperationnel()
+                ? $type->domaine().'.'.$column->target
+                : throw new \DomainException('La fusion Traiteur n’est pas disponible.'),
             default => throw new \LogicException(sprintf('Chemin cible inattendu « %s » (colonne %s).', $column->targetPath, $column->header)),
         };
     }

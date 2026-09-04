@@ -4,12 +4,10 @@ declare(strict_types=1);
 
 namespace App\Audit\Restore;
 
+use App\Audit\AuditPath;
 use App\Pim\Entity\Activite\Activite;
 use App\Pim\Entity\Fiche;
-use App\Pim\Entity\FicheAdministratif;
 use App\Pim\Entity\Lieu\Lieu;
-use App\Pim\Entity\Lieu\LieuTarification;
-use App\Pim\Entity\Localisation;
 use App\Pim\Entity\Restaurant\Restaurant;
 use App\Pim\Entity\Service\ServiceEvenementiel;
 use Doctrine\ORM\EntityManagerInterface;
@@ -22,17 +20,6 @@ use Doctrine\ORM\EntityManagerInterface;
  */
 final readonly class RestorableFieldCatalog
 {
-    private const PREFIX_CLASSES = [
-        'fiche' => Fiche::class,
-        'lieu' => Lieu::class,
-        'activite' => Activite::class,
-        'service' => ServiceEvenementiel::class,
-        'restaurant' => Restaurant::class,
-        'localisation' => Localisation::class,
-        'administratif' => FicheAdministratif::class,
-        'tarification' => LieuTarification::class,
-    ];
-
     public function __construct(private EntityManagerInterface $entityManager)
     {
     }
@@ -74,26 +61,7 @@ final readonly class RestorableFieldCatalog
     /** @return array{string, string}|null [préfixe, champ] */
     private function parse(string $path): ?array
     {
-        if ('nom' === $path) {
-            return ['fiche', 'label'];
-        }
-        if (
-            'workflow.status' === $path
-            || str_contains($path, '[')
-            || 1 !== substr_count($path, '.')
-        ) {
-            return null;
-        }
-        [$prefix, $field] = explode('.', $path, 2);
-        if (
-            !isset(self::PREFIX_CLASSES[$prefix])
-            || '' === $field
-            || !preg_match('/^[a-zA-Z][a-zA-Z0-9]*$/', $field)
-        ) {
-            return null;
-        }
-
-        return [$prefix, $field];
+        return AuditPath::decoder($path);
     }
 
     private function setterParameter(string $path): ?\ReflectionParameter
@@ -103,7 +71,7 @@ final readonly class RestorableFieldCatalog
             return null;
         }
         [$prefix, $field] = $parsed;
-        $class = self::PREFIX_CLASSES[$prefix];
+        $class = AuditPath::PREFIXES[$prefix];
         $setter = self::setterName($field);
         if (!method_exists($class, $setter)) {
             return null;
@@ -179,7 +147,7 @@ final readonly class RestorableFieldCatalog
             return $fiche;
         }
         $detail = $this->detailFor($fiche);
-        $detailClass = self::PREFIX_CLASSES[$prefix];
+        $detailClass = AuditPath::PREFIXES[$prefix];
         $entity = match ($prefix) {
             'localisation' => $detail->localisation(),
             // Facturation & partenariat : porté par la fiche, toutes gammes.

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Audit\EventSubscriber;
 
 use App\Audit\AuditContext;
+use App\Audit\AuditPath;
 use App\Audit\Entity\AuditChange;
 use App\Audit\Entity\AuditRevision;
 use App\Audit\ValueNormalizer;
@@ -101,63 +102,19 @@ final readonly class DoctrineAuditSubscriber
             'update' => $uow->getScheduledEntityUpdates(),
             'delete' => $uow->getScheduledEntityDeletions(),
         ];
-        $lieux = array_values(
-            array_filter(
-                $uow->getIdentityMap()[Lieu::class] ?? [],
-                static fn (object $entity): bool => $entity instanceof Lieu,
-            ),
-        );
-        foreach ($operations['create'] as $entity) {
-            if ($entity instanceof Lieu) {
-                $lieux[] = $entity;
-            }
-        }
-        $activites = array_values(
-            array_filter(
-                $uow->getIdentityMap()[Activite::class] ?? [],
-                static fn (object $entity): bool => $entity instanceof Activite,
-            ),
-        );
-        foreach ($operations['create'] as $entity) {
-            if ($entity instanceof Activite) {
-                $activites[] = $entity;
-            }
-        }
-        $services = array_values(
-            array_filter(
-                $uow->getIdentityMap()[ServiceEvenementiel::class] ?? [],
-                static fn (object $entity): bool => $entity instanceof ServiceEvenementiel,
-            ),
-        );
-        foreach ($operations['create'] as $entity) {
-            if ($entity instanceof ServiceEvenementiel) {
-                $services[] = $entity;
-            }
-        }
-        $restaurants = array_values(
-            array_filter(
-                $uow->getIdentityMap()[Restaurant::class] ?? [],
-                static fn (object $entity): bool => $entity instanceof Restaurant,
-            ),
-        );
-        foreach ($operations['create'] as $entity) {
-            if ($entity instanceof Restaurant) {
-                $restaurants[] = $entity;
-            }
-        }
-        // Certains chemins (arbitrage d'adresse, vérification au fil de
-        // l'eau) mutent la Localisation sans jamais charger l'entité de
-        // gamme : la fiche elle-même porte l'association et suffit à
-        // rattacher la révision.
-        $fiches = array_values(
-            array_filter(
-                $uow->getIdentityMap()[Fiche::class] ?? [],
-                static fn (object $entity): bool => $entity instanceof Fiche,
-            ),
-        );
-        foreach ($operations['create'] as $entity) {
-            if ($entity instanceof Fiche) {
-                $fiches[] = $entity;
+        // Entités déjà chargées ou créées dans ce flush, par classe : elles
+        // permettent de rattacher une sous-entité (localisation, tarification,
+        // valeur d'attribut) à sa fiche sans requête. Certains chemins
+        // (arbitrage d'adresse, vérification au fil de l'eau) mutent la
+        // Localisation sans jamais charger l'entité de gamme : la fiche
+        // elle-même porte l'association et suffit à rattacher la révision.
+        $charges = [];
+        foreach ([Lieu::class, Activite::class, ServiceEvenementiel::class, Restaurant::class, Fiche::class] as $class) {
+            $charges[$class] = array_values(array_filter($uow->getIdentityMap()[$class] ?? [], static fn (object $entity): bool => $entity instanceof $class));
+            foreach ($operations['create'] as $entity) {
+                if ($entity instanceof $class) {
+                    $charges[$class][] = $entity;
+                }
             }
         }
         /** @var array<string, AuditRevision> $revisions */
@@ -172,14 +129,7 @@ final readonly class DoctrineAuditSubscriber
                 ) {
                     continue;
                 }
-                $fiche = $this->resolveFiche(
-                    $entity,
-                    $lieux,
-                    $activites,
-                    $services,
-                    $restaurants,
-                    $fiches,
-                );
+                $fiche = $this->resolveFiche($entity, $charges);
                 if (null === $fiche) {
                     continue;
                 }
@@ -217,7 +167,7 @@ final readonly class DoctrineAuditSubscriber
                         continue;
                     }
                     $changes[] = [
-                        $this->path($entity, $field),
+                        AuditPath::pour($entity, $field),
                         $this->normalizer->normalize($old),
                         $this->normalizer->normalize($new),
                     ];
@@ -225,33 +175,9 @@ final readonly class DoctrineAuditSubscriber
                 if ([] === $changes) {
                     continue;
                 }
-                $action = $auditContext['action']
-                    ?? $this->action($entity, $operation, $changeset);
-                $source = in_array(
-                    $action,
-                    ['submission', 'publication', 'archive', 'rejection'],
-                    true,
-                )
-                    ? 'workflow'
-                    : $auditContext['source'];
-                if (!isset($revisions[$ficheId])) {
-                    $revisions[$ficheId] = new AuditRevision(
-                        $ficheId,
-                        $action,
-                        $source,
-                        $auditContext['actor'],
-                        $auditContext['rolesScopes'],
-                        $auditContext['correlationId'],
-                    );
-                } elseif (
-                    $this->actionPriority($action) >
-                    $this->actionPriority($revisions[$ficheId]->action())
-                ) {
-                    $revisions[$ficheId]->changeAction($action);
-                    $revisions[$ficheId]->changeSource($source);
-                }
+                $revision = $this->revision($revisions, $ficheId, $auditContext['action'] ?? $this->action($entity, $operation, $changeset), $auditContext);
                 foreach ($changes as [$path, $old, $new]) {
-                    new AuditChange($revisions[$ficheId], $path, $old, $new);
+                    new AuditChange($revision, $path, $old, $new);
                 }
             }
         }
@@ -318,45 +244,14 @@ final readonly class DoctrineAuditSubscriber
                 if ($old === $new) {
                     continue;
                 }
-                $fiche = $this->resolveFiche(
-                    $owner,
-                    $lieux,
-                    $activites,
-                    $services,
-                    $restaurants,
-                    $fiches,
-                );
+                $fiche = $this->resolveFiche($owner, $charges);
                 if (null === $fiche) {
                     continue;
                 }
                 $ficheId = $fiche->idString();
-                $action = $auditContext['action'] ?? 'update';
-                $source = in_array(
-                    $action,
-                    ['submission', 'publication', 'archive', 'rejection'],
-                    true,
-                )
-                    ? 'workflow'
-                    : $auditContext['source'];
-                if (!isset($revisions[$ficheId])) {
-                    $revisions[$ficheId] = new AuditRevision(
-                        $ficheId,
-                        $action,
-                        $source,
-                        $auditContext['actor'],
-                        $auditContext['rolesScopes'],
-                        $auditContext['correlationId'],
-                    );
-                } elseif (
-                    $this->actionPriority($action) >
-                    $this->actionPriority($revisions[$ficheId]->action())
-                ) {
-                    $revisions[$ficheId]->changeAction($action);
-                    $revisions[$ficheId]->changeSource($source);
-                }
                 new AuditChange(
-                    $revisions[$ficheId],
-                    $this->path($owner, $field),
+                    $this->revision($revisions, $ficheId, $auditContext['action'] ?? 'update', $auditContext),
+                    AuditPath::pour($owner, $field),
                     $old,
                     $new,
                 );
@@ -396,109 +291,79 @@ final readonly class DoctrineAuditSubscriber
     }
 
     /**
-     * @param list<Lieu>                $lieux
-     * @param list<Activite>            $activites
-     * @param list<ServiceEvenementiel> $services
-     * @param list<Restaurant>          $restaurants
-     * @param list<Fiche>               $fiches
+     * Fiche à laquelle rattacher la révision d'une entité auditée.
+     *
+     * @param array<class-string, list<object>> $charges entités chargées ou créées, par classe
      */
-    private function resolveFiche(
-        object $entity,
-        array $lieux,
-        array $activites,
-        array $services,
-        array $restaurants,
-        array $fiches,
-    ): ?Fiche {
-        if (
-            $entity instanceof Lieu
-            || $entity instanceof Activite
-            || $entity instanceof ServiceEvenementiel
-            || $entity instanceof Restaurant
-        ) {
+    private function resolveFiche(object $entity, array $charges): ?Fiche
+    {
+        if ($entity instanceof Lieu || $entity instanceof Activite || $entity instanceof ServiceEvenementiel || $entity instanceof Restaurant) {
             return $entity->fiche();
         }
         if ($entity instanceof OffreActivite) {
             return $entity->activite()?->fiche();
         }
-        if ($entity instanceof RessourceLieu) {
+        if ($entity instanceof RessourceLieu || $entity instanceof FicheAdministratif) {
             return $entity->fiche();
         }
-        if (
-            $entity instanceof Salle
-            || $entity instanceof PeriodeFermeture
-            || $entity instanceof AccesLieu
-        ) {
+        if ($entity instanceof Salle || $entity instanceof PeriodeFermeture || $entity instanceof AccesLieu) {
             return $entity->lieu()?->fiche();
         }
-        if (
-            $entity instanceof RestaurantSalle
-            || $entity instanceof RestaurantPeriodeFermeture
-            || $entity instanceof RestaurantAcces
-        ) {
+        if ($entity instanceof RestaurantSalle || $entity instanceof RestaurantPeriodeFermeture || $entity instanceof RestaurantAcces) {
             return $entity->restaurant()?->fiche();
         }
         if ($entity instanceof ServiceAcces) {
             return $entity->service()?->fiche();
         }
-        if ($entity instanceof FicheAdministratif) {
-            return $entity->fiche();
-        }
-        $fiche =
-            $entity instanceof Fiche
-                ? $entity
-                : ($entity instanceof FicheAttributValeur
-                    ? $entity->fiche()
-                    : null);
-        foreach ($lieux as $lieu) {
-            if (
-                ($fiche instanceof Fiche && $lieu->fiche() === $fiche)
-                || ($entity instanceof Localisation
-                    && $lieu->localisation() === $entity)
-                || ($entity instanceof LieuTarification
-                    && $lieu->tarification() === $entity)
-            ) {
-                return $lieu->fiche();
-            }
-        }
-        foreach ($activites as $activite) {
-            if (
-                ($fiche instanceof Fiche && $activite->fiche() === $fiche)
-                || ($entity instanceof Localisation
-                    && $activite->localisation() === $entity)
-            ) {
-                return $activite->fiche();
-            }
-        }
-        foreach ($services as $service) {
-            if (
-                ($fiche instanceof Fiche && $service->fiche() === $fiche)
-                || ($entity instanceof Localisation && $service->localisation() === $entity)
-            ) {
-                return $service->fiche();
-            }
-        }
-        foreach ($restaurants as $restaurant) {
-            if (
-                ($fiche instanceof Fiche && $restaurant->fiche() === $fiche)
-                || ($entity instanceof Localisation
-                    && $restaurant->localisation() === $entity)
-            ) {
-                return $restaurant->fiche();
+        $fiche = $entity instanceof Fiche ? $entity : ($entity instanceof FicheAttributValeur ? $entity->fiche() : null);
+        // Sous-entité singulière (localisation, tarification) ou fiche : la
+        // gamme chargée qui la porte donne la fiche.
+        foreach ([Lieu::class, Activite::class, ServiceEvenementiel::class, Restaurant::class] as $class) {
+            foreach ($charges[$class] ?? [] as $detail) {
+                if (!$detail instanceof Lieu && !$detail instanceof Activite && !$detail instanceof ServiceEvenementiel && !$detail instanceof Restaurant) {
+                    continue;
+                }
+                if (
+                    ($fiche instanceof Fiche && $detail->fiche() === $fiche)
+                    || ($entity instanceof Localisation && $detail->localisation() === $entity)
+                    || ($entity instanceof LieuTarification && $detail instanceof Lieu && $detail->tarification() === $entity)
+                ) {
+                    return $detail->fiche();
+                }
             }
         }
         // Localisation mutée sans entité de gamme chargée (arbitrage
         // d'adresse, vérification au fil de l'eau) : la fiche porte
         // directement l'association.
         if ($entity instanceof Localisation) {
-            foreach ($fiches as $candidate) {
-                if ($candidate->localisation() === $entity) {
+            foreach ($charges[Fiche::class] ?? [] as $candidate) {
+                if ($candidate instanceof Fiche && $candidate->localisation() === $entity) {
                     return $candidate;
                 }
             }
         }
 
         return null;
+    }
+
+    /**
+     * Révision de la fiche dans ce flush : créée au premier changement, son
+     * action et sa source suivent ensuite l'action la plus significative.
+     *
+     * @param array<string, AuditRevision>                                                                            $revisions
+     * @param array{source: string, actor: string, rolesScopes: list<string>, correlationId: string, action: ?string} $auditContext
+     */
+    private function revision(array &$revisions, string $ficheId, string $action, array $auditContext): AuditRevision
+    {
+        $source = in_array($action, ['submission', 'publication', 'archive', 'rejection'], true) ? 'workflow' : $auditContext['source'];
+        if (!isset($revisions[$ficheId])) {
+            $revisions[$ficheId] = new AuditRevision($ficheId, $action, $source, $auditContext['actor'], $auditContext['rolesScopes'], $auditContext['correlationId']);
+        } elseif ($this->actionPriority($action) > $this->actionPriority($revisions[$ficheId]->action())) {
+            $revisions[$ficheId]->changeAction($action);
+            $revisions[$ficheId]->changeSource($source);
+        }
+
+        return $revisions[$ficheId];
     }
 
     /** @return array<string, array{mixed, mixed}> */
@@ -542,80 +407,6 @@ final readonly class DoctrineAuditSubscriber
         }
 
         return $this->normalizer->normalize($element);
-    }
-
-    private function path(object $entity, string $field): string
-    {
-        return match (true) {
-            $entity instanceof Fiche => match ($field) {
-                'label' => 'nom',
-                'status' => 'workflow.status',
-                'siteSelections' => 'sitesDiffusion',
-                default => 'fiche.'.$field,
-            },
-            $entity instanceof Lieu => 'lieu.'.$field,
-            $entity instanceof Activite => 'activite.'.$field,
-            $entity instanceof ServiceEvenementiel => 'service.'.$field,
-            $entity instanceof Restaurant => 'restaurant.'.$field,
-            $entity instanceof OffreActivite => sprintf(
-                '%s[%s].%s',
-                $entity->type()->value.'s',
-                $entity->id(),
-                $field,
-            ),
-            $entity instanceof Localisation => 'localisation.'.$field,
-            $entity instanceof FicheAdministratif => 'administratif.'.$field,
-            $entity instanceof LieuTarification => 'tarification.'.$field,
-            $entity instanceof Salle => sprintf(
-                'salles[%s].%s',
-                $entity->id(),
-                $field,
-            ),
-            $entity instanceof PeriodeFermeture => sprintf(
-                'fermetures[%s].%s',
-                $entity->id(),
-                $field,
-            ),
-            $entity instanceof AccesLieu => sprintf(
-                'acces[%s].%s',
-                $entity->id(),
-                $field,
-            ),
-            $entity instanceof RestaurantSalle => sprintf(
-                'salles[%s].%s',
-                $entity->id(),
-                $field,
-            ),
-            $entity instanceof RestaurantPeriodeFermeture => sprintf(
-                'fermetures[%s].%s',
-                $entity->id(),
-                $field,
-            ),
-            $entity instanceof RestaurantAcces => sprintf(
-                'acces[%s].%s',
-                $entity->id(),
-                $field,
-            ),
-            $entity instanceof ServiceAcces => sprintf(
-                'acces[%s].%s',
-                $entity->id(),
-                $field,
-            ),
-            $entity instanceof RessourceLieu => sprintf(
-                '%s[%s].%s',
-                NatureRessource::Document === $entity->nature()
-                    ? 'documents'
-                    : 'medias',
-                $entity->id(),
-                $field,
-            ),
-            $entity instanceof FicheAttributValeur => sprintf(
-                'attributs[%s].%s',
-                $entity->attributeCode(),
-                $field,
-            ),
-            default => $field,
-        };
     }
 
     /** @param array<string, array{mixed, mixed}> $changeset */
